@@ -106,11 +106,12 @@ pub async fn worker_entry() {
 
     let mut camera_velocity=vec2same(0.0);
     let mut camera=vec2same(0.0);
-
+    
 
     let mut scrolling=Scrollin::NotScrolling;
     'outer: loop {
         for e in frame_timer.next().await {
+            log!(format!("{:?}",e));
             match e {
                 MEvent::CanvasMouseUp=>{
                     match scrolling{
@@ -129,11 +130,10 @@ pub async fn worker_entry() {
                                 }
                             }
                             walls.update_clear(cache);
+                            scrolling=Scrollin::NotScrolling;
                         }
                         Scrollin::Scrolling{anchor}=>{
-                            let curr:Vec2<_>=mouse_pos.into();
-                            let anchor:Vec2<_>=anchor.into();
-                            camera_velocity=(curr-anchor)*0.02;
+                            
                             scrolling=Scrollin::NotScrolling;
                         }
                         Scrollin::NotScrolling=>{
@@ -142,10 +142,20 @@ pub async fn worker_entry() {
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
+                   
                     mouse_pos = [*x, *y];
                     match scrolling{
                         Scrollin::MouseDown{anchor}=>{
-                            scrolling=Scrollin::Scrolling{anchor}
+                            let curr:Vec2<_>=mouse_pos.into();
+                            let anchor:Vec2<_>=anchor.into();
+                            camera_velocity+=(curr-anchor)*0.02;
+                            scrolling=Scrollin::Scrolling{anchor:mouse_pos}
+                        },
+                        Scrollin::Scrolling{anchor}=>{
+                            let curr:Vec2<_>=mouse_pos.into();
+                            let anchor:Vec2<_>=anchor.into();
+                            camera_velocity+=(curr-anchor)*0.02;
+                            scrolling=Scrollin::Scrolling{anchor:mouse_pos}
                         },
                         _=>{}
                     }
@@ -162,13 +172,12 @@ pub async fn worker_entry() {
             }
         }
 
-        log!(format!("{:?}",&scrolling));
-
+        //log!(format!("{:?}",&scrolling));
 
 
         {
             camera+=camera_velocity;
-            camera_velocity*=0.99;
+            camera_velocity*=0.9;
         }
 
 
