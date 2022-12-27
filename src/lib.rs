@@ -107,6 +107,7 @@ pub async fn worker_entry() {
     let mut camera_velocity=vec2same(0.0);
     let mut camera=vec2same(0.0);
     
+    let mut world_cursor=vec2same(0.0);
 
     let mut scrolling=Scrollin::NotScrolling;
     'outer: loop {
@@ -116,7 +117,7 @@ pub async fn worker_entry() {
                 MEvent::CanvasMouseUp=>{
                     match scrolling{
                         Scrollin::MouseDown{..}=>{
-                            grid_walls.set(grid_viewport.to_grid(mouse_pos.into()),true);
+                            grid_walls.set(grid_viewport.to_grid(world_cursor.into()),true);
                             let mut s=simple2d::shapes(cache);
                             for (p,val) in grid_walls.iter(){
                                 if val{
@@ -132,7 +133,7 @@ pub async fn worker_entry() {
                             walls.update_clear(cache);
                             scrolling=Scrollin::NotScrolling;
                         }
-                        Scrollin::Scrolling{anchor}=>{
+                        Scrollin::Scrolling{..}=>{
                             
                             scrolling=Scrollin::NotScrolling;
                         }
@@ -142,7 +143,8 @@ pub async fn worker_entry() {
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
-                   
+                    world_cursor=camera+mouse_pos.into();
+        
                     mouse_pos = [*x, *y];
                     match scrolling{
                         Scrollin::MouseDown{anchor}=>{
@@ -172,6 +174,7 @@ pub async fn worker_entry() {
             }
         }
 
+        world_cursor=-camera+mouse_pos.into();
         //log!(format!("{:?}",&scrolling));
 
 
@@ -182,10 +185,10 @@ pub async fn worker_entry() {
 
 
         simple2d::shapes(cache)
-            .line(radius, mouse_pos, [0.0, 0.0])
-            .line(radius, mouse_pos, game_dim)
-            .line(radius, mouse_pos, [0.0, game_dim[1]])
-            .line(radius, mouse_pos, [game_dim[0], 0.0]);
+            .line(radius, world_cursor, [0.0, 0.0])
+            .line(radius, world_cursor, game_dim)
+            .line(radius, world_cursor, [0.0, game_dim[1]])
+            .line(radius, world_cursor, [game_dim[0], 0.0]);
 
         buffer.update_clear(cache);
 
