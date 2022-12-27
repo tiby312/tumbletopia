@@ -1,16 +1,12 @@
-use axgeom::{vec2, Vec2, vec2same};
+use axgeom::{vec2, vec2same, Vec2};
 use gloo::console::log;
 use serde::{Deserialize, Serialize};
 use shogo::utils;
 use wasm_bindgen::prelude::*;
 
-
-
 use duckduckgeo::grid;
 
-
-
-
+mod scroll;
 
 const COLORS: &[[f32; 4]] = &[
     [1.0, 0.0, 0.0, 0.5],
@@ -42,20 +38,17 @@ pub async fn main_entry() {
 
     let offscreen = canvas.transfer_control_to_offscreen().unwrap_throw();
 
-    let (mut worker, mut response) = shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
+    let (mut worker, mut response) =
+        shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
 
     let _handler = worker.register_event(&canvas, "mousemove", |e| {
         let [x, y] = convert_coord(e.elem, e.event);
         MEvent::CanvasMouseMove { x, y }
     });
 
-    let _handler = worker.register_event(&canvas, "mousedown", |e| {
-        MEvent::CanvasMouseDown
-    });
+    let _handler = worker.register_event(&canvas, "mousedown", |_| MEvent::CanvasMouseDown);
 
-    let _handler = worker.register_event(&canvas, "mouseup", |e| {
-        MEvent::CanvasMouseUp
-    });
+    let _handler = worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp);
 
     let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick);
 
@@ -82,90 +75,49 @@ pub async fn worker_entry() {
     ctx.setup_alpha();
 
     // setup game data
-    let mut mouse_pos = [0.0f32; 2];
     let mut color_iter = COLORS.iter().cycle().peekable();
     let radius = 4.0;
     let game_dim = [canvas.width() as f32, canvas.height() as f32];
 
+    let grid_viewport = duckduckgeo::grid::GridViewPort {
+        origin: vec2(0.0, 0.0),
+        spacing: game_dim[0] / (64 as f32),
+    };
 
-    let grid_viewport=duckduckgeo::grid::GridViewPort{origin:vec2(0.0,0.0),spacing:game_dim[0]/(64 as f32)};
+    let mut grid_walls = grid::Grid2D::new(axgeom::Vec2 { x: 64, y: 64 });
 
-    let mut grid_walls=grid::Grid2D::new(axgeom::Vec2{x:64,y:64});
+    let mut scroll_manager = scroll::ScrollController::new(vec2same(0.0));
 
-
-    #[derive(PartialEq,Debug)]
-    pub enum Scrollin{
-        MouseDown{
-            anchor:[f32;2]
-        },
-        Scrolling{
-            anchor:[f32;2]
-        },
-        NotScrolling
-    }
-
-    let mut camera_velocity=vec2same(0.0);
-    let mut camera=vec2same(0.0);
-    
-    let mut world_cursor=vec2same(0.0);
-
-    let mut scrolling=Scrollin::NotScrolling;
     'outer: loop {
         for e in frame_timer.next().await {
-            log!(format!("{:?}",e));
+            log!(format!("{:?}", e));
             match e {
-                MEvent::CanvasMouseUp=>{
-                    match scrolling{
-                        Scrollin::MouseDown{..}=>{
-                            grid_walls.set(grid_viewport.to_grid(world_cursor.into()),true);
-                            let mut s=simple2d::shapes(cache);
-                            for (p,val) in grid_walls.iter(){
-                                if val{
-                                    let top_left=grid_viewport.to_world_topleft(p);
-                                    s.rect(simple2d::Rect {
-                                        x: top_left.x,
-                                        y: top_left.y,
-                                        w: grid_viewport.spacing,
-                                        h: grid_viewport.spacing,
-                                    });
-                                }
+                MEvent::CanvasMouseUp => {
+                    if scroll_manager.handle_mouse_up() {
+                        grid_walls.set(
+                            grid_viewport.to_grid((*scroll_manager.world_cursor()).into()),
+                            true,
+                        );
+                        let mut s = simple2d::shapes(cache);
+                        for (p, val) in grid_walls.iter() {
+                            if val {
+                                let top_left = grid_viewport.to_world_topleft(p);
+                                s.rect(simple2d::Rect {
+                                    x: top_left.x,
+                                    y: top_left.y,
+                                    w: grid_viewport.spacing,
+                                    h: grid_viewport.spacing,
+                                });
                             }
-                            walls.update_clear(cache);
-                            scrolling=Scrollin::NotScrolling;
                         }
-                        Scrollin::Scrolling{..}=>{
-                            
-                            scrolling=Scrollin::NotScrolling;
-                        }
-                        Scrollin::NotScrolling=>{
-                            panic!("not possible?")
-                        }
+                        walls.update_clear(cache);
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
-                    world_cursor=camera+mouse_pos.into();
-        
-                    mouse_pos = [*x, *y];
-                    match scrolling{
-                        Scrollin::MouseDown{anchor}=>{
-                            let curr:Vec2<_>=mouse_pos.into();
-                            let anchor:Vec2<_>=anchor.into();
-                            camera_velocity+=(curr-anchor)*0.02;
-                            scrolling=Scrollin::Scrolling{anchor:mouse_pos}
-                        },
-                        Scrollin::Scrolling{anchor}=>{
-                            let curr:Vec2<_>=mouse_pos.into();
-                            let anchor:Vec2<_>=anchor.into();
-                            camera_velocity+=(curr-anchor)*0.02;
-                            scrolling=Scrollin::Scrolling{anchor:mouse_pos}
-                        },
-                        _=>{}
-                    }
-                },
-                MEvent::CanvasMouseDown=>{
-                    scrolling=Scrollin::MouseDown{
-                        anchor:mouse_pos
-                    };
+                    scroll_manager.handle_mouse_move([*x, *y]);
+                }
+                MEvent::CanvasMouseDown => {
+                    scroll_manager.handle_mouse_down();
                 }
                 MEvent::ButtonClick => {
                     let _ = color_iter.next();
@@ -174,16 +126,9 @@ pub async fn worker_entry() {
             }
         }
 
-        world_cursor=-camera+mouse_pos.into();
-        //log!(format!("{:?}",&scrolling));
+        scroll_manager.step();
 
-
-        {
-            camera+=camera_velocity;
-            camera_velocity*=0.9;
-        }
-
-
+        let world_cursor = *scroll_manager.world_cursor();
         simple2d::shapes(cache)
             .line(radius, world_cursor, [0.0, 0.0])
             .line(radius, world_cursor, game_dim)
@@ -194,7 +139,7 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.13, 0.13, 0.13, 1.0]);
 
-        let mut v = draw_sys.view(game_dim, camera);
+        let mut v = draw_sys.view(game_dim, *scroll_manager.camera_pos());
         v.draw_triangles(&walls, &[1.0, 1.0, 1.0, 0.2]);
         v.draw_triangles(&buffer, color_iter.peek().unwrap_throw());
 
@@ -206,35 +151,8 @@ pub async fn worker_entry() {
     log!("worker thread closing");
 }
 
-
-fn convert_canvas_to_grid(){
-
-}
-fn convert_grid_canvas(){
-
-}
-
-
-
 //convert DOM coordinate to canvas relative coordinate
 fn convert_coord(canvas: &web_sys::HtmlElement, event: &web_sys::Event) -> [f32; 2] {
     use wasm_bindgen::JsCast;
     shogo::simple2d::convert_coord(canvas, event.dyn_ref().unwrap_throw())
-}
-
-
-
-pub trait Stuff{
-    type N;
-    fn sub(self,other:Self)->Self;
-    fn div(self,other:Self::N)->Self;
-}
-impl Stuff for [f32;2]{
-    type N=f32;
-    fn sub(self,other:Self)->Self{
-        [other[0]-self[0],other[1]-self[1]]
-    }
-    fn div(self,other:Self::N)->Self{
-        [self[0]/other,self[1]/other]
-    }
 }
