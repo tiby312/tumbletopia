@@ -1,4 +1,4 @@
-use axgeom::vec2;
+use axgeom::{vec2, Vec2, vec2same};
 use gloo::console::log;
 use serde::{Deserialize, Serialize};
 use shogo::utils;
@@ -93,37 +93,67 @@ pub async fn worker_entry() {
     let mut grid_walls=grid::Grid2D::new(axgeom::Vec2{x:64,y:64});
 
 
-    //let mut scrolling=false;
-    //let mut mouse_is_down=false;
+    #[derive(PartialEq,Debug)]
+    pub enum Scrollin{
+        MouseDown{
+            anchor:[f32;2]
+        },
+        Scrolling{
+            anchor:[f32;2]
+        },
+        NotScrolling
+    }
+
+    let mut camera_velocity=vec2same(0.0);
+    let mut camera=vec2same(0.0);
+
+
+    let mut scrolling=Scrollin::NotScrolling;
     'outer: loop {
         for e in frame_timer.next().await {
             match e {
                 MEvent::CanvasMouseUp=>{
-                
-                    grid_walls.set(grid_viewport.to_grid(mouse_pos.into()),true);
-                    let mut s=simple2d::shapes(cache);
-                    for (p,val) in grid_walls.iter(){
-                        if val{
-                            let top_left=grid_viewport.to_world_topleft(p);
-                            s.rect(simple2d::Rect {
-                                x: top_left.x,
-                                y: top_left.y,
-                                w: grid_viewport.spacing,
-                                h: grid_viewport.spacing,
-                            });
+                    match scrolling{
+                        Scrollin::MouseDown{..}=>{
+                            grid_walls.set(grid_viewport.to_grid(mouse_pos.into()),true);
+                            let mut s=simple2d::shapes(cache);
+                            for (p,val) in grid_walls.iter(){
+                                if val{
+                                    let top_left=grid_viewport.to_world_topleft(p);
+                                    s.rect(simple2d::Rect {
+                                        x: top_left.x,
+                                        y: top_left.y,
+                                        w: grid_viewport.spacing,
+                                        h: grid_viewport.spacing,
+                                    });
+                                }
+                            }
+                            walls.update_clear(cache);
+                        }
+                        Scrollin::Scrolling{anchor}=>{
+                            let curr:Vec2<_>=mouse_pos.into();
+                            let anchor:Vec2<_>=anchor.into();
+                            camera_velocity=(curr-anchor)*0.02;
+                            scrolling=Scrollin::NotScrolling;
+                        }
+                        Scrollin::NotScrolling=>{
+                            panic!("not possible?")
                         }
                     }
-                    walls.update_clear(cache);
-                
                 }
                 MEvent::CanvasMouseMove { x, y } => {
                     mouse_pos = [*x, *y];
-                    // if mouse_is_down{
-                    //     scrolling=true;
-                    // }
+                    match scrolling{
+                        Scrollin::MouseDown{anchor}=>{
+                            scrolling=Scrollin::Scrolling{anchor}
+                        },
+                        _=>{}
+                    }
                 },
                 MEvent::CanvasMouseDown=>{
-
+                    scrolling=Scrollin::MouseDown{
+                        anchor:mouse_pos
+                    };
                 }
                 MEvent::ButtonClick => {
                     let _ = color_iter.next();
@@ -131,6 +161,16 @@ pub async fn worker_entry() {
                 MEvent::ShutdownClick => break 'outer,
             }
         }
+
+        log!(format!("{:?}",&scrolling));
+
+
+
+        {
+            camera+=camera_velocity;
+            camera_velocity*=0.99;
+        }
+
 
         simple2d::shapes(cache)
             .line(radius, mouse_pos, [0.0, 0.0])
@@ -142,7 +182,7 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.13, 0.13, 0.13, 1.0]);
 
-        let mut v = draw_sys.view(game_dim, [0.0, 0.0]);
+        let mut v = draw_sys.view(game_dim, camera);
         v.draw_triangles(&walls, &[1.0, 1.0, 1.0, 0.2]);
         v.draw_triangles(&buffer, color_iter.peek().unwrap_throw());
 
@@ -168,4 +208,21 @@ fn convert_grid_canvas(){
 fn convert_coord(canvas: &web_sys::HtmlElement, event: &web_sys::Event) -> [f32; 2] {
     use wasm_bindgen::JsCast;
     shogo::simple2d::convert_coord(canvas, event.dyn_ref().unwrap_throw())
+}
+
+
+
+pub trait Stuff{
+    type N;
+    fn sub(self,other:Self)->Self;
+    fn div(self,other:Self::N)->Self;
+}
+impl Stuff for [f32;2]{
+    type N=f32;
+    fn sub(self,other:Self)->Self{
+        [other[0]-self[0],other[1]-self[1]]
+    }
+    fn div(self,other:Self::N)->Self{
+        [self[0]/other,self[1]/other]
+    }
 }
