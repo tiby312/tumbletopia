@@ -134,8 +134,7 @@ pub async fn worker_entry() {
                     scroll_manager.handle_mouse_move([*x, *y]);
                 }
                 MEvent::CanvasMouseDown{x,y} => {
-                    scroll_manager.handle_mouse_move([*x,*y]);
-                    scroll_manager.handle_mouse_down();
+                    scroll_manager.handle_mouse_down([*x,*y]);
                 }
                 MEvent::ButtonClick => {
                     let _ = color_iter.next();

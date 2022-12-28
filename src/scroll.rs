@@ -45,7 +45,10 @@ impl ScrollController {
             _ => {}
         }
     }
-    pub fn handle_mouse_down(&mut self) {
+    pub fn handle_mouse_down(&mut self,mouse:[f32;2]) {
+        self.mouse_pos_canvas = mouse.into();
+        self.world_cursor = self.camera + self.mouse_pos_canvas.into();
+
         self.scrolling = Scrollin::MouseDown {
             anchor: self.mouse_pos_canvas,
         };
