@@ -24,3 +24,7 @@ version = "0.8"
 features=[
   'futures'
   ]
+
+
+[patch.crates-io]
+shogo={path="../shogo"}
