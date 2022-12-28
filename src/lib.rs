@@ -91,16 +91,36 @@ pub async fn worker_entry() {
 
     // setup game data
     let mut color_iter = COLORS.iter().cycle().peekable();
-    let radius = 4.0;
     let game_dim = [2000.0f32, 2000.0];
     let viewport = [canvas.width() as f32, canvas.height() as f32];
 
+    let grid_width = 32;
+
     let grid_viewport = duckduckgeo::grid::GridViewPort {
         origin: vec2(0.0, 0.0),
-        spacing: game_dim[0] / (64 as f32),
+        spacing: game_dim[0] / (grid_width as f32),
     };
 
-    let mut grid_walls = grid::Grid2D::new(axgeom::Vec2 { x: 64, y: 64 });
+    let mut k = simple2d::shapes(cache);
+    for x in 0..grid_width {
+        let offset = if x % 2 == 0 {
+            0..grid_width
+        } else {
+            1..grid_width - 1
+        };
+        for y in offset.step_by(2) {
+            k.rect(simple2d::Rect {
+                x: x as f32 * grid_viewport.spacing,
+                y: y as f32 * grid_viewport.spacing,
+                w: grid_viewport.spacing,
+                h: grid_viewport.spacing,
+            });
+        }
+    }
+
+    let checker = ctx.buffer_static_clear(cache);
+
+    let mut grid_walls = grid::Grid2D::new(vec2same(grid_width));
 
     let mut scroll_manager = scroll::ScrollController::new(vec2same(0.0));
 
@@ -144,19 +164,26 @@ pub async fn worker_entry() {
 
         scroll_manager.step();
 
+        
+        /*
         let world_cursor = *scroll_manager.world_cursor();
+
         simple2d::shapes(cache)
             .line(radius, world_cursor, [0.0, 0.0])
             .line(radius, world_cursor, game_dim)
             .line(radius, world_cursor, [0.0, game_dim[1]])
             .line(radius, world_cursor, [game_dim[0], 0.0]);
+        */
 
         buffer.update_clear(cache);
 
-        ctx.draw_clear([0.13, 0.13, 0.13, 1.0]);
+        ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
         let mut v = draw_sys.view(viewport, *scroll_manager.camera_pos());
-        v.draw_triangles(&walls, &[1.0, 1.0, 1.0, 0.2]);
+
+        v.draw_triangles(&checker, &[0.3, 0.3, 0.3, 0.3]);
+
+        v.draw_triangles(&walls, &[1.0, 0.5, 0.5, 1.0]);
         v.draw_triangles(&buffer, color_iter.peek().unwrap_throw());
 
         ctx.flush();
@@ -208,10 +235,15 @@ pub fn convert_coord_touch_inner(
     let mut ans = vec![];
     for a in 0..touches.length() {
         let touch = touches.get(a).unwrap();
-        let x = touch.screen_x() as f64;
-        let y = touch.screen_y() as f64;
-
-        let [x, y] = [(x - rect.left()) * scalex, (y - rect.top()) * scaley];
+        let x = touch.client_x() as f64;
+        let y = touch.client_y() as f64;
+        let rx = touch.radius_x() as f64;
+        let ry = touch.radius_y() as f64;
+        //log!(format!("{:?}",(rx,ry)));
+        let [x, y] = [
+            (x + rx - rect.left()) * scalex,
+            (y + ry - rect.top()) * scaley,
+        ];
 
         ans.push([x as f32, y as f32]);
     }
