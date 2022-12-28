@@ -72,7 +72,6 @@ impl ScrollController {
     }
     pub fn step(&mut self) {
         self.world_cursor = -self.camera + self.mouse_pos_canvas.into();
-        //log!(format!("{:?}",&scrolling));
 
         {
             self.camera += self.camera_velocity;

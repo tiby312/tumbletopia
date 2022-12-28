@@ -92,7 +92,8 @@ pub async fn worker_entry() {
     // setup game data
     let mut color_iter = COLORS.iter().cycle().peekable();
     let radius = 4.0;
-    let game_dim = [canvas.width() as f32, canvas.height() as f32];
+    let game_dim = [2000.0f32, 2000.0];
+    let viewport = [canvas.width() as f32, canvas.height() as f32];
 
     let grid_viewport = duckduckgeo::grid::GridViewPort {
         origin: vec2(0.0, 0.0),
@@ -154,7 +155,7 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.13, 0.13, 0.13, 1.0]);
 
-        let mut v = draw_sys.view(game_dim, *scroll_manager.camera_pos());
+        let mut v = draw_sys.view(viewport, *scroll_manager.camera_pos());
         v.draw_triangles(&walls, &[1.0, 1.0, 1.0, 0.2]);
         v.draw_triangles(&buffer, color_iter.peek().unwrap_throw());
 
