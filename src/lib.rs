@@ -18,7 +18,7 @@ const COLORS: &[[f32; 4]] = &[
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum MEvent {
     CanvasMouseMove { x: f32, y: f32 },
-    CanvasMouseDown,
+    CanvasMouseDown {x:f32,y:f32},
     CanvasMouseUp,
     ButtonClick,
     ShutdownClick,
@@ -46,21 +46,28 @@ pub async fn main_entry() {
         MEvent::CanvasMouseMove { x, y }
     });
 
-    let _handler = worker.register_event(&canvas, "mousedown", |_| MEvent::CanvasMouseDown);
+    let _handler = worker.register_event(&canvas, "mousedown", |e| {
+        let [x, y] = convert_coord(e.elem, e.event);
+        MEvent::CanvasMouseDown { x, y }
+    });
 
     let _handler = worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp);
 
+
+    // let _handler = worker.register_event(&canvas, "touchstart", |e| {
+    //     let [x, y] = convert_coord_touch(e.elem, e.event);
+    //     MEvent::CanvasMouseDown{x,y}
+    // });
+
+    // let _handler = worker.register_event(&canvas, "touchend", |_| MEvent::CanvasMouseUp);
+
+    // let _handler = worker.register_event(&canvas, "touchmove", |e|{
+    //     let [x, y] = convert_coord_touch(e.elem, e.event);
+    //     MEvent::CanvasMouseMove{x,y}
+    // });
+
+
     let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick);
-
-    let _handler = worker.register_event(&canvas, "touchstart", |_| MEvent::CanvasMouseDown);
-
-    let _handler = worker.register_event(&canvas, "touchend", |_| MEvent::CanvasMouseUp);
-
-    let _handler = worker.register_event(&canvas, "touchmove", |e|{
-        let [x, y] = convert_coord_touch(e.elem, e.event);
-        MEvent::CanvasMouseMove{x,y}
-    });
-
 
     let _handler = worker.register_event(&shutdown_button, "click", |_| MEvent::ShutdownClick);
 
@@ -126,7 +133,8 @@ pub async fn worker_entry() {
                 MEvent::CanvasMouseMove { x, y } => {
                     scroll_manager.handle_mouse_move([*x, *y]);
                 }
-                MEvent::CanvasMouseDown => {
+                MEvent::CanvasMouseDown{x,y} => {
+                    scroll_manager.handle_mouse_move([*x,*y]);
                     scroll_manager.handle_mouse_down();
                 }
                 MEvent::ButtonClick => {
