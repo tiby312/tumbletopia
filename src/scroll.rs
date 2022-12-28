@@ -37,7 +37,7 @@ impl ScrollController {
             Scrollin::MouseDown { anchor } | Scrollin::Scrolling { anchor } => {
                 let curr = self.mouse_pos_canvas;
                 let anchor: Vec2<_> = anchor.into();
-                self.camera_velocity += (curr - anchor) * 0.2;
+                self.camera_velocity += (curr - anchor) * 0.3;
                 self.scrolling = Scrollin::Scrolling {
                     anchor: self.mouse_pos_canvas,
                 }
