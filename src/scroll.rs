@@ -1,56 +1,86 @@
 #[derive(PartialEq, Debug)]
 enum Scrollin {
-    MouseDown { anchor: Vec2<f32> },
-    Scrolling { anchor: Vec2<f32> },
+    MouseDown {
+        mouse_anchor: Vec2<f32>,
+        camera_anchor: Vec2<f32>,
+    },
+    Scrolling {
+        mouse_anchor: Vec2<f32>,
+        camera_anchor: Vec2<f32>,
+    },
     NotScrolling,
 }
 use super::*;
 pub struct ScrollController {
-    mouse_pos_canvas: Vec2<f32>,
+    cursor_canvas: Vec2<f32>,
+    //world coord
     camera: Vec2<f32>,
-    camera_velocity: Vec2<f32>,
-    world_cursor: Vec2<f32>,
+    last_camera: Vec2<f32>,
+
     scrolling: Scrollin,
+    camera_data: CamData,
 }
+
+//angle of camera/zoom etc
+struct CamData;
+
+impl CamData {
+    fn canvas_to_world(&self, a: Vec2<f32>) -> Vec2<f32> {
+        a
+    }
+}
+
 impl ScrollController {
-    pub fn new(mouse_pos_canvas: Vec2<f32>) -> Self {
+    pub fn new(cursor_canvas: Vec2<f32>) -> Self {
         ScrollController {
-            mouse_pos_canvas,
-            camera: mouse_pos_canvas,
-            camera_velocity: vec2same(0.0),
-            world_cursor: vec2same(0.0),
+            camera: vec2same(0.0),
+            last_camera: vec2same(0.0),
+            cursor_canvas,
             scrolling: Scrollin::NotScrolling,
+            camera_data: CamData,
         }
     }
-    pub fn world_cursor(&self) -> &Vec2<f32> {
-        &self.world_cursor
+    pub fn world_cursor(&self) -> Vec2<f32> {
+        //get cursor in world coordinates relative to origin.
+        let cursor = self.camera_data.canvas_to_world(self.cursor_canvas);
+
+        //get abosolute position by adding it to where the camera is
+        self.camera + cursor
     }
     pub fn camera_pos(&self) -> &Vec2<f32> {
         &self.camera
     }
 
     pub fn handle_mouse_move(&mut self, mouse: [f32; 2]) {
-        self.mouse_pos_canvas = mouse.into();
-        //self.world_cursor = self.camera + self.mouse_pos_canvas.into();
+        self.cursor_canvas = mouse.into();
 
         match self.scrolling {
-            Scrollin::MouseDown { anchor } | Scrollin::Scrolling { anchor } => {
-                let curr = self.mouse_pos_canvas;
-                let anchor: Vec2<_> = anchor.into();
-                self.camera_velocity += (curr - anchor) * 0.3;
+            Scrollin::Scrolling {
+                mouse_anchor,
+                camera_anchor,
+            } => {
+                let offset = self.cursor_canvas - mouse_anchor;
+                self.last_camera = self.camera;
+                self.camera = camera_anchor + self.camera_data.canvas_to_world(offset);
+            }
+            Scrollin::MouseDown {
+                mouse_anchor,
+                camera_anchor,
+            } => {
                 self.scrolling = Scrollin::Scrolling {
-                    anchor: self.mouse_pos_canvas,
+                    mouse_anchor,
+                    camera_anchor,
                 }
             }
             _ => {}
         }
     }
     pub fn handle_mouse_down(&mut self, mouse: [f32; 2]) {
-        self.mouse_pos_canvas = mouse.into();
-        //self.world_cursor = self.camera + self.mouse_pos_canvas.into();
+        self.cursor_canvas = mouse.into();
 
         self.scrolling = Scrollin::MouseDown {
-            anchor: self.mouse_pos_canvas,
+            mouse_anchor: self.cursor_canvas,
+            camera_anchor: self.camera,
         };
     }
 
@@ -71,11 +101,13 @@ impl ScrollController {
         }
     }
     pub fn step(&mut self) {
-        self.world_cursor = -self.camera + self.mouse_pos_canvas.into();
-
-        {
-            self.camera += self.camera_velocity;
-            self.camera_velocity *= 0.9;
+        match self.scrolling {
+            Scrollin::Scrolling { .. } => {}
+            _ => {
+                let delta = self.camera - self.last_camera;
+                self.last_camera = self.camera;
+                self.camera += delta * 0.9;
+            }
         }
     }
 }

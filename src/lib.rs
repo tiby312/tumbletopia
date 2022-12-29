@@ -131,7 +131,7 @@ pub async fn worker_entry() {
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
                         grid_walls.set(
-                            grid_viewport.to_grid((*scroll_manager.world_cursor()).into()),
+                            grid_viewport.to_grid((scroll_manager.world_cursor()).into()),
                             true,
                         );
                         let mut s = simple2d::shapes(cache);
@@ -164,7 +164,6 @@ pub async fn worker_entry() {
 
         scroll_manager.step();
 
-        
         /*
         let world_cursor = *scroll_manager.world_cursor();
 
