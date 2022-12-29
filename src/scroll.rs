@@ -44,8 +44,9 @@ impl ScrollController {
         //get cursor in world coordinates relative to origin.
         let cursor = self.camera_data.canvas_to_world(self.cursor_canvas);
 
+        //log!(format!("{:?}",(self.camera,cursor)));
         //get abosolute position by adding it to where the camera is
-        self.camera + cursor
+        -self.camera + cursor
     }
     pub fn camera_pos(&self) -> &Vec2<f32> {
         &self.camera
