@@ -307,10 +307,12 @@ impl<'a> Doop<'a>{
 }
 
 
-fn projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
+
+
+//world to screen space
+fn screen_projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
     
 
-    use webgl_matrix::prelude::*;
 
     let mut id = Mat4::identity();
 
@@ -319,7 +321,22 @@ fn projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
     doop.
         z_rotation(std::f32::consts::PI / 4.).
         x_rotation(std::f32::consts::PI / 4.).
-        translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0).
+        translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0);
+    
+    id
+}
+
+
+//screenspace to clip space
+fn projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
+    
+
+    let mut id=screen_projection(dim,offset);
+
+
+    let mut doop=Doop(&mut id);
+
+    doop.
         scale(2.0,-2.0,0.0).
         scale(1.0 / dim[0], 1.0 / dim[1], 0.0);
 
