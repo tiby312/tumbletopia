@@ -87,6 +87,8 @@ pub async fn worker_entry() {
     let cache = &mut vec![];
     let mut walls = ctx.buffer_dynamic();
 
+    //TODO move?
+    ctx.viewport(0, 0, canvas.width() as i32, canvas.height() as i32);
     ctx.setup_alpha();
 
     // setup game data
