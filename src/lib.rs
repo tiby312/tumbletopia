@@ -252,50 +252,76 @@ pub fn convert_coord_touch_inner(
     ans
 }
 
-fn projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
-    let scale = |scalex, scaley, scalez| {
-        [
-            scalex, 0., 0., 0., 0., scaley, 0., 0., 0., 0., scalez, 0., 0., 0., 0., 1.0,
-        ]
-    };
 
-    let translation = |tx, ty, tz| {
-        [
+
+use webgl_matrix::prelude::*;
+
+
+
+pub struct Doop<'a>(pub &'a mut [f32;16]);
+
+impl<'a> Doop<'a>{
+    pub fn scale(&mut self,x:f32,y:f32,z:f32)->&mut Self{
+        self.0.mul(&[
+            x, 0., 0., 0., 0., y, 0., 0., 0., 0., z, 0., 0., 0., 0., 1.0,
+        ]);
+        self
+    }
+
+    pub fn translation(&mut self,tx:f32,ty:f32,tz:f32)->&mut Self{
+        self.0.mul(&[
             1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., tx, ty, tz, 1.,
-        ]
-    };
+        ]);
+        self
+    }
 
-    let x_rotation = |angle_rad: f32| {
+    pub fn x_rotation(&mut self,angle_rad:f32)->&mut Self{
         let c = angle_rad.cos();
         let s = angle_rad.sin();
 
-        [1., 0., 0., 0., 0., c, s, 0., 0., -s, c, 0., 0., 0., 0., 1.]
-    };
+        self.0.mul(&
+            [1., 0., 0., 0., 0., c, s, 0., 0., -s, c, 0., 0., 0., 0., 1.]);
+        self
+    }
 
-    let y_rotation = |angle_rad: f32| {
+
+    pub fn y_rotation(&mut self,angle_rad:f32)->&mut Self{
         let c = angle_rad.cos();
         let s = angle_rad.sin();
 
-        [c, 0., -s, 0., 0., 1., 0., 0., s, 0., c, 0., 0., 0., 0., 1.]
-    };
+        self.0.mul(&
+            [c, 0., -s, 0., 0., 1., 0., 0., s, 0., c, 0., 0., 0., 0., 1.]);
+        self
+    }
 
-    let z_rotation = |angle_rad: f32| {
+    pub fn z_rotation(&mut self,angle_rad:f32)->&mut Self{
         let c = angle_rad.cos();
         let s = angle_rad.sin();
 
-        [c, s, 0., 0., -s, c, 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.]
-    };
+        self.0.mul(&
+            [c, s, 0., 0., -s, c, 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.]);
+        self
+    }
+
+    
+}
+
+
+fn projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
+    
 
     use webgl_matrix::prelude::*;
 
     let mut id = Mat4::identity();
 
-    let zrot = &z_rotation(std::f32::consts::PI / 4.);
-    let xrot = &x_rotation(std::f32::consts::PI / 4.);
+    let mut doop=Doop(&mut id);
 
-    let az = &translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0);
-    let a1 = &scale(2.0, -2.0, 0.0);
-    let a2 = &scale(1.0 / dim[0], 1.0 / dim[1], 0.0);
-    id.mul(zrot).mul(xrot).mul(az).mul(a1).mul(a2);
+    doop.
+        z_rotation(std::f32::consts::PI / 4.).
+        x_rotation(std::f32::consts::PI / 4.).
+        translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0).
+        scale(2.0,-2.0,0.0).
+        scale(1.0 / dim[0], 1.0 / dim[1], 0.0);
+
     id
 }
