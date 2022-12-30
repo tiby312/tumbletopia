@@ -1,8 +1,9 @@
 use axgeom::{vec2, vec2same, Vec2};
 use gloo::console::log;
 use serde::{Deserialize, Serialize};
-use shogo::utils;
+use shogo::{utils, simple2d::DynamicBuffer};
 use wasm_bindgen::prelude::*;
+use shogo::simple2d;
 
 use duckduckgeo::grid;
 
@@ -75,8 +76,7 @@ pub async fn main_entry() {
 
 #[wasm_bindgen]
 pub async fn worker_entry() {
-    use shogo::simple2d;
-
+    
     let (mut w, ss) = shogo::EngineWorker::new().await;
     let mut frame_timer = shogo::FrameTimer::new(30, ss);
 
@@ -124,6 +124,11 @@ pub async fn worker_entry() {
 
     let mut grid_walls = grid::Grid2D::new(vec2same(grid_width));
 
+    grid_walls.set(vec2(0,0),true);
+    grid_walls.set(vec2(2,1),true);
+
+    update_walls(&grid_viewport,cache,&mut walls,&grid_walls);
+
     let mut scroll_manager = scroll::ScrollController::new(vec2same(0.0));
 
     'outer: loop {
@@ -136,19 +141,7 @@ pub async fn worker_entry() {
                             grid_viewport.to_grid((scroll_manager.world_cursor()).into()),
                             true,
                         );
-                        let mut s = simple2d::shapes(cache);
-                        for (p, val) in grid_walls.iter() {
-                            if val {
-                                let top_left = grid_viewport.to_world_topleft(p);
-                                s.rect(simple2d::Rect {
-                                    x: top_left.x,
-                                    y: top_left.y,
-                                    w: grid_viewport.spacing,
-                                    h: grid_viewport.spacing,
-                                });
-                            }
-                        }
-                        walls.update_clear(cache);
+                        update_walls(&grid_viewport,cache,&mut walls,&grid_walls);
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
@@ -195,6 +188,25 @@ pub async fn worker_entry() {
 
     log!("worker thread closing");
 }
+
+
+fn update_walls(grid_viewport:&duckduckgeo::grid::GridViewPort,cache:&mut Vec<[f32;2]>,buffer:&mut DynamicBuffer,grid_walls:&grid::Grid2D){
+    let mut s = simple2d::shapes(cache);
+    for (p, val) in grid_walls.iter() {
+        if val {
+            let top_left = grid_viewport.to_world_topleft(p);
+            s.rect(simple2d::Rect {
+                x: top_left.x,
+                y: top_left.y,
+                w: grid_viewport.spacing,
+                h: grid_viewport.spacing,
+            });
+        }
+    }
+    buffer.update_clear(cache);
+}
+
+
 
 //convert DOM coordinate to canvas relative coordinate
 fn convert_coord(canvas: &web_sys::HtmlElement, event: &web_sys::Event) -> [f32; 2] {
