@@ -138,7 +138,7 @@ pub async fn worker_entry() {
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
                         grid_walls.set(
-                            grid_viewport.to_grid((scroll_manager.world_cursor()).into()),
+                            grid_viewport.to_grid((scroll_manager.world_cursor(&game_dim)).into()),
                             true,
                         );
                         update_walls(&grid_viewport,cache,&mut walls,&grid_walls);
@@ -159,15 +159,28 @@ pub async fn worker_entry() {
 
         scroll_manager.step();
 
-        /*
-        let world_cursor = *scroll_manager.world_cursor();
+        
+        //let world_cursor:[f32;2] = (scroll_manager.world_cursor(&game_dim)).into();
+
+        //let cam=(scroll_manager.camera).into();
+        let k=inverse_projection(viewport,(*scroll_manager.camera_pos()).into());
+        let j:[f32;2]=scroll_manager.cursor_canvas.into();
+
+        let a=canvas_to_clip(viewport);
+        let res=a.mul_vector_left(&[j[0],j[1],0.0,1.0]);
+        log!(format!("canvas clip:{:?}",res));
+        
+        let res=k.mul_vector_left(&[res[0],res[1],0.0,1.0]); 
+        
 
         simple2d::shapes(cache)
-            .line(radius, world_cursor, [0.0, 0.0])
-            .line(radius, world_cursor, game_dim)
-            .line(radius, world_cursor, [0.0, game_dim[1]])
-            .line(radius, world_cursor, [game_dim[0], 0.0]);
-        */
+            .rect(simple2d::Rect {
+                x: res[0],
+                y: res[1],
+                w: grid_viewport.spacing,
+                h: grid_viewport.spacing,
+            });
+
 
         buffer.update_clear(cache);
 
@@ -275,14 +288,20 @@ pub struct Doop<'a>(pub &'a mut [f32;16]);
 impl<'a> Doop<'a>{
     pub fn scale(&mut self,x:f32,y:f32,z:f32)->&mut Self{
         self.0.mul(&[
-            x, 0., 0., 0., 0., y, 0., 0., 0., 0., z, 0., 0., 0., 0., 1.0,
+            x, 0., 0., 0.,
+             0., y, 0., 0.,
+              0., 0., z, 0.,
+               0., 0., 0., 1.0,
         ]);
         self
     }
 
     pub fn translation(&mut self,tx:f32,ty:f32,tz:f32)->&mut Self{
         self.0.mul(&[
-            1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., tx, ty, tz, 1.,
+            1., 0., 0., 0.,
+             0., 1., 0., 0.,
+              0., 0., 1., 0.,
+               tx, ty, tz, 1.,
         ]);
         self
     }
@@ -292,7 +311,11 @@ impl<'a> Doop<'a>{
         let s = angle_rad.sin();
 
         self.0.mul(&
-            [1., 0., 0., 0., 0., c, s, 0., 0., -s, c, 0., 0., 0., 0., 1.]);
+            [
+                    1., 0., 0., 0.,
+                    0., c, s, 0.,
+                    0., -s, c, 0.,
+                     0., 0., 0., 1.]);
         self
     }
 
@@ -302,7 +325,10 @@ impl<'a> Doop<'a>{
         let s = angle_rad.sin();
 
         self.0.mul(&
-            [c, 0., -s, 0., 0., 1., 0., 0., s, 0., c, 0., 0., 0., 0., 1.]);
+            [c, 0., -s, 0.,
+             0., 1., 0., 0.,
+              s, 0., c, 0.,
+               0., 0., 0., 1.]);
         self
     }
 
@@ -311,7 +337,10 @@ impl<'a> Doop<'a>{
         let s = angle_rad.sin();
 
         self.0.mul(&
-            [c, s, 0., 0., -s, c, 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.]);
+            [c, s, 0., 0.,
+             -s, c, 0., 0.,
+              0., 0., 1., 0.,
+               0., 0., 0., 1.]);
         self
     }
 
@@ -319,38 +348,56 @@ impl<'a> Doop<'a>{
 }
 
 
+fn canvas_to_clip(dim:[f32;2])->[f32;16]{
+
+    
+    let mut id=Mat4::identity();
+
+    let mut doop=Doop(&mut id);
+    
+    doop.scale(2.0 / dim[0], -2.0 / dim[1], 0.0);
+    doop.translation(-1.0,1.0,0.0);
+    
+    id
+}
 
 
-//world to screen space
-fn screen_projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
+
+
+
+fn inverse_projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
     
 
-
-    let mut id = Mat4::identity();
+    let mut id=Mat4::identity();
 
     let mut doop=Doop(&mut id);
 
     doop.
-        z_rotation(std::f32::consts::PI / 4.).
-        x_rotation(std::f32::consts::PI / 4.).
-        translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0);
-    
+        translation(1.0,-1.0,0.0).      
+        scale(dim[0]/2.0 , -dim[1]/2.0 , 0.0).
+        translation(-( -dim[0] / 2. + offset[0]),-( -dim[1] / 2. + offset[1]), 0.0).
+        x_rotation(-std::f32::consts::PI / 4.).
+        z_rotation(-std::f32::consts::PI / 4.);
+        
     id
 }
+
 
 
 //screenspace to clip space
 fn projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
     
 
-    let mut id=screen_projection(dim,offset);
-
+    let mut id=Mat4::identity();
 
     let mut doop=Doop(&mut id);
 
     doop.
-        scale(2.0,-2.0,0.0).
-        scale(1.0 / dim[0], 1.0 / dim[1], 0.0);
+        z_rotation(std::f32::consts::PI / 4.).
+        x_rotation(std::f32::consts::PI / 4.).
+        translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0).
+        scale(2.0 / dim[0], -2.0 / dim[1], 0.0).
+        translation(-1.0,1.0,0.0);
 
     id
 }
