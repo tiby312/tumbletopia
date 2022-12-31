@@ -3,6 +3,13 @@ use webgl_matrix::prelude::*;
 pub trait Inverse {
     type Neg: MyMatrix;
     fn inverse(self) -> Self::Neg;
+    
+}
+
+impl MyMatrix for [f32;16]{
+    fn generate(self) -> [f32; 16] {
+        self
+    }
 }
 pub trait MyMatrix {
     fn generate(self) -> [f32; 16];
@@ -12,6 +19,12 @@ pub trait MyMatrix {
         Self: Sized,
     {
         Chain { a: self, b: other }
+    }
+
+    fn calc_inverse(self)->[f32;16] where Self:Sized{
+        let mut g=self.generate();
+        g.inverse();
+        g
     }
 }
 

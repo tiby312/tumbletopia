@@ -161,6 +161,7 @@ pub async fn worker_entry() {
 
         use matrix::*;
 
+        
         let mut k = matrix::scale(1.0, 2.0, 1.0)
             .chain(world_to_screen(viewport, *scroll_manager.camera_pos()).inverse())
             .generate();
