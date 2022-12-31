@@ -66,6 +66,7 @@ impl ScrollController {
 
         vec2(ans[0], ans[1])
     }
+    
     pub fn camera_pos(&self) -> &Vec2<f32> {
         &self.camera
     }

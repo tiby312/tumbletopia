@@ -159,12 +159,11 @@ pub async fn worker_entry() {
 
         scroll_manager.step();
 
-        //let world_cursor:[f32;2] = (scroll_manager.world_cursor(&game_dim)).into();
 
         use matrix::*;
-        let j=world_to_screen(viewport, (*scroll_manager.camera_pos()).into());
-        let j=j.chain(matrix::scale(1.0,0.5,1.0));
-        let j=j.inverse();
+        let j1=matrix::scale(1.0,2.0,1.0);
+        let j2=world_to_screen(viewport, (*scroll_manager.camera_pos()).into()).inverse();
+        let j=j1.chain(j2);
         let mut k=j.generate();
         k.transpose();
         let j: [f32; 2] = (scroll_manager.cursor_canvas).into();
