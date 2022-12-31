@@ -1,12 +1,13 @@
 use axgeom::{vec2, vec2same, Vec2};
 use gloo::console::log;
 use serde::{Deserialize, Serialize};
-use shogo::{utils, simple2d::DynamicBuffer};
-use wasm_bindgen::prelude::*;
 use shogo::simple2d;
+use shogo::{simple2d::DynamicBuffer, utils};
+use wasm_bindgen::prelude::*;
 
 use duckduckgeo::grid;
 
+mod matrix;
 mod scroll;
 
 const COLORS: &[[f32; 4]] = &[
@@ -76,7 +77,6 @@ pub async fn main_entry() {
 
 #[wasm_bindgen]
 pub async fn worker_entry() {
-    
     let (mut w, ss) = shogo::EngineWorker::new().await;
     let mut frame_timer = shogo::FrameTimer::new(30, ss);
 
@@ -124,10 +124,10 @@ pub async fn worker_entry() {
 
     let mut grid_walls = grid::Grid2D::new(vec2same(grid_width));
 
-    grid_walls.set(vec2(0,0),true);
-    grid_walls.set(vec2(2,1),true);
+    grid_walls.set(vec2(0, 0), true);
+    grid_walls.set(vec2(2, 1), true);
 
-    update_walls(&grid_viewport,cache,&mut walls,&grid_walls);
+    update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
 
     let mut scroll_manager = scroll::ScrollController::new(vec2same(0.0));
 
@@ -141,7 +141,7 @@ pub async fn worker_entry() {
                             grid_viewport.to_grid((scroll_manager.world_cursor(&game_dim)).into()),
                             true,
                         );
-                        update_walls(&grid_viewport,cache,&mut walls,&grid_walls);
+                        update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
@@ -159,34 +159,33 @@ pub async fn worker_entry() {
 
         scroll_manager.step();
 
-        
         //let world_cursor:[f32;2] = (scroll_manager.world_cursor(&game_dim)).into();
 
+        use matrix::*;
         //let cam=(scroll_manager.camera).into();
-        let k=inverse_projection(viewport,(*scroll_manager.camera_pos()).into());
-        let j:[f32;2]=scroll_manager.cursor_canvas.into();
+        let mut k = projection(viewport, (*scroll_manager.camera_pos()).into()).inverse().generate();
+        let j: [f32; 2] = (scroll_manager.cursor_canvas).into();
 
-        let a=canvas_to_clip(viewport);
-        let res=a.mul_vector_left(&[j[0],j[1],0.0,1.0]);
-        log!(format!("canvas clip:{:?}",res));
-        
-        let res=k.mul_vector_left(&[res[0],res[1],0.0,1.0]); 
-        
+        let mut a = canvas_to_clip(viewport).generate();
+        a.transpose();
+        let res = a.mul_vector(&[j[0], j[1], 0.0, 1.0]);
+        log!(format!("canvas clip:{:?}", res));
 
-        simple2d::shapes(cache)
-            .rect(simple2d::Rect {
-                x: res[0],
-                y: res[1],
-                w: grid_viewport.spacing,
-                h: grid_viewport.spacing,
-            });
+        k.transpose();
+        let res = k.mul_vector(&[res[0], res[1], 0.0, 1.0]);
 
+        simple2d::shapes(cache).rect(simple2d::Rect {
+            x: res[0],
+            y: res[1],
+            w: grid_viewport.spacing,
+            h: grid_viewport.spacing,
+        });
 
         buffer.update_clear(cache);
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let matrix = projection(viewport, (*scroll_manager.camera_pos()).into());
+        let matrix = projection(viewport, (*scroll_manager.camera_pos()).into()).generate();
         let mut v = draw_sys.view(&matrix);
 
         v.draw_triangles(&checker, &[0.3, 0.3, 0.3, 0.3]);
@@ -202,8 +201,12 @@ pub async fn worker_entry() {
     log!("worker thread closing");
 }
 
-
-fn update_walls(grid_viewport:&duckduckgeo::grid::GridViewPort,cache:&mut Vec<[f32;2]>,buffer:&mut DynamicBuffer,grid_walls:&grid::Grid2D){
+fn update_walls(
+    grid_viewport: &duckduckgeo::grid::GridViewPort,
+    cache: &mut Vec<[f32; 2]>,
+    buffer: &mut DynamicBuffer,
+    grid_walls: &grid::Grid2D,
+) {
     let mut s = simple2d::shapes(cache);
     for (p, val) in grid_walls.iter() {
         if val {
@@ -218,8 +221,6 @@ fn update_walls(grid_viewport:&duckduckgeo::grid::GridViewPort,cache:&mut Vec<[f
     }
     buffer.update_clear(cache);
 }
-
-
 
 //convert DOM coordinate to canvas relative coordinate
 fn convert_coord(canvas: &web_sys::HtmlElement, event: &web_sys::Event) -> [f32; 2] {
@@ -277,134 +278,32 @@ pub fn convert_coord_touch_inner(
     ans
 }
 
-
-
 use webgl_matrix::prelude::*;
 
-
-
-pub struct Doop<'a>(pub &'a mut [f32;16]);
-
-impl<'a> Doop<'a>{
-    pub fn scale(&mut self,x:f32,y:f32,z:f32)->&mut Self{
-        self.0.mul(&[
-            x, 0., 0., 0.,
-             0., y, 0., 0.,
-              0., 0., z, 0.,
-               0., 0., 0., 1.0,
-        ]);
-        self
-    }
-
-    pub fn translation(&mut self,tx:f32,ty:f32,tz:f32)->&mut Self{
-        self.0.mul(&[
-            1., 0., 0., 0.,
-             0., 1., 0., 0.,
-              0., 0., 1., 0.,
-               tx, ty, tz, 1.,
-        ]);
-        self
-    }
-
-    pub fn x_rotation(&mut self,angle_rad:f32)->&mut Self{
-        let c = angle_rad.cos();
-        let s = angle_rad.sin();
-
-        self.0.mul(&
-            [
-                    1., 0., 0., 0.,
-                    0., c, s, 0.,
-                    0., -s, c, 0.,
-                     0., 0., 0., 1.]);
-        self
-    }
-
-
-    pub fn y_rotation(&mut self,angle_rad:f32)->&mut Self{
-        let c = angle_rad.cos();
-        let s = angle_rad.sin();
-
-        self.0.mul(&
-            [c, 0., -s, 0.,
-             0., 1., 0., 0.,
-              s, 0., c, 0.,
-               0., 0., 0., 1.]);
-        self
-    }
-
-    pub fn z_rotation(&mut self,angle_rad:f32)->&mut Self{
-        let c = angle_rad.cos();
-        let s = angle_rad.sin();
-
-        self.0.mul(&
-            [c, s, 0., 0.,
-             -s, c, 0., 0.,
-              0., 0., 1., 0.,
-               0., 0., 0., 1.]);
-        self
-    }
-
-    
-}
-
-
-fn canvas_to_clip(dim:[f32;2])->[f32;16]{
-
-    
-    let mut id=Mat4::identity();
-
-    let mut doop=Doop(&mut id);
-    
-    doop.scale(2.0 / dim[0], -  2.0/dim[1], 0.0);
-    doop.translation(-1.0,1.0,0.0);
-
+fn canvas_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix+matrix::Inverse{
+    use matrix::*;
+    let a=scale(2.0 / dim[0], -2.0 / dim[1], 0.0);
+    let b=translation(-1.0, 1.0, 0.0);
     //TODO WHY THIS SCALE NEEDED?
-    doop.scale(1.0,2.0,0.0);
-    
-    id
+    let c=scale(1.0, 2.0, 0.0);
+
+    a.chain(b).chain(c)
 }
 
 
+//world space to clip space
+fn projection(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix+matrix::Inverse {
+    use matrix::*;
+
+    let a = z_rotation(std::f32::consts::PI / 4.);
+    let b = x_rotation(std::f32::consts::PI / 4.);
+    let c = translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0);
+
+    let depth=dim[0]*dim[1];
+    //TODO why can't do 1.0 for scale????
+    let d = scale(2.0 / dim[0], -2.0 / dim[1], 2.0/depth);
+    let e = translation(-1.0, 1.0, 0.0);
 
 
-
-fn inverse_projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
-    
-
-    let mut id=Mat4::identity();
-
-    let mut doop=Doop(&mut id);
-
-    doop.
-        translation(1.0,-1.0,0.0).    
-        
-        //WHY THIS SCALE NEEDED?  
-        //scale(1.0,2.0,0.0).
-
-        scale(dim[0]/2.0 , -dim[1]/2.0 , 0.0).
-        translation(-( -dim[0] / 2. + offset[0]),-( -dim[1] / 2. + offset[1]), 0.0).
-        x_rotation(-std::f32::consts::PI / 4.).
-        z_rotation(-std::f32::consts::PI / 4.);
-        
-    id
-}
-
-
-
-//screenspace to clip space
-fn projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
-    
-
-    let mut id=Mat4::identity();
-
-    let mut doop=Doop(&mut id);
-
-    doop.
-        z_rotation(std::f32::consts::PI / 4.).
-        x_rotation(std::f32::consts::PI / 4.).
-        translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0).
-        scale(2.0 / dim[0], -2.0 / dim[1], 0.0).
-        translation(-1.0,1.0,0.0);
-
-    id
+    a.chain(b).chain(c).chain(d).chain(e)
 }

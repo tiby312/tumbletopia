@@ -40,38 +40,31 @@ impl ScrollController {
             camera_data: CamData,
         }
     }
-    pub fn world_cursor(&self,dim:&[f32;2]) -> Vec2<f32> {
+    pub fn world_cursor(&self, dim: &[f32; 2]) -> Vec2<f32> {
         //get cursor in world coordinates relative to origin.
         let cursor = self.camera_data.canvas_to_world(self.cursor_canvas);
 
         //log!(format!("{:?}",(self.camera,cursor)));
         //get abosolute position by adding it to where the camera is
-        let point=-self.camera + cursor;
-
-
+        let point = -self.camera + cursor;
 
         let mut id = Mat4::identity();
-
-        let mut doop=Doop(&mut id);
 
         // let mut k=Mat4::identity();
         // Doop(&mut k).x_rotation(std::f32::consts::PI / 4.);
         // k.inverse().unwrap_throw();
 
         use webgl_matrix::prelude::*;
-        doop.
-        z_rotation(std::f32::consts::PI / 4.);
-            //z_rotation(std::f32::consts::PI / 4.);
+        use super::matrix::*;
+        id.mul(&super::matrix::z_rotation(std::f32::consts::PI / 4.).generate());
+        //z_rotation(std::f32::consts::PI / 4.);
 
-            
-            //translation(-dim[0] / 2., -dim[1] / 2., 0.0);
+        //translation(-dim[0] / 2., -dim[1] / 2., 0.0);
 
-        let vec=[point.x,point.y,0.0];
-        let ans=id.mul_vector(&vec);
+        let vec = [point.x, point.y, 0.0];
+        let ans = id.mul_vector(&vec);
 
-        vec2(ans[0],ans[1])
-        
-            
+        vec2(ans[0], ans[1])
     }
     pub fn camera_pos(&self) -> &Vec2<f32> {
         &self.camera
