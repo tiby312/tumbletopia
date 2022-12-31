@@ -129,7 +129,7 @@ pub async fn worker_entry() {
 
     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
 
-    let mut scroll_manager = scroll::ScrollController::new(vec2same(0.0));
+    let mut scroll_manager = scroll::ScrollController::new([0.0; 2]);
 
     'outer: loop {
         for e in frame_timer.next().await {
@@ -159,16 +159,14 @@ pub async fn worker_entry() {
 
         scroll_manager.step();
 
-
         use matrix::*;
-        let j1=matrix::scale(1.0,2.0,1.0);
-        let j2=world_to_screen(viewport, (*scroll_manager.camera_pos()).into()).inverse();
-        let j=j1.chain(j2);
-        let mut k=j.generate();
-        k.transpose();
-        let j: [f32; 2] = (scroll_manager.cursor_canvas).into();
-        let res = k.mul_vector(&[j[0], j[1], 0.0, 1.0]);
-        
+
+        let mut k = matrix::scale(1.0, 2.0, 1.0)
+            .chain(world_to_screen(viewport, *scroll_manager.camera_pos()).inverse())
+            .generate();
+        let res = k
+            .transpose()
+            .mul_vector(&to_vec4(scroll_manager.cursor_canvas));
 
         simple2d::shapes(cache).rect(simple2d::Rect {
             x: res[0],
@@ -181,7 +179,7 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let matrix = projection(viewport, (*scroll_manager.camera_pos()).into()).generate();
+        let matrix = projection(viewport, *scroll_manager.camera_pos()).generate();
         let mut v = draw_sys.view(&matrix);
 
         v.draw_triangles(&checker, &[0.3, 0.3, 0.3, 0.3]);
@@ -274,30 +272,22 @@ pub fn convert_coord_touch_inner(
     ans
 }
 
-use webgl_matrix::prelude::*;
-
-fn canvas_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix+matrix::Inverse{
-    use matrix::*;
-    let depth=dim[0]*dim[1];
-    let a = scale(2.0 / dim[0], -2.0 / dim[1], 2.0/depth);
-    let b = translation(-1.0, 1.0, 0.0);
-    //TODO WHY THIS SCALE NEEDED?
-    let c=scale(1.0, 2.0, 0.0);
-
-    a.chain(b).chain(c)
+fn to_vec4(j: [f32; 2]) -> [f32; 4] {
+    [j[0], j[1], 0.0, 1.0]
 }
 
-fn screen_to_clip(dim:[f32;2])-> impl matrix::MyMatrix+matrix::Inverse{
+use webgl_matrix::prelude::*;
+
+fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
     //Deep enough that we can tilt the whole board and have it still show up
-    let depth=dim[0]*dim[1];
-    let d = scale(2.0 / dim[0], -2.0 / dim[1], 2.0/depth);
+    let depth = dim[0] * dim[1];
+    let d = scale(2.0 / dim[0], -2.0 / dim[1], 2.0 / depth);
     let e = translation(-1.0, 1.0, 0.0);
     d.chain(e)
 }
 
-
-fn world_to_screen(dim:[f32;2],offset:[f32;2])-> impl matrix::MyMatrix+matrix::Inverse{
+fn world_to_screen(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
     let a = z_rotation(std::f32::consts::PI / 4.);
@@ -307,10 +297,10 @@ fn world_to_screen(dim:[f32;2],offset:[f32;2])-> impl matrix::MyMatrix+matrix::I
 }
 
 //world space to clip space
-fn projection(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix+matrix::Inverse {
+fn projection(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
-    let a=world_to_screen(dim, offset);
-    let k=screen_to_clip(dim);
+    let a = world_to_screen(dim, offset);
+    let k = screen_to_clip(dim);
     a.chain(k)
 }

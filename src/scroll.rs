@@ -12,41 +12,30 @@ enum Scrollin {
 }
 use super::*;
 pub struct ScrollController {
-    pub cursor_canvas: Vec2<f32>,
+    pub cursor_canvas: [f32; 2],
     //world coord
-    pub camera: Vec2<f32>,
+    pub camera: [f32; 2],
     last_camera: Vec2<f32>,
 
     scrolling: Scrollin,
-    camera_data: CamData,
-}
-
-//angle of camera/zoom etc
-struct CamData;
-
-impl CamData {
-    fn canvas_to_world(&self, a: Vec2<f32>) -> Vec2<f32> {
-        a
-    }
 }
 
 impl ScrollController {
-    pub fn new(cursor_canvas: Vec2<f32>) -> Self {
+    pub fn new(cursor_canvas: [f32; 2]) -> Self {
         ScrollController {
-            camera: vec2same(0.0),
+            camera: [0.0; 2],
             last_camera: vec2same(0.0),
             cursor_canvas,
             scrolling: Scrollin::NotScrolling,
-            camera_data: CamData,
         }
     }
     pub fn world_cursor(&self, dim: &[f32; 2]) -> Vec2<f32> {
         //get cursor in world coordinates relative to origin.
-        let cursor = self.camera_data.canvas_to_world(self.cursor_canvas);
+        let cursor = self.cursor_canvas;
 
         //log!(format!("{:?}",(self.camera,cursor)));
         //get abosolute position by adding it to where the camera is
-        let point = -self.camera + cursor;
+        let point = -Vec2::from(self.camera) + Vec2::from(cursor);
 
         let mut id = Mat4::identity();
 
@@ -54,8 +43,8 @@ impl ScrollController {
         // Doop(&mut k).x_rotation(std::f32::consts::PI / 4.);
         // k.inverse().unwrap_throw();
 
-        use webgl_matrix::prelude::*;
         use super::matrix::*;
+        use webgl_matrix::prelude::*;
         id.mul(&super::matrix::z_rotation(std::f32::consts::PI / 4.).generate());
         //z_rotation(std::f32::consts::PI / 4.);
 
@@ -66,8 +55,8 @@ impl ScrollController {
 
         vec2(ans[0], ans[1])
     }
-    
-    pub fn camera_pos(&self) -> &Vec2<f32> {
+
+    pub fn camera_pos(&self) -> &[f32; 2] {
         &self.camera
     }
 
@@ -79,9 +68,9 @@ impl ScrollController {
                 mouse_anchor,
                 camera_anchor,
             } => {
-                let offset = self.cursor_canvas - mouse_anchor;
-                self.last_camera = self.camera;
-                self.camera = camera_anchor + self.camera_data.canvas_to_world(offset);
+                let offset = Vec2::from(self.cursor_canvas) - Vec2::from(mouse_anchor);
+                self.last_camera = Vec2::from(self.camera);
+                self.camera = (camera_anchor + offset).into();
             }
             Scrollin::MouseDown {
                 mouse_anchor,
@@ -99,8 +88,8 @@ impl ScrollController {
         self.cursor_canvas = mouse.into();
 
         self.scrolling = Scrollin::MouseDown {
-            mouse_anchor: self.cursor_canvas,
-            camera_anchor: self.camera,
+            mouse_anchor: Vec2::from(self.cursor_canvas),
+            camera_anchor: Vec2::from(self.camera),
         };
     }
 
@@ -124,9 +113,10 @@ impl ScrollController {
         match self.scrolling {
             Scrollin::Scrolling { .. } => {}
             _ => {
-                let delta = self.camera - self.last_camera;
-                self.last_camera = self.camera;
-                self.camera += delta * 0.9;
+                let delta = Vec2::from(self.camera) - Vec2::from(self.last_camera);
+                self.last_camera = Vec2::from(self.camera);
+
+                self.camera = (Vec2::from(self.camera) + delta * 0.9).into();
             }
         }
     }
