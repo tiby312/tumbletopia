@@ -162,7 +162,6 @@ pub async fn worker_entry() {
         //let world_cursor:[f32;2] = (scroll_manager.world_cursor(&game_dim)).into();
 
         use matrix::*;
-        //let cam=(scroll_manager.camera).into();
         let mut k = projection(viewport, (*scroll_manager.camera_pos()).into()).inverse().generate();
         let j: [f32; 2] = (scroll_manager.cursor_canvas).into();
 
@@ -299,11 +298,9 @@ fn projection(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix+matrix::
     let b = x_rotation(std::f32::consts::PI / 4.);
     let c = translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0);
 
+    //Deep enough that we can tilt the whole board and have it still show up
     let depth=dim[0]*dim[1];
-    //TODO why can't do 1.0 for scale????
     let d = scale(2.0 / dim[0], -2.0 / dim[1], 2.0/depth);
     let e = translation(-1.0, 1.0, 0.0);
-
-
     a.chain(b).chain(c).chain(d).chain(e)
 }
