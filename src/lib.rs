@@ -162,16 +162,14 @@ pub async fn worker_entry() {
         //let world_cursor:[f32;2] = (scroll_manager.world_cursor(&game_dim)).into();
 
         use matrix::*;
-        let mut k = projection(viewport, (*scroll_manager.camera_pos()).into()).inverse().generate();
-        let j: [f32; 2] = (scroll_manager.cursor_canvas).into();
-
-        let mut a = canvas_to_clip(viewport).generate();
-        a.transpose();
-        let res = a.mul_vector(&[j[0], j[1], 0.0, 1.0]);
-        log!(format!("canvas clip:{:?}", res));
-
+        let j=world_to_screen(viewport, (*scroll_manager.camera_pos()).into());
+        let j=j.chain(matrix::scale(1.0,0.5,1.0));
+        let j=j.inverse();
+        let mut k=j.generate();
         k.transpose();
-        let res = k.mul_vector(&[res[0], res[1], 0.0, 1.0]);
+        let j: [f32; 2] = (scroll_manager.cursor_canvas).into();
+        let res = k.mul_vector(&[j[0], j[1], 0.0, 1.0]);
+        
 
         simple2d::shapes(cache).rect(simple2d::Rect {
             x: res[0],
@@ -281,26 +279,39 @@ use webgl_matrix::prelude::*;
 
 fn canvas_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix+matrix::Inverse{
     use matrix::*;
-    let a=scale(2.0 / dim[0], -2.0 / dim[1], 0.0);
-    let b=translation(-1.0, 1.0, 0.0);
+    let depth=dim[0]*dim[1];
+    let a = scale(2.0 / dim[0], -2.0 / dim[1], 2.0/depth);
+    let b = translation(-1.0, 1.0, 0.0);
     //TODO WHY THIS SCALE NEEDED?
     let c=scale(1.0, 2.0, 0.0);
 
     a.chain(b).chain(c)
 }
 
+fn screen_to_clip(dim:[f32;2])-> impl matrix::MyMatrix+matrix::Inverse{
+    use matrix::*;
+    //Deep enough that we can tilt the whole board and have it still show up
+    let depth=dim[0]*dim[1];
+    let d = scale(2.0 / dim[0], -2.0 / dim[1], 2.0/depth);
+    let e = translation(-1.0, 1.0, 0.0);
+    d.chain(e)
+}
 
-//world space to clip space
-fn projection(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix+matrix::Inverse {
+
+fn world_to_screen(dim:[f32;2],offset:[f32;2])-> impl matrix::MyMatrix+matrix::Inverse{
     use matrix::*;
 
     let a = z_rotation(std::f32::consts::PI / 4.);
     let b = x_rotation(std::f32::consts::PI / 4.);
     let c = translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0);
+    a.chain(b).chain(c)
+}
 
-    //Deep enough that we can tilt the whole board and have it still show up
-    let depth=dim[0]*dim[1];
-    let d = scale(2.0 / dim[0], -2.0 / dim[1], 2.0/depth);
-    let e = translation(-1.0, 1.0, 0.0);
-    a.chain(b).chain(c).chain(d).chain(e)
+//world space to clip space
+fn projection(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix+matrix::Inverse {
+    use matrix::*;
+
+    let a=world_to_screen(dim, offset);
+    let k=screen_to_clip(dim);
+    a.chain(k)
 }
