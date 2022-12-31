@@ -355,8 +355,11 @@ fn canvas_to_clip(dim:[f32;2])->[f32;16]{
 
     let mut doop=Doop(&mut id);
     
-    doop.scale(2.0 / dim[0], -2.0 / dim[1], 0.0);
+    doop.scale(2.0 / dim[0], -  2.0/dim[1], 0.0);
     doop.translation(-1.0,1.0,0.0);
+
+    //TODO WHY THIS SCALE NEEDED?
+    doop.scale(1.0,2.0,0.0);
     
     id
 }
@@ -373,7 +376,11 @@ fn inverse_projection(dim: [f32; 2], offset: [f32; 2]) -> [f32; 16] {
     let mut doop=Doop(&mut id);
 
     doop.
-        translation(1.0,-1.0,0.0).      
+        translation(1.0,-1.0,0.0).    
+        
+        //WHY THIS SCALE NEEDED?  
+        //scale(1.0,2.0,0.0).
+
         scale(dim[0]/2.0 , -dim[1]/2.0 , 0.0).
         translation(-( -dim[0] / 2. + offset[0]),-( -dim[1] / 2. + offset[1]), 0.0).
         x_rotation(-std::f32::consts::PI / 4.).
