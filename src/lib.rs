@@ -279,9 +279,7 @@ fn transform_point_3d(matrix: &[f32; 16], point: [f32; 3]) -> [f32; 3] {
         [j[0], j[1], j[2], 1.0]
     }
 
-    let mut matrix = matrix.clone();
-    matrix.transpose();
-    let res = matrix.mul_vector(&to_vec4(point));
+    let res = matrix.mul_vector_left(&to_vec4(point));
     [res[0], res[1], res[2]]
 }
 
