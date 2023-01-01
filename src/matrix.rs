@@ -1,7 +1,7 @@
 use webgl_matrix::prelude::*;
 
-pub trait Inverse {
-    type Neg: MyMatrix;
+pub trait Inverse:MyMatrix {
+    type Neg: MyMatrix+Inverse;
     fn inverse(self) -> Self::Neg;
 }
 

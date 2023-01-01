@@ -195,9 +195,11 @@ pub async fn worker_entry() {
     log!("worker thread closing");
 }
 
+use shogo::simple2d::Vertex;
+
 fn update_walls(
     grid_viewport: &duckduckgeo::grid::GridViewPort,
-    cache: &mut Vec<[f32; 2]>,
+    cache: &mut Vec<Vertex>,
     buffer: &mut DynamicBuffer,
     grid_walls: &grid::Grid2D,
 ) {
