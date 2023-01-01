@@ -93,7 +93,7 @@ pub async fn worker_entry() {
 
     // setup game data
     let mut color_iter = COLORS.iter().cycle().peekable();
-    let game_dim = [3000.0f32, 3000.0];
+    let game_dim = [1000.0f32, 1000.0];
     let viewport = [canvas.width() as f32, canvas.height() as f32];
 
     let grid_width = 32;
@@ -155,21 +155,25 @@ pub async fn worker_entry() {
                 MEvent::ShutdownClick => break 'outer,
             }
         }
-        let mouse_world=mouse_to_world(scroll_manager.cursor_canvas,scroll_manager.camera,viewport,grid_viewport.spacing);
+        let mouse_world=mouse_to_world(scroll_manager.cursor_canvas,scroll_manager.camera(),viewport);
         
-        if j{
-            grid_walls.set(
-                grid_viewport.to_grid((mouse_world).into()),
-                true,
-            );
-            update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
-        }
+        log!(format!("{:?}", (scroll_manager.cursor_canvas,scroll_manager.camera(),mouse_world)));
+
+
+        // if j{
+        //     grid_walls.set(
+        //         grid_viewport.to_grid((mouse_world).into()),
+        //         true,
+        //     );
+        //     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
+        // }
         scroll_manager.step();
 
         use matrix::*;
 
         
         
+
         simple2d::shapes(cache).rect(simple2d::Rect {
             x: mouse_world[0]-grid_viewport.spacing/2.0,
             y: mouse_world[1]-grid_viewport.spacing/2.0,
@@ -182,7 +186,7 @@ pub async fn worker_entry() {
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
 
-        let matrix=world_to_screen(viewport, scroll_manager.camera).chain(screen_to_clip(viewport)).generate();
+        let matrix=world_to_screen(viewport, scroll_manager.camera()).chain(screen_to_clip(viewport)).generate();
         
         let mut v = draw_sys.view(&matrix);
 
@@ -282,33 +286,44 @@ use webgl_matrix::prelude::*;
 
 
 
-fn transform_point(matrix:&[f32;16],point:[f32;2])->[f32;2]{
+
+
+
+fn transform_point_3d(matrix:&[f32;16],point:[f32;3])->[f32;3]{
+    fn to_vec4(j: [f32; 3]) -> [f32; 4] {
+        [j[0], j[1], j[2], 1.0]
+    }
+    
+    let mut matrix=matrix.clone();
+    matrix.transpose();
+    let res = matrix
+    .mul_vector(&to_vec4(point));
+    [res[0],res[1],res[2]]
+}
+fn transform_point_2d(matrix:&[f32;16],point:[f32;2])->[f32;2]{
     fn to_vec4(j: [f32; 2]) -> [f32; 4] {
         [j[0], j[1], 0.0, 1.0]
     }
     
+    let mut matrix=matrix.clone();
+    matrix.transpose();
     let res = matrix
-    .mul_vector_left(&to_vec4(point));
+    .mul_vector(&to_vec4(point));
     [res[0],res[1]]
 }
 
-fn mouse_to_world(mouse:[f32;2],camera:[f32;2],viewport:[f32;2],spacing:f32)->[f32;2]{
 
-    let b = scale(1.0,2.0,1.0);//x_rotation(std::f32::consts::PI / 4.);
-    //let b=scale(1.0,2.0,1.0);
-
-    let bb=b.generate();
-    let camera=transform_point(&bb,camera);
-    let mouse=transform_point(&bb,mouse);
-
-    //let camera=[camera[0],camera[1]*2.0];
-    //let mouse=[mouse[0],mouse[1]*2.0];
+fn mouse_to_world(mouse:[f32;2],camera:[f32;2],viewport:[f32;2])->[f32;2]{
 
     use matrix::*;
-    let k=world_to_screen(camera,viewport).inverse().generate();
+    let k=world_to_screen(viewport,camera).inverse();
     
-    transform_point(&k,mouse)
-    
+    let depth=mouse[1];
+
+    let matrix=k.generate();
+
+    let a=transform_point_3d(&matrix,[mouse[0],mouse[1],depth]);
+    [a[0],a[1]]
 } 
 
 
@@ -334,16 +349,21 @@ fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     let depth = dim[0] * dim[1];
     let d = scale(2.0 / dim[0], -2.0 / dim[1], 2.0 / depth);
     let e = translation(-1.0, 1.0, 0.0);
+
+    
     d.chain(e)
 }
+
 
 fn world_to_screen(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
     let a = z_rotation(std::f32::consts::PI / 4.);
     let b = x_rotation(std::f32::consts::PI / 4.);
-    let c = translation(-dim[0] / 2. + offset[0], -dim[1] / 2. + offset[1], 0.0);
-    a.chain(b).chain(c)
+    let c = translation(offset[0], offset[1], 0.0);
+    
+    a.chain(c).chain(b)
+    
 }
 
 
