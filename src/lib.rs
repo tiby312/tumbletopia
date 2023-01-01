@@ -181,7 +181,9 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let matrix = projection(viewport, *scroll_manager.camera_pos()).generate();
+
+        let matrix=world_to_screen(viewport, scroll_manager.camera).chain(screen_to_clip(viewport)).generate();
+        
         let mut v = draw_sys.view(&matrix);
 
         v.draw_triangles(&checker, &[0.3, 0.3, 0.3, 0.3]);
@@ -195,17 +197,6 @@ pub async fn worker_entry() {
     w.post_message(());
 
     log!("worker thread closing");
-}
-
-
-fn mouse_to_world(mouse:[f32;2],camera:[f32;2],viewport:[f32;2],spacing:f32)->[f32;2]{
-    use matrix::*;
-    let mut k=screen_to_world(camera,viewport,spacing).generate();
-
-    let res = k
-        .transpose()
-        .mul_vector(&to_vec4(mouse));
-    [res[0],res[1]]
 }
 
 
@@ -286,25 +277,55 @@ pub fn convert_coord_touch_inner(
     ans
 }
 
-fn to_vec4(j: [f32; 2]) -> [f32; 4] {
-    [j[0], j[1], 0.0, 1.0]
-}
 
 use webgl_matrix::prelude::*;
 
 
-fn screen_to_world(camera:[f32;2],viewport:[f32;2],spacing:f32) -> impl matrix::MyMatrix{
-    use matrix::*;
-    let camera={
-        let k=matrix::scale(1.0,2.0,1.0).generate();
-        let cp=k.mul_vector(&to_vec4(camera));
-        [cp[0],cp[1]]
-    };
+
+fn transform_point(matrix:&[f32;16],point:[f32;2])->[f32;2]{
+    fn to_vec4(j: [f32; 2]) -> [f32; 4] {
+        [j[0], j[1], 0.0, 1.0]
+    }
     
-    //TODO why 2.4???
-    matrix::translation(0.0,spacing*1.6,0.0).chain(matrix::scale(1.0, 2.0, 1.0))
-        .chain(world_to_screen(viewport, camera).inverse())
+    let res = matrix
+    .mul_vector_left(&to_vec4(point));
+    [res[0],res[1]]
 }
+
+fn mouse_to_world(mouse:[f32;2],camera:[f32;2],viewport:[f32;2],spacing:f32)->[f32;2]{
+
+    let b = scale(1.0,2.0,1.0);//x_rotation(std::f32::consts::PI / 4.);
+    //let b=scale(1.0,2.0,1.0);
+
+    let bb=b.generate();
+    let camera=transform_point(&bb,camera);
+    let mouse=transform_point(&bb,mouse);
+
+    //let camera=[camera[0],camera[1]*2.0];
+    //let mouse=[mouse[0],mouse[1]*2.0];
+
+    use matrix::*;
+    let k=world_to_screen(camera,viewport).inverse().generate();
+    
+    transform_point(&k,mouse)
+    
+} 
+
+
+// fn screen_to_world(camera:[f32;2],viewport:[f32;2],spacing:f32) -> impl matrix::MyMatrix{
+//     use matrix::*;
+//     // let camera={
+//     //     let k=matrix::scale(1.0,2.0,1.0).generate();
+//     //     let cp=k.mul_vector(&to_vec4(camera));
+//     //     [cp[0],cp[1]]
+//     // };
+    
+//     // //TODO why 2.4???
+//     // matrix::translation(0.0,spacing*1.6,0.0).chain(matrix::scale(1.0, 2.0, 1.0))
+//     //     .chain(world_to_screen(viewport, camera).inverse())
+
+//     world_to_screen(viewport, camera).inverse()
+// }
 
 
 fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
@@ -325,11 +346,14 @@ fn world_to_screen(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix + m
     a.chain(b).chain(c)
 }
 
-//world space to clip space
-fn projection(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
-    use matrix::*;
 
-    let a = world_to_screen(dim, offset);
-    let k = screen_to_clip(dim);
-    a.chain(k)
-}
+
+
+// //world space to clip space
+// fn projection(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+//     use matrix::*;
+
+//     let a = world_to_screen(dim, offset);
+//     let k = screen_to_clip(dim);
+//     a.chain(k)
+// }
