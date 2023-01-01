@@ -93,7 +93,7 @@ pub async fn worker_entry() {
 
     // setup game data
     let mut color_iter = COLORS.iter().cycle().peekable();
-    let game_dim = [2000.0f32, 2000.0];
+    let game_dim = [3000.0f32, 3000.0];
     let viewport = [canvas.width() as f32, canvas.height() as f32];
 
     let grid_width = 32;
@@ -134,7 +134,7 @@ pub async fn worker_entry() {
     'outer: loop {
         let mut j=false;
         for e in frame_timer.next().await {
-            log!(format!("{:?}", e));
+            //log!(format!("{:?}", e));
             match e {
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
@@ -302,7 +302,7 @@ fn screen_to_world(camera:[f32;2],viewport:[f32;2],spacing:f32) -> impl matrix::
     };
     
     //TODO why 2.4???
-    matrix::translation(0.0,spacing*2.4,0.0).chain(matrix::scale(1.0, 2.0, 1.0))
+    matrix::translation(0.0,spacing*1.6,0.0).chain(matrix::scale(1.0, 2.0, 1.0))
         .chain(world_to_screen(viewport, camera).inverse())
 }
 

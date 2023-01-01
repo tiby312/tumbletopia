@@ -77,9 +77,14 @@ impl ScrollController {
                 mouse_anchor,
                 camera_anchor,
             } => {
-                self.scrolling = Scrollin::Scrolling {
-                    mouse_anchor,
-                    camera_anchor,
+                let a=Vec2::from(self.cursor_canvas);
+                let b=Vec2::from(mouse_anchor);
+                let offset=b-a;
+                if offset.magnitude2()>10.0*10.0{
+                    self.scrolling = Scrollin::Scrolling {
+                        mouse_anchor,
+                        camera_anchor,
+                    }
                 }
             }
             _ => {}
