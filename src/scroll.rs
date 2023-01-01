@@ -29,32 +29,33 @@ impl ScrollController {
             scrolling: Scrollin::NotScrolling,
         }
     }
-    pub fn world_cursor(&self, dim: &[f32; 2]) -> Vec2<f32> {
-        //get cursor in world coordinates relative to origin.
-        let cursor = self.cursor_canvas;
 
-        //log!(format!("{:?}",(self.camera,cursor)));
-        //get abosolute position by adding it to where the camera is
-        let point = -Vec2::from(self.camera) + Vec2::from(cursor);
+    // pub fn world_cursor(&self, dim: &[f32; 2]) -> Vec2<f32> {
+    //     //get cursor in world coordinates relative to origin.
+    //     let cursor = self.cursor_canvas;
 
-        let mut id = Mat4::identity();
+    //     //log!(format!("{:?}",(self.camera,cursor)));
+    //     //get abosolute position by adding it to where the camera is
+    //     let point = -Vec2::from(self.camera) + Vec2::from(cursor);
 
-        // let mut k=Mat4::identity();
-        // Doop(&mut k).x_rotation(std::f32::consts::PI / 4.);
-        // k.inverse().unwrap_throw();
+    //     let mut id = Mat4::identity();
 
-        use super::matrix::*;
-        use webgl_matrix::prelude::*;
-        id.mul(&super::matrix::z_rotation(std::f32::consts::PI / 4.).generate());
-        //z_rotation(std::f32::consts::PI / 4.);
+    //     // let mut k=Mat4::identity();
+    //     // Doop(&mut k).x_rotation(std::f32::consts::PI / 4.);
+    //     // k.inverse().unwrap_throw();
 
-        //translation(-dim[0] / 2., -dim[1] / 2., 0.0);
+    //     use super::matrix::*;
+    //     use webgl_matrix::prelude::*;
+    //     id.mul(&super::matrix::z_rotation(std::f32::consts::PI / 4.).generate());
+    //     //z_rotation(std::f32::consts::PI / 4.);
 
-        let vec = [point.x, point.y, 0.0];
-        let ans = id.mul_vector(&vec);
+    //     //translation(-dim[0] / 2., -dim[1] / 2., 0.0);
 
-        vec2(ans[0], ans[1])
-    }
+    //     let vec = [point.x, point.y, 0.0];
+    //     let ans = id.mul_vector(&vec);
+
+    //     vec2(ans[0], ans[1])
+    // }
 
     pub fn camera_pos(&self) -> &[f32; 2] {
         &self.camera

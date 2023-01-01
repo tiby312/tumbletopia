@@ -132,16 +132,15 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::ScrollController::new([0.0; 2]);
 
     'outer: loop {
+        let mut j=false;
         for e in frame_timer.next().await {
             log!(format!("{:?}", e));
             match e {
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
-                        grid_walls.set(
-                            grid_viewport.to_grid((scroll_manager.world_cursor(&game_dim)).into()),
-                            true,
-                        );
-                        update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
+                        j=true;
+                        
+                        
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
@@ -156,22 +155,24 @@ pub async fn worker_entry() {
                 MEvent::ShutdownClick => break 'outer,
             }
         }
-
+        let mouse_world=mouse_to_world(scroll_manager.cursor_canvas,scroll_manager.camera,viewport,grid_viewport.spacing);
+        
+        if j{
+            grid_walls.set(
+                grid_viewport.to_grid((mouse_world).into()),
+                true,
+            );
+            update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
+        }
         scroll_manager.step();
 
         use matrix::*;
 
         
-        let mut k = matrix::scale(1.0, 2.0, 1.0)
-            .chain(world_to_screen(viewport, *scroll_manager.camera_pos()).inverse())
-            .generate();
-        let res = k
-            .transpose()
-            .mul_vector(&to_vec4(scroll_manager.cursor_canvas));
-
+        
         simple2d::shapes(cache).rect(simple2d::Rect {
-            x: res[0],
-            y: res[1],
+            x: mouse_world[0]-grid_viewport.spacing/2.0,
+            y: mouse_world[1]-grid_viewport.spacing/2.0,
             w: grid_viewport.spacing,
             h: grid_viewport.spacing,
         });
@@ -195,6 +196,18 @@ pub async fn worker_entry() {
 
     log!("worker thread closing");
 }
+
+
+fn mouse_to_world(mouse:[f32;2],camera:[f32;2],viewport:[f32;2],spacing:f32)->[f32;2]{
+    use matrix::*;
+    let mut k=screen_to_world(camera,viewport,spacing).generate();
+
+    let res = k
+        .transpose()
+        .mul_vector(&to_vec4(mouse));
+    [res[0],res[1]]
+}
+
 
 fn update_walls(
     grid_viewport: &duckduckgeo::grid::GridViewPort,
@@ -278,6 +291,21 @@ fn to_vec4(j: [f32; 2]) -> [f32; 4] {
 }
 
 use webgl_matrix::prelude::*;
+
+
+fn screen_to_world(camera:[f32;2],viewport:[f32;2],spacing:f32) -> impl matrix::MyMatrix{
+    use matrix::*;
+    let camera={
+        let k=matrix::scale(1.0,2.0,1.0).generate();
+        let cp=k.mul_vector(&to_vec4(camera));
+        [cp[0],cp[1]]
+    };
+    
+    //TODO why 2.4???
+    matrix::translation(0.0,spacing*2.4,0.0).chain(matrix::scale(1.0, 2.0, 1.0))
+        .chain(world_to_screen(viewport, camera).inverse())
+}
+
 
 fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
