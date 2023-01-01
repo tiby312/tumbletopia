@@ -58,7 +58,7 @@ impl ScrollController {
     // }
 
     pub fn camera(&self) -> [f32; 2] {
-        [self.camera[0],self.camera[1]]
+        [self.camera[0], self.camera[1]]
     }
 
     pub fn handle_mouse_move(&mut self, mouse: [f32; 2]) {
@@ -71,21 +71,21 @@ impl ScrollController {
             } => {
                 let offset = Vec2::from(self.cursor_canvas) - Vec2::from(mouse_anchor);
                 self.last_camera = Vec2::from(self.camera);
-                self.camera = (camera_anchor - offset).into();
+                self.camera = (camera_anchor + offset).into();
             }
             Scrollin::MouseDown {
                 mouse_anchor,
                 camera_anchor,
             } => {
-                // let a=Vec2::from(self.cursor_canvas);
-                // let b=Vec2::from(mouse_anchor);
-                // let offset=b-a;
-                // if offset.magnitude2()>10.0*10.0{
-                //     self.scrolling = Scrollin::Scrolling {
-                //         mouse_anchor,
-                //         camera_anchor,
-                //     }
-                // }
+                let a = Vec2::from(self.cursor_canvas);
+                let b = Vec2::from(mouse_anchor);
+                let offset = b - a;
+                if offset.magnitude2() > 10.0 * 10.0 {
+                    self.scrolling = Scrollin::Scrolling {
+                        mouse_anchor,
+                        camera_anchor,
+                    }
+                }
             }
             _ => {}
         }

@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::*;
 
 use duckduckgeo::grid;
 
-mod matrix;
+pub mod matrix;
 mod scroll;
 
 const COLORS: &[[f32; 4]] = &[
@@ -132,15 +132,13 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::ScrollController::new([0.0; 2]);
 
     'outer: loop {
-        let mut j=false;
+        let mut j = false;
         for e in frame_timer.next().await {
             //log!(format!("{:?}", e));
             match e {
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
-                        j=true;
-                        
-                        
+                        j = true;
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
@@ -155,28 +153,21 @@ pub async fn worker_entry() {
                 MEvent::ShutdownClick => break 'outer,
             }
         }
-        let mouse_world=mouse_to_world(scroll_manager.cursor_canvas,scroll_manager.camera(),viewport);
-        
-        log!(format!("{:?}", (scroll_manager.cursor_canvas,scroll_manager.camera(),mouse_world)));
+        let mouse_world = mouse_to_world(scroll_manager.cursor_canvas, scroll_manager.camera());
 
+        //log!(format!("{:?}", (scroll_manager.cursor_canvas,scroll_manager.camera(),mouse_world)));
 
-        // if j{
-        //     grid_walls.set(
-        //         grid_viewport.to_grid((mouse_world).into()),
-        //         true,
-        //     );
-        //     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
-        // }
+        if j {
+            grid_walls.set(grid_viewport.to_grid((mouse_world).into()), true);
+            update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
+        }
         scroll_manager.step();
 
         use matrix::*;
 
-        
-        
-
         simple2d::shapes(cache).rect(simple2d::Rect {
-            x: mouse_world[0]-grid_viewport.spacing/2.0,
-            y: mouse_world[1]-grid_viewport.spacing/2.0,
+            x: mouse_world[0] - grid_viewport.spacing / 2.0,
+            y: mouse_world[1] - grid_viewport.spacing / 2.0,
             w: grid_viewport.spacing,
             h: grid_viewport.spacing,
         });
@@ -185,9 +176,10 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
+        let matrix = world_to_screen(scroll_manager.camera())
+            .chain(screen_to_clip(viewport))
+            .generate();
 
-        let matrix=world_to_screen(viewport, scroll_manager.camera()).chain(screen_to_clip(viewport)).generate();
-        
         let mut v = draw_sys.view(&matrix);
 
         v.draw_triangles(&checker, &[0.3, 0.3, 0.3, 0.3]);
@@ -202,7 +194,6 @@ pub async fn worker_entry() {
 
     log!("worker thread closing");
 }
-
 
 fn update_walls(
     grid_viewport: &duckduckgeo::grid::GridViewPort,
@@ -281,67 +272,30 @@ pub fn convert_coord_touch_inner(
     ans
 }
 
-
 use webgl_matrix::prelude::*;
 
-
-
-
-
-
-fn transform_point_3d(matrix:&[f32;16],point:[f32;3])->[f32;3]{
+fn transform_point_3d(matrix: &[f32; 16], point: [f32; 3]) -> [f32; 3] {
     fn to_vec4(j: [f32; 3]) -> [f32; 4] {
         [j[0], j[1], j[2], 1.0]
     }
-    
-    let mut matrix=matrix.clone();
+
+    let mut matrix = matrix.clone();
     matrix.transpose();
-    let res = matrix
-    .mul_vector(&to_vec4(point));
-    [res[0],res[1],res[2]]
-}
-fn transform_point_2d(matrix:&[f32;16],point:[f32;2])->[f32;2]{
-    fn to_vec4(j: [f32; 2]) -> [f32; 4] {
-        [j[0], j[1], 0.0, 1.0]
-    }
-    
-    let mut matrix=matrix.clone();
-    matrix.transpose();
-    let res = matrix
-    .mul_vector(&to_vec4(point));
-    [res[0],res[1]]
+    let res = matrix.mul_vector(&to_vec4(point));
+    [res[0], res[1], res[2]]
 }
 
-
-fn mouse_to_world(mouse:[f32;2],camera:[f32;2],viewport:[f32;2])->[f32;2]{
-
+fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2]) -> [f32; 2] {
     use matrix::*;
-    let k=world_to_screen(viewport,camera).inverse();
-    
-    let depth=mouse[1];
+    let k = world_to_screen(camera).inverse();
 
-    let matrix=k.generate();
+    let depth = mouse[1];
 
-    let a=transform_point_3d(&matrix,[mouse[0],mouse[1],depth]);
-    [a[0],a[1]]
-} 
+    let matrix = k.generate();
 
-
-// fn screen_to_world(camera:[f32;2],viewport:[f32;2],spacing:f32) -> impl matrix::MyMatrix{
-//     use matrix::*;
-//     // let camera={
-//     //     let k=matrix::scale(1.0,2.0,1.0).generate();
-//     //     let cp=k.mul_vector(&to_vec4(camera));
-//     //     [cp[0],cp[1]]
-//     // };
-    
-//     // //TODO why 2.4???
-//     // matrix::translation(0.0,spacing*1.6,0.0).chain(matrix::scale(1.0, 2.0, 1.0))
-//     //     .chain(world_to_screen(viewport, camera).inverse())
-
-//     world_to_screen(viewport, camera).inverse()
-// }
-
+    let a = transform_point_3d(&matrix, [mouse[0], mouse[1], depth]);
+    [a[0], a[1]]
+}
 
 fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
@@ -350,30 +304,13 @@ fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     let d = scale(2.0 / dim[0], -2.0 / dim[1], 2.0 / depth);
     let e = translation(-1.0, 1.0, 0.0);
 
-    
     d.chain(e)
 }
 
-
-fn world_to_screen(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+fn world_to_screen(offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
-
     let a = z_rotation(std::f32::consts::PI / 4.);
     let b = x_rotation(std::f32::consts::PI / 4.);
     let c = translation(offset[0], offset[1], 0.0);
-    
     a.chain(c).chain(b)
-    
 }
-
-
-
-
-// //world space to clip space
-// fn projection(dim: [f32; 2], offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
-//     use matrix::*;
-
-//     let a = world_to_screen(dim, offset);
-//     let k = screen_to_clip(dim);
-//     a.chain(k)
-// }
