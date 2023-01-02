@@ -26,8 +26,12 @@ pub enum MEvent {
     ShutdownClick,
 }
 
+
 #[wasm_bindgen]
 pub async fn main_entry() {
+    console_error_panic_hook::set_once();
+    load_glb(BLOCK_GLB);
+
     use futures::StreamExt;
 
     log!("demo start");
@@ -313,4 +317,54 @@ fn world_to_screen(offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse 
     let b = x_rotation(std::f32::consts::PI / 4.);
     let c = translation(offset[0], offset[1], 0.0);
     a.chain(c).chain(b)
+}
+
+
+
+const BLOCK_GLB:&'static [u8]=include_bytes!("../block-v2.glb");
+
+//TODO wouldnt it be amazing if this was a const function????
+fn load_glb(bytes:&[u8]){
+    //Use https://www.gltfeditor.com/ also
+    //Use https://gltf.report/ to compress it to the binary format!!!!
+    
+    let (document,buffers,images)=gltf::import_slice(bytes).map_err(|e|log!(format!("{:?}", e))).unwrap_throw();
+    //log!(format!("{:?}", buffers));
+
+
+    for mesh in document.meshes(){
+        for p in mesh.primitives(){
+            let mode=p.mode(); //i.e. TRIANGLES
+            log!(format!("{:?}", mode));
+
+            let mut pp=p.attributes();
+            
+            //TODO dont assume order
+            assert_eq!(gltf::Semantic::Positions,pp.next().unwrap_throw().0);
+            assert_eq!(gltf::Semantic::Normals,pp.next().unwrap_throw().0);
+            assert_eq!(gltf::Semantic::TexCoords(0),pp.next().unwrap_throw().0);
+
+
+            let view=p.get(&gltf::Semantic::Positions).unwrap_throw().view().unwrap_throw();
+            let start=view.offset();
+            let end=view.length();
+            
+            let data=&buffers[view.buffer().index()].0;
+
+            //pass this to the buffer!!!!
+            let positions=&data[start..end];
+
+            for i in 0..positions.len()/4{
+                let data=f32::from_le_bytes([positions[4*i+0],positions[4*i+1],positions[4*i+2],positions[4*i+3]]);
+                log!(format!("{:?}", data));
+            }
+
+
+            //reader.read_positions().unwrap()
+
+        }
+
+    }
+
+
 }

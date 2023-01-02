@@ -19,12 +19,17 @@ serde = { version = "1.0", features = ["derive"] }
 duckduckgeo={git="https://github.com/tiby312/duckduckgeo.git"}
 axgeom="*"
 webgl-matrix="*"
+gltf={version="*", features=["import"]}
+console_error_panic_hook="*"
 
 [dependencies.gloo]
 version = "0.8"
 features=[
   'futures'
   ]
+
+[profile.release]
+debug = true
 
 
 [patch.crates-io]
