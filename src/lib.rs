@@ -141,18 +141,17 @@ pub async fn worker_entry() {
     //let foo=load_glb(BLOCK_GLB);
     let foo=load_glb(KEY_GLB);
 
-    let mut data=foo.gen();
-    log!(format!("{:?}", &data.all_positions));
-    log!(format!("{:?}", &data.all_indices));
+    let mut data=foo.gen().pop().unwrap_throw();
+    log!(format!("{:?}", &data.positions));
+    log!(format!("{:?}", &data.indices));
 
     {
         use matrix::*;
         let s=matrix::scale(2.0,2.0,2.0).chain(matrix::z_rotation(-PI/2.0)).generate();
             
-        for a in data.all_positions.iter_mut(){
-            for p in a.iter_mut(){
-                *p=transform_point_3d(&s,*p);
-            }
+        for p in data.positions.iter_mut(){
+            *p=transform_point_3d(&s,*p);
+            
         }
     }
     
@@ -216,15 +215,14 @@ pub async fn worker_entry() {
         v.draw_triangles(&buffer,None, color_iter.peek().unwrap_throw());
 
 
-        for (a,b) in data.all_positions.iter().zip(data.all_indices.iter()){
-
+        {
             let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
-            index.update(&b);
+            index.update(&data.indices);
 
-            buffer.update_no_clear(&a);
+            buffer.update_no_clear(&data.positions);
             v.draw_triangles(&buffer,Some(&index), color_iter.peek().unwrap_throw());
-
         }
+        
         
         
 
@@ -360,10 +358,6 @@ fn world_to_screen(offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse 
 
 const KEY_GLB:&'static [u8]=include_bytes!("../assets/key.glb");
 
-struct ModelData{
-    all_positions:Vec<Vec<[f32;3]>>,
-    all_indices:Vec<Vec<u16>>
-}
 
 
 pub struct Doop{
@@ -384,47 +378,34 @@ fn load_glb(bytes:&[u8])->Doop{
     Doop { document, buffers, images }
 }
 
+
+struct ModelData{
+    positions:Vec<[f32;3]>,
+    indices:Vec<u16>,
+}
+
 impl Doop{
 
-    fn gen(&self)->ModelData{
+    fn gen(&self)->Vec<ModelData>{
         
-        let mut all_positions=Vec::new();
-        let mut all_indices=Vec::new();
-        for mesh in self.document.meshes(){
+        self.document.meshes().map(|mesh|{
             let mut positions=Vec::new();
             let mut indices=Vec::new();
         
             for p in mesh.primitives(){
-
+                //only support triangles
+                assert_eq!(p.mode(),gltf::mesh::Mode::Triangles);
+                
                 let reader = p.reader(|buffer| Some(&self.buffers[buffer.index()]));
-                // let indices:Vec<_> = if let Some(indices) = reader.read_indices() {
-                //     indices.into_u32().map(|i| i as u16).collect()
-                // } else {
-                //     panic!("need indicies!");
-                // };
-
-
-                // let mut positions: Vec<_> = 
-                //     .unwrap_or_else(|| panic!("The model primitive doesn't contain positions"))
-                //     .collect();
                 
                 positions.extend(reader.read_positions().unwrap_throw());
                 indices.extend(reader.read_indices().unwrap_throw().into_u32().map(|x|x as u16));
 
 
-
-
-                
-
             }
 
-            all_positions.push(positions);
-            all_indices.push(indices);
-
-            
-
-        }
-        return ModelData { all_positions,all_indices};
+            ModelData { positions,indices}
+        }).collect()
         
     }
 
