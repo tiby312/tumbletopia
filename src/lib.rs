@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use axgeom::{vec2, vec2same, Vec2};
 use gloo::console::log;
 use serde::{Deserialize, Serialize};
@@ -30,7 +32,8 @@ pub enum MEvent {
 #[wasm_bindgen]
 pub async fn main_entry() {
     console_error_panic_hook::set_once();
-    load_glb(BLOCK_GLB);
+    
+    
 
     use futures::StreamExt;
 
@@ -135,6 +138,24 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::ScrollController::new([0.0; 2]);
 
+    //let foo=load_glb(BLOCK_GLB);
+    let foo=load_glb(KEY_GLB);
+
+    let mut data=foo.gen();
+    log!(format!("{:?}", &data.all_positions));
+    log!(format!("{:?}", &data.all_indices));
+
+    {
+        use matrix::*;
+        let s=matrix::scale(2.0,2.0,2.0).chain(matrix::z_rotation(-PI/2.0)).generate();
+            
+        for a in data.all_positions.iter_mut(){
+            for p in a.iter_mut(){
+                *p=transform_point_3d(&s,*p);
+            }
+        }
+    }
+    
     'outer: loop {
         let mut j = false;
         for e in frame_timer.next().await {
@@ -178,6 +199,9 @@ pub async fn worker_entry() {
 
         buffer.update_clear(cache);
 
+
+
+
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
         let matrix = world_to_screen(scroll_manager.camera())
@@ -186,10 +210,23 @@ pub async fn worker_entry() {
 
         let mut v = draw_sys.view(&matrix);
 
-        v.draw_triangles(&checker, &[0.3, 0.3, 0.3, 0.3]);
+        v.draw_triangles(&checker, None,&[0.3, 0.3, 0.3, 0.3]);
 
-        v.draw_triangles(&walls, &[1.0, 0.5, 0.5, 1.0]);
-        v.draw_triangles(&buffer, color_iter.peek().unwrap_throw());
+        v.draw_triangles(&walls,None, &[1.0, 0.5, 0.5, 1.0]);
+        v.draw_triangles(&buffer,None, color_iter.peek().unwrap_throw());
+
+
+        for (a,b) in data.all_positions.iter().zip(data.all_indices.iter()){
+
+            let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
+            index.update(&b);
+
+            buffer.update_no_clear(&a);
+            v.draw_triangles(&buffer,Some(&index), color_iter.peek().unwrap_throw());
+
+        }
+        
+        
 
         ctx.flush();
     }
@@ -321,50 +358,74 @@ fn world_to_screen(offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse 
 
 
 
-const BLOCK_GLB:&'static [u8]=include_bytes!("../block-v2.glb");
+const KEY_GLB:&'static [u8]=include_bytes!("../assets/key.glb");
+
+struct ModelData{
+    all_positions:Vec<Vec<[f32;3]>>,
+    all_indices:Vec<Vec<u16>>
+}
+
+
+pub struct Doop{
+    document:gltf::Document,
+    buffers:Vec<gltf::buffer::Data>,
+    images:Vec<gltf::image::Data>
+}
 
 //TODO wouldnt it be amazing if this was a const function????
-fn load_glb(bytes:&[u8]){
+fn load_glb(bytes:&[u8])->Doop{
     //Use https://www.gltfeditor.com/ also
     //Use https://gltf.report/ to compress it to the binary format!!!!
     
+    //TODO discard normal verticies if not used???
+
+
     let (document,buffers,images)=gltf::import_slice(bytes).map_err(|e|log!(format!("{:?}", e))).unwrap_throw();
-    //log!(format!("{:?}", buffers));
+    Doop { document, buffers, images }
+}
+
+impl Doop{
+
+    fn gen(&self)->ModelData{
+        
+        let mut all_positions=Vec::new();
+        let mut all_indices=Vec::new();
+        for mesh in self.document.meshes(){
+            let mut positions=Vec::new();
+            let mut indices=Vec::new();
+        
+            for p in mesh.primitives(){
+
+                let reader = p.reader(|buffer| Some(&self.buffers[buffer.index()]));
+                // let indices:Vec<_> = if let Some(indices) = reader.read_indices() {
+                //     indices.into_u32().map(|i| i as u16).collect()
+                // } else {
+                //     panic!("need indicies!");
+                // };
 
 
-    for mesh in document.meshes(){
-        for p in mesh.primitives(){
-            let mode=p.mode(); //i.e. TRIANGLES
-            log!(format!("{:?}", mode));
-
-            let mut pp=p.attributes();
-            
-            //TODO dont assume order
-            assert_eq!(gltf::Semantic::Positions,pp.next().unwrap_throw().0);
-            assert_eq!(gltf::Semantic::Normals,pp.next().unwrap_throw().0);
-            assert_eq!(gltf::Semantic::TexCoords(0),pp.next().unwrap_throw().0);
+                // let mut positions: Vec<_> = 
+                //     .unwrap_or_else(|| panic!("The model primitive doesn't contain positions"))
+                //     .collect();
+                
+                positions.extend(reader.read_positions().unwrap_throw());
+                indices.extend(reader.read_indices().unwrap_throw().into_u32().map(|x|x as u16));
 
 
-            let view=p.get(&gltf::Semantic::Positions).unwrap_throw().view().unwrap_throw();
-            let start=view.offset();
-            let end=view.length();
-            
-            let data=&buffers[view.buffer().index()].0;
 
-            //pass this to the buffer!!!!
-            let positions=&data[start..end];
 
-            for i in 0..positions.len()/4{
-                let data=f32::from_le_bytes([positions[4*i+0],positions[4*i+1],positions[4*i+2],positions[4*i+3]]);
-                log!(format!("{:?}", data));
+                
+
             }
 
+            all_positions.push(positions);
+            all_indices.push(indices);
 
-            //reader.read_positions().unwrap()
+            
 
         }
-
+        return ModelData { all_positions,all_indices};
+        
     }
-
 
 }
