@@ -351,7 +351,7 @@ fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
     //Deep enough that we can tilt the whole board and have it still show up
     let depth = dim[0] * dim[1];
-    let d = scale(2.0 / dim[0], -2.0 / dim[1], 2.0 / depth);
+    let d = scale(2.0 / dim[0], -2.0 / dim[1], -2.0 / depth);
     let e = translation(-1.0, 1.0, 0.0);
 
     d.chain(e)
