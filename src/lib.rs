@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 use axgeom::{vec2, vec2same, Vec2};
 use gloo::console::log;
+use gltf::image::Source;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d;
 use shogo::{simple2d::DynamicBuffer, utils};
@@ -391,9 +392,11 @@ fn load_glb(bytes:&[u8])->Doop{
 }
 
 
-struct ModelData{
+struct ModelData<'a>{
     positions:Vec<[f32;3]>,
     indices:Vec<u16>,
+    texture:Option<&'a [u8]>,
+    tex_coords:Vec<[f32;2]>
 }
 
 impl Doop{
@@ -402,7 +405,28 @@ impl Doop{
         
         let mut positions=Vec::new();
         let mut indices=Vec::new();
-        let mut offset=0;    
+        let mut offset=0;   
+        let mut tex_coords=Vec::new();
+        let texture=if let Some(texture)= self.document.textures().next(){
+
+            log!("found a texture!");
+            let g_img = texture.source();
+            
+            let buffers = &self.buffers;
+            Some(match g_img.source() {
+                Source::View { view, mime_type } => {
+                    let parent_buffer_data = &buffers[view.buffer().index()].0;
+                    let data = &parent_buffer_data[view.offset()..view.offset() + view.length()];
+                    //log!(format!("{:?}",data));
+                    data
+                },
+                _=>{panic!("not supported")}
+            })
+        }else{
+            None
+        };
+
+
         for mesh in self.document.meshes(){
             
             for p in mesh.primitives(){
@@ -416,6 +440,15 @@ impl Doop{
                 
                 let i:Vec<_>=reader.read_indices().unwrap_throw().into_u32().map(|x|offset+(x as u16)).collect();
                 
+
+                
+                if let Some(t) = reader.read_tex_coords(0) {
+                    tex_coords.extend(t.into_f32())
+                } else {
+                    if texture.is_some(){
+                        panic!("no texture coords!");
+                    }
+                };
                 //log!(format!("pos:{:?}", &p));
 
                 //log!(format!("ind:{:?}", &i));
@@ -429,7 +462,7 @@ impl Doop{
             } 
         };
         
-        ModelData { positions,indices}
+        ModelData { texture,positions,indices,tex_coords}
         
     }
 
