@@ -148,7 +148,7 @@ pub async fn worker_entry() {
     {
         use matrix::*;
         //for key
-        let s=matrix::scale(2.0,2.0,2.0).chain(matrix::z_rotation(-PI/2.0)).generate();
+        //let s=matrix::scale(2.0,2.0,2.0).chain(matrix::x_rotation(PI/2.0)).generate();
         
         //for person
         let s=matrix::scale(200.0,200.0,200.0).chain(matrix::x_rotation(PI/2.0)).generate();
@@ -160,6 +160,12 @@ pub async fn worker_entry() {
     }
     
     'outer: loop {
+        let s=matrix::translation(0.5,0.0,0.0).generate();
+        
+        for p in data.positions.iter_mut(){
+            *p=transform_point_3d(&s,*p);    
+        }
+
         let mut j = false;
         for e in frame_timer.next().await {
             //log!(format!("{:?}", e));
