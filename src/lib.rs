@@ -139,16 +139,20 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::ScrollController::new([0.0; 2]);
 
     //let foo=load_glb(BLOCK_GLB);
-    let foo=load_glb(KEY_GLB);
+    let foo=load_glb(PERSON_GLB);
 
-    let mut data=foo.gen().pop().unwrap_throw();
-    log!(format!("{:?}", &data.positions));
-    log!(format!("{:?}", &data.indices));
+    let mut data=foo.gen();
+    log!(format!("{:?}", &data.positions.len()));
+    log!(format!("{:?}", &data.indices.len()));
 
     {
         use matrix::*;
+        //for key
         let s=matrix::scale(2.0,2.0,2.0).chain(matrix::z_rotation(-PI/2.0)).generate();
-            
+        
+        //for person
+        let s=matrix::scale(200.0,200.0,200.0).chain(matrix::x_rotation(PI/2.0)).generate();
+        
         for p in data.positions.iter_mut(){
             *p=transform_point_3d(&s,*p);
             
@@ -357,6 +361,7 @@ fn world_to_screen(offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse 
 
 
 const KEY_GLB:&'static [u8]=include_bytes!("../assets/key.glb");
+const PERSON_GLB:&'static [u8]=include_bytes!("../assets/person-v1.glb");
 
 
 
@@ -375,6 +380,7 @@ fn load_glb(bytes:&[u8])->Doop{
 
 
     let (document,buffers,images)=gltf::import_slice(bytes).map_err(|e|log!(format!("{:?}", e))).unwrap_throw();
+    log!(format!("{:?}", document));
     Doop { document, buffers, images }
 }
 
@@ -386,26 +392,38 @@ struct ModelData{
 
 impl Doop{
 
-    fn gen(&self)->Vec<ModelData>{
+    fn gen(&self)->ModelData{
         
-        self.document.meshes().map(|mesh|{
-            let mut positions=Vec::new();
-            let mut indices=Vec::new();
-        
+        let mut positions=Vec::new();
+        let mut indices=Vec::new();
+        let mut offset=0;    
+        for mesh in self.document.meshes(){
+            
             for p in mesh.primitives(){
                 //only support triangles
                 assert_eq!(p.mode(),gltf::mesh::Mode::Triangles);
                 
+
                 let reader = p.reader(|buffer| Some(&self.buffers[buffer.index()]));
+
+                let p:Vec<_>=reader.read_positions().unwrap_throw().collect();
                 
-                positions.extend(reader.read_positions().unwrap_throw());
-                indices.extend(reader.read_indices().unwrap_throw().into_u32().map(|x|x as u16));
+                let i:Vec<_>=reader.read_indices().unwrap_throw().into_u32().map(|x|offset+(x as u16)).collect();
+                
+                //log!(format!("pos:{:?}", &p));
+
+                //log!(format!("ind:{:?}", &i));
+                
+                offset+=p.len() as u16;
+                positions.extend(p);
+
+                indices.extend(i);
 
 
-            }
-
-            ModelData { positions,indices}
-        }).collect()
+            } 
+        };
+        
+        ModelData { positions,indices}
         
     }
 
