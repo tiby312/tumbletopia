@@ -124,7 +124,7 @@ pub async fn worker_entry() {
                 y: y as f32 * grid_viewport.spacing,
                 w: grid_viewport.spacing,
                 h: grid_viewport.spacing,
-            });
+            },-0.1);
         }
     }
 
@@ -161,7 +161,7 @@ pub async fn worker_entry() {
     }
     
     'outer: loop {
-        let s=matrix::translation(0.5,0.0,0.0).generate();
+        let s=matrix::z_rotation(0.1).generate();
         
         for p in data.positions.iter_mut(){
             *p=transform_point_3d(&s,*p);    
@@ -205,7 +205,7 @@ pub async fn worker_entry() {
             y: mouse_world[1] - grid_viewport.spacing / 2.0,
             w: grid_viewport.spacing,
             h: grid_viewport.spacing,
-        });
+        },0.0);
 
         buffer.update_clear(cache);
 
@@ -262,7 +262,7 @@ fn update_walls(
                 y: top_left.y,
                 w: grid_viewport.spacing,
                 h: grid_viewport.spacing,
-            });
+            },-0.1);
         }
     }
     buffer.update_clear(cache);
