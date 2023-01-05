@@ -144,9 +144,10 @@ pub async fn worker_entry() {
     let foo=load_glb(PERSON_GLB);
 
     let mut data=foo.gen();
-    log!(format!("{:?}", &data.positions.len()));
-    log!(format!("{:?}", &data.indices.len()));
-    log!(format!("tex:{:?}", &data.tex_coords.len()));
+    let cat=data.create(&ctx);
+    // log!(format!("{:?}", &data.positions.len()));
+    // log!(format!("{:?}", &data.indices.len()));
+    // log!(format!("tex:{:?}", &data.tex_coords.len()));
 
     {
         use matrix::*;
@@ -161,15 +162,7 @@ pub async fn worker_entry() {
             
         }
     }
-    let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
-    index.update(&data.indices);
-
-    let mut tex_coord=simple2d::TextureCoordBuffer::new(&ctx).unwrap_throw();
-    tex_coord.update(&data.tex_coords);
-
-    let mut tex=simple2d::TextureBuffer::new(&ctx);
-    tex.update(32,32,data.texture.unwrap_throw());
-
+    
     'outer: loop {
         // let s=matrix::z_rotation(0.1).generate();
         
@@ -238,7 +231,8 @@ pub async fn worker_entry() {
         {
             
             buffer.update_no_clear(&data.positions);
-            v.draw_triangles(&tex,&tex_coord,&buffer,Some(&index), color_iter.peek().unwrap_throw());
+            cat.draw(&mut v,&buffer);
+            
         }
         
         
@@ -250,6 +244,41 @@ pub async fn worker_entry() {
     w.post_message(());
 
     log!("worker thread closing");
+}
+
+
+pub struct ModelGpu{
+    index:simple2d::IndexBuffer,
+    tex_coord:simple2d::TextureCoordBuffer,
+    texture:simple2d::TextureBuffer
+}
+impl ModelGpu{
+    pub fn draw(&self,view:&mut simple2d::View,positions:&simple2d::Buffer){
+        view.draw_triangles(&self.texture,&self.tex_coord,positions,Some(&self.index));
+    }
+}
+
+struct ModelData<'a>{
+    positions:Vec<[f32;3]>,
+    indices:Vec<u16>,
+    texture:Option<&'a [u8]>,
+    tex_coords:Vec<[f32;2]>
+}
+impl<'a> ModelData<'a>{
+    
+    pub fn create(&self,ctx:&web_sys::WebGl2RenderingContext)->ModelGpu{
+        let data=self;
+        let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
+        index.update(&data.indices);
+    
+        let mut tex_coord=simple2d::TextureCoordBuffer::new(&ctx).unwrap_throw();
+        tex_coord.update(&data.tex_coords);
+    
+        let mut texture=simple2d::TextureBuffer::new(&ctx);
+        texture.update(32,32,data.texture.unwrap_throw());
+        ModelGpu { index, tex_coord, texture }
+    
+    }
 }
 
 use shogo::simple2d::Vertex;
@@ -399,12 +428,7 @@ fn load_glb(bytes:&[u8])->Doop{
 }
 
 
-struct ModelData<'a>{
-    positions:Vec<[f32;3]>,
-    indices:Vec<u16>,
-    texture:Option<&'a [u8]>,
-    tex_coords:Vec<[f32;2]>
-}
+
 
 impl Doop{
 
