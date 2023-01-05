@@ -161,13 +161,21 @@ pub async fn worker_entry() {
             
         }
     }
-    
+    let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
+    index.update(&data.indices);
+
+    let mut tex_coord=simple2d::TextureCoordBuffer::new(&ctx).unwrap_throw();
+    tex_coord.update(&data.tex_coords);
+
+    let mut tex=simple2d::TextureBuffer::new(&ctx);
+    tex.update(32,32,data.texture.unwrap_throw());
+
     'outer: loop {
-        let s=matrix::z_rotation(0.1).generate();
+        // let s=matrix::z_rotation(0.1).generate();
         
-        for p in data.positions.iter_mut(){
-            *p=transform_point_3d(&s,*p);    
-        }
+        // for p in data.positions.iter_mut(){
+        //     *p=transform_point_3d(&s,*p);    
+        // }
 
         let mut j = false;
         for e in frame_timer.next().await {
@@ -228,14 +236,7 @@ pub async fn worker_entry() {
 
 
         {
-            let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
-            index.update(&data.indices);
-
-            let mut tex_coord=simple2d::TextureCoordBuffer::new(&ctx).unwrap_throw();
-            tex_coord.update(&data.tex_coords);
-
-            let mut tex=simple2d::TextureBuffer::new(&ctx);
-            tex.update(32,32,data.texture.unwrap_throw());
+            
             buffer.update_no_clear(&data.positions);
             v.draw_triangles(&tex,&tex_coord,&buffer,Some(&index), color_iter.peek().unwrap_throw());
         }
