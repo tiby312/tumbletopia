@@ -112,24 +112,32 @@ pub async fn worker_entry() {
         spacing: game_dim[0] / (grid_width as f32),
     };
 
-    let mut k = simple2d::shapes(cache);
-    for x in 0..grid_width {
-        let offset = if x % 2 == 0 {
-            0..grid_width
-        } else {
-            1..grid_width - 1
-        };
-        for y in offset.step_by(2) {
-            k.rect(simple2d::Rect {
-                x: x as f32 * grid_viewport.spacing,
-                y: y as f32 * grid_viewport.spacing,
-                w: grid_viewport.spacing,
-                h: grid_viewport.spacing,
-            },-0.1);
+    let checkers={
+        let mut positions=Vec::new();
+        let mut k = simple2d::shapes(&mut positions);
+        for x in 0..grid_width {
+            let offset = if x % 2 == 0 {
+                0..grid_width
+            } else {
+                1..grid_width - 1
+            };
+            for y in offset.step_by(2) {
+                k.rect(simple2d::Rect {
+                    x: x as f32 * grid_viewport.spacing,
+                    y: y as f32 * grid_viewport.spacing,
+                    w: grid_viewport.spacing,
+                    h: grid_viewport.spacing,
+                },-0.1);
+            }
         }
-    }
+        let j=(0..positions.len()).map(|x|[0.0;2]).collect();
+        ModelData { positions, indices:None, texture:None, tex_coords: j }
+    };
+    //let checkers_gpu=checkers.create(&ctx);
 
-    let checker = ctx.buffer_static_clear(cache);
+
+
+    //let checker = ctx.buffer_static_clear(cache);
 
     let mut grid_walls = grid::Grid2D::new(vec2same(grid_width));
 
@@ -229,7 +237,8 @@ pub async fn worker_entry() {
 
 
         {
-            
+            //buffer.update_no_clear(&checkers.positions);
+            //checkers_gpu.draw(&mut v,&buffer);
             buffer.update_no_clear(&data.positions);
             cat.draw(&mut v,&buffer);
             
@@ -248,19 +257,19 @@ pub async fn worker_entry() {
 
 
 pub struct ModelGpu{
-    index:simple2d::IndexBuffer,
+    index:Option<simple2d::IndexBuffer>,
     tex_coord:simple2d::TextureCoordBuffer,
     texture:simple2d::TextureBuffer
 }
 impl ModelGpu{
     pub fn draw(&self,view:&mut simple2d::View,positions:&simple2d::Buffer){
-        view.draw_triangles(&self.texture,&self.tex_coord,positions,Some(&self.index));
+        view.draw_triangles(&self.texture,&self.tex_coord,positions,self.index.as_ref());
     }
 }
 
 struct ModelData<'a>{
     positions:Vec<[f32;3]>,
-    indices:Vec<u16>,
+    indices:Option<Vec<u16>>,
     texture:Option<&'a [u8]>,
     tex_coords:Vec<[f32;2]>
 }
@@ -268,13 +277,21 @@ impl<'a> ModelData<'a>{
     
     pub fn create(&self,ctx:&web_sys::WebGl2RenderingContext)->ModelGpu{
         let data=self;
-        let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
-        index.update(&data.indices);
-    
+
+        let index=if let Some(indices)=&self.indices{
+            let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
+            index.update(&indices);
+            Some(index)    
+        }else{
+            None
+        };
+
+        
         let mut tex_coord=simple2d::TextureCoordBuffer::new(&ctx).unwrap_throw();
         tex_coord.update(&data.tex_coords);
     
         let mut texture=simple2d::TextureBuffer::new(&ctx);
+        //TODO dont hardcode!!!!!
         texture.update(32,32,data.texture.unwrap_throw());
         ModelGpu { index, tex_coord, texture }
     
@@ -493,7 +510,7 @@ impl Doop{
             } 
         };
         
-        ModelData { texture,positions,indices,tex_coords}
+        ModelData { texture,positions,indices:Some(indices),tex_coords}
         
     }
 
