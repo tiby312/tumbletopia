@@ -1,3 +1,4 @@
+
 use std::f32::consts::PI;
 
 use axgeom::{vec2, vec2same, Vec2};
@@ -145,6 +146,7 @@ pub async fn worker_entry() {
     let mut data=foo.gen();
     log!(format!("{:?}", &data.positions.len()));
     log!(format!("{:?}", &data.indices.len()));
+    log!(format!("tex:{:?}", &data.tex_coords.len()));
 
     {
         use matrix::*;
@@ -220,18 +222,22 @@ pub async fn worker_entry() {
 
         let mut v = draw_sys.view(&matrix);
 
-        v.draw_triangles(&checker, None,&[0.3, 0.3, 0.3, 0.3]);
-
-        v.draw_triangles(&walls,None, &[1.0, 0.5, 0.5, 1.0]);
-        v.draw_triangles(&buffer,None, color_iter.peek().unwrap_throw());
+        // v.draw_triangles(&checker, None,&[0.3, 0.3, 0.3, 0.3]);
+        // v.draw_triangles(&walls,None, &[1.0, 0.5, 0.5, 1.0]);
+        // v.draw_triangles(&buffer,None, color_iter.peek().unwrap_throw());
 
 
         {
             let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
             index.update(&data.indices);
 
+            let mut tex_coord=simple2d::TextureCoordBuffer::new(&ctx).unwrap_throw();
+            tex_coord.update(&data.tex_coords);
+
+            let mut tex=simple2d::TextureBuffer::new(&ctx);
+            tex.update(32,32,data.texture.unwrap_throw());
             buffer.update_no_clear(&data.positions);
-            v.draw_triangles(&buffer,Some(&index), color_iter.peek().unwrap_throw());
+            v.draw_triangles(&tex,&tex_coord,&buffer,Some(&index), color_iter.peek().unwrap_throw());
         }
         
         
@@ -402,7 +408,7 @@ struct ModelData<'a>{
 impl Doop{
 
     fn gen(&self)->ModelData{
-        
+        // TODO use this: https://www.nayuki.io/page/png-file-chunk-inspector
         let mut positions=Vec::new();
         let mut indices=Vec::new();
         let mut offset=0;   
@@ -417,7 +423,7 @@ impl Doop{
                 Source::View { view, mime_type } => {
                     let parent_buffer_data = &buffers[view.buffer().index()].0;
                     let data = &parent_buffer_data[view.offset()..view.offset() + view.length()];
-                    //log!(format!("{:?}",data));
+                    log!(format!("{:?}",data));
                     data
                 },
                 _=>{panic!("not supported")}
