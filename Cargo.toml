@@ -21,6 +21,8 @@ axgeom="*"
 webgl-matrix="*"
 console_error_panic_hook="*"
 model={path="model"}
+collision="*"
+cgmath="*"
 
 [workspace]
 members = [

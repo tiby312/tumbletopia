@@ -151,7 +151,7 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::ScrollController::new([0.0; 2]);
 
     //let foo=load_glb(BLOCK_GLB);
-    let foo = model::load_glb(PERSON_GLB);
+    let foo = model::load_glb(CAT_GLB);
 
     let data = {
         let mut data = foo.gen();
@@ -159,8 +159,8 @@ pub async fn worker_entry() {
         use matrix::*;
 
         //for person
-        let s = matrix::scale(200.0, 200.0, 200.0)
-            .chain(matrix::x_rotation(PI / 2.0))
+        let s = matrix::scale(400.0, 400.0, 400.0)
+            //.chain(matrix::y_rotation(-PI / 2.0))
             .generate();
 
         for p in data.positions.iter_mut() {
@@ -202,7 +202,13 @@ pub async fn worker_entry() {
                 MEvent::ShutdownClick => break 'outer,
             }
         }
-        let mouse_world = mouse_to_world(scroll_manager.cursor_canvas, scroll_manager.camera(),viewport);
+        let mouse_world = mouse_to_world(
+            scroll_manager.cursor_canvas,
+            scroll_manager.camera(),
+            viewport,
+        );
+
+        //let mm = mouse_ray(scroll_manager.cursor_canvas, scroll_manager.camera(),viewport);
 
         //log!(format!("{:?}", (scroll_manager.cursor_canvas,scroll_manager.camera(),mouse_world)));
 
@@ -228,9 +234,7 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let matrix = world_to_screen(scroll_manager.camera(),viewport)
-            .chain(screen_to_clip(viewport))
-            .generate();
+        let matrix = projection(scroll_manager.camera(), viewport).generate();
 
         //let k = matrix::z_rotation(counter).chain(matrix).generate();
         let mut v = draw_sys.view(&matrix);
@@ -400,43 +404,91 @@ fn transform_point_3d(matrix: &[f32; 16], point: [f32; 3]) -> [f32; 3] {
     [res[0], res[1], res[2]]
 }
 
-fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2],viewport:[f32;2]) -> [f32; 2] {
+fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
+    let [a, b] = mouse_to_world_coord(mouse, camera, viewport);
+
+    let a = a.into();
+    let b: cgmath::Point3<f32> = b.into();
+    let v = b - a;
+    let ray = collision::Ray::new(a, v);
+
+    let p = cgmath::Point3::new(0.0, 0.0, 0.0);
+    let up = cgmath::Vector3::new(0.0, 0.0, 1.0);
+
+    let plane = collision::Plane::from_point_normal(p, up);
+    use collision::Continuous;
+
+    if let Some(point) = plane.intersection(&ray) {
+        [point.x, point.y]
+    } else {
+        [0.0; 2]
+    }
+    //let point:cgmath::Point3<f32>=plane.intersection(&ray);
+}
+// fn mouse_to_world_old(mouse: [f32; 2], camera: [f32; 2],viewport:[f32;2]) -> [f32; 2] {
+//     use matrix::*;
+//     let k = world_to_screen(camera,viewport).inverse();
+
+//     let depth = mouse[1];
+
+//     //let fudge=fudge(-0.001).chain(translation(viewport[0]/2.0,viewport[1]/2.0,0.0)).inverse();
+
+//     let matrix = k.generate();
+
+//     let a = transform_point_3d(&matrix, [mouse[0], mouse[1], depth]);
+//     [a[0], a[1]]
+// }
+
+fn mouse_to_world_coord(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [Vertex; 2] {
+    //generate some mouse points
     use matrix::*;
-    let k = world_to_screen(camera,viewport).inverse();
 
-    //let depth = mouse[1];
+    let clip_x = mouse[0] / viewport[0] * 2. - 1.;
+    let clip_y = mouse[1] / viewport[1] * -2. + 1.;
 
-    //let fudge=fudge(-0.001).chain(translation(viewport[0]/2.0,viewport[1]/2.0,0.0)).inverse();
-    
-    let matrix = k.generate();
+    let depth = viewport[0] * viewport[1];
+    //let depth=100.0;
+    let start = [clip_x, clip_y, depth];
+    let end = [clip_x, clip_y, 0.0];
 
-    
+    let matrix = projection(camera, viewport).inverse().generate();
 
+    let start = transform_point_3d(&matrix, start);
+    let end = transform_point_3d(&matrix, end);
 
-    let a = transform_point_3d(&matrix, [mouse[0], mouse[1], 0.0]);
-    [a[0], a[1]]
+    [start, end]
 }
 
-fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+//project world to clip space
+fn projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+    fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+        use matrix::*;
+        //Deep enough that we can tilt the whole board and have it still show up
+        let depth = dim[0] * dim[1];
+        let d = scale(2.0 / dim[0], -2.0 / dim[1], -2.0 / depth);
+        let e = translation(-1.0, 1.0, 0.0);
+
+        //let fudge=fudge(-0.004).chain(translation(dim[0]/2.0,dim[1]/2.0,0.0));
+
+        d.chain(e) //.chain(fudge(50.))
+    }
+
+    fn world_to_screen(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+        use matrix::*;
+
+        let a = z_rotation(std::f32::consts::PI / 4.);
+        let b = x_rotation(std::f32::consts::PI / 4.);
+        let c = translation(offset[0], offset[1], 0.0);
+
+        let fudge = fudge(-0.004).chain(translation(dim[0] / 2.0, dim[1] / 2.0, 0.0));
+
+        a.chain(c).chain(b) // .chain(fudge)
+    }
+
     use matrix::*;
-    //Deep enough that we can tilt the whole board and have it still show up
-    let depth = dim[0] * dim[1];
-    let d = scale(2.0 / dim[0], -2.0 / dim[1], -2.0 / depth);
-    let e = translation(-1.0, 1.0, 0.0);
-
-    d.chain(e)
-}
-
-fn world_to_screen(offset: [f32; 2],dim:[f32;2]) -> impl matrix::MyMatrix + matrix::Inverse {
-    use matrix::*;
-    let fudge=fudge(-0.001).chain(translation(dim[0]/2.0,dim[1]/2.0,0.0));
-
-
-    let a = z_rotation(std::f32::consts::PI / 4.);
-    let b = x_rotation(std::f32::consts::PI / 4.);
-    let c = translation(offset[0], offset[1], 0.0);
-    a.chain(c).chain(b).chain(fudge)
+    world_to_screen(offset, dim).chain(screen_to_clip(dim))
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
 const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
+const CAT_GLB: &'static [u8] = include_bytes!("../assets/cat2.glb");
