@@ -409,7 +409,7 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
 
     let a = a.into();
     let b: cgmath::Point3<f32> = b.into();
-    let v = a - b;
+    let v = b-a;
     let ray = collision::Ray::new(a, v);
 
     let p = cgmath::Point3::new(0.0, 0.0, 0.0);
@@ -432,10 +432,10 @@ fn mouse_to_world_coord(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -
     let clip_x = mouse[0] / viewport[0] * 2. - 1.;
     let clip_y = mouse[1] / viewport[1] * -2. + 1.;
 
-    let depth = 2000.0; //viewport[0] * viewport[1];
+    //let depth = 2000.0; //viewport[0] * viewport[1];
                         //let depth=100.0;
-    let start = [clip_x, clip_y, 0.];
-    let end = [clip_x, clip_y, depth];
+    let start = [clip_x, clip_y, -1.0];
+    let end = [clip_x, clip_y, 1.0];
 
     let mut matrix = projection(camera, viewport).inverse().generate();
     //matrix.inverse();
@@ -455,7 +455,7 @@ fn projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix
     fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
         use matrix::*;
         //Deep enough that we can tilt the whole board and have it still show up
-        let depth = 2000.0;
+        let depth = 2000.0;//dim[0]*dim[1];
         //let scale=dim[0]*dim[1]
         let d = scale(2.0 / dim[0], -2.0 / dim[1], -2.0 / depth);
         let e = translation(-1.0, 1.0, 0.0);
