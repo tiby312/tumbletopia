@@ -82,7 +82,7 @@ pub async fn main_entry() {
 #[wasm_bindgen]
 pub async fn worker_entry() {
     let (mut w, ss) = shogo::EngineWorker::new().await;
-    let mut frame_timer = shogo::FrameTimer::new(60, ss);
+    let mut frame_timer = shogo::FrameTimer::new(30, ss);
 
     let canvas = w.canvas();
     let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
@@ -173,7 +173,7 @@ pub async fn worker_entry() {
 
     let mut counter = 0.0;
     'outer: loop {
-        counter += 0.1;
+        counter += 0.02;
         // let s=matrix::z_rotation(0.1).generate();
 
         // for p in data.positions.iter_mut(){
@@ -202,7 +202,7 @@ pub async fn worker_entry() {
                 MEvent::ShutdownClick => break 'outer,
             }
         }
-        let mouse_world = mouse_to_world(scroll_manager.cursor_canvas, scroll_manager.camera());
+        let mouse_world = mouse_to_world(scroll_manager.cursor_canvas, scroll_manager.camera(),viewport);
 
         //log!(format!("{:?}", (scroll_manager.cursor_canvas,scroll_manager.camera(),mouse_world)));
 
@@ -228,10 +228,11 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let matrix = world_to_screen(scroll_manager.camera())
+        let matrix = world_to_screen(scroll_manager.camera(),viewport)
             .chain(screen_to_clip(viewport))
             .generate();
 
+        //let k = matrix::z_rotation(counter).chain(matrix).generate();
         let mut v = draw_sys.view(&matrix);
 
         // v.draw_triangles(&checker, None,&[0.3, 0.3, 0.3, 0.3]);
@@ -245,8 +246,8 @@ pub async fn worker_entry() {
             checkers_gpu.draw_pos(&mut v, &buffer);
         }
 
-        let k = matrix::z_rotation(counter).chain(matrix).generate();
-        let mut v = draw_sys.view(&k);
+        //let k = matrix::z_rotation(counter).chain(matrix).generate();
+        //let mut v = draw_sys.view(&k);
         cat.draw(&mut v);
 
         ctx.flush();
@@ -399,9 +400,9 @@ fn transform_point_3d(matrix: &[f32; 16], point: [f32; 3]) -> [f32; 3] {
     [res[0], res[1], res[2]]
 }
 
-fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2]) -> [f32; 2] {
+fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2],viewport:[f32;2]) -> [f32; 2] {
     use matrix::*;
-    let k = world_to_screen(camera).inverse();
+    let k = world_to_screen(camera,viewport).inverse();
 
     let depth = mouse[1];
 
@@ -421,12 +422,15 @@ fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     d.chain(e)
 }
 
-fn world_to_screen(offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+fn world_to_screen(offset: [f32; 2],dim:[f32;2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
+    let fudge=fudge(-0.001).chain(translation(dim[0]/2.0,dim[1]/2.0,0.0));
+
+
     let a = z_rotation(std::f32::consts::PI / 4.);
     let b = x_rotation(std::f32::consts::PI / 4.);
     let c = translation(offset[0], offset[1], 0.0);
-    a.chain(c).chain(b)
+    a.chain(c).chain(b).chain(fudge)
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");

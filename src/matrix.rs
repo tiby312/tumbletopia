@@ -51,6 +51,27 @@ impl<A: MyMatrix, B: MyMatrix> MyMatrix for Chain<A, B> {
         a
     }
 }
+
+pub struct FudgeFactor{
+    factor:f32
+}
+impl MyMatrix for FudgeFactor{
+    fn generate(self) -> [f32; 16] {
+        [1., 0., 0., 0.,
+         0., 1., 0., 0.,
+        0., 0., 1., self.factor,
+         0., 0., 0., 1.0]
+    }
+}
+
+impl Inverse for FudgeFactor {
+    type Neg = Self;
+    fn inverse(self) -> Self::Neg {
+        FudgeFactor{factor:-self.factor}
+    }
+}
+
+
 pub struct Scale {
     pub tx: f32,
     pub ty: f32,
@@ -136,6 +157,9 @@ impl MyMatrix for ZRot {
     }
 }
 
+pub fn fudge(factor:f32)->FudgeFactor{
+    FudgeFactor { factor: factor }
+}
 pub fn x_rotation(angle_rad: f32) -> XRot {
     XRot { angle_rad }
 }
