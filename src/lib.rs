@@ -231,7 +231,9 @@ pub async fn worker_entry() {
         let mut v = draw_sys.view(&matrix);
 
         // v.draw_triangles(&checker, None,&[0.3, 0.3, 0.3, 0.3]);
-        // v.draw_triangles(&walls,None, &[1.0, 0.5, 0.5, 1.0]);
+
+        checkers_gpu.draw_pos(&mut v,&buffer);
+        //v.draw_triangles(&walls,None, &[1.0, 0.5, 0.5, 1.0]);
         // v.draw_triangles(&buffer,None, color_iter.peek().unwrap_throw());
 
 
