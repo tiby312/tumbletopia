@@ -409,11 +409,11 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
 
     let a = a.into();
     let b: cgmath::Point3<f32> = b.into();
-    let v = b - a;
+    let v = a-b;
     let ray = collision::Ray::new(a, v);
 
     let p = cgmath::Point3::new(0.0, 0.0, 0.0);
-    let up = cgmath::Vector3::new(0.0, 0.0, 1.0);
+    let up = cgmath::Vector3::new(0.0, 0.0, -1.0);
 
     let plane = collision::Plane::from_point_normal(p, up);
     use collision::Continuous;
@@ -423,21 +423,7 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     } else {
         [0.0; 2]
     }
-    //let point:cgmath::Point3<f32>=plane.intersection(&ray);
 }
-// fn mouse_to_world_old(mouse: [f32; 2], camera: [f32; 2],viewport:[f32;2]) -> [f32; 2] {
-//     use matrix::*;
-//     let k = world_to_screen(camera,viewport).inverse();
-
-//     let depth = mouse[1];
-
-//     //let fudge=fudge(-0.001).chain(translation(viewport[0]/2.0,viewport[1]/2.0,0.0)).inverse();
-
-//     let matrix = k.generate();
-
-//     let a = transform_point_3d(&matrix, [mouse[0], mouse[1], depth]);
-//     [a[0], a[1]]
-// }
 
 fn mouse_to_world_coord(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [Vertex; 2] {
     //generate some mouse points
@@ -448,8 +434,8 @@ fn mouse_to_world_coord(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -
 
     let depth = viewport[0] * viewport[1];
     //let depth=100.0;
-    let start = [clip_x, clip_y, depth];
-    let end = [clip_x, clip_y, 0.0];
+    let start = [clip_x, clip_y, -depth];
+    let end = [clip_x, clip_y, depth];
 
     let matrix = projection(camera, viewport).inverse().generate();
 
@@ -470,7 +456,7 @@ fn projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix
 
         //let fudge=fudge(-0.004).chain(translation(dim[0]/2.0,dim[1]/2.0,0.0));
 
-        d.chain(e) //.chain(fudge(50.))
+        d.chain(e)//.chain(fudge(50.))
     }
 
     fn world_to_screen(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
