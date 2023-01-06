@@ -1,4 +1,3 @@
-
 use std::f32::consts::PI;
 
 use axgeom::{vec2, vec2same, Vec2};
@@ -29,12 +28,9 @@ pub enum MEvent {
     ShutdownClick,
 }
 
-
 #[wasm_bindgen]
 pub async fn main_entry() {
     console_error_panic_hook::set_once();
-    
-    
 
     use futures::StreamExt;
 
@@ -86,7 +82,7 @@ pub async fn main_entry() {
 #[wasm_bindgen]
 pub async fn worker_entry() {
     let (mut w, ss) = shogo::EngineWorker::new().await;
-    let mut frame_timer = shogo::FrameTimer::new(30, ss);
+    let mut frame_timer = shogo::FrameTimer::new(60, ss);
 
     let canvas = w.canvas();
     let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
@@ -111,8 +107,8 @@ pub async fn worker_entry() {
         spacing: game_dim[0] / (grid_width as f32),
     };
 
-    let checkers={
-        let mut positions=Vec::new();
+    let checkers = {
+        let mut positions = Vec::new();
         let mut k = simple2d::shapes(&mut positions);
         for x in 0..grid_width {
             let offset = if x % 2 == 0 {
@@ -121,21 +117,27 @@ pub async fn worker_entry() {
                 1..grid_width - 1
             };
             for y in offset.step_by(2) {
-                k.rect(simple2d::Rect {
-                    x: x as f32 * grid_viewport.spacing,
-                    y: y as f32 * grid_viewport.spacing,
-                    w: grid_viewport.spacing,
-                    h: grid_viewport.spacing,
-                },-0.1);
+                k.rect(
+                    simple2d::Rect {
+                        x: x as f32 * grid_viewport.spacing,
+                        y: y as f32 * grid_viewport.spacing,
+                        w: grid_viewport.spacing,
+                        h: grid_viewport.spacing,
+                    },
+                    -0.1,
+                );
             }
         }
-        let j=(0..positions.len()).map(|_|[0.0;2]).collect();
-        model::ModelData { positions, indices:None, texture:model::single_tex(), tex_coords: j }
+        let j = (0..positions.len()).map(|_| [0.0; 2]).collect();
+        model::ModelData {
+            positions,
+            indices: None,
+            texture: model::single_tex(),
+            tex_coords: j,
+        }
     };
 
-    let checkers_gpu=ModelGpu::new(&ctx,&checkers);
-
-
+    let checkers_gpu = ModelGpu::new(&ctx, &checkers);
 
     //let checker = ctx.buffer_static_clear(cache);
 
@@ -149,35 +151,39 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::ScrollController::new([0.0; 2]);
 
     //let foo=load_glb(BLOCK_GLB);
-    let foo=model::load_glb(PERSON_GLB);
+    let foo = model::load_glb(PERSON_GLB);
 
-    let mut data=foo.gen();
+    let data = {
+        let mut data = foo.gen();
 
-    {
         use matrix::*;
-        
+
         //for person
-        let s=matrix::scale(200.0,200.0,200.0).chain(matrix::x_rotation(PI/2.0)).generate();
-        
-        for p in data.positions.iter_mut(){
-            *p=transform_point_3d(&s,*p);    
+        let s = matrix::scale(200.0, 200.0, 200.0)
+            .chain(matrix::x_rotation(PI / 2.0))
+            .generate();
+
+        for p in data.positions.iter_mut() {
+            *p = transform_point_3d(&s, *p);
         }
-    
-    }
-    let cat=ModelGpu::new(&ctx,&data);
-    
-    let mut counter=0.0;
+        data
+    };
+
+    let cat = ModelGpu::new(&ctx, &data);
+
+    let mut counter = 0.0;
     'outer: loop {
-        counter+=0.1;
+        counter += 0.1;
         // let s=matrix::z_rotation(0.1).generate();
-        
+
         // for p in data.positions.iter_mut(){
-        //     *p=transform_point_3d(&s,*p);    
+        //     *p=transform_point_3d(&s,*p);
         // }
 
         let mut j = false;
-        for e in frame_timer.next().await {
-            //log!(format!("{:?}", e));
+        let res = frame_timer.next().await;
+        log!(format!("number of events:{:?}", res.len()));
+        for e in res {
             match e {
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
@@ -208,17 +214,17 @@ pub async fn worker_entry() {
 
         use matrix::*;
 
-        simple2d::shapes(cache).rect(simple2d::Rect {
-            x: mouse_world[0] - grid_viewport.spacing / 2.0,
-            y: mouse_world[1] - grid_viewport.spacing / 2.0,
-            w: grid_viewport.spacing,
-            h: grid_viewport.spacing,
-        },0.0);
+        simple2d::shapes(cache).rect(
+            simple2d::Rect {
+                x: mouse_world[0] - grid_viewport.spacing / 2.0,
+                y: mouse_world[1] - grid_viewport.spacing / 2.0,
+                w: grid_viewport.spacing,
+                h: grid_viewport.spacing,
+            },
+            0.0,
+        );
 
         buffer.update_clear(cache);
-
-
-
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
@@ -226,29 +232,22 @@ pub async fn worker_entry() {
             .chain(screen_to_clip(viewport))
             .generate();
 
-            
-
         let mut v = draw_sys.view(&matrix);
 
         // v.draw_triangles(&checker, None,&[0.3, 0.3, 0.3, 0.3]);
 
-        checkers_gpu.draw_pos(&mut v,&buffer);
+        checkers_gpu.draw_pos(&mut v, &buffer);
         //v.draw_triangles(&walls,None, &[1.0, 0.5, 0.5, 1.0]);
         // v.draw_triangles(&buffer,None, color_iter.peek().unwrap_throw());
 
-
         {
             buffer.update_no_clear(&checkers.positions);
-            checkers_gpu.draw_pos(&mut v,&buffer);
-            
+            checkers_gpu.draw_pos(&mut v, &buffer);
         }
-        
 
-        let k=matrix::z_rotation(counter).chain(matrix).generate();
+        let k = matrix::z_rotation(counter).chain(matrix).generate();
         let mut v = draw_sys.view(&k);
         cat.draw(&mut v);
-            
-        
 
         ctx.flush();
     }
@@ -258,44 +257,52 @@ pub async fn worker_entry() {
     log!("worker thread closing");
 }
 
-
-pub struct ModelGpu{
-    index:Option<simple2d::IndexBuffer>,
-    tex_coord:simple2d::TextureCoordBuffer,
-    texture:simple2d::TextureBuffer,
-    position:simple2d::DynamicBuffer
+pub struct ModelGpu {
+    index: Option<simple2d::IndexBuffer>,
+    tex_coord: simple2d::TextureCoordBuffer,
+    texture: simple2d::TextureBuffer,
+    position: simple2d::DynamicBuffer,
 }
-impl ModelGpu{
-
-    pub fn new(ctx:&web_sys::WebGl2RenderingContext,data:&model::ModelData)->Self{
-        
-        let index=if let Some(indices)=&data.indices{
-            let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
+impl ModelGpu {
+    pub fn new(ctx: &web_sys::WebGl2RenderingContext, data: &model::ModelData) -> Self {
+        let index = if let Some(indices) = &data.indices {
+            let mut index = simple2d::IndexBuffer::new(&ctx).unwrap_throw();
             index.update(&indices);
-            Some(index)    
-        }else{
+            Some(index)
+        } else {
             None
         };
 
-        
-        let mut tex_coord=simple2d::TextureCoordBuffer::new(&ctx).unwrap_throw();
+        let mut tex_coord = simple2d::TextureCoordBuffer::new(&ctx).unwrap_throw();
         tex_coord.update(&data.tex_coords);
-    
-        let mut texture=simple2d::TextureBuffer::new(&ctx);
 
-        texture.update(data.texture.width as usize,data.texture.height as usize,&data.texture.data);
+        let mut texture = simple2d::TextureBuffer::new(&ctx);
 
-        let mut position=simple2d::DynamicBuffer::new(&ctx).unwrap_throw();
+        texture.update(
+            data.texture.width as usize,
+            data.texture.height as usize,
+            &data.texture.data,
+        );
+
+        let mut position = simple2d::DynamicBuffer::new(&ctx).unwrap_throw();
         position.update_no_clear(&data.positions);
-        ModelGpu { index, tex_coord, texture,position }
-    
-    
+        ModelGpu {
+            index,
+            tex_coord,
+            texture,
+            position,
+        }
     }
-    pub fn draw_pos(&self,view:&mut simple2d::View,pos:&simple2d::Buffer){
-        view.draw_triangles(&self.texture,&self.tex_coord,pos,self.index.as_ref());
+    pub fn draw_pos(&self, view: &mut simple2d::View, pos: &simple2d::Buffer) {
+        view.draw_triangles(&self.texture, &self.tex_coord, pos, self.index.as_ref());
     }
-    pub fn draw(&self,view:&mut simple2d::View){
-        view.draw_triangles(&self.texture,&self.tex_coord,&self.position,self.index.as_ref());
+    pub fn draw(&self, view: &mut simple2d::View) {
+        view.draw_triangles(
+            &self.texture,
+            &self.tex_coord,
+            &self.position,
+            self.index.as_ref(),
+        );
     }
 }
 
@@ -311,12 +318,15 @@ fn update_walls(
     for (p, val) in grid_walls.iter() {
         if val {
             let top_left = grid_viewport.to_world_topleft(p);
-            s.rect(simple2d::Rect {
-                x: top_left.x,
-                y: top_left.y,
-                w: grid_viewport.spacing,
-                h: grid_viewport.spacing,
-            },-0.1);
+            s.rect(
+                simple2d::Rect {
+                    x: top_left.x,
+                    y: top_left.y,
+                    w: grid_viewport.spacing,
+                    h: grid_viewport.spacing,
+                },
+                -0.1,
+            );
         }
     }
     buffer.update_clear(cache);
@@ -419,9 +429,5 @@ fn world_to_screen(offset: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse 
     a.chain(c).chain(b)
 }
 
-
-
-const KEY_GLB:&'static [u8]=include_bytes!("../assets/key.glb");
-const PERSON_GLB:&'static [u8]=include_bytes!("../assets/person-v1.glb");
-
-
+const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
+const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
