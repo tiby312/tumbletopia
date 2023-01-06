@@ -152,26 +152,23 @@ pub async fn worker_entry() {
     let foo=model::load_glb(PERSON_GLB);
 
     let mut data=foo.gen();
-    let cat=ModelGpu::new(&ctx,&data);
-    // log!(format!("{:?}", &data.positions.len()));
-    // log!(format!("{:?}", &data.indices.len()));
-    // log!(format!("tex:{:?}", &data.tex_coords.len()));
 
     {
         use matrix::*;
-        //for key
-        //let s=matrix::scale(2.0,2.0,2.0).chain(matrix::x_rotation(PI/2.0)).generate();
         
         //for person
         let s=matrix::scale(200.0,200.0,200.0).chain(matrix::x_rotation(PI/2.0)).generate();
         
         for p in data.positions.iter_mut(){
-            *p=transform_point_3d(&s,*p);
-            
+            *p=transform_point_3d(&s,*p);    
         }
-    }
     
+    }
+    let cat=ModelGpu::new(&ctx,&data);
+    
+    let mut counter=0.0;
     'outer: loop {
+        counter+=0.1;
         // let s=matrix::z_rotation(0.1).generate();
         
         // for p in data.positions.iter_mut(){
@@ -229,6 +226,8 @@ pub async fn worker_entry() {
             .chain(screen_to_clip(viewport))
             .generate();
 
+            
+
         let mut v = draw_sys.view(&matrix);
 
         // v.draw_triangles(&checker, None,&[0.3, 0.3, 0.3, 0.3]);
@@ -238,13 +237,15 @@ pub async fn worker_entry() {
 
         {
             buffer.update_no_clear(&checkers.positions);
-            checkers_gpu.draw(&mut v,&buffer);
-            buffer.update_no_clear(&data.positions);
-            cat.draw(&mut v,&buffer);
+            checkers_gpu.draw_pos(&mut v,&buffer);
             
         }
         
-        
+
+        let k=matrix::z_rotation(counter).chain(matrix).generate();
+        let mut v = draw_sys.view(&k);
+        cat.draw(&mut v);
+            
         
 
         ctx.flush();
@@ -259,7 +260,8 @@ pub async fn worker_entry() {
 pub struct ModelGpu{
     index:Option<simple2d::IndexBuffer>,
     tex_coord:simple2d::TextureCoordBuffer,
-    texture:simple2d::TextureBuffer
+    texture:simple2d::TextureBuffer,
+    position:simple2d::DynamicBuffer
 }
 impl ModelGpu{
 
@@ -280,12 +282,18 @@ impl ModelGpu{
         let mut texture=simple2d::TextureBuffer::new(&ctx);
 
         texture.update(data.texture.width as usize,data.texture.height as usize,&data.texture.data);
-        ModelGpu { index, tex_coord, texture }
+
+        let mut position=simple2d::DynamicBuffer::new(&ctx).unwrap_throw();
+        position.update_no_clear(&data.positions);
+        ModelGpu { index, tex_coord, texture,position }
     
     
     }
-    pub fn draw(&self,view:&mut simple2d::View,positions:&simple2d::Buffer){
-        view.draw_triangles(&self.texture,&self.tex_coord,positions,self.index.as_ref());
+    pub fn draw_pos(&self,view:&mut simple2d::View,pos:&simple2d::Buffer){
+        view.draw_triangles(&self.texture,&self.tex_coord,pos,self.index.as_ref());
+    }
+    pub fn draw(&self,view:&mut simple2d::View){
+        view.draw_triangles(&self.texture,&self.tex_coord,&self.position,self.index.as_ref());
     }
 }
 
