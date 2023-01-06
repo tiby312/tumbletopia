@@ -22,14 +22,29 @@ pub fn load_glb(bytes:&[u8])->Doop{
 }
 
 
+pub struct Img{
+    pub width:u32,
+    pub height:u32,
+    pub data:Vec<u8>
+}
+
+
+pub fn single_tex()->Img{
+    Img{
+        width:1,
+        height:1,
+        data:vec!(0,0,255,255)
+    }
+}
 
 
 pub struct ModelData{
     pub positions:Vec<[f32;3]>,
     pub indices:Option<Vec<u16>>,
-    pub texture:Vec<u8>,
-    pub texture_width:u32,
-    pub texture_height:u32,
+    pub texture:Img,
+    // pub texture:Vec<u8>,
+    // pub texture_width:u32,
+    // pub texture_height:u32,
     pub tex_coords:Vec<[f32;2]>
 }
 
@@ -63,10 +78,10 @@ impl Doop{
                     let height=image.height();
 
                     let rgba_image = image.to_rgba8();
-                    let texture=rgba_image.into_raw();
+                    let data=rgba_image.into_raw();
 
+                    Img{width,height,data}
 
-                    (width,height,texture)
                 },
                 _=>{panic!("not supported")}
             }
@@ -111,8 +126,7 @@ impl Doop{
             } 
         };
         
-        let (texture_width,texture_height,texture)=texture;
-        ModelData { texture_width,texture_height,texture,positions,indices:Some(indices),tex_coords}
+        ModelData { texture,positions,indices:Some(indices),tex_coords}
         
     }
 
