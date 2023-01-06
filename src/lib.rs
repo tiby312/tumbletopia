@@ -3,7 +3,6 @@ use std::f32::consts::PI;
 
 use axgeom::{vec2, vec2same, Vec2};
 use gloo::console::log;
-use gltf::image::Source;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d;
 use shogo::{simple2d::DynamicBuffer, utils};
@@ -112,27 +111,28 @@ pub async fn worker_entry() {
         spacing: game_dim[0] / (grid_width as f32),
     };
 
-    let checkers={
-        let mut positions=Vec::new();
-        let mut k = simple2d::shapes(&mut positions);
-        for x in 0..grid_width {
-            let offset = if x % 2 == 0 {
-                0..grid_width
-            } else {
-                1..grid_width - 1
-            };
-            for y in offset.step_by(2) {
-                k.rect(simple2d::Rect {
-                    x: x as f32 * grid_viewport.spacing,
-                    y: y as f32 * grid_viewport.spacing,
-                    w: grid_viewport.spacing,
-                    h: grid_viewport.spacing,
-                },-0.1);
-            }
-        }
-        let j=(0..positions.len()).map(|x|[0.0;2]).collect();
-        ModelData { positions, indices:None, texture:None, tex_coords: j }
-    };
+    // let checkers={
+    //     let mut positions=Vec::new();
+    //     let mut k = simple2d::shapes(&mut positions);
+    //     for x in 0..grid_width {
+    //         let offset = if x % 2 == 0 {
+    //             0..grid_width
+    //         } else {
+    //             1..grid_width - 1
+    //         };
+    //         for y in offset.step_by(2) {
+    //             k.rect(simple2d::Rect {
+    //                 x: x as f32 * grid_viewport.spacing,
+    //                 y: y as f32 * grid_viewport.spacing,
+    //                 w: grid_viewport.spacing,
+    //                 h: grid_viewport.spacing,
+    //             },-0.1);
+    //         }
+    //     }
+    //     let j=(0..positions.len()).map(|x|[0.0;2]).collect();
+    //     ModelData { positions, indices:None, texture:None, tex_coords: j }
+    // };
+
     //let checkers_gpu=checkers.create(&ctx);
 
 
@@ -149,10 +149,10 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::ScrollController::new([0.0; 2]);
 
     //let foo=load_glb(BLOCK_GLB);
-    let foo=load_glb(PERSON_GLB);
+    let foo=model::load_glb(PERSON_GLB);
 
     let mut data=foo.gen();
-    let cat=data.create(&ctx);
+    let cat=ModelGpu::new(&ctx,&data);
     // log!(format!("{:?}", &data.positions.len()));
     // log!(format!("{:?}", &data.indices.len()));
     // log!(format!("tex:{:?}", &data.tex_coords.len()));
@@ -262,23 +262,10 @@ pub struct ModelGpu{
     texture:simple2d::TextureBuffer
 }
 impl ModelGpu{
-    pub fn draw(&self,view:&mut simple2d::View,positions:&simple2d::Buffer){
-        view.draw_triangles(&self.texture,&self.tex_coord,positions,self.index.as_ref());
-    }
-}
 
-struct ModelData<'a>{
-    positions:Vec<[f32;3]>,
-    indices:Option<Vec<u16>>,
-    texture:Option<&'a [u8]>,
-    tex_coords:Vec<[f32;2]>
-}
-impl<'a> ModelData<'a>{
-    
-    pub fn create(&self,ctx:&web_sys::WebGl2RenderingContext)->ModelGpu{
-        let data=self;
-
-        let index=if let Some(indices)=&self.indices{
+    pub fn new(ctx:&web_sys::WebGl2RenderingContext,data:&model::ModelData)->Self{
+        
+        let index=if let Some(indices)=&data.indices{
             let mut index=simple2d::IndexBuffer::new(&ctx).unwrap_throw();
             index.update(&indices);
             Some(index)    
@@ -291,10 +278,14 @@ impl<'a> ModelData<'a>{
         tex_coord.update(&data.tex_coords);
     
         let mut texture=simple2d::TextureBuffer::new(&ctx);
-        //TODO dont hardcode!!!!!
-        texture.update(32,32,data.texture.unwrap_throw());
+
+        texture.update(data.texture_width as usize,data.texture_height as usize,data.texture);
         ModelGpu { index, tex_coord, texture }
     
+    
+    }
+    pub fn draw(&self,view:&mut simple2d::View,positions:&simple2d::Buffer){
+        view.draw_triangles(&self.texture,&self.tex_coord,positions,self.index.as_ref());
     }
 }
 
@@ -424,94 +415,3 @@ const KEY_GLB:&'static [u8]=include_bytes!("../assets/key.glb");
 const PERSON_GLB:&'static [u8]=include_bytes!("../assets/person-v1.glb");
 
 
-
-pub struct Doop{
-    document:gltf::Document,
-    buffers:Vec<gltf::buffer::Data>,
-    images:Vec<gltf::image::Data>
-}
-
-//TODO wouldnt it be amazing if this was a const function????
-fn load_glb(bytes:&[u8])->Doop{
-    //Use https://www.gltfeditor.com/ also
-    //Use https://gltf.report/ to compress it to the binary format!!!!
-    
-    //TODO discard normal verticies if not used???
-
-
-    let (document,buffers,images)=gltf::import_slice(bytes).map_err(|e|log!(format!("{:?}", e))).unwrap_throw();
-    log!(format!("{:?}", document));
-    Doop { document, buffers, images }
-}
-
-
-
-
-impl Doop{
-
-    fn gen(&self)->ModelData{
-        // TODO use this: https://www.nayuki.io/page/png-file-chunk-inspector
-        let mut positions=Vec::new();
-        let mut indices=Vec::new();
-        let mut offset=0;   
-        let mut tex_coords=Vec::new();
-        let texture=if let Some(texture)= self.document.textures().next(){
-
-            log!("found a texture!");
-            let g_img = texture.source();
-            
-            let buffers = &self.buffers;
-            Some(match g_img.source() {
-                Source::View { view, mime_type } => {
-                    let parent_buffer_data = &buffers[view.buffer().index()].0;
-                    let data = &parent_buffer_data[view.offset()..view.offset() + view.length()];
-                    log!(format!("{:?}",data));
-                    data
-                },
-                _=>{panic!("not supported")}
-            })
-        }else{
-            None
-        };
-
-
-        for mesh in self.document.meshes(){
-            
-            for p in mesh.primitives(){
-                //only support triangles
-                assert_eq!(p.mode(),gltf::mesh::Mode::Triangles);
-                
-
-                let reader = p.reader(|buffer| Some(&self.buffers[buffer.index()]));
-
-                let p:Vec<_>=reader.read_positions().unwrap_throw().collect();
-                
-                let i:Vec<_>=reader.read_indices().unwrap_throw().into_u32().map(|x|offset+(x as u16)).collect();
-                
-
-                
-                if let Some(t) = reader.read_tex_coords(0) {
-                    tex_coords.extend(t.into_f32())
-                } else {
-                    if texture.is_some(){
-                        panic!("no texture coords!");
-                    }
-                };
-                //log!(format!("pos:{:?}", &p));
-
-                //log!(format!("ind:{:?}", &i));
-                
-                offset+=p.len() as u16;
-                positions.extend(p);
-
-                indices.extend(i);
-
-
-            } 
-        };
-        
-        ModelData { texture,positions,indices:Some(indices),tex_coords}
-        
-    }
-
-}
