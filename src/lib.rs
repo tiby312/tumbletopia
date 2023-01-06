@@ -421,7 +421,7 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     if let Some(point) = plane.intersection(&ray) {
         [point.x, point.y]
     } else {
-        [0.0; 2]
+        [-50.0; 2]
     }
 }
 
@@ -434,8 +434,8 @@ fn mouse_to_world_coord(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -
 
     let depth = viewport[0] * viewport[1];
     //let depth=100.0;
-    let start = [clip_x, clip_y, -depth];
-    let end = [clip_x, clip_y, depth];
+    let start = [clip_x, clip_y, -depth*20.0];
+    let end = [clip_x, clip_y, depth*20.0];
 
     let matrix = projection(camera, viewport).inverse().generate();
 
