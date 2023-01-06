@@ -99,7 +99,7 @@ impl Inverse for Scale {
         Scale {
             tx: 1.0 / self.tx,
             ty: 1.0 / self.ty,
-            tz: self.tz,
+            tz: 1.0 / self.tz,
         }
     }
 }
