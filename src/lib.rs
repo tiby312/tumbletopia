@@ -111,29 +111,29 @@ pub async fn worker_entry() {
         spacing: game_dim[0] / (grid_width as f32),
     };
 
-    // let checkers={
-    //     let mut positions=Vec::new();
-    //     let mut k = simple2d::shapes(&mut positions);
-    //     for x in 0..grid_width {
-    //         let offset = if x % 2 == 0 {
-    //             0..grid_width
-    //         } else {
-    //             1..grid_width - 1
-    //         };
-    //         for y in offset.step_by(2) {
-    //             k.rect(simple2d::Rect {
-    //                 x: x as f32 * grid_viewport.spacing,
-    //                 y: y as f32 * grid_viewport.spacing,
-    //                 w: grid_viewport.spacing,
-    //                 h: grid_viewport.spacing,
-    //             },-0.1);
-    //         }
-    //     }
-    //     let j=(0..positions.len()).map(|x|[0.0;2]).collect();
-    //     ModelData { positions, indices:None, texture:None, tex_coords: j }
-    // };
+    let checkers={
+        let mut positions=Vec::new();
+        let mut k = simple2d::shapes(&mut positions);
+        for x in 0..grid_width {
+            let offset = if x % 2 == 0 {
+                0..grid_width
+            } else {
+                1..grid_width - 1
+            };
+            for y in offset.step_by(2) {
+                k.rect(simple2d::Rect {
+                    x: x as f32 * grid_viewport.spacing,
+                    y: y as f32 * grid_viewport.spacing,
+                    w: grid_viewport.spacing,
+                    h: grid_viewport.spacing,
+                },-0.1);
+            }
+        }
+        let j=(0..positions.len()).map(|_|[0.0;2]).collect();
+        model::ModelData { positions, indices:None, texture:model::single_tex(), tex_coords: j }
+    };
 
-    //let checkers_gpu=checkers.create(&ctx);
+    let checkers_gpu=ModelGpu::new(&ctx,&checkers);
 
 
 
@@ -237,8 +237,8 @@ pub async fn worker_entry() {
 
 
         {
-            //buffer.update_no_clear(&checkers.positions);
-            //checkers_gpu.draw(&mut v,&buffer);
+            buffer.update_no_clear(&checkers.positions);
+            checkers_gpu.draw(&mut v,&buffer);
             buffer.update_no_clear(&data.positions);
             cat.draw(&mut v,&buffer);
             

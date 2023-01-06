@@ -3,9 +3,9 @@ use gltf::image::Source;
 
 
 pub struct Doop{
-    document:gltf::Document,
-    buffers:Vec<gltf::buffer::Data>,
-    images:Vec<gltf::image::Data>
+    pub document:gltf::Document,
+    pub buffers:Vec<gltf::buffer::Data>,
+    pub images:Vec<gltf::image::Data>
 }
 
 //TODO wouldnt it be amazing if this was a const function????
@@ -65,7 +65,7 @@ impl Doop{
             
             let buffers = &self.buffers;
             match g_img.source() {
-                Source::View { view, mime_type } => {
+                Source::View { view, .. } => {
                     let parent_buffer_data = &buffers[view.buffer().index()].0;
                     let data = &parent_buffer_data[view.offset()..view.offset() + view.length()];
                     //log!(format!("{:?}",data));
