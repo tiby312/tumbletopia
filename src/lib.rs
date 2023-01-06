@@ -404,11 +404,16 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2],viewport:[f32;2]) -> [f32; 2
     use matrix::*;
     let k = world_to_screen(camera,viewport).inverse();
 
-    let depth = mouse[1];
+    //let depth = mouse[1];
 
+    //let fudge=fudge(-0.001).chain(translation(viewport[0]/2.0,viewport[1]/2.0,0.0)).inverse();
+    
     let matrix = k.generate();
 
-    let a = transform_point_3d(&matrix, [mouse[0], mouse[1], depth]);
+    
+
+
+    let a = transform_point_3d(&matrix, [mouse[0], mouse[1], 0.0]);
     [a[0], a[1]]
 }
 
