@@ -24,10 +24,10 @@ pub fn load_glb(bytes:&[u8])->Doop{
 
 
 
-pub struct ModelData<'a>{
+pub struct ModelData{
     pub positions:Vec<[f32;3]>,
     pub indices:Option<Vec<u16>>,
-    pub texture:&'a [u8],
+    pub texture:Vec<u8>,
     pub texture_width:u32,
     pub texture_height:u32,
     pub tex_coords:Vec<[f32;2]>
@@ -66,7 +66,7 @@ impl Doop{
                     let texture=rgba_image.into_raw();
 
 
-                    (width,height,data)
+                    (width,height,texture)
                 },
                 _=>{panic!("not supported")}
             }

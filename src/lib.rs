@@ -279,7 +279,7 @@ impl ModelGpu{
     
         let mut texture=simple2d::TextureBuffer::new(&ctx);
 
-        texture.update(data.texture_width as usize,data.texture_height as usize,data.texture);
+        texture.update(data.texture_width as usize,data.texture_height as usize,&data.texture);
         ModelGpu { index, tex_coord, texture }
     
     
