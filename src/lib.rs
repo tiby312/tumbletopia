@@ -1,6 +1,7 @@
 use std::f32::consts::PI;
 
 use axgeom::{vec2, vec2same, Vec2};
+use cgmath::Transform;
 use gloo::console::log;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d;
@@ -159,30 +160,20 @@ pub async fn worker_entry() {
         use matrix::*;
 
         //for person
-        let s = matrix::scale(400.0, 400.0, 400.0)
-            //.chain(matrix::y_rotation(-PI / 2.0))
-            .generate();
+        let s = matrix::scale(400.0, 400.0, 400.0).generate();
 
         for p in data.positions.iter_mut() {
-            *p = transform_point_3d(&s, *p);
+            *p = s.transform_point((*p).into()).into();
         }
         data
     };
 
     let cat = ModelGpu::new(&ctx, &data);
 
-    let mut counter = 0.0;
     'outer: loop {
-        counter += 0.02;
-        // let s=matrix::z_rotation(0.1).generate();
-
-        // for p in data.positions.iter_mut(){
-        //     *p=transform_point_3d(&s,*p);
-        // }
-
         let mut j = false;
         let res = frame_timer.next().await;
-        log!(format!("number of events:{:?}", res.len()));
+        //log!(format!("number of events:{:?}", res.len()));
         for e in res {
             match e {
                 MEvent::CanvasMouseUp => {
@@ -212,14 +203,27 @@ pub async fn worker_entry() {
 
         //log!(format!("{:?}", (scroll_manager.cursor_canvas,scroll_manager.camera(),mouse_world)));
 
-        if j {
-            grid_walls.set(grid_viewport.to_grid((mouse_world).into()), true);
-            update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
-        }
+        // if j {
+        //     grid_walls.set(grid_viewport.to_grid((mouse_world).into()), true);
+        //     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
+        // }
         scroll_manager.step();
 
         use matrix::*;
 
+        // for a in mouse_to_world_coord(scroll_manager.cursor_canvas,
+        //     scroll_manager.camera(),
+        //     viewport){
+        //     simple2d::shapes(cache).rect(
+        //         simple2d::Rect {
+        //             x: a[0] - grid_viewport.spacing / 2.0,
+        //             y: a[1] - grid_viewport.spacing / 2.0,
+        //             w: grid_viewport.spacing,
+        //             h: grid_viewport.spacing,
+        //         },
+        //         a[2],
+        //     );
+        // }
         simple2d::shapes(cache).rect(
             simple2d::Rect {
                 x: mouse_world[0] - grid_viewport.spacing / 2.0,
@@ -237,7 +241,7 @@ pub async fn worker_entry() {
         let matrix = projection(scroll_manager.camera(), viewport).generate();
 
         //let k = matrix::z_rotation(counter).chain(matrix).generate();
-        let mut v = draw_sys.view(&matrix);
+        let mut v = draw_sys.view(matrix.as_ref());
 
         // v.draw_triangles(&checker, None,&[0.3, 0.3, 0.3, 0.3]);
 
@@ -393,27 +397,26 @@ pub fn convert_coord_touch_inner(
     ans
 }
 
-use webgl_matrix::prelude::*;
-
-fn transform_point_3d(matrix: &[f32; 16], point: [f32; 3]) -> [f32; 3] {
-    fn to_vec4(j: [f32; 3]) -> [f32; 4] {
-        [j[0], j[1], j[2], 1.0]
-    }
-
-    let res = matrix.mul_vector_left(&to_vec4(point));
-    [res[0], res[1], res[2]]
-}
-
 fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
-    let [a, b] = mouse_to_world_coord(mouse, camera, viewport);
+    //generate some mouse points
+    use matrix::*;
 
-    let a = a.into();
-    let b: cgmath::Point3<f32> = b.into();
-    let v = b-a;
+    let clip_x = mouse[0] / viewport[0] * 2. - 1.;
+    let clip_y = mouse[1] / viewport[1] * -2. + 1.;
+
+    let startc = [clip_x, clip_y, -0.9];
+    let endc = [clip_x, clip_y, 0.999];
+
+    let matrix = projection(camera, viewport).inverse().generate();
+
+    let a = matrix.transform_point(startc.into());
+    let b = matrix.transform_point(endc.into());
+
+    let v = b - a;
     let ray = collision::Ray::new(a, v);
 
     let p = cgmath::Point3::new(0.0, 0.0, 0.0);
-    let up = cgmath::Vector3::new(0.0, 0.0, 1.0);
+    let up = cgmath::Vector3::new(0.0, 0.0, -1.0);
 
     let plane = collision::Plane::from_point_normal(p, up);
     use collision::Continuous;
@@ -425,60 +428,15 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     }
 }
 
-fn mouse_to_world_coord(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [Vertex; 2] {
-    //generate some mouse points
-    use matrix::*;
-
-    let clip_x = mouse[0] / viewport[0] * 2. - 1.;
-    let clip_y = mouse[1] / viewport[1] * -2. + 1.;
-
-    //let depth = 2000.0; //viewport[0] * viewport[1];
-                        //let depth=100.0;
-    let start = [clip_x, clip_y, -1.0];
-    let end = [clip_x, clip_y, 1.0];
-
-    let mut matrix = projection(camera, viewport).inverse().generate();
-    //matrix.inverse();
-
-    let start = transform_point_3d(&matrix, start);
-    let end = transform_point_3d(&matrix, end);
-
-    //assert!(start[2]>0.0);
-    //assert!(end[2]<0.0);
-
-    log!(format!("{:?}", (start, end)));
-    [start, end]
-}
-
 //project world to clip space
 fn projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
-    fn screen_to_clip(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
-        use matrix::*;
-        //Deep enough that we can tilt the whole board and have it still show up
-        let depth = 2000.0;//dim[0]*dim[1];
-        //let scale=dim[0]*dim[1]
-        let d = scale(2.0 / dim[0], -2.0 / dim[1], -2.0 / depth);
-        let e = translation(-1.0, 1.0, 0.0);
-
-        //let fudge=fudge(-0.004).chain(translation(dim[0]/2.0,dim[1]/2.0,0.0));
-
-        d.chain(e).chain(fudge(0.5))
-    }
-
-    fn world_to_screen(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
-        use matrix::*;
-
-        let a = z_rotation(std::f32::consts::PI / 4.);
-        let b = x_rotation(std::f32::consts::PI / 4.);
-        let c = translation(offset[0], offset[1], 0.0);
-
-        let fudge = fudge(-0.004).chain(translation(dim[0] / 2.0, dim[1] / 2.0, 0.0));
-
-        a.chain(c).chain(b) //.chain(fudge)
-    }
-
     use matrix::*;
-    world_to_screen(offset, dim).chain(screen_to_clip(dim))
+    //clip space positive z is into the screen. negative z is towards your face.
+    let m = matrix::perspective(0.3, dim[0] / dim[1], 1.0, 1610.0);
+    let t = translation(offset[0], offset[1], -500.0);
+    let r = z_rotation(PI / 4.0);
+    let r2 = x_rotation(PI / 4.0);
+    scale(1.0, -1.0, 1.0).chain(m).chain(r2).chain(t).chain(r) //.chain(r2).chain(t)//.chain(r)
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");

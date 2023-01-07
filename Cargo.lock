@@ -611,7 +611,6 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "webgl-matrix",
 ]
 
 [[package]]
@@ -1353,12 +1352,6 @@ dependencies = [
  "js-sys",
  "wasm-bindgen",
 ]
-
-[[package]]
-name = "webgl-matrix"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1abfe1ef1f132690e177ab5e48131278f482ffe0e2d5a073e95ddf1e93cb5443"
 
 [[package]]
 name = "weezl"
