@@ -21,11 +21,11 @@ pub struct ScrollController {
 }
 
 impl ScrollController {
-    pub fn new(cursor_canvas: [f32; 2]) -> Self {
+    pub fn new(camera: [f32; 2]) -> Self {
         ScrollController {
-            camera: [0.0; 2],
-            last_camera: vec2same(0.0),
-            cursor_canvas,
+            camera,
+            last_camera: camera.into(),
+            cursor_canvas: [0.0; 2],
             scrolling: Scrollin::NotScrolling,
         }
     }

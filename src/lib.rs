@@ -149,7 +149,7 @@ pub async fn worker_entry() {
 
     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
 
-    let mut scroll_manager = scroll::ScrollController::new([0.0; 2]);
+    let mut scroll_manager = scroll::ScrollController::new([-18., -672.]);
 
     //let foo=load_glb(BLOCK_GLB);
     let foo = model::load_glb(CAT_GLB);
@@ -193,6 +193,8 @@ pub async fn worker_entry() {
                 MEvent::ShutdownClick => break 'outer,
             }
         }
+
+        //log!(format!("{:?}",scroll_manager.camera()));
         let mouse_world = mouse_to_world(
             scroll_manager.cursor_canvas,
             scroll_manager.camera(),
