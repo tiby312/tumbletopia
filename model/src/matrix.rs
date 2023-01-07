@@ -70,10 +70,7 @@ impl MyMatrix for Perspective {
 impl Inverse for Perspective {
     type Neg = cgmath::Matrix4<f32>;
     fn inverse(self) -> Self::Neg {
-        self.generate().inverse_transform().unwrap_or_else(|| {
-            crate::log!("no inverse!");
-            panic!();
-        })
+        self.generate().inverse_transform().unwrap()
     }
 }
 pub fn perspective(field_of_view_rad: f32, aspect: f32, near: f32, far: f32) -> Perspective {

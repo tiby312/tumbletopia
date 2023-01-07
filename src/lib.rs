@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
-
+use model::matrix;
 use axgeom::{vec2, vec2same, Vec2};
-use cgmath::Transform;
+use cgmath::{Transform, SquareMatrix};
 use gloo::console::log;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d;
@@ -10,7 +10,6 @@ use wasm_bindgen::prelude::*;
 
 use duckduckgeo::grid;
 
-pub mod matrix;
 mod scroll;
 
 const COLORS: &[[f32; 4]] = &[
@@ -131,6 +130,7 @@ pub async fn worker_entry() {
         }
         let j = (0..positions.len()).map(|_| [0.0; 2]).collect();
         model::ModelData {
+            matrix:cgmath::Matrix4::identity(),
             positions,
             indices: None,
             texture: model::single_tex(),
@@ -153,14 +153,16 @@ pub async fn worker_entry() {
 
     //let foo=load_glb(BLOCK_GLB);
     let foo = model::load_glb(CAT_GLB);
+    log!(format!("matrix:{:?}",&foo));
 
     let data = {
         let mut data = foo.gen();
+        log!(format!("matrix:{:?}",&data.matrix));
 
         use matrix::*;
 
         //for person
-        let s = matrix::scale(400.0, 400.0, 400.0).generate();
+        let s = matrix::scale(200.0, 200.0, 200.0).chain(x_rotation(PI/2.0)).generate();
 
         for p in data.positions.iter_mut() {
             *p = s.transform_point((*p).into()).into();

@@ -736,6 +736,8 @@ dependencies = [
 name = "model"
 version = "0.1.0"
 dependencies = [
+ "cgmath",
+ "gloo",
  "gltf",
  "image",
 ]

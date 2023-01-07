@@ -1,5 +1,11 @@
+use gloo::console::log;
+
+pub mod matrix;
+use cgmath::Transform;
 use gltf::image::Source;
 
+
+#[derive(Debug)]
 pub struct Doop {
     pub document: gltf::Document,
     pub buffers: Vec<gltf::buffer::Data>,
@@ -37,6 +43,7 @@ pub fn single_tex() -> Img {
 }
 
 pub struct ModelData {
+    pub matrix:cgmath::Matrix4<f32>,
     pub positions: Vec<[f32; 3]>,
     pub indices: Option<Vec<u16>>,
     pub texture: Img,
@@ -54,6 +61,13 @@ impl Doop {
         let mut indices = Vec::new();
         let mut offset = 0;
         let mut tex_coords = Vec::new();
+
+
+        
+        
+        
+
+
         let texture = if let Some(texture) = self.document.textures().next() {
             //log!("found a texture!");
             let g_img = texture.source();
@@ -91,6 +105,7 @@ impl Doop {
         };
 
         for mesh in self.document.meshes() {
+            
             for p in mesh.primitives() {
                 //only support triangles
                 assert_eq!(p.mode(), gltf::mesh::Mode::Triangles);
@@ -124,7 +139,49 @@ impl Doop {
             }
         }
 
+        
+
+
+        let node=self.document.nodes().next().unwrap();
+        
+        
+        let matrix:cgmath::Matrix4<f32>=node.transform().matrix().into();
+
+        // log!(format!("mat:    {:?}",node.transform().matrix()));
+        
+        // let (t,r,s)=node.transform().decomposed();
+
+        // let rot={
+        //     let a:&cgmath::Quaternion<f32>=(&r).into();
+        //     log!(format!("quart:    {:?}",r));
+        //     let a=*a;
+        //     let rot:cgmath::Matrix4<f32>=a.into();
+        //     rot
+        // };
+
+        // let t={
+        //     let a:&cgmath::Vector3<f32>=(&t).into();
+        //     matrix::translation(a.x, a.y, a.z)
+        // };
+
+        // let s={
+        //     let a:&cgmath::Vector3<f32>=(&s).into();
+        //     matrix::scale(a.x, a.y, a.z)
+        // };
+
+        // use matrix::*;
+        // let matrix=s.chain(t).chain(rot).generate();// rot.chain(t).chain(s).generate();
+
+    
+        
+        
+        let positions=positions.into_iter().map(|p|{
+            matrix.transform_point(p.into()).into()
+        }).collect();
+
+        use cgmath::SquareMatrix;
         ModelData {
+            matrix,
             texture,
             positions,
             indices: Some(indices),
