@@ -13,7 +13,7 @@ impl MyMatrix for cgmath::Matrix4<f32> {
 
 impl Inverse for cgmath::Matrix4<f32> {
     type Neg = Self;
-    fn inverse(mut self) -> Self::Neg {
+    fn inverse(self) -> Self::Neg {
         self.inverse_transform().unwrap()
     }
 }
@@ -43,7 +43,7 @@ impl<A: MyMatrix + Inverse, B: MyMatrix + Inverse> Inverse for Chain<A, B> {
 }
 impl<A: MyMatrix, B: MyMatrix> MyMatrix for Chain<A, B> {
     fn generate(self) -> cgmath::Matrix4<f32> {
-        let mut a = self.a.generate();
+        let a = self.a.generate();
         let b = self.b.generate();
         a * b
     }

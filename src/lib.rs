@@ -204,8 +204,8 @@ pub async fn worker_entry() {
         //log!(format!("{:?}", (scroll_manager.cursor_canvas,scroll_manager.camera(),mouse_world)));
 
         // if j {
-        //     grid_walls.set(grid_viewport.to_grid((mouse_world).into()), true);
-        //     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
+        //      grid_walls.set(grid_viewport.to_grid((mouse_world).into()), true);
+        //      update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
         // }
         scroll_manager.step();
 
