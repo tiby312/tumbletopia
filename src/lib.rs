@@ -205,19 +205,7 @@ pub async fn worker_entry() {
 
         use matrix::*;
 
-        // for a in mouse_to_world_coord(scroll_manager.cursor_canvas,
-        //     scroll_manager.camera(),
-        //     viewport){
-        //     simple2d::shapes(cache).rect(
-        //         simple2d::Rect {
-        //             x: a[0] - grid_viewport.spacing / 2.0,
-        //             y: a[1] - grid_viewport.spacing / 2.0,
-        //             w: grid_viewport.spacing,
-        //             h: grid_viewport.spacing,
-        //         },
-        //         a[2],
-        //     );
-        // }
+
         simple2d::shapes(cache).rect(
             simple2d::Rect {
                 x: mouse_world[0] - grid_viewport.spacing / 2.0,
@@ -225,7 +213,7 @@ pub async fn worker_entry() {
                 w: grid_viewport.spacing,
                 h: grid_viewport.spacing,
             },
-            10.0,
+            mouse_world[2]-10.0,
         );
 
         buffer.update_clear(cache);
@@ -340,7 +328,7 @@ fn update_walls(
                     w: grid_viewport.spacing,
                     h: grid_viewport.spacing,
                 },
-                -0.1,
+                0.1,
             );
         }
     }
@@ -403,17 +391,17 @@ pub fn convert_coord_touch_inner(
     ans
 }
 
-//TODO don't compute matrix each time!!!!
-fn viewport_to_word(camera: [f32; 2], viewport: [f32; 2]) -> [[f32; 2]; 4] {
-    [
-        mouse_to_world([0.0, 0.0], camera, viewport),
-        mouse_to_world([viewport[0], 0.0], camera, viewport),
-        mouse_to_world([0.0, viewport[1]], camera, viewport),
-        mouse_to_world(viewport, camera, viewport),
-    ]
-}
+// //TODO don't compute matrix each time!!!!
+// fn viewport_to_word(camera: [f32; 2], viewport: [f32; 2]) -> [[f32; 2]; 4] {
+//     [
+//         mouse_to_world([0.0, 0.0], camera, viewport),
+//         mouse_to_world([viewport[0], 0.0], camera, viewport),
+//         mouse_to_world([0.0, viewport[1]], camera, viewport),
+//         mouse_to_world(viewport, camera, viewport),
+//     ]
+// }
 
-fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
+fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 3] {
     //generate some mouse points
     use matrix::*;
 
@@ -438,21 +426,24 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     use collision::Continuous;
 
     if let Some(point) = plane.intersection(&ray) {
-        [point.x, point.y]
+        [point.x, point.y,0.0]
     } else {
-        [300.0, -80.0]
+        [300.0, -80.0,0.0]
     }
+    
+    
 }
 
 //project world to clip space
 fn projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
     //clip space positive z is into the screen. negative z is towards your face.
+    //world space positive z is into the ground
     let m = matrix::perspective(0.3, dim[0] / dim[1], 1.0, 1610.0);
-    let t = translation(offset[0], offset[1], -500.0);
-    let r = z_rotation(PI / 4.0);
-    let r2 = x_rotation(PI / 4.0);
-    scale(1.0, -1.0, 1.0).chain(m).chain(r2).chain(t).chain(r) //.chain(r2).chain(t)//.chain(r)
+    let t = translation(offset[0], offset[1], 500.0);
+    let r = z_rotation(PI/4.0);
+    let r2 = x_rotation(-PI/4.0); //PI / 4.0
+    scale(1.0, -1.0, 1.0).chain(m).chain(scale(1.0,1.0,-1.0)).chain(r2).chain(t).chain(r) //.chain(r2).chain(t)//.chain(r)
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
