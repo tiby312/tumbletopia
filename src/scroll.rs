@@ -69,7 +69,9 @@ impl ScrollController {
                 mouse_anchor,
                 camera_anchor,
             } => {
-                let offset = Vec2::from(self.cursor_canvas) - Vec2::from(mouse_anchor);
+                let mut offset = Vec2::from(self.cursor_canvas) - Vec2::from(mouse_anchor);
+                offset.x*=0.3; //needs to be slightly larger
+                offset.y*=0.5; //its close
                 self.last_camera = Vec2::from(self.camera);
                 self.camera = (camera_anchor + offset).into();
             }

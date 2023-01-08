@@ -206,15 +206,15 @@ pub async fn worker_entry() {
 
         use matrix::*;
 
-        simple2d::shapes(cache).rect(
-            simple2d::Rect {
-                x: mouse_world[0] - grid_viewport.spacing / 2.0,
-                y: mouse_world[1] - grid_viewport.spacing / 2.0,
-                w: grid_viewport.spacing,
-                h: grid_viewport.spacing,
-            },
-            mouse_world[2] - 10.0,
-        );
+        // simple2d::shapes(cache).rect(
+        //     simple2d::Rect {
+        //         x: mouse_world[0] - grid_viewport.spacing / 2.0,
+        //         y: mouse_world[1] - grid_viewport.spacing / 2.0,
+        //         w: grid_viewport.spacing,
+        //         h: grid_viewport.spacing,
+        //     },
+        //     mouse_world[2] - 10.0,
+        // );
 
         buffer.update_clear(cache);
 
@@ -237,7 +237,9 @@ pub async fn worker_entry() {
         }
 
         {
-            let m=matrix.chain(matrix::translation(mouse_world[0],mouse_world[1],mouse_world[2])).generate();
+            let j=grid_viewport.spacing / 2.0;
+            let t=matrix::translation(mouse_world[0]-j,mouse_world[1]-j,mouse_world[2]);
+            let m=matrix.chain(t).generate();
             let mut v = draw_sys.view(m.as_ref());
             cat.draw(&mut v);
         }
