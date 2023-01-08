@@ -152,12 +152,16 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::ScrollController::new([-18., -672.]);
 
-    let foo = model::load_glb(GRASS_GLB);
-    log!(format!("matrix:{:?}", &foo));
+    
+    let cat = {
+        let data = model::load_glb(CAT_GLB).gen_ext(grid_viewport.spacing);
+        ModelGpu::new(&ctx, &data)
+    };
 
-    let data = foo.gen_ext(grid_viewport.spacing);
-
-    let cat = ModelGpu::new(&ctx, &data);
+    let grass = {
+        let data = model::load_glb(GRASS_GLB).gen_ext(grid_viewport.spacing);
+        ModelGpu::new(&ctx, &data)
+    };
 
     'outer: loop {
         let mut j = false;
@@ -218,7 +222,6 @@ pub async fn worker_entry() {
 
         let matrix = projection(scroll_manager.camera(), viewport).generate();
 
-        //let k = matrix::z_rotation(counter).chain(matrix).generate();
         let mut v = draw_sys.view(matrix.as_ref());
 
         // v.draw_triangles(&checker, None,&[0.3, 0.3, 0.3, 0.3]);
@@ -227,11 +230,17 @@ pub async fn worker_entry() {
         //v.draw_triangles(&walls,None, &[1.0, 0.5, 0.5, 1.0]);
         // v.draw_triangles(&buffer,None, color_iter.peek().unwrap_throw());
 
+
         {
             buffer.update_no_clear(&checkers.positions);
             checkers_gpu.draw_pos(&mut v, &buffer);
         }
 
+        {
+            let m=matrix.chain(matrix::translation(mouse_world[0],mouse_world[1],mouse_world[2])).generate();
+            let mut v = draw_sys.view(m.as_ref());
+            cat.draw(&mut v);
+        }
         //let k = matrix::z_rotation(counter).chain(matrix).generate();
         //let mut v = draw_sys.view(&k);
         //cat.draw(&mut v);
@@ -246,7 +255,7 @@ pub async fn worker_entry() {
                     .generate();
 
                 let mut v = draw_sys.view(mm.as_ref());
-                cat.draw(&mut v);
+                grass.draw(&mut v);
             }
         }
 
