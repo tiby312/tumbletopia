@@ -1,11 +1,11 @@
-use std::f32::consts::PI;
-use model::matrix;
 use axgeom::{vec2, vec2same, Vec2};
-use cgmath::{Transform, SquareMatrix};
+use cgmath::{SquareMatrix, Transform};
 use gloo::console::log;
+use model::matrix;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d;
 use shogo::{simple2d::DynamicBuffer, utils};
+use std::f32::consts::PI;
 use wasm_bindgen::prelude::*;
 
 use duckduckgeo::grid;
@@ -86,7 +86,7 @@ pub async fn worker_entry() {
 
     let canvas = w.canvas();
     let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
-    
+
     let mut draw_sys = ctx.shader_system();
     let mut buffer = ctx.buffer_dynamic();
     let cache = &mut vec![];
@@ -131,7 +131,7 @@ pub async fn worker_entry() {
         }
         let j = (0..positions.len()).map(|_| [0.0; 2]).collect();
         model::ModelData {
-            matrix:cgmath::Matrix4::identity(),
+            matrix: cgmath::Matrix4::identity(),
             positions,
             indices: None,
             texture: model::single_tex(),
@@ -154,11 +154,11 @@ pub async fn worker_entry() {
 
     //let foo=load_glb(BLOCK_GLB);
     let foo = model::load_glb(GRASS_GLB);
-    log!(format!("matrix:{:?}",&foo));
+    log!(format!("matrix:{:?}", &foo));
 
     let data = {
         let mut data = foo.gen();
-        log!(format!("matrix:{:?}",&data.matrix));
+        log!(format!("matrix:{:?}", &data.matrix));
 
         use matrix::*;
 
@@ -166,9 +166,12 @@ pub async fn worker_entry() {
         //let s = matrix::scale(200.0, 200.0, 200.0).chain(x_rotation(PI/2.0)).generate();
 
         //for grass
-        let v=grid_viewport.spacing;
-        let s = matrix::scale(v, v, v).chain(x_rotation(PI/2.0)).generate();
-
+        let v = grid_viewport.spacing;
+        let s = translation(v / 2.0, v / 2.0, 0.0)
+            .chain(z_rotation(PI / 2.0))
+            .chain(x_rotation(PI / 2.0))
+            .chain(matrix::scale(v, v, v))
+            .generate();
 
         for p in data.positions.iter_mut() {
             *p = s.transform_point((*p).into()).into();
@@ -407,6 +410,16 @@ pub fn convert_coord_touch_inner(
     ans
 }
 
+//TODO don't compute matrix each time!!!!
+fn viewport_to_word(camera: [f32; 2], viewport: [f32; 2]) -> [[f32; 2]; 4] {
+    [
+        mouse_to_world([0.0, 0.0], camera, viewport),
+        mouse_to_world([viewport[0], 0.0], camera, viewport),
+        mouse_to_world([0.0, viewport[1]], camera, viewport),
+        mouse_to_world(viewport, camera, viewport),
+    ]
+}
+
 fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
     //generate some mouse points
     use matrix::*;
@@ -449,10 +462,7 @@ fn projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix
     scale(1.0, -1.0, 1.0).chain(m).chain(r2).chain(t).chain(r) //.chain(r2).chain(t)//.chain(r)
 }
 
-
-
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
 const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
 const CAT_GLB: &'static [u8] = include_bytes!("../assets/cat2.glb");
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");
-
