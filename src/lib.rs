@@ -86,6 +86,7 @@ pub async fn worker_entry() {
 
     let canvas = w.canvas();
     let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
+    
     let mut draw_sys = ctx.shader_system();
     let mut buffer = ctx.buffer_dynamic();
     let cache = &mut vec![];
