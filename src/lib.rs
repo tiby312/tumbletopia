@@ -153,7 +153,7 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::ScrollController::new([-18., -672.]);
 
     //let foo=load_glb(BLOCK_GLB);
-    let foo = model::load_glb(CAT_GLB);
+    let foo = model::load_glb(GRASS_GLB);
     log!(format!("matrix:{:?}",&foo));
 
     let data = {
@@ -163,7 +163,12 @@ pub async fn worker_entry() {
         use matrix::*;
 
         //for person
-        let s = matrix::scale(200.0, 200.0, 200.0).chain(x_rotation(PI/2.0)).generate();
+        //let s = matrix::scale(200.0, 200.0, 200.0).chain(x_rotation(PI/2.0)).generate();
+
+        //for grass
+        let v=grid_viewport.spacing;
+        let s = matrix::scale(v, v, v).chain(x_rotation(PI/2.0)).generate();
+
 
         for p in data.positions.iter_mut() {
             *p = s.transform_point((*p).into()).into();
@@ -444,6 +449,10 @@ fn projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix
     scale(1.0, -1.0, 1.0).chain(m).chain(r2).chain(t).chain(r) //.chain(r2).chain(t)//.chain(r)
 }
 
+
+
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
 const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
 const CAT_GLB: &'static [u8] = include_bytes!("../assets/cat2.glb");
+const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");
+
