@@ -53,15 +53,14 @@ pub struct ModelData {
 }
 
 impl Doop {
-    pub fn gen_ext(&self,ss:f32)->ModelData{
-        use std::f32::consts::PI;
+    pub fn gen_ext(&self, ss: f32) -> ModelData {
         use matrix::*;
-        let mut m=self.gen();
+        use std::f32::consts::PI;
+        let mut m = self.gen();
 
         let v = ss;
         let s = matrix::translation(v / 2.0, v / 2.0, 0.0)
-            .chain(z_rotation(PI / 2.0))
-            .chain(x_rotation(PI / 2.0))
+            .chain(x_rotation(-PI / 2.0))
             .chain(matrix::scale(v, v, v))
             .generate();
 

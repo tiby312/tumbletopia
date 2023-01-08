@@ -125,7 +125,7 @@ pub async fn worker_entry() {
                         w: grid_viewport.spacing,
                         h: grid_viewport.spacing,
                     },
-                    -0.1,
+                    0.1,
                 );
             }
         }
@@ -148,17 +148,14 @@ pub async fn worker_entry() {
     grid_walls.set(vec2(0, 0), true);
     grid_walls.set(vec2(2, 1), true);
 
-
     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
 
     let mut scroll_manager = scroll::ScrollController::new([-18., -672.]);
-
 
     let foo = model::load_glb(GRASS_GLB);
     log!(format!("matrix:{:?}", &foo));
 
     let data = foo.gen_ext(grid_viewport.spacing);
-        
 
     let cat = ModelGpu::new(&ctx, &data);
 
@@ -205,7 +202,6 @@ pub async fn worker_entry() {
 
         use matrix::*;
 
-
         simple2d::shapes(cache).rect(
             simple2d::Rect {
                 x: mouse_world[0] - grid_viewport.spacing / 2.0,
@@ -213,7 +209,7 @@ pub async fn worker_entry() {
                 w: grid_viewport.spacing,
                 h: grid_viewport.spacing,
             },
-            mouse_world[2]-10.0,
+            mouse_world[2] - 10.0,
         );
 
         buffer.update_clear(cache);
@@ -240,14 +236,16 @@ pub async fn worker_entry() {
         //let mut v = draw_sys.view(&k);
         //cat.draw(&mut v);
 
-        for a in 0..5{
-            for b in 0..5{
+        for a in 0..5 {
+            for b in 0..5 {
                 use matrix::*;
-                let x1=grid_viewport.spacing*a as f32;
-                let y1=grid_viewport.spacing*b as f32;
-                let mm =projection(scroll_manager.camera(), viewport).chain(translation(x1,y1,0.0)).generate();
+                let x1 = grid_viewport.spacing * a as f32;
+                let y1 = grid_viewport.spacing * b as f32;
+                let mm = projection(scroll_manager.camera(), viewport)
+                    .chain(translation(x1, y1, 0.0))
+                    .generate();
 
-                let mut v=draw_sys.view(mm.as_ref());
+                let mut v = draw_sys.view(mm.as_ref());
                 cat.draw(&mut v);
             }
         }
@@ -426,12 +424,10 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     use collision::Continuous;
 
     if let Some(point) = plane.intersection(&ray) {
-        [point.x, point.y,0.0]
+        [point.x, point.y, 0.0]
     } else {
-        [300.0, -80.0,0.0]
+        [300.0, -80.0, 0.0]
     }
-    
-    
 }
 
 //project world to clip space
@@ -441,9 +437,14 @@ fn projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix
     //world space positive z is into the ground
     let m = matrix::perspective(0.3, dim[0] / dim[1], 1.0, 1610.0);
     let t = translation(offset[0], offset[1], 500.0);
-    let r = z_rotation(PI/4.0);
-    let r2 = x_rotation(-PI/4.0); //PI / 4.0
-    scale(1.0, -1.0, 1.0).chain(m).chain(scale(1.0,1.0,-1.0)).chain(r2).chain(t).chain(r) //.chain(r2).chain(t)//.chain(r)
+    let r = z_rotation(PI / 4.0);
+    let r2 = x_rotation(-PI / 4.0); //PI / 4.0
+    scale(1.0, -1.0, 1.0)
+        .chain(m)
+        .chain(scale(1.0, 1.0, -1.0))
+        .chain(r2)
+        .chain(t)
+        .chain(r) //.chain(r2).chain(t)//.chain(r)
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
