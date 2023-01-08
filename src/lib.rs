@@ -153,7 +153,7 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::ScrollController::new([-18., -672.]);
 
-    //let foo=load_glb(BLOCK_GLB);
+
     let foo = model::load_glb(GRASS_GLB);
     log!(format!("matrix:{:?}", &foo));
 
@@ -225,7 +225,7 @@ pub async fn worker_entry() {
                 w: grid_viewport.spacing,
                 h: grid_viewport.spacing,
             },
-            0.0,
+            10.0,
         );
 
         buffer.update_clear(cache);
@@ -250,7 +250,19 @@ pub async fn worker_entry() {
 
         //let k = matrix::z_rotation(counter).chain(matrix).generate();
         //let mut v = draw_sys.view(&k);
-        cat.draw(&mut v);
+        //cat.draw(&mut v);
+
+        for a in 0..5{
+            for b in 0..5{
+                use matrix::*;
+                let x1=grid_viewport.spacing*a as f32;
+                let y1=grid_viewport.spacing*b as f32;
+                let mm =projection(scroll_manager.camera(), viewport).chain(translation(x1,y1,0.0)).generate();
+
+                let mut v=draw_sys.view(mm.as_ref());
+                cat.draw(&mut v);
+            }
+        }
 
         ctx.flush();
     }
