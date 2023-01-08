@@ -148,6 +148,7 @@ pub async fn worker_entry() {
     grid_walls.set(vec2(0, 0), true);
     grid_walls.set(vec2(2, 1), true);
 
+
     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
 
     let mut scroll_manager = scroll::ScrollController::new([-18., -672.]);
@@ -156,28 +157,8 @@ pub async fn worker_entry() {
     let foo = model::load_glb(GRASS_GLB);
     log!(format!("matrix:{:?}", &foo));
 
-    let data = {
-        let mut data = foo.gen();
-        log!(format!("matrix:{:?}", &data.matrix));
-
-        use matrix::*;
-
-        //for person
-        //let s = matrix::scale(200.0, 200.0, 200.0).chain(x_rotation(PI/2.0)).generate();
-
-        //for grass
-        let v = grid_viewport.spacing;
-        let s = translation(v / 2.0, v / 2.0, 0.0)
-            .chain(z_rotation(PI / 2.0))
-            .chain(x_rotation(PI / 2.0))
-            .chain(matrix::scale(v, v, v))
-            .generate();
-
-        for p in data.positions.iter_mut() {
-            *p = s.transform_point((*p).into()).into();
-        }
-        data
-    };
+    let data = foo.gen_ext(grid_viewport.spacing);
+        
 
     let cat = ModelGpu::new(&ctx, &data);
 
