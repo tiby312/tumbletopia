@@ -152,7 +152,6 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::ScrollController::new([-18., -672.]);
 
-    
     let cat = {
         let data = model::load_glb(CAT_GLB).gen_ext(grid_viewport.spacing);
         ModelGpu::new(&ctx, &data)
@@ -230,16 +229,15 @@ pub async fn worker_entry() {
         //v.draw_triangles(&walls,None, &[1.0, 0.5, 0.5, 1.0]);
         // v.draw_triangles(&buffer,None, color_iter.peek().unwrap_throw());
 
-
         {
             buffer.update_no_clear(&checkers.positions);
             checkers_gpu.draw_pos(&mut v, &buffer);
         }
 
         {
-            let j=grid_viewport.spacing / 2.0;
-            let t=matrix::translation(mouse_world[0]-j,mouse_world[1]-j,mouse_world[2]);
-            let m=matrix.chain(t).generate();
+            let j = grid_viewport.spacing / 2.0;
+            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, mouse_world[2]);
+            let m = matrix.chain(t).generate();
             let mut v = draw_sys.view(m.as_ref());
             cat.draw(&mut v);
         }
@@ -441,21 +439,30 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     }
 }
 
+fn camera(camera: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+    use matrix::*;
+
+    //move camera up
+    let t = translation(-camera[0], -camera[1], -500.0);
+
+    //rotate left to topleft corner
+    let r = z_rotation(-PI / 4.0);
+
+    //rotate down at 45 degree angle
+    let r2 = x_rotation(PI / 4.0); 
+    r.chain(t).chain(r2).chain(scale(1.0, 1.0, -1.0))
+}
+
 //project world to clip space
 fn projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
+
     //clip space positive z is into the screen. negative z is towards your face.
     //world space positive z is into the ground
     let m = matrix::perspective(0.3, dim[0] / dim[1], 1.0, 1610.0);
-    let t = translation(offset[0], offset[1], 500.0);
-    let r = z_rotation(PI / 4.0);
-    let r2 = x_rotation(-PI / 4.0); //PI / 4.0
-    scale(1.0, -1.0, 1.0)
-        .chain(m)
-        .chain(scale(1.0, 1.0, -1.0))
-        .chain(r2)
-        .chain(t)
-        .chain(r) //.chain(r2).chain(t)//.chain(r)
+
+    let c = m.chain(camera(offset).inverse());
+    scale(1.0, -1.0, 1.0).chain(c)
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
