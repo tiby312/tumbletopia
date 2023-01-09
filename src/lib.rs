@@ -219,7 +219,7 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let matrix = projection(scroll_manager.camera(), viewport).generate();
+        let matrix = view_projection(scroll_manager.camera(), viewport).generate();
 
         let mut v = draw_sys.view(matrix.as_ref());
 
@@ -250,7 +250,7 @@ pub async fn worker_entry() {
                 use matrix::*;
                 let x1 = grid_viewport.spacing * a as f32;
                 let y1 = grid_viewport.spacing * b as f32;
-                let mm = projection(scroll_manager.camera(), viewport)
+                let mm = view_projection(scroll_manager.camera(), viewport)
                     .chain(translation(x1, y1, 0.0))
                     .generate();
 
@@ -418,7 +418,7 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     let startc = [clip_x, clip_y, -0.9];
     let endc = [clip_x, clip_y, 0.999];
 
-    let matrix = projection(camera, viewport).inverse().generate();
+    let matrix = view_projection(camera, viewport).inverse().generate();
 
     let a = matrix.transform_point(startc.into());
     let b = matrix.transform_point(endc.into());
@@ -449,20 +449,21 @@ fn camera(camera: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     let r = z_rotation(-PI / 4.0);
 
     //rotate down at 45 degree angle
-    let r2 = x_rotation(PI / 4.0); 
+    let r2 = x_rotation(PI / 4.0);
     r.chain(t).chain(r2).chain(scale(1.0, 1.0, -1.0))
 }
 
-//project world to clip space
-fn projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
-
     //clip space positive z is into the screen. negative z is towards your face.
     //world space positive z is into the ground
-    let m = matrix::perspective(0.3, dim[0] / dim[1], 1.0, 1610.0);
+    scale(1.0, -1.0, 1.0).chain(matrix::perspective(0.3, dim[0] / dim[1], 1.0, 1610.0))
+}
 
-    let c = m.chain(camera(offset).inverse());
-    scale(1.0, -1.0, 1.0).chain(c)
+//project world to clip space
+fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+    use matrix::*;
+    projection(dim).chain(camera(offset).inverse())
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
