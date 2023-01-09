@@ -1,67 +1,42 @@
+use cgmath::{InnerSpace, Vector2};
+
 #[derive(PartialEq, Debug)]
 enum Scrollin {
     MouseDown {
-        mouse_anchor: Vec2<f32>,
-        camera_anchor: Vec2<f32>,
+        mouse_anchor: Vector2<f32>,
+        camera_anchor: Vector2<f32>,
     },
     Scrolling {
-        mouse_anchor: Vec2<f32>,
-        camera_anchor: Vec2<f32>,
+        mouse_anchor: Vector2<f32>,
+        camera_anchor: Vector2<f32>,
     },
     NotScrolling,
 }
 use super::*;
 pub struct ScrollController {
-    pub cursor_canvas: [f32; 2],
+    pub cursor_canvas: Vector2<f32>,
     //world coord
-    camera: [f32; 2],
-    last_camera: Vec2<f32>,
+    camera: Vector2<f32>,
+    last_camera: Vector2<f32>,
 
     scrolling: Scrollin,
 }
 
 impl ScrollController {
-    pub fn new(camera: [f32; 2]) -> Self {
+    pub fn new(camera: Vector2<f32>) -> Self {
         ScrollController {
             camera,
             last_camera: camera.into(),
-            cursor_canvas: [0.0; 2],
+            cursor_canvas: [0.0; 2].into(),
             scrolling: Scrollin::NotScrolling,
         }
     }
-
-    // pub fn world_cursor(&self, dim: &[f32; 2]) -> Vec2<f32> {
-    //     //get cursor in world coordinates relative to origin.
-    //     let cursor = self.cursor_canvas;
-
-    //     //log!(format!("{:?}",(self.camera,cursor)));
-    //     //get abosolute position by adding it to where the camera is
-    //     let point = -Vec2::from(self.camera) + Vec2::from(cursor);
-
-    //     let mut id = Mat4::identity();
-
-    //     // let mut k=Mat4::identity();
-    //     // Doop(&mut k).x_rotation(std::f32::consts::PI / 4.);
-    //     // k.inverse().unwrap_throw();
-
-    //     use super::matrix::*;
-    //     use webgl_matrix::prelude::*;
-    //     id.mul(&super::matrix::z_rotation(std::f32::consts::PI / 4.).generate());
-    //     //z_rotation(std::f32::consts::PI / 4.);
-
-    //     //translation(-dim[0] / 2., -dim[1] / 2., 0.0);
-
-    //     let vec = [point.x, point.y, 0.0];
-    //     let ans = id.mul_vector(&vec);
-
-    //     vec2(ans[0], ans[1])
-    // }
 
     pub fn camera(&self) -> [f32; 2] {
         [self.camera[0], self.camera[1]]
     }
 
-    pub fn handle_mouse_move(&mut self, mouse: [f32; 2]) {
+    pub fn handle_mouse_move(&mut self, mouse: [f32; 2], viewport: [f32; 2]) {
         self.cursor_canvas = mouse.into();
 
         match self.scrolling {
@@ -69,18 +44,23 @@ impl ScrollController {
                 mouse_anchor,
                 camera_anchor,
             } => {
-                let mut offset = Vec2::from(self.cursor_canvas) - Vec2::from(mouse_anchor);
-                offset.x *= 0.3; //needs to be slightly larger
-                offset.y *= 0.5; //its close
-                self.last_camera = Vec2::from(self.camera);
-                self.camera = (camera_anchor + offset).into();
+                let mouse_world1: Vector2<f32> =
+                    mouse_to_world(self.cursor_canvas.into(), camera_anchor.into(), viewport)
+                        .into();
+
+                let mouse_world2: Vector2<f32> =
+                    mouse_to_world(mouse_anchor.into(), camera_anchor.into(), viewport).into();
+
+                let offset = mouse_world2 - mouse_world1;
+                self.last_camera = self.camera;
+                self.camera = camera_anchor + offset;
             }
             Scrollin::MouseDown {
                 mouse_anchor,
                 camera_anchor,
             } => {
-                let a = Vec2::from(self.cursor_canvas);
-                let b = Vec2::from(mouse_anchor);
+                let a = Vector2::from(self.cursor_canvas);
+                let b = Vector2::from(mouse_anchor);
                 let offset = b - a;
                 if offset.magnitude2() > 10.0 * 10.0 {
                     self.scrolling = Scrollin::Scrolling {
@@ -96,8 +76,8 @@ impl ScrollController {
         self.cursor_canvas = mouse.into();
 
         self.scrolling = Scrollin::MouseDown {
-            mouse_anchor: Vec2::from(self.cursor_canvas),
-            camera_anchor: Vec2::from(self.camera),
+            mouse_anchor: Vector2::from(self.cursor_canvas),
+            camera_anchor: Vector2::from(self.camera),
         };
     }
 
@@ -121,10 +101,10 @@ impl ScrollController {
         match self.scrolling {
             Scrollin::Scrolling { .. } => {}
             _ => {
-                let delta = Vec2::from(self.camera) - Vec2::from(self.last_camera);
-                self.last_camera = Vec2::from(self.camera);
+                let delta = Vector2::from(self.camera) - Vector2::from(self.last_camera);
+                self.last_camera = Vector2::from(self.camera);
 
-                self.camera = (Vec2::from(self.camera) + delta * 0.9).into();
+                self.camera = (Vector2::from(self.camera) + delta * 0.9).into();
             }
         }
     }

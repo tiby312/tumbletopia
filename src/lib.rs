@@ -150,7 +150,7 @@ pub async fn worker_entry() {
 
     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
 
-    let mut scroll_manager = scroll::ScrollController::new([-18., -672.]);
+    let mut scroll_manager = scroll::ScrollController::new([800., 800.].into());
 
     let cat = {
         let data = model::load_glb(CAT_GLB).gen_ext(grid_viewport.spacing);
@@ -174,7 +174,7 @@ pub async fn worker_entry() {
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
-                    scroll_manager.handle_mouse_move([*x, *y]);
+                    scroll_manager.handle_mouse_move([*x, *y], viewport);
                 }
                 MEvent::CanvasMouseDown { x, y } => {
                     scroll_manager.handle_mouse_down([*x, *y]);
@@ -188,7 +188,7 @@ pub async fn worker_entry() {
 
         //log!(format!("{:?}",scroll_manager.camera()));
         let mouse_world = mouse_to_world(
-            scroll_manager.cursor_canvas,
+            scroll_manager.cursor_canvas.into(),
             scroll_manager.camera(),
             viewport,
         );
@@ -236,7 +236,7 @@ pub async fn worker_entry() {
 
         {
             let j = grid_viewport.spacing / 2.0;
-            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, mouse_world[2]);
+            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 0.0);
             let m = matrix.chain(t).generate();
             let mut v = draw_sys.view(m.as_ref());
             cat.draw(&mut v);
@@ -408,7 +408,7 @@ pub fn convert_coord_touch_inner(
 //     ]
 // }
 
-fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 3] {
+fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
     //generate some mouse points
     use matrix::*;
 
@@ -433,9 +433,9 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     use collision::Continuous;
 
     if let Some(point) = plane.intersection(&ray) {
-        [point.x, point.y, 0.0]
+        [point.x, point.y]
     } else {
-        [300.0, -80.0, 0.0]
+        [300.0, -80.0]
     }
 }
 
@@ -443,14 +443,15 @@ fn camera(camera: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
     //move camera up
-    let t = translation(-camera[0], -camera[1], -500.0);
+    let t = translation(camera[0], camera[1], -500.0);
 
     //rotate left to topleft corner
     let r = z_rotation(-PI / 4.0);
 
     //rotate down at 45 degree angle
     let r2 = x_rotation(PI / 4.0);
-    r.chain(t).chain(r2).chain(scale(1.0, 1.0, -1.0))
+
+    t.chain(r).chain(r2).chain(scale(1.0, 1.0, -1.0))
 }
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
