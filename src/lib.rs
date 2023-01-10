@@ -26,6 +26,7 @@ pub enum MEvent {
     CanvasMouseUp,
     ButtonClick,
     ShutdownClick,
+    Resize{x:f32,y:f32}
 }
 
 #[wasm_bindgen]
@@ -74,6 +75,22 @@ pub async fn main_entry() {
     let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick);
 
     let _handler = worker.register_event(&shutdown_button, "click", |_| MEvent::ShutdownClick);
+
+    let w=gloo::utils::window();
+
+    let _handler = worker.register_event(&w, "resize", |e| {
+        log!("RESIZING!!!!!");
+        // var width=document.body.clientWidth;
+        //     var height=document.body.clientHeight;
+            
+        //     var realToCSSPixels = window.devicePixelRatio;
+        //     var gl_width  = Math.floor(width  * realToCSSPixels);
+        //     var gl_height = Math.floor(height * realToCSSPixels);
+
+
+        MEvent::Resize{x:0.0,y:0.0}
+    });
+
 
     let _: () = response.next().await.unwrap_throw();
     log!("main thread is closing");
@@ -168,6 +185,9 @@ pub async fn worker_entry() {
         //log!(format!("number of events:{:?}", res.len()));
         for e in res {
             match e {
+                MEvent::Resize{x,y}=>{
+
+                }
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
                         j = true;
@@ -237,7 +257,8 @@ pub async fn worker_entry() {
         {
             let j = grid_viewport.spacing / 2.0;
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 0.0);
-            let m = matrix.chain(t).generate();
+            let s= matrix::scale(3.0,3.0,3.0);
+            let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
             cat.draw(&mut v);
         }
@@ -269,86 +290,105 @@ pub async fn worker_entry() {
 
 use web_sys::{WebGl2RenderingContext, WebGlTexture};
 
-pub struct AATexture<'a> {
-    ctx: WebGl2RenderingContext,
-    color_rend_buffer: web_sys::WebGlRenderbuffer,
-    rend_buffer: web_sys::WebGlFramebuffer,
-    color_buffer: web_sys::WebGlFramebuffer,
-    texture:&'a TextureBuffer
-}
-impl<'a> AATexture<'a> {
-    pub fn phase1(&mut self){
-        self.ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&self.rend_buffer));
-    }
-    pub fn phase2(&mut self){
+// pub struct AATexture<'a> {
+//     ctx: WebGl2RenderingContext,
+//     color_rend_buffer: web_sys::WebGlRenderbuffer,
+//     rend_buffer: web_sys::WebGlFramebuffer,
+//     color_buffer: web_sys::WebGlFramebuffer,
+//     texture:&'a TextureBuffer
+// }
+// impl<'a> AATexture<'a> {
+//     pub fn phase1(&mut self){
+//         self.ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&self.rend_buffer));
+//     }
+//     pub fn finish_phase1(&mut self){
 
-        self.ctx.bind_framebuffer(WebGl2RenderingContext::READ_FRAMEBUFFER, Some(&self.rend_buffer));
-        self.ctx.bind_framebuffer(WebGl2RenderingContext::DRAW_FRAMEBUFFER, Some(&self.color_buffer));
-        self.ctx.clear_bufferfv_with_f32_array(WebGl2RenderingContext::COLOR, 0, &[1.0, 1.0, 1.0, 1.0]);
+//         self.ctx.bind_framebuffer(WebGl2RenderingContext::READ_FRAMEBUFFER, Some(&self.rend_buffer));
+//         self.ctx.bind_framebuffer(WebGl2RenderingContext::DRAW_FRAMEBUFFER, Some(&self.color_buffer));
+//         self.ctx.clear_bufferfv_with_f32_array(WebGl2RenderingContext::COLOR, 0, &[1.0, 1.0, 1.0, 1.0]);
 
-        let w=self.texture.width();
-        let h=self.texture.height();
-        self.ctx.blit_framebuffer(0, 0, w, h,
-            0, 0, w, h,
-            WebGl2RenderingContext::COLOR_BUFFER_BIT, WebGl2RenderingContext::LINEAR);
+//         let w=self.texture.width();
+//         let h=self.texture.height();
+//         self.ctx.blit_framebuffer(0, 0, w, h,
+//             0, 0, w, h,
+//             WebGl2RenderingContext::COLOR_BUFFER_BIT, WebGl2RenderingContext::LINEAR); //TODO nearest?
 
-        self.ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&self.rend_buffer));
+//         self.ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&self.rend_buffer));
+
+//         self.ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+
+//         //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+//     }
+
+//     pub fn phase2(&mut self){
+       
+//     }
+//     pub fn new(
+//         ctx: &WebGl2RenderingContext,
+//         width: usize,
+//         height: usize,
+//         texture: &'a TextureBuffer,
+//     ) -> Self {
         
 
+//         let rend_buffer = {
+//             let rend_buffer=ctx.create_renderbuffer().unwrap_throw();
+//             ctx.bind_renderbuffer(WebGl2RenderingContext::RENDERBUFFER, Some(&rend_buffer));
+//             use wasm_bindgen::convert::IntoWasmAbi;
+//             // let max_sample: i32 = ctx
+//             //     .get_parameter(WebGl2RenderingContext::MAX_SAMPLES)
+//             //     .unwrap_throw()
+//             //     .into_abi() as i32;
+//             ctx.renderbuffer_storage_multisample(
+//                 WebGl2RenderingContext::RENDERBUFFER,
+//                 4,
+//                 WebGl2RenderingContext::RGBA8,
+//                 width as i32,
+//                 height as i32,
+//             );
+//             rend_buffer
+//         };
 
-    }
-    pub fn new(
-        ctx: &WebGl2RenderingContext,
-        width: usize,
-        height: usize,
-        texture: &'a TextureBuffer,
-    ) -> Self {
-        let rend_buffer = ctx.create_renderbuffer().unwrap_throw();
-        let frame1 = ctx.create_framebuffer().unwrap_throw();
-        let frame2 = ctx.create_framebuffer().unwrap_throw();
+//         let frame1={
+//             let frame1 = ctx.create_framebuffer().unwrap_throw();
+//             ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&frame1));
+//             ctx.framebuffer_renderbuffer(
+//                 WebGl2RenderingContext::FRAMEBUFFER,
+//                 WebGl2RenderingContext::COLOR_ATTACHMENT0,
+//                 WebGl2RenderingContext::RENDERBUFFER,
+//                 Some(&rend_buffer),
+//             );
+//             ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
 
-        ctx.bind_renderbuffer(WebGl2RenderingContext::RENDERBUFFER, Some(&rend_buffer));
-        use wasm_bindgen::convert::IntoWasmAbi;
-        let max_sample: i32 = ctx
-            .get_parameter(WebGl2RenderingContext::MAX_SAMPLES)
-            .unwrap_throw()
-            .into_abi() as i32;
-        ctx.renderbuffer_storage_multisample(
-            WebGl2RenderingContext::RENDERBUFFER,
-            max_sample,
-            WebGl2RenderingContext::RGBA8,
-            width as i32,
-            height as i32,
-        );
+//             frame1
+//         };
 
-        ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&frame1));
-        ctx.framebuffer_renderbuffer(
-            WebGl2RenderingContext::FRAMEBUFFER,
-            WebGl2RenderingContext::COLOR_ATTACHMENT0,
-            WebGl2RenderingContext::RENDERBUFFER,
-            Some(&rend_buffer),
-        );
+//         let frame2={
+//             let frame2 = ctx.create_framebuffer().unwrap_throw();
+//             ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&frame2));
+//             ctx.framebuffer_texture_2d(
+//                 WebGl2RenderingContext::FRAMEBUFFER,
+//                 WebGl2RenderingContext::COLOR_ATTACHMENT0,
+//                 WebGl2RenderingContext::TEXTURE_2D,
+//                 Some(texture.texture()),
+//                 0,
+//             );
+//             ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
 
-        ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&frame2));
-        ctx.framebuffer_texture_2d(
-            WebGl2RenderingContext::FRAMEBUFFER,
-            WebGl2RenderingContext::COLOR_ATTACHMENT0,
-            WebGl2RenderingContext::TEXTURE_2D,
-            Some(texture.texture()),
-            0,
-        );
+//             frame2
+//         };
 
-        ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+        
+//         AATexture {
+//             ctx:ctx.clone(),
+//             color_rend_buffer: rend_buffer,
+//             rend_buffer: frame1,
+//             color_buffer: frame2,
+//             texture
+//         }
+//     }
+// }
 
-        AATexture {
-            ctx:ctx.clone(),
-            color_rend_buffer: rend_buffer,
-            rend_buffer: frame1,
-            color_buffer: frame2,
-            texture
-        }
-    }
-}
 pub struct ModelGpu {
     index: Option<simple2d::IndexBuffer>,
     tex_coord: simple2d::TextureCoordBuffer,
@@ -425,12 +465,12 @@ fn update_walls(
 }
 
 //convert DOM coordinate to canvas relative coordinate
-fn convert_coord(canvas: &web_sys::HtmlElement, event: &web_sys::Event) -> [f32; 2] {
+fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
     use wasm_bindgen::JsCast;
-    shogo::simple2d::convert_coord(canvas, event.dyn_ref().unwrap_throw())
+    shogo::simple2d::convert_coord(canvas.dyn_ref().unwrap_throw(), event.dyn_ref().unwrap_throw())
 }
 
-fn convert_coord_touch(canvas: &web_sys::HtmlElement, event: &web_sys::Event) -> [f32; 2] {
+fn convert_coord_touch(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
     event.prevent_default();
     event.stop_propagation();
     use wasm_bindgen::JsCast;
@@ -441,9 +481,12 @@ fn convert_coord_touch(canvas: &web_sys::HtmlElement, event: &web_sys::Event) ->
 /// Convert a mouse event to a coordinate for simple2d.
 ///
 pub fn convert_coord_touch_inner(
-    canvas: &web_sys::HtmlElement,
+    canvas: &web_sys::EventTarget,
     e: &web_sys::TouchEvent,
 ) -> Vec<[f32; 2]> {
+    use wasm_bindgen::JsCast;
+    
+    let canvas:&web_sys::HtmlElement=canvas.dyn_ref().unwrap_throw();
     let rect = canvas.get_bounding_client_rect();
 
     let canvas_width: f64 = canvas
@@ -551,5 +594,5 @@ fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + m
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
 const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
-const CAT_GLB: &'static [u8] = include_bytes!("../assets/cat2.glb");
+const CAT_GLB: &'static [u8] = include_bytes!("../assets/tiger2.glb");
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");

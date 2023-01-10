@@ -130,7 +130,7 @@ impl Doop {
                     .collect();
 
                 if let Some(t) = reader.read_tex_coords(0) {
-                    tex_coords.extend(t.into_f32())
+                    tex_coords.extend(t.into_f32().map(|[x,y]|[x,y]))
                 } else {
                     //if texture.is_some(){
                     panic!("no texture coords!");
