@@ -590,7 +590,7 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     }
 }
 
-fn camera(camera: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+fn camera(camera: [f32; 2],zoom:f32) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
     //move camera up
@@ -602,7 +602,9 @@ fn camera(camera: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     //rotate down at 45 degree angle
     let r2 = x_rotation(PI / 4.0);
 
-    t.chain(r).chain(r2).chain(scale(1.0, 1.0, -1.0))
+    let z=translation(0.0,0.0,zoom);
+
+    t.chain(r).chain(r2).chain(scale(1.0, 1.0, -1.0)).chain(z)
 }
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
@@ -610,13 +612,13 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     //log!(format!("{:?}",dim));
     //clip space positive z is into the screen. negative z is towards your face.
     //world space positive z is into the ground
-    scale(1.0, -1.0, 1.0).chain(matrix::perspective(0.3, dim[0] / dim[1], 1.0, 1610.0))
+    scale(1.0, -1.0, 1.0).chain(matrix::perspective(0.3, dim[0] / dim[1], 1.0, 16100.0))
 }
 
 //project world to clip space
 fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
-    projection(dim).chain(camera(offset).inverse())
+    projection(dim).chain(camera(offset,dim[1]).inverse())
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
