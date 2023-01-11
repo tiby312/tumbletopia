@@ -212,11 +212,13 @@ pub async fn worker_entry() {
         for e in res {
             match e {
                 MEvent::Resize {canvasx,canvasy, x, y } => {
-                    canvas.set_width(*canvasx);
-                    canvas.set_height(*canvasy);
-                    ctx.viewport(0, 0, *canvasx as i32, *canvasy as i32);
+                    let xx=*x as u32;
+                    let yy=*y as u32;
+                    canvas.set_width(xx);
+                    canvas.set_height(yy);
+                    ctx.viewport(0, 0, xx as i32, yy as i32);
 
-                    viewport = [*canvasx as f32, *canvasy as f32];
+                    viewport = [xx as f32, yy as f32];
                     log!(format!("updating viewport to be:{:?}", viewport));
         
                 }
@@ -609,13 +611,16 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     //log!(format!("{:?}",dim));
     //clip space positive z is into the screen. negative z is towards your face.
     //world space positive z is into the ground
-    scale(1.0, -1.0, 1.0).chain(matrix::perspective(0.3, dim[0] / dim[1], 1.0, 16100.0))
+    scale(1.0, -1.0, 1.0).chain(matrix::perspective(0.4, dim[0] / dim[1], 1.0, 16100.0))
 }
 
 //project world to clip space
 fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
-    projection(dim).chain(camera(offset,dim[1]).inverse())
+
+    
+
+    projection(dim).chain(camera(offset,0.0).inverse())
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
