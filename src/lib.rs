@@ -515,20 +515,6 @@ pub fn convert_coord_touch_inner(
     let canvas: &web_sys::HtmlElement = canvas.dyn_ref().unwrap_throw();
     let rect = canvas.get_bounding_client_rect();
 
-    let canvas_width: f64 = canvas
-        .get_attribute("width")
-        .unwrap_throw()
-        .parse()
-        .unwrap_throw();
-    let canvas_height: f64 = canvas
-        .get_attribute("height")
-        .unwrap_throw()
-        .parse()
-        .unwrap_throw();
-
-    let scalex = canvas_width / rect.width();
-    let scaley = canvas_height / rect.height();
-
     let touches = e.touches();
 
     let mut ans = vec![];
@@ -540,8 +526,8 @@ pub fn convert_coord_touch_inner(
         let ry = touch.radius_y() as f64;
         //log!(format!("{:?}",(rx,ry)));
         let [x, y] = [
-            (x + rx - rect.left()) * scalex,
-            (y + ry - rect.top()) * scaley,
+            (x + rx - rect.left()) ,
+            (y + ry - rect.top()) ,
         ];
 
         ans.push([x as f32, y as f32]);
