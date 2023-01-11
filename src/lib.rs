@@ -82,18 +82,21 @@ pub async fn main_entry() {
     let w = gloo::utils::window();
 
     let _handler = worker.register_event(&w, "resize", |e| {
-        //let canvas=utils::get_by_id_canvas("mycanvas");
+        let canvas=utils::get_by_id_canvas("mycanvas");
         //canvas.set_width(gloo::utils::body().client_width() as u32);
         //canvas.set_height(gloo::utils::body().client_height() as u32);
     
-        //log!("RESIZING!!!!!");
-        let width = gloo::utils::document().body().unwrap_throw().client_width();
-        let height = gloo::utils::document()
-            .body()
-            .unwrap_throw()
-            .client_height();
+        // let width = gloo::utils::document().body().unwrap_throw().client_width();
+        // let height = gloo::utils::document()
+        //     .body()
+        //     .unwrap_throw()
+        //     .client_height();
+
+        let width=canvas.client_width();
+        let height=canvas.client_height();
 
         let realpixels = gloo::utils::window().device_pixel_ratio();
+        log!(format!("pixel ratio:{:?}",realpixels));
         // .body.clientWidth;
         // var height=document.body.clientHeight;
 
@@ -129,8 +132,12 @@ pub async fn worker_entry() {
     let cache = &mut vec![];
     let mut walls = ctx.buffer_dynamic();
 
+    //TODO don't hardcode
+    let gl_width=canvas.width(); //as f32*1.6;
+    let gl_height=canvas.height(); //as f32*1.6;
+    
     //TODO move?
-    ctx.viewport(0, 0, canvas.width() as i32, canvas.height() as i32);
+    ctx.viewport(0, 0, gl_width as i32, gl_height as i32);
     ctx.setup_alpha();
 
     // setup game data
@@ -207,9 +214,9 @@ pub async fn worker_entry() {
                 MEvent::Resize {canvasx,canvasy, x, y } => {
                     canvas.set_width(*canvasx);
                     canvas.set_height(*canvasy);
-                    ctx.viewport(0, 0, *x as i32, *y as i32);
+                    ctx.viewport(0, 0, *canvasx as i32, *canvasy as i32);
 
-                    viewport = [*x, *y];
+                    viewport = [*canvasx as f32, *canvasy as f32];
                     log!(format!("updating viewport to be:{:?}", viewport));
         
                 }
