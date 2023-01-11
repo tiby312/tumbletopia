@@ -26,7 +26,7 @@ pub enum MEvent {
     CanvasMouseUp,
     ButtonClick,
     ShutdownClick,
-    Resize { x: f32, y: f32 },
+    Resize { canvasx:u32,canvasy:u32,x: f32, y: f32 },
 }
 
 #[wasm_bindgen]
@@ -82,9 +82,9 @@ pub async fn main_entry() {
     let w = gloo::utils::window();
 
     let _handler = worker.register_event(&w, "resize", |e| {
-        let canvas=utils::get_by_id_canvas("mycanvas");
-        canvas.set_width(gloo::utils::body().client_width() as u32);
-        canvas.set_height(gloo::utils::body().client_height() as u32);
+        //let canvas=utils::get_by_id_canvas("mycanvas");
+        //canvas.set_width(gloo::utils::body().client_width() as u32);
+        //canvas.set_height(gloo::utils::body().client_height() as u32);
     
         //log!("RESIZING!!!!!");
         let width = gloo::utils::document().body().unwrap_throw().client_width();
@@ -105,6 +105,8 @@ pub async fn main_entry() {
         let gl_height = (height as f64 * realpixels).floor();
 
         MEvent::Resize {
+            canvasx:gloo::utils::body().client_width() as u32,
+            canvasy:gloo::utils::body().client_height() as u32,
             x: gl_width as f32,
             y: gl_height as f32,
         }
@@ -200,13 +202,16 @@ pub async fn worker_entry() {
     'outer: loop {
         let mut j = false;
         let res = frame_timer.next().await;
-        //log!(format!("number of events:{:?}", res.len()));
         for e in res {
             match e {
-                MEvent::Resize { x, y } => {
+                MEvent::Resize {canvasx,canvasy, x, y } => {
+                    canvas.set_width(*canvasx);
+                    canvas.set_height(*canvasy);
                     ctx.viewport(0, 0, *x as i32, *y as i32);
 
                     viewport = [*x, *y];
+                    log!(format!("updating viewport to be:{:?}", viewport));
+        
                 }
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
@@ -602,6 +607,7 @@ fn camera(camera: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
+    //log!(format!("{:?}",dim));
     //clip space positive z is into the screen. negative z is towards your face.
     //world space positive z is into the ground
     scale(1.0, -1.0, 1.0).chain(matrix::perspective(0.3, dim[0] / dim[1], 1.0, 1610.0))
