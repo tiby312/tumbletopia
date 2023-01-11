@@ -26,7 +26,7 @@ pub enum MEvent {
     CanvasMouseUp,
     ButtonClick,
     ShutdownClick,
-    Resize{x:f32,y:f32}
+    Resize { x: f32, y: f32 },
 }
 
 #[wasm_bindgen]
@@ -42,6 +42,9 @@ pub async fn main_entry() {
         utils::get_by_id_elem("mybutton"),
         utils::get_by_id_elem("shutdownbutton"),
     );
+
+    canvas.set_width(gloo::utils::body().client_width() as u32);
+    canvas.set_height(gloo::utils::body().client_height() as u32);
 
     let offscreen = canvas.transfer_control_to_offscreen().unwrap_throw();
 
@@ -76,21 +79,32 @@ pub async fn main_entry() {
 
     let _handler = worker.register_event(&shutdown_button, "click", |_| MEvent::ShutdownClick);
 
-    let w=gloo::utils::window();
+    let w = gloo::utils::window();
 
     let _handler = worker.register_event(&w, "resize", |e| {
-        log!("RESIZING!!!!!");
-        // var width=document.body.clientWidth;
-        //     var height=document.body.clientHeight;
-            
-        //     var realToCSSPixels = window.devicePixelRatio;
-        //     var gl_width  = Math.floor(width  * realToCSSPixels);
-        //     var gl_height = Math.floor(height * realToCSSPixels);
+        //log!("RESIZING!!!!!");
+        let width = gloo::utils::document().body().unwrap_throw().client_width();
+        let height = gloo::utils::document()
+            .body()
+            .unwrap_throw()
+            .client_height();
 
+        let realpixels = gloo::utils::window().device_pixel_ratio();
+        // .body.clientWidth;
+        // var height=document.body.clientHeight;
 
-        MEvent::Resize{x:0.0,y:0.0}
+        // var realToCSSPixels = window.devicePixelRatio;
+        // var gl_width  = Math.floor(width  * realToCSSPixels);
+        // var gl_height = Math.floor(height * realToCSSPixels);
+
+        let gl_width = (width as f64 * realpixels).floor();
+        let gl_height = (height as f64 * realpixels).floor();
+
+        MEvent::Resize {
+            x: gl_width as f32,
+            y: gl_height as f32,
+        }
     });
-
 
     let _: () = response.next().await.unwrap_throw();
     log!("main thread is closing");
@@ -116,7 +130,7 @@ pub async fn worker_entry() {
     // setup game data
     let mut color_iter = COLORS.iter().cycle().peekable();
     let game_dim = [1000.0f32, 1000.0];
-    let viewport = [canvas.width() as f32, canvas.height() as f32];
+    let mut viewport = [canvas.width() as f32, canvas.height() as f32];
 
     let grid_width = 32;
 
@@ -142,7 +156,7 @@ pub async fn worker_entry() {
                         w: grid_viewport.spacing,
                         h: grid_viewport.spacing,
                     },
-                    0.1,
+                    1.0,
                 );
             }
         }
@@ -185,8 +199,10 @@ pub async fn worker_entry() {
         //log!(format!("number of events:{:?}", res.len()));
         for e in res {
             match e {
-                MEvent::Resize{x,y}=>{
+                MEvent::Resize { x, y } => {
+                    ctx.viewport(0, 0, *x as i32, *y as i32);
 
+                    viewport = [*x, *y];
                 }
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
@@ -257,7 +273,7 @@ pub async fn worker_entry() {
         {
             let j = grid_viewport.spacing / 2.0;
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 0.0);
-            let s= matrix::scale(3.0,3.0,3.0);
+            let s = matrix::scale(3.0, 3.0, 3.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
             cat.draw(&mut v);
@@ -321,7 +337,7 @@ use web_sys::{WebGl2RenderingContext, WebGlTexture};
 //     }
 
 //     pub fn phase2(&mut self){
-       
+
 //     }
 //     pub fn new(
 //         ctx: &WebGl2RenderingContext,
@@ -329,7 +345,6 @@ use web_sys::{WebGl2RenderingContext, WebGlTexture};
 //         height: usize,
 //         texture: &'a TextureBuffer,
 //     ) -> Self {
-        
 
 //         let rend_buffer = {
 //             let rend_buffer=ctx.create_renderbuffer().unwrap_throw();
@@ -378,7 +393,6 @@ use web_sys::{WebGl2RenderingContext, WebGlTexture};
 //             frame2
 //         };
 
-        
 //         AATexture {
 //             ctx:ctx.clone(),
 //             color_rend_buffer: rend_buffer,
@@ -467,7 +481,10 @@ fn update_walls(
 //convert DOM coordinate to canvas relative coordinate
 fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
     use wasm_bindgen::JsCast;
-    shogo::simple2d::convert_coord(canvas.dyn_ref().unwrap_throw(), event.dyn_ref().unwrap_throw())
+    shogo::simple2d::convert_coord(
+        canvas.dyn_ref().unwrap_throw(),
+        event.dyn_ref().unwrap_throw(),
+    )
 }
 
 fn convert_coord_touch(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
@@ -485,8 +502,8 @@ pub fn convert_coord_touch_inner(
     e: &web_sys::TouchEvent,
 ) -> Vec<[f32; 2]> {
     use wasm_bindgen::JsCast;
-    
-    let canvas:&web_sys::HtmlElement=canvas.dyn_ref().unwrap_throw();
+
+    let canvas: &web_sys::HtmlElement = canvas.dyn_ref().unwrap_throw();
     let rect = canvas.get_bounding_client_rect();
 
     let canvas_width: f64 = canvas
