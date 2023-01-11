@@ -219,9 +219,13 @@ pub async fn worker_entry() {
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
+                    //log!(format!("{:?}",(x,y)));
+        
                     scroll_manager.handle_mouse_move([*x, *y], viewport);
                 }
                 MEvent::CanvasMouseDown { x, y } => {
+                    //log!(format!("{:?}",(x,y)));
+        
                     scroll_manager.handle_mouse_down([*x, *y]);
                 }
                 MEvent::ButtonClick => {
@@ -524,12 +528,11 @@ pub fn convert_coord_touch_inner(
         let y = touch.client_y() as f64;
         let rx = touch.radius_x() as f64;
         let ry = touch.radius_y() as f64;
-        //log!(format!("{:?}",(rx,ry)));
         let [x, y] = [
             (x + rx - rect.left()) ,
             (y + ry - rect.top()) ,
         ];
-
+        
         ans.push([x as f32, y as f32]);
     }
     ans
@@ -546,6 +549,7 @@ pub fn convert_coord_touch_inner(
 // }
 
 fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
+    //TODO something wrong here. not factoring in zoom!
     //generate some mouse points
     use matrix::*;
 
