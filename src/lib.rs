@@ -82,6 +82,10 @@ pub async fn main_entry() {
     let w = gloo::utils::window();
 
     let _handler = worker.register_event(&w, "resize", |e| {
+        let canvas=utils::get_by_id_canvas("mycanvas");
+        canvas.set_width(gloo::utils::body().client_width() as u32);
+        canvas.set_height(gloo::utils::body().client_height() as u32);
+    
         //log!("RESIZING!!!!!");
         let width = gloo::utils::document().body().unwrap_throw().client_width();
         let height = gloo::utils::document()
