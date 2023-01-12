@@ -21,12 +21,23 @@ const COLORS: &[[f32; 4]] = &[
 ///Common data sent from the main thread to the worker.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum MEvent {
-    CanvasMouseMove { x: f32, y: f32 },
-    CanvasMouseDown { x: f32, y: f32 },
+    CanvasMouseMove {
+        x: f32,
+        y: f32,
+    },
+    CanvasMouseDown {
+        x: f32,
+        y: f32,
+    },
     CanvasMouseUp,
     ButtonClick,
     ShutdownClick,
-    Resize { canvasx:u32,canvasy:u32,x: f32, y: f32 },
+    Resize {
+        canvasx: u32,
+        canvasy: u32,
+        x: f32,
+        y: f32,
+    },
 }
 
 #[wasm_bindgen]
@@ -81,42 +92,45 @@ pub async fn main_entry() {
 
     let w = gloo::utils::window();
 
-    let _handler = worker.register_event(&w, "resize", |e| {
-        let canvas=utils::get_by_id_canvas("mycanvas");
-        //canvas.set_width(gloo::utils::body().client_width() as u32);
-        //canvas.set_height(gloo::utils::body().client_height() as u32);
-    
-        // let width = gloo::utils::document().body().unwrap_throw().client_width();
-        // let height = gloo::utils::document()
-        //     .body()
-        //     .unwrap_throw()
-        //     .client_height();
+    let _handler = worker.register_event(&w, "resize", |_| resize());
 
-        let width=canvas.client_width();
-        let height=canvas.client_height();
-
-        let realpixels = gloo::utils::window().device_pixel_ratio();
-        log!(format!("pixel ratio:{:?}",realpixels));
-        // .body.clientWidth;
-        // var height=document.body.clientHeight;
-
-        // var realToCSSPixels = window.devicePixelRatio;
-        // var gl_width  = Math.floor(width  * realToCSSPixels);
-        // var gl_height = Math.floor(height * realToCSSPixels);
-
-        let gl_width = (width as f64 * realpixels).floor();
-        let gl_height = (height as f64 * realpixels).floor();
-
-        MEvent::Resize {
-            canvasx:gloo::utils::body().client_width() as u32,
-            canvasy:gloo::utils::body().client_height() as u32,
-            x: gl_width as f32,
-            y: gl_height as f32,
-        }
-    });
+    worker.post_message(resize());
 
     let _: () = response.next().await.unwrap_throw();
     log!("main thread is closing");
+}
+fn resize() -> MEvent {
+    let canvas = utils::get_by_id_canvas("mycanvas");
+    //canvas.set_width(gloo::utils::body().client_width() as u32);
+    //canvas.set_height(gloo::utils::body().client_height() as u32);
+
+    // let width = gloo::utils::document().body().unwrap_throw().client_width();
+    // let height = gloo::utils::document()
+    //     .body()
+    //     .unwrap_throw()
+    //     .client_height();
+
+    let width = canvas.client_width();
+    let height = canvas.client_height();
+
+    let realpixels = gloo::utils::window().device_pixel_ratio();
+    log!(format!("pixel ratio:{:?}", realpixels));
+    // .body.clientWidth;
+    // var height=document.body.clientHeight;
+
+    // var realToCSSPixels = window.devicePixelRatio;
+    // var gl_width  = Math.floor(width  * realToCSSPixels);
+    // var gl_height = Math.floor(height * realToCSSPixels);
+
+    let gl_width = (width as f64 * realpixels).floor();
+    let gl_height = (height as f64 * realpixels).floor();
+
+    MEvent::Resize {
+        canvasx: gloo::utils::body().client_width() as u32,
+        canvasy: gloo::utils::body().client_height() as u32,
+        x: gl_width as f32,
+        y: gl_height as f32,
+    }
 }
 
 #[wasm_bindgen]
@@ -132,10 +146,12 @@ pub async fn worker_entry() {
     let cache = &mut vec![];
     let mut walls = ctx.buffer_dynamic();
 
-    //TODO don't hardcode
-    let gl_width=canvas.width(); //as f32*1.6;
-    let gl_height=canvas.height(); //as f32*1.6;
-    
+    //TODO get rid of this somehow.
+    //these values are incorrect.
+    //they are set correctly after resize is called on startup.
+    let gl_width = canvas.width(); // as f32*1.6;
+    let gl_height = canvas.height(); // as f32*1.6;
+
     //TODO move?
     ctx.viewport(0, 0, gl_width as i32, gl_height as i32);
     ctx.setup_alpha();
@@ -211,16 +227,20 @@ pub async fn worker_entry() {
         let res = frame_timer.next().await;
         for e in res {
             match e {
-                MEvent::Resize {canvasx,canvasy, x, y } => {
-                    let xx=*x as u32;
-                    let yy=*y as u32;
+                MEvent::Resize {
+                    canvasx,
+                    canvasy,
+                    x,
+                    y,
+                } => {
+                    let xx = *x as u32;
+                    let yy = *y as u32;
                     canvas.set_width(xx);
                     canvas.set_height(yy);
                     ctx.viewport(0, 0, xx as i32, yy as i32);
 
                     viewport = [xx as f32, yy as f32];
                     log!(format!("updating viewport to be:{:?}", viewport));
-        
                 }
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
@@ -229,12 +249,12 @@ pub async fn worker_entry() {
                 }
                 MEvent::CanvasMouseMove { x, y } => {
                     //log!(format!("{:?}",(x,y)));
-        
+
                     scroll_manager.handle_mouse_move([*x, *y], viewport);
                 }
                 MEvent::CanvasMouseDown { x, y } => {
                     //log!(format!("{:?}",(x,y)));
-        
+
                     scroll_manager.handle_mouse_down([*x, *y]);
                 }
                 MEvent::ButtonClick => {
@@ -528,6 +548,20 @@ pub fn convert_coord_touch_inner(
     let canvas: &web_sys::HtmlElement = canvas.dyn_ref().unwrap_throw();
     let rect = canvas.get_bounding_client_rect();
 
+    let canvas_width: f64 = canvas
+        .get_attribute("width")
+        .unwrap_throw()
+        .parse()
+        .unwrap_throw();
+    let canvas_height: f64 = canvas
+        .get_attribute("height")
+        .unwrap_throw()
+        .parse()
+        .unwrap_throw();
+
+    let scalex = canvas_width / rect.width();
+    let scaley = canvas_height / rect.height();
+
     let touches = e.touches();
 
     let mut ans = vec![];
@@ -538,10 +572,10 @@ pub fn convert_coord_touch_inner(
         let rx = touch.radius_x() as f64;
         let ry = touch.radius_y() as f64;
         let [x, y] = [
-            (x + rx - rect.left()) ,
-            (y + ry - rect.top()) ,
+            (x + rx - rect.left()) * scalex,
+            (y + ry - rect.top()) * scaley,
         ];
-        
+
         ans.push([x as f32, y as f32]);
     }
     ans
@@ -589,7 +623,7 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     }
 }
 
-fn camera(camera: [f32; 2],zoom:f32) -> impl matrix::MyMatrix + matrix::Inverse {
+fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
     //move camera up
@@ -601,7 +635,7 @@ fn camera(camera: [f32; 2],zoom:f32) -> impl matrix::MyMatrix + matrix::Inverse 
     //rotate down at 45 degree angle
     let r2 = x_rotation(PI / 4.0);
 
-    let z=translation(0.0,0.0,zoom);
+    let z = translation(0.0, 0.0, zoom);
 
     t.chain(r).chain(r2).chain(scale(1.0, 1.0, -1.0)).chain(z)
 }
@@ -618,9 +652,7 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
 fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
-    
-
-    projection(dim).chain(camera(offset,0.0).inverse())
+    projection(dim).chain(camera(offset, 0.0).inverse())
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
