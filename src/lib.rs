@@ -151,15 +151,14 @@ pub async fn worker_entry() {
     //they are set correctly after resize is called on startup.
     let gl_width = canvas.width(); // as f32*1.6;
     let gl_height = canvas.height(); // as f32*1.6;
-
-    //TODO move?
     ctx.viewport(0, 0, gl_width as i32, gl_height as i32);
+    let mut viewport = [canvas.width() as f32, canvas.height() as f32];
+
     ctx.setup_alpha();
 
     // setup game data
     let mut color_iter = COLORS.iter().cycle().peekable();
     let game_dim = [1000.0f32, 1000.0];
-    let mut viewport = [canvas.width() as f32, canvas.height() as f32];
 
     let grid_width = 32;
 
@@ -645,6 +644,14 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     //log!(format!("{:?}",dim));
     //clip space positive z is into the screen. negative z is towards your face.
     //world space positive z is into the ground
+
+    // let s=if dim[0]<dim[1]{
+    //     //dragging y works when this case is true?
+    //     dim[0]/dim[1]
+    // }else{
+    //     //dragging x works when this case is true?
+    //     1.0
+    // };
     scale(1.0, -1.0, 1.0).chain(matrix::perspective(0.4, dim[0] / dim[1], 1.0, 16100.0))
 }
 
@@ -652,7 +659,7 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
 fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
-    projection(dim).chain(camera(offset, 0.0).inverse())
+    projection(dim).chain(camera(offset, -800.0 + dim[1]).inverse())
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
