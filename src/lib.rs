@@ -314,7 +314,7 @@ pub async fn worker_entry() {
         {
             let j = grid_viewport.spacing / 2.0;
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 0.0);
-            let s = matrix::scale(3.0, 3.0, 3.0);
+            let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
             cat.draw(&mut v);
@@ -571,8 +571,8 @@ pub fn convert_coord_touch_inner(
         let rx = touch.radius_x() as f64;
         let ry = touch.radius_y() as f64;
         let [x, y] = [
-            (x + rx - rect.left()) * scalex,
-            (y + ry - rect.top()) * scaley,
+            (x*scalex  - rect.left()*scalex),
+            (y*scaley  - rect.top()*scaley),
         ];
 
         ans.push([x as f32, y as f32]);
