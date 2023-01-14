@@ -214,8 +214,13 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::ScrollController::new([0., 0.].into());
 
+    let drop_shadow={
+        let data = model::load_glb(DROP_SHADOW_GLB).gen_ext(grid_viewport.spacing);
+        ModelGpu::new(&ctx, &data) 
+    };
+
     let cat = {
-        let data = model::load_glb(CAT_GLB).gen_ext(grid_viewport.spacing);
+        let data = model::load_glb(SHADED_GLB).gen_ext(grid_viewport.spacing);
         ModelGpu::new(&ctx, &data)
     };
 
@@ -317,12 +322,13 @@ pub async fn worker_entry() {
 
         {
             let j = grid_viewport.spacing / 2.0;
-            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 50.0);
+            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 30.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
             cat.draw(&mut v);
         }
+        
         //let k = matrix::z_rotation(counter).chain(matrix).generate();
         //let mut v = draw_sys.view(&k);
         //cat.draw(&mut v);
@@ -339,6 +345,15 @@ pub async fn worker_entry() {
                 let mut v = draw_sys.view(mm.as_ref());
                 grass.draw(&mut v);
             }
+        }
+
+        {
+            let j = grid_viewport.spacing / 2.0;
+            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 10.0);
+            let s = matrix::scale(1.0, 1.0, 1.0);
+            let m = matrix.chain(t).chain(s).generate();
+            let mut v = draw_sys.view(m.as_ref());
+            drop_shadow.draw(&mut v);
         }
 
         ctx.flush();
@@ -657,9 +672,11 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
 fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
-    projection(dim).chain(camera(offset, -600.0 + dim[1] * 0.5).inverse())
+    projection(dim).chain(camera(offset, -800.0 + dim[1] * 0.5).inverse())
 }
 
+const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
+const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
 const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
 const CAT_GLB: &'static [u8] = include_bytes!("../assets/tiger2.glb");
