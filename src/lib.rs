@@ -8,7 +8,7 @@ use shogo::{simple2d::DynamicBuffer, utils};
 use std::f32::consts::PI;
 use wasm_bindgen::prelude::*;
 
-use duckduckgeo::grid;
+use duckduckgeo::grid::{self, GridViewPort};
 
 mod scroll;
 
@@ -324,6 +324,7 @@ pub async fn worker_entry() {
         //     checkers_gpu.draw_pos(&mut v, &buffer);
         // }
 
+
         {
             let j = grid_viewport.spacing / 2.0;
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 30.0);
@@ -337,8 +338,11 @@ pub async fn worker_entry() {
         //let mut v = draw_sys.view(&k);
         //cat.draw(&mut v);
 
-        for a in 0..6 {
-            for b in 0..5 {
+        let [vvx,vvy]=get_world_rect(scroll_manager.camera(),viewport,&grid_viewport);
+        
+
+        for a in  (vvx[0]..vvx[1]).skip_while(|&a|a<0).take_while(|&a|a<grid_walls.dim().x){ //both should be skip
+            for b in (vvy[0]..vvy[1]).skip_while(|&a|a<0).take_while(|&a|a<grid_walls.dim().x) {
                 use matrix::*;
                 let x1 = grid_viewport.spacing * a as f32;
                 let y1 = grid_viewport.spacing * b as f32;
@@ -610,24 +614,41 @@ pub fn convert_coord_touch_inner(
     ans
 }
 
-// //TODO don't compute matrix each time!!!!
-// fn viewport_to_word(camera: [f32; 2], viewport: [f32; 2]) -> [[f32; 2]; 4] {
-//     [
-//         mouse_to_world([0.0, 0.0], camera, viewport),
-//         mouse_to_world([viewport[0], 0.0], camera, viewport),
-//         mouse_to_world([0.0, viewport[1]], camera, viewport),
-//         mouse_to_world(viewport, camera, viewport),
-//     ]
-// }
 
-fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
-    //TODO something wrong here. not factoring in zoom!
-    //generate some mouse points
+fn get_world_rect(camera:[f32;2],viewport:[f32;2],grid:&GridViewPort)->[[i16;2];2]{
+    let k=1.0;
+    let a=clip_to_world([k,k],camera,viewport);
+    let b=clip_to_world([-k,-k],camera,viewport);
+    
+    let a=grid.to_grid(a.into());
+    let b=grid.to_grid(b.into());
+    //assert!(a.x<=b.x);
+    //assert!(a.y<=b.y);
+    let xs=[a.x,b.x+1];
+
+
+    let a=clip_to_world([-k,k],camera,viewport);
+    let b=clip_to_world([k,-k],camera,viewport);
+    
+    let a=grid.to_grid(a.into());
+    let b=grid.to_grid(b.into());
+    
+    let ys=[a.y,b.y+1];
+
+    [xs,ys]
+
+
+
+
+
+}
+
+
+
+
+fn clip_to_world(clip:[f32;2],camera:[f32;2],viewport:[f32;2])->[f32;2]{
     use matrix::*;
-
-    let clip_x = mouse[0] / viewport[0] * 2. - 1.;
-    let clip_y = mouse[1] / viewport[1] * -2. + 1.;
-
+    let [clip_x,clip_y]=clip;
     let startc = [clip_x, clip_y, -0.9];
     let endc = [clip_x, clip_y, 0.999];
 
@@ -650,6 +671,13 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
     } else {
         [300.0, -80.0]
     }
+}
+
+fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
+    //generate some mouse points
+    let clip_x = mouse[0] / viewport[0] * 2. - 1.;
+    let clip_y = mouse[1] / viewport[1] * -2. + 1.;
+    clip_to_world([clip_x,clip_y],camera,viewport)
 }
 
 fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Inverse {
