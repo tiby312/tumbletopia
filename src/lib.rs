@@ -706,7 +706,7 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
 fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
-    projection(dim).chain(camera(offset, -700.0 + dim[1] * 0.2).inverse())
+    projection(dim).chain(camera(offset, -600.0 + dim[1] * 0.2).inverse())
 }
 
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
