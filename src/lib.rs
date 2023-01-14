@@ -136,7 +136,7 @@ fn resize() -> MEvent {
 #[wasm_bindgen]
 pub async fn worker_entry() {
     let (mut w, ss) = shogo::EngineWorker::new().await;
-    let mut frame_timer = shogo::FrameTimer::new(30, ss);
+    let mut frame_timer = shogo::FrameTimer::new(60, ss);
 
     let canvas = w.canvas();
     let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
@@ -341,8 +341,11 @@ pub async fn worker_entry() {
                 use matrix::*;
                 let x1 = grid_viewport.spacing * a as f32;
                 let y1 = grid_viewport.spacing * b as f32;
+                let s=0.99;
                 let mm = view_projection(scroll_manager.camera(), viewport)
                     .chain(translation(x1, y1, 1.0))
+                    .chain(scale(s,s,s))
+                    
                     .generate();
 
                 let mut v = draw_sys.view(mm.as_ref());
