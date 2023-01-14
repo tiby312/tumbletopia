@@ -209,7 +209,7 @@ pub async fn worker_entry() {
 
     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
 
-    let mut scroll_manager = scroll::ScrollController::new([800., 800.].into());
+    let mut scroll_manager = scroll::ScrollController::new([0., 0.].into());
 
     let cat = {
         let data = model::load_glb(CAT_GLB).gen_ext(grid_viewport.spacing);
@@ -269,6 +269,7 @@ pub async fn worker_entry() {
             scroll_manager.camera(),
             viewport,
         );
+        //log!(format!("mouse:{:?}",mouse_world));
 
         //let mm = mouse_ray(scroll_manager.cursor_canvas, scroll_manager.camera(),viewport);
 
@@ -571,8 +572,8 @@ pub fn convert_coord_touch_inner(
         let rx = touch.radius_x() as f64;
         let ry = touch.radius_y() as f64;
         let [x, y] = [
-            (x*scalex  - rect.left()*scalex),
-            (y*scaley  - rect.top()*scaley),
+            (x * scalex - rect.left() * scalex),
+            (y * scaley - rect.top() * scaley),
         ];
 
         ans.push([x as f32, y as f32]);
@@ -625,41 +626,28 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
 fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
-    //move camera up
-    let t = translation(camera[0], camera[1], -500.0);
+    use cgmath::*;
 
-    //rotate left to topleft corner
-    let r = z_rotation(-PI / 4.0);
+    let cam = Point3::new(camera[0] + 300.0, camera[1] + 300.0, -500.0);
+    let dir = Point3::new(camera[0], camera[1], 0.0);
+    let up = Vector3::new(0.0, 0.0, -1.0);
+    //position camera in the sky pointing down
+    let g = cgmath::Matrix4::look_at(cam, dir, up).inverse();
 
-    //rotate down at 45 degree angle
-    let r2 = x_rotation(PI / 4.0);
-
-    let z = translation(0.0, 0.0, zoom);
-
-    t.chain(r).chain(r2).chain(scale(1.0, 1.0, -1.0)).chain(z)
+    let zoom = translation(0.0, 0.0, zoom);
+    g.chain(zoom)
 }
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
-    //log!(format!("{:?}",dim));
-    //clip space positive z is into the screen. negative z is towards your face.
-    //world space positive z is into the ground
-
-    // let s=if dim[0]<dim[1]{
-    //     //dragging y works when this case is true?
-    //     dim[0]/dim[1]
-    // }else{
-    //     //dragging x works when this case is true?
-    //     1.0
-    // };
-    scale(1.0, -1.0, 1.0).chain(matrix::perspective(0.4, dim[0] / dim[1], 1.0, 16100.0))
+    matrix::perspective(0.4, dim[0] / dim[1], 1.0, 1000.0)
 }
 
 //project world to clip space
 fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
-    projection(dim).chain(camera(offset, -600.0 + dim[1]*0.5).inverse())
+    projection(dim).chain(camera(offset, -600.0 + dim[1] * 0.5).inverse())
 }
 
 const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
