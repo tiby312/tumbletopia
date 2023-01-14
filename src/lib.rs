@@ -614,25 +614,22 @@ fn get_world_rect(camera:[f32;2],viewport:[f32;2],grid:&GridViewPort)->[[i16;2];
     let k=1.0;
     let a=clip_to_world([k,k],camera,viewport);
     let b=clip_to_world([-k,-k],camera,viewport);
+    let c=clip_to_world([-k,k],camera,viewport);
+    let d=clip_to_world([k,-k],camera,viewport);
     
-    let a=grid.to_grid(a.into());
-    let b=grid.to_grid(b.into());
-    //assert!(a.x<=b.x);
-    //assert!(a.y<=b.y);
-    let xs=[a.x,b.x+1];
+
+    let mut r=axgeom::Rect::new(0.0,0.0,0.0,0.0);
+    r.grow_to_fit_point(a.into());
+    r.grow_to_fit_point(b.into());
+    r.grow_to_fit_point(c.into());
+    r.grow_to_fit_point(d.into());
 
 
-    let a=clip_to_world([-k,k],camera,viewport);
-    let b=clip_to_world([k,-k],camera,viewport);
-    
-    let a=grid.to_grid(a.into());
-    let b=grid.to_grid(b.into());
-    
-    let ys=[a.y,b.y+1];
-
-    [xs,ys]
+    let a=grid.to_grid([r.x.start,r.y.start].into());
+    let b=grid.to_grid([r.x.end,r.y.end].into());
 
 
+    [[a.x,b.x+1],[a.y,b.y+1]]
 
 
 
