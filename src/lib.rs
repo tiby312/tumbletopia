@@ -317,7 +317,7 @@ pub async fn worker_entry() {
 
         {
             let j = grid_viewport.spacing / 2.0;
-            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 0.0);
+            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 50.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
@@ -327,7 +327,7 @@ pub async fn worker_entry() {
         //let mut v = draw_sys.view(&k);
         //cat.draw(&mut v);
 
-        for a in 0..5 {
+        for a in 0..6 {
             for b in 0..5 {
                 use matrix::*;
                 let x1 = grid_viewport.spacing * a as f32;
