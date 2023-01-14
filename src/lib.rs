@@ -311,11 +311,6 @@ pub async fn worker_entry() {
         let matrix = view_projection(scroll_manager.camera(), viewport).generate();
 
 
-        //TODO don't repeat self!
-        // let inverse_matrix_transpose=camera(scroll_manager.camera(),-800.0 + viewport[1] * 0.5).inverse().generate();
-        // use cgmath::Matrix;
-        // //let inverse_matrix_transpose=inverse_matrix_transpose.transpose();
-        // let inverse_matrix_transpose=inverse_matrix_transpose.as_ref();
         let mut v = draw_sys.view(matrix.as_ref());
 
 
@@ -711,7 +706,7 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
 fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
-    projection(dim).chain(camera(offset, -800.0 + dim[1] * 0.5).inverse())
+    projection(dim).chain(camera(offset, -700.0 + dim[1] * 0.2).inverse())
 }
 
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
