@@ -201,7 +201,7 @@ pub async fn worker_entry() {
         }
     };
 
-    let checkers_gpu = ModelGpu::new(&ctx, &checkers);
+    //let checkers_gpu = ModelGpu::new(&ctx, &checkers);
 
     //let checker = ctx.buffer_static_clear(cache);
 
@@ -312,7 +312,7 @@ pub async fn worker_entry() {
 
 
         //TODO don't repeat self!
-        let inverse_matrix_transpose=camera(scroll_manager.camera(),-800.0 + viewport[1] * 0.5).generate();
+        let inverse_matrix_transpose=camera(scroll_manager.camera(),-800.0 + viewport[1] * 0.5).inverse().generate();
         use cgmath::Matrix;
         let inverse_matrix_transpose=inverse_matrix_transpose.transpose();
         let inverse_matrix_transpose=inverse_matrix_transpose.as_ref();

@@ -72,6 +72,14 @@ impl Doop {
         for p in m.positions.iter_mut() {
             *p = s.transform_point((*p).into()).into();
         }
+
+        let kk=x_rotation(PI / 2.0).generate();
+
+        for p in m.normals.iter_mut() {
+            *p = kk.transform_point((*p).into()).into();
+        }
+
+        
         m
     }
     //TODO return a read only reference instead!
@@ -143,7 +151,7 @@ impl Doop {
                     //}
                 };
 
-                
+
                 if let Some(t)=reader.read_normals(){
                     normals.extend(t);
                 }else{
@@ -193,6 +201,14 @@ impl Doop {
             .into_iter()
             .map(|p| matrix.transform_point(p.into()).into())
             .collect();
+
+
+        let normals = normals
+        .into_iter()
+        .map(|p| matrix.transform_point(p.into()).into())
+        .collect();
+
+
 
         use cgmath::SquareMatrix;
         ModelData {
