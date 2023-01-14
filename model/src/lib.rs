@@ -45,6 +45,7 @@ pub struct ModelData {
     pub matrix: cgmath::Matrix4<f32>,
     pub positions: Vec<[f32; 3]>,
     pub indices: Option<Vec<u16>>,
+    pub normals:Vec<[f32;3]>,
     pub texture: Img,
     // pub texture:Vec<u8>,
     // pub texture_width:u32,
@@ -60,7 +61,7 @@ impl Doop {
 
         let v = ss;
         let s = matrix::translation(v / 2.0, v / 2.0, 0.0)
-            .chain(x_rotation(-PI / 2.0))
+            .chain(x_rotation(PI / 2.0))
             .chain(matrix::scale(v, v, v))
             .generate();
 
@@ -76,6 +77,7 @@ impl Doop {
         let mut indices = Vec::new();
         let mut offset = 0;
         let mut tex_coords = Vec::new();
+        let mut normals=Vec::new();
 
         let texture = if let Some(texture) = self.document.textures().next() {
             //log!("found a texture!");
@@ -136,6 +138,12 @@ impl Doop {
                     panic!("no texture coords!");
                     //}
                 };
+
+                if let Some(t)=reader.read_normals(){
+                    normals.extend(t);
+                }else{
+                    panic!("no normals!");
+                }
                 //log!(format!("pos:{:?}", &p));
 
                 //log!(format!("ind:{:?}", &i));
@@ -183,6 +191,7 @@ impl Doop {
 
         use cgmath::SquareMatrix;
         ModelData {
+            normals,
             matrix,
             texture,
             positions,

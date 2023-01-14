@@ -184,14 +184,17 @@ pub async fn worker_entry() {
                         w: grid_viewport.spacing,
                         h: grid_viewport.spacing,
                     },
-                    1.0,
+                    -1.0,
                 );
             }
         }
         let j = (0..positions.len()).map(|_| [0.0; 2]).collect();
+        let normals = (0..positions.len()).map(|_| [0.0,0.0,1.0]).collect();
+        
         model::ModelData {
             matrix: cgmath::Matrix4::identity(),
             positions,
+            normals,
             indices: None,
             texture: model::single_tex(),
             tex_coords: j,
@@ -330,7 +333,7 @@ pub async fn worker_entry() {
                 let x1 = grid_viewport.spacing * a as f32;
                 let y1 = grid_viewport.spacing * b as f32;
                 let mm = view_projection(scroll_manager.camera(), viewport)
-                    .chain(translation(x1, y1, 0.0))
+                    .chain(translation(x1, y1, 1.0))
                     .generate();
 
                 let mut v = draw_sys.view(mm.as_ref());
@@ -624,14 +627,20 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
 }
 
 fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Inverse {
+    //world coordinates is right-handed
+    //x right
+    //y down
+    //z+ into the sky (-z into the worlds ground)
+
     use matrix::*;
 
     use cgmath::*;
 
-    let cam = Point3::new(camera[0] + 300.0, camera[1] + 300.0, -500.0);
-    let dir = Point3::new(camera[0], camera[1], 0.0);
-    let up = Vector3::new(0.0, 0.0, -1.0);
     //position camera in the sky pointing down
+    
+    let cam = Point3::new(camera[0] + 300.0, camera[1] + 300.0, 500.0);
+    let dir = Point3::new(camera[0], camera[1], 0.0);
+    let up = Vector3::new(0.0, 0.0, 1.0);
     let g = cgmath::Matrix4::look_at(cam, dir, up).inverse();
 
     let zoom = translation(0.0, 0.0, zoom);
@@ -639,6 +648,7 @@ fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Invers
 }
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+    
     use matrix::*;
     matrix::perspective(0.4, dim[0] / dim[1], 1.0, 1000.0)
 }
