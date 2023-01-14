@@ -27,6 +27,8 @@ pub fn load_glb(bytes: &[u8]) -> Doop {
     }
 }
 
+
+#[derive(Debug)]
 pub struct Img {
     pub width: u32,
     pub height: u32,
@@ -41,6 +43,8 @@ pub fn single_tex() -> Img {
     }
 }
 
+
+#[derive(Debug)]
 pub struct ModelData {
     pub matrix: cgmath::Matrix4<f32>,
     pub positions: Vec<[f32; 3]>,
@@ -139,6 +143,7 @@ impl Doop {
                     //}
                 };
 
+                
                 if let Some(t)=reader.read_normals(){
                     normals.extend(t);
                 }else{

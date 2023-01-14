@@ -216,16 +216,19 @@ pub async fn worker_entry() {
 
     let drop_shadow={
         let data = model::load_glb(DROP_SHADOW_GLB).gen_ext(grid_viewport.spacing);
+        //log!(format!("grass:{:?}",(&data.positions.len(),&data.normals.len(),&data.indices.as_ref().map(|o|o.len()))));
+        
         ModelGpu::new(&ctx, &data) 
     };
 
     let cat = {
-        let data = model::load_glb(SHADED_GLB).gen_ext(grid_viewport.spacing);
+        let data = model::load_glb(CAT_GLB).gen_ext(grid_viewport.spacing);
         ModelGpu::new(&ctx, &data)
     };
 
     let grass = {
         let data = model::load_glb(GRASS_GLB).gen_ext(grid_viewport.spacing);
+        
         ModelGpu::new(&ctx, &data)
     };
 
@@ -307,25 +310,26 @@ pub async fn worker_entry() {
 
         let matrix = view_projection(scroll_manager.camera(), viewport).generate();
 
-        let mut v = draw_sys.view(matrix.as_ref());
 
-        // v.draw_triangles(&checker, None,&[0.3, 0.3, 0.3, 0.3]);
+        //TODO don't repeat self!
+        let inverse_matrix_transpose=camera(scroll_manager.camera(),-800.0 + viewport[1] * 0.5).generate();
+        use cgmath::Matrix;
+        let inverse_matrix_transpose=inverse_matrix_transpose.transpose();
+        let inverse_matrix_transpose=inverse_matrix_transpose.as_ref();
+        let mut v = draw_sys.view(matrix.as_ref(),inverse_matrix_transpose);
 
-        checkers_gpu.draw_pos(&mut v, &buffer);
-        //v.draw_triangles(&walls,None, &[1.0, 0.5, 0.5, 1.0]);
-        // v.draw_triangles(&buffer,None, color_iter.peek().unwrap_throw());
 
-        {
-            buffer.update_no_clear(&checkers.positions);
-            checkers_gpu.draw_pos(&mut v, &buffer);
-        }
+        // {
+        //     buffer.update_no_clear(&checkers.positions);
+        //     checkers_gpu.draw_pos(&mut v, &buffer);
+        // }
 
         {
             let j = grid_viewport.spacing / 2.0;
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 30.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref());
+            let mut v = draw_sys.view(m.as_ref(),inverse_matrix_transpose);
             cat.draw(&mut v);
         }
         
@@ -342,7 +346,7 @@ pub async fn worker_entry() {
                     .chain(translation(x1, y1, 1.0))
                     .generate();
 
-                let mut v = draw_sys.view(mm.as_ref());
+                let mut v = draw_sys.view(mm.as_ref(),inverse_matrix_transpose);
                 grass.draw(&mut v);
             }
         }
@@ -352,7 +356,7 @@ pub async fn worker_entry() {
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 10.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref());
+            let mut v = draw_sys.view(m.as_ref(),inverse_matrix_transpose);
             drop_shadow.draw(&mut v);
         }
 
@@ -468,6 +472,7 @@ pub struct ModelGpu {
     tex_coord: simple2d::TextureCoordBuffer,
     texture: simple2d::TextureBuffer,
     position: simple2d::DynamicBuffer,
+    normals:simple2d::DynamicBuffer
 }
 impl ModelGpu {
     pub fn new(ctx: &web_sys::WebGl2RenderingContext, data: &model::ModelData) -> Self {
@@ -492,22 +497,28 @@ impl ModelGpu {
 
         let mut position = simple2d::DynamicBuffer::new(&ctx).unwrap_throw();
         position.update_no_clear(&data.positions);
+
+        let mut normals = simple2d::DynamicBuffer::new(&ctx).unwrap_throw();
+        normals.update_no_clear(&data.normals);
+        
         ModelGpu {
             index,
             tex_coord,
             texture,
             position,
+            normals
         }
     }
-    pub fn draw_pos(&self, view: &mut simple2d::View, pos: &simple2d::Buffer) {
-        view.draw_triangles(&self.texture, &self.tex_coord, pos, self.index.as_ref());
-    }
+    // pub fn draw_pos(&self, view: &mut simple2d::View, pos: &simple2d::Buffer) {
+    //     view.draw_triangles(&self.texture, &self.tex_coord, pos, self.index.as_ref());
+    // }
     pub fn draw(&self, view: &mut simple2d::View) {
         view.draw_triangles(
             &self.texture,
             &self.tex_coord,
             &self.position,
             self.index.as_ref(),
+            &self.normals
         );
     }
 }
