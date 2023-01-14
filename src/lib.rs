@@ -312,11 +312,11 @@ pub async fn worker_entry() {
 
 
         //TODO don't repeat self!
-        let inverse_matrix_transpose=camera(scroll_manager.camera(),-800.0 + viewport[1] * 0.5).inverse().generate();
-        use cgmath::Matrix;
-        let inverse_matrix_transpose=inverse_matrix_transpose.transpose();
-        let inverse_matrix_transpose=inverse_matrix_transpose.as_ref();
-        let mut v = draw_sys.view(matrix.as_ref(),inverse_matrix_transpose);
+        // let inverse_matrix_transpose=camera(scroll_manager.camera(),-800.0 + viewport[1] * 0.5).inverse().generate();
+        // use cgmath::Matrix;
+        // //let inverse_matrix_transpose=inverse_matrix_transpose.transpose();
+        // let inverse_matrix_transpose=inverse_matrix_transpose.as_ref();
+        let mut v = draw_sys.view(matrix.as_ref());
 
 
         // {
@@ -329,7 +329,7 @@ pub async fn worker_entry() {
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 30.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref(),inverse_matrix_transpose);
+            let mut v = draw_sys.view(m.as_ref());
             cat.draw(&mut v);
         }
         
@@ -346,7 +346,7 @@ pub async fn worker_entry() {
                     .chain(translation(x1, y1, 1.0))
                     .generate();
 
-                let mut v = draw_sys.view(mm.as_ref(),inverse_matrix_transpose);
+                let mut v = draw_sys.view(mm.as_ref());
                 grass.draw(&mut v);
             }
         }
@@ -356,7 +356,7 @@ pub async fn worker_entry() {
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 10.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref(),inverse_matrix_transpose);
+            let mut v = draw_sys.view(m.as_ref());
             drop_shadow.draw(&mut v);
         }
 
