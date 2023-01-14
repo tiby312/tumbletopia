@@ -627,7 +627,7 @@ fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32
 }
 
 fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Inverse {
-    //world coordinates is right-handed
+    //world coordinates is:
     //x right
     //y down
     //z+ into the sky (-z into the worlds ground)
@@ -648,7 +648,7 @@ fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Invers
 }
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
-    
+
     use matrix::*;
     matrix::perspective(0.4, dim[0] / dim[1], 1.0, 1000.0)
 }
