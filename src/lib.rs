@@ -18,6 +18,14 @@ const COLORS: &[[f32; 4]] = &[
     [0.0, 0.0, 1.0, 0.5],
 ];
 
+
+#[derive(Debug,Serialize,Deserialize,Clone)]
+pub struct Touches{
+    all:[(i32,f32,f32);4],
+    count:usize
+}
+
+
 ///Common data sent from the main thread to the worker.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum MEvent {
@@ -29,6 +37,15 @@ pub enum MEvent {
         x: f32,
         y: f32,
     },
+    TouchMove{
+        touches:Touches
+    },
+    TouchDown{
+        touches:Touches
+    },
+    TouchEnd{
+        touches:Touches
+    },
     CanvasMouseUp,
     ButtonClick,
     ShutdownClick,
@@ -39,6 +56,8 @@ pub enum MEvent {
         y: f32,
     },
 }
+
+
 
 #[wasm_bindgen]
 pub async fn main_entry() {
@@ -75,16 +94,21 @@ pub async fn main_entry() {
     let _handler = worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp);
 
     let _handler = worker.register_event(&canvas, "touchstart", |e| {
-        let [x, y] = convert_coord_touch(e.elem, e.event);
-        MEvent::CanvasMouseDown { x, y }
+        let touches = convert_coord_touch(e.elem, e.event);
+        MEvent::TouchDown { touches }
     });
 
-    let _handler = worker.register_event(&canvas, "touchend", |_| MEvent::CanvasMouseUp);
 
     let _handler = worker.register_event(&canvas, "touchmove", |e| {
-        let [x, y] = convert_coord_touch(e.elem, e.event);
-        MEvent::CanvasMouseMove { x, y }
+        let touches = convert_coord_touch(e.elem, e.event);
+        MEvent::TouchMove { touches}
     });
+
+    let _handler = worker.register_event(&canvas, "touchend", |e| {
+        let touches = convert_coord_touch(e.elem, e.event);
+        MEvent::TouchEnd { touches}
+    });
+
 
     let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick);
 
@@ -167,39 +191,39 @@ pub async fn worker_entry() {
         spacing: game_dim[0] / (grid_width as f32),
     };
 
-    let checkers = {
-        let mut positions = Vec::new();
-        let mut k = simple2d::shapes(&mut positions);
-        for x in 0..grid_width {
-            let offset = if x % 2 == 0 {
-                0..grid_width
-            } else {
-                1..grid_width - 1
-            };
-            for y in offset.step_by(2) {
-                k.rect(
-                    simple2d::Rect {
-                        x: x as f32 * grid_viewport.spacing,
-                        y: y as f32 * grid_viewport.spacing,
-                        w: grid_viewport.spacing,
-                        h: grid_viewport.spacing,
-                    },
-                    -1.0,
-                );
-            }
-        }
-        let j = (0..positions.len()).map(|_| [0.0; 2]).collect();
-        let normals = (0..positions.len()).map(|_| [0.0,0.0,1.0]).collect();
+    // let checkers = {
+    //     let mut positions = Vec::new();
+    //     let mut k = simple2d::shapes(&mut positions);
+    //     for x in 0..grid_width {
+    //         let offset = if x % 2 == 0 {
+    //             0..grid_width
+    //         } else {
+    //             1..grid_width - 1
+    //         };
+    //         for y in offset.step_by(2) {
+    //             k.rect(
+    //                 simple2d::Rect {
+    //                     x: x as f32 * grid_viewport.spacing,
+    //                     y: y as f32 * grid_viewport.spacing,
+    //                     w: grid_viewport.spacing,
+    //                     h: grid_viewport.spacing,
+    //                 },
+    //                 -1.0,
+    //             );
+    //         }
+    //     }
+    //     let j = (0..positions.len()).map(|_| [0.0; 2]).collect();
+    //     let normals = (0..positions.len()).map(|_| [0.0,0.0,1.0]).collect();
         
-        model::ModelData {
-            matrix: cgmath::Matrix4::identity(),
-            positions,
-            normals,
-            indices: None,
-            texture: model::single_tex(),
-            tex_coords: j,
-        }
-    };
+    //     model::ModelData {
+    //         matrix: cgmath::Matrix4::identity(),
+    //         positions,
+    //         normals,
+    //         indices: None,
+    //         texture: model::single_tex(),
+    //         tex_coords: j,
+    //     }
+    // };
 
     //let checkers_gpu = ModelGpu::new(&ctx, &checkers);
 
@@ -252,6 +276,16 @@ pub async fn worker_entry() {
                     viewport = [xx as f32, yy as f32];
                     log!(format!("updating viewport to be:{:?}", viewport));
                 }
+                MEvent::TouchMove { touches }=>{
+                    
+                }
+                MEvent::TouchDown{touches}=>{
+                    //log!(format!("touch down:{:?}",touches));
+                }
+                MEvent::TouchEnd{touches}=>{
+                    //log!(format!("touch end:{:?}",touches));
+                }
+                
                 MEvent::CanvasMouseUp => {
                     if scroll_manager.handle_mouse_up() {
                         j = true;
@@ -560,12 +594,16 @@ fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32;
     )
 }
 
-fn convert_coord_touch(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
+fn convert_coord_touch(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> Touches {
     event.prevent_default();
     event.stop_propagation();
     use wasm_bindgen::JsCast;
-    convert_coord_touch_inner(canvas, event.dyn_ref().unwrap_throw())[0]
+    convert_coord_touch_inner(canvas, event.dyn_ref().unwrap_throw())
 }
+
+
+
+
 
 ///
 /// Convert a mouse event to a coordinate for simple2d.
@@ -573,7 +611,7 @@ fn convert_coord_touch(canvas: &web_sys::EventTarget, event: &web_sys::Event) ->
 pub fn convert_coord_touch_inner(
     canvas: &web_sys::EventTarget,
     e: &web_sys::TouchEvent,
-) -> Vec<[f32; 2]> {
+) -> Touches {
     use wasm_bindgen::JsCast;
 
     let canvas: &web_sys::HtmlElement = canvas.dyn_ref().unwrap_throw();
@@ -595,7 +633,12 @@ pub fn convert_coord_touch_inner(
 
     let touches = e.touches();
 
-    let mut ans = vec![];
+
+    let mut k=Touches{
+        all:[(0,0.0,0.0);4],
+        count:0
+    };
+
     for a in 0..touches.length() {
         let touch = touches.get(a).unwrap();
         let x = touch.client_x() as f64;
@@ -607,9 +650,12 @@ pub fn convert_coord_touch_inner(
             (y * scaley - rect.top() * scaley),
         ];
 
-        ans.push([x as f32, y as f32]);
+        let id=touch.identifier();
+        k.all[k.count]=(id,x as f32,y as f32);
+        k.count+=1;
+        //ans.push([x as f32, y as f32]);
     }
-    ans
+    k
 }
 
 
