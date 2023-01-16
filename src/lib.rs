@@ -1,11 +1,10 @@
 use axgeom::{vec2, vec2same};
-use cgmath::{SquareMatrix, Transform};
+use cgmath::Transform;
 use gloo::console::log;
 use model::matrix;
 use serde::{Deserialize, Serialize};
-use shogo::simple2d::{self, TextureBuffer};
+use shogo::simple2d::{self};
 use shogo::{simple2d::DynamicBuffer, utils};
-use std::f32::consts::PI;
 use wasm_bindgen::prelude::*;
 
 use duckduckgeo::grid::{self, GridViewPort};
@@ -336,6 +335,7 @@ pub async fn worker_entry() {
         let mouse_world = scroll::mouse_to_world(
             scroll_manager.cursor_canvas(),
             scroll_manager.camera(),
+            scroll_manager.zoom(),
             viewport,
         );
         //log!(format!("mouse:{:?}",mouse_world));
@@ -366,7 +366,8 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let matrix = view_projection(scroll_manager.camera(), viewport).generate();
+        let matrix =
+            view_projection(scroll_manager.camera(), viewport, scroll_manager.zoom()).generate();
 
         let mut v = draw_sys.view(matrix.as_ref());
 
@@ -388,7 +389,12 @@ pub async fn worker_entry() {
         //let mut v = draw_sys.view(&k);
         //cat.draw(&mut v);
 
-        let [vvx, vvy] = get_world_rect(scroll_manager.camera(), viewport, &grid_viewport);
+        let [vvx, vvy] = get_world_rect(
+            scroll_manager.camera(),
+            scroll_manager.zoom(),
+            viewport,
+            &grid_viewport,
+        );
 
         for a in (vvx[0]..vvx[1])
             .skip_while(|&a| a < 0)
@@ -403,7 +409,7 @@ pub async fn worker_entry() {
                 let x1 = grid_viewport.spacing * a as f32;
                 let y1 = grid_viewport.spacing * b as f32;
                 let s = 0.99;
-                let mm = view_projection(scroll_manager.camera(), viewport)
+                let mm = view_projection(scroll_manager.camera(), viewport, scroll_manager.zoom())
                     .chain(translation(x1, y1, 1.0))
                     .chain(scale(s, s, s))
                     .generate();
@@ -679,12 +685,17 @@ pub fn convert_coord_touch_inner(
     k
 }
 
-fn get_world_rect(camera: [f32; 2], viewport: [f32; 2], grid: &GridViewPort) -> [[i16; 2]; 2] {
+fn get_world_rect(
+    camera: [f32; 2],
+    zoom: f32,
+    viewport: [f32; 2],
+    grid: &GridViewPort,
+) -> [[i16; 2]; 2] {
     let k = 1.0;
-    let a = clip_to_world([k, k], camera, viewport);
-    let b = clip_to_world([-k, -k], camera, viewport);
-    let c = clip_to_world([-k, k], camera, viewport);
-    let d = clip_to_world([k, -k], camera, viewport);
+    let a = clip_to_world([k, k], camera, zoom, viewport);
+    let b = clip_to_world([-k, -k], camera, zoom, viewport);
+    let c = clip_to_world([-k, k], camera, zoom, viewport);
+    let d = clip_to_world([k, -k], camera, zoom, viewport);
 
     let mut r = axgeom::Rect::new(0.0, 0.0, 0.0, 0.0);
     r.grow_to_fit_point(a.into());
@@ -698,13 +709,13 @@ fn get_world_rect(camera: [f32; 2], viewport: [f32; 2], grid: &GridViewPort) -> 
     [[a.x, b.x + 1], [a.y, b.y + 1]]
 }
 
-fn clip_to_world(clip: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
+fn clip_to_world(clip: [f32; 2], camera: [f32; 2], zoom: f32, viewport: [f32; 2]) -> [f32; 2] {
     use matrix::*;
     let [clip_x, clip_y] = clip;
     let startc = [clip_x, clip_y, -0.9];
     let endc = [clip_x, clip_y, 0.999];
 
-    let matrix = view_projection(camera, viewport).inverse().generate();
+    let matrix = view_projection(camera, viewport, zoom).inverse().generate();
 
     let a = matrix.transform_point(startc.into());
     let b = matrix.transform_point(endc.into());
@@ -752,10 +763,14 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
 }
 
 //project world to clip space
-fn view_projection(offset: [f32; 2], dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+fn view_projection(
+    offset: [f32; 2],
+    dim: [f32; 2],
+    zoom: f32,
+) -> impl matrix::MyMatrix + matrix::Inverse {
     use matrix::*;
 
-    projection(dim).chain(camera(offset, -600.0 + dim[1] * 0.2).inverse())
+    projection(dim).chain(camera(offset, zoom + -600.0 + dim[1] * 0.2).inverse())
 }
 
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");

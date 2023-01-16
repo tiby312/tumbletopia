@@ -1,26 +1,45 @@
 use cgmath::{InnerSpace, Vector2};
 
-pub enum Foo {
+enum Foo {
     OneTouchActive {
         touch_id: i32,
     },
     TwoTouchActive {
+        zoom: ZoomDelta,
         first_touch_id: i32,
         second_touch_id: i32,
     },
     None,
 }
 
+#[derive(Copy, Clone)]
+struct ZoomDelta {
+    starting_distance: f32,
+    current_distance: f32,
+}
+
+impl ZoomDelta {
+    fn compute(&self) -> f32 {
+        self.starting_distance - self.current_distance
+    }
+    fn update(&mut self, a: f32) {
+        self.current_distance = a;
+    }
+}
+
 pub struct TouchController {
     inner: ScrollController,
     foo: Foo,
+    persistent_zoom: f32,
 }
 
-fn compute_middle(touches: &Touches, first: i32, second: i32) -> [f32; 2] {
+fn compute_middle(touches: &Touches, first: i32, second: i32) -> (f32, [f32; 2]) {
     let first_pos: Vector2<f32> = touches.get_pos(first).unwrap().into();
     let second_pos: Vector2<f32> = touches.get_pos(second).unwrap().into();
-    let middle = first_pos + (second_pos - first_pos) / 2.0;
-    middle.into()
+    let offset = second_pos - first_pos;
+    let dis = offset.magnitude();
+    let middle = first_pos + offset / 2.0;
+    (dis, middle.into())
 }
 
 impl TouchController {
@@ -29,6 +48,7 @@ impl TouchController {
         TouchController {
             inner,
             foo: Foo::None,
+            persistent_zoom: 0.0,
         }
     }
 
@@ -37,13 +57,18 @@ impl TouchController {
             Foo::OneTouchActive { touch_id } => {
                 let second_touch_id = touches.select_lowest_touch_excluding(touch_id).unwrap();
 
-                let middle = compute_middle(&touches, touch_id, second_touch_id);
+                let (dis, middle) = compute_middle(&touches, touch_id, second_touch_id);
 
                 //we don't want to propogate this click to the user.
                 let _ = self.inner.handle_mouse_up();
                 self.inner.handle_mouse_down(middle);
 
                 self.foo = Foo::TwoTouchActive {
+                    zoom: ZoomDelta {
+                        starting_distance: dis,
+                        current_distance: dis,
+                    },
+
                     first_touch_id: touch_id,
                     second_touch_id,
                 }
@@ -69,14 +94,21 @@ impl TouchController {
         match self.foo {
             Foo::OneTouchActive { touch_id } => {
                 let mouse = touches.get_pos(touch_id).unwrap();
-                self.inner.handle_mouse_move(mouse, viewport);
+                self.inner.handle_mouse_move(mouse, viewport, self.zoom());
             }
             Foo::TwoTouchActive {
+                mut zoom,
                 first_touch_id,
                 second_touch_id,
             } => {
-                let middle = compute_middle(&touches, first_touch_id, second_touch_id);
-                self.inner.handle_mouse_move(middle, viewport);
+                let (dis, middle) = compute_middle(&touches, first_touch_id, second_touch_id);
+                self.inner.handle_mouse_move(middle, viewport, self.zoom());
+                zoom.update(dis);
+                self.foo = Foo::TwoTouchActive {
+                    zoom,
+                    first_touch_id,
+                    second_touch_id,
+                }
             }
             Foo::None => {
                 //A touch moved that we don't care about.
@@ -96,6 +128,7 @@ impl TouchController {
                 }
             }
             Foo::TwoTouchActive {
+                zoom,
                 first_touch_id,
                 second_touch_id,
             } => {
@@ -108,6 +141,7 @@ impl TouchController {
                         //don't propograte. otherwise it would click in the middle of both touches.
                         let _ = self.inner.handle_mouse_up();
                         self.foo = Foo::None;
+                        self.persistent_zoom += zoom.compute();
                         MouseUp::NoSelect
                     }
                     (None, Some(pos)) => {
@@ -116,6 +150,7 @@ impl TouchController {
                         self.foo = Foo::OneTouchActive {
                             touch_id: second_touch_id,
                         };
+                        self.persistent_zoom += zoom.compute();
                         MouseUp::NoSelect
                     }
                     (Some(pos), None) => {
@@ -124,6 +159,7 @@ impl TouchController {
                         self.foo = Foo::OneTouchActive {
                             touch_id: first_touch_id,
                         };
+                        self.persistent_zoom += zoom.compute();
                         MouseUp::NoSelect
                     }
                     (Some(_), Some(_)) => {
@@ -141,6 +177,15 @@ impl TouchController {
 
     pub fn step(&mut self) {
         self.inner.step();
+    }
+
+    pub fn zoom(&self) -> f32 {
+        let z = if let Foo::TwoTouchActive { zoom, .. } = &self.foo {
+            zoom.compute()
+        } else {
+            0.0
+        };
+        self.persistent_zoom + z
     }
 
     //camera in world coordinates
@@ -198,7 +243,7 @@ impl ScrollController {
         [self.camera[0], self.camera[1]]
     }
 
-    pub fn handle_mouse_move(&mut self, mouse: [f32; 2], viewport: [f32; 2]) {
+    pub fn handle_mouse_move(&mut self, mouse: [f32; 2], viewport: [f32; 2], zoom: f32) {
         self.cursor_canvas = mouse.into();
 
         match self.scrolling {
@@ -206,12 +251,17 @@ impl ScrollController {
                 mouse_anchor,
                 camera_anchor,
             } => {
-                let mouse_world1: Vector2<f32> =
-                    mouse_to_world(self.cursor_canvas.into(), camera_anchor.into(), viewport)
-                        .into();
+                let mouse_world1: Vector2<f32> = mouse_to_world(
+                    self.cursor_canvas.into(),
+                    camera_anchor.into(),
+                    zoom,
+                    viewport,
+                )
+                .into();
 
                 let mouse_world2: Vector2<f32> =
-                    mouse_to_world(mouse_anchor.into(), camera_anchor.into(), viewport).into();
+                    mouse_to_world(mouse_anchor.into(), camera_anchor.into(), zoom, viewport)
+                        .into();
 
                 let offset = mouse_world2 - mouse_world1;
                 self.last_camera = self.camera;
@@ -279,9 +329,14 @@ impl ScrollController {
     }
 }
 
-pub fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
+pub fn mouse_to_world(
+    mouse: [f32; 2],
+    camera: [f32; 2],
+    zoom: f32,
+    viewport: [f32; 2],
+) -> [f32; 2] {
     //generate some mouse points
     let clip_x = mouse[0] / viewport[0] * 2. - 1.;
     let clip_y = mouse[1] / viewport[1] * -2. + 1.;
-    clip_to_world([clip_x, clip_y], camera, viewport)
+    clip_to_world([clip_x, clip_y], camera, zoom, viewport)
 }
