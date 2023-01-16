@@ -40,6 +40,9 @@ enum Foo {
         first_touch_id: i32,
         second_touch_id: i32,
     },
+    MouseActive {
+        canvas_pos: [f32; 2],
+    },
     None,
 }
 
@@ -83,6 +86,33 @@ impl TouchController {
         }
     }
 
+    pub fn on_mouse_down(&mut self, canvas_pos: [f32; 2]) {
+        match self.foo {
+            Foo::None => {
+                self.inner.handle_mouse_down(canvas_pos);
+                self.foo = Foo::MouseActive { canvas_pos }
+            }
+            _ => {}
+        }
+    }
+    pub fn on_mouse_up(&mut self) -> MouseUp {
+        match self.foo {
+            Foo::MouseActive { .. } => {
+                self.foo = Foo::None;
+                self.inner.handle_mouse_up()
+            }
+            _ => MouseUp::NoSelect,
+        }
+    }
+    pub fn on_mouse_move(&mut self, pos: [f32; 2], view_projection: ViewProjection) {
+        match self.foo {
+            Foo::MouseActive { .. } => {
+                self.inner.handle_mouse_move(pos, view_projection);
+            }
+            _ => {}
+        }
+    }
+
     pub fn on_new_touch(&mut self, touches: &Touches) {
         match self.foo {
             Foo::OneTouchActive { touch_id } => {
@@ -118,6 +148,9 @@ impl TouchController {
                 //find position
                 self.foo = Foo::OneTouchActive { touch_id };
             }
+            Foo::MouseActive { .. } => {
+                //ignore touch mouse is active
+            }
         }
     }
 
@@ -144,11 +177,14 @@ impl TouchController {
             Foo::None => {
                 //A touch moved that we don't care about.
             }
+            Foo::MouseActive { .. } => {
+                //ignore touch mouse active
+            }
         }
     }
 
     #[must_use]
-    pub fn on_touch_up(&mut self, touches: &Touches, _viewport: [f32; 2]) -> MouseUp {
+    pub fn on_touch_up(&mut self, touches: &Touches) -> MouseUp {
         match self.foo {
             Foo::OneTouchActive { touch_id } => {
                 if touches.get_pos(touch_id).is_none() {
@@ -201,6 +237,10 @@ impl TouchController {
             }
             Foo::None => {
                 //Touch up for a touch we don't care about.
+                MouseUp::NoSelect
+            }
+            Foo::MouseActive { .. } => {
+                //ignore touch mosue active
                 MouseUp::NoSelect
             }
         }

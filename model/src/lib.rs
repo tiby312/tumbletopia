@@ -1,4 +1,3 @@
-
 pub mod matrix;
 use cgmath::Transform;
 use gltf::image::Source;

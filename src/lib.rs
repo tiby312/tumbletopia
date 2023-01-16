@@ -130,8 +130,8 @@ pub async fn worker_entry() {
         for e in res {
             match e {
                 MEvent::Resize {
-                    canvasx:_canvasx,
-                    canvasy:_canvasy,
+                    canvasx: _canvasx,
+                    canvasy: _canvasy,
                     x,
                     y,
                 } => {
@@ -153,26 +153,25 @@ pub async fn worker_entry() {
                 }
                 MEvent::TouchEnd { touches } => {
                     //log!(format!("touch end:{:?}",touches));
-                    if let scroll::MouseUp::Select = scroll_manager.on_touch_up(&touches, viewport)
-                    {
+                    if let scroll::MouseUp::Select = scroll_manager.on_touch_up(&touches) {
                         j = true;
                     }
                 }
 
                 MEvent::CanvasMouseUp => {
-                    // if scroll_manager.handle_mouse_up() {
-                    //     j = true;
-                    // }
+                    if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
+                        j = true;
+                    }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
                     //log!(format!("{:?}",(x,y)));
 
-                    //scroll_manager.handle_mouse_move([*x, *y], viewport);
+                    scroll_manager.on_mouse_move([*x, *y], matrix);
                 }
                 MEvent::CanvasMouseDown { x, y } => {
                     //log!(format!("{:?}",(x,y)));
 
-                    //scroll_manager.handle_mouse_down([*x, *y]);
+                    scroll_manager.on_mouse_down([*x, *y]);
                 }
                 MEvent::ButtonClick => {
                     let _ = color_iter.next();
@@ -211,7 +210,6 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        
         let [vvx, vvy] = get_world_rect(matrix, &grid_viewport);
 
         for a in (vvx[0]..vvx[1])
@@ -237,12 +235,11 @@ pub async fn worker_entry() {
             }
         }
 
-
-        
-        {//draw dropshadow
+        {
+            //draw dropshadow
             ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
-        
+
             let j = grid_viewport.spacing / 2.0;
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 10.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
@@ -253,7 +250,7 @@ pub async fn worker_entry() {
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
         }
-        
+
         {
             let j = grid_viewport.spacing / 2.0;
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 30.0);
@@ -270,7 +267,6 @@ pub async fn worker_entry() {
 
     log!("worker thread closing");
 }
-
 
 use shogo::simple2d::Vertex;
 use web_sys::WebGl2RenderingContext;
