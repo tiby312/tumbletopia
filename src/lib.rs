@@ -18,13 +18,36 @@ const COLORS: &[[f32; 4]] = &[
     [0.0, 0.0, 1.0, 0.5],
 ];
 
-
-#[derive(Debug,Serialize,Deserialize,Clone)]
-pub struct Touches{
-    all:[(i32,f32,f32);4],
-    count:usize
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Touches {
+    all: [(i32, f32, f32); 4],
+    count: usize,
 }
-
+impl Touches {
+    //TODO return reference
+    pub fn get_pos(&self, a: i32) -> Option<[f32; 2]> {
+        self.all
+            .iter()
+            .take(self.count)
+            .find(|&b| b.0 == a)
+            .map(|a| [a.1, a.2])
+    }
+    pub fn select_lowest_touch(&self) -> Option<i32> {
+        self.all
+            .iter()
+            .take(self.count)
+            .min_by_key(|a| a.0)
+            .map(|a| a.0)
+    }
+    pub fn select_lowest_touch_excluding(&self, b: i32) -> Option<i32> {
+        self.all
+            .iter()
+            .take(self.count)
+            .filter(|a| a.0 != b)
+            .min_by_key(|a| a.0)
+            .map(|a| a.0)
+    }
+}
 
 ///Common data sent from the main thread to the worker.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -37,14 +60,14 @@ pub enum MEvent {
         x: f32,
         y: f32,
     },
-    TouchMove{
-        touches:Touches
+    TouchMove {
+        touches: Touches,
     },
-    TouchDown{
-        touches:Touches
+    TouchDown {
+        touches: Touches,
     },
-    TouchEnd{
-        touches:Touches
+    TouchEnd {
+        touches: Touches,
     },
     CanvasMouseUp,
     ButtonClick,
@@ -56,8 +79,6 @@ pub enum MEvent {
         y: f32,
     },
 }
-
-
 
 #[wasm_bindgen]
 pub async fn main_entry() {
@@ -98,17 +119,15 @@ pub async fn main_entry() {
         MEvent::TouchDown { touches }
     });
 
-
     let _handler = worker.register_event(&canvas, "touchmove", |e| {
         let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchMove { touches}
+        MEvent::TouchMove { touches }
     });
 
     let _handler = worker.register_event(&canvas, "touchend", |e| {
         let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchEnd { touches}
+        MEvent::TouchEnd { touches }
     });
-
 
     let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick);
 
@@ -214,7 +233,7 @@ pub async fn worker_entry() {
     //     }
     //     let j = (0..positions.len()).map(|_| [0.0; 2]).collect();
     //     let normals = (0..positions.len()).map(|_| [0.0,0.0,1.0]).collect();
-        
+
     //     model::ModelData {
     //         matrix: cgmath::Matrix4::identity(),
     //         positions,
@@ -236,13 +255,13 @@ pub async fn worker_entry() {
 
     update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
 
-    let mut scroll_manager = scroll::ScrollController::new([0., 0.].into());
+    let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-    let drop_shadow={
+    let drop_shadow = {
         let data = model::load_glb(DROP_SHADOW_GLB).gen_ext(grid_viewport.spacing);
         //log!(format!("grass:{:?}",(&data.positions.len(),&data.normals.len(),&data.indices.as_ref().map(|o|o.len()))));
-        
-        ModelGpu::new(&ctx, &data) 
+
+        ModelGpu::new(&ctx, &data)
     };
 
     let cat = {
@@ -252,7 +271,7 @@ pub async fn worker_entry() {
 
     let grass = {
         let data = model::load_glb(GRASS_GLB).gen_ext(grid_viewport.spacing);
-        
+
         ModelGpu::new(&ctx, &data)
     };
 
@@ -276,30 +295,35 @@ pub async fn worker_entry() {
                     viewport = [xx as f32, yy as f32];
                     log!(format!("updating viewport to be:{:?}", viewport));
                 }
-                MEvent::TouchMove { touches }=>{
-                    
+                MEvent::TouchMove { touches } => {
+                    scroll_manager.on_touch_move(touches, viewport);
                 }
-                MEvent::TouchDown{touches}=>{
+                MEvent::TouchDown { touches } => {
                     //log!(format!("touch down:{:?}",touches));
+                    scroll_manager.on_new_touch(touches);
                 }
-                MEvent::TouchEnd{touches}=>{
+                MEvent::TouchEnd { touches } => {
                     //log!(format!("touch end:{:?}",touches));
-                }
-                
-                MEvent::CanvasMouseUp => {
-                    if scroll_manager.handle_mouse_up() {
+                    if let scroll::MouseUp::Select = scroll_manager.on_touch_up(&touches, viewport)
+                    {
                         j = true;
                     }
+                }
+
+                MEvent::CanvasMouseUp => {
+                    // if scroll_manager.handle_mouse_up() {
+                    //     j = true;
+                    // }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
                     //log!(format!("{:?}",(x,y)));
 
-                    scroll_manager.handle_mouse_move([*x, *y], viewport);
+                    //scroll_manager.handle_mouse_move([*x, *y], viewport);
                 }
                 MEvent::CanvasMouseDown { x, y } => {
                     //log!(format!("{:?}",(x,y)));
 
-                    scroll_manager.handle_mouse_down([*x, *y]);
+                    //scroll_manager.handle_mouse_down([*x, *y]);
                 }
                 MEvent::ButtonClick => {
                     let _ = color_iter.next();
@@ -309,8 +333,8 @@ pub async fn worker_entry() {
         }
 
         //log!(format!("{:?}",scroll_manager.camera()));
-        let mouse_world = mouse_to_world(
-            scroll_manager.cursor_canvas.into(),
+        let mouse_world = scroll::mouse_to_world(
+            scroll_manager.cursor_canvas(),
             scroll_manager.camera(),
             viewport,
         );
@@ -344,15 +368,12 @@ pub async fn worker_entry() {
 
         let matrix = view_projection(scroll_manager.camera(), viewport).generate();
 
-
         let mut v = draw_sys.view(matrix.as_ref());
-
 
         // {
         //     buffer.update_no_clear(&checkers.positions);
         //     checkers_gpu.draw_pos(&mut v, &buffer);
         // }
-
 
         {
             let j = grid_viewport.spacing / 2.0;
@@ -362,24 +383,29 @@ pub async fn worker_entry() {
             let mut v = draw_sys.view(m.as_ref());
             cat.draw(&mut v);
         }
-        
+
         //let k = matrix::z_rotation(counter).chain(matrix).generate();
         //let mut v = draw_sys.view(&k);
         //cat.draw(&mut v);
 
-        let [vvx,vvy]=get_world_rect(scroll_manager.camera(),viewport,&grid_viewport);
-        
+        let [vvx, vvy] = get_world_rect(scroll_manager.camera(), viewport, &grid_viewport);
 
-        for a in  (vvx[0]..vvx[1]).skip_while(|&a|a<0).take_while(|&a|a<grid_walls.dim().x){ //both should be skip
-            for b in (vvy[0]..vvy[1]).skip_while(|&a|a<0).take_while(|&a|a<grid_walls.dim().x) {
+        for a in (vvx[0]..vvx[1])
+            .skip_while(|&a| a < 0)
+            .take_while(|&a| a < grid_walls.dim().x)
+        {
+            //both should be skip
+            for b in (vvy[0]..vvy[1])
+                .skip_while(|&a| a < 0)
+                .take_while(|&a| a < grid_walls.dim().x)
+            {
                 use matrix::*;
                 let x1 = grid_viewport.spacing * a as f32;
                 let y1 = grid_viewport.spacing * b as f32;
-                let s=0.99;
+                let s = 0.99;
                 let mm = view_projection(scroll_manager.camera(), viewport)
                     .chain(translation(x1, y1, 1.0))
-                    .chain(scale(s,s,s))
-                    
+                    .chain(scale(s, s, s))
                     .generate();
 
                 let mut v = draw_sys.view(mm.as_ref());
@@ -508,7 +534,7 @@ pub struct ModelGpu {
     tex_coord: simple2d::TextureCoordBuffer,
     texture: simple2d::TextureBuffer,
     position: simple2d::DynamicBuffer,
-    normals:simple2d::DynamicBuffer
+    normals: simple2d::DynamicBuffer,
 }
 impl ModelGpu {
     pub fn new(ctx: &web_sys::WebGl2RenderingContext, data: &model::ModelData) -> Self {
@@ -536,13 +562,13 @@ impl ModelGpu {
 
         let mut normals = simple2d::DynamicBuffer::new(&ctx).unwrap_throw();
         normals.update_no_clear(&data.normals);
-        
+
         ModelGpu {
             index,
             tex_coord,
             texture,
             position,
-            normals
+            normals,
         }
     }
     // pub fn draw_pos(&self, view: &mut simple2d::View, pos: &simple2d::Buffer) {
@@ -554,7 +580,7 @@ impl ModelGpu {
             &self.tex_coord,
             &self.position,
             self.index.as_ref(),
-            &self.normals
+            &self.normals,
         );
     }
 }
@@ -601,10 +627,6 @@ fn convert_coord_touch(canvas: &web_sys::EventTarget, event: &web_sys::Event) ->
     convert_coord_touch_inner(canvas, event.dyn_ref().unwrap_throw())
 }
 
-
-
-
-
 ///
 /// Convert a mouse event to a coordinate for simple2d.
 ///
@@ -633,13 +655,12 @@ pub fn convert_coord_touch_inner(
 
     let touches = e.touches();
 
-
-    let mut k=Touches{
-        all:[(0,0.0,0.0);4],
-        count:0
+    let mut k = Touches {
+        all: [(0, 0.0, 0.0); 4],
+        count: 0,
     };
 
-    for a in 0..touches.length() {
+    for a in (0..touches.length()).take(4) {
         let touch = touches.get(a).unwrap();
         let x = touch.client_x() as f64;
         let y = touch.client_y() as f64;
@@ -650,46 +671,36 @@ pub fn convert_coord_touch_inner(
             (y * scaley - rect.top() * scaley),
         ];
 
-        let id=touch.identifier();
-        k.all[k.count]=(id,x as f32,y as f32);
-        k.count+=1;
+        let id = touch.identifier();
+        k.all[k.count] = (id, x as f32, y as f32);
+        k.count += 1;
         //ans.push([x as f32, y as f32]);
     }
     k
 }
 
+fn get_world_rect(camera: [f32; 2], viewport: [f32; 2], grid: &GridViewPort) -> [[i16; 2]; 2] {
+    let k = 1.0;
+    let a = clip_to_world([k, k], camera, viewport);
+    let b = clip_to_world([-k, -k], camera, viewport);
+    let c = clip_to_world([-k, k], camera, viewport);
+    let d = clip_to_world([k, -k], camera, viewport);
 
-fn get_world_rect(camera:[f32;2],viewport:[f32;2],grid:&GridViewPort)->[[i16;2];2]{
-    let k=1.0;
-    let a=clip_to_world([k,k],camera,viewport);
-    let b=clip_to_world([-k,-k],camera,viewport);
-    let c=clip_to_world([-k,k],camera,viewport);
-    let d=clip_to_world([k,-k],camera,viewport);
-    
-
-    let mut r=axgeom::Rect::new(0.0,0.0,0.0,0.0);
+    let mut r = axgeom::Rect::new(0.0, 0.0, 0.0, 0.0);
     r.grow_to_fit_point(a.into());
     r.grow_to_fit_point(b.into());
     r.grow_to_fit_point(c.into());
     r.grow_to_fit_point(d.into());
 
+    let a = grid.to_grid([r.x.start, r.y.start].into());
+    let b = grid.to_grid([r.x.end, r.y.end].into());
 
-    let a=grid.to_grid([r.x.start,r.y.start].into());
-    let b=grid.to_grid([r.x.end,r.y.end].into());
-
-
-    [[a.x,b.x+1],[a.y,b.y+1]]
-
-
-
+    [[a.x, b.x + 1], [a.y, b.y + 1]]
 }
 
-
-
-
-fn clip_to_world(clip:[f32;2],camera:[f32;2],viewport:[f32;2])->[f32;2]{
+fn clip_to_world(clip: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
     use matrix::*;
-    let [clip_x,clip_y]=clip;
+    let [clip_x, clip_y] = clip;
     let startc = [clip_x, clip_y, -0.9];
     let endc = [clip_x, clip_y, 0.999];
 
@@ -714,13 +725,6 @@ fn clip_to_world(clip:[f32;2],camera:[f32;2],viewport:[f32;2])->[f32;2]{
     }
 }
 
-fn mouse_to_world(mouse: [f32; 2], camera: [f32; 2], viewport: [f32; 2]) -> [f32; 2] {
-    //generate some mouse points
-    let clip_x = mouse[0] / viewport[0] * 2. - 1.;
-    let clip_y = mouse[1] / viewport[1] * -2. + 1.;
-    clip_to_world([clip_x,clip_y],camera,viewport)
-}
-
 fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Inverse {
     //world coordinates when viewed with this camera is:
     //x leftdown
@@ -732,7 +736,7 @@ fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Invers
     use cgmath::*;
 
     //position camera in the sky pointing down
-    
+
     let cam = Point3::new(camera[0] + 300.0, camera[1] + 300.0, 500.0);
     let dir = Point3::new(camera[0], camera[1], 0.0);
     let up = Vector3::new(0.0, 0.0, 1.0);
@@ -743,7 +747,6 @@ fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Invers
 }
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
-
     use matrix::*;
     matrix::perspective(0.4, dim[0] / dim[1], 1.0, 1000.0)
 }

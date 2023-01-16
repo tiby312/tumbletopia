@@ -27,7 +27,6 @@ pub fn load_glb(bytes: &[u8]) -> Doop {
     }
 }
 
-
 #[derive(Debug)]
 pub struct Img {
     pub width: u32,
@@ -43,13 +42,12 @@ pub fn single_tex() -> Img {
     }
 }
 
-
 #[derive(Debug)]
 pub struct ModelData {
     pub matrix: cgmath::Matrix4<f32>,
     pub positions: Vec<[f32; 3]>,
     pub indices: Option<Vec<u16>>,
-    pub normals:Vec<[f32;3]>,
+    pub normals: Vec<[f32; 3]>,
     pub texture: Img,
     // pub texture:Vec<u8>,
     // pub texture_width:u32,
@@ -73,13 +71,12 @@ impl Doop {
             *p = s.transform_point((*p).into()).into();
         }
 
-        let kk=x_rotation(PI / 2.0).generate();
+        let kk = x_rotation(PI / 2.0).generate();
 
         for p in m.normals.iter_mut() {
             *p = kk.transform_point((*p).into()).into();
         }
 
-        
         m
     }
     //TODO return a read only reference instead!
@@ -89,7 +86,7 @@ impl Doop {
         let mut indices = Vec::new();
         let mut offset = 0;
         let mut tex_coords = Vec::new();
-        let mut normals=Vec::new();
+        let mut normals = Vec::new();
 
         let texture = if let Some(texture) = self.document.textures().next() {
             //log!("found a texture!");
@@ -151,10 +148,9 @@ impl Doop {
                     //}
                 };
 
-
-                if let Some(t)=reader.read_normals(){
+                if let Some(t) = reader.read_normals() {
                     normals.extend(t);
-                }else{
+                } else {
                     panic!("no normals!");
                 }
                 //log!(format!("pos:{:?}", &p));
@@ -202,13 +198,10 @@ impl Doop {
             .map(|p| matrix.transform_point(p.into()).into())
             .collect();
 
-
         let normals = normals
-        .into_iter()
-        .map(|p| matrix.transform_point(p.into()).into())
-        .collect();
-
-
+            .into_iter()
+            .map(|p| matrix.transform_point(p.into()).into())
+            .collect();
 
         use cgmath::SquareMatrix;
         ModelData {
