@@ -21,6 +21,7 @@ pub enum MEvent {
         touches: scroll::Touches,
     },
     CanvasMouseUp,
+    CanvasMouseLeave,
     ButtonClick,
     ShutdownClick,
     Resize {
@@ -132,6 +133,8 @@ pub async fn main_entry() {
     });
 
     let _handler = worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp);
+
+    let _handler = worker.register_event(&canvas, "mouseleave", |_| MEvent::CanvasMouseLeave);
 
     let _handler = worker.register_event(&canvas, "touchstart", |e| {
         let touches = convert_coord_touch(e.elem, e.event);

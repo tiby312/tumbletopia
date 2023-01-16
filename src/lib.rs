@@ -157,7 +157,10 @@ pub async fn worker_entry() {
                         j = true;
                     }
                 }
-
+                MEvent::CanvasMouseLeave => {
+                    log!("mouse leaving!");
+                    let _ = scroll_manager.on_mouse_up();
+                }
                 MEvent::CanvasMouseUp => {
                     if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
                         j = true;
