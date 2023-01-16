@@ -211,27 +211,7 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let m = matrix.clone().generate();
-        //let v = draw_sys.view(m.as_ref());
-
-        // {
-        //     buffer.update_no_clear(&checkers.positions);
-        //     checkers_gpu.draw_pos(&mut v, &buffer);
-        // }
-
-        {
-            let j = grid_viewport.spacing / 2.0;
-            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 30.0);
-            let s = matrix::scale(1.0, 1.0, 1.0);
-            let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref());
-            cat.draw(&mut v);
-        }
-
-        //let k = matrix::z_rotation(counter).chain(matrix).generate();
-        //let mut v = draw_sys.view(&k);
-        //cat.draw(&mut v);
-
+        
         let [vvx, vvy] = get_world_rect(matrix, &grid_viewport);
 
         for a in (vvx[0]..vvx[1])
@@ -248,7 +228,7 @@ pub async fn worker_entry() {
                 let y1 = grid_viewport.spacing * b as f32;
                 let s = 0.99;
                 let mm = view_projection(scroll_manager.camera(), viewport, scroll_manager.zoom())
-                    .chain(translation(x1, y1, 1.0))
+                    .chain(translation(x1, y1, -1.0))
                     .chain(scale(s, s, s))
                     .generate();
 
@@ -257,13 +237,30 @@ pub async fn worker_entry() {
             }
         }
 
-        {
+
+        
+        {//draw dropshadow
+            ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
+            ctx.disable(WebGl2RenderingContext::CULL_FACE);
+        
             let j = grid_viewport.spacing / 2.0;
             let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 10.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
             drop_shadow.draw(&mut v);
+
+            ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
+            ctx.enable(WebGl2RenderingContext::CULL_FACE);
+        }
+        
+        {
+            let j = grid_viewport.spacing / 2.0;
+            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 30.0);
+            let s = matrix::scale(1.0, 1.0, 1.0);
+            let m = matrix.chain(t).chain(s).generate();
+            let mut v = draw_sys.view(m.as_ref());
+            cat.draw(&mut v);
         }
 
         ctx.flush();
@@ -276,6 +273,7 @@ pub async fn worker_entry() {
 
 
 use shogo::simple2d::Vertex;
+use web_sys::WebGl2RenderingContext;
 
 fn update_walls(
     grid_viewport: &duckduckgeo::grid::GridViewPort,

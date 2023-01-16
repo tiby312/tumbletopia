@@ -67,7 +67,7 @@ fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Invers
 }
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
-    matrix::perspective(0.4, dim[0] / dim[1], 1.0, 1000.0)
+    matrix::perspective(0.4, dim[0] / dim[1], 150.0, 1000.0)
 }
 
 #[derive(Copy, Clone)]
