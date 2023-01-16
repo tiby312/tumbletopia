@@ -1,4 +1,3 @@
-use gloo::console::log;
 
 pub mod matrix;
 use cgmath::Transform;
@@ -203,7 +202,6 @@ impl Doop {
             .map(|p| matrix.transform_point(p.into()).into())
             .collect();
 
-        use cgmath::SquareMatrix;
         ModelData {
             normals,
             matrix,

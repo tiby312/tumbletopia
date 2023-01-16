@@ -1,5 +1,36 @@
 use cgmath::{InnerSpace, Vector2};
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Touches {
+    pub all: [(i32, f32, f32); 4],
+    pub count: usize,
+}
+impl Touches {
+    //TODO return reference
+    pub fn get_pos(&self, a: i32) -> Option<[f32; 2]> {
+        self.all
+            .iter()
+            .take(self.count)
+            .find(|&b| b.0 == a)
+            .map(|a| [a.1, a.2])
+    }
+    pub fn select_lowest_touch(&self) -> Option<i32> {
+        self.all
+            .iter()
+            .take(self.count)
+            .min_by_key(|a| a.0)
+            .map(|a| a.0)
+    }
+    pub fn select_lowest_touch_excluding(&self, b: i32) -> Option<i32> {
+        self.all
+            .iter()
+            .take(self.count)
+            .filter(|a| a.0 != b)
+            .min_by_key(|a| a.0)
+            .map(|a| a.0)
+    }
+}
+
 enum Foo {
     OneTouchActive {
         touch_id: i32,
@@ -90,11 +121,11 @@ impl TouchController {
         }
     }
 
-    pub fn on_touch_move(&mut self, touches: &Touches, viewport: [f32; 2]) {
+    pub fn on_touch_move(&mut self, touches: &Touches, view_projection: ViewProjection) {
         match self.foo {
             Foo::OneTouchActive { touch_id } => {
                 let mouse = touches.get_pos(touch_id).unwrap();
-                self.inner.handle_mouse_move(mouse, viewport, self.zoom());
+                self.inner.handle_mouse_move(mouse, view_projection);
             }
             Foo::TwoTouchActive {
                 mut zoom,
@@ -102,7 +133,7 @@ impl TouchController {
                 second_touch_id,
             } => {
                 let (dis, middle) = compute_middle(&touches, first_touch_id, second_touch_id);
-                self.inner.handle_mouse_move(middle, viewport, self.zoom());
+                self.inner.handle_mouse_move(middle, view_projection);
                 zoom.update(dis);
                 self.foo = Foo::TwoTouchActive {
                     zoom,
@@ -243,7 +274,7 @@ impl ScrollController {
         [self.camera[0], self.camera[1]]
     }
 
-    pub fn handle_mouse_move(&mut self, mouse: [f32; 2], viewport: [f32; 2], zoom: f32) {
+    pub fn handle_mouse_move(&mut self, mouse: [f32; 2], view_projection: ViewProjection) {
         self.cursor_canvas = mouse.into();
 
         match self.scrolling {
@@ -251,17 +282,11 @@ impl ScrollController {
                 mouse_anchor,
                 camera_anchor,
             } => {
-                let mouse_world1: Vector2<f32> = mouse_to_world(
-                    self.cursor_canvas.into(),
-                    camera_anchor.into(),
-                    zoom,
-                    viewport,
-                )
-                .into();
+                let mouse_world1: Vector2<f32> =
+                    mouse_to_world(self.cursor_canvas.into(), view_projection).into();
 
                 let mouse_world2: Vector2<f32> =
-                    mouse_to_world(mouse_anchor.into(), camera_anchor.into(), zoom, viewport)
-                        .into();
+                    mouse_to_world(mouse_anchor.into(), view_projection).into();
 
                 let offset = mouse_world2 - mouse_world1;
                 self.last_camera = self.camera;
@@ -329,14 +354,9 @@ impl ScrollController {
     }
 }
 
-pub fn mouse_to_world(
-    mouse: [f32; 2],
-    camera: [f32; 2],
-    zoom: f32,
-    viewport: [f32; 2],
-) -> [f32; 2] {
+pub fn mouse_to_world(mouse: [f32; 2], view_projection: ViewProjection) -> [f32; 2] {
     //generate some mouse points
-    let clip_x = mouse[0] / viewport[0] * 2. - 1.;
-    let clip_y = mouse[1] / viewport[1] * -2. + 1.;
-    clip_to_world([clip_x, clip_y], camera, zoom, viewport)
+    let clip_x = mouse[0] / view_projection.dim[0] * 2. - 1.;
+    let clip_y = mouse[1] / view_projection.dim[1] * -2. + 1.;
+    clip_to_world([clip_x, clip_y], view_projection)
 }

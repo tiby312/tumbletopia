@@ -6,8 +6,13 @@ use serde::{Deserialize, Serialize};
 use shogo::simple2d::{self};
 use shogo::{simple2d::DynamicBuffer, utils};
 use wasm_bindgen::prelude::*;
-
+pub mod dom;
+mod model_parse;
+mod projection;
+mod util;
+use dom::MEvent;
 use duckduckgeo::grid::{self, GridViewPort};
+use projection::*;
 
 mod scroll;
 
@@ -16,164 +21,6 @@ const COLORS: &[[f32; 4]] = &[
     [0.0, 1.0, 0.0, 0.5],
     [0.0, 0.0, 1.0, 0.5],
 ];
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Touches {
-    all: [(i32, f32, f32); 4],
-    count: usize,
-}
-impl Touches {
-    //TODO return reference
-    pub fn get_pos(&self, a: i32) -> Option<[f32; 2]> {
-        self.all
-            .iter()
-            .take(self.count)
-            .find(|&b| b.0 == a)
-            .map(|a| [a.1, a.2])
-    }
-    pub fn select_lowest_touch(&self) -> Option<i32> {
-        self.all
-            .iter()
-            .take(self.count)
-            .min_by_key(|a| a.0)
-            .map(|a| a.0)
-    }
-    pub fn select_lowest_touch_excluding(&self, b: i32) -> Option<i32> {
-        self.all
-            .iter()
-            .take(self.count)
-            .filter(|a| a.0 != b)
-            .min_by_key(|a| a.0)
-            .map(|a| a.0)
-    }
-}
-
-///Common data sent from the main thread to the worker.
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum MEvent {
-    CanvasMouseMove {
-        x: f32,
-        y: f32,
-    },
-    CanvasMouseDown {
-        x: f32,
-        y: f32,
-    },
-    TouchMove {
-        touches: Touches,
-    },
-    TouchDown {
-        touches: Touches,
-    },
-    TouchEnd {
-        touches: Touches,
-    },
-    CanvasMouseUp,
-    ButtonClick,
-    ShutdownClick,
-    Resize {
-        canvasx: u32,
-        canvasy: u32,
-        x: f32,
-        y: f32,
-    },
-}
-
-#[wasm_bindgen]
-pub async fn main_entry() {
-    console_error_panic_hook::set_once();
-
-    use futures::StreamExt;
-
-    log!("demo start");
-
-    let (canvas, button, shutdown_button) = (
-        utils::get_by_id_canvas("mycanvas"),
-        utils::get_by_id_elem("mybutton"),
-        utils::get_by_id_elem("shutdownbutton"),
-    );
-
-    canvas.set_width(gloo::utils::body().client_width() as u32);
-    canvas.set_height(gloo::utils::body().client_height() as u32);
-
-    let offscreen = canvas.transfer_control_to_offscreen().unwrap_throw();
-
-    let (mut worker, mut response) =
-        shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
-
-    let _handler = worker.register_event(&canvas, "mousemove", |e| {
-        let [x, y] = convert_coord(e.elem, e.event);
-        MEvent::CanvasMouseMove { x, y }
-    });
-
-    let _handler = worker.register_event(&canvas, "mousedown", |e| {
-        let [x, y] = convert_coord(e.elem, e.event);
-        MEvent::CanvasMouseDown { x, y }
-    });
-
-    let _handler = worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp);
-
-    let _handler = worker.register_event(&canvas, "touchstart", |e| {
-        let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchDown { touches }
-    });
-
-    let _handler = worker.register_event(&canvas, "touchmove", |e| {
-        let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchMove { touches }
-    });
-
-    let _handler = worker.register_event(&canvas, "touchend", |e| {
-        let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchEnd { touches }
-    });
-
-    let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick);
-
-    let _handler = worker.register_event(&shutdown_button, "click", |_| MEvent::ShutdownClick);
-
-    let w = gloo::utils::window();
-
-    let _handler = worker.register_event(&w, "resize", |_| resize());
-
-    worker.post_message(resize());
-
-    let _: () = response.next().await.unwrap_throw();
-    log!("main thread is closing");
-}
-fn resize() -> MEvent {
-    let canvas = utils::get_by_id_canvas("mycanvas");
-    //canvas.set_width(gloo::utils::body().client_width() as u32);
-    //canvas.set_height(gloo::utils::body().client_height() as u32);
-
-    // let width = gloo::utils::document().body().unwrap_throw().client_width();
-    // let height = gloo::utils::document()
-    //     .body()
-    //     .unwrap_throw()
-    //     .client_height();
-
-    let width = canvas.client_width();
-    let height = canvas.client_height();
-
-    let realpixels = gloo::utils::window().device_pixel_ratio();
-    log!(format!("pixel ratio:{:?}", realpixels));
-    // .body.clientWidth;
-    // var height=document.body.clientHeight;
-
-    // var realToCSSPixels = window.devicePixelRatio;
-    // var gl_width  = Math.floor(width  * realToCSSPixels);
-    // var gl_height = Math.floor(height * realToCSSPixels);
-
-    let gl_width = (width as f64 * realpixels).floor();
-    let gl_height = (height as f64 * realpixels).floor();
-
-    MEvent::Resize {
-        canvasx: gloo::utils::body().client_width() as u32,
-        canvasy: gloo::utils::body().client_height() as u32,
-        x: gl_width as f32,
-        y: gl_height as f32,
-    }
-}
 
 #[wasm_bindgen]
 pub async fn worker_entry() {
@@ -260,28 +107,31 @@ pub async fn worker_entry() {
         let data = model::load_glb(DROP_SHADOW_GLB).gen_ext(grid_viewport.spacing);
         //log!(format!("grass:{:?}",(&data.positions.len(),&data.normals.len(),&data.indices.as_ref().map(|o|o.len()))));
 
-        ModelGpu::new(&ctx, &data)
+        model_parse::ModelGpu::new(&ctx, &data)
     };
 
     let cat = {
         let data = model::load_glb(CAT_GLB).gen_ext(grid_viewport.spacing);
-        ModelGpu::new(&ctx, &data)
+        model_parse::ModelGpu::new(&ctx, &data)
     };
 
     let grass = {
         let data = model::load_glb(GRASS_GLB).gen_ext(grid_viewport.spacing);
 
-        ModelGpu::new(&ctx, &data)
+        model_parse::ModelGpu::new(&ctx, &data)
     };
 
     'outer: loop {
         let mut j = false;
         let res = frame_timer.next().await;
+
+        let matrix = view_projection(scroll_manager.camera(), viewport, scroll_manager.zoom());
+
         for e in res {
             match e {
                 MEvent::Resize {
-                    canvasx,
-                    canvasy,
+                    canvasx:_canvasx,
+                    canvasy:_canvasy,
                     x,
                     y,
                 } => {
@@ -295,7 +145,7 @@ pub async fn worker_entry() {
                     log!(format!("updating viewport to be:{:?}", viewport));
                 }
                 MEvent::TouchMove { touches } => {
-                    scroll_manager.on_touch_move(touches, viewport);
+                    scroll_manager.on_touch_move(touches, matrix);
                 }
                 MEvent::TouchDown { touches } => {
                     //log!(format!("touch down:{:?}",touches));
@@ -332,12 +182,7 @@ pub async fn worker_entry() {
         }
 
         //log!(format!("{:?}",scroll_manager.camera()));
-        let mouse_world = scroll::mouse_to_world(
-            scroll_manager.cursor_canvas(),
-            scroll_manager.camera(),
-            scroll_manager.zoom(),
-            viewport,
-        );
+        let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), matrix);
         //log!(format!("mouse:{:?}",mouse_world));
 
         //let mm = mouse_ray(scroll_manager.cursor_canvas, scroll_manager.camera(),viewport);
@@ -366,10 +211,8 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let matrix =
-            view_projection(scroll_manager.camera(), viewport, scroll_manager.zoom()).generate();
-
-        let mut v = draw_sys.view(matrix.as_ref());
+        let m = matrix.clone().generate();
+        //let v = draw_sys.view(m.as_ref());
 
         // {
         //     buffer.update_no_clear(&checkers.positions);
@@ -389,12 +232,7 @@ pub async fn worker_entry() {
         //let mut v = draw_sys.view(&k);
         //cat.draw(&mut v);
 
-        let [vvx, vvy] = get_world_rect(
-            scroll_manager.camera(),
-            scroll_manager.zoom(),
-            viewport,
-            &grid_viewport,
-        );
+        let [vvx, vvy] = get_world_rect(matrix, &grid_viewport);
 
         for a in (vvx[0]..vvx[1])
             .skip_while(|&a| a < 0)
@@ -436,160 +274,6 @@ pub async fn worker_entry() {
     log!("worker thread closing");
 }
 
-use web_sys::{WebGl2RenderingContext, WebGlTexture};
-
-// pub struct AATexture<'a> {
-//     ctx: WebGl2RenderingContext,
-//     color_rend_buffer: web_sys::WebGlRenderbuffer,
-//     rend_buffer: web_sys::WebGlFramebuffer,
-//     color_buffer: web_sys::WebGlFramebuffer,
-//     texture:&'a TextureBuffer
-// }
-// impl<'a> AATexture<'a> {
-//     pub fn phase1(&mut self){
-//         self.ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&self.rend_buffer));
-//     }
-//     pub fn finish_phase1(&mut self){
-
-//         self.ctx.bind_framebuffer(WebGl2RenderingContext::READ_FRAMEBUFFER, Some(&self.rend_buffer));
-//         self.ctx.bind_framebuffer(WebGl2RenderingContext::DRAW_FRAMEBUFFER, Some(&self.color_buffer));
-//         self.ctx.clear_bufferfv_with_f32_array(WebGl2RenderingContext::COLOR, 0, &[1.0, 1.0, 1.0, 1.0]);
-
-//         let w=self.texture.width();
-//         let h=self.texture.height();
-//         self.ctx.blit_framebuffer(0, 0, w, h,
-//             0, 0, w, h,
-//             WebGl2RenderingContext::COLOR_BUFFER_BIT, WebGl2RenderingContext::LINEAR); //TODO nearest?
-
-//         self.ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&self.rend_buffer));
-
-//         self.ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
-
-//         //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-//     }
-
-//     pub fn phase2(&mut self){
-
-//     }
-//     pub fn new(
-//         ctx: &WebGl2RenderingContext,
-//         width: usize,
-//         height: usize,
-//         texture: &'a TextureBuffer,
-//     ) -> Self {
-
-//         let rend_buffer = {
-//             let rend_buffer=ctx.create_renderbuffer().unwrap_throw();
-//             ctx.bind_renderbuffer(WebGl2RenderingContext::RENDERBUFFER, Some(&rend_buffer));
-//             use wasm_bindgen::convert::IntoWasmAbi;
-//             // let max_sample: i32 = ctx
-//             //     .get_parameter(WebGl2RenderingContext::MAX_SAMPLES)
-//             //     .unwrap_throw()
-//             //     .into_abi() as i32;
-//             ctx.renderbuffer_storage_multisample(
-//                 WebGl2RenderingContext::RENDERBUFFER,
-//                 4,
-//                 WebGl2RenderingContext::RGBA8,
-//                 width as i32,
-//                 height as i32,
-//             );
-//             rend_buffer
-//         };
-
-//         let frame1={
-//             let frame1 = ctx.create_framebuffer().unwrap_throw();
-//             ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&frame1));
-//             ctx.framebuffer_renderbuffer(
-//                 WebGl2RenderingContext::FRAMEBUFFER,
-//                 WebGl2RenderingContext::COLOR_ATTACHMENT0,
-//                 WebGl2RenderingContext::RENDERBUFFER,
-//                 Some(&rend_buffer),
-//             );
-//             ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
-
-//             frame1
-//         };
-
-//         let frame2={
-//             let frame2 = ctx.create_framebuffer().unwrap_throw();
-//             ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, Some(&frame2));
-//             ctx.framebuffer_texture_2d(
-//                 WebGl2RenderingContext::FRAMEBUFFER,
-//                 WebGl2RenderingContext::COLOR_ATTACHMENT0,
-//                 WebGl2RenderingContext::TEXTURE_2D,
-//                 Some(texture.texture()),
-//                 0,
-//             );
-//             ctx.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
-
-//             frame2
-//         };
-
-//         AATexture {
-//             ctx:ctx.clone(),
-//             color_rend_buffer: rend_buffer,
-//             rend_buffer: frame1,
-//             color_buffer: frame2,
-//             texture
-//         }
-//     }
-// }
-
-pub struct ModelGpu {
-    index: Option<simple2d::IndexBuffer>,
-    tex_coord: simple2d::TextureCoordBuffer,
-    texture: simple2d::TextureBuffer,
-    position: simple2d::DynamicBuffer,
-    normals: simple2d::DynamicBuffer,
-}
-impl ModelGpu {
-    pub fn new(ctx: &web_sys::WebGl2RenderingContext, data: &model::ModelData) -> Self {
-        let index = if let Some(indices) = &data.indices {
-            let mut index = simple2d::IndexBuffer::new(&ctx).unwrap_throw();
-            index.update(&indices);
-            Some(index)
-        } else {
-            None
-        };
-
-        let mut tex_coord = simple2d::TextureCoordBuffer::new(&ctx).unwrap_throw();
-        tex_coord.update(&data.tex_coords);
-
-        let mut texture = simple2d::TextureBuffer::new(&ctx);
-
-        texture.update(
-            data.texture.width as usize,
-            data.texture.height as usize,
-            &data.texture.data,
-        );
-
-        let mut position = simple2d::DynamicBuffer::new(&ctx).unwrap_throw();
-        position.update_no_clear(&data.positions);
-
-        let mut normals = simple2d::DynamicBuffer::new(&ctx).unwrap_throw();
-        normals.update_no_clear(&data.normals);
-
-        ModelGpu {
-            index,
-            tex_coord,
-            texture,
-            position,
-            normals,
-        }
-    }
-    // pub fn draw_pos(&self, view: &mut simple2d::View, pos: &simple2d::Buffer) {
-    //     view.draw_triangles(&self.texture, &self.tex_coord, pos, self.index.as_ref());
-    // }
-    pub fn draw(&self, view: &mut simple2d::View) {
-        view.draw_triangles(
-            &self.texture,
-            &self.tex_coord,
-            &self.position,
-            self.index.as_ref(),
-            &self.normals,
-        );
-    }
-}
 
 use shogo::simple2d::Vertex;
 
@@ -617,165 +301,9 @@ fn update_walls(
     buffer.update_clear(cache);
 }
 
-//convert DOM coordinate to canvas relative coordinate
-fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
-    use wasm_bindgen::JsCast;
-    shogo::simple2d::convert_coord(
-        canvas.dyn_ref().unwrap_throw(),
-        event.dyn_ref().unwrap_throw(),
-    )
-}
-
-fn convert_coord_touch(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> Touches {
-    event.prevent_default();
-    event.stop_propagation();
-    use wasm_bindgen::JsCast;
-    convert_coord_touch_inner(canvas, event.dyn_ref().unwrap_throw())
-}
-
-///
-/// Convert a mouse event to a coordinate for simple2d.
-///
-pub fn convert_coord_touch_inner(
-    canvas: &web_sys::EventTarget,
-    e: &web_sys::TouchEvent,
-) -> Touches {
-    use wasm_bindgen::JsCast;
-
-    let canvas: &web_sys::HtmlElement = canvas.dyn_ref().unwrap_throw();
-    let rect = canvas.get_bounding_client_rect();
-
-    let canvas_width: f64 = canvas
-        .get_attribute("width")
-        .unwrap_throw()
-        .parse()
-        .unwrap_throw();
-    let canvas_height: f64 = canvas
-        .get_attribute("height")
-        .unwrap_throw()
-        .parse()
-        .unwrap_throw();
-
-    let scalex = canvas_width / rect.width();
-    let scaley = canvas_height / rect.height();
-
-    let touches = e.touches();
-
-    let mut k = Touches {
-        all: [(0, 0.0, 0.0); 4],
-        count: 0,
-    };
-
-    for a in (0..touches.length()).take(4) {
-        let touch = touches.get(a).unwrap();
-        let x = touch.client_x() as f64;
-        let y = touch.client_y() as f64;
-        let rx = touch.radius_x() as f64;
-        let ry = touch.radius_y() as f64;
-        let [x, y] = [
-            (x * scalex - rect.left() * scalex),
-            (y * scaley - rect.top() * scaley),
-        ];
-
-        let id = touch.identifier();
-        k.all[k.count] = (id, x as f32, y as f32);
-        k.count += 1;
-        //ans.push([x as f32, y as f32]);
-    }
-    k
-}
-
-fn get_world_rect(
-    camera: [f32; 2],
-    zoom: f32,
-    viewport: [f32; 2],
-    grid: &GridViewPort,
-) -> [[i16; 2]; 2] {
-    let k = 1.0;
-    let a = clip_to_world([k, k], camera, zoom, viewport);
-    let b = clip_to_world([-k, -k], camera, zoom, viewport);
-    let c = clip_to_world([-k, k], camera, zoom, viewport);
-    let d = clip_to_world([k, -k], camera, zoom, viewport);
-
-    let mut r = axgeom::Rect::new(0.0, 0.0, 0.0, 0.0);
-    r.grow_to_fit_point(a.into());
-    r.grow_to_fit_point(b.into());
-    r.grow_to_fit_point(c.into());
-    r.grow_to_fit_point(d.into());
-
-    let a = grid.to_grid([r.x.start, r.y.start].into());
-    let b = grid.to_grid([r.x.end, r.y.end].into());
-
-    [[a.x, b.x + 1], [a.y, b.y + 1]]
-}
-
-fn clip_to_world(clip: [f32; 2], camera: [f32; 2], zoom: f32, viewport: [f32; 2]) -> [f32; 2] {
-    use matrix::*;
-    let [clip_x, clip_y] = clip;
-    let startc = [clip_x, clip_y, -0.9];
-    let endc = [clip_x, clip_y, 0.999];
-
-    let matrix = view_projection(camera, viewport, zoom).inverse().generate();
-
-    let a = matrix.transform_point(startc.into());
-    let b = matrix.transform_point(endc.into());
-
-    let v = b - a;
-    let ray = collision::Ray::new(a, v);
-
-    let p = cgmath::Point3::new(0.0, 0.0, 0.0);
-    let up = cgmath::Vector3::new(0.0, 0.0, -1.0);
-
-    let plane = collision::Plane::from_point_normal(p, up);
-    use collision::Continuous;
-
-    if let Some(point) = plane.intersection(&ray) {
-        [point.x, point.y]
-    } else {
-        [300.0, -80.0]
-    }
-}
-
-fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Inverse {
-    //world coordinates when viewed with this camera is:
-    //x leftdown
-    //y right down
-    //z+ into the sky (-z into the worlds ground)
-
-    use matrix::*;
-
-    use cgmath::*;
-
-    //position camera in the sky pointing down
-
-    let cam = Point3::new(camera[0] + 300.0, camera[1] + 300.0, 500.0);
-    let dir = Point3::new(camera[0], camera[1], 0.0);
-    let up = Vector3::new(0.0, 0.0, 1.0);
-    let g = cgmath::Matrix4::look_at(cam, dir, up).inverse();
-
-    let zoom = translation(0.0, 0.0, zoom);
-    g.chain(zoom)
-}
-
-fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
-    use matrix::*;
-    matrix::perspective(0.4, dim[0] / dim[1], 1.0, 1000.0)
-}
-
-//project world to clip space
-fn view_projection(
-    offset: [f32; 2],
-    dim: [f32; 2],
-    zoom: f32,
-) -> impl matrix::MyMatrix + matrix::Inverse {
-    use matrix::*;
-
-    projection(dim).chain(camera(offset, zoom + -600.0 + dim[1] * 0.2).inverse())
-}
-
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
-const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
-const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
-const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
+// const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
+// const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
+// const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
 const CAT_GLB: &'static [u8] = include_bytes!("../assets/tiger2.glb");
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");
