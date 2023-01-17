@@ -36,6 +36,7 @@ enum Foo {
         touch_id: i32,
     },
     TwoTouchActive {
+        rot: RotDelta,
         zoom: ZoomDelta,
         first_touch_id: i32,
         second_touch_id: i32,
@@ -46,6 +47,20 @@ enum Foo {
     None,
 }
 
+#[derive(Copy, Clone)]
+struct RotDelta {
+    starting_rot: f32,
+    current_rot: f32,
+}
+
+impl RotDelta {
+    fn compute(&self) -> f32 {
+        self.starting_rot - self.current_rot
+    }
+    fn update(&mut self, a: f32) {
+        self.current_rot = a;
+    }
+}
 #[derive(Copy, Clone)]
 struct ZoomDelta {
     starting_distance: f32,
@@ -65,15 +80,17 @@ pub struct TouchController {
     inner: ScrollController,
     foo: Foo,
     persistent_zoom: f32,
+    persistent_rot: f32,
 }
 
-fn compute_middle(touches: &Touches, first: i32, second: i32) -> (f32, [f32; 2]) {
+fn compute_middle(touches: &Touches, first: i32, second: i32) -> (f32, [f32; 2], f32) {
     let first_pos: Vector2<f32> = touches.get_pos(first).unwrap().into();
     let second_pos: Vector2<f32> = touches.get_pos(second).unwrap().into();
     let offset = second_pos - first_pos;
+    let rot = offset.x.atan2(offset.y);
     let dis = offset.magnitude();
     let middle = first_pos + offset / 2.0;
-    (dis, middle.into())
+    (dis, middle.into(), rot)
 }
 
 impl TouchController {
@@ -83,6 +100,7 @@ impl TouchController {
             inner,
             foo: Foo::None,
             persistent_zoom: 0.0,
+            persistent_rot: 0.0,
         }
     }
 
@@ -118,7 +136,7 @@ impl TouchController {
             Foo::OneTouchActive { touch_id } => {
                 let second_touch_id = touches.select_lowest_touch_excluding(touch_id).unwrap();
 
-                let (dis, middle) = compute_middle(&touches, touch_id, second_touch_id);
+                let (dis, middle, rot) = compute_middle(&touches, touch_id, second_touch_id);
 
                 //we don't want to propogate this click to the user.
                 let _ = self.inner.handle_mouse_up();
@@ -129,7 +147,10 @@ impl TouchController {
                         starting_distance: dis,
                         current_distance: dis,
                     },
-
+                    rot: RotDelta {
+                        starting_rot: rot,
+                        current_rot: rot,
+                    },
                     first_touch_id: touch_id,
                     second_touch_id,
                 }
@@ -162,14 +183,17 @@ impl TouchController {
             }
             Foo::TwoTouchActive {
                 mut zoom,
+                mut rot,
                 first_touch_id,
                 second_touch_id,
             } => {
-                let (dis, middle) = compute_middle(&touches, first_touch_id, second_touch_id);
+                let (dis, middle, r) = compute_middle(&touches, first_touch_id, second_touch_id);
                 self.inner.handle_mouse_move(middle, view_projection);
                 zoom.update(dis);
+                rot.update(r);
                 self.foo = Foo::TwoTouchActive {
                     zoom,
+                    rot,
                     first_touch_id,
                     second_touch_id,
                 }
@@ -196,6 +220,7 @@ impl TouchController {
             }
             Foo::TwoTouchActive {
                 zoom,
+                rot,
                 first_touch_id,
                 second_touch_id,
             } => {
@@ -208,6 +233,7 @@ impl TouchController {
                         //don't propograte. otherwise it would click in the middle of both touches.
                         let _ = self.inner.handle_mouse_up();
                         self.foo = Foo::None;
+                        self.persistent_rot += rot.compute();
                         self.persistent_zoom += zoom.compute();
                         MouseUp::NoSelect
                     }
@@ -217,6 +243,7 @@ impl TouchController {
                         self.foo = Foo::OneTouchActive {
                             touch_id: second_touch_id,
                         };
+                        self.persistent_rot += rot.compute();
                         self.persistent_zoom += zoom.compute();
                         MouseUp::NoSelect
                     }
@@ -226,6 +253,7 @@ impl TouchController {
                         self.foo = Foo::OneTouchActive {
                             touch_id: first_touch_id,
                         };
+                        self.persistent_rot += rot.compute();
                         self.persistent_zoom += zoom.compute();
                         MouseUp::NoSelect
                     }
@@ -247,6 +275,20 @@ impl TouchController {
     }
 
     pub fn step(&mut self) {
+        // used kaifas answer at
+        // https://stackoverflow.com/questions/2708476/rotation-interpolation
+
+        let r = self.persistent_rot;
+        let v1 = Vector2::new(r.cos(), r.sin());
+        let target = Vector2::new(1.0, 0.0);
+
+        use cgmath::VectorSpace;
+        let newv = v1.lerp(target, 0.1);
+
+        self.persistent_rot = newv.y.atan2(newv.x);
+
+        //TODO use quarterion here??? has issues overlapping 2pi?
+        //self.persistent_rot+=-self.persistent_rot.clamp(-1.0,1.0)*0.1;
         self.inner.step();
     }
 
@@ -257,6 +299,15 @@ impl TouchController {
             0.0
         };
         self.persistent_zoom + z
+    }
+
+    pub fn rot(&self) -> f32 {
+        let z = if let Foo::TwoTouchActive { rot, .. } = &self.foo {
+            rot.compute()
+        } else {
+            0.0
+        };
+        self.persistent_rot + z
     }
 
     //camera in world coordinates

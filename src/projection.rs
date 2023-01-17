@@ -45,7 +45,7 @@ pub fn clip_to_world(clip: [f32; 2], view_projection: ViewProjection) -> [f32; 2
     }
 }
 
-fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Inverse {
+fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matrix::Inverse {
     //world coordinates when viewed with this camera is:
     //x leftdown
     //y right down
@@ -62,8 +62,12 @@ fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Invers
     let up = Vector3::new(0.0, 0.0, 1.0);
     let g = cgmath::Matrix4::look_at(cam, dir, up).inverse();
 
+    let rot = z_rotation(rot);
     let zoom = translation(0.0, 0.0, start_zoom + zoom);
-    translation(camera[0], camera[1], 0.0).chain(g).chain(zoom)
+    translation(camera[0], camera[1], 0.0)
+        .chain(rot)
+        .chain(g)
+        .chain(zoom)
 }
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
@@ -85,6 +89,7 @@ pub struct ViewProjection {
     pub offset: [f32; 2],
     pub dim: [f32; 2],
     pub zoom: f32,
+    pub rot: f32,
 }
 impl matrix::Inverse for ViewProjection {
     type Neg = cgmath::Matrix4<f32>;
@@ -96,21 +101,29 @@ impl matrix::Inverse for ViewProjection {
 }
 impl matrix::MyMatrix for ViewProjection {
     fn generate(self) -> cgmath::Matrix4<f32> {
-        //project world to clip space
-        fn view_projection(
-            offset: [f32; 2],
-            dim: [f32; 2],
-            zoom: f32,
-        ) -> impl matrix::MyMatrix + matrix::Inverse {
-            use matrix::*;
+        // //project world to clip space
+        // fn view_projection(
+        //     offset: [f32; 2],
+        //     dim: [f32; 2],
+        //     zoom: f32,
+        // ) -> impl matrix::MyMatrix + matrix::Inverse {
 
-            projection(dim).chain(camera(offset, zoom /* + -600.0 + dim[1] * 0.2*/).inverse())
-        }
+        // }
 
-        view_projection(self.offset, self.dim, self.zoom).generate()
+        use matrix::*;
+
+        projection(self.dim)
+            .chain(camera(self.offset, self.zoom, self.rot).inverse())
+            .generate()
+        //view_projection(self.offset, self.dim, self.zoom).generate()
     }
 }
 
-pub fn view_projection(offset: [f32; 2], dim: [f32; 2], zoom: f32) -> ViewProjection {
-    ViewProjection { offset, dim, zoom }
+pub fn view_projection(offset: [f32; 2], dim: [f32; 2], zoom: f32, rot: f32) -> ViewProjection {
+    ViewProjection {
+        offset,
+        dim,
+        zoom,
+        rot,
+    }
 }

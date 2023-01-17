@@ -125,7 +125,12 @@ pub async fn worker_entry() {
         let mut j = false;
         let res = frame_timer.next().await;
 
-        let matrix = view_projection(scroll_manager.camera(), viewport, scroll_manager.zoom());
+        let matrix = view_projection(
+            scroll_manager.camera(),
+            viewport,
+            scroll_manager.zoom(),
+            scroll_manager.rot(),
+        );
 
         for e in res {
             match e {
@@ -228,7 +233,7 @@ pub async fn worker_entry() {
                 let x1 = grid_viewport.spacing * a as f32;
                 let y1 = grid_viewport.spacing * b as f32;
                 let s = 0.99;
-                let mm = view_projection(scroll_manager.camera(), viewport, scroll_manager.zoom())
+                let mm = matrix
                     .chain(translation(x1, y1, -1.0))
                     .chain(scale(s, s, s))
                     .generate();
