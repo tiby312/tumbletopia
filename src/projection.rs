@@ -55,15 +55,15 @@ fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Invers
 
     use cgmath::*;
 
-    //position camera in the sky pointing down
+    let start_zoom = 300.0;
 
-    let cam = Point3::new(camera[0] + 300.0, camera[1] + 300.0, 500.0);
-    let dir = Point3::new(camera[0], camera[1], 0.0);
+    let cam = Point3::new(0.0, 0.0, 0.0);
+    let dir = Point3::new(-1.0, -1.0, -1.0);
     let up = Vector3::new(0.0, 0.0, 1.0);
     let g = cgmath::Matrix4::look_at(cam, dir, up).inverse();
 
-    let zoom = translation(0.0, 0.0, zoom);
-    g.chain(zoom)
+    let zoom = translation(0.0, 0.0, start_zoom + zoom);
+    translation(camera[0], camera[1], 0.0).chain(g).chain(zoom)
 }
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
@@ -73,7 +73,7 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     let near = 150.0;
     let far = 2000.0;
 
-    let fov_factor=0.05;
+    let fov_factor = 0.05;
     let frustum_height = dim[1] * fov_factor;
 
     let fov = 2.0 * (frustum_height * 0.5 / near).atan();

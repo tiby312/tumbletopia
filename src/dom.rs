@@ -31,8 +31,8 @@ pub enum MEvent {
         y: f32,
     },
 }
-impl MEvent{
-    fn some(self)->Option<Self>{
+impl MEvent {
+    fn some(self) -> Option<Self> {
         Some(self)
     }
 }
@@ -137,7 +137,7 @@ pub async fn main_entry() {
         MEvent::CanvasMouseDown { x, y }.some()
     });
 
-    let _handler = worker.register_event(&canvas,"wheel",|e|{
+    let _handler = worker.register_event(&canvas, "wheel", |e| {
         e.event.prevent_default();
         e.event.stop_propagation();
         None
@@ -145,7 +145,8 @@ pub async fn main_entry() {
 
     let _handler = worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp.some());
 
-    let _handler = worker.register_event(&canvas, "mouseleave", |_| MEvent::CanvasMouseLeave.some());
+    let _handler =
+        worker.register_event(&canvas, "mouseleave", |_| MEvent::CanvasMouseLeave.some());
 
     let _handler = worker.register_event(&canvas, "touchstart", |e| {
         let touches = convert_coord_touch(e.elem, e.event);
@@ -164,7 +165,8 @@ pub async fn main_entry() {
 
     let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick.some());
 
-    let _handler = worker.register_event(&shutdown_button, "click", |_| MEvent::ShutdownClick.some());
+    let _handler =
+        worker.register_event(&shutdown_button, "click", |_| MEvent::ShutdownClick.some());
 
     let w = gloo::utils::window();
 
