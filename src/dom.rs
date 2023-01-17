@@ -31,6 +31,11 @@ pub enum MEvent {
         y: f32,
     },
 }
+impl MEvent{
+    fn some(self)->Option<Self>{
+        Some(self)
+    }
+}
 
 //convert DOM coordinate to canvas relative coordinate
 fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
@@ -124,40 +129,46 @@ pub async fn main_entry() {
 
     let _handler = worker.register_event(&canvas, "mousemove", |e| {
         let [x, y] = convert_coord(e.elem, e.event);
-        MEvent::CanvasMouseMove { x, y }
+        MEvent::CanvasMouseMove { x, y }.some()
     });
 
     let _handler = worker.register_event(&canvas, "mousedown", |e| {
         let [x, y] = convert_coord(e.elem, e.event);
-        MEvent::CanvasMouseDown { x, y }
+        MEvent::CanvasMouseDown { x, y }.some()
     });
 
-    let _handler = worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp);
+    let _handler = worker.register_event(&canvas,"wheel",|e|{
+        e.event.prevent_default();
+        e.event.stop_propagation();
+        None
+    });
 
-    let _handler = worker.register_event(&canvas, "mouseleave", |_| MEvent::CanvasMouseLeave);
+    let _handler = worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp.some());
+
+    let _handler = worker.register_event(&canvas, "mouseleave", |_| MEvent::CanvasMouseLeave.some());
 
     let _handler = worker.register_event(&canvas, "touchstart", |e| {
         let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchDown { touches }
+        MEvent::TouchDown { touches }.some()
     });
 
     let _handler = worker.register_event(&canvas, "touchmove", |e| {
         let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchMove { touches }
+        MEvent::TouchMove { touches }.some()
     });
 
     let _handler = worker.register_event(&canvas, "touchend", |e| {
         let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchEnd { touches }
+        MEvent::TouchEnd { touches }.some()
     });
 
-    let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick);
+    let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick.some());
 
-    let _handler = worker.register_event(&shutdown_button, "click", |_| MEvent::ShutdownClick);
+    let _handler = worker.register_event(&shutdown_button, "click", |_| MEvent::ShutdownClick.some());
 
     let w = gloo::utils::window();
 
-    let _handler = worker.register_event(&w, "resize", |_| resize());
+    let _handler = worker.register_event(&w, "resize", |_| resize().some());
 
     worker.post_message(resize());
 

@@ -68,18 +68,15 @@ fn camera(camera: [f32; 2], zoom: f32) -> impl matrix::MyMatrix + matrix::Invers
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     //https://www.gamedev.net/forums/topic/558921-calculating-the-field-of-view/
-    //length=tan(fov/2);
-    //atan(length)=fov/2
-    //2*atan(length)=fov;
     //https://docs.unity3d.com/Manual/FrustumSizeAtDistance.html
 
     let near = 150.0;
     let far = 2000.0;
-    let frustum_height = dim[1] * 0.05;
+
+    let fov_factor=0.05;
+    let frustum_height = dim[1] * fov_factor;
 
     let fov = 2.0 * (frustum_height * 0.5 / near).atan();
-    //let fov=fov.max(0.16);
-    //log!(fov);
     matrix::perspective(fov /*0.4*/, dim[0] / dim[1], near, far)
 }
 
