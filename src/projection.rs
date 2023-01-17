@@ -46,6 +46,10 @@ pub fn clip_to_world(clip: [f32; 2], view_projection: ViewProjection) -> [f32; 2
 }
 
 fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matrix::Inverse {
+    
+    //TODO pass in the point to zoom in and rotate from!!!!!!
+
+
     //world coordinates when viewed with this camera is:
     //x leftdown
     //y right down
