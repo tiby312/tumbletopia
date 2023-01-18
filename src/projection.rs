@@ -57,7 +57,7 @@ fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matr
 
     use cgmath::*;
 
-    let start_zoom = 300.0;
+    let start_zoom = 800.0;
 
     let cam = Point3::new(0.0, 0.0, 0.0);
     let dir = Point3::new(-1.0, -1.0, -1.5);
@@ -77,14 +77,19 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     //https://docs.unity3d.com/Manual/FrustumSizeAtDistance.html
 
     let near = 10.0;
-    let far = 1000.0;
+    let far = 2000.0;
 
-    let fov_factor = 0.005;
-    let dd = dim[1].min(1000.0);
+    let fov_factor = 0.002;
+    let dd = dim[1];//.min(1200.0);
     let frustum_height = dd * fov_factor;
 
     let fov = 2.0 * (frustum_height * 0.5 / near).atan();
     matrix::perspective(fov /*0.4*/, dim[0] / dim[1], near, far)
+
+    //ortho
+    // let k=dim[0]/dim[1];
+    // let r=100.0;
+    // cgmath::ortho(-r*k, r*k, -r, r, 10.0, 1000.0)
 }
 
 #[derive(Copy, Clone)]
