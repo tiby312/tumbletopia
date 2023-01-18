@@ -92,7 +92,7 @@ fn compute_middle(touches: &Touches, first: i32, second: i32) -> (f32, [f32; 2],
     let middle = first_pos + offset / 2.0;
     (dis, middle.into(), rot)
 }
-const TOUCH_RAD:f32=10.0;
+const TOUCH_RAD: f32 = 10.0;
 impl TouchController {
     pub fn new(camera: Vector2<f32>) -> Self {
         let inner = ScrollController::new(camera);
@@ -125,7 +125,8 @@ impl TouchController {
     pub fn on_mouse_move(&mut self, pos: [f32; 2], view_projection: ViewProjection) {
         match self.foo {
             Foo::MouseActive { .. } => {
-                self.inner.handle_mouse_move(TOUCH_RAD,pos, view_projection);
+                self.inner
+                    .handle_mouse_move(TOUCH_RAD, pos, view_projection);
             }
             _ => {}
         }
@@ -179,7 +180,8 @@ impl TouchController {
         match self.foo {
             Foo::OneTouchActive { touch_id } => {
                 let mouse = touches.get_pos(touch_id).unwrap();
-                self.inner.handle_mouse_move(TOUCH_RAD,mouse, view_projection);
+                self.inner
+                    .handle_mouse_move(TOUCH_RAD, mouse, view_projection);
             }
             Foo::TwoTouchActive {
                 mut zoom,
@@ -188,7 +190,7 @@ impl TouchController {
                 second_touch_id,
             } => {
                 let (dis, middle, r) = compute_middle(&touches, first_touch_id, second_touch_id);
-                self.inner.handle_mouse_move(0.0,middle, view_projection);
+                self.inner.handle_mouse_move(0.0, middle, view_projection);
                 zoom.update(dis);
                 rot.update(r);
                 self.foo = Foo::TwoTouchActive {
@@ -367,7 +369,12 @@ impl ScrollController {
         [self.camera[0], self.camera[1]]
     }
 
-    pub fn handle_mouse_move(&mut self, buffer_radius:f32,mouse: [f32; 2], view_projection: ViewProjection) {
+    pub fn handle_mouse_move(
+        &mut self,
+        buffer_radius: f32,
+        mouse: [f32; 2],
+        view_projection: ViewProjection,
+    ) {
         self.cursor_canvas = mouse.into();
 
         match self.scrolling {

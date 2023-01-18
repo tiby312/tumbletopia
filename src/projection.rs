@@ -80,7 +80,8 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     let far = 1000.0;
 
     let fov_factor = 0.005;
-    let frustum_height = dim[1] * fov_factor;
+    let dd = dim[1].min(1000.0);
+    let frustum_height = dd * fov_factor;
 
     let fov = 2.0 * (frustum_height * 0.5 / near).atan();
     matrix::perspective(fov /*0.4*/, dim[0] / dim[1], near, far)
