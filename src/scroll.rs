@@ -275,20 +275,22 @@ impl TouchController {
     }
 
     pub fn step(&mut self) {
-        // used kaifas answer at
+        // used
+        // https://www.gamedev.net/forums/topic/370644-angle-between-two-vectors/3442782/
+        // not used
         // https://stackoverflow.com/questions/2708476/rotation-interpolation
 
         let r = self.persistent_rot;
         let v1 = Vector2::new(r.cos(), r.sin());
         let target = Vector2::new(1.0, 0.0);
 
-        use cgmath::VectorSpace;
-        let newv = v1.lerp(target, 0.1);
+        let perp_dot = -target.perp_dot(v1);
+        let dot = target.dot(v1);
+        let angle = perp_dot.atan2(dot);
 
-        self.persistent_rot = newv.y.atan2(newv.x);
+        //let m=0.02;
+        self.persistent_rot += angle * 0.05; //angle.clamp(-m,m);
 
-        //TODO use quarterion here??? has issues overlapping 2pi?
-        //self.persistent_rot+=-self.persistent_rot.clamp(-1.0,1.0)*0.1;
         self.inner.step();
     }
 
@@ -298,7 +300,7 @@ impl TouchController {
         } else {
             0.0
         };
-        self.persistent_zoom + z
+        (self.persistent_zoom + z) * 0.5
     }
 
     pub fn rot(&self) -> f32 {
@@ -392,7 +394,7 @@ impl ScrollController {
                 let offset = b - a;
                 if offset.magnitude2() > 10.0 * 10.0 {
                     self.scrolling = Scrollin::Scrolling {
-                        mouse_anchor,
+                        mouse_anchor: mouse.into(),
                         camera_anchor,
                     }
                 }

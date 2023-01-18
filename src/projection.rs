@@ -46,9 +46,7 @@ pub fn clip_to_world(clip: [f32; 2], view_projection: ViewProjection) -> [f32; 2
 }
 
 fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matrix::Inverse {
-    
     //TODO pass in the point to zoom in and rotate from!!!!!!
-
 
     //world coordinates when viewed with this camera is:
     //x leftdown
@@ -62,7 +60,7 @@ fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matr
     let start_zoom = 300.0;
 
     let cam = Point3::new(0.0, 0.0, 0.0);
-    let dir = Point3::new(-1.0, -1.0, -1.0);
+    let dir = Point3::new(-1.0, -1.0, -1.5);
     let up = Vector3::new(0.0, 0.0, 1.0);
     let g = cgmath::Matrix4::look_at(cam, dir, up).inverse();
 
@@ -78,10 +76,10 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     //https://www.gamedev.net/forums/topic/558921-calculating-the-field-of-view/
     //https://docs.unity3d.com/Manual/FrustumSizeAtDistance.html
 
-    let near = 150.0;
-    let far = 2000.0;
+    let near = 10.0;
+    let far = 1000.0;
 
-    let fov_factor = 0.05;
+    let fov_factor = 0.005;
     let frustum_height = dim[1] * fov_factor;
 
     let fov = 2.0 * (frustum_height * 0.5 / near).atan();
