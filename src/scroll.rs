@@ -302,7 +302,7 @@ impl TouchController {
         } else {
             0.0
         };
-        (self.persistent_zoom + z) * 0.5
+        (self.persistent_zoom + z) * 0.75
     }
 
     pub fn rot(&self) -> f32 {
