@@ -1,26 +1,20 @@
-use axgeom::{vec2, vec2same};
+use axgeom::{vec2same};
 use cgmath::Transform;
 use gloo::console::log;
 use model::matrix;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d::{self};
-use shogo::{simple2d::DynamicBuffer, utils};
+use shogo::{ utils};
 use wasm_bindgen::prelude::*;
 pub mod dom;
 mod model_parse;
 mod projection;
 mod util;
 use dom::MEvent;
-use duckduckgeo::grid::{self, GridViewPort};
 use projection::*;
 
 mod scroll;
-
-const COLORS: &[[f32; 4]] = &[
-    [1.0, 0.0, 0.0, 0.5],
-    [0.0, 1.0, 0.0, 0.5],
-    [0.0, 0.0, 1.0, 0.5],
-];
+mod grids;
 
 #[wasm_bindgen]
 pub async fn worker_entry() {
@@ -33,7 +27,6 @@ pub async fn worker_entry() {
     let mut draw_sys = ctx.shader_system();
     let mut buffer = ctx.buffer_dynamic();
     let cache = &mut vec![];
-    let mut walls = ctx.buffer_dynamic();
 
     //TODO get rid of this somehow.
     //these values are incorrect.
@@ -45,72 +38,22 @@ pub async fn worker_entry() {
 
     ctx.setup_alpha();
 
-    // setup game data
-    let mut color_iter = COLORS.iter().cycle().peekable();
-    let game_dim = [1000.0f32, 1000.0];
-
-    let grid_width = 32;
-    
-    let grid_viewport = duckduckgeo::grid::GridViewPort {
-        origin: vec2(0.0, 0.0),
-        spacing: game_dim[0] / (grid_width as f32),
-    };
-
-    // let checkers = {
-    //     let mut positions = Vec::new();
-    //     let mut k = simple2d::shapes(&mut positions);
-    //     for x in 0..grid_width {
-    //         let offset = if x % 2 == 0 {
-    //             0..grid_width
-    //         } else {
-    //             1..grid_width - 1
-    //         };
-    //         for y in offset.step_by(2) {
-    //             k.rect(
-    //                 simple2d::Rect {
-    //                     x: x as f32 * grid_viewport.spacing,
-    //                     y: y as f32 * grid_viewport.spacing,
-    //                     w: grid_viewport.spacing,
-    //                     h: grid_viewport.spacing,
-    //                 },
-    //                 -1.0,
-    //             );
-    //         }
-    //     }
-    //     let j = (0..positions.len()).map(|_| [0.0; 2]).collect();
-    //     let normals = (0..positions.len()).map(|_| [0.0,0.0,1.0]).collect();
-
-    //     model::ModelData {
-    //         matrix: cgmath::Matrix4::identity(),
-    //         positions,
-    //         normals,
-    //         indices: None,
-    //         texture: model::single_tex(),
-    //         tex_coords: j,
-    //     }
-    // };
-
-    //let checkers_gpu = ModelGpu::new(&ctx, &checkers);
-
-    //let checker = ctx.buffer_static_clear(cache);
-
+    let gg=grids::GridMatrix::new();
     
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let drop_shadow = {
-        let data = model::load_glb(DROP_SHADOW_GLB).gen_ext(grid_viewport.spacing);
-        //log!(format!("grass:{:?}",(&data.positions.len(),&data.normals.len(),&data.indices.as_ref().map(|o|o.len()))));
-
+        let data = model::load_glb(DROP_SHADOW_GLB).gen_ext(gg.spacing());
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
     let cat = {
-        let data = model::load_glb(CAT_GLB).gen_ext(grid_viewport.spacing);
+        let data = model::load_glb(CAT_GLB).gen_ext(gg.spacing());
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
     let grass = {
-        let data = model::load_glb(GRASS_GLB).gen_ext(grid_viewport.spacing);
+        let data = model::load_glb(GRASS_GLB).gen_ext(gg.spacing());
 
         model_parse::ModelGpu::new(&ctx, &data)
     };
@@ -179,7 +122,7 @@ pub async fn worker_entry() {
                     scroll_manager.on_mouse_down([*x, *y]);
                 }
                 MEvent::ButtonClick => {
-                    let _ = color_iter.next();
+
                 }
                 MEvent::ShutdownClick => break 'outer,
             }
@@ -188,7 +131,7 @@ pub async fn worker_entry() {
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), matrix);
 
         if j {
-            let val:[i16;2]=grid_viewport.to_grid((mouse_world).into()).into();
+            let val:[i16;2]=gg.to_grid((mouse_world).into()).into();
             if !cats.contains(&val){
                 cats.push(val);
             }else{
@@ -215,22 +158,22 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let [vvx, vvy] = get_world_rect(matrix, &grid_viewport);
+        let [vvx, vvy] = get_world_rect(matrix, &gg);
 
         
 
         for a in (vvx[0]..vvx[1])
             .skip_while(|&a| a < 0)
-            .take_while(|&a| a < grid_width)
+            .take_while(|&a| a < gg.num_rows())
         {
             //both should be skip
             for b in (vvy[0]..vvy[1])
                 .skip_while(|&a| a < 0)
-                .take_while(|&a| a < grid_width)
+                .take_while(|&a| a < gg.num_rows())
             {
                 use matrix::*;
-                let x1 = grid_viewport.spacing * a as f32;
-                let y1 = grid_viewport.spacing * b as f32;
+                let x1 = gg.spacing() * a as f32;
+                let y1 = gg.spacing() * b as f32;
                 let s = 0.99;
                 let mm = matrix
                     .chain(translation(x1, y1, -1.0))
@@ -247,18 +190,11 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
-            for a in cats.iter(){
-                //let t = matrix::translation(a[0] as f32, a[1] as f32, 0.0);
+            for &a in cats.iter(){
                 
-                let mm=projection::grid_to_world_center().generate();
-                let pos:[f32;3]=mm.transform_vector([a[0] as f32,a[1] as f32,1.0].into()).into();
-
-                //let pos:[f32;2]=grid_viewport.to_world_center(a.into()).into();
+                let pos:[f32;2]=gg.to_world_topleft(a.into()).into();
                 let t = matrix::translation(pos[0], pos[1] , 1.0);
             
-                //let j = grid_viewport.spacing / 2.0;
-                //let s = matrix::scale(1.0, 1.0, 1.0);
-                //let m = matrix.chain(t).chain(s).generate();
                 let m=matrix.chain(t).generate();
                 
                 let mut v = draw_sys.view(m.as_ref());
@@ -271,10 +207,9 @@ pub async fn worker_entry() {
         }
 
         for a in cats.iter(){
-            let pos:[f32;2]=grid_viewport.to_world_center(a.into()).into();
+            let pos:[f32;2]=gg.to_world_topleft(a.into()).into();
         
-            let j = grid_viewport.spacing / 2.0;
-            let t = matrix::translation(pos[0] - j, pos[1] - j, 20.0);
+            let t = matrix::translation(pos[0], pos[1], 20.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
@@ -289,7 +224,6 @@ pub async fn worker_entry() {
     log!("worker thread closing");
 }
 
-use shogo::simple2d::Vertex;
 use web_sys::WebGl2RenderingContext;
 
 

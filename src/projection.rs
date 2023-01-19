@@ -1,5 +1,7 @@
+use crate::grids::GridMatrix;
+
 use super::*;
-pub fn get_world_rect(view_projection: ViewProjection, grid: &GridViewPort) -> [[i16; 2]; 2] {
+pub fn get_world_rect(view_projection: ViewProjection, grid: &GridMatrix) -> [[i16; 2]; 2] {
     let k = 1.0;
     let a = clip_to_world([k, k], view_projection);
     let b = clip_to_world([-k, -k], view_projection);
@@ -73,16 +75,6 @@ fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matr
 }
 
 
-pub fn grid_to_world_center()->impl matrix::MyMatrix+matrix::Inverse{
-    use matrix::*;
-
-    let grid_width = 32;
-    
-    let game_dim = [1000.0f32, 1000.0];
-    let spacing=game_dim[0] / (grid_width as f32);
-
-    matrix::scale(spacing,spacing,1.0).chain(matrix::translation(spacing/2.0,spacing/2.0,0.0))
-}
 
 fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     //https://www.gamedev.net/forums/topic/558921-calculating-the-field-of-view/
