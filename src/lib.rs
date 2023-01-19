@@ -248,12 +248,19 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
             for a in cats.iter(){
-                let pos:[f32;2]=grid_viewport.to_world_center(a.into()).into();
+                //let t = matrix::translation(a[0] as f32, a[1] as f32, 0.0);
+                
+                let mm=projection::grid_to_world_center().generate();
+                let pos:[f32;3]=mm.transform_vector([a[0] as f32,a[1] as f32,1.0].into()).into();
+
+                //let pos:[f32;2]=grid_viewport.to_world_center(a.into()).into();
+                let t = matrix::translation(pos[0], pos[1] , 1.0);
             
-                let j = grid_viewport.spacing / 2.0;
-                let t = matrix::translation(pos[0] - j, pos[1] - j, 1.0);
-                let s = matrix::scale(1.0, 1.0, 1.0);
-                let m = matrix.chain(t).chain(s).generate();
+                //let j = grid_viewport.spacing / 2.0;
+                //let s = matrix::scale(1.0, 1.0, 1.0);
+                //let m = matrix.chain(t).chain(s).generate();
+                let m=matrix.chain(t).generate();
+                
                 let mut v = draw_sys.view(m.as_ref());
                 drop_shadow.draw(&mut v);
 
