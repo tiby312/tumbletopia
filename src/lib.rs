@@ -115,6 +115,9 @@ pub async fn worker_entry() {
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
+
+    let mut cats=vec!([2;2]);
+
     'outer: loop {
         let mut j = false;
         let res = frame_timer.next().await;
@@ -182,18 +185,17 @@ pub async fn worker_entry() {
             }
         }
 
-        //log!(format!("{:?}",scroll_manager.camera()));
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), matrix);
-        //log!(format!("mouse:{:?}",mouse_world));
 
-        //let mm = mouse_ray(scroll_manager.cursor_canvas, scroll_manager.camera(),viewport);
+        if j {
+            let val:[i16;2]=grid_viewport.to_grid((mouse_world).into()).into();
+            if !cats.contains(&val){
+                cats.push(val);
+            }else{
+                cats.retain(|a|a!=&val);
+            }
 
-        //log!(format!("{:?}", (scroll_manager.cursor_canvas,scroll_manager.camera(),mouse_world)));
-
-        // if j {
-        //      grid_walls.set(grid_viewport.to_grid((mouse_world).into()), true);
-        //      update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
-        // }
+        }
         scroll_manager.step();
 
         use matrix::*;
@@ -214,6 +216,8 @@ pub async fn worker_entry() {
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
         let [vvx, vvy] = get_world_rect(matrix, &grid_viewport);
+
+        
 
         for a in (vvx[0]..vvx[1])
             .skip_while(|&a| a < 0)
@@ -243,20 +247,27 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
-            let j = grid_viewport.spacing / 2.0;
-            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 10.0);
-            let s = matrix::scale(1.0, 1.0, 1.0);
-            let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref());
-            drop_shadow.draw(&mut v);
+            for a in cats.iter(){
+                let pos:[f32;2]=grid_viewport.to_world_center(a.into()).into();
+            
+                let j = grid_viewport.spacing / 2.0;
+                let t = matrix::translation(pos[0] - j, pos[1] - j, 1.0);
+                let s = matrix::scale(1.0, 1.0, 1.0);
+                let m = matrix.chain(t).chain(s).generate();
+                let mut v = draw_sys.view(m.as_ref());
+                drop_shadow.draw(&mut v);
+
+            }
 
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
         }
 
-        {
+        for a in cats.iter(){
+            let pos:[f32;2]=grid_viewport.to_world_center(a.into()).into();
+        
             let j = grid_viewport.spacing / 2.0;
-            let t = matrix::translation(mouse_world[0] - j, mouse_world[1] - j, 30.0);
+            let t = matrix::translation(pos[0] - j, pos[1] - j, 20.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
