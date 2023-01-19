@@ -50,7 +50,7 @@ pub async fn worker_entry() {
     let game_dim = [1000.0f32, 1000.0];
 
     let grid_width = 32;
-
+    
     let grid_viewport = duckduckgeo::grid::GridViewPort {
         origin: vec2(0.0, 0.0),
         spacing: game_dim[0] / (grid_width as f32),
@@ -94,13 +94,7 @@ pub async fn worker_entry() {
 
     //let checker = ctx.buffer_static_clear(cache);
 
-    let mut grid_walls = grid::Grid2D::new(vec2same(grid_width));
-
-    grid_walls.set(vec2(0, 0), true);
-    grid_walls.set(vec2(2, 1), true);
-
-    update_walls(&grid_viewport, cache, &mut walls, &grid_walls);
-
+    
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let drop_shadow = {
@@ -214,6 +208,7 @@ pub async fn worker_entry() {
         //     mouse_world[2] - 10.0,
         // );
 
+
         buffer.update_clear(cache);
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
@@ -222,12 +217,12 @@ pub async fn worker_entry() {
 
         for a in (vvx[0]..vvx[1])
             .skip_while(|&a| a < 0)
-            .take_while(|&a| a < grid_walls.dim().x)
+            .take_while(|&a| a < grid_width)
         {
             //both should be skip
             for b in (vvy[0]..vvy[1])
                 .skip_while(|&a| a < 0)
-                .take_while(|&a| a < grid_walls.dim().x)
+                .take_while(|&a| a < grid_width)
             {
                 use matrix::*;
                 let x1 = grid_viewport.spacing * a as f32;
@@ -279,29 +274,6 @@ pub async fn worker_entry() {
 use shogo::simple2d::Vertex;
 use web_sys::WebGl2RenderingContext;
 
-fn update_walls(
-    grid_viewport: &duckduckgeo::grid::GridViewPort,
-    cache: &mut Vec<Vertex>,
-    buffer: &mut DynamicBuffer,
-    grid_walls: &grid::Grid2D,
-) {
-    let mut s = simple2d::shapes(cache);
-    for (p, val) in grid_walls.iter() {
-        if val {
-            let top_left = grid_viewport.to_world_topleft(p);
-            s.rect(
-                simple2d::Rect {
-                    x: top_left.x,
-                    y: top_left.y,
-                    w: grid_viewport.spacing,
-                    h: grid_viewport.spacing,
-                },
-                0.1,
-            );
-        }
-    }
-    buffer.update_clear(cache);
-}
 
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
