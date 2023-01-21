@@ -1,10 +1,10 @@
-use axgeom::{vec2same};
+use axgeom::vec2same;
 use cgmath::Transform;
 use gloo::console::log;
 use model::matrix;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d::{self};
-use shogo::{ utils};
+use shogo::utils;
 use wasm_bindgen::prelude::*;
 pub mod dom;
 mod model_parse;
@@ -13,8 +13,57 @@ mod util;
 use dom::MEvent;
 use projection::*;
 
-mod scroll;
 mod grids;
+mod movement;
+mod scroll;
+
+// enum SelectState<'a>{
+//     Nothing,
+//     CatSelected{
+//         cat_pos:[i16;2],
+//         allowable_squares:&'a mut Vec<[i16;2]>,
+//     }
+// }
+
+// //Handles different states within one turn only!!!
+// pub struct Player<'a>{
+//     state:SelectState<'a>
+// }
+// impl<'a> Player<'a>{
+//     fn handle_mouse_select(&mut self,grid:[i16;2]){
+//         match self.state{
+//             SelectState::Nothing=>{
+
+//             },
+//             SelectState::CatSelected(pos)=>{
+
+//             }
+//         }
+//     }
+//     fn draw(&mut self){
+//         match self.state{
+//             SelectState::Nothing=>{
+
+//             },
+//             SelectState::CatSelected(pos)=>{
+
+//             }
+//         }
+//     }
+// }
+
+// struct World{
+
+// }
+
+// pub trait SelectedItem{
+//     fn handle_select(&mut self,grid:[i16;2],world:&mut World){
+
+//     }
+//     fn draw(&self){
+
+//     }
+// }
 
 #[wasm_bindgen]
 pub async fn worker_entry() {
@@ -38,8 +87,8 @@ pub async fn worker_entry() {
 
     ctx.setup_alpha();
 
-    let gg=grids::GridMatrix::new();
-    
+    let gg = grids::GridMatrix::new();
+
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let drop_shadow = {
@@ -58,11 +107,18 @@ pub async fn worker_entry() {
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
+    let select_model = {
+        let data = model::load_glb(SELECT_GLB).gen_ext(gg.spacing());
 
-    let mut cats=vec!([2;2]);
+        model_parse::ModelGpu::new(&ctx, &data)
+    };
+
+    let mut cats = vec![[2; 2]];
+
+    let mut selected_cell = None;
 
     'outer: loop {
-        let mut j = false;
+        let mut on_select = false;
         let res = frame_timer.next().await;
 
         let matrix = view_projection(
@@ -99,7 +155,7 @@ pub async fn worker_entry() {
                 MEvent::TouchEnd { touches } => {
                     //log!(format!("touch end:{:?}",touches));
                     if let scroll::MouseUp::Select = scroll_manager.on_touch_up(&touches) {
-                        j = true;
+                        on_select = true;
                     }
                 }
                 MEvent::CanvasMouseLeave => {
@@ -108,7 +164,7 @@ pub async fn worker_entry() {
                 }
                 MEvent::CanvasMouseUp => {
                     if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
-                        j = true;
+                        on_select = true;
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
@@ -121,24 +177,32 @@ pub async fn worker_entry() {
 
                     scroll_manager.on_mouse_down([*x, *y]);
                 }
-                MEvent::ButtonClick => {
-
-                }
+                MEvent::ButtonClick => {}
                 MEvent::ShutdownClick => break 'outer,
             }
         }
 
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), matrix);
 
-        if j {
-            let val:[i16;2]=gg.to_grid((mouse_world).into()).into();
-            if !cats.contains(&val){
-                cats.push(val);
-            }else{
-                cats.retain(|a|a!=&val);
-            }
+        if on_select {
+            let cell: [i16; 2] = gg.to_grid((mouse_world).into()).into();
 
+            let gg = movement::PossibleMoves::new::<movement::WarriorMovement>(
+                GridCoord(cell),
+                MoveUnit(4),
+            );
+            selected_cell = Some(gg);
+
+            // if let Some(ss)=selected_cell{
+            //     if cell==ss{
+            //         selected_cell=None;
+            //     }
+            // }else{
+            //     selected_cell=Some(cell);
+
+            // }
         }
+
         scroll_manager.step();
 
         use matrix::*;
@@ -153,14 +217,11 @@ pub async fn worker_entry() {
         //     mouse_world[2] - 10.0,
         // );
 
-
         buffer.update_clear(cache);
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
         let [vvx, vvy] = get_world_rect(matrix, &gg);
-
-        
 
         for a in (vvx[0]..vvx[1])
             .skip_while(|&a| a < 0)
@@ -186,29 +247,46 @@ pub async fn worker_entry() {
         }
 
         {
+            ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
+            ctx.disable(WebGl2RenderingContext::CULL_FACE);
+
+            if let Some(a) = &selected_cell {
+                for GridCoord(a) in a.iter_coords() {
+                    let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+                    let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                    let m = matrix.chain(t).generate();
+
+                    let mut v = draw_sys.view(m.as_ref());
+                    select_model.draw(&mut v);
+                }
+            }
+            ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
+            ctx.enable(WebGl2RenderingContext::CULL_FACE);
+        }
+
+        {
             //draw dropshadow
             ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
-            for &a in cats.iter(){
-                
-                let pos:[f32;2]=gg.to_world_topleft(a.into()).into();
-                let t = matrix::translation(pos[0], pos[1] , 1.0);
-            
-                let m=matrix.chain(t).generate();
-                
+            for &a in cats.iter() {
+                let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+                let t = matrix::translation(pos[0], pos[1], 1.0);
+
+                let m = matrix.chain(t).generate();
+
                 let mut v = draw_sys.view(m.as_ref());
                 drop_shadow.draw(&mut v);
-
             }
 
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
         }
 
-        for a in cats.iter(){
-            let pos:[f32;2]=gg.to_world_topleft(a.into()).into();
-        
+        for a in cats.iter() {
+            let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+
             let t = matrix::translation(pos[0], pos[1], 20.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
@@ -226,7 +304,9 @@ pub async fn worker_entry() {
 
 use web_sys::WebGl2RenderingContext;
 
+use crate::movement::{GridCoord, MoveUnit};
 
+const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");

@@ -1,31 +1,33 @@
-
 use super::*;
 
 use axgeom::*;
 ///A way to map a grid to world coordinates and vice versa
 #[derive(Debug)]
 pub struct GridMatrix {
-    grid_width:i16,
-    grid_dim:[f32;2],
+    grid_width: i16,
+    grid_dim: [f32; 2],
     spacing: f32,
 }
 impl GridMatrix {
-    pub fn new()->Self{
-            
+    pub fn new() -> Self {
         let grid_width = 32;
-            
-        let grid_dim = [1000.0f32, 1000.0];
-        
-        let spacing=grid_dim[0] / (grid_width as f32);
 
-        Self { grid_width,grid_dim ,spacing}
+        let grid_dim = [1000.0f32, 1000.0];
+
+        let spacing = grid_dim[0] / (grid_width as f32);
+
+        Self {
+            grid_width,
+            grid_dim,
+            spacing,
+        }
     }
     pub fn to_world_topleft(&self, pos: Vec2<i16>) -> Vec2<f32> {
         pos.inner_as() * self.spacing
     }
 
     pub fn to_world_center(&self, pos: Vec2<i16>) -> Vec2<f32> {
-        self.to_world_topleft(pos)  + vec2same(self.spacing) / 2.0
+        self.to_world_topleft(pos) + vec2same(self.spacing) / 2.0
     }
 
     pub fn to_grid_mod(&self, pos: Vec2<f32>) -> Vec2<f32> {
@@ -38,10 +40,10 @@ impl GridMatrix {
         result.inner_as()
     }
 
-    pub fn num_rows(&self)->i16{
+    pub fn num_rows(&self) -> i16 {
         self.grid_width
     }
-    pub fn dim(&self)->&[f32;2]{
+    pub fn dim(&self) -> &[f32; 2] {
         &self.grid_dim
     }
     pub fn spacing(&self) -> f32 {
@@ -56,11 +58,11 @@ impl GridMatrix {
 
 // impl GridMatrix{
 //     pub fn new()->Self{
-            
+
 //         let grid_width = 32;
-            
+
 //         let grid_dim = [1000.0f32, 1000.0];
-        
+
 //         Self { grid_width,grid_dim }
 //     }
 //     pub fn world_to_grid(&self,a:[i16;2])->[f32;2]{
