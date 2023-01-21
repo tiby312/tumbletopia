@@ -188,7 +188,7 @@ pub async fn worker_entry() {
             let cell: [i16; 2] = gg.to_grid((mouse_world).into()).into();
 
             if let Some(gg)=selected_cell{
-                if gg.contains_coord(&GridCoord(cell)){
+                if movement::contains_coord(gg.iter_coords(),&GridCoord(cell)){
                     let c=cats.iter_mut().find(|a|**a==gg.start().0).unwrap();
                     *c=cell;
                 }
@@ -198,11 +198,13 @@ pub async fn worker_entry() {
                 
                 if cats.contains(&cell){
 
-                    let gg = movement::PossibleMoves::new::<movement::WarriorMovement>(
+                    let oo = movement::PossibleMoves::new(
+                        &movement::WarriorMovement,
+                        &gg,
                         GridCoord(cell),
                         MoveUnit(3),
                     );
-                    selected_cell = Some(gg);
+                    selected_cell = Some(oo);
                 }
             }
         }

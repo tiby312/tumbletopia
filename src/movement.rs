@@ -121,31 +121,37 @@ pub struct PossibleMoves {
     //Has the end coord,path from current, and the remainder cost to get there.
     //cells that are the furthest away will have a move unit of zero.
     moves: Vec<(GridCoord, Path, MoveUnit)>,
-    start: GridCoord,
+    start: GridCoord
+}
+
+pub trait Filter{
+    fn filter(&self,a:&GridCoord)->bool;
+}
+
+pub fn contains_coord<'a,I:Iterator<Item=&'a GridCoord>>(mut it:I,b:&GridCoord)->bool{
+    it.find(|a|*a==b).is_some()
 }
 impl PossibleMoves {
-    pub fn new<K: MoveStrategy>(coord: GridCoord, remaining_moves: MoveUnit) -> Self {
+    pub fn new<K: MoveStrategy,F:Filter>(movement:&K,filter:&F,coord: GridCoord, remaining_moves: MoveUnit) -> Self {
         //A typical move costs 2, so scale everything as if it cost 1.
         let remaining_moves=MoveUnit(remaining_moves.0*2);
         let mut p = PossibleMoves {
             moves: vec![],
-            start: coord,
+            start: coord
         };
-        p.explore_path::<K>(Path::new(), remaining_moves);
+        p.explore_path(movement,filter,Path::new(), remaining_moves);
         p
     }
 
     pub fn start(&self)->&GridCoord{
         &self.start
     }
-    pub fn contains_coord(&self,b:&GridCoord)->bool{
-        self.iter_coords().find(|a|*a==b).is_some()
-    }
+    
     pub fn iter_coords(&self) -> impl Iterator<Item = &GridCoord> {
         self.moves.iter().map(|a| &a.0)
     }
 
-    fn explore_path<K: MoveStrategy>(&mut self, current_path: Path, remaining_moves: MoveUnit) {
+    fn explore_path<K: MoveStrategy,F:Filter>(&mut self,movement:&K,filter:&F, current_path: Path, remaining_moves: MoveUnit) {
         if remaining_moves.0 == 0 {
             return;
         }
@@ -155,6 +161,9 @@ impl PossibleMoves {
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
+            if !filter.filter(&target_pos){
+                continue;
+            }
             let cost=if curr_pos==self.start{
                 //Units can always move one spot away.
                 MoveUnit(2)
@@ -175,7 +184,7 @@ impl PossibleMoves {
                 continue;
             }
 
-            self.explore_path::<K>(current_path.add(a).unwrap(), rr)
+            self.explore_path(movement,filter,current_path.add(a).unwrap(), rr)
         }
     }
 

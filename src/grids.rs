@@ -8,6 +8,14 @@ pub struct GridMatrix {
     grid_dim: [f32; 2],
     spacing: f32,
 }
+impl movement::Filter for GridMatrix{
+    fn filter(&self,a:&GridCoord)->bool {
+        let x=a.0[0];
+        let y=a.0[1];
+
+        x>=0 && y>=0 && x<self.grid_width && y<self.grid_width
+    }
+}
 impl GridMatrix {
     pub fn new() -> Self {
         let grid_width = 32;
