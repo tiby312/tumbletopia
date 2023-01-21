@@ -82,14 +82,13 @@ impl Path {
                     .count();
                 //if num % 3 == 0 || num % 3==1  {
                 if num%2 ==0{
-                    MoveUnit(1)
+                    MoveUnit(0)
                 } else {
-                    MoveUnit(2)
+                    MoveUnit(1)
                 }
             }
-            _ => MoveUnit(1),
+            _ => MoveUnit(0),
         }
-        //MoveUnit(1)
     }
 }
 
@@ -126,6 +125,8 @@ pub struct PossibleMoves {
 }
 impl PossibleMoves {
     pub fn new<K: MoveStrategy>(coord: GridCoord, remaining_moves: MoveUnit) -> Self {
+        //A typical move costs 2, so scale everything as if it cost 1.
+        let remaining_moves=MoveUnit(remaining_moves.0*2);
         let mut p = PossibleMoves {
             moves: vec![],
             start: coord,
@@ -194,6 +195,9 @@ impl PossibleMoves {
     }
 }
 
+
+//normal terrain is 2.
+//road is 1.
 fn terrain_cost(a: GridCoord) -> MoveUnit {
-    MoveUnit(0)
+    MoveUnit(2)
 }
