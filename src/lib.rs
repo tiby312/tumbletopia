@@ -115,7 +115,7 @@ pub async fn worker_entry() {
 
     let mut cats = vec![[2; 2]];
 
-    let mut selected_cell = None;
+    let mut selected_cell:Option<movement::PossibleMoves> = None;
 
     'outer: loop {
         let mut on_select = false;
@@ -187,20 +187,24 @@ pub async fn worker_entry() {
         if on_select {
             let cell: [i16; 2] = gg.to_grid((mouse_world).into()).into();
 
-            let gg = movement::PossibleMoves::new::<movement::WarriorMovement>(
-                GridCoord(cell),
-                MoveUnit(2),
-            );
-            selected_cell = Some(gg);
+            if let Some(gg)=selected_cell{
+                if gg.contains_coord(&GridCoord(cell)){
+                    let c=cats.iter_mut().find(|a|**a==gg.start().0).unwrap();
+                    *c=cell;
+                }
+                selected_cell=None;
 
-            // if let Some(ss)=selected_cell{
-            //     if cell==ss{
-            //         selected_cell=None;
-            //     }
-            // }else{
-            //     selected_cell=Some(cell);
+            }else{    
+                
+                if cats.contains(&cell){
 
-            // }
+                    let gg = movement::PossibleMoves::new::<movement::WarriorMovement>(
+                        GridCoord(cell),
+                        MoveUnit(2),
+                    );
+                    selected_cell = Some(gg);
+                }
+            }
         }
 
         scroll_manager.step();

@@ -135,6 +135,12 @@ impl PossibleMoves {
         p
     }
 
+    pub fn start(&self)->&GridCoord{
+        &self.start
+    }
+    pub fn contains_coord(&self,b:&GridCoord)->bool{
+        self.iter_coords().find(|a|*a==b).is_some()
+    }
     pub fn iter_coords(&self) -> impl Iterator<Item = &GridCoord> {
         self.moves.iter().map(|a| &a.0)
     }
