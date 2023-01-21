@@ -80,7 +80,8 @@ impl Path {
                     .take(self.num_moves as usize)
                     .filter(|&&a| a == m)
                     .count();
-                if num % 2 == 0 {
+                //if num % 3 == 0 || num % 3==1  {
+                if num%2 ==0{
                     MoveUnit(1)
                 } else {
                     MoveUnit(2)
