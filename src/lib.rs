@@ -17,53 +17,29 @@ mod grids;
 mod movement;
 mod scroll;
 
-// enum SelectState<'a>{
-//     Nothing,
-//     CatSelected{
-//         cat_pos:[i16;2],
-//         allowable_squares:&'a mut Vec<[i16;2]>,
-//     }
-// }
 
-// //Handles different states within one turn only!!!
-// pub struct Player<'a>{
-//     state:SelectState<'a>
-// }
-// impl<'a> Player<'a>{
-//     fn handle_mouse_select(&mut self,grid:[i16;2]){
-//         match self.state{
-//             SelectState::Nothing=>{
 
-//             },
-//             SelectState::CatSelected(pos)=>{
+pub struct UnitCollection(Vec<GridCoord>);
+impl UnitCollection{
+    fn find_mut(&mut self,a:&GridCoord)->Option<&mut GridCoord>{
+        self.0.iter_mut().find(|b|*b==a)    
+    }
+    fn filter(&self)->UnitCollectionFilter{
+        UnitCollectionFilter { a: &self.0 }
+    }
+}
 
-//             }
-//         }
-//     }
-//     fn draw(&mut self){
-//         match self.state{
-//             SelectState::Nothing=>{
+pub struct UnitCollectionFilter<'a>{
+    a:&'a [GridCoord]
+}
+impl<'a> movement::Filter for UnitCollectionFilter<'a>{
+    fn filter(&self,a:&GridCoord)->bool {
+        !self.a.contains(a)
+    }
+}
 
-//             },
-//             SelectState::CatSelected(pos)=>{
 
-//             }
-//         }
-//     }
-// }
 
-// struct World{
-
-// }
-
-// pub trait SelectedItem{
-//     fn handle_select(&mut self,grid:[i16;2],world:&mut World){
-
-//     }
-//     fn draw(&self){
-
-//     }
-// }
 
 #[wasm_bindgen]
 pub async fn worker_entry() {
@@ -113,7 +89,9 @@ pub async fn worker_entry() {
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
-    let mut cats = vec![[2; 2]];
+    //let mut cats = vec![[2; 2],[5;2]];
+    let mut cats = UnitCollection(vec!(GridCoord([2,2]),GridCoord([5,5]),GridCoord([6,6]),GridCoord([7,7])));
+
 
     let mut selected_cell:Option<movement::PossibleMoves> = None;
 
@@ -185,23 +163,23 @@ pub async fn worker_entry() {
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), matrix);
 
         if on_select {
-            let cell: [i16; 2] = gg.to_grid((mouse_world).into()).into();
+            let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
 
             if let Some(gg)=selected_cell{
-                if movement::contains_coord(gg.iter_coords(),&GridCoord(cell)){
-                    let c=cats.iter_mut().find(|a|**a==gg.start().0).unwrap();
+                if movement::contains_coord(gg.iter_coords(),&cell){
+                    let c=cats.find_mut(gg.start()).unwrap();
                     *c=cell;
                 }
                 selected_cell=None;
 
             }else{    
                 
-                if cats.contains(&cell){
+                if cats.0.contains(&cell){
 
                     let oo = movement::PossibleMoves::new(
                         &movement::WarriorMovement,
-                        &gg,
-                        GridCoord(cell),
+                        &gg.filter().chain(cats.filter()),
+                        cell,
                         MoveUnit(3),
                     );
                     selected_cell = Some(oo);
@@ -276,7 +254,8 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
-            for &a in cats.iter() {
+            for &GridCoord(a) in cats.0.iter() {
+
                 let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
                 let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -290,7 +269,7 @@ pub async fn worker_entry() {
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
         }
 
-        for a in cats.iter() {
+        for &GridCoord(a) in cats.0.iter() {
             let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
 
             let t = matrix::translation(pos[0], pos[1], 20.0);
@@ -310,7 +289,7 @@ pub async fn worker_entry() {
 
 use web_sys::WebGl2RenderingContext;
 
-use crate::movement::{GridCoord, MoveUnit};
+use crate::movement::{GridCoord, MoveUnit, Filter};
 
 const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");

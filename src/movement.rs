@@ -126,6 +126,18 @@ pub struct PossibleMoves {
 
 pub trait Filter{
     fn filter(&self,a:&GridCoord)->bool;
+    fn chain<K:Filter>(self,other:K)->Chain<Self,K> where Self:Sized{
+        Chain{a:self,b:other}
+    }
+}
+pub struct Chain<A,B>{
+    a:A,
+    b:B
+}
+impl<A:Filter,B:Filter> Filter for Chain<A,B>{
+    fn filter(&self,a:&GridCoord)->bool {
+        self.a.filter(a) && self.b.filter(a)
+    }
 }
 
 pub fn contains_coord<'a,I:Iterator<Item=&'a GridCoord>>(mut it:I,b:&GridCoord)->bool{
