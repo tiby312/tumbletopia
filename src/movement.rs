@@ -106,7 +106,7 @@ impl GridCoord {
 }
 
 #[derive(Copy, Clone)]
-pub struct MoveUnit(pub usize);
+pub struct MoveUnit(pub i8);
 impl MoveUnit {
     fn add(self, a: MoveUnit) -> Self {
         MoveUnit(self.0 + a.0)

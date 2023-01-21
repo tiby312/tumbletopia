@@ -16,6 +16,7 @@ use projection::*;
 mod grids;
 mod movement;
 mod scroll;
+mod terrain;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 enum UiButton {
@@ -33,10 +34,7 @@ impl UnitCollection {
     }
 }
 
-//TODO use this?
-pub trait MoveCost {
-    fn foop(&self, a: GridCoord) -> MoveUnit;
-}
+
 
 pub struct UnitCollectionFilter<'a> {
     a: &'a [GridCoord],
