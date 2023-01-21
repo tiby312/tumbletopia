@@ -113,10 +113,9 @@ pub async fn main_entry() {
 
     log!("demo start");
 
-    let (canvas, button, shutdown_button) = (
+    let (canvas, button) = (
         utils::get_by_id_canvas("mycanvas"),
         utils::get_by_id_elem("mybutton"),
-        utils::get_by_id_elem("shutdownbutton"),
     );
 
     canvas.set_width(gloo::utils::body().client_width() as u32);
@@ -165,16 +164,27 @@ pub async fn main_entry() {
 
     let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick.some());
 
-    let _handler =
-        worker.register_event(&shutdown_button, "click", |_| MEvent::ShutdownClick.some());
 
     let w = gloo::utils::window();
 
     let _handler = worker.register_event(&w, "resize", |_| resize().some());
 
+    //TODO make this happen on start??
     worker.post_message(resize());
 
-    let _: () = response.next().await.unwrap_throw();
+    loop{
+        let hay: UiButton = response.next().await.unwrap_throw();
+        
+        match hay{
+            UiButton::ShowRoadUi=>{
+                button.set_text_content(Some("make a road?"));
+            },
+            UiButton::NoUi=>{
+                button.set_text_content(Some(""));
+            }
+        }
+        log!(format!("main thread received={:?}",hay));
+    }
     log!("main thread is closing");
 }
 fn resize() -> MEvent {

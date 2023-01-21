@@ -19,6 +19,13 @@ mod scroll;
 
 
 
+#[derive(Serialize, Deserialize,Debug,Copy,Clone)]
+enum UiButton{
+    ShowRoadUi,
+    NoUi
+}
+
+
 pub struct UnitCollection(Vec<GridCoord>);
 impl UnitCollection{
     fn find_mut(&mut self,a:&GridCoord)->Option<&mut GridCoord>{
@@ -39,6 +46,11 @@ impl<'a> movement::Filter for UnitCollectionFilter<'a>{
 }
 
 
+
+enum CellSelection{
+    MoveSelection(movement::PossibleMoves),
+    BuildSelection(GridCoord)
+}
 
 
 #[wasm_bindgen]
@@ -89,11 +101,10 @@ pub async fn worker_entry() {
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
-    //let mut cats = vec![[2; 2],[5;2]];
-    let mut cats = UnitCollection(vec!(GridCoord([2,2]),GridCoord([5,5]),GridCoord([6,6]),GridCoord([7,7])));
+    let mut cats = UnitCollection(vec!(GridCoord([2,2]),GridCoord([5,5]),GridCoord([6,6]),GridCoord([7,7]),GridCoord([3,1])));
 
 
-    let mut selected_cell:Option<movement::PossibleMoves> = None;
+    let mut selected_cell:Option<CellSelection> = None;
 
     'outer: loop {
         let mut on_select = false;
@@ -155,7 +166,9 @@ pub async fn worker_entry() {
 
                     scroll_manager.on_mouse_down([*x, *y]);
                 }
-                MEvent::ButtonClick => {}
+                MEvent::ButtonClick => {
+                    //We want to build a road!
+                }
                 MEvent::ShutdownClick => break 'outer,
             }
         }
@@ -165,13 +178,20 @@ pub async fn worker_entry() {
         if on_select {
             let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
 
-            if let Some(gg)=selected_cell{
-                if movement::contains_coord(gg.iter_coords(),&cell){
-                    let c=cats.find_mut(gg.start()).unwrap();
-                    *c=cell;
+            if let Some(gg)=&mut selected_cell{
+                match gg{
+                    CellSelection::MoveSelection(gg)=>{
+                        if movement::contains_coord(gg.iter_coords(),&cell){
+                            let c=cats.find_mut(gg.start()).unwrap();
+                            *c=cell;
+                        }
+                        selected_cell=None;
+                    },
+                    CellSelection::BuildSelection(_)=>{
+                        //do nothing? we are waiting on user to push a button.
+                    }
                 }
-                selected_cell=None;
-
+                
             }else{    
                 
                 if cats.0.contains(&cell){
@@ -182,8 +202,15 @@ pub async fn worker_entry() {
                         cell,
                         MoveUnit(3),
                     );
-                    selected_cell = Some(oo);
+                    selected_cell = Some(CellSelection::MoveSelection(oo));
                 }
+                else
+                {
+                    selected_cell=Some(CellSelection::BuildSelection(cell));
+                    //activate the build options for that terrain
+                    w.post_message(UiButton::ShowRoadUi);
+                }
+                
             }
         }
 
@@ -235,15 +262,23 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
             if let Some(a) = &selected_cell {
-                for GridCoord(a) in a.iter_coords() {
-                    let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
-                    let t = matrix::translation(pos[0], pos[1], 0.0);
+                match a{
+                    CellSelection::MoveSelection(a)=>{
+                        for GridCoord(a) in a.iter_coords() {
+                            let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+                            let t = matrix::translation(pos[0], pos[1], 0.0);
+        
+                            let m = matrix.chain(t).generate();
+        
+                            let mut v = draw_sys.view(m.as_ref());
+                            select_model.draw(&mut v);
+                        }
+                    },
+                    CellSelection::BuildSelection(_)=>{
 
-                    let m = matrix.chain(t).generate();
-
-                    let mut v = draw_sys.view(m.as_ref());
-                    select_model.draw(&mut v);
+                    }
                 }
+                
             }
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
@@ -282,7 +317,7 @@ pub async fn worker_entry() {
         ctx.flush();
     }
 
-    w.post_message(());
+    w.post_message(UiButton::NoUi);
 
     log!("worker thread closing");
 }
