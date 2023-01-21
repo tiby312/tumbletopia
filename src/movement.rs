@@ -149,9 +149,14 @@ impl PossibleMoves {
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
-            //how much it would cost to move to this square
-            let cost = terrain_cost(target_pos).add(current_path.move_cost(a));
-
+            let cost=if curr_pos==self.start{
+                //Units can always move one spot away.
+                MoveUnit(2)
+            }else{
+                //how much it would cost to move to this square
+                terrain_cost(target_pos).add(current_path.move_cost(a))
+            };
+            
             //can't afford to move to this square.
             if remaining_moves.0 < cost.0 {
                 continue;
