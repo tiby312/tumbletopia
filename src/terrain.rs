@@ -25,8 +25,8 @@ impl<A:MoveCost,B:MoveCost> MoveCost for Chain<A,B>{
 
 
 pub struct TerrainCollection{
-    cost:MoveUnit,
-    pos:Vec<GridCoord>
+    pub cost:MoveUnit,
+    pub pos:Vec<GridCoord>
 }
 impl TerrainCollection {
     fn find_mut(&mut self, a: &GridCoord) -> Option<&mut GridCoord> {

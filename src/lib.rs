@@ -2,21 +2,22 @@ use axgeom::vec2same;
 use cgmath::Transform;
 use gloo::console::log;
 use model::matrix;
+use movement::GridCoord;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d::{self};
 use shogo::utils;
 use wasm_bindgen::prelude::*;
 pub mod dom;
-mod model_parse;
-mod projection;
-mod util;
+pub mod model_parse;
+pub mod projection;
+pub mod util;
+
+pub mod grids;
+pub mod movement;
+pub mod scroll;
+pub mod terrain;
 use dom::MEvent;
 use projection::*;
-
-mod grids;
-mod movement;
-mod scroll;
-mod terrain;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 enum UiButton {
@@ -106,6 +107,11 @@ pub async fn worker_entry() {
         GridCoord([3, 1]),
     ]);
 
+    let mut roads=terrain::TerrainCollection{
+        cost:MoveUnit(-1),
+        pos:vec!()
+    };
+
     let mut selected_cell: Option<CellSelection> = None;
 
     'outer: loop {
@@ -171,7 +177,8 @@ pub async fn worker_entry() {
                 MEvent::ButtonClick => {
                     match selected_cell {
                         Some(CellSelection::BuildSelection(g)) => {
-                            //TODO We want to build a road!
+                            roads.pos.push(g);
+                            selected_cell=None;
                         }
                         _ => {}
                     }
@@ -321,10 +328,13 @@ pub async fn worker_entry() {
 
 use web_sys::WebGl2RenderingContext;
 
-use crate::movement::{Filter, GridCoord, MoveUnit};
+use crate::movement::{  MoveUnit, Filter};
+use crate::terrain::MoveCost;
 
 const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
+const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
+
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
 // const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
