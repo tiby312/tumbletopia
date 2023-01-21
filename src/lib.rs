@@ -167,7 +167,12 @@ pub async fn worker_entry() {
                     scroll_manager.on_mouse_down([*x, *y]);
                 }
                 MEvent::ButtonClick => {
-                    //We want to build a road!
+                    match selected_cell{
+                        Some(CellSelection::BuildSelection(g))=>{
+                            //TODO We want to build a road!
+                        },
+                        _=>{}
+                    }
                 }
                 MEvent::ShutdownClick => break 'outer,
             }
