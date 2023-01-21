@@ -9,21 +9,21 @@ pub struct GridMatrix {
     spacing: f32,
 }
 
-pub struct GridFilter{
-    grid_width:i16
+pub struct GridFilter {
+    grid_width: i16,
 }
-impl movement::Filter for GridFilter{
-    fn filter(&self,a:&GridCoord)->bool {
-        let x=a.0[0];
-        let y=a.0[1];
+impl movement::Filter for GridFilter {
+    fn filter(&self, a: &GridCoord) -> bool {
+        let x = a.0[0];
+        let y = a.0[1];
 
-        x>=0 && y>=0 && x<self.grid_width && y<self.grid_width
+        x >= 0 && y >= 0 && x < self.grid_width && y < self.grid_width
     }
 }
 impl GridMatrix {
-    pub fn filter(&self)->GridFilter{
-        GridFilter{
-            grid_width:self.grid_width
+    pub fn filter(&self) -> GridFilter {
+        GridFilter {
+            grid_width: self.grid_width,
         }
     }
     pub fn new() -> Self {

@@ -164,7 +164,6 @@ pub async fn main_entry() {
 
     let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick.some());
 
-
     let w = gloo::utils::window();
 
     let _handler = worker.register_event(&w, "resize", |_| resize().some());
@@ -172,18 +171,18 @@ pub async fn main_entry() {
     //TODO make this happen on start??
     worker.post_message(resize());
 
-    loop{
+    loop {
         let hay: UiButton = response.next().await.unwrap_throw();
-        
-        match hay{
-            UiButton::ShowRoadUi=>{
+
+        match hay {
+            UiButton::ShowRoadUi => {
                 button.set_text_content(Some("make a road?"));
-            },
-            UiButton::NoUi=>{
+            }
+            UiButton::NoUi => {
                 button.set_text_content(Some(""));
             }
         }
-        log!(format!("main thread received={:?}",hay));
+        log!(format!("main thread received={:?}", hay));
     }
     log!("main thread is closing");
 }

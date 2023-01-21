@@ -17,41 +17,40 @@ mod grids;
 mod movement;
 mod scroll;
 
-
-
-#[derive(Serialize, Deserialize,Debug,Copy,Clone)]
-enum UiButton{
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+enum UiButton {
     ShowRoadUi,
-    NoUi
+    NoUi,
 }
 
-
 pub struct UnitCollection(Vec<GridCoord>);
-impl UnitCollection{
-    fn find_mut(&mut self,a:&GridCoord)->Option<&mut GridCoord>{
-        self.0.iter_mut().find(|b|*b==a)    
+impl UnitCollection {
+    fn find_mut(&mut self, a: &GridCoord) -> Option<&mut GridCoord> {
+        self.0.iter_mut().find(|b| *b == a)
     }
-    fn filter(&self)->UnitCollectionFilter{
+    fn filter(&self) -> UnitCollectionFilter {
         UnitCollectionFilter { a: &self.0 }
     }
 }
 
-pub struct UnitCollectionFilter<'a>{
-    a:&'a [GridCoord]
+//TODO use this?
+pub trait MoveCost {
+    fn foop(&self, a: GridCoord) -> MoveUnit;
 }
-impl<'a> movement::Filter for UnitCollectionFilter<'a>{
-    fn filter(&self,a:&GridCoord)->bool {
+
+pub struct UnitCollectionFilter<'a> {
+    a: &'a [GridCoord],
+}
+impl<'a> movement::Filter for UnitCollectionFilter<'a> {
+    fn filter(&self, a: &GridCoord) -> bool {
         !self.a.contains(a)
     }
 }
 
-
-
-enum CellSelection{
+enum CellSelection {
     MoveSelection(movement::PossibleMoves),
-    BuildSelection(GridCoord)
+    BuildSelection(GridCoord),
 }
-
 
 #[wasm_bindgen]
 pub async fn worker_entry() {
@@ -101,10 +100,15 @@ pub async fn worker_entry() {
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
-    let mut cats = UnitCollection(vec!(GridCoord([2,2]),GridCoord([5,5]),GridCoord([6,6]),GridCoord([7,7]),GridCoord([3,1])));
+    let mut cats = UnitCollection(vec![
+        GridCoord([2, 2]),
+        GridCoord([5, 5]),
+        GridCoord([6, 6]),
+        GridCoord([7, 7]),
+        GridCoord([3, 1]),
+    ]);
 
-
-    let mut selected_cell:Option<CellSelection> = None;
+    let mut selected_cell: Option<CellSelection> = None;
 
     'outer: loop {
         let mut on_select = false;
@@ -167,11 +171,11 @@ pub async fn worker_entry() {
                     scroll_manager.on_mouse_down([*x, *y]);
                 }
                 MEvent::ButtonClick => {
-                    match selected_cell{
-                        Some(CellSelection::BuildSelection(g))=>{
+                    match selected_cell {
+                        Some(CellSelection::BuildSelection(g)) => {
                             //TODO We want to build a road!
-                        },
-                        _=>{}
+                        }
+                        _ => {}
                     }
                 }
                 MEvent::ShutdownClick => break 'outer,
@@ -183,24 +187,21 @@ pub async fn worker_entry() {
         if on_select {
             let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
 
-            if let Some(gg)=&mut selected_cell{
-                match gg{
-                    CellSelection::MoveSelection(gg)=>{
-                        if movement::contains_coord(gg.iter_coords(),&cell){
-                            let c=cats.find_mut(gg.start()).unwrap();
-                            *c=cell;
+            if let Some(gg) = &mut selected_cell {
+                match gg {
+                    CellSelection::MoveSelection(gg) => {
+                        if movement::contains_coord(gg.iter_coords(), &cell) {
+                            let c = cats.find_mut(gg.start()).unwrap();
+                            *c = cell;
                         }
-                        selected_cell=None;
-                    },
-                    CellSelection::BuildSelection(_)=>{
+                        selected_cell = None;
+                    }
+                    CellSelection::BuildSelection(_) => {
                         //do nothing? we are waiting on user to push a button.
                     }
                 }
-                
-            }else{    
-                
-                if cats.0.contains(&cell){
-
+            } else {
+                if cats.0.contains(&cell) {
                     let oo = movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter().chain(cats.filter()),
@@ -208,14 +209,11 @@ pub async fn worker_entry() {
                         MoveUnit(3),
                     );
                     selected_cell = Some(CellSelection::MoveSelection(oo));
-                }
-                else
-                {
-                    selected_cell=Some(CellSelection::BuildSelection(cell));
+                } else {
+                    selected_cell = Some(CellSelection::BuildSelection(cell));
                     //activate the build options for that terrain
                     w.post_message(UiButton::ShowRoadUi);
                 }
-                
             }
         }
 
@@ -267,23 +265,20 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
             if let Some(a) = &selected_cell {
-                match a{
-                    CellSelection::MoveSelection(a)=>{
+                match a {
+                    CellSelection::MoveSelection(a) => {
                         for GridCoord(a) in a.iter_coords() {
                             let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
                             let t = matrix::translation(pos[0], pos[1], 0.0);
-        
+
                             let m = matrix.chain(t).generate();
-        
+
                             let mut v = draw_sys.view(m.as_ref());
                             select_model.draw(&mut v);
                         }
-                    },
-                    CellSelection::BuildSelection(_)=>{
-
                     }
+                    CellSelection::BuildSelection(_) => {}
                 }
-                
             }
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
@@ -295,7 +290,6 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
             for &GridCoord(a) in cats.0.iter() {
-
                 let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
                 let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -329,7 +323,7 @@ pub async fn worker_entry() {
 
 use web_sys::WebGl2RenderingContext;
 
-use crate::movement::{GridCoord, MoveUnit, Filter};
+use crate::movement::{Filter, GridCoord, MoveUnit};
 
 const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");

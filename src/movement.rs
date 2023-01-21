@@ -81,7 +81,7 @@ impl Path {
                     .filter(|&&a| a == m)
                     .count();
                 //if num % 3 == 0 || num % 3==1  {
-                if num%2 ==0{
+                if num % 2 == 0 {
                     MoveUnit(0)
                 } else {
                     MoveUnit(1)
@@ -121,49 +121,63 @@ pub struct PossibleMoves {
     //Has the end coord,path from current, and the remainder cost to get there.
     //cells that are the furthest away will have a move unit of zero.
     moves: Vec<(GridCoord, Path, MoveUnit)>,
-    start: GridCoord
+    start: GridCoord,
 }
 
-pub trait Filter{
-    fn filter(&self,a:&GridCoord)->bool;
-    fn chain<K:Filter>(self,other:K)->Chain<Self,K> where Self:Sized{
-        Chain{a:self,b:other}
+pub trait Filter {
+    fn filter(&self, a: &GridCoord) -> bool;
+    fn chain<K: Filter>(self, other: K) -> Chain<Self, K>
+    where
+        Self: Sized,
+    {
+        Chain { a: self, b: other }
     }
 }
-pub struct Chain<A,B>{
-    a:A,
-    b:B
+pub struct Chain<A, B> {
+    a: A,
+    b: B,
 }
-impl<A:Filter,B:Filter> Filter for Chain<A,B>{
-    fn filter(&self,a:&GridCoord)->bool {
+impl<A: Filter, B: Filter> Filter for Chain<A, B> {
+    fn filter(&self, a: &GridCoord) -> bool {
         self.a.filter(a) && self.b.filter(a)
     }
 }
 
-pub fn contains_coord<'a,I:Iterator<Item=&'a GridCoord>>(mut it:I,b:&GridCoord)->bool{
-    it.find(|a|*a==b).is_some()
+pub fn contains_coord<'a, I: Iterator<Item = &'a GridCoord>>(mut it: I, b: &GridCoord) -> bool {
+    it.find(|a| *a == b).is_some()
 }
 impl PossibleMoves {
-    pub fn new<K: MoveStrategy,F:Filter>(movement:&K,filter:&F,coord: GridCoord, remaining_moves: MoveUnit) -> Self {
+    pub fn new<K: MoveStrategy, F: Filter>(
+        movement: &K,
+        filter: &F,
+        coord: GridCoord,
+        remaining_moves: MoveUnit,
+    ) -> Self {
         //A typical move costs 2, so scale everything as if it cost 1.
-        let remaining_moves=MoveUnit(remaining_moves.0*2);
+        let remaining_moves = MoveUnit(remaining_moves.0 * 2);
         let mut p = PossibleMoves {
             moves: vec![],
-            start: coord
+            start: coord,
         };
-        p.explore_path(movement,filter,Path::new(), remaining_moves);
+        p.explore_path(movement, filter, Path::new(), remaining_moves);
         p
     }
 
-    pub fn start(&self)->&GridCoord{
+    pub fn start(&self) -> &GridCoord {
         &self.start
     }
-    
+
     pub fn iter_coords(&self) -> impl Iterator<Item = &GridCoord> {
         self.moves.iter().map(|a| &a.0)
     }
 
-    fn explore_path<K: MoveStrategy,F:Filter>(&mut self,movement:&K,filter:&F, current_path: Path, remaining_moves: MoveUnit) {
+    fn explore_path<K: MoveStrategy, F: Filter>(
+        &mut self,
+        movement: &K,
+        filter: &F,
+        current_path: Path,
+        remaining_moves: MoveUnit,
+    ) {
         if remaining_moves.0 == 0 {
             return;
         }
@@ -173,17 +187,17 @@ impl PossibleMoves {
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
-            if !filter.filter(&target_pos){
+            if !filter.filter(&target_pos) {
                 continue;
             }
-            let cost=if curr_pos==self.start{
+            let cost = if curr_pos == self.start {
                 //Units can always move one spot away.
                 MoveUnit(2)
-            }else{
+            } else {
                 //how much it would cost to move to this square
                 terrain_cost(target_pos).add(current_path.move_cost(a))
             };
-            
+
             //can't afford to move to this square.
             if remaining_moves.0 < cost.0 {
                 continue;
@@ -196,7 +210,7 @@ impl PossibleMoves {
                 continue;
             }
 
-            self.explore_path(movement,filter,current_path.add(a).unwrap(), rr)
+            self.explore_path(movement, filter, current_path.add(a).unwrap(), rr)
         }
     }
 
@@ -226,7 +240,6 @@ impl PossibleMoves {
         return false;
     }
 }
-
 
 //normal terrain is 2.
 //road is 1.
