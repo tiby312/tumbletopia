@@ -200,7 +200,7 @@ pub async fn worker_entry() {
 
                     let gg = movement::PossibleMoves::new::<movement::WarriorMovement>(
                         GridCoord(cell),
-                        MoveUnit(2),
+                        MoveUnit(3),
                     );
                     selected_cell = Some(gg);
                 }
