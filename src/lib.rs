@@ -113,7 +113,7 @@ pub async fn worker_entry() {
     ]);
 
     let mut roads=terrain::TerrainCollection{
-        cost:MoveUnit(-1),
+        cost:MoveUnit(-2),
         pos:vec!()
     };
 
@@ -218,8 +218,9 @@ pub async fn worker_entry() {
                     let oo = movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter().chain(cats.filter()),
+                        &terrain::Grass.chain(roads.foo()),
                         cell,
-                        MoveUnit(3),
+                        MoveUnit(1),
                     );
                     selected_cell = Some(CellSelection::MoveSelection(oo));
                 } else {

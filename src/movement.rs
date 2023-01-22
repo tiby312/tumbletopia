@@ -147,9 +147,10 @@ pub fn contains_coord<'a, I: Iterator<Item = &'a GridCoord>>(mut it: I, b: &Grid
     it.find(|a| *a == b).is_some()
 }
 impl PossibleMoves {
-    pub fn new<K: MoveStrategy, F: Filter>(
+    pub fn new<K: MoveStrategy, F: Filter,M:MoveCost>(
         movement: &K,
         filter: &F,
+        mo:&M,
         coord: GridCoord,
         remaining_moves: MoveUnit,
     ) -> Self {
@@ -159,7 +160,7 @@ impl PossibleMoves {
             moves: vec![],
             start: coord,
         };
-        p.explore_path(movement, filter, Path::new(), remaining_moves);
+        p.explore_path(movement, filter, mo,Path::new(), remaining_moves);
         p
     }
 
@@ -171,10 +172,11 @@ impl PossibleMoves {
         self.moves.iter().map(|a| &a.0)
     }
 
-    fn explore_path<K: MoveStrategy, F: Filter>(
+    fn explore_path<K: MoveStrategy, F: Filter,M:MoveCost>(
         &mut self,
         movement: &K,
         filter: &F,
+        mo:&M,
         current_path: Path,
         remaining_moves: MoveUnit,
     ) {
@@ -190,13 +192,9 @@ impl PossibleMoves {
             if !filter.filter(&target_pos) {
                 continue;
             }
-            let cost = if curr_pos == self.start {
-                //Units can always move one spot away.
-                MoveUnit(2)
-            } else {
+            let cost = 
                 //how much it would cost to move to this square
-                terrain_cost(target_pos).add(current_path.move_cost(a))
-            };
+                mo.foop(target_pos).add(current_path.move_cost(a));
 
             //can't afford to move to this square.
             if remaining_moves.0 < cost.0 {
@@ -210,7 +208,7 @@ impl PossibleMoves {
                 continue;
             }
 
-            self.explore_path(movement, filter, current_path.add(a).unwrap(), rr)
+            self.explore_path(movement, filter, mo,current_path.add(a).unwrap(), rr)
         }
     }
 
@@ -241,8 +239,8 @@ impl PossibleMoves {
     }
 }
 
-//normal terrain is 2.
-//road is 1.
-fn terrain_cost(a: GridCoord) -> MoveUnit {
-    MoveUnit(2)
-}
+// //normal terrain is 2.
+// //road is 1.
+// fn terrain_cost(a: GridCoord) -> MoveUnit {
+//     MoveUnit(2)
+// }

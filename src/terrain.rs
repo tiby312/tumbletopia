@@ -29,10 +29,10 @@ pub struct TerrainCollection{
     pub pos:Vec<GridCoord>
 }
 impl TerrainCollection {
-    fn find_mut(&mut self, a: &GridCoord) -> Option<&mut GridCoord> {
+    pub fn find_mut(&mut self, a: &GridCoord) -> Option<&mut GridCoord> {
         self.pos.iter_mut().find(|b| *b == a)
     }
-    fn foo(&self)->TerrainCollectionFoo{
+    pub fn foo(&self)->TerrainCollectionFoo{
         TerrainCollectionFoo { cost:self.cost, a: &self.pos }
     }
 }
@@ -53,6 +53,13 @@ impl<'a> MoveCost for TerrainCollectionFoo<'a> {
     }
 }
 
+
+pub struct Grass;
+impl MoveCost for Grass{
+    fn foop(&self,g:GridCoord)->MoveUnit{
+        MoveUnit(2)
+    }
+}
 
 
 
