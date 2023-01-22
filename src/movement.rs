@@ -84,7 +84,7 @@ impl Path {
                 if num % 2 == 0 {
                     MoveUnit(0)
                 } else {
-                    MoveUnit(1)
+                    MoveUnit(2)
                 }
             }
             _ => MoveUnit(0),

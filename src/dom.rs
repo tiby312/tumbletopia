@@ -118,6 +118,8 @@ pub async fn main_entry() {
         utils::get_by_id_elem("mybutton"),
     );
 
+    button.set_hidden(true);
+
     canvas.set_width(gloo::utils::body().client_width() as u32);
     canvas.set_height(gloo::utils::body().client_height() as u32);
 
@@ -162,7 +164,12 @@ pub async fn main_entry() {
         MEvent::TouchEnd { touches }.some()
     });
 
-    let _handler = worker.register_event(&button, "click", |_| MEvent::ButtonClick.some());
+    let bb=button.clone();
+    let _handler = worker.register_event(&button, "click",move  |_| {
+        log!("clicked the button!!!!!");
+        bb.set_hidden(true);
+        MEvent::ButtonClick.some()
+    });
 
     let w = gloo::utils::window();
 
@@ -176,6 +183,7 @@ pub async fn main_entry() {
 
         match hay {
             UiButton::ShowRoadUi => {
+                button.set_hidden(false);
                 button.set_text_content(Some("make a road?"));
             }
             UiButton::NoUi => {

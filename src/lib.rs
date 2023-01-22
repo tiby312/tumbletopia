@@ -87,6 +87,11 @@ pub async fn worker_entry() {
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
+    let road = {
+        let data = model::load_glb(ROAD_GLB).gen_ext(gg.spacing());
+        model_parse::ModelGpu::new(&ctx, &data)
+    };
+
     let grass = {
         let data = model::load_glb(GRASS_GLB).gen_ext(gg.spacing());
 
@@ -177,10 +182,13 @@ pub async fn worker_entry() {
                 MEvent::ButtonClick => {
                     match selected_cell {
                         Some(CellSelection::BuildSelection(g)) => {
+                            log!("adding to roads!!!!!");
                             roads.pos.push(g);
                             selected_cell=None;
                         }
-                        _ => {}
+                        _ => {
+                            panic!("Received button push when we did not ask for it!")
+                        }
                     }
                 }
                 MEvent::ShutdownClick => break 'outer,
@@ -285,6 +293,18 @@ pub async fn worker_entry() {
                     CellSelection::BuildSelection(_) => {}
                 }
             }
+
+            for GridCoord(a) in roads.pos.iter(){
+                let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+                let t = matrix::translation(pos[0], pos[1], 3.0);
+
+                let m = matrix.chain(t).generate();
+
+                let mut v = draw_sys.view(m.as_ref());
+                road.draw(&mut v);
+            }
+
+
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
         }
