@@ -74,7 +74,14 @@ impl Path {
         use Moves::*;
         match m {
             UpLeft | DownLeft | UpRight | DownRight => {
-                MoveUnit(1)
+                //MoveUnit(1)
+
+                // if self.num_moves==0 {
+                //     MoveUnit(1)
+                // }else{
+                //     MoveUnit(2)
+                // }
+                MoveUnit(3)
                 // let num = self
                 //     .moves
                 //     .iter()
@@ -97,7 +104,7 @@ impl Path {
                 //     //}
                 // }
             }
-            _ => MoveUnit(0),
+            _ => MoveUnit(2),
         }
     }
 }
@@ -232,16 +239,22 @@ impl PossibleMoves {
             //     continue;
             // }
 
-            let cost = mo.foop(target_pos).add(current_path.move_cost(a));
+            let  move_cost=current_path.move_cost(a);
+            // if move_cost.0>remaining_moves.0{
+            //     move_cost.0=remaining_moves.0;
+            // }
+            //TODO road should HALF the cost?
+            let cost = mo.foop(target_pos,move_cost);
 
             //as long as we have SOME remainv moves, we can go to this square even
             //if it is really expensive.
-            if remaining_moves.0 <=0 {
+            if !(remaining_moves.0 >0) {
                 continue;
             }
 
             //subtract move cost
             let rr = remaining_moves.sub(cost);
+            
 
             if !self.consider(&current_path, a, rr) {
                 continue;

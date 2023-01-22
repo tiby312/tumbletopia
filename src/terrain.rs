@@ -2,7 +2,7 @@ use super::*;
 
 //TODO use this?
 pub trait MoveCost {
-    fn foop(&self, a: GridCoord) -> MoveUnit;
+    fn foop(&self, a: GridCoord,a:MoveUnit) -> MoveUnit;
 
     fn chain<B:MoveCost>(self,other:B)->Chain<Self,B> where Self:Sized{
         Chain{a:self,b:other}
@@ -14,41 +14,40 @@ pub struct Chain<A,B>{
     b:B
 }
 impl<A:MoveCost,B:MoveCost> MoveCost for Chain<A,B>{
-    fn foop(&self,g:GridCoord)->MoveUnit{
-        let a=self.a.foop(g);
-        let b=self.b.foop(g);
-        MoveUnit(a.0+b.0)
+    fn foop(&self,g:GridCoord,z:MoveUnit)->MoveUnit{
+        let a=self.a.foop(g,z);
+        self.b.foop(g,a)
     }
 }
 
 
 
 
-pub struct TerrainCollection{
-    pub cost:MoveUnit,
-    pub pos:Vec<GridCoord>
+pub struct TerrainCollection<F>{
+    pub pos:Vec<GridCoord>,
+    pub func:F
 }
-impl TerrainCollection {
+impl<F> TerrainCollection<F> {
     pub fn find_mut(&mut self, a: &GridCoord) -> Option<&mut GridCoord> {
         self.pos.iter_mut().find(|b| *b == a)
     }
-    pub fn foo(&self)->TerrainCollectionFoo{
-        TerrainCollectionFoo { cost:self.cost, a: &self.pos }
+    pub fn foo(&self)->TerrainCollectionFoo<F>{
+        TerrainCollectionFoo {  a: &self.pos,func:&self.func }
     }
 }
 
 
 
-pub struct TerrainCollectionFoo<'a> {
-    cost:MoveUnit,
+pub struct TerrainCollectionFoo<'a,F> {
     a: &'a [GridCoord],
+    func:&'a F
 }
-impl<'a> MoveCost for TerrainCollectionFoo<'a> {
-    fn foop(&self, g: GridCoord) -> MoveUnit{
+impl<'a,F:Fn(MoveUnit)->MoveUnit> MoveCost for TerrainCollectionFoo<'a,F> {
+    fn foop(&self, g: GridCoord,z:MoveUnit) -> MoveUnit{
         if self.a.contains(&g){
-            self.cost
+            (self.func)(z)
         }else{
-            MoveUnit(0)
+            z
         }
     }
 }
@@ -56,8 +55,8 @@ impl<'a> MoveCost for TerrainCollectionFoo<'a> {
 
 pub struct Grass;
 impl MoveCost for Grass{
-    fn foop(&self,_:GridCoord)->MoveUnit{
-        MoveUnit(2)
+    fn foop(&self,_:GridCoord,z:MoveUnit)->MoveUnit{
+        z
     }
 }
 
