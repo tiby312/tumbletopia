@@ -220,7 +220,7 @@ pub async fn worker_entry() {
                         &gg.filter().chain(cats.filter()),
                         &terrain::Grass.chain(roads.foo()),
                         cell,
-                        MoveUnit(1),
+                        MoveUnit(3),
                     );
                     selected_cell = Some(CellSelection::MoveSelection(oo));
                 } else {

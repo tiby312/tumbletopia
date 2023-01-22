@@ -74,27 +74,28 @@ impl Path {
         use Moves::*;
         match m {
             UpLeft | DownLeft | UpRight | DownRight => {
-                let num = self
-                    .moves
-                    .iter()
-                    .take(self.num_moves as usize)
-                    .filter(|&&a| a == m)
-                    .count();
+                MoveUnit(1)
+                // let num = self
+                //     .moves
+                //     .iter()
+                //     .take(self.num_moves as usize)
+                //     .filter(|&&a| a == m)
+                //     .count();
                 
-                //if num % 3 == 0 || num % 3==1  {
-                if num!=0 && num % 2 == 0 {
+                // //if num % 3 == 0 || num % 3==1  {
+                // if num!=0 && num % 2 == 0 {
                 
-                    MoveUnit(0)
-                } else {
+                //     MoveUnit(0)
+                // } else {
                     
-                    //Technically should have the penalty all the time.
-                    //But it looks better with this so roads work on corners for warriors (1 move unit)
-                    //if num>0{
-                    MoveUnit(2) //TODO 2 better?
-                    //}else{
-                    //    MoveUnit(0)
-                    //}
-                }
+                //     //Technically should have the penalty all the time.
+                //     //But it looks better with this so roads work on corners for warriors (1 move unit)
+                //     //if num>0{
+                //     MoveUnit(2) //TODO 2 better?
+                //     //}else{
+                //     //    MoveUnit(0)
+                //     //}
+                // }
             }
             _ => MoveUnit(0),
         }
