@@ -113,7 +113,7 @@ pub async fn worker_entry() {
     ]);
 
     let mut roads=terrain::TerrainCollection{
-        cost:MoveUnit(-2),
+        cost:MoveUnit(-1),
         pos:vec!()
     };
 

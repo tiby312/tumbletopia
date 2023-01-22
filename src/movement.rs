@@ -80,11 +80,20 @@ impl Path {
                     .take(self.num_moves as usize)
                     .filter(|&&a| a == m)
                     .count();
+                
                 //if num % 3 == 0 || num % 3==1  {
-                if num % 2 == 0 {
+                if num!=0 && num % 2 == 0 {
+                
                     MoveUnit(0)
                 } else {
-                    MoveUnit(2)
+                    
+                    //Technically should have the penalty all the time.
+                    //But it looks better with this so roads work on corners for warriors (1 move unit)
+                    //if num>0{
+                    MoveUnit(2) //TODO 2 better?
+                    //}else{
+                    //    MoveUnit(0)
+                    //}
                 }
             }
             _ => MoveUnit(0),
@@ -178,26 +187,55 @@ impl PossibleMoves {
         filter: &F,
         mo:&M,
         current_path: Path,
-        remaining_moves: MoveUnit,
+        mut remaining_moves: MoveUnit,
     ) {
         if remaining_moves.0 == 0 {
             return;
         }
+        
+        
+
+        // 2-OG
+        // warrior has 2 move points
+        // warrior moves to grass and expends its 2 move points
+        // warrior cant move anymore
+
+
+        // 2-ORG
+        // warrior has 2 move points
+        // warrior moves to road on grass and expends 1 move point (2-1)
+        // warrior has 1 move point.
+        // warrior moves to grass and expends 2 move points.
+        // warrior has -1 move points. can't move anymore.
+
+
+        // 2-ORRG
+        // warrior has 2 move points
+        // warrior moves to road on grass and expends 1 move point (2-1)
+        // warrior has 1 move point
+        // warrior moves to road on grass and expends 1 move point?????
+        // warrior has 0 move points. cant move anymore.
 
         let curr_pos = current_path.get_end_coord(self.start);
 
+        log!(format!("rem:{:?}",remaining_moves.0));
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
             if !filter.filter(&target_pos) {
                 continue;
             }
-            let cost = 
-                //how much it would cost to move to this square
-                mo.foop(target_pos).add(current_path.move_cost(a));
 
-            //can't afford to move to this square.
-            if remaining_moves.0 < cost.0 {
+            //We must have remaining moves to satisfy ALL move cost.
+            // if remaining_moves.0<current_path.move_cost(a).0{
+            //     continue;
+            // }
+
+            let cost = mo.foop(target_pos).add(current_path.move_cost(a));
+
+            //as long as we have SOME remainv moves, we can go to this square even
+            //if it is really expensive.
+            if remaining_moves.0 <=0 {
                 continue;
             }
 

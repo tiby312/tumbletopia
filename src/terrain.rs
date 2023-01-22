@@ -56,7 +56,7 @@ impl<'a> MoveCost for TerrainCollectionFoo<'a> {
 
 pub struct Grass;
 impl MoveCost for Grass{
-    fn foop(&self,g:GridCoord)->MoveUnit{
+    fn foop(&self,_:GridCoord)->MoveUnit{
         MoveUnit(2)
     }
 }
