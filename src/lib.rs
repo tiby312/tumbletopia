@@ -112,9 +112,14 @@ pub async fn worker_entry() {
         GridCoord([3, 1]),
     ]);
 
+    // let mut roads=terrain::TerrainCollection{
+    //     pos:vec!(),
+    //     func:|a:MoveUnit|MoveUnit(a.0/2)
+    // };
+
     let mut roads=terrain::TerrainCollection{
         pos:vec!(),
-        func:|a:MoveUnit|MoveUnit(a.0/2)
+        func:|a:MoveUnit|MoveUnit(a.0+10)
     };
 
     let mut selected_cell: Option<CellSelection> = None;
@@ -220,7 +225,7 @@ pub async fn worker_entry() {
                         &gg.filter().chain(cats.filter()),
                         &terrain::Grass.chain(roads.foo()),
                         cell,
-                        MoveUnit(1),
+                        MoveUnit(2),
                     );
                     selected_cell = Some(CellSelection::MoveSelection(oo));
                 } else {
