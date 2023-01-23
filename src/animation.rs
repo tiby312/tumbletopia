@@ -6,6 +6,8 @@ struct Doop {
     dir: Vector2<f32>,
     distance_to_next: f32,
 }
+
+
 impl Doop {
     fn new(current: Vector2<f32>, next: Vector2<f32>) -> Self {
         let distance_to_next = (next - current).magnitude();
@@ -53,10 +55,11 @@ impl Animation {
             curr: 0.0,
         }
     }
-    pub fn animate_step(&mut self, delta: f32) -> Option<[f32; 2]> {
-        self.curr += delta;
+    pub fn animate_step(&mut self) -> Option<[f32; 2]> {
+        let tt=0.1;
+        self.curr += (self.doop.distance_to_next()-self.curr)*tt;
 
-        if self.curr > self.doop.distance_to_next() {
+        if self.curr > self.doop.distance_to_next()-tt {
             let Some(new_next)=self.points.next() else{
                         return None;
                     };
