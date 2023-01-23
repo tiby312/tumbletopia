@@ -164,8 +164,8 @@ pub async fn main_entry() {
         MEvent::TouchEnd { touches }.some()
     });
 
-    let bb=button.clone();
-    let _handler = worker.register_event(&button, "click",move  |_| {
+    let bb = button.clone();
+    let _handler = worker.register_event(&button, "click", move |_| {
         log!("clicked the button!!!!!");
         bb.set_hidden(true);
         MEvent::ButtonClick.some()

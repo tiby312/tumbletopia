@@ -1,5 +1,5 @@
 use axgeom::vec2same;
-use cgmath::Transform;
+use cgmath::{InnerSpace, Transform, Vector2};
 use gloo::console::log;
 use model::matrix;
 use movement::GridCoord;
@@ -7,15 +7,15 @@ use serde::{Deserialize, Serialize};
 use shogo::simple2d::{self};
 use shogo::utils;
 use wasm_bindgen::prelude::*;
+pub mod animation;
 pub mod dom;
-pub mod model_parse;
-pub mod projection;
-pub mod util;
-
 pub mod grids;
+pub mod model_parse;
 pub mod movement;
+pub mod projection;
 pub mod scroll;
 pub mod terrain;
+pub mod util;
 use dom::MEvent;
 use projection::*;
 
@@ -34,8 +34,6 @@ impl UnitCollection {
         UnitCollectionFilter { a: &self.0 }
     }
 }
-
-
 
 pub struct UnitCollectionFilter<'a> {
     a: &'a [GridCoord],
@@ -112,9 +110,9 @@ pub async fn worker_entry() {
         GridCoord([3, 1]),
     ]);
 
-    let mut roads=terrain::TerrainCollection{
-        pos:vec!(),
-        func:|a:MoveUnit|MoveUnit(a.0/2)
+    let mut roads = terrain::TerrainCollection {
+        pos: vec![],
+        func: |a: MoveUnit| MoveUnit(a.0 / 2),
     };
 
     // let mut roads=terrain::TerrainCollection{
@@ -123,7 +121,7 @@ pub async fn worker_entry() {
     // };
 
     let mut selected_cell: Option<CellSelection> = None;
-
+    let mut animation = None;
     'outer: loop {
         let mut on_select = false;
         let res = frame_timer.next().await;
@@ -184,18 +182,16 @@ pub async fn worker_entry() {
 
                     scroll_manager.on_mouse_down([*x, *y]);
                 }
-                MEvent::ButtonClick => {
-                    match selected_cell {
-                        Some(CellSelection::BuildSelection(g)) => {
-                            log!("adding to roads!!!!!");
-                            roads.pos.push(g);
-                            selected_cell=None;
-                        }
-                        _ => {
-                            panic!("Received button push when we did not ask for it!")
-                        }
+                MEvent::ButtonClick => match selected_cell {
+                    Some(CellSelection::BuildSelection(g)) => {
+                        log!("adding to roads!!!!!");
+                        roads.pos.push(g);
+                        selected_cell = None;
                     }
-                }
+                    _ => {
+                        panic!("Received button push when we did not ask for it!")
+                    }
+                },
                 MEvent::ShutdownClick => break 'outer,
             }
         }
@@ -205,11 +201,16 @@ pub async fn worker_entry() {
         if on_select {
             let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
 
-            if let Some(gg) = &mut selected_cell {
-                match gg {
-                    CellSelection::MoveSelection(gg) => {
-                        if movement::contains_coord(gg.iter_coords(), &cell) {
-                            let c = cats.find_mut(gg.start()).unwrap();
+            if let Some(ss) = &mut selected_cell {
+                match ss {
+                    CellSelection::MoveSelection(ss) => {
+                        if movement::contains_coord(ss.iter_coords(), &cell) {
+                            animation = Some(animation::Animation::new(
+                                ss.start(),
+                                ss.get_path(cell).unwrap(),
+                                &gg,
+                            ));
+                            let c = cats.find_mut(ss.start()).unwrap();
                             *c = cell;
                         }
                         selected_cell = None;
@@ -300,7 +301,7 @@ pub async fn worker_entry() {
                 }
             }
 
-            for GridCoord(a) in roads.pos.iter(){
+            for GridCoord(a) in roads.pos.iter() {
                 let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
                 let t = matrix::translation(pos[0], pos[1], 3.0);
 
@@ -309,7 +310,6 @@ pub async fn worker_entry() {
                 let mut v = draw_sys.view(m.as_ref());
                 road.draw(&mut v);
             }
-
 
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
@@ -344,6 +344,18 @@ pub async fn worker_entry() {
             cat.draw(&mut v);
         }
 
+        if let Some(a) = &mut animation {
+            if let Some(pos) = a.animate_step(2.0) {
+                let t = matrix::translation(pos[0], pos[1], 20.0);
+                let s = matrix::scale(1.0, 1.0, 1.0);
+                let m = matrix.chain(t).chain(s).generate();
+                let mut v = draw_sys.view(m.as_ref());
+                cat.draw(&mut v);
+            } else {
+                animation = None;
+            };
+        }
+
         ctx.flush();
     }
 
@@ -354,7 +366,7 @@ pub async fn worker_entry() {
 
 use web_sys::WebGl2RenderingContext;
 
-use crate::movement::{  MoveUnit, Filter};
+use crate::movement::{Filter, MoveUnit};
 use crate::terrain::MoveCost;
 
 const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");

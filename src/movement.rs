@@ -25,7 +25,7 @@ pub enum Moves {
     UpRight,
 }
 impl Moves {
-    fn to_relative(&self) -> GridCoord {
+    pub fn to_relative(&self) -> GridCoord {
         use Moves::*;
         GridCoord(match self {
             Up => [0, 1],
@@ -52,6 +52,9 @@ impl Path {
             moves: [Moves::Up; 20],
             num_moves: 0,
         }
+    }
+    pub fn get_moves(&self) -> &[Moves] {
+        &self.moves[0..self.num_moves as usize]
     }
     pub fn add(mut self, a: Moves) -> Option<Self> {
         if self.num_moves >= 20 {
@@ -88,13 +91,13 @@ impl Path {
                 //     .take(self.num_moves as usize)
                 //     .filter(|&&a| a == m)
                 //     .count();
-                
+
                 // //if num % 3 == 0 || num % 3==1  {
                 // if num!=0 && num % 2 == 0 {
-                
+
                 //     MoveUnit(0)
                 // } else {
-                    
+
                 //     //Technically should have the penalty all the time.
                 //     //But it looks better with this so roads work on corners for warriors (1 move unit)
                 //     //if num>0{
@@ -133,14 +136,6 @@ impl MoveUnit {
     }
 }
 
-//Represents all the legal moves for a specific piece.
-pub struct PossibleMoves {
-    //Has the end coord,path from current, and the remainder cost to get there.
-    //cells that are the furthest away will have a move unit of zero.
-    moves: Vec<(GridCoord, Path, MoveUnit)>,
-    start: GridCoord,
-}
-
 pub trait Filter {
     fn filter(&self, a: &GridCoord) -> bool;
     fn chain<K: Filter>(self, other: K) -> Chain<Self, K>
@@ -163,11 +158,20 @@ impl<A: Filter, B: Filter> Filter for Chain<A, B> {
 pub fn contains_coord<'a, I: Iterator<Item = &'a GridCoord>>(mut it: I, b: &GridCoord) -> bool {
     it.find(|a| *a == b).is_some()
 }
+
+//Represents all the legal moves for a specific piece.
+pub struct PossibleMoves {
+    //Has the end coord,path from current, and the remainder cost to get there.
+    //cells that are the furthest away will have a move unit of zero.
+    moves: Vec<(GridCoord, Path, MoveUnit)>,
+    start: GridCoord,
+}
+
 impl PossibleMoves {
-    pub fn new<K: MoveStrategy, F: Filter,M:MoveCost>(
+    pub fn new<K: MoveStrategy, F: Filter, M: MoveCost>(
         movement: &K,
         filter: &F,
-        mo:&M,
+        mo: &M,
         coord: GridCoord,
         remaining_moves: MoveUnit,
     ) -> Self {
@@ -177,8 +181,12 @@ impl PossibleMoves {
             moves: vec![],
             start: coord,
         };
-        p.explore_path(movement, filter, mo,Path::new(), remaining_moves);
+        p.explore_path(movement, filter, mo, Path::new(), remaining_moves);
         p
+    }
+
+    pub fn get_path(&self, g: GridCoord) -> Option<&Path> {
+        self.moves.iter().find(|a| a.0 == g).map(|a| &a.1)
     }
 
     pub fn start(&self) -> &GridCoord {
@@ -189,25 +197,22 @@ impl PossibleMoves {
         self.moves.iter().map(|a| &a.0)
     }
 
-    fn explore_path<K: MoveStrategy, F: Filter,M:MoveCost>(
+    fn explore_path<K: MoveStrategy, F: Filter, M: MoveCost>(
         &mut self,
         movement: &K,
         filter: &F,
-        mo:&M,
+        mo: &M,
         current_path: Path,
         mut remaining_moves: MoveUnit,
     ) {
         if remaining_moves.0 == 0 {
             return;
         }
-        
-        
 
         // 2-OG
         // warrior has 2 move points
         // warrior moves to grass and expends its 2 move points
         // warrior cant move anymore
-
 
         // 2-ORG
         // warrior has 2 move points
@@ -215,7 +220,6 @@ impl PossibleMoves {
         // warrior has 1 move point.
         // warrior moves to grass and expends 2 move points.
         // warrior has -1 move points. can't move anymore.
-
 
         // 2-ORRG
         // warrior has 2 move points
@@ -226,7 +230,7 @@ impl PossibleMoves {
 
         let curr_pos = current_path.get_end_coord(self.start);
 
-        log!(format!("rem:{:?}",remaining_moves.0));
+        //log!(format!("rem:{:?}",remaining_moves.0));
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
@@ -239,28 +243,27 @@ impl PossibleMoves {
             //     continue;
             // }
 
-            let  move_cost=current_path.move_cost(a);
+            let move_cost = current_path.move_cost(a);
             // if move_cost.0>remaining_moves.0{
             //     move_cost.0=remaining_moves.0;
             // }
             //TODO road should HALF the cost?
-            let cost = mo.foop(target_pos,move_cost);
+            let cost = mo.foop(target_pos, move_cost);
 
             //as long as we have SOME remainv moves, we can go to this square even
             //if it is really expensive.
-            if !(remaining_moves.0 >0) {
+            if !(remaining_moves.0 > 0) {
                 continue;
             }
 
             //subtract move cost
             let rr = remaining_moves.sub(cost);
-            
 
             if !self.consider(&current_path, a, rr) {
                 continue;
             }
 
-            self.explore_path(movement, filter, mo,current_path.add(a).unwrap(), rr)
+            self.explore_path(movement, filter, mo, current_path.add(a).unwrap(), rr)
         }
     }
 
