@@ -345,7 +345,7 @@ pub async fn worker_entry() {
         }
 
         if let Some(a) = &mut animation {
-            if let Some(pos) = a.animate_step(2.0) {
+            if let Some(pos) = a.animate_step(5.0) {
                 let t = matrix::translation(pos[0], pos[1], 20.0);
                 let s = matrix::scale(1.0, 1.0, 1.0);
                 let m = matrix.chain(t).chain(s).generate();
