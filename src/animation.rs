@@ -26,13 +26,14 @@ impl Doop {
         self.current + self.dir * val
     }
 }
-pub struct Animation {
+pub struct Animation<T> {
     points: std::vec::IntoIter<Vector2<f32>>,
     doop: Doop,
     curr: f32,
+    data:T
 }
-impl Animation {
-    pub fn new(start: &GridCoord, path: &movement::Path, v: &grids::GridMatrix) -> Self {
+impl<T> Animation<T> {
+    pub fn new(start: &GridCoord, path: &movement::Path, v: &grids::GridMatrix,data:T) -> Self {
         let first: [f32; 2] = v.to_world_topleft(start.0.into()).into();
         let first = first.into();
 
@@ -50,6 +51,7 @@ impl Animation {
         let next: Vector2<f32> = points.next().unwrap();
 
         Animation {
+            data,
             points,
             doop: Doop::new(first, next),
             curr: 0.0,
@@ -57,7 +59,8 @@ impl Animation {
     }
     pub fn animate_step(&mut self) -> Option<[f32; 2]> {
         let tt=0.1;
-        self.curr += (self.doop.distance_to_next()-self.curr)*tt;
+        let max_tween=2.0;
+        self.curr += ((self.doop.distance_to_next()-self.curr)*tt).min(max_tween);
 
         if self.curr > self.doop.distance_to_next()-tt {
             let Some(new_next)=self.points.next() else{
@@ -73,5 +76,8 @@ impl Animation {
         }
         
         Some(self.doop.lerp(self.curr).into())
+    }
+    pub fn into_data(self)->T{
+        self.data
     }
 }
