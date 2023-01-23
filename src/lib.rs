@@ -27,8 +27,8 @@ enum UiButton {
 
 pub struct UnitCollection(Vec<GridCoord>);
 impl UnitCollection {
-    fn remove(&mut self,a:&GridCoord)->GridCoord{
-        let (i,_) = self.0.iter().enumerate().find(|(_,b)| *b == a).unwrap();
+    fn remove(&mut self, a: &GridCoord) -> GridCoord {
+        let (i, _) = self.0.iter().enumerate().find(|(_, b)| *b == a).unwrap();
         self.0.swap_remove(i)
     }
     fn find_mut(&mut self, a: &GridCoord) -> Option<&mut GridCoord> {
@@ -209,19 +209,14 @@ pub async fn worker_entry() {
                 match ss {
                     CellSelection::MoveSelection(ss) => {
                         if movement::contains_coord(ss.iter_coords(), &cell) {
-                            log!("hay");
-                            let mut c=cats.remove(ss.start());
-                            c=cell;
-                            log!("fff");
+                            let mut c = cats.remove(ss.start());
+                            c = cell;
                             animation = Some(animation::Animation::new(
                                 ss.start(),
                                 ss.get_path(cell).unwrap(),
                                 &gg,
-                                c
+                                c,
                             ));
-                            log!("boo");
-                            // let c = cats.find_mut(ss.start()).unwrap();
-                            // *c = cell;
                         }
                         selected_cell = None;
                     }
@@ -340,8 +335,32 @@ pub async fn worker_entry() {
                 drop_shadow.draw(&mut v);
             }
 
+            if let Some(a) = &animation {
+                let pos = a.calc_pos();
+                let t = matrix::translation(pos[0], pos[1], 1.0);
+
+                let m = matrix.chain(t).generate();
+
+                let mut v = draw_sys.view(m.as_ref());
+                drop_shadow.draw(&mut v);
+            }
+
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
+        }
+
+        if let Some(mut a) = animation.take() {
+            if let Some(pos) = a.animate_step() {
+                let t = matrix::translation(pos[0], pos[1], 20.0);
+                let s = matrix::scale(1.0, 1.0, 1.0);
+                let m = matrix.chain(t).chain(s).generate();
+                let mut v = draw_sys.view(m.as_ref());
+                cat.draw(&mut v);
+                animation = Some(a);
+            } else {
+                cats.0.push(a.into_data());
+                animation = None;
+            };
         }
 
         for &GridCoord(a) in cats.0.iter() {
@@ -352,20 +371,6 @@ pub async fn worker_entry() {
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
             cat.draw(&mut v);
-        }
-
-        if let Some(mut a) = animation.take() {
-            if let Some(pos) = a.animate_step() {
-                let t = matrix::translation(pos[0], pos[1], 20.0);
-                let s = matrix::scale(1.0, 1.0, 1.0);
-                let m = matrix.chain(t).chain(s).generate();
-                let mut v = draw_sys.view(m.as_ref());
-                cat.draw(&mut v);
-                animation=Some(a);
-            } else {
-                cats.0.push(a.into_data());
-                animation = None;
-            };
         }
 
         ctx.flush();
