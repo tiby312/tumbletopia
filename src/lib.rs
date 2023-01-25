@@ -202,6 +202,9 @@ pub async fn worker_entry() {
 
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), matrix);
 
+        if animation.is_some(){
+            on_select=false;
+        }
         if on_select {
             let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
 
@@ -211,14 +214,18 @@ pub async fn worker_entry() {
                         if movement::contains_coord(ss.iter_coords(), &cell) {
                             let mut c = cats.remove(ss.start());
                             c = cell;
+                            
                             animation = Some(animation::Animation::new(
                                 ss.start(),
                                 ss.get_path(cell).unwrap(),
                                 &gg,
                                 c,
                             ));
+
+                        
                         }
                         selected_cell = None;
+                        
                     }
                     CellSelection::BuildSelection(_) => {
                         //do nothing? we are waiting on user to push a button.
@@ -226,18 +233,19 @@ pub async fn worker_entry() {
                 }
             } else {
                 if cats.0.contains(&cell) {
+                    
                     let oo = movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter().chain(cats.filter()),
                         &terrain::Grass.chain(roads.foo()),
                         cell,
-                        MoveUnit(3),
+                        MoveUnit(2),
                     );
                     selected_cell = Some(CellSelection::MoveSelection(oo));
                 } else {
-                    selected_cell = Some(CellSelection::BuildSelection(cell));
+                    //selected_cell = Some(CellSelection::BuildSelection(cell));
                     //activate the build options for that terrain
-                    w.post_message(UiButton::ShowRoadUi);
+                    //w.post_message(UiButton::ShowRoadUi);
                 }
             }
         }

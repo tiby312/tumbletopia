@@ -242,9 +242,10 @@ impl TouchController {
                     (None, Some(pos)) => {
                         let _ = self.inner.handle_mouse_up();
                         self.inner.handle_mouse_down(pos);
-                        self.foo = Foo::OneTouchActive {
-                            touch_id: second_touch_id,
-                        };
+                        // self.foo = Foo::OneTouchActive {
+                        //     touch_id: second_touch_id,
+                        // };
+                        self.foo=Foo::None;
                         self.persistent_rot += rot.compute();
                         self.persistent_zoom += zoom.compute();
                         MouseUp::NoSelect
@@ -252,9 +253,10 @@ impl TouchController {
                     (Some(pos), None) => {
                         let _ = self.inner.handle_mouse_up();
                         self.inner.handle_mouse_down(pos);
-                        self.foo = Foo::OneTouchActive {
-                            touch_id: first_touch_id,
-                        };
+                        // self.foo = Foo::OneTouchActive {
+                        //     touch_id: first_touch_id,
+                        // };
+                        self.foo=Foo::None;
                         self.persistent_rot += rot.compute();
                         self.persistent_zoom += zoom.compute();
                         MouseUp::NoSelect
