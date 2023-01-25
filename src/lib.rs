@@ -243,9 +243,9 @@ pub async fn worker_entry() {
                     );
                     selected_cell = Some(CellSelection::MoveSelection(oo));
                 } else {
-                    //selected_cell = Some(CellSelection::BuildSelection(cell));
+                    selected_cell = Some(CellSelection::BuildSelection(cell));
                     //activate the build options for that terrain
-                    //w.post_message(UiButton::ShowRoadUi);
+                    w.post_message(UiButton::ShowRoadUi);
                 }
             }
         }
