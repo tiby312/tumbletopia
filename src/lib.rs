@@ -202,8 +202,8 @@ pub async fn worker_entry() {
 
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), matrix);
 
-        if animation.is_some(){
-            on_select=false;
+        if animation.is_some() {
+            on_select = false;
         }
         if on_select {
             let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
@@ -214,18 +214,15 @@ pub async fn worker_entry() {
                         if movement::contains_coord(ss.iter_coords(), &cell) {
                             let mut c = cats.remove(ss.start());
                             c = cell;
-                            
+
                             animation = Some(animation::Animation::new(
                                 ss.start(),
                                 ss.get_path(cell).unwrap(),
                                 &gg,
                                 c,
                             ));
-
-                        
                         }
                         selected_cell = None;
-                        
                     }
                     CellSelection::BuildSelection(_) => {
                         //do nothing? we are waiting on user to push a button.
@@ -233,7 +230,6 @@ pub async fn worker_entry() {
                 }
             } else {
                 if cats.0.contains(&cell) {
-                    
                     let oo = movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter().chain(cats.filter()),

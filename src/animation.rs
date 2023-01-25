@@ -60,8 +60,8 @@ impl<T> Animation<T> {
         self.doop.lerp(self.curr).into()
     }
     pub fn animate_step(&mut self) -> Option<[f32; 2]> {
-        let tt = 0.1;
-        let max_tween = 2.0;
+        let tt = 0.2;
+        let max_tween = 4.0;
         self.curr += ((self.doop.distance_to_next() - self.curr) * tt).min(max_tween);
 
         if self.curr > self.doop.distance_to_next() - tt {

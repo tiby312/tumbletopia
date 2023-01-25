@@ -245,7 +245,7 @@ impl TouchController {
                         // self.foo = Foo::OneTouchActive {
                         //     touch_id: second_touch_id,
                         // };
-                        self.foo=Foo::None;
+                        self.foo = Foo::None;
                         self.persistent_rot += rot.compute();
                         self.persistent_zoom += zoom.compute();
                         MouseUp::NoSelect
@@ -256,7 +256,7 @@ impl TouchController {
                         // self.foo = Foo::OneTouchActive {
                         //     touch_id: first_touch_id,
                         // };
-                        self.foo=Foo::None;
+                        self.foo = Foo::None;
                         self.persistent_rot += rot.compute();
                         self.persistent_zoom += zoom.compute();
                         MouseUp::NoSelect
