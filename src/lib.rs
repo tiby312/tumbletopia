@@ -286,7 +286,7 @@ pub async fn worker_entry() {
                     let attack_range=2;
 
                     let attack_range=4;
-                    let aa=(attack_range+cat.move_deficit.0).max(1);
+                    let aa=(attack_range+cat.move_deficit.0);
                     let attack=movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter(),
