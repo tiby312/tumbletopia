@@ -177,7 +177,7 @@ impl PossibleMoves {
         remaining_moves: MoveUnit,
     ) -> Self {
         //A typical move costs 2, so scale everything as if it cost 1.
-        let remaining_moves = MoveUnit(remaining_moves.0 * 2);
+        let remaining_moves = MoveUnit(remaining_moves.0 );
         let mut p = PossibleMoves {
             moves: vec![],
             start: coord,

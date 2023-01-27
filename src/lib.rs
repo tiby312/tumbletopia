@@ -68,11 +68,12 @@ impl HasPos for Cat{
 
 pub struct Cat{
     position:GridCoord,
-    move_deficit:MoveUnit
+    move_deficit:MoveUnit,
+    moved:bool
 }
 impl Cat{
     fn new(position:GridCoord)->Self{
-        Cat { position, move_deficit: MoveUnit(0) }
+        Cat { position, move_deficit: MoveUnit(0) ,moved:false}
     }
 }
 
@@ -251,6 +252,7 @@ pub async fn worker_entry() {
                             let (dd,aa)=ss.get_path_data(cell).unwrap();
                             c.position = cell;
                             c.move_deficit=*aa;
+                            c.moved=true;
                             animation = Some(animation::Animation::new(
                                 ss.start(),
                                 dd,
@@ -266,20 +268,31 @@ pub async fn worker_entry() {
                 }
             } else {
                 if let Some(cat)=cats.find(&cell){
-                    let mm = movement::PossibleMoves::new(
+                    let mm=if cat.moved{
+                        MoveUnit(0)
+                    }else{
+                        MoveUnit(4)
+                    };
+
+                    let mm=movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter().chain(cats.filter()),
                         &terrain::Grass.chain(roads.foo()),
                         cat.position,
-                        MoveUnit(2),
+                        mm,
                     );
+                    log!(format!("deficit:{:?}",cat.move_deficit.0));
 
+                    let attack_range=2;
+
+                    let attack_range=4;
+                    let aa=(attack_range+cat.move_deficit.0).max(1);
                     let attack=movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter(),
                         &terrain::Grass,
                         cat.position,
-                        MoveUnit(1),
+                        MoveUnit(aa),
                     );
 
                     selected_cell = Some(CellSelection::MoveSelection(mm,attack));
