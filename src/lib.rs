@@ -25,28 +25,54 @@ enum UiButton {
     NoUi,
 }
 
-pub struct UnitCollection(Vec<GridCoord>);
-impl UnitCollection {
-    fn remove(&mut self, a: &GridCoord) -> GridCoord {
-        let (i, _) = self.0.iter().enumerate().find(|(_, b)| *b == a).unwrap();
+pub struct UnitCollection<T:HasPos>(Vec<T>);
+impl<T:HasPos> UnitCollection<T> {
+    fn remove(&mut self, a: &GridCoord) -> T {
+        let (i, _) = self.0.iter().enumerate().find(|(_, b)| b.get_pos() == a).unwrap();
         self.0.swap_remove(i)
     }
-    fn find_mut(&mut self, a: &GridCoord) -> Option<&mut GridCoord> {
-        self.0.iter_mut().find(|b| *b == a)
+    fn find_mut(&mut self, a: &GridCoord) -> Option<&mut T> {
+        self.0.iter_mut().find(|b| b.get_pos() == a)
     }
-    fn filter(&self) -> UnitCollectionFilter {
+    fn filter(&self) -> UnitCollectionFilter<T> {
         UnitCollectionFilter { a: &self.0 }
     }
 }
 
-pub struct UnitCollectionFilter<'a> {
-    a: &'a [GridCoord],
+pub struct UnitCollectionFilter<'a,T> {
+    a: &'a [T],
 }
-impl<'a> movement::Filter for UnitCollectionFilter<'a> {
-    fn filter(&self, a: &GridCoord) -> bool {
-        !self.a.contains(a)
+impl<'a,T:HasPos> movement::Filter for UnitCollectionFilter<'a,T> {
+    fn filter(&self, b: &GridCoord) -> bool {
+        self.a.iter().find(|a|a.get_pos()==b).is_none()
     }
 }
+
+pub trait HasPos{
+    fn get_pos(&self)->&GridCoord;
+}
+impl HasPos for GridCoord{
+    fn get_pos(&self)->&GridCoord{
+        self
+    }
+}
+
+impl HasPos for Cat{
+    fn get_pos(&self)->&GridCoord{
+        &self.position
+    }
+}
+
+pub struct Cat{
+    position:GridCoord,
+    move_deficit:MoveUnit
+}
+impl Cat{
+    fn new(position:GridCoord)->Self{
+        Cat { position, move_deficit: MoveUnit(0) }
+    }
+}
+
 
 enum CellSelection {
     MoveSelection(movement::PossibleMoves),
@@ -107,11 +133,11 @@ pub async fn worker_entry() {
     };
 
     let mut cats = UnitCollection(vec![
-        GridCoord([2, 2]),
-        GridCoord([5, 5]),
-        GridCoord([6, 6]),
-        GridCoord([7, 7]),
-        GridCoord([3, 1]),
+        Cat::new(GridCoord([2, 2])),
+        Cat::new(GridCoord([5, 5])),
+        Cat::new(GridCoord([6, 6])),
+        Cat::new(GridCoord([7, 7])),
+        Cat::new(GridCoord([3, 1])),
     ]);
 
     let mut roads = terrain::TerrainCollection {
@@ -213,7 +239,7 @@ pub async fn worker_entry() {
                     CellSelection::MoveSelection(ss) => {
                         if movement::contains_coord(ss.iter_coords(), &cell) {
                             let mut c = cats.remove(ss.start());
-                            c = cell;
+                            c.position = cell;
 
                             animation = Some(animation::Animation::new(
                                 ss.start(),
@@ -229,7 +255,8 @@ pub async fn worker_entry() {
                     }
                 }
             } else {
-                if cats.0.contains(&cell) {
+                if cats.find_mut(&cell).is_some(){
+                //if cats.0.contains(&cell) {
                     let oo = movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter().chain(cats.filter()),
@@ -329,7 +356,7 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
-            for &GridCoord(a) in cats.0.iter() {
+            for &GridCoord(a) in cats.0.iter().map(|a|&a.position) {
                 let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
                 let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -367,7 +394,7 @@ pub async fn worker_entry() {
             };
         }
 
-        for &GridCoord(a) in cats.0.iter() {
+        for &GridCoord(a) in cats.0.iter().map(|a|&a.position) {
             let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
 
             let t = matrix::translation(pos[0], pos[1], 20.0);

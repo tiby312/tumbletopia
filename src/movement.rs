@@ -163,6 +163,7 @@ pub fn contains_coord<'a, I: Iterator<Item = &'a GridCoord>>(mut it: I, b: &Grid
 pub struct PossibleMoves {
     //Has the end coord,path from current, and the remainder cost to get there.
     //cells that are the furthest away will have a move unit of zero.
+    //TODO start with the remainder when determining attack squares
     moves: Vec<(GridCoord, Path, MoveUnit)>,
     start: GridCoord,
 }
