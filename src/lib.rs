@@ -34,6 +34,9 @@ impl<T:HasPos> UnitCollection<T> {
     fn find_mut(&mut self, a: &GridCoord) -> Option<&mut T> {
         self.0.iter_mut().find(|b| b.get_pos() == a)
     }
+    fn find(&self, a: &GridCoord) -> Option<&T> {
+        self.0.iter().find(|b| b.get_pos() == a)
+    }
     fn filter(&self) -> UnitCollectionFilter<T> {
         UnitCollectionFilter { a: &self.0 }
     }
@@ -75,7 +78,7 @@ impl Cat{
 
 
 enum CellSelection {
-    MoveSelection(movement::PossibleMoves),
+    MoveSelection(movement::PossibleMoves,movement::PossibleMoves),
     BuildSelection(GridCoord),
 }
 
@@ -128,6 +131,12 @@ pub async fn worker_entry() {
 
     let select_model = {
         let data = model::load_glb(SELECT_GLB).gen_ext(gg.spacing());
+
+        model_parse::ModelGpu::new(&ctx, &data)
+    };
+
+    let attack_model = {
+        let data = model::load_glb(ATTACK_GLB).gen_ext(gg.spacing());
 
         model_parse::ModelGpu::new(&ctx, &data)
     };
@@ -236,7 +245,7 @@ pub async fn worker_entry() {
 
             if let Some(ss) = &mut selected_cell {
                 match ss {
-                    CellSelection::MoveSelection(ss) => {
+                    CellSelection::MoveSelection(ss,attack) => {
                         if movement::contains_coord(ss.iter_coords(), &cell) {
                             let mut c = cats.remove(ss.start());
                             let (dd,aa)=ss.get_path_data(cell).unwrap();
@@ -256,16 +265,24 @@ pub async fn worker_entry() {
                     }
                 }
             } else {
-                if cats.find_mut(&cell).is_some(){
-                //if cats.0.contains(&cell) {
-                    let oo = movement::PossibleMoves::new(
+                if let Some(cat)=cats.find(&cell){
+                    let mm = movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter().chain(cats.filter()),
                         &terrain::Grass.chain(roads.foo()),
-                        cell,
+                        cat.position,
                         MoveUnit(2),
                     );
-                    selected_cell = Some(CellSelection::MoveSelection(oo));
+
+                    let attack=movement::PossibleMoves::new(
+                        &movement::WarriorMovement,
+                        &gg.filter(),
+                        &terrain::Grass,
+                        cat.position,
+                        MoveUnit(1),
+                    );
+
+                    selected_cell = Some(CellSelection::MoveSelection(mm,attack));
                 } else {
                     selected_cell = Some(CellSelection::BuildSelection(cell));
                     //activate the build options for that terrain
@@ -323,7 +340,7 @@ pub async fn worker_entry() {
 
             if let Some(a) = &selected_cell {
                 match a {
-                    CellSelection::MoveSelection(a) => {
+                    CellSelection::MoveSelection(a,attack) => {
                         for GridCoord(a) in a.iter_coords() {
                             let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
                             let t = matrix::translation(pos[0], pos[1], 0.0);
@@ -332,6 +349,16 @@ pub async fn worker_entry() {
 
                             let mut v = draw_sys.view(m.as_ref());
                             select_model.draw(&mut v);
+                        }
+
+                        for GridCoord(a) in attack.iter_coords() {
+                            let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+                            let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                            let m = matrix.chain(t).generate();
+
+                            let mut v = draw_sys.view(m.as_ref());
+                            attack_model.draw(&mut v);
                         }
                     }
                     CellSelection::BuildSelection(_) => {}
@@ -421,6 +448,7 @@ use crate::terrain::MoveCost;
 const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
 const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
+const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
 
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
