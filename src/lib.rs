@@ -239,11 +239,12 @@ pub async fn worker_entry() {
                     CellSelection::MoveSelection(ss) => {
                         if movement::contains_coord(ss.iter_coords(), &cell) {
                             let mut c = cats.remove(ss.start());
+                            let (dd,aa)=ss.get_path_data(cell).unwrap();
                             c.position = cell;
-
+                            c.move_deficit=*aa;
                             animation = Some(animation::Animation::new(
                                 ss.start(),
-                                ss.get_path(cell).unwrap(),
+                                dd,
                                 &gg,
                                 c,
                             ));
