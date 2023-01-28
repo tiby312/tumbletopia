@@ -217,7 +217,7 @@ pub async fn worker_entry() {
 
                     scroll_manager.on_mouse_move([*x, *y], matrix);
                 }
-                EndTurn=>{
+                MEvent::EndTurn=>{
                     for a in cats.0.iter_mut(){
                         a.moved=false;
                     }
@@ -288,7 +288,7 @@ pub async fn worker_entry() {
                     );
                     log!(format!("deficit:{:?}",cat.move_deficit.0));
 
-                    let attack_range=2;
+                    let attack_range=6;
                     let aa=(attack_range);
                     let attack=movement::PossibleMoves::new(
                         &movement::WarriorMovement,
