@@ -276,7 +276,8 @@ pub async fn worker_entry() {
                     let mm=if cat.moved{
                         MoveUnit(0)
                     }else{
-                        MoveUnit(4)
+                        //MoveUnit(2-1) vs MoveUnit(4-1) vs MoveUnit(6-1)
+                        MoveUnit(6-1)
                     };
 
                     let mm=movement::PossibleMoves::new(
@@ -288,7 +289,7 @@ pub async fn worker_entry() {
                     );
                     log!(format!("deficit:{:?}",cat.move_deficit.0));
 
-                    let attack_range=6;
+                    let attack_range=3;
                     let aa=(attack_range);
                     let attack=movement::PossibleMoves::new(
                         &movement::WarriorMovement,
