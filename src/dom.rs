@@ -106,6 +106,27 @@ pub fn convert_coord_touch_inner(
     k
 }
 
+
+pub fn text_texture(text:&str,width:usize,height:usize)->web_sys::HtmlCanvasElement{
+    use wasm_bindgen::JsCast;
+    let canvas=gloo::utils::document().create_element("canvas").unwrap();
+    let canvas:web_sys::HtmlCanvasElement=canvas.dyn_into().unwrap();
+    let ctx=canvas.get_context("2d").unwrap().unwrap();
+    let ctx:web_sys::CanvasRenderingContext2d=ctx.dyn_into().unwrap();
+
+    canvas.set_width(width as u32);
+    canvas.set_height(height as u32);
+    ctx.set_font(text);
+    ctx.set_text_align("center");
+    ctx.set_text_baseline("middle");
+    ctx.set_fill_style(&JsValue::from_str("black"));
+    ctx.clear_rect(0., 0., width as f64, height as f64);
+    ctx.fill_text(text, width as f64/2., height as f64/2.).unwrap();
+    canvas
+}
+
+
+
 #[wasm_bindgen]
 pub async fn main_entry() {
     console_error_panic_hook::set_once();
