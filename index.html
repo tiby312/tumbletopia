@@ -33,9 +33,24 @@
       }
       #mybutton{
         z-index: 10;
-        position: relative;
+        position: absolute;
         top:90%;
         left:50%;
+        font-size: 24px;
+        background-color: #213022; /* Green */
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        transform: translate(-50%, -50%);
+      }
+      #endturn{
+        z-index: 10;
+        position: absolute;
+        top:90%;
+        left:90%;
         font-size: 24px;
         background-color: #213022; /* Green */
         border: none;
@@ -55,7 +70,9 @@
   </script>
 </head>
 <body style="background-color: black;">
-  <button id="mybutton" class="ui">change color</button>
+  <button id="mybutton" class="ui"></button>
+  <button id="endturn" class="ui">End Turn</button>
+  
   <canvas id="mycanvas" class="unselectable"></canvas>
   
 </body>

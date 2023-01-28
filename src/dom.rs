@@ -20,6 +20,7 @@ pub enum MEvent {
     TouchEnd {
         touches: scroll::Touches,
     },
+    EndTurn,
     CanvasMouseUp,
     CanvasMouseLeave,
     ButtonClick,
@@ -113,9 +114,10 @@ pub async fn main_entry() {
 
     log!("demo start");
 
-    let (canvas, button) = (
+    let (canvas, button,endturn) = (
         utils::get_by_id_canvas("mycanvas"),
         utils::get_by_id_elem("mybutton"),
+        utils::get_by_id_elem("endturn"),
     );
 
     button.set_hidden(true);
@@ -170,6 +172,13 @@ pub async fn main_entry() {
         bb.set_hidden(true);
         MEvent::ButtonClick.some()
     });
+
+
+    let _handler = worker.register_event(&endturn, "click", move |_| {
+        log!("clicked the button!!!!!");
+        MEvent::EndTurn.some()
+    });
+
 
     let w = gloo::utils::window();
 
