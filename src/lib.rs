@@ -442,14 +442,15 @@ pub async fn worker_entry() {
             };
         }
 
-        for &GridCoord(a) in cats.0.iter().map(|a| &a.position) {
-            let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+        for cc in cats.0.iter() {
+            let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
 
             let t = matrix::translation(pos[0], pos[1], 20.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
-            cat.draw_ext(&mut v, true);
+
+            cat.draw_ext(&mut v, cc.moved);
         }
 
         ctx.flush();
