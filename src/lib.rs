@@ -25,10 +25,15 @@ enum UiButton {
     NoUi,
 }
 
-pub struct UnitCollection<T:HasPos>(Vec<T>);
-impl<T:HasPos> UnitCollection<T> {
+pub struct UnitCollection<T: HasPos>(Vec<T>);
+impl<T: HasPos> UnitCollection<T> {
     fn remove(&mut self, a: &GridCoord) -> T {
-        let (i, _) = self.0.iter().enumerate().find(|(_, b)| b.get_pos() == a).unwrap();
+        let (i, _) = self
+            .0
+            .iter()
+            .enumerate()
+            .find(|(_, b)| b.get_pos() == a)
+            .unwrap();
         self.0.swap_remove(i)
     }
     fn find_mut(&mut self, a: &GridCoord) -> Option<&mut T> {
@@ -42,44 +47,47 @@ impl<T:HasPos> UnitCollection<T> {
     }
 }
 
-pub struct UnitCollectionFilter<'a,T> {
+pub struct UnitCollectionFilter<'a, T> {
     a: &'a [T],
 }
-impl<'a,T:HasPos> movement::Filter for UnitCollectionFilter<'a,T> {
+impl<'a, T: HasPos> movement::Filter for UnitCollectionFilter<'a, T> {
     fn filter(&self, b: &GridCoord) -> bool {
-        self.a.iter().find(|a|a.get_pos()==b).is_none()
+        self.a.iter().find(|a| a.get_pos() == b).is_none()
     }
 }
 
-pub trait HasPos{
-    fn get_pos(&self)->&GridCoord;
+pub trait HasPos {
+    fn get_pos(&self) -> &GridCoord;
 }
-impl HasPos for GridCoord{
-    fn get_pos(&self)->&GridCoord{
+impl HasPos for GridCoord {
+    fn get_pos(&self) -> &GridCoord {
         self
     }
 }
 
-impl HasPos for Cat{
-    fn get_pos(&self)->&GridCoord{
+impl HasPos for Cat {
+    fn get_pos(&self) -> &GridCoord {
         &self.position
     }
 }
 
-pub struct Cat{
-    position:GridCoord,
-    move_deficit:MoveUnit,
-    moved:bool
+pub struct Cat {
+    position: GridCoord,
+    move_deficit: MoveUnit,
+    moved: bool,
 }
-impl Cat{
-    fn new(position:GridCoord)->Self{
-        Cat { position, move_deficit: MoveUnit(0) ,moved:false}
+impl Cat {
+    fn new(position: GridCoord) -> Self {
+        Cat {
+            position,
+            move_deficit: MoveUnit(0),
+            moved: false,
+        }
     }
 }
 
-
 enum CellSelection {
-    MoveSelection(movement::PossibleMoves,movement::PossibleMoves),
+    MoveSelection(movement::PossibleMoves, movement::PossibleMoves),
     BuildSelection(GridCoord),
 }
 
@@ -217,9 +225,9 @@ pub async fn worker_entry() {
 
                     scroll_manager.on_mouse_move([*x, *y], matrix);
                 }
-                MEvent::EndTurn=>{
-                    for a in cats.0.iter_mut(){
-                        a.moved=false;
+                MEvent::EndTurn => {
+                    for a in cats.0.iter_mut() {
+                        a.moved = false;
                     }
                 }
                 MEvent::CanvasMouseDown { x, y } => {
@@ -251,19 +259,14 @@ pub async fn worker_entry() {
 
             if let Some(ss) = &mut selected_cell {
                 match ss {
-                    CellSelection::MoveSelection(ss,attack) => {
+                    CellSelection::MoveSelection(ss, attack) => {
                         if movement::contains_coord(ss.iter_coords(), &cell) {
                             let mut c = cats.remove(ss.start());
-                            let (dd,aa)=ss.get_path_data(cell).unwrap();
+                            let (dd, aa) = ss.get_path_data(cell).unwrap();
                             c.position = cell;
-                            c.move_deficit=*aa;
-                            c.moved=true;
-                            animation = Some(animation::Animation::new(
-                                ss.start(),
-                                dd,
-                                &gg,
-                                c,
-                            ));
+                            c.move_deficit = *aa;
+                            c.moved = true;
+                            animation = Some(animation::Animation::new(ss.start(), dd, &gg, c));
                         }
                         selected_cell = None;
                     }
@@ -272,26 +275,26 @@ pub async fn worker_entry() {
                     }
                 }
             } else {
-                if let Some(cat)=cats.find(&cell){
-                    let mm=if cat.moved{
+                if let Some(cat) = cats.find(&cell) {
+                    let mm = if cat.moved {
                         MoveUnit(0)
-                    }else{
+                    } else {
                         //MoveUnit(2-1) vs MoveUnit(4-1) vs MoveUnit(6-1)
-                        MoveUnit(6-1)
+                        MoveUnit(6 - 1)
                     };
 
-                    let mm=movement::PossibleMoves::new(
+                    let mm = movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter().chain(cats.filter()),
                         &terrain::Grass.chain(roads.foo()),
                         cat.position,
                         mm,
                     );
-                    log!(format!("deficit:{:?}",cat.move_deficit.0));
+                    log!(format!("deficit:{:?}", cat.move_deficit.0));
 
-                    let attack_range=3;
-                    let aa=(attack_range);
-                    let attack=movement::PossibleMoves::new(
+                    let attack_range = 3;
+                    let aa = (attack_range);
+                    let attack = movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter(),
                         &terrain::Grass,
@@ -299,7 +302,7 @@ pub async fn worker_entry() {
                         MoveUnit(aa),
                     );
 
-                    selected_cell = Some(CellSelection::MoveSelection(mm,attack));
+                    selected_cell = Some(CellSelection::MoveSelection(mm, attack));
                 } else {
                     selected_cell = Some(CellSelection::BuildSelection(cell));
                     //activate the build options for that terrain
@@ -357,7 +360,7 @@ pub async fn worker_entry() {
 
             if let Some(a) = &selected_cell {
                 match a {
-                    CellSelection::MoveSelection(a,attack) => {
+                    CellSelection::MoveSelection(a, attack) => {
                         for GridCoord(a) in a.iter_coords() {
                             let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
                             let t = matrix::translation(pos[0], pos[1], 0.0);
@@ -401,7 +404,7 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
-            for &GridCoord(a) in cats.0.iter().map(|a|&a.position) {
+            for &GridCoord(a) in cats.0.iter().map(|a| &a.position) {
                 let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
                 let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -439,14 +442,14 @@ pub async fn worker_entry() {
             };
         }
 
-        for &GridCoord(a) in cats.0.iter().map(|a|&a.position) {
+        for &GridCoord(a) in cats.0.iter().map(|a| &a.position) {
             let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
 
             let t = matrix::translation(pos[0], pos[1], 20.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
-            cat.draw(&mut v);
+            cat.draw_ext(&mut v, true);
         }
 
         ctx.flush();

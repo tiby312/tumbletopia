@@ -106,13 +106,12 @@ pub fn convert_coord_touch_inner(
     k
 }
 
-
-pub fn text_texture(text:&str,width:usize,height:usize)->web_sys::HtmlCanvasElement{
+pub fn text_texture(text: &str, width: usize, height: usize) -> web_sys::HtmlCanvasElement {
     use wasm_bindgen::JsCast;
-    let canvas=gloo::utils::document().create_element("canvas").unwrap();
-    let canvas:web_sys::HtmlCanvasElement=canvas.dyn_into().unwrap();
-    let ctx=canvas.get_context("2d").unwrap().unwrap();
-    let ctx:web_sys::CanvasRenderingContext2d=ctx.dyn_into().unwrap();
+    let canvas = gloo::utils::document().create_element("canvas").unwrap();
+    let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into().unwrap();
+    let ctx = canvas.get_context("2d").unwrap().unwrap();
+    let ctx: web_sys::CanvasRenderingContext2d = ctx.dyn_into().unwrap();
 
     canvas.set_width(width as u32);
     canvas.set_height(height as u32);
@@ -121,11 +120,10 @@ pub fn text_texture(text:&str,width:usize,height:usize)->web_sys::HtmlCanvasElem
     ctx.set_text_baseline("middle");
     ctx.set_fill_style(&JsValue::from_str("black"));
     ctx.clear_rect(0., 0., width as f64, height as f64);
-    ctx.fill_text(text, width as f64/2., height as f64/2.).unwrap();
+    ctx.fill_text(text, width as f64 / 2., height as f64 / 2.)
+        .unwrap();
     canvas
 }
-
-
 
 #[wasm_bindgen]
 pub async fn main_entry() {
@@ -135,7 +133,7 @@ pub async fn main_entry() {
 
     log!("demo start");
 
-    let (canvas, button,endturn) = (
+    let (canvas, button, endturn) = (
         utils::get_by_id_canvas("mycanvas"),
         utils::get_by_id_elem("mybutton"),
         utils::get_by_id_elem("endturn"),
@@ -194,12 +192,10 @@ pub async fn main_entry() {
         MEvent::ButtonClick.some()
     });
 
-
     let _handler = worker.register_event(&endturn, "click", move |_| {
         log!("clicked the button!!!!!");
         MEvent::EndTurn.some()
     });
-
 
     let w = gloo::utils::window();
 

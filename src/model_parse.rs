@@ -52,6 +52,17 @@ impl ModelGpu {
             &self.position,
             self.index.as_ref(),
             &self.normals,
+            false,
+        );
+    }
+    pub fn draw_ext(&self, view: &mut simple2d::View, grayscale: bool) {
+        view.draw_triangles(
+            &self.texture,
+            &self.tex_coord,
+            &self.position,
+            self.index.as_ref(),
+            &self.normals,
+            grayscale,
         );
     }
 }

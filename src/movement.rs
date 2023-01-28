@@ -177,7 +177,7 @@ impl PossibleMoves {
         remaining_moves: MoveUnit,
     ) -> Self {
         //A typical move costs 2, so scale everything as if it cost 1.
-        let remaining_moves = MoveUnit(remaining_moves.0 );
+        let remaining_moves = MoveUnit(remaining_moves.0);
         let mut p = PossibleMoves {
             moves: vec![],
             start: coord,
@@ -186,8 +186,8 @@ impl PossibleMoves {
         p
     }
 
-    pub fn get_path_data(&self, g: GridCoord) -> Option<(&Path,&MoveUnit)> {
-        self.moves.iter().find(|a| a.0 == g).map(|a| (&a.1,&a.2))
+    pub fn get_path_data(&self, g: GridCoord) -> Option<(&Path, &MoveUnit)> {
+        self.moves.iter().find(|a| a.0 == g).map(|a| (&a.1, &a.2))
     }
 
     pub fn start(&self) -> &GridCoord {
