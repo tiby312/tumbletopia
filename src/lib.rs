@@ -1,7 +1,7 @@
 use axgeom::vec2same;
 use cgmath::{InnerSpace, Transform, Vector2};
 use gloo::console::log;
-use model::matrix;
+use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d::{self};
@@ -423,7 +423,7 @@ pub async fn worker_entry() {
                 let m = matrix.chain(t).generate();
 
                 let mut v = draw_sys.view(m.as_ref());
-                text_model.draw(&mut v);
+                text_model.draw_ext(&mut v,false,true);
                 //drop_shadow.draw(&mut v);
             }
 
@@ -463,7 +463,7 @@ pub async fn worker_entry() {
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
 
-            cat.draw_ext(&mut v, cc.moved);
+            cat.draw_ext(&mut v, cc.moved,false);
             //text_model.draw_ext(&mut v, cc.moved);
             
         }
@@ -481,13 +481,10 @@ pub async fn worker_entry() {
 
 //TODO just use reference???
 fn string_to_coords(im:model::Img,st:&str)->model::ModelData{
-    //let start=[0.0;2];
-    //let width=10.0;
-    //let mut cc = start;
     
-    // let c_width=im.width as f32 / 16.0;
-    // let c_height=im.height as f32 / 16.0;
-    
+
+
+
     let mut tex_coords=vec!();
     let mut counter=0.0;
     let dd=20.0;
@@ -510,10 +507,6 @@ fn string_to_coords(im:model::Img,st:&str)->model::ModelData{
         let y1=y;
         let y2=y+1.0/14.0;
 
-
-        //let y1=1.0-y1;
-        //let y2=1.0-y2;
-        
         let a=[
             [x1,y1],
             [x2,y1],
@@ -544,25 +537,27 @@ fn string_to_coords(im:model::Img,st:&str)->model::ModelData{
 
 
         positions.extend(y);
-
         
         inds.extend(iii);
-
-
 
         assert!(ascii >= 32);
         counter += dd;
     }
 
     let normals=positions.iter().map(|_|[0.0,0.0,1.0]).collect();
-    use cgmath::SquareMatrix;
+
+    let cc=1.0/dd;
+    let mm=matrix::scale(cc,cc,cc).generate();
+
+    let positions=positions.into_iter().map(|a|mm.transform_point(a.into()).into()).collect();
+
     model::ModelData{
         positions,
         tex_coords,
         indices:Some(inds),
         texture:im,
         normals,
-        matrix:cgmath::Matrix4::identity()
+        matrix:mm
 
     }
 }
