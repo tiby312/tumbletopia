@@ -490,7 +490,7 @@ fn string_to_coords(im:model::Img,st:&str)->model::ModelData{
     
     let mut tex_coords=vec!();
     let mut counter=0.0;
-    let dd=50.0;
+    let dd=20.0;
     let mut positions=vec!();
 
 
@@ -510,11 +510,10 @@ fn string_to_coords(im:model::Img,st:&str)->model::ModelData{
         let y1=y;
         let y2=y+1.0/14.0;
 
-        // let x1=0.0;
-        // let x2=1.0;
-        // let y1=0.0;
-        // let y2=1.0;
 
+        //let y1=1.0-y1;
+        //let y2=1.0-y2;
+        
         let a=[
             [x1,y1],
             [x2,y1],
@@ -532,10 +531,10 @@ fn string_to_coords(im:model::Img,st:&str)->model::ModelData{
 
         let xx1=counter;
         let xx2=counter+dd;
-        let yy1=0.0;
-        let yy2=dd;
+        let yy1=dd;
+        let yy2=0.0;
 
-        let zz=10.0;
+        let zz=0.0;
         let y=[
             [xx1,yy1,zz],
             [xx2,yy1,zz],
