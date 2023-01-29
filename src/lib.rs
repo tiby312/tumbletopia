@@ -150,6 +150,16 @@ pub async fn worker_entry() {
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
+
+    let text_model = {
+        let ascii_tex=model::load_texture_from_data(include_bytes!("../assets/ascii.png"));
+        let data=string_to_coords(ascii_tex,"abcdefg");
+    
+        model_parse::ModelGpu::new(&ctx, &data)
+    };
+
+    
+
     let mut cats = UnitCollection(vec![
         Cat::new(GridCoord([2, 2])),
         Cat::new(GridCoord([5, 5])),
@@ -162,6 +172,8 @@ pub async fn worker_entry() {
         pos: vec![],
         func: |a: MoveUnit| MoveUnit(a.0 / 2),
     };
+
+
 
     // let mut roads=terrain::TerrainCollection{
     //     pos:vec!(),
@@ -411,7 +423,8 @@ pub async fn worker_entry() {
                 let m = matrix.chain(t).generate();
 
                 let mut v = draw_sys.view(m.as_ref());
-                drop_shadow.draw(&mut v);
+                text_model.draw(&mut v);
+                //drop_shadow.draw(&mut v);
             }
 
             if let Some(a) = &animation {
@@ -451,6 +464,8 @@ pub async fn worker_entry() {
             let mut v = draw_sys.view(m.as_ref());
 
             cat.draw_ext(&mut v, cc.moved);
+            //text_model.draw_ext(&mut v, cc.moved);
+            
         }
 
         ctx.flush();
@@ -460,6 +475,99 @@ pub async fn worker_entry() {
 
     log!("worker thread closing");
 }
+
+
+
+
+//TODO just use reference???
+fn string_to_coords(im:model::Img,st:&str)->model::ModelData{
+    //let start=[0.0;2];
+    //let width=10.0;
+    //let mut cc = start;
+    
+    // let c_width=im.width as f32 / 16.0;
+    // let c_height=im.height as f32 / 16.0;
+    
+    let mut tex_coords=vec!();
+    let mut counter=0.0;
+    let dd=50.0;
+    let mut positions=vec!();
+
+
+    let mut inds=vec!();
+    for (_, a) in st.chars().enumerate() {
+        let ascii = a as u8;
+        let index=(ascii-32) as u16;
+
+        //log!(format!("aaaa:{:?}",index));
+        let x = (index % 16) as f32/16.;
+        let y = ((index / 16)) as f32/14.;
+        
+        
+        let x1=x;
+        let x2=x1+1.0/16.0;
+        
+        let y1=y;
+        let y2=y+1.0/14.0;
+
+        // let x1=0.0;
+        // let x2=1.0;
+        // let y1=0.0;
+        // let y2=1.0;
+
+        let a=[
+            [x1,y1],
+            [x2,y1],
+            [x1,y2],
+            [x2,y2]
+        ];
+
+        tex_coords.extend(a);
+
+        let iii=[
+            0u16,1,2,2,1,3
+            
+        ].map(|a|positions.len() as u16+a);
+       
+
+        let xx1=counter;
+        let xx2=counter+dd;
+        let yy1=0.0;
+        let yy2=dd;
+
+        let zz=10.0;
+        let y=[
+            [xx1,yy1,zz],
+            [xx2,yy1,zz],
+            [xx1,yy2,zz],
+            [xx2,yy2,zz]
+        ];
+
+
+        positions.extend(y);
+
+        
+        inds.extend(iii);
+
+
+
+        assert!(ascii >= 32);
+        counter += dd;
+    }
+
+    let normals=positions.iter().map(|_|[0.0,0.0,1.0]).collect();
+    use cgmath::SquareMatrix;
+    model::ModelData{
+        positions,
+        tex_coords,
+        indices:Some(inds),
+        texture:im,
+        normals,
+        matrix:cgmath::Matrix4::identity()
+
+    }
+}
+
 
 use web_sys::WebGl2RenderingContext;
 

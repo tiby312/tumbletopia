@@ -211,3 +211,25 @@ impl Doop {
         }
     }
 }
+
+
+
+
+
+pub fn load_texture_from_data(data:&[u8])->Img{
+
+    use image::GenericImageView;
+    let image =
+        image::load_from_memory_with_format(data, image::ImageFormat::Png).unwrap();
+    let width = image.width();
+    let height = image.height();
+
+    let rgba_image = image.to_rgba8();
+    let data = rgba_image.into_raw();
+
+    Img {
+        width,
+        height,
+        data,
+    }
+}

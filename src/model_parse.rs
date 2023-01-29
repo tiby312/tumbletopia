@@ -46,7 +46,8 @@ impl ModelGpu {
     //     view.draw_triangles(&self.texture, &self.tex_coord, pos, self.index.as_ref());
     // }
     pub fn draw(&self, view: &mut simple2d::View) {
-        view.draw_triangles(
+        view.draw(
+            WebGl2RenderingContext::TRIANGLES,
             &self.texture,
             &self.tex_coord,
             &self.position,
@@ -55,8 +56,9 @@ impl ModelGpu {
             false,
         );
     }
-    pub fn draw_ext(&self, view: &mut simple2d::View, grayscale: bool) {
-        view.draw_triangles(
+    pub fn draw_ext(&self, view: &mut simple2d::View,grayscale: bool) {
+        view.draw(
+            WebGl2RenderingContext::TRIANGLES,
             &self.texture,
             &self.tex_coord,
             &self.position,
