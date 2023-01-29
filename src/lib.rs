@@ -153,7 +153,7 @@ pub async fn worker_entry() {
 
     let text_model = {
         let ascii_tex=model::load_texture_from_data(include_bytes!("../assets/ascii2.png"));
-        let data=string_to_coords(ascii_tex,"0123456789");
+        let data=string_to_coords(ascii_tex,"10");
     
         model_parse::ModelGpu::new(&ctx, &data)
     };
@@ -186,6 +186,12 @@ pub async fn worker_entry() {
         let mut on_select = false;
         let res = frame_timer.next().await;
 
+
+        let proj=projection::projection(viewport);
+        let view_proj=projection::view_matrix(scroll_manager.camera(),
+            scroll_manager.zoom(),
+            scroll_manager.rot());
+        
         let matrix = view_projection(
             scroll_manager.camera(),
             viewport,
@@ -480,17 +486,13 @@ pub async fn worker_entry() {
                 let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
 
                 
-                let proj=projection::projection(viewport);
-                //fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matrix::Inverse {
-                let view_proj=projection::view_matrix(scroll_manager.camera(),
-                    scroll_manager.zoom(),
-                    scroll_manager.rot());
+                
                 let t = matrix::translation(pos[0], pos[1]+20.0, 20.0);
                 
                 let jj=view_proj.chain(t).generate();
                 let jj:&[f32;16]=jj.as_ref();
                 let tt=matrix::translation(jj[12],jj[13],jj[14]);
-                let new_proj=proj.chain(tt);
+                let new_proj=proj.clone().chain(tt);
 
                 let s = matrix::scale(5.0,5.0,5.0);
                 
