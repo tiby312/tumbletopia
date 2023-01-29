@@ -423,8 +423,8 @@ pub async fn worker_entry() {
                 let m = matrix.chain(t).generate();
 
                 let mut v = draw_sys.view(m.as_ref());
-                text_model.draw_ext(&mut v,false,true);
-                //drop_shadow.draw(&mut v);
+                //text_model.draw_ext(&mut v,false,true);
+                drop_shadow.draw(&mut v);
             }
 
             if let Some(a) = &animation {
@@ -435,6 +435,20 @@ pub async fn worker_entry() {
 
                 let mut v = draw_sys.view(m.as_ref());
                 drop_shadow.draw(&mut v);
+            }
+
+
+            //draw text
+            for &GridCoord(a) in cats.0.iter().map(|a| &a.position) {
+                let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+                let t = matrix::translation(pos[0], pos[1], 50.0);
+                let s = matrix::scale(5.0,5.0,5.0);
+                let r= matrix::z_rotation(std::f32::consts::PI/2.0);
+                let m = matrix.chain(t).chain(s).chain(r).generate();
+
+                let mut v = draw_sys.view(m.as_ref());
+                text_model.draw_ext(&mut v,false,true);
+                //drop_shadow.draw(&mut v);
             }
 
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
