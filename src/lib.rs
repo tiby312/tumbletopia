@@ -153,7 +153,7 @@ pub async fn worker_entry() {
 
     let text_model = {
         let ascii_tex=model::load_texture_from_data(include_bytes!("../assets/ascii.png"));
-        let data=string_to_coords(ascii_tex,"abcdefg");
+        let data=string_to_coords(ascii_tex,"8");
     
         model_parse::ModelGpu::new(&ctx, &data)
     };
@@ -482,10 +482,10 @@ pub async fn worker_entry() {
                 
                 let proj=projection::projection(viewport);
                 //fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matrix::Inverse {
-                let view_proj=projection::camera(scroll_manager.camera(),
+                let view_proj=projection::view_matrix(scroll_manager.camera(),
                     scroll_manager.zoom(),
-                    scroll_manager.rot()).inverse();
-                let t = matrix::translation(pos[0], pos[1], 20.0);
+                    scroll_manager.rot());
+                let t = matrix::translation(pos[0], pos[1]+20.0, 20.0);
                 
                 let jj=view_proj.chain(t).generate();
                 let jj:&[f32;16]=jj.as_ref();
