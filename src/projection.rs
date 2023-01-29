@@ -47,7 +47,7 @@ pub fn clip_to_world(clip: [f32; 2], view_projection: ViewProjection) -> [f32; 2
     }
 }
 
-fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matrix::Inverse {
+pub fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matrix::Inverse {
     //TODO pass in the point to zoom in and rotate from!!!!!!
 
     //world coordinates when viewed with this camera is:
@@ -74,7 +74,7 @@ fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matr
         .chain(zoom)
 }
 
-fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
+pub fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
     //https://www.gamedev.net/forums/topic/558921-calculating-the-field-of-view/
     //https://docs.unity3d.com/Manual/FrustumSizeAtDistance.html
 
@@ -87,11 +87,6 @@ fn projection(dim: [f32; 2]) -> impl matrix::MyMatrix + matrix::Inverse {
 
     let fov = 2.0 * (frustum_height * 0.5 / near).atan();
     matrix::perspective(fov /*0.4*/, dim[0] / dim[1], near, far)
-
-    //ortho
-    // let k=dim[0]/dim[1];
-    // let r=100.0;
-    // cgmath::ortho(-r*k, r*k, -r, r, 10.0, 1000.0)
 }
 
 #[derive(Copy, Clone)]
@@ -105,27 +100,18 @@ impl matrix::Inverse for ViewProjection {
     type Neg = cgmath::Matrix4<f32>;
 
     fn inverse(self) -> Self::Neg {
-        use matrix::MyMatrix;
         self.generate().inverse()
     }
 }
 impl matrix::MyMatrix for ViewProjection {
     fn generate(self) -> cgmath::Matrix4<f32> {
-        // //project world to clip space
-        // fn view_projection(
-        //     offset: [f32; 2],
-        //     dim: [f32; 2],
-        //     zoom: f32,
-        // ) -> impl matrix::MyMatrix + matrix::Inverse {
-
-        // }
+        
 
         use matrix::*;
 
         projection(self.dim)
             .chain(camera(self.offset, self.zoom, self.rot).inverse())
             .generate()
-        //view_projection(self.offset, self.dim, self.zoom).generate()
     }
 }
 

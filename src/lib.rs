@@ -438,18 +438,7 @@ pub async fn worker_entry() {
             }
 
 
-            //draw text
-            for &GridCoord(a) in cats.0.iter().map(|a| &a.position) {
-                let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
-                let t = matrix::translation(pos[0], pos[1], 50.0);
-                let s = matrix::scale(5.0,5.0,5.0);
-                let r= matrix::z_rotation(std::f32::consts::PI/2.0);
-                let m = matrix.chain(t).chain(s).chain(r).generate();
-
-                let mut v = draw_sys.view(m.as_ref());
-                text_model.draw_ext(&mut v,false,true);
-                //drop_shadow.draw(&mut v);
-            }
+            
 
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
@@ -480,6 +469,43 @@ pub async fn worker_entry() {
             cat.draw_ext(&mut v, cc.moved,false);
             //text_model.draw_ext(&mut v, cc.moved);
             
+        }
+
+        {
+            ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
+            ctx.disable(WebGl2RenderingContext::CULL_FACE);
+
+            //draw text
+            for &GridCoord(a) in cats.0.iter().map(|a| &a.position) {
+                let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+
+                
+                let proj=projection::projection(viewport);
+                //fn camera(camera: [f32; 2], zoom: f32, rot: f32) -> impl matrix::MyMatrix + matrix::Inverse {
+                let view_proj=projection::camera(scroll_manager.camera(),
+                    scroll_manager.zoom(),
+                    scroll_manager.rot()).inverse();
+                let t = matrix::translation(pos[0], pos[1], 20.0);
+                
+                let jj=view_proj.chain(t).generate();
+                let jj:&[f32;16]=jj.as_ref();
+                let tt=matrix::translation(jj[12],jj[13],jj[14]);
+                let new_proj=proj.chain(tt);
+
+                let s = matrix::scale(5.0,5.0,5.0);
+                
+                let m = new_proj.chain(s).generate();
+
+
+                // let m=matrix.chain(tt).generate();
+
+                let mut v = draw_sys.view(m.as_ref());
+                text_model.draw_ext(&mut v,false,true);
+                //drop_shadow.draw(&mut v);
+            }
+
+            ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
+            ctx.enable(WebGl2RenderingContext::CULL_FACE);
         }
 
         ctx.flush();
