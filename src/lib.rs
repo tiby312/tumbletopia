@@ -152,8 +152,8 @@ pub async fn worker_entry() {
 
 
     let text_model = {
-        let ascii_tex=model::load_texture_from_data(include_bytes!("../assets/ascii.png"));
-        let data=string_to_coords(ascii_tex,"8");
+        let ascii_tex=model::load_texture_from_data(include_bytes!("../assets/ascii2.png"));
+        let data=string_to_coords(ascii_tex,"0123456789");
     
         model_parse::ModelGpu::new(&ctx, &data)
     };
@@ -523,7 +523,8 @@ pub async fn worker_entry() {
 fn string_to_coords(im:model::Img,st:&str)->model::ModelData{
     
 
-
+    let num_rows=16;
+    let num_columns=16;
 
     let mut tex_coords=vec!();
     let mut counter=0.0;
@@ -534,18 +535,18 @@ fn string_to_coords(im:model::Img,st:&str)->model::ModelData{
     let mut inds=vec!();
     for (_, a) in st.chars().enumerate() {
         let ascii = a as u8;
-        let index=(ascii-32) as u16;
+        let index=(ascii-0/*32*/) as u16;
 
         //log!(format!("aaaa:{:?}",index));
-        let x = (index % 16) as f32/16.;
-        let y = ((index / 16)) as f32/14.;
+        let x = (index % num_rows) as f32/num_rows as f32;
+        let y = ((index / num_rows)) as f32/num_columns as f32;
         
         
         let x1=x;
-        let x2=x1+1.0/16.0;
+        let x2=x1+1.0/num_rows as f32;
         
         let y1=y;
-        let y2=y+1.0/14.0;
+        let y2=y+1.0/num_columns as f32;
 
         let a=[
             [x1,y1],
