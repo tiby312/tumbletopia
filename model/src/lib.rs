@@ -103,6 +103,9 @@ impl Doop {
                     use image::GenericImageView;
                     let image =
                         image::load_from_memory_with_format(data, image::ImageFormat::Png).unwrap();
+
+                    //unpremultiply here?
+
                     let width = image.width();
                     let height = image.height();
                     //TODO pass as argument
