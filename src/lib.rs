@@ -19,6 +19,8 @@ pub mod util;
 use dom::MEvent;
 use projection::*;
 
+pub const RESIZE: usize = 6;
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 enum UiButton {
     ShowRoadUi,
@@ -118,40 +120,40 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let drop_shadow = {
-        let data = model::load_glb(DROP_SHADOW_GLB).gen_ext(gg.spacing());
+        let data = model::load_glb(DROP_SHADOW_GLB).gen_ext(gg.spacing(), RESIZE);
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
     let cat = {
-        let data = model::load_glb(CAT_GLB).gen_ext(gg.spacing());
+        let data = model::load_glb(CAT_GLB).gen_ext(gg.spacing(), RESIZE);
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
     let road = {
-        let data = model::load_glb(ROAD_GLB).gen_ext(gg.spacing());
+        let data = model::load_glb(ROAD_GLB).gen_ext(gg.spacing(), RESIZE);
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
     let grass = {
-        let data = model::load_glb(GRASS_GLB).gen_ext(gg.spacing());
+        let data = model::load_glb(GRASS_GLB).gen_ext(gg.spacing(), RESIZE);
 
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
     let select_model = {
-        let data = model::load_glb(SELECT_GLB).gen_ext(gg.spacing());
+        let data = model::load_glb(SELECT_GLB).gen_ext(gg.spacing(), RESIZE);
 
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
     let attack_model = {
-        let data = model::load_glb(ATTACK_GLB).gen_ext(gg.spacing());
+        let data = model::load_glb(ATTACK_GLB).gen_ext(gg.spacing(), RESIZE);
 
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
     let text_model = {
-        let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii2.png"));
+        let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
         let data = string_to_coords(ascii_tex, "10");
 
         model_parse::ModelGpu::new(&ctx, &data)
@@ -491,7 +493,7 @@ pub async fn worker_entry() {
                 // let m=matrix.chain(tt).generate();
 
                 let mut v = draw_sys.view(m.as_ref());
-                text_model.draw_ext(&mut v, false, true, true);
+                text_model.draw_ext(&mut v, false, false, true);
                 //drop_shadow.draw(&mut v);
             }
 

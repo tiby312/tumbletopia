@@ -1,6 +1,7 @@
 pub mod matrix;
 use cgmath::Transform;
 use gltf::image::Source;
+use image::imageops::FilterType;
 
 #[derive(Debug)]
 pub struct Doop {
@@ -54,10 +55,10 @@ pub struct ModelData {
 }
 
 impl Doop {
-    pub fn gen_ext(&self, ss: f32) -> ModelData {
+    pub fn gen_ext(&self, ss: f32, foo: usize) -> ModelData {
         use matrix::*;
         use std::f32::consts::PI;
-        let mut m = self.gen();
+        let mut m = self.gen(foo);
 
         let v = ss;
         let s = matrix::translation(v / 2.0, v / 2.0, 0.0)
@@ -78,7 +79,7 @@ impl Doop {
         m
     }
     //TODO return a read only reference instead!
-    pub fn gen(&self) -> ModelData {
+    pub fn gen(&self, foo: usize) -> ModelData {
         // TODO use this: https://www.nayuki.io/page/png-file-chunk-inspector
         let mut positions = Vec::new();
         let mut indices = Vec::new();
@@ -102,6 +103,11 @@ impl Doop {
                     use image::GenericImageView;
                     let image =
                         image::load_from_memory_with_format(data, image::ImageFormat::Png).unwrap();
+                    let width = image.width();
+                    let height = image.height();
+                    //TODO pass as argument
+                    let image =
+                        image.resize(width * foo as u32, height * foo as u32, FilterType::Nearest);
                     let width = image.width();
                     let height = image.height();
 
