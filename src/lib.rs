@@ -150,15 +150,12 @@ pub async fn worker_entry() {
         model_parse::ModelGpu::new(&ctx, &data)
     };
 
-
     let text_model = {
-        let ascii_tex=model::load_texture_from_data(include_bytes!("../assets/ascii2.png"));
-        let data=string_to_coords(ascii_tex,"10");
-    
+        let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii2.png"));
+        let data = string_to_coords(ascii_tex, "10");
+
         model_parse::ModelGpu::new(&ctx, &data)
     };
-
-    
 
     let mut cats = UnitCollection(vec![
         Cat::new(GridCoord([2, 2])),
@@ -173,8 +170,6 @@ pub async fn worker_entry() {
         func: |a: MoveUnit| MoveUnit(a.0 / 2),
     };
 
-
-
     // let mut roads=terrain::TerrainCollection{
     //     pos:vec!(),
     //     func:|a:MoveUnit|MoveUnit(a.0+10)
@@ -186,12 +181,13 @@ pub async fn worker_entry() {
         let mut on_select = false;
         let res = frame_timer.next().await;
 
-
-        let proj=projection::projection(viewport);
-        let view_proj=projection::view_matrix(scroll_manager.camera(),
+        let proj = projection::projection(viewport);
+        let view_proj = projection::view_matrix(
+            scroll_manager.camera(),
             scroll_manager.zoom(),
-            scroll_manager.rot());
-        
+            scroll_manager.rot(),
+        );
+
         let matrix = view_projection(
             scroll_manager.camera(),
             viewport,
@@ -443,9 +439,6 @@ pub async fn worker_entry() {
                 drop_shadow.draw(&mut v);
             }
 
-
-            
-
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
         }
@@ -472,9 +465,8 @@ pub async fn worker_entry() {
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
 
-            cat.draw_ext(&mut v, cc.moved,false);
+            cat.draw_ext(&mut v, cc.moved, false, false);
             //text_model.draw_ext(&mut v, cc.moved);
-            
         }
 
         {
@@ -485,24 +477,21 @@ pub async fn worker_entry() {
             for &GridCoord(a) in cats.0.iter().map(|a| &a.position) {
                 let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
 
-                
-                
-                let t = matrix::translation(pos[0], pos[1]+20.0, 20.0);
-                
-                let jj=view_proj.chain(t).generate();
-                let jj:&[f32;16]=jj.as_ref();
-                let tt=matrix::translation(jj[12],jj[13],jj[14]);
-                let new_proj=proj.clone().chain(tt);
+                let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
 
-                let s = matrix::scale(5.0,5.0,5.0);
-                
+                let jj = view_proj.chain(t).generate();
+                let jj: &[f32; 16] = jj.as_ref();
+                let tt = matrix::translation(jj[12], jj[13], jj[14]);
+                let new_proj = proj.clone().chain(tt);
+
+                let s = matrix::scale(5.0, 5.0, 5.0);
+                //let r=matrix::z_rotation(std::f32::consts::PI/4.0);
                 let m = new_proj.chain(s).generate();
-
 
                 // let m=matrix.chain(tt).generate();
 
                 let mut v = draw_sys.view(m.as_ref());
-                text_model.draw_ext(&mut v,false,true);
+                text_model.draw_ext(&mut v, false, true, true);
                 //drop_shadow.draw(&mut v);
             }
 
@@ -518,93 +507,77 @@ pub async fn worker_entry() {
     log!("worker thread closing");
 }
 
-
-
-
 //TODO just use reference???
-fn string_to_coords(im:model::Img,st:&str)->model::ModelData{
-    
+fn string_to_coords(im: model::Img, st: &str) -> model::ModelData {
+    let num_rows = 16;
+    let num_columns = 16;
 
-    let num_rows=16;
-    let num_columns=16;
+    let mut tex_coords = vec![];
+    let mut counter = 0.0;
+    let dd = 20.0;
+    let mut positions = vec![];
 
-    let mut tex_coords=vec!();
-    let mut counter=0.0;
-    let dd=20.0;
-    let mut positions=vec!();
-
-
-    let mut inds=vec!();
+    let mut inds = vec![];
     for (_, a) in st.chars().enumerate() {
         let ascii = a as u8;
-        let index=(ascii-0/*32*/) as u16;
+        let index = (ascii - 0/*32*/) as u16;
 
         //log!(format!("aaaa:{:?}",index));
-        let x = (index % num_rows) as f32/num_rows as f32;
-        let y = ((index / num_rows)) as f32/num_columns as f32;
-        
-        
-        let x1=x;
-        let x2=x1+1.0/num_rows as f32;
-        
-        let y1=y;
-        let y2=y+1.0/num_columns as f32;
+        let x = (index % num_rows) as f32 / num_rows as f32;
+        let y = (index / num_rows) as f32 / num_columns as f32;
 
-        let a=[
-            [x1,y1],
-            [x2,y1],
-            [x1,y2],
-            [x2,y2]
-        ];
+        let x1 = x;
+        let x2 = x1 + 1.0 / num_rows as f32;
+
+        let y1 = y;
+        let y2 = y + 1.0 / num_columns as f32;
+
+        let a = [[x1, y1], [x2, y1], [x1, y2], [x2, y2]];
 
         tex_coords.extend(a);
 
-        let iii=[
-            0u16,1,2,2,1,3
-            
-        ].map(|a|positions.len() as u16+a);
-       
+        let iii = [0u16, 1, 2, 2, 1, 3].map(|a| positions.len() as u16 + a);
 
-        let xx1=counter;
-        let xx2=counter+dd;
-        let yy1=dd;
-        let yy2=0.0;
+        let xx1 = counter;
+        let xx2 = counter + dd;
+        let yy1 = dd;
+        let yy2 = 0.0;
 
-        let zz=0.0;
-        let y=[
-            [xx1,yy1,zz],
-            [xx2,yy1,zz],
-            [xx1,yy2,zz],
-            [xx2,yy2,zz]
+        let zz = 0.0;
+        let y = [
+            [xx1, yy1, zz],
+            [xx2, yy1, zz],
+            [xx1, yy2, zz],
+            [xx2, yy2, zz],
         ];
 
-
         positions.extend(y);
-        
+
         inds.extend(iii);
 
         assert!(ascii >= 32);
         counter += dd;
     }
 
-    let normals=positions.iter().map(|_|[0.0,0.0,1.0]).collect();
+    let normals = positions.iter().map(|_| [0.0, 0.0, 1.0]).collect();
 
-    let cc=1.0/dd;
-    let mm=matrix::scale(cc,cc,cc).generate();
+    let cc = 1.0 / dd;
+    let mm = matrix::scale(cc, cc, cc).generate();
 
-    let positions=positions.into_iter().map(|a|mm.transform_point(a.into()).into()).collect();
+    let positions = positions
+        .into_iter()
+        .map(|a| mm.transform_point(a.into()).into())
+        .collect();
 
-    model::ModelData{
+    model::ModelData {
         positions,
         tex_coords,
-        indices:Some(inds),
-        texture:im,
+        indices: Some(inds),
+        texture: im,
         normals,
-        matrix:mm
-
+        matrix: mm,
     }
 }
-
 
 use web_sys::WebGl2RenderingContext;
 

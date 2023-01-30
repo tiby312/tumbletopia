@@ -54,10 +54,11 @@ impl ModelGpu {
             self.index.as_ref(),
             &self.normals,
             false,
-            false
+            false,
+            false,
         );
     }
-    pub fn draw_ext(&self, view: &mut simple2d::View,grayscale: bool,text:bool) {
+    pub fn draw_ext(&self, view: &mut simple2d::View, grayscale: bool, text: bool, linear: bool) {
         view.draw(
             WebGl2RenderingContext::TRIANGLES,
             &self.texture,
@@ -66,7 +67,8 @@ impl ModelGpu {
             self.index.as_ref(),
             &self.normals,
             grayscale,
-            text
+            text,
+            linear,
         );
     }
 }

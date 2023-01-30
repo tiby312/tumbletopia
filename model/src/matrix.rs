@@ -49,7 +49,7 @@ impl<A: MyMatrix, B: MyMatrix> MyMatrix for Chain<A, B> {
     }
 }
 
-#[derive(Copy,Clone,Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Perspective {
     field_of_view_rad: f32,
     aspect: f32,

@@ -68,15 +68,13 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> cgmath::Matrix4<f32
 
     let rot = z_rotation(rot);
     let zoom = translation(0.0, 0.0, start_zoom + zoom);
-    let camera=translation(camera[0], camera[1], 0.0)
+    let camera = translation(camera[0], camera[1], 0.0)
         .chain(rot)
         .chain(g)
         .chain(zoom);
 
     camera.inverse().generate()
 }
-
-
 
 pub fn projection(dim: [f32; 2]) -> matrix::Perspective {
     //https://www.gamedev.net/forums/topic/558921-calculating-the-field-of-view/
@@ -92,10 +90,6 @@ pub fn projection(dim: [f32; 2]) -> matrix::Perspective {
     let fov = 2.0 * (frustum_height * 0.5 / near).atan();
     matrix::perspective(fov /*0.4*/, dim[0] / dim[1], near, far)
 }
-
-
-
-
 
 #[derive(Copy, Clone)]
 pub struct ViewProjection {
@@ -113,8 +107,6 @@ impl matrix::Inverse for ViewProjection {
 }
 impl matrix::MyMatrix for ViewProjection {
     fn generate(self) -> cgmath::Matrix4<f32> {
-        
-
         use matrix::*;
 
         projection(self.dim)
