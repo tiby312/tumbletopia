@@ -183,19 +183,6 @@ pub async fn worker_entry() {
         let mut on_select = false;
         let res = frame_timer.next().await;
 
-        let proj = projection::projection(viewport);
-        let view_proj = projection::view_matrix(
-            scroll_manager.camera(),
-            scroll_manager.zoom(),
-            scroll_manager.rot(),
-        );
-
-        let matrix = view_projection(
-            scroll_manager.camera(),
-            viewport,
-            scroll_manager.zoom(),
-            scroll_manager.rot(),
-        );
 
         for e in res {
             match e {
@@ -215,7 +202,14 @@ pub async fn worker_entry() {
                     log!(format!("updating viewport to be:{:?}", viewport));
                 }
                 MEvent::TouchMove { touches } => {
-                    scroll_manager.on_touch_move(touches, matrix);
+                    let mm = view_projection(
+                        scroll_manager.camera(),
+                        viewport,
+                        scroll_manager.zoom(),
+                        scroll_manager.rot(),
+                    );
+            
+                    scroll_manager.on_touch_move(touches, mm);
                 }
                 MEvent::TouchDown { touches } => {
                     //log!(format!("touch down:{:?}",touches));
@@ -238,8 +232,14 @@ pub async fn worker_entry() {
                 }
                 MEvent::CanvasMouseMove { x, y } => {
                     //log!(format!("{:?}",(x,y)));
+                    let mm = view_projection(
+                        scroll_manager.camera(),
+                        viewport,
+                        scroll_manager.zoom(),
+                        scroll_manager.rot(),
+                    );
 
-                    scroll_manager.on_mouse_move([*x, *y], matrix);
+                    scroll_manager.on_mouse_move([*x, *y], mm);
                 }
                 MEvent::EndTurn => {
                     for a in cats.0.iter_mut() {
@@ -264,6 +264,21 @@ pub async fn worker_entry() {
                 MEvent::ShutdownClick => break 'outer,
             }
         }
+
+
+        let proj = projection::projection(viewport);
+        let view_proj = projection::view_matrix(
+            scroll_manager.camera(),
+            scroll_manager.zoom(),
+            scroll_manager.rot(),
+        );
+        //TODO simplify
+        let matrix = view_projection(
+            scroll_manager.camera(),
+            viewport,
+            scroll_manager.zoom(),
+            scroll_manager.rot(),
+        );
 
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), matrix);
 
