@@ -77,6 +77,7 @@ pub struct Cat {
     position: GridCoord,
     move_deficit: MoveUnit,
     moved: bool,
+    health: i8,
 }
 impl Cat {
     fn new(position: GridCoord) -> Self {
@@ -84,6 +85,7 @@ impl Cat {
             position,
             move_deficit: MoveUnit(0),
             moved: false,
+            health: 10,
         }
     }
 }
@@ -119,44 +121,30 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-    let drop_shadow = {
-        let data = model::load_glb(DROP_SHADOW_GLB).gen_ext(gg.spacing(), RESIZE);
-        model_parse::ModelGpu::new(&ctx, &data)
+    let quick_load = |name| {
+        let (data, t) = model::load_glb(name).gen_ext(gg.spacing(), RESIZE);
+        model_parse::Foo {
+            texture: model_parse::TextureGpu::new(&ctx, &t),
+            model: model_parse::ModelGpu::new(&ctx, &data),
+        }
     };
 
-    let cat = {
-        let data = model::load_glb(CAT_GLB).gen_ext(gg.spacing(), RESIZE);
-        model_parse::ModelGpu::new(&ctx, &data)
-    };
+    let drop_shadow = quick_load(DROP_SHADOW_GLB);
 
-    let road = {
-        let data = model::load_glb(ROAD_GLB).gen_ext(gg.spacing(), RESIZE);
-        model_parse::ModelGpu::new(&ctx, &data)
-    };
+    let cat = quick_load(CAT_GLB);
 
-    let grass = {
-        let data = model::load_glb(GRASS_GLB).gen_ext(gg.spacing(), RESIZE);
+    let road = quick_load(ROAD_GLB);
 
-        model_parse::ModelGpu::new(&ctx, &data)
-    };
+    let grass = quick_load(GRASS_GLB);
 
-    let select_model = {
-        let data = model::load_glb(SELECT_GLB).gen_ext(gg.spacing(), RESIZE);
+    let select_model = quick_load(SELECT_GLB);
 
-        model_parse::ModelGpu::new(&ctx, &data)
-    };
+    let attack_model = quick_load(ATTACK_GLB);
 
-    let attack_model = {
-        let data = model::load_glb(ATTACK_GLB).gen_ext(gg.spacing(), RESIZE);
-
-        model_parse::ModelGpu::new(&ctx, &data)
-    };
-
-    let text_model = {
+    let text_texture = {
         let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
-        let data = string_to_coords(ascii_tex, "10");
 
-        model_parse::ModelGpu::new(&ctx, &data)
+        model_parse::TextureGpu::new(&ctx, &ascii_tex)
     };
 
     let mut cats = UnitCollection(vec![
@@ -183,7 +171,6 @@ pub async fn worker_entry() {
         let mut on_select = false;
         let res = frame_timer.next().await;
 
-
         for e in res {
             match e {
                 MEvent::Resize {
@@ -208,7 +195,7 @@ pub async fn worker_entry() {
                         scroll_manager.zoom(),
                         scroll_manager.rot(),
                     );
-            
+
                     scroll_manager.on_touch_move(touches, mm);
                 }
                 MEvent::TouchDown { touches } => {
@@ -265,7 +252,6 @@ pub async fn worker_entry() {
             }
         }
 
-
         let proj = projection::projection(viewport);
         let view_proj = projection::view_matrix(
             scroll_manager.camera(),
@@ -291,7 +277,12 @@ pub async fn worker_entry() {
             if let Some(ss) = &mut selected_cell {
                 match ss {
                     CellSelection::MoveSelection(ss, attack) => {
-                        if movement::contains_coord(ss.iter_coords(), &cell) {
+                        if movement::contains_coord(attack.iter_coords(), &cell)
+                            && cats.find(&cell).is_some()
+                        {
+                            let a = cats.find_mut(&cell).unwrap();
+                            a.health -= 1;
+                        } else if movement::contains_coord(ss.iter_coords(), &cell) {
                             let mut c = cats.remove(ss.start());
                             let (dd, aa) = ss.get_path_data(cell).unwrap();
                             c.position = cell;
@@ -321,16 +312,15 @@ pub async fn worker_entry() {
                         cat.position,
                         mm,
                     );
-                    log!(format!("deficit:{:?}", cat.move_deficit.0));
+                    //log!(format!("deficit:{:?}", cat.move_deficit.0));
 
                     let attack_range = 3;
-                    let aa = (attack_range);
                     let attack = movement::PossibleMoves::new(
                         &movement::WarriorMovement,
                         &gg.filter(),
                         &terrain::Grass,
                         cat.position,
-                        MoveUnit(aa),
+                        MoveUnit(attack_range),
                     );
 
                     selected_cell = Some(CellSelection::MoveSelection(mm, attack));
@@ -491,8 +481,8 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
             //draw text
-            for &GridCoord(a) in cats.0.iter().map(|a| &a.position) {
-                let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+            for ccat in cats.0.iter() {
+                let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
 
                 let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
 
@@ -508,8 +498,15 @@ pub async fn worker_entry() {
                 // let m=matrix.chain(tt).generate();
 
                 let mut v = draw_sys.view(m.as_ref());
-                text_model.draw_ext(&mut v, false, false, true);
-                //drop_shadow.draw(&mut v);
+
+                //TODO optimize
+                let data = string_to_coords(&format!("{}", ccat.health));
+                let m = model_parse::ModelGpu::new(&ctx, &data);
+                model_parse::Foo {
+                    texture: &text_texture,
+                    model: &m,
+                }
+                .draw_ext(&mut v, false, false, true);
             }
 
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
@@ -525,7 +522,7 @@ pub async fn worker_entry() {
 }
 
 //TODO just use reference???
-fn string_to_coords(im: model::Img, st: &str) -> model::ModelData {
+fn string_to_coords<'a>(st: &str) -> model::ModelData {
     let num_rows = 16;
     let num_columns = 16;
 
@@ -590,7 +587,6 @@ fn string_to_coords(im: model::Img, st: &str) -> model::ModelData {
         positions,
         tex_coords,
         indices: Some(inds),
-        texture: im,
         normals,
         matrix: mm,
     }

@@ -47,18 +47,14 @@ pub struct ModelData {
     pub positions: Vec<[f32; 3]>,
     pub indices: Option<Vec<u16>>,
     pub normals: Vec<[f32; 3]>,
-    pub texture: Img,
-    // pub texture:Vec<u8>,
-    // pub texture_width:u32,
-    // pub texture_height:u32,
     pub tex_coords: Vec<[f32; 2]>,
 }
 
 impl Doop {
-    pub fn gen_ext(&self, ss: f32, foo: usize) -> ModelData {
+    pub fn gen_ext(&self, ss: f32, foo: usize) -> (ModelData, Img) {
         use matrix::*;
         use std::f32::consts::PI;
-        let mut m = self.gen(foo);
+        let (mut m, tex) = self.gen(foo);
 
         let v = ss;
         let s = matrix::translation(v / 2.0, v / 2.0, 0.0)
@@ -76,10 +72,10 @@ impl Doop {
             *p = kk.transform_point((*p).into()).into();
         }
 
-        m
+        (m, tex)
     }
     //TODO return a read only reference instead!
-    pub fn gen(&self, foo: usize) -> ModelData {
+    pub fn gen(&self, foo: usize) -> (ModelData, Img) {
         // TODO use this: https://www.nayuki.io/page/png-file-chunk-inspector
         let mut positions = Vec::new();
         let mut indices = Vec::new();
@@ -210,14 +206,17 @@ impl Doop {
             .map(|p| matrix.transform_point(p.into()).into())
             .collect();
 
-        ModelData {
-            normals,
-            matrix,
+        (
+            ModelData {
+                normals,
+                matrix,
+
+                positions,
+                indices: Some(indices),
+                tex_coords,
+            },
             texture,
-            positions,
-            indices: Some(indices),
-            tex_coords,
-        }
+        )
     }
 }
 

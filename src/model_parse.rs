@@ -1,9 +1,59 @@
+use std::borrow::Borrow;
+
 use super::*;
+
+pub struct TextureGpu {
+    texture: simple2d::TextureBuffer,
+}
+impl TextureGpu {
+    pub fn new(ctx: &web_sys::WebGl2RenderingContext, tt: &model::Img) -> Self {
+        let mut texture = simple2d::TextureBuffer::new(&ctx);
+
+        texture.update(tt.width as usize, tt.height as usize, &tt.data);
+        TextureGpu { texture }
+    }
+}
+
+pub struct Foo<A, B> {
+    pub texture: A,
+    pub model: B,
+}
+impl<A: Borrow<TextureGpu>, B: Borrow<ModelGpu>> Foo<A, B> {
+    pub fn draw(&self, view: &mut simple2d::View) {
+        let model = self.model.borrow();
+        let tex = self.texture.borrow();
+        view.draw(
+            WebGl2RenderingContext::TRIANGLES,
+            &tex.texture,
+            &model.tex_coord,
+            &model.position,
+            model.index.as_ref(),
+            &model.normals,
+            false,
+            false,
+            false,
+        );
+    }
+    pub fn draw_ext(&self, view: &mut simple2d::View, grayscale: bool, text: bool, linear: bool) {
+        let model = self.model.borrow();
+        let tex = self.texture.borrow();
+        view.draw(
+            WebGl2RenderingContext::TRIANGLES,
+            &tex.texture,
+            &model.tex_coord,
+            &model.position,
+            model.index.as_ref(),
+            &model.normals,
+            grayscale,
+            text,
+            linear,
+        );
+    }
+}
 
 pub struct ModelGpu {
     index: Option<simple2d::IndexBuffer>,
     tex_coord: simple2d::TextureCoordBuffer,
-    texture: simple2d::TextureBuffer,
     position: simple2d::DynamicBuffer,
     normals: simple2d::DynamicBuffer,
 }
@@ -20,14 +70,6 @@ impl ModelGpu {
         let mut tex_coord = simple2d::TextureCoordBuffer::new(&ctx).unwrap_throw();
         tex_coord.update(&data.tex_coords);
 
-        let mut texture = simple2d::TextureBuffer::new(&ctx);
-
-        texture.update(
-            data.texture.width as usize,
-            data.texture.height as usize,
-            &data.texture.data,
-        );
-
         let mut position = simple2d::DynamicBuffer::new(&ctx).unwrap_throw();
         position.update_no_clear(&data.positions);
 
@@ -37,38 +79,8 @@ impl ModelGpu {
         ModelGpu {
             index,
             tex_coord,
-            texture,
             position,
             normals,
         }
-    }
-    // pub fn draw_pos(&self, view: &mut simple2d::View, pos: &simple2d::Buffer) {
-    //     view.draw_triangles(&self.texture, &self.tex_coord, pos, self.index.as_ref());
-    // }
-    pub fn draw(&self, view: &mut simple2d::View) {
-        view.draw(
-            WebGl2RenderingContext::TRIANGLES,
-            &self.texture,
-            &self.tex_coord,
-            &self.position,
-            self.index.as_ref(),
-            &self.normals,
-            false,
-            false,
-            false,
-        );
-    }
-    pub fn draw_ext(&self, view: &mut simple2d::View, grayscale: bool, text: bool, linear: bool) {
-        view.draw(
-            WebGl2RenderingContext::TRIANGLES,
-            &self.texture,
-            &self.tex_coord,
-            &self.position,
-            self.index.as_ref(),
-            &self.normals,
-            grayscale,
-            text,
-            linear,
-        );
     }
 }
