@@ -23,6 +23,19 @@ impl<A: MoveCost, B: MoveCost> MoveCost for Chain<A, B> {
     }
 }
 
+
+
+pub trait MoveStrat{
+    fn process(&self,a:MoveUnit)->MoveUnit;
+}
+
+impl<F:Fn(MoveUnit)->MoveUnit> MoveStrat for F{
+    fn process(&self,a:MoveUnit)->MoveUnit {
+        (self)(a)
+    }
+}
+
+
 pub struct TerrainCollection<F> {
     pub pos: Vec<GridCoord>,
     pub func: F,
@@ -43,10 +56,10 @@ pub struct TerrainCollectionFoo<'a, F> {
     a: &'a [GridCoord],
     func: &'a F,
 }
-impl<'a, F: Fn(MoveUnit) -> MoveUnit> MoveCost for TerrainCollectionFoo<'a, F> {
+impl<'a, F: MoveStrat> MoveCost for TerrainCollectionFoo<'a, F> {
     fn foop(&self, g: GridCoord, z: MoveUnit) -> MoveUnit {
         if self.a.contains(&g) {
-            (self.func)(z)
+            self.func.process(z)
         } else {
             z
         }

@@ -88,7 +88,9 @@ impl Cat {
             health: 10,
         }
     }
+
 }
+
 
 enum CellSelection {
     MoveSelection(movement::PossibleMoves, movement::PossibleMoves),
@@ -297,33 +299,9 @@ pub async fn worker_entry() {
                     }
                 }
             } else {
-                if let Some(cat) = cats.find(&cell) {
-                    let mm = if cat.moved {
-                        MoveUnit(0)
-                    } else {
-                        //MoveUnit(2-1) vs MoveUnit(4-1) vs MoveUnit(6-1)
-                        MoveUnit(6 - 1)
-                    };
-
-                    let mm = movement::PossibleMoves::new(
-                        &movement::WarriorMovement,
-                        &gg.filter().chain(cats.filter()),
-                        &terrain::Grass.chain(roads.foo()),
-                        cat.position,
-                        mm,
-                    );
-                    //log!(format!("deficit:{:?}", cat.move_deficit.0));
-
-                    let attack_range = 3;
-                    let attack = movement::PossibleMoves::new(
-                        &movement::WarriorMovement,
-                        &gg.filter(),
-                        &terrain::Grass,
-                        cat.position,
-                        MoveUnit(attack_range),
-                    );
-
-                    selected_cell = Some(CellSelection::MoveSelection(mm, attack));
+                
+                if let Some(r)=get_cat_move_attack_matrix(&cell,&cats,roads.foo(),&gg){
+                    selected_cell=Some(r)
                 } else {
                     selected_cell = Some(CellSelection::BuildSelection(cell));
                     //activate the build options for that terrain
@@ -520,6 +498,40 @@ pub async fn worker_entry() {
 
     log!("worker thread closing");
 }
+
+fn get_cat_move_attack_matrix(cell:&GridCoord,cats:&UnitCollection<Cat>,roads:impl MoveCost,gg:&grids::GridMatrix)->Option<CellSelection>{
+    let Some(cat) = cats.find(&cell) else {
+        return None;
+    };
+
+    let mm = if cat.moved {
+        MoveUnit(0)
+    } else {
+        //MoveUnit(2-1) vs MoveUnit(4-1) vs MoveUnit(6-1)
+        MoveUnit(6 - 1)
+    };
+
+    let mm = movement::PossibleMoves::new(
+        &movement::WarriorMovement,
+        &gg.filter().chain(cats.filter()),
+        &terrain::Grass.chain(roads),
+        cat.position,
+        mm,
+    );
+    //log!(format!("deficit:{:?}", cat.move_deficit.0));
+
+    let attack_range = 3;
+    let attack = movement::PossibleMoves::new(
+        &movement::WarriorMovement,
+        &gg.filter(),
+        &terrain::Grass,
+        cat.position,
+        MoveUnit(attack_range),
+    );
+
+    Some(CellSelection::MoveSelection(mm, attack))
+}
+
 
 //TODO just use reference???
 fn string_to_coords<'a>(st: &str) -> model::ModelData {
