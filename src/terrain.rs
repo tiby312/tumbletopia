@@ -23,18 +23,15 @@ impl<A: MoveCost, B: MoveCost> MoveCost for Chain<A, B> {
     }
 }
 
-
-
-pub trait MoveStrat{
-    fn process(&self,a:MoveUnit)->MoveUnit;
+pub trait MoveStrat {
+    fn process(&self, a: MoveUnit) -> MoveUnit;
 }
 
-impl<F:Fn(MoveUnit)->MoveUnit> MoveStrat for F{
-    fn process(&self,a:MoveUnit)->MoveUnit {
+impl<F: Fn(MoveUnit) -> MoveUnit> MoveStrat for F {
+    fn process(&self, a: MoveUnit) -> MoveUnit {
         (self)(a)
     }
 }
-
 
 pub struct TerrainCollection<F> {
     pub pos: Vec<GridCoord>,
