@@ -23,29 +23,29 @@ pub const RESIZE: usize = 6;
 
 
 
-//TODO use htis!!!
-pub struct MyComp<T>{
-    a:Vec<Option<T>>
-}
-impl<T> MyComp<T>{
-    fn new_elem(&mut self,a:T)->usize{
-        //TODO look for a destroyed element.
-        let b=self.a.len();
-        self.a.push(Some(a));
-        b
-    }
-    fn destroy_elem(&mut self,i:usize){
-        self.a[i]=None;
-    }
-    fn get_mut(&mut self,i:usize)->Option<&mut T>{
-        self.a[i].as_mut()
-    }
+// //TODO use htis!!!
+// pub struct MyComp<T>{
+//     a:Vec<Option<T>>
+// }
+// impl<T> MyComp<T>{
+//     fn new_elem(&mut self,a:T)->usize{
+//         //TODO look for a destroyed element.
+//         let b=self.a.len();
+//         self.a.push(Some(a));
+//         b
+//     }
+//     fn destroy_elem(&mut self,i:usize){
+//         self.a[i]=None;
+//     }
+//     fn get_mut(&mut self,i:usize)->Option<&mut T>{
+//         self.a[i].as_mut()
+//     }
 
-    fn get_two_mut(&mut self,a:usize,b:usize)->Option<(&mut T,&mut T)>{
-        let (first,second)=self.a.split_at_mut(a);
-        todo!();
-    }
-}
+//     fn get_two_mut(&mut self,a:usize,b:usize)->Option<(&mut T,&mut T)>{
+//         let (first,second)=self.a.split_at_mut(a);
+//         todo!();
+//     }
+// }
 
 
 
