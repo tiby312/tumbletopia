@@ -535,14 +535,10 @@ fn get_cat_move_attack_matrix(
     roads: impl MoveCost,
     gg: &grids::GridMatrix,
 ) -> CellSelection {
-    // let Some(cat) = cats.find(&cell) else {
-    //     return None;
-    // };
-
+    
     let mm = if cat.moved {
         MoveUnit(0)
     } else {
-        //MoveUnit(2-1) vs MoveUnit(4-1) vs MoveUnit(6-1)
         MoveUnit(6 - 1)
     };
 
@@ -553,9 +549,8 @@ fn get_cat_move_attack_matrix(
         cat.position,
         mm,
     );
-    //log!(format!("deficit:{:?}", cat.move_deficit.0));
 
-    let attack_range = 3;
+    let attack_range = 2-1;
     let attack = movement::PossibleMoves::new(
         &movement::WarriorMovement,
         &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
