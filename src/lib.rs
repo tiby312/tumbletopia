@@ -294,8 +294,11 @@ pub async fn worker_entry() {
                 match ss {
                     CellSelection::MoveSelection(ss, attack) => {
                         let target_cat_pos = &cell;
-                        if movement::contains_coord(attack.iter_coords(), target_cat_pos)
-                            && cats.find(target_cat_pos).is_some()
+
+                        let current_attack=cats.find_mut(ss.start()).unwrap().attacked;
+                        
+                        if !current_attack && movement::contains_coord(attack.iter_coords(), target_cat_pos)
+                            && cats.find(target_cat_pos).is_some() 
                         {
                             let target_cat = cats.find_mut(target_cat_pos).unwrap();
                             target_cat.health -= 1;
