@@ -49,6 +49,15 @@ impl<T: HasPos> UnitCollection<T> {
     }
 }
 
+pub struct SingleFilter<'a> {
+    a: &'a GridCoord,
+}
+impl<'a> movement::Filter for SingleFilter<'a> {
+    fn filter(&self, a: &GridCoord) -> bool {
+        self.a != a
+    }
+}
+
 pub struct UnitCollectionFilter<'a, T> {
     a: &'a [T],
 }
@@ -81,6 +90,10 @@ pub struct Cat {
     health: i8,
 }
 impl Cat {
+    fn is_selectable(&self) -> bool {
+        !self.moved || !self.attacked
+    }
+
     fn new(position: GridCoord) -> Self {
         Cat {
             position,
@@ -233,6 +246,7 @@ pub async fn worker_entry() {
                 MEvent::EndTurn => {
                     for a in cats.0.iter_mut() {
                         a.moved = false;
+                        a.attacked = false;
                     }
                 }
                 MEvent::CanvasMouseDown { x, y } => {
@@ -279,11 +293,15 @@ pub async fn worker_entry() {
             if let Some(ss) = &mut selected_cell {
                 match ss {
                     CellSelection::MoveSelection(ss, attack) => {
-                        if movement::contains_coord(attack.iter_coords(), &cell)
-                            && cats.find(&cell).is_some()
+                        let target_cat_pos = &cell;
+                        if movement::contains_coord(attack.iter_coords(), target_cat_pos)
+                            && cats.find(target_cat_pos).is_some()
                         {
-                            let a = cats.find_mut(&cell).unwrap();
-                            a.health -= 1;
+                            let target_cat = cats.find_mut(target_cat_pos).unwrap();
+                            target_cat.health -= 1;
+
+                            let current_cat = cats.find_mut(ss.start()).unwrap();
+                            current_cat.attacked = true;
                         } else if movement::contains_coord(ss.iter_coords(), &cell) {
                             let mut c = cats.remove(ss.start());
                             let (dd, aa) = ss.get_path_data(cell).unwrap();
@@ -300,12 +318,14 @@ pub async fn worker_entry() {
                 }
             } else {
                 if let Some(cat) = cats.find(&cell) {
-                    selected_cell = Some(get_cat_move_attack_matrix(
-                        cat,
-                        cats.filter(),
-                        roads.foo(),
-                        &gg,
-                    ));
+                    if cat.is_selectable() {
+                        selected_cell = Some(get_cat_move_attack_matrix(
+                            cat,
+                            cats.filter(),
+                            roads.foo(),
+                            &gg,
+                        ));
+                    }
                 } else {
                     selected_cell = Some(CellSelection::BuildSelection(cell));
                     //activate the build options for that terrain
@@ -414,7 +434,6 @@ pub async fn worker_entry() {
                 let m = matrix.chain(t).generate();
 
                 let mut v = draw_sys.view(m.as_ref());
-                //text_model.draw_ext(&mut v,false,true);
                 drop_shadow.draw(&mut v);
             }
 
@@ -462,8 +481,7 @@ pub async fn worker_entry() {
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
 
-            cat.draw_ext(&mut v, cc.moved, false, false);
-            //text_model.draw_ext(&mut v, cc.moved);
+            cat.draw_ext(&mut v, !cc.is_selectable(), false, false);
         }
 
         {
@@ -540,7 +558,7 @@ fn get_cat_move_attack_matrix(
     let attack_range = 3;
     let attack = movement::PossibleMoves::new(
         &movement::WarriorMovement,
-        &gg.filter(),
+        &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
         &terrain::Grass,
         cat.position,
         MoveUnit(attack_range),
