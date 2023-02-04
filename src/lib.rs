@@ -1,10 +1,11 @@
 use axgeom::vec2same;
-use cgmath::{InnerSpace, Transform, Vector2};
+use cgmath::{InnerSpace, Transform, Vector2, Matrix4};
+use duckduckgeo::grid::Grid2D;
 use gloo::console::log;
 use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
 use serde::{Deserialize, Serialize};
-use shogo::simple2d::{self};
+use shogo::simple2d::{self, ShaderSystem};
 use shogo::utils;
 use wasm_bindgen::prelude::*;
 pub mod animation;
@@ -55,26 +56,100 @@ enum UiButton {
     NoUi,
 }
 
-pub struct UnitCollection<T: HasPos>(Vec<T>);
-impl<T: HasPos> UnitCollection<T> {
+pub struct UnitCollection<'a,T: HasPos>{
+    elem:Vec<T>,
+    model:&'a MyModel,
+    drop_shadow:&'a MyModel,
+    
+}
+
+impl<'a> UnitCollection<'a,Warrior> {
+    fn draw(&self,gg:&grids::GridMatrix,draw_sys:&mut ShaderSystem,matrix:&ViewProjection){
+        for cc in self.elem.iter() {
+            let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
+
+            let t = matrix::translation(pos[0], pos[1], 20.0);
+            let s = matrix::scale(1.0, 1.0, 1.0);
+            let m = matrix.chain(t).chain(s).generate();
+            let mut v = draw_sys.view(m.as_ref());
+
+            self.model.draw_ext(&mut v, !cc.is_selectable(), false, false);
+        }
+    }
+
+    fn draw_shadow(&self,gg:&grids::GridMatrix,draw_sys:&mut ShaderSystem,matrix:&ViewProjection){
+
+
+        for &GridCoord(a) in self.elem.iter().map(|a| &a.position) {
+            let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+            let t = matrix::translation(pos[0], pos[1], 1.0);
+
+            let m = matrix.chain(t).generate();
+
+            let mut v = draw_sys.view(m.as_ref());
+            self.drop_shadow.draw(&mut v);
+        }
+
+
+    }
+
+    // fn draw_text(&self,gg:&grids::GridMatrix,draw_sys:&mut ShaderSystem,proj:&matrix::Perspective,view_proj:&Matrix4<f32>){
+
+    //         //draw text
+    //         for ccat in self.elem.iter() {
+    //             let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
+
+    //             let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
+
+    //             let jj = view_proj.chain(t).generate();
+    //             let jj: &[f32; 16] = jj.as_ref();
+    //             let tt = matrix::translation(jj[12], jj[13], jj[14]);
+    //             let new_proj = proj.clone().chain(tt);
+
+    //             let s = matrix::scale(5.0, 5.0, 5.0);
+    //             //let r=matrix::z_rotation(std::f32::consts::PI/4.0);
+    //             let m = new_proj.chain(s).generate();
+
+    //             // let m=matrix.chain(tt).generate();
+
+    //             let mut v = draw_sys.view(m.as_ref());
+
+    //             //TODO optimize
+    //             let data = string_to_coords(&format!("{}", ccat.health));
+    //             //TODO only sent to gpu on text update
+    //             let m = model_parse::ModelGpu::new(&ctx, &data);
+    //             model_parse::Foo {
+    //                 texture: &text_texture,
+    //                 model: &m,
+    //             }
+    //             .draw_ext(&mut v, false, false, true);
+    //         }
+    // }
+}
+
+impl<'a,T: HasPos> UnitCollection<'a,T> {
+ 
+    fn new(elem:Vec<T>,model:&'a MyModel,drop_shadow:&'a MyModel)->Self{
+        UnitCollection { elem,model,drop_shadow }
+    }
     fn remove(&mut self, a: &GridCoord) -> T {
         let (i, _) = self
-            .0
+            .elem
             .iter()
             .enumerate()
             .find(|(_, b)| b.get_pos() == a)
             .unwrap();
-        self.0.swap_remove(i)
+        self.elem.swap_remove(i)
     }
 
     fn find_mut(&mut self, a: &GridCoord) -> Option<&mut T> {
-        self.0.iter_mut().find(|b| b.get_pos() == a)
+        self.elem.iter_mut().find(|b| b.get_pos() == a)
     }
     fn find(&self, a: &GridCoord) -> Option<&T> {
-        self.0.iter().find(|b| b.get_pos() == a)
+        self.elem.iter().find(|b| b.get_pos() == a)
     }
     fn filter(&self) -> UnitCollectionFilter<T> {
-        UnitCollectionFilter { a: &self.0 }
+        UnitCollectionFilter { a: &self.elem }
     }
 }
 
@@ -105,26 +180,29 @@ impl HasPos for GridCoord {
     }
 }
 
-impl HasPos for Cat {
+impl HasPos for Warrior {
     fn get_pos(&self) -> &GridCoord {
         &self.position
     }
 }
 
-pub struct Cat {
+type MyModel=model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
+
+pub struct Warrior {
     position: GridCoord,
     move_deficit: MoveUnit,
     moved: bool,
     attacked: bool,
     health: i8,
 }
-impl Cat {
+
+impl Warrior {
     fn is_selectable(&self) -> bool {
         !self.moved || !self.attacked
     }
 
     fn new(position: GridCoord) -> Self {
-        Cat {
+        Warrior {
             position,
             move_deficit: MoveUnit(0),
             moved: false,
@@ -175,6 +253,8 @@ pub async fn worker_entry() {
 
     let drop_shadow = quick_load(DROP_SHADOW_GLB);
 
+    let dog = quick_load(DOG_GLB);
+
     let cat = quick_load(CAT_GLB);
 
     let road = quick_load(ROAD_GLB);
@@ -191,13 +271,19 @@ pub async fn worker_entry() {
         model_parse::TextureGpu::new(&ctx, &ascii_tex)
     };
 
-    let mut cats = UnitCollection(vec![
-        Cat::new(GridCoord([2, 2])),
-        Cat::new(GridCoord([5, 5])),
-        Cat::new(GridCoord([6, 6])),
-        Cat::new(GridCoord([7, 7])),
-        Cat::new(GridCoord([3, 1])),
-    ]);
+
+    let mut dogs = UnitCollection::new(vec![
+        Warrior::new(GridCoord([3, 3])),
+        Warrior::new(GridCoord([4, 4])),
+    ],&dog,&drop_shadow);
+
+    let mut cats = UnitCollection::new(vec![
+        Warrior::new(GridCoord([2, 2])),
+        Warrior::new(GridCoord([5, 5])),
+        Warrior::new(GridCoord([6, 6])),
+        Warrior::new(GridCoord([7, 7])),
+        Warrior::new(GridCoord([3, 1])),
+    ],&cat,&drop_shadow);
 
     let mut roads = terrain::TerrainCollection {
         pos: vec![],
@@ -273,7 +359,7 @@ pub async fn worker_entry() {
                     scroll_manager.on_mouse_move([*x, *y], mm);
                 }
                 MEvent::EndTurn => {
-                    for a in cats.0.iter_mut() {
+                    for a in cats.elem.iter_mut() {
                         a.moved = false;
                         a.attacked = false;
                     }
@@ -459,15 +545,8 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
-            for &GridCoord(a) in cats.0.iter().map(|a| &a.position) {
-                let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
-                let t = matrix::translation(pos[0], pos[1], 1.0);
-
-                let m = matrix.chain(t).generate();
-
-                let mut v = draw_sys.view(m.as_ref());
-                drop_shadow.draw(&mut v);
-            }
+            cats.draw_shadow(&gg, &mut draw_sys, &matrix);
+            
 
             if let Some(a) = &animation {
                 let pos = a.calc_pos();
@@ -501,27 +580,23 @@ pub async fn worker_entry() {
                     roads.foo(),
                     &gg,
                 ));
-                cats.0.push(cat);
+                cats.elem.push(cat);
             };
         }
 
-        for cc in cats.0.iter() {
-            let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
 
-            let t = matrix::translation(pos[0], pos[1], 20.0);
-            let s = matrix::scale(1.0, 1.0, 1.0);
-            let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref());
+        cats.draw(&gg,&mut draw_sys,&matrix);
 
-            cat.draw_ext(&mut v, !cc.is_selectable(), false, false);
-        }
 
+
+
+        
         {
             ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
             //draw text
-            for ccat in cats.0.iter() {
+            for ccat in cats.elem.iter() {
                 let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
 
                 let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
@@ -532,21 +607,13 @@ pub async fn worker_entry() {
                 let new_proj = proj.clone().chain(tt);
 
                 let s = matrix::scale(5.0, 5.0, 5.0);
-                //let r=matrix::z_rotation(std::f32::consts::PI/4.0);
                 let m = new_proj.chain(s).generate();
 
-                // let m=matrix.chain(tt).generate();
 
-                let mut v = draw_sys.view(m.as_ref());
-
-                //TODO optimize
-                let data = string_to_coords(&format!("{}", ccat.health));
-                let m = model_parse::ModelGpu::new(&ctx, &data);
-                model_parse::Foo {
-                    texture: &text_texture,
-                    model: &m,
-                }
-                .draw_ext(&mut v, false, false, true);
+                //TODO cache this
+                let mut nn=NumberDraw::new();
+                nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
+                
             }
 
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
@@ -562,7 +629,7 @@ pub async fn worker_entry() {
 }
 
 fn get_cat_move_attack_matrix(
-    cat: &Cat,
+    cat: &Warrior,
     cat_filter: impl Filter,
     roads: impl MoveCost,
     gg: &grids::GridMatrix,
@@ -679,4 +746,46 @@ const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
 // const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
 const CAT_GLB: &'static [u8] = include_bytes!("../assets/tiger2.glb");
+const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat2.glb");
+
+
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");
+
+
+
+
+pub struct NumberDraw{
+    inner:Option<(i8,model::ModelData,model_parse::ModelGpu)>
+}
+impl NumberDraw{
+    fn new()->Self{
+        NumberDraw { inner:None }
+    }
+    fn draw(&mut self,new_number:i8,ctx:&WebGl2RenderingContext,text_texture:&model_parse::TextureGpu,draw_sys:&mut ShaderSystem,m:&Matrix4<f32>){
+        
+        if let Some((curr_number,data,gpu))=self.inner.as_mut(){
+            if *curr_number!=new_number{
+                *curr_number=new_number;
+                *data=string_to_coords(&format!("{}", curr_number));
+                *gpu=model_parse::ModelGpu::new(&ctx, data);
+            }
+        }else{
+            let data=string_to_coords(&format!("{}", new_number));
+            let gpu=model_parse::ModelGpu::new(&ctx, &data);
+            self.inner=Some((new_number,data,gpu));
+        }
+        
+
+        let mut v = draw_sys.view(m.as_ref());
+
+        if let Some((_,_,gpu))=self.inner.as_ref(){
+
+            model_parse::Foo {
+                texture: text_texture,
+                model: gpu,
+            }
+            .draw_ext(&mut v, false, false, true);
+        }
+
+    }
+}
