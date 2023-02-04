@@ -90,38 +90,35 @@ impl<'a> UnitCollection<'a, Warrior> {
         }
     }
 
-    // fn draw_text(&self,gg:&grids::GridMatrix,draw_sys:&mut ShaderSystem,proj:&matrix::Perspective,view_proj:&Matrix4<f32>){
+    fn draw_health_text(
+        &self,
+        gg: &grids::GridMatrix,
+        health_numbers: &NumberTextManager,
+        view_proj: &Matrix4<f32>,
+        proj: &Matrix4<f32>,
+        draw_sys: &mut ShaderSystem,
+    ) {
+        //draw text
+        for ccat in self.elem.iter() {
+            let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
 
-    //         //draw text
-    //         for ccat in self.elem.iter() {
-    //             let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
+            let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
 
-    //             let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
+            let jj = view_proj.chain(t).generate();
+            let jj: &[f32; 16] = jj.as_ref();
+            let tt = matrix::translation(jj[12], jj[13], jj[14]);
+            let new_proj = proj.clone().chain(tt);
 
-    //             let jj = view_proj.chain(t).generate();
-    //             let jj: &[f32; 16] = jj.as_ref();
-    //             let tt = matrix::translation(jj[12], jj[13], jj[14]);
-    //             let new_proj = proj.clone().chain(tt);
+            let s = matrix::scale(5.0, 5.0, 5.0);
+            let m = new_proj.chain(s).generate();
 
-    //             let s = matrix::scale(5.0, 5.0, 5.0);
-    //             //let r=matrix::z_rotation(std::f32::consts::PI/4.0);
-    //             let m = new_proj.chain(s).generate();
+            let nn = health_numbers.get_number(ccat.health);
+            let mut v = draw_sys.view(m.as_ref());
+            nn.draw_ext(&mut v, false, false, true);
 
-    //             // let m=matrix.chain(tt).generate();
-
-    //             let mut v = draw_sys.view(m.as_ref());
-
-    //             //TODO optimize
-    //             let data = string_to_coords(&format!("{}", ccat.health));
-    //             //TODO only sent to gpu on text update
-    //             let m = model_parse::ModelGpu::new(&ctx, &data);
-    //             model_parse::Foo {
-    //                 texture: &text_texture,
-    //                 model: &m,
-    //             }
-    //             .draw_ext(&mut v, false, false, true);
-    //         }
-    // }
+            //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
+        }
+    }
 }
 
 impl<'a, T: HasPos> UnitCollection<'a, T> {
@@ -308,7 +305,7 @@ pub async fn worker_entry() {
     let mut animation = None;
 
     use cgmath::SquareMatrix;
-    let mut last_matrix=cgmath::Matrix4::identity();
+    let mut last_matrix = cgmath::Matrix4::identity();
 
     'outer: loop {
         let mut on_select = false;
@@ -355,7 +352,7 @@ pub async fn worker_entry() {
                 }
                 MEvent::CanvasMouseMove { x, y } => {
                     //log!(format!("{:?}",(x,y)));
-                    
+
                     scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
                 }
                 MEvent::EndTurn => {
@@ -383,16 +380,16 @@ pub async fn worker_entry() {
             }
         }
 
-        let proj = projection::projection(viewport);
+        let proj = projection::projection(viewport).generate();
         let view_proj = projection::view_matrix(
             scroll_manager.camera(),
             scroll_manager.zoom(),
             scroll_manager.rot(),
         );
-        
+
         let matrix = proj.chain(view_proj).generate();
 
-        last_matrix=matrix;
+        last_matrix = matrix;
 
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
@@ -587,26 +584,7 @@ pub async fn worker_entry() {
             ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
-            //draw text
-            for ccat in cats.elem.iter() {
-                let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
-
-                let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
-
-                let jj = view_proj.chain(t).generate();
-                let jj: &[f32; 16] = jj.as_ref();
-                let tt = matrix::translation(jj[12], jj[13], jj[14]);
-                let new_proj = proj.clone().chain(tt);
-
-                let s = matrix::scale(5.0, 5.0, 5.0);
-                let m = new_proj.chain(s).generate();
-
-                let nn = health_numbers.get_number(ccat.health);
-                let mut v = draw_sys.view(m.as_ref());
-                nn.draw_ext(&mut v, false, false, true);
-
-                //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
-            }
+            cats.draw_health_text(&gg, &health_numbers, &view_proj, &proj, &mut draw_sys);
 
             ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
             ctx.enable(WebGl2RenderingContext::CULL_FACE);
