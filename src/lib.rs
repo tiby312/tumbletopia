@@ -251,7 +251,6 @@ pub async fn worker_entry() {
         }
     };
 
-    let health_numbers=NumberTextManager::new(0..=10,&ctx);
 
 
     let drop_shadow = quick_load(DROP_SHADOW_GLB);
@@ -273,6 +272,9 @@ pub async fn worker_entry() {
 
         model_parse::TextureGpu::new(&ctx, &ascii_tex)
     };
+
+    let health_numbers=NumberTextManager::new(0..=10,&ctx,&text_texture);
+
 
 
     let mut dogs = UnitCollection::new(vec![
@@ -612,12 +614,15 @@ pub async fn worker_entry() {
                 let s = matrix::scale(5.0, 5.0, 5.0);
                 let m = new_proj.chain(s).generate();
 
-
-                //TODO cache this
-                //let mut nn=NumberDraw::new();
                 let nn=health_numbers.get_number(ccat.health);
 
-                nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
+
+                let mut v = draw_sys.view(m.as_ref());
+
+                nn.draw_ext(&mut v, false, false, true);
+        
+
+                //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
                 
             }
 
@@ -759,64 +764,34 @@ const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");
 
 
 
-pub struct NumberTextManager{
-    numbers:Vec<NumberDraw>
+pub struct NumberTextManager<'a>{
+    numbers:Vec<model_parse::ModelGpu>,
+    texture:&'a model_parse::TextureGpu
 }
-impl NumberTextManager{
+impl<'a> NumberTextManager<'a>{
 
-    fn new(range:impl IntoIterator<Item=i8>,ctx:&WebGl2RenderingContext)->Self{
+    fn new(range:impl IntoIterator<Item=i8>,ctx:&WebGl2RenderingContext,texture:&'a model_parse::TextureGpu)->Self{
+
+        fn generate_number(number:i8,ctx:&WebGl2RenderingContext)->model_parse::ModelGpu{
+            let data=string_to_coords(&format!("{}", number));
+            model_parse::ModelGpu::new(ctx, &data)
+        }
+
         let numbers=range.into_iter().map(|i|{
-            let mut a=NumberDraw::new();
-            a.update(i,ctx);
-            a
+            generate_number(i,ctx)
         }).collect();
-        Self { numbers }
+        Self { numbers,texture }
     }
 
-    fn get_number(&self,num:i8)->&NumberDraw{
-        &self.numbers[num as usize]
-
-    }
-}
-
-pub struct NumberDraw{
-    inner:Option<(i8,model::ModelData,model_parse::ModelGpu)>
-}
-impl NumberDraw{
-    fn new()->Self{
-        NumberDraw { inner:None }
-    }
-
-    fn update(&mut self,new_number:i8,
-        ctx:&WebGl2RenderingContext){
-        if let Some((curr_number,data,gpu))=self.inner.as_mut(){
-            if *curr_number!=new_number{
-                *curr_number=new_number;
-                *data=string_to_coords(&format!("{}", curr_number));
-                *gpu=model_parse::ModelGpu::new(ctx, data);
-            }
-        }else{
-            let data=string_to_coords(&format!("{}", new_number));
-            let gpu=model_parse::ModelGpu::new(ctx, &data);
-            self.inner=Some((new_number,data,gpu));
-        }
-    }
+    fn get_number(&self,num:i8)->model_parse::Foo<&model_parse::TextureGpu,&model_parse::ModelGpu>{
+        let gpu=&self.numbers[num as usize];
 
 
-    fn draw(&self,new_number:i8,ctx:&WebGl2RenderingContext,text_texture:&model_parse::TextureGpu,draw_sys:&mut ShaderSystem,m:&Matrix4<f32>){
-        
-       
-
-        let mut v = draw_sys.view(m.as_ref());
-
-        if let Some((_,_,gpu))=self.inner.as_ref(){
-
-            model_parse::Foo {
-                texture: text_texture,
-                model: gpu,
-            }
-            .draw_ext(&mut v, false, false, true);
+        model_parse::Foo {
+            texture: &self.texture,
+            model: gpu,
         }
 
     }
 }
+
