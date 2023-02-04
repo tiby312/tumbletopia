@@ -1,7 +1,7 @@
 use crate::grids::GridMatrix;
 
 use super::*;
-pub fn get_world_rect(view_projection: ViewProjection, grid: &GridMatrix) -> [[i16; 2]; 2] {
+pub fn get_world_rect(view_projection: &Matrix4<f32>, grid: &GridMatrix) -> [[i16; 2]; 2] {
     let k = 1.0;
     let a = clip_to_world([k, k], view_projection);
     let b = clip_to_world([-k, -k], view_projection);
@@ -20,7 +20,7 @@ pub fn get_world_rect(view_projection: ViewProjection, grid: &GridMatrix) -> [[i
     [[a.x, b.x + 1], [a.y, b.y + 1]]
 }
 
-pub fn clip_to_world(clip: [f32; 2], view_projection: ViewProjection) -> [f32; 2] {
+pub fn clip_to_world(clip: [f32; 2], view_projection: &Matrix4<f32>) -> [f32; 2] {
     use matrix::*;
     let [clip_x, clip_y] = clip;
     let startc = [clip_x, clip_y, -0.9];
@@ -91,35 +91,35 @@ pub fn projection(dim: [f32; 2]) -> matrix::Perspective {
     matrix::perspective(fov /*0.4*/, dim[0] / dim[1], near, far)
 }
 
-#[derive(Copy, Clone)]
-pub struct ViewProjection {
-    pub offset: [f32; 2],
-    pub dim: [f32; 2],
-    pub zoom: f32,
-    pub rot: f32,
-}
-impl matrix::Inverse for ViewProjection {
-    type Neg = cgmath::Matrix4<f32>;
+// #[derive(Copy, Clone)]
+// pub struct ViewProjection {
+//     pub offset: [f32; 2],
+//     pub dim: [f32; 2],
+//     pub zoom: f32,
+//     pub rot: f32,
+// }
+// impl matrix::Inverse for ViewProjection {
+//     type Neg = cgmath::Matrix4<f32>;
 
-    fn inverse(self) -> Self::Neg {
-        self.generate().inverse()
-    }
-}
-impl matrix::MyMatrix for ViewProjection {
-    fn generate(self) -> cgmath::Matrix4<f32> {
-        use matrix::*;
+//     fn inverse(self) -> Self::Neg {
+//         self.generate().inverse()
+//     }
+// }
+// impl matrix::MyMatrix for ViewProjection {
+//     fn generate(self) -> cgmath::Matrix4<f32> {
+//         use matrix::*;
 
-        projection(self.dim)
-            .chain(view_matrix(self.offset, self.zoom, self.rot))
-            .generate()
-    }
-}
+//         projection(self.dim)
+//             .chain(view_matrix(self.offset, self.zoom, self.rot))
+//             .generate()
+//     }
+// }
 
-pub fn view_projection(offset: [f32; 2], dim: [f32; 2], zoom: f32, rot: f32) -> ViewProjection {
-    ViewProjection {
-        offset,
-        dim,
-        zoom,
-        rot,
-    }
-}
+// pub fn view_projection(offset: [f32; 2], dim: [f32; 2], zoom: f32, rot: f32) -> ViewProjection {
+//     ViewProjection {
+//         offset,
+//         dim,
+//         zoom,
+//         rot,
+//     }
+// }
