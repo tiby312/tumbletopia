@@ -490,9 +490,7 @@ pub async fn worker_entry() {
             }
         }
 
-        {
-            ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
-            ctx.disable(WebGl2RenderingContext::CULL_FACE);
+        disable_depth(&ctx, || {
 
             if let Some(a) = &selected_cell {
                 match a {
@@ -531,14 +529,10 @@ pub async fn worker_entry() {
                 road.draw(&mut v);
             }
 
-            ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
-            ctx.enable(WebGl2RenderingContext::CULL_FACE);
-        }
+        });
 
-        {
+        disable_depth(&ctx, || {
             //draw dropshadow
-            ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
-            ctx.disable(WebGl2RenderingContext::CULL_FACE);
 
             cats.draw_shadow(&gg, &mut draw_sys, &matrix);
 
@@ -552,9 +546,7 @@ pub async fn worker_entry() {
                 drop_shadow.draw(&mut v);
             }
 
-            ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
-            ctx.enable(WebGl2RenderingContext::CULL_FACE);
-        }
+        });
 
         if let Some(mut a) = animation.take() {
             if let Some(pos) = a.animate_step() {
@@ -580,15 +572,9 @@ pub async fn worker_entry() {
 
         cats.draw(&gg, &mut draw_sys, &matrix);
 
-        {
-            ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
-            ctx.disable(WebGl2RenderingContext::CULL_FACE);
-
+        disable_depth(&ctx, || {
             cats.draw_health_text(&gg, &health_numbers, &view_proj, &proj, &mut draw_sys);
-
-            ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
-            ctx.enable(WebGl2RenderingContext::CULL_FACE);
-        }
+        });
 
         ctx.flush();
     }
@@ -596,6 +582,16 @@ pub async fn worker_entry() {
     w.post_message(UiButton::NoUi);
 
     log!("worker thread closing");
+}
+
+fn disable_depth(ctx: &WebGl2RenderingContext, func: impl FnOnce()) {
+    ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
+    ctx.disable(WebGl2RenderingContext::CULL_FACE);
+
+    func();
+
+    ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
+    ctx.enable(WebGl2RenderingContext::CULL_FACE);
 }
 
 fn get_cat_move_attack_matrix(
