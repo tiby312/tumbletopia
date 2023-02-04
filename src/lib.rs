@@ -251,6 +251,9 @@ pub async fn worker_entry() {
         }
     };
 
+    let health_numbers=NumberTextManager::new(0..=10,&ctx);
+
+
     let drop_shadow = quick_load(DROP_SHADOW_GLB);
 
     let dog = quick_load(DOG_GLB);
@@ -611,7 +614,9 @@ pub async fn worker_entry() {
 
 
                 //TODO cache this
-                let mut nn=NumberDraw::new();
+                //let mut nn=NumberDraw::new();
+                let nn=health_numbers.get_number(ccat.health);
+
                 nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
                 
             }
@@ -754,6 +759,26 @@ const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");
 
 
 
+pub struct NumberTextManager{
+    numbers:Vec<NumberDraw>
+}
+impl NumberTextManager{
+
+    fn new(range:impl IntoIterator<Item=i8>,ctx:&WebGl2RenderingContext)->Self{
+        let numbers=range.into_iter().map(|i|{
+            let mut a=NumberDraw::new();
+            a.update(i,ctx);
+            a
+        }).collect();
+        Self { numbers }
+    }
+
+    fn get_number(&self,num:i8)->&NumberDraw{
+        &self.numbers[num as usize]
+
+    }
+}
+
 pub struct NumberDraw{
     inner:Option<(i8,model::ModelData,model_parse::ModelGpu)>
 }
@@ -761,20 +786,26 @@ impl NumberDraw{
     fn new()->Self{
         NumberDraw { inner:None }
     }
-    fn draw(&mut self,new_number:i8,ctx:&WebGl2RenderingContext,text_texture:&model_parse::TextureGpu,draw_sys:&mut ShaderSystem,m:&Matrix4<f32>){
-        
+
+    fn update(&mut self,new_number:i8,
+        ctx:&WebGl2RenderingContext){
         if let Some((curr_number,data,gpu))=self.inner.as_mut(){
             if *curr_number!=new_number{
                 *curr_number=new_number;
                 *data=string_to_coords(&format!("{}", curr_number));
-                *gpu=model_parse::ModelGpu::new(&ctx, data);
+                *gpu=model_parse::ModelGpu::new(ctx, data);
             }
         }else{
             let data=string_to_coords(&format!("{}", new_number));
-            let gpu=model_parse::ModelGpu::new(&ctx, &data);
+            let gpu=model_parse::ModelGpu::new(ctx, &data);
             self.inner=Some((new_number,data,gpu));
         }
+    }
+
+
+    fn draw(&self,new_number:i8,ctx:&WebGl2RenderingContext,text_texture:&model_parse::TextureGpu,draw_sys:&mut ShaderSystem,m:&Matrix4<f32>){
         
+       
 
         let mut v = draw_sys.view(m.as_ref());
 
