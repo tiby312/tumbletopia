@@ -482,6 +482,7 @@ pub async fn worker_entry() {
         }
 
         let cat_draw = WarriorDraw::new(&cats, &cat, &drop_shadow);
+        let dog_draw = WarriorDraw::new(&dogs, &dog, &drop_shadow);
 
         disable_depth(&ctx, || {
             if let Some(a) = &selected_cell {
@@ -526,6 +527,7 @@ pub async fn worker_entry() {
             //draw dropshadow
 
             cat_draw.draw_shadow(&gg, &mut draw_sys, &matrix);
+            dog_draw.draw_shadow(&gg, &mut draw_sys, &matrix);
 
             if let Some(a) = &animation {
                 let pos = a.calc_pos();
@@ -548,9 +550,11 @@ pub async fn worker_entry() {
         }
 
         cat_draw.draw(&gg, &mut draw_sys, &matrix);
+        dog_draw.draw(&gg, &mut draw_sys, &matrix);
 
         disable_depth(&ctx, || {
             cat_draw.draw_health_text(&gg, &health_numbers, &view_proj, &proj, &mut draw_sys);
+            dog_draw.draw_health_text(&gg, &health_numbers, &view_proj, &proj, &mut draw_sys);
         });
 
         ctx.flush();
