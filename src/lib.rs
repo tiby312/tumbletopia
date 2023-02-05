@@ -22,45 +22,27 @@ use projection::*;
 
 pub const RESIZE: usize = 6;
 
-// //TODO use htis!!!
-// pub struct MyComp<T>{
-//     a:Vec<Option<T>>
-// }
-// impl<T> MyComp<T>{
-//     fn new_elem(&mut self,a:T)->usize{
-//         //TODO look for a destroyed element.
-//         let b=self.a.len();
-//         self.a.push(Some(a));
-//         b
-//     }
-//     fn destroy_elem(&mut self,i:usize){
-//         self.a[i]=None;
-//     }
-//     fn get_mut(&mut self,i:usize)->Option<&mut T>{
-//         self.a[i].as_mut()
-//     }
-
-//     fn get_two_mut(&mut self,a:usize,b:usize)->Option<(&mut T,&mut T)>{
-//         let (first,second)=self.a.split_at_mut(a);
-//         todo!();
-//     }
-// }
-
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 enum UiButton {
     ShowRoadUi,
     NoUi,
 }
 
-pub struct UnitCollection<'a, T: HasPos> {
-    elem: Vec<T>,
+pub struct WarriorDraw<'a> {
     model: &'a MyModel,
     drop_shadow: &'a MyModel,
+    col: &'a UnitCollection<Warrior>,
 }
-
-impl<'a> UnitCollection<'a, Warrior> {
+impl<'a> WarriorDraw<'a> {
+    fn new(col: &'a UnitCollection<Warrior>, model: &'a MyModel, drop_shadow: &'a MyModel) -> Self {
+        Self {
+            model,
+            drop_shadow,
+            col,
+        }
+    }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
-        for cc in self.elem.iter() {
+        for cc in self.col.elem.iter() {
             let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
 
             let t = matrix::translation(pos[0], pos[1], 20.0);
@@ -79,7 +61,7 @@ impl<'a> UnitCollection<'a, Warrior> {
         draw_sys: &mut ShaderSystem,
         matrix: &Matrix4<f32>,
     ) {
-        for &GridCoord(a) in self.elem.iter().map(|a| &a.position) {
+        for &GridCoord(a) in self.col.elem.iter().map(|a| &a.position) {
             let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
             let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -99,7 +81,7 @@ impl<'a> UnitCollection<'a, Warrior> {
         draw_sys: &mut ShaderSystem,
     ) {
         //draw text
-        for ccat in self.elem.iter() {
+        for ccat in self.col.elem.iter() {
             let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
 
             let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
@@ -121,13 +103,13 @@ impl<'a> UnitCollection<'a, Warrior> {
     }
 }
 
-impl<'a, T: HasPos> UnitCollection<'a, T> {
-    fn new(elem: Vec<T>, model: &'a MyModel, drop_shadow: &'a MyModel) -> Self {
-        UnitCollection {
-            elem,
-            model,
-            drop_shadow,
-        }
+pub struct UnitCollection<T: HasPos> {
+    elem: Vec<T>,
+}
+
+impl<T: HasPos> UnitCollection<T> {
+    fn new(elem: Vec<T>) -> Self {
+        UnitCollection { elem }
     }
     fn remove(&mut self, a: &GridCoord) -> T {
         let (i, _) = self
@@ -270,26 +252,18 @@ pub async fn worker_entry() {
 
     let health_numbers = NumberTextManager::new(0..=10, &ctx, &text_texture);
 
-    let mut dogs = UnitCollection::new(
-        vec![
-            Warrior::new(GridCoord([3, 3])),
-            Warrior::new(GridCoord([4, 4])),
-        ],
-        &dog,
-        &drop_shadow,
-    );
+    let mut dogs = UnitCollection::new(vec![
+        Warrior::new(GridCoord([3, 3])),
+        Warrior::new(GridCoord([4, 4])),
+    ]);
 
-    let mut cats = UnitCollection::new(
-        vec![
-            Warrior::new(GridCoord([2, 2])),
-            Warrior::new(GridCoord([5, 5])),
-            Warrior::new(GridCoord([6, 6])),
-            Warrior::new(GridCoord([7, 7])),
-            Warrior::new(GridCoord([3, 1])),
-        ],
-        &cat,
-        &drop_shadow,
-    );
+    let mut cats = UnitCollection::new(vec![
+        Warrior::new(GridCoord([2, 2])),
+        Warrior::new(GridCoord([5, 5])),
+        Warrior::new(GridCoord([6, 6])),
+        Warrior::new(GridCoord([7, 7])),
+        Warrior::new(GridCoord([3, 1])),
+    ]);
 
     let mut roads = terrain::TerrainCollection {
         pos: vec![],
@@ -490,8 +464,26 @@ pub async fn worker_entry() {
             }
         }
 
-        disable_depth(&ctx, || {
+        if let Some(mut a) = animation.take() {
+            if let Some(pos) = a.animate_step() {
+                animation = Some(a);
+            } else {
+                let cat = a.into_data();
+                animation = None;
 
+                selected_cell = Some(get_cat_move_attack_matrix(
+                    &cat,
+                    cats.filter(),
+                    roads.foo(),
+                    &gg,
+                ));
+                cats.elem.push(cat);
+            };
+        }
+
+        let cat_draw = WarriorDraw::new(&cats, &cat, &drop_shadow);
+
+        disable_depth(&ctx, || {
             if let Some(a) = &selected_cell {
                 match a {
                     CellSelection::MoveSelection(a, attack) => {
@@ -528,13 +520,12 @@ pub async fn worker_entry() {
                 let mut v = draw_sys.view(m.as_ref());
                 road.draw(&mut v);
             }
-
         });
 
         disable_depth(&ctx, || {
             //draw dropshadow
 
-            cats.draw_shadow(&gg, &mut draw_sys, &matrix);
+            cat_draw.draw_shadow(&gg, &mut draw_sys, &matrix);
 
             if let Some(a) = &animation {
                 let pos = a.calc_pos();
@@ -545,35 +536,21 @@ pub async fn worker_entry() {
                 let mut v = draw_sys.view(m.as_ref());
                 drop_shadow.draw(&mut v);
             }
-
         });
 
-        if let Some(mut a) = animation.take() {
-            if let Some(pos) = a.animate_step() {
-                let t = matrix::translation(pos[0], pos[1], 20.0);
-                let s = matrix::scale(1.0, 1.0, 1.0);
-                let m = matrix.chain(t).chain(s).generate();
-                let mut v = draw_sys.view(m.as_ref());
-                cat.draw(&mut v);
-                animation = Some(a);
-            } else {
-                let cat = a.into_data();
-                animation = None;
-
-                selected_cell = Some(get_cat_move_attack_matrix(
-                    &cat,
-                    cats.filter(),
-                    roads.foo(),
-                    &gg,
-                ));
-                cats.elem.push(cat);
-            };
+        if let Some(a) = &animation {
+            let pos = a.calc_pos();
+            let t = matrix::translation(pos[0], pos[1], 20.0);
+            let s = matrix::scale(1.0, 1.0, 1.0);
+            let m = matrix.chain(t).chain(s).generate();
+            let mut v = draw_sys.view(m.as_ref());
+            cat.draw(&mut v);
         }
 
-        cats.draw(&gg, &mut draw_sys, &matrix);
+        cat_draw.draw(&gg, &mut draw_sys, &matrix);
 
         disable_depth(&ctx, || {
-            cats.draw_health_text(&gg, &health_numbers, &view_proj, &proj, &mut draw_sys);
+            cat_draw.draw_health_text(&gg, &health_numbers, &view_proj, &proj, &mut draw_sys);
         });
 
         ctx.flush();
