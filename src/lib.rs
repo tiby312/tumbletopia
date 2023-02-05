@@ -1,3 +1,4 @@
+use animation::Animation;
 use axgeom::vec2same;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use duckduckgeo::grid::Grid2D;
@@ -28,47 +29,32 @@ enum UiButton {
     NoUi,
 }
 
-pub struct WarriorDraw<'a> {
-    model: &'a MyModel,
-    drop_shadow: &'a MyModel,
-    col: &'a UnitCollection<Warrior>,
+
+pub struct AnimationDraw<'a>{
+    an:&'a Option<Animation<Warrior>>,
+    model:&'a MyModel,
+    drop_shadow:&'a MyModel
 }
-impl<'a> WarriorDraw<'a> {
-    fn new(col: &'a UnitCollection<Warrior>, model: &'a MyModel, drop_shadow: &'a MyModel) -> Self {
-        Self {
-            model,
-            drop_shadow,
-            col,
-        }
+
+impl<'a> AnimationDraw<'a>{
+    fn new(an:&'a Option<Animation<Warrior>>,model:&'a MyModel,drop_shadow:&'a MyModel)->Self{
+        
+        AnimationDraw { an, model, drop_shadow }
     }
+}
+
+impl<'a> Drawable for AnimationDraw<'a>{
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
-        for cc in self.col.elem.iter() {
-            let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
-
-            let t = matrix::translation(pos[0], pos[1], 20.0);
-            let s = matrix::scale(1.0, 1.0, 1.0);
-            let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref());
-
-            self.model
-                .draw_ext(&mut v, !cc.is_selectable(), false, false);
+        if let Some(aa)=self.an{
+            let w=WarriorDraw::new(aa.get_data(),self.model,self.drop_shadow);
+            w.draw(gg,draw_sys,matrix);
         }
+        
     }
-
-    fn draw_shadow(
-        &self,
-        gg: &grids::GridMatrix,
-        draw_sys: &mut ShaderSystem,
-        matrix: &Matrix4<f32>,
-    ) {
-        for &GridCoord(a) in self.col.elem.iter().map(|a| &a.position) {
-            let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
-            let t = matrix::translation(pos[0], pos[1], 1.0);
-
-            let m = matrix.chain(t).generate();
-
-            let mut v = draw_sys.view(m.as_ref());
-            self.drop_shadow.draw(&mut v);
+    fn draw_shadow(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
+        if let Some(aa)=self.an{
+            let w=WarriorDraw::new(aa.get_data(),self.model,self.drop_shadow);
+            w.draw_shadow(gg,draw_sys,matrix);
         }
     }
 
@@ -80,9 +66,130 @@ impl<'a> WarriorDraw<'a> {
         proj: &Matrix4<f32>,
         draw_sys: &mut ShaderSystem,
     ) {
+        if let Some(aa)=self.an{
+            let w=WarriorDraw::new(aa.get_data(),self.model,self.drop_shadow);
+            w.draw_health_text(gg, health_numbers, view_proj, proj, draw_sys)
+        }
+    }
+}
+
+
+pub struct MultiWarriorDraw<'a>{
+    model:&'a MyModel,
+    drop_shadow:&'a MyModel,
+    cols:&'a UnitCollection<Warrior>
+}
+impl<'a> MultiWarriorDraw<'a>{
+    fn new(cols: &'a UnitCollection<Warrior>, model: &'a MyModel, drop_shadow: &'a MyModel) -> Self {
+        Self {
+            model,
+            drop_shadow,
+            cols,
+        }
+    }
+}
+impl<'a> Drawable for MultiWarriorDraw<'a>{
+    fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
+        for a in self.cols.elem.iter(){
+            WarriorDraw::new(a,self.model,self.drop_shadow).draw(gg,draw_sys,matrix);
+        }
+    }
+    fn draw_shadow(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
+        for a in self.cols.elem.iter(){
+            WarriorDraw::new(a,self.model,self.drop_shadow).draw_shadow(gg, draw_sys, matrix);
+        }
+    }
+    fn draw_health_text(
+        &self,
+        gg: &grids::GridMatrix,
+        health_numbers: &NumberTextManager,
+        view_proj: &Matrix4<f32>,
+        proj: &Matrix4<f32>,
+        draw_sys: &mut ShaderSystem,
+    ) {
+        for a in self.cols.elem.iter(){
+            WarriorDraw::new(a,self.model,self.drop_shadow).draw_health_text(gg, health_numbers, view_proj, proj, draw_sys);
+        }
+    }
+}
+pub struct WarriorDraw<'a> {
+    model: &'a MyModel,
+    drop_shadow: &'a MyModel,
+    col: &'a Warrior,
+}
+
+pub trait Drawable{
+    fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>);
+    fn draw_shadow(
+        &self,
+        gg: &grids::GridMatrix,
+        draw_sys: &mut ShaderSystem,
+        matrix: &Matrix4<f32>,
+    );
+    fn draw_health_text(
+        &self,
+        gg: &grids::GridMatrix,
+        health_numbers: &NumberTextManager,
+        view_proj: &Matrix4<f32>,
+        proj: &Matrix4<f32>,
+        draw_sys: &mut ShaderSystem,
+    );
+
+    
+}
+
+impl<'a> WarriorDraw<'a> {
+    fn new(col: &'a Warrior, model: &'a MyModel, drop_shadow: &'a MyModel) -> Self {
+        Self {
+            model,
+            drop_shadow,
+            col,
+        }
+    }
+}
+
+impl<'a> Drawable for WarriorDraw<'a>{
+
+    fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
+        
+        let pos: [f32; 2] = gg.to_world_topleft(self.col.position.0.into()).into();
+
+        let t = matrix::translation(pos[0], pos[1], 20.0);
+        let s = matrix::scale(1.0, 1.0, 1.0);
+        let m = matrix.chain(t).chain(s).generate();
+        let mut v = draw_sys.view(m.as_ref());
+
+        self.model
+            .draw_ext(&mut v, !self.col.is_selectable(), false, false);
+    
+    }
+    
+    fn draw_shadow(
+        &self,
+        gg: &grids::GridMatrix,
+        draw_sys: &mut ShaderSystem,
+        matrix: &Matrix4<f32>,
+    ) {
+        let pos: [f32; 2] = gg.to_world_topleft(self.col.position.0.into()).into();
+        let t = matrix::translation(pos[0], pos[1], 1.0);
+
+        let m = matrix.chain(t).generate();
+
+        let mut v = draw_sys.view(m.as_ref());
+        self.drop_shadow.draw(&mut v);
+    
+    }
+
+    fn draw_health_text(
+        &self,
+        gg: &grids::GridMatrix,
+        health_numbers: &NumberTextManager,
+        view_proj: &Matrix4<f32>,
+        proj: &Matrix4<f32>,
+        draw_sys: &mut ShaderSystem,
+    ) {
         //draw text
-        for ccat in self.col.elem.iter() {
-            let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
+            let pos: [f32; 2] = gg.to_world_topleft(self.col.position.0.into()).into();
 
             let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
 
@@ -94,12 +201,12 @@ impl<'a> WarriorDraw<'a> {
             let s = matrix::scale(5.0, 5.0, 5.0);
             let m = new_proj.chain(s).generate();
 
-            let nn = health_numbers.get_number(ccat.health);
+            let nn = health_numbers.get_number(self.col.health);
             let mut v = draw_sys.view(m.as_ref());
             nn.draw_ext(&mut v, false, false, true);
 
             //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
-        }
+        
     }
 }
 
@@ -176,6 +283,8 @@ pub struct Warrior {
 }
 
 impl Warrior {
+
+   
     fn is_selectable(&self) -> bool {
         !self.moved || !self.attacked
     }
@@ -465,7 +574,7 @@ pub async fn worker_entry() {
         }
 
         if let Some(mut a) = animation.take() {
-            if let Some(pos) = a.animate_step() {
+            if let Some(_) = a.animate_step() {
                 animation = Some(a);
             } else {
                 let cat = a.into_data();
@@ -481,8 +590,8 @@ pub async fn worker_entry() {
             };
         }
 
-        let cat_draw = WarriorDraw::new(&cats, &cat, &drop_shadow);
-
+        let cat_draw = MultiWarriorDraw::new(&cats, &cat, &drop_shadow);
+        let animation_draw=AnimationDraw::new(&animation,&cat,&drop_shadow);
         disable_depth(&ctx, || {
             if let Some(a) = &selected_cell {
                 match a {
@@ -527,6 +636,8 @@ pub async fn worker_entry() {
 
             cat_draw.draw_shadow(&gg, &mut draw_sys, &matrix);
 
+            animation_draw.draw_shadow(&gg,&mut draw_sys,&matrix);
+        
             if let Some(a) = &animation {
                 let pos = a.calc_pos();
                 let t = matrix::translation(pos[0], pos[1], 1.0);
@@ -538,14 +649,15 @@ pub async fn worker_entry() {
             }
         });
 
-        if let Some(a) = &animation {
-            let pos = a.calc_pos();
-            let t = matrix::translation(pos[0], pos[1], 20.0);
-            let s = matrix::scale(1.0, 1.0, 1.0);
-            let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref());
-            cat.draw(&mut v);
-        }
+         animation_draw.draw(&gg,&mut draw_sys,&matrix);
+        // if let Some(a) = &animation {
+        //     let pos = a.calc_pos();
+        //     let t = matrix::translation(pos[0], pos[1], 20.0);
+        //     let s = matrix::scale(1.0, 1.0, 1.0);
+        //     let m = matrix.chain(t).chain(s).generate();
+        //     let mut v = draw_sys.view(m.as_ref());
+        //     cat.draw(&mut v);
+        // }
 
         cat_draw.draw(&gg, &mut draw_sys, &matrix);
 

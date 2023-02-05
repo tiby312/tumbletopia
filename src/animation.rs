@@ -79,6 +79,9 @@ impl<T> Animation<T> {
 
         Some(self.doop.lerp(self.curr).into())
     }
+    pub fn get_data(&self) -> &T {
+        &self.data
+    }
     pub fn into_data(self) -> T {
         self.data
     }
