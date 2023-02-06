@@ -281,10 +281,12 @@ pub async fn worker_entry() {
     use cgmath::SquareMatrix;
     let mut last_matrix = cgmath::Matrix4::identity();
 
+    let mut turn_counter=false;
+
     'outer: loop {
         let mut on_select = false;
         let res = frame_timer.next().await;
-
+        let mut end_turn=false;
         for e in res {
             match e {
                 MEvent::Resize {
@@ -330,10 +332,7 @@ pub async fn worker_entry() {
                     scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
                 }
                 MEvent::EndTurn => {
-                    for a in cats.elem.iter_mut() {
-                        a.moved = false;
-                        a.attacked = false;
-                    }
+                    end_turn=true;
                 }
                 MEvent::CanvasMouseDown { x, y } => {
                     //log!(format!("{:?}",(x,y)));
@@ -351,6 +350,23 @@ pub async fn worker_entry() {
                     }
                 },
                 MEvent::ShutdownClick => break 'outer,
+            }
+        }
+
+
+        let (this_team_model,this_team)=if turn_counter{
+            (&dog,&mut dogs)
+        }else{
+            (&cat,&mut cats)
+        };
+
+        
+        if end_turn{
+            selected_cell=None;
+            turn_counter=!turn_counter;
+            for a in this_team.elem.iter_mut() {
+                a.moved = false;
+                a.attacked = false;
             }
         }
 
@@ -378,19 +394,19 @@ pub async fn worker_entry() {
                     CellSelection::MoveSelection(ss, attack) => {
                         let target_cat_pos = &cell;
 
-                        let current_attack = cats.find_mut(ss.start()).unwrap().attacked;
+                        let current_attack = this_team.find_mut(ss.start()).unwrap().attacked;
 
                         if !current_attack
                             && movement::contains_coord(attack.iter_coords(), target_cat_pos)
-                            && cats.find(target_cat_pos).is_some()
+                            && this_team.find(target_cat_pos).is_some()
                         {
-                            let target_cat = cats.find_mut(target_cat_pos).unwrap();
+                            let target_cat = this_team.find_mut(target_cat_pos).unwrap();
                             target_cat.health -= 1;
 
-                            let current_cat = cats.find_mut(ss.start()).unwrap();
+                            let current_cat = this_team.find_mut(ss.start()).unwrap();
                             current_cat.attacked = true;
                         } else if movement::contains_coord(ss.iter_coords(), &cell) {
-                            let mut c = cats.remove(ss.start());
+                            let mut c = this_team.remove(ss.start());
                             let (dd, aa) = ss.get_path_data(cell).unwrap();
                             c.position = cell;
                             c.move_deficit = *aa;
@@ -404,22 +420,24 @@ pub async fn worker_entry() {
                     }
                 }
             } else {
-                if let Some(cat) = cats.find(&cell) {
+                if let Some(cat) = this_team.find(&cell) {
                     if cat.is_selectable() {
                         selected_cell = Some(get_cat_move_attack_matrix(
                             cat,
-                            cats.filter(),
+                            this_team.filter(),
                             roads.foo(),
                             &gg,
                         ));
                     }
                 } else {
-                    selected_cell = Some(CellSelection::BuildSelection(cell));
+                    // selected_cell = Some(CellSelection::BuildSelection(cell));
                     //activate the build options for that terrain
-                    w.post_message(UiButton::ShowRoadUi);
+                    // w.post_message(UiButton::ShowRoadUi);
                 }
             }
         }
+
+
 
         scroll_manager.step();
 
@@ -473,11 +491,11 @@ pub async fn worker_entry() {
 
                 selected_cell = Some(get_cat_move_attack_matrix(
                     &cat,
-                    cats.filter(),
+                    this_team.filter(),
                     roads.foo(),
                     &gg,
                 ));
-                cats.elem.push(cat);
+                this_team.elem.push(cat);
             };
         }
 
@@ -546,7 +564,7 @@ pub async fn worker_entry() {
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
-            cat.draw(&mut v);
+            this_team_model.draw(&mut v);
         }
 
         cat_draw.draw(&gg, &mut draw_sys, &matrix);
