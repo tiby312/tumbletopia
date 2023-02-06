@@ -281,12 +281,12 @@ pub async fn worker_entry() {
     use cgmath::SquareMatrix;
     let mut last_matrix = cgmath::Matrix4::identity();
 
-    let mut turn_counter=false;
+    let mut turn_counter = false;
 
     'outer: loop {
         let mut on_select = false;
         let res = frame_timer.next().await;
-        let mut end_turn=false;
+        let mut end_turn = false;
         for e in res {
             match e {
                 MEvent::Resize {
@@ -332,7 +332,7 @@ pub async fn worker_entry() {
                     scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
                 }
                 MEvent::EndTurn => {
-                    end_turn=true;
+                    end_turn = true;
                 }
                 MEvent::CanvasMouseDown { x, y } => {
                     //log!(format!("{:?}",(x,y)));
@@ -353,17 +353,15 @@ pub async fn worker_entry() {
             }
         }
 
-
-        let (this_team_model,this_team)=if turn_counter{
-            (&dog,&mut dogs)
-        }else{
-            (&cat,&mut cats)
+        let (this_team_model, this_team, other_team) = if turn_counter {
+            (&dog, &mut dogs, &mut cats)
+        } else {
+            (&cat, &mut cats, &mut dogs)
         };
 
-        
-        if end_turn{
-            selected_cell=None;
-            turn_counter=!turn_counter;
+        if end_turn {
+            selected_cell = None;
+            turn_counter = !turn_counter;
             for a in this_team.elem.iter_mut() {
                 a.moved = false;
                 a.attacked = false;
@@ -398,9 +396,9 @@ pub async fn worker_entry() {
 
                         if !current_attack
                             && movement::contains_coord(attack.iter_coords(), target_cat_pos)
-                            && this_team.find(target_cat_pos).is_some()
+                            && other_team.find(target_cat_pos).is_some()
                         {
-                            let target_cat = this_team.find_mut(target_cat_pos).unwrap();
+                            let target_cat = other_team.find_mut(target_cat_pos).unwrap();
                             target_cat.health -= 1;
 
                             let current_cat = this_team.find_mut(ss.start()).unwrap();
@@ -424,7 +422,7 @@ pub async fn worker_entry() {
                     if cat.is_selectable() {
                         selected_cell = Some(get_cat_move_attack_matrix(
                             cat,
-                            this_team.filter(),
+                            this_team.filter().chain(other_team.filter()),
                             roads.foo(),
                             &gg,
                         ));
@@ -436,8 +434,6 @@ pub async fn worker_entry() {
                 }
             }
         }
-
-
 
         scroll_manager.step();
 
