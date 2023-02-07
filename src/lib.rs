@@ -286,7 +286,7 @@ pub async fn worker_entry() {
     'outer: loop {
         let mut on_select = false;
         let res = frame_timer.next().await;
-        let mut end_turn = false;
+        let mut reset = false;
         for e in res {
             match e {
                 MEvent::Resize {
@@ -332,7 +332,7 @@ pub async fn worker_entry() {
                     scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
                 }
                 MEvent::EndTurn => {
-                    end_turn = true;
+                    reset = true;
                 }
                 MEvent::CanvasMouseDown { x, y } => {
                     //log!(format!("{:?}",(x,y)));
@@ -359,13 +359,14 @@ pub async fn worker_entry() {
             (&cat, &mut cats, &mut dogs)
         };
 
-        if end_turn {
-            selected_cell = None;
-            turn_counter = !turn_counter;
+        let mut end_turn = false;
+
+        if reset {
             for a in this_team.elem.iter_mut() {
                 a.moved = false;
                 a.attacked = false;
             }
+            end_turn = true;
         }
 
         let proj = projection::projection(viewport).generate();
@@ -384,7 +385,8 @@ pub async fn worker_entry() {
         if animation.is_some() {
             on_select = false;
         }
-        if on_select {
+
+        if on_select && !end_turn {
             let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
 
             if let Some(ss) = &mut selected_cell {
@@ -403,6 +405,8 @@ pub async fn worker_entry() {
 
                             let current_cat = this_team.find_mut(ss.start()).unwrap();
                             current_cat.attacked = true;
+
+                            end_turn = true;
                         } else if movement::contains_coord(ss.iter_coords(), &cell) {
                             let mut c = this_team.remove(ss.start());
                             let (dd, aa) = ss.get_path_data(cell).unwrap();
@@ -410,6 +414,14 @@ pub async fn worker_entry() {
                             c.move_deficit = *aa;
                             c.moved = true;
                             animation = Some(animation::Animation::new(ss.start(), dd, &gg, c));
+                        } else {
+                            let c = this_team.find_mut(ss.start()).unwrap();
+
+                            if c.moved {
+                                c.attacked = true;
+                                end_turn = true;
+                            }
+                            //end turn?
                         }
                         selected_cell = None;
                     }
@@ -433,6 +445,11 @@ pub async fn worker_entry() {
                     // w.post_message(UiButton::ShowRoadUi);
                 }
             }
+        }
+
+        if end_turn {
+            selected_cell = None;
+            turn_counter = !turn_counter;
         }
 
         scroll_manager.step();
