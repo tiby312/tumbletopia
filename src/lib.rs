@@ -191,6 +191,109 @@ impl Warrior {
     }
 }
 
+pub struct Once<K> {
+    val: Option<K>,
+}
+impl<K> GameStepper for Once<K> {
+    type Result = K;
+    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Option<Self::Result> {
+        self.val.take()
+    }
+}
+
+pub struct Game;
+pub trait GameStepper {
+    type Result;
+    //Return if you are done with this stage.
+    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Option<Self::Result>;
+
+    fn and_then<K: GameStepper, B: FnMut(Self::Result, &mut Game) -> K>(
+        self,
+        other: B,
+    ) -> AndThen<Self, B, K>
+    where
+        Self: Sized,
+    {
+        AndThen::First(self, other)
+    }
+}
+
+pub struct Looper<A, F> {
+    a: Option<A>,
+    func: F,
+}
+impl<A: GameStepper, F: FnMut(&mut Game) -> A> Looper<A, F> {
+    pub fn new(func: F) -> Self {
+        Self { a: None, func }
+    }
+}
+impl<A: GameStepper, F: FnMut(&mut Game) -> A> GameStepper for Looper<A, F> {
+    type Result = A::Result;
+    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Option<Self::Result> {
+        if let Some(mut a) = self.a.take() {
+            if let Some(_) = a.step(game, mouse) {
+                self.a = Some((self.func)(game))
+            } else {
+                self.a = Some(a);
+            }
+        } else {
+            self.a = Some((self.func)(game))
+        }
+        None
+    }
+}
+
+pub enum AndThen<A, B, N> {
+    First(A, B),
+    Second(N),
+}
+impl<A: GameStepper, K: GameStepper, B: FnMut(A::Result, &mut Game) -> K> GameStepper
+    for AndThen<A, B, K>
+{
+    type Result = K::Result;
+    //Return if you are done with this stage.
+    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Option<Self::Result> {
+        match self {
+            AndThen::First(a, b) => {
+                if let Some(j) = a.step(game, mouse) {
+                    let nn = b(j, game);
+                    *self = AndThen::Second(nn);
+                }
+                None
+            }
+            AndThen::Second(n) => n.step(game, mouse),
+        }
+    }
+}
+
+pub struct WaitForInput;
+impl GameStepper for WaitForInput {
+    type Result = [f32; 2];
+    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Option<Self::Result> {
+        mouse
+    }
+}
+struct Empty;
+impl GameStepper for Empty {
+    type Result = ();
+    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Option<Self::Result> {
+        Some(())
+    }
+}
+
+// fn doop(){
+//     WaitForInput.and_then(|pos,game|{
+//         let cat=game.lookup(pos);
+//         game.show_moves(cat);
+//         animate(cat)
+//     }).and_then(|cat,game|{
+//         game.show_attacks();
+//         WaitForInput
+//     }).and_then(|a|{
+
+//     })
+// }
+
 enum CellSelection {
     MoveSelection(movement::PossibleMoves, movement::PossibleMoves),
     BuildSelection(GridCoord),
@@ -270,11 +373,6 @@ pub async fn worker_entry() {
         func: |a: MoveUnit| MoveUnit(a.0 / 2),
     };
 
-    // let mut roads=terrain::TerrainCollection{
-    //     pos:vec!(),
-    //     func:|a:MoveUnit|MoveUnit(a.0+10)
-    // };
-
     let mut selected_cell: Option<CellSelection> = None;
     let mut animation = None;
 
@@ -282,6 +380,19 @@ pub async fn worker_entry() {
     let mut last_matrix = cgmath::Matrix4::identity();
 
     let mut turn_counter = false;
+
+    //TODO use this!
+    let mut k = Looper::new(|_| {
+        WaitForInput
+            .and_then(|w, _| {
+                log!(format!("first touch:{:?}", w));
+                WaitForInput
+            })
+            .and_then(|w, _| {
+                log!(format!("second touch:{:?}", w));
+                Empty
+            })
+    });
 
     'outer: loop {
         let mut on_select = false;
@@ -385,6 +496,8 @@ pub async fn worker_entry() {
         if animation.is_some() {
             on_select = false;
         }
+
+        k.step(&mut Game, on_select.then_some(mouse_world));
 
         if on_select && !end_turn {
             let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
