@@ -44,6 +44,19 @@ impl<F: FnMut(&mut G) -> Stage<L>, L, G> GameStepper<G> for WaitForCustom<F> {
     }
 }
 
+pub fn empty() -> Empty {
+    Empty
+}
+
+#[derive(Copy, Clone)]
+pub struct Empty;
+impl<G> GameStepper<G> for Empty {
+    type Result = ();
+    fn step(&mut self, game: &mut G) -> Stage<Self::Result> {
+        Stage::NextStage(())
+    }
+}
+
 pub struct Game;
 pub trait GameStepper<G> {
     type Result;

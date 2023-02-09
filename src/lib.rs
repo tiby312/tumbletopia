@@ -279,8 +279,7 @@ pub async fn worker_entry() {
 
     let mut turn_counter = false;
 
-    let empty = gameplay::wait_custom(|_| gameplay::Stage::NextStage(()));
-    let ww = gameplay::wait_custom(|m| {
+    let wait_mouse_input = gameplay::wait_custom(|m| {
         if let Some(m) = m {
             gameplay::Stage::NextStage(*m)
         } else {
@@ -290,14 +289,15 @@ pub async fn worker_entry() {
 
     //TODO use this!
     let mut k = gameplay::looper(|_| {
-        ww.clone()
+        wait_mouse_input
+            .clone()
             .and_then(|w, _| {
                 log!(format!("first touch:{:?}", w));
-                ww
+                wait_mouse_input
             })
             .and_then(|w, _| {
                 log!(format!("second touch:{:?}", w));
-                empty
+                gameplay::empty()
             })
     });
 
