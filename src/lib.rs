@@ -269,8 +269,7 @@ pub async fn worker_entry() {
     let mut selected_cells: Option<CellSelection> = None;
     let mut animation = None;
 
-
-    //TODO store actual world pos? Less calculation each iteration. 
+    //TODO store actual world pos? Less calculation each iteration.
     //Additionally removes need to special case animation.
     pub struct Game {
         selected_cells: Option<CellSelection>,
@@ -320,20 +319,19 @@ pub async fn worker_entry() {
         })
     };
 
-    let animate=||{
-        let mut animator=0;
-        gameplay::wait_custom(Doopo,move |e|{
-            animator+=1;
-            if animator>30{
+    let animate = || {
+        let mut animator = 0;
+        gameplay::wait_custom(Doopo, move |e| {
+            animator += 1;
+            if animator > 30 {
                 gameplay::Stage::NextStage(())
-            }else{
+            } else {
                 gameplay::Stage::Stay
             }
         })
     };
 
-    //TODO use this!
-    let mut k = gameplay::looper(Doopo, |_| {
+    let player_turn = || {
         wait_mouse_input()
             .and_then(|w, g| {
                 log!(format!("first touch:{:?}", w));
@@ -343,14 +341,15 @@ pub async fn worker_entry() {
                 log!(format!("second touch:{:?}", w));
                 gameplay::empty()
             })
-            .and_then(|_,_|{
-                animate()
-            })
-            .and_then(|_,_|{
+            .and_then(|_, _| animate())
+            .and_then(|_, _| {
                 log!("Finished!");
                 gameplay::empty()
             })
-    });
+    };
+
+    //TODO use this!
+    let mut k = gameplay::looper(Doopo, |_| player_turn());
 
     'outer: loop {
         let mut on_select = false;
