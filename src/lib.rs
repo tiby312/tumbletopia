@@ -276,6 +276,11 @@ pub async fn worker_entry() {
         cats: UnitCollection<Warrior>,
     }
 
+    pub struct Doop {
+        state: Game,
+        select: Option<[f32; 2]>,
+    }
+
     let mut ggame = Game {
         dogs,
         cats,
@@ -294,8 +299,8 @@ pub async fn worker_entry() {
     let mut turn_counter = false;
 
     let wait_mouse_input = || {
-        gameplay::wait_custom(|m| {
-            if let Some(m) = m {
+        gameplay::wait_custom(|m: &mut Game, e: &Option<[f32; 2]>| {
+            if let Some(m) = e {
                 gameplay::Stage::NextStage(*m)
             } else {
                 gameplay::Stage::Stay
@@ -304,13 +309,13 @@ pub async fn worker_entry() {
     };
 
     //TODO use this!
-    let mut k = gameplay::looper(|_| {
+    let mut k = gameplay::looper(|_, _| {
         wait_mouse_input()
-            .and_then(|w, _| {
+            .and_then(|w, _, _| {
                 log!(format!("first touch:{:?}", w));
                 wait_mouse_input()
             })
-            .and_then(|w, _| {
+            .and_then(|w, _, _| {
                 log!(format!("second touch:{:?}", w));
                 gameplay::empty()
             })
@@ -386,6 +391,24 @@ pub async fn worker_entry() {
             }
         }
 
+        let proj = projection::projection(viewport).generate();
+        let view_proj = projection::view_matrix(
+            scroll_manager.camera(),
+            scroll_manager.zoom(),
+            scroll_manager.rot(),
+        );
+
+        let matrix = proj.chain(view_proj).generate();
+
+        last_matrix = matrix;
+
+        let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
+
+        {
+            let mm = on_select.then_some(mouse_world);
+            k.step(&mut ggame, &mm);
+        }
+
         let (this_team_model, this_team, other_team) = if turn_counter {
             (&dog, &mut ggame.dogs, &mut ggame.cats)
         } else {
@@ -402,24 +425,9 @@ pub async fn worker_entry() {
             end_turn = true;
         }
 
-        let proj = projection::projection(viewport).generate();
-        let view_proj = projection::view_matrix(
-            scroll_manager.camera(),
-            scroll_manager.zoom(),
-            scroll_manager.rot(),
-        );
-
-        let matrix = proj.chain(view_proj).generate();
-
-        last_matrix = matrix;
-
-        let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
-
         if ggame.animation.is_some() {
             on_select = false;
         }
-
-        k.step(&mut on_select.then_some(mouse_world));
 
         if on_select && !end_turn {
             let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
