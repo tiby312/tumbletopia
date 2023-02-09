@@ -29,6 +29,8 @@ pub enum Stage<T> {
     Stay,
 }
 
+
+#[derive(Copy,Clone)]
 pub struct WaitForCustom<F> {
     func: F,
 }
@@ -44,24 +46,7 @@ impl<F: FnMut(&mut Game, Option<[f32; 2]>) -> Stage<L>, L> GameStepper for WaitF
     }
 }
 
-pub struct WaitForInput;
-impl GameStepper for WaitForInput {
-    type Result = [f32; 2];
-    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Stage<Self::Result> {
-        if let Some(o) = mouse {
-            Stage::NextStage(o)
-        } else {
-            Stage::Stay
-        }
-    }
-}
-pub struct Empty;
-impl GameStepper for Empty {
-    type Result = ();
-    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Stage<Self::Result> {
-        Stage::NextStage(())
-    }
-}
+
 
 pub struct Game;
 pub trait GameStepper {
