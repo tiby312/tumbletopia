@@ -269,6 +269,9 @@ pub async fn worker_entry() {
     let mut selected_cells: Option<CellSelection> = None;
     let mut animation = None;
 
+
+    //TODO store actual world pos? Less calculation each iteration. 
+    //Additionally removes need to special case animation.
     pub struct Game {
         selected_cells: Option<CellSelection>,
         animation: Option<animation::Animation<Warrior>>,
@@ -317,15 +320,34 @@ pub async fn worker_entry() {
         })
     };
 
+    let animate=||{
+        let mut animator=0;
+        gameplay::wait_custom(Doopo,move |e|{
+            animator+=1;
+            if animator>30{
+                gameplay::Stage::NextStage(())
+            }else{
+                gameplay::Stage::Stay
+            }
+        })
+    };
+
     //TODO use this!
     let mut k = gameplay::looper(Doopo, |_| {
         wait_mouse_input()
-            .and_then(|w, g: &mut Stuff<'_>| {
+            .and_then(|w, g| {
                 log!(format!("first touch:{:?}", w));
                 wait_mouse_input()
             })
             .and_then(|w, _| {
                 log!(format!("second touch:{:?}", w));
+                gameplay::empty()
+            })
+            .and_then(|_,_|{
+                animate()
+            })
+            .and_then(|_,_|{
+                log!("Finished!");
                 gameplay::empty()
             })
     });
