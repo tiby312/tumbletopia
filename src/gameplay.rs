@@ -2,15 +2,15 @@ pub enum AndThen<A, B, N> {
     First(A, B),
     Second(N),
 }
-impl<A: GameStepper, K: GameStepper, B: FnMut(A::Result, &mut Game) -> K> GameStepper
+impl<G, A: GameStepper<G>, K: GameStepper<G>, B: FnMut(A::Result, &mut G) -> K> GameStepper<G>
     for AndThen<A, B, K>
 {
     type Result = K::Result;
     //Return if you are done with this stage.
-    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Stage<Self::Result> {
+    fn step(&mut self, game: &mut G) -> Stage<Self::Result> {
         match self {
             AndThen::First(a, b) => {
-                match a.step(game, mouse) {
+                match a.step(game) {
                     Stage::Stay => {}
                     Stage::NextStage(j) => {
                         let nn = b(j, game);
@@ -19,7 +19,7 @@ impl<A: GameStepper, K: GameStepper, B: FnMut(A::Result, &mut Game) -> K> GameSt
                 }
                 Stage::Stay
             }
-            AndThen::Second(n) => n.step(game, mouse),
+            AndThen::Second(n) => n.step(game),
         }
     }
 }
@@ -29,32 +29,28 @@ pub enum Stage<T> {
     Stay,
 }
 
-
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub struct WaitForCustom<F> {
     func: F,
 }
-impl<F: FnMut(&mut Game, Option<[f32; 2]>) -> Stage<L>, L> WaitForCustom<F> {
-    pub fn new(func: F) -> Self {
-        Self { func }
-    }
+pub fn wait_custom<G, F: FnMut(&mut G) -> Stage<L>, L>(func: F) -> WaitForCustom<F> {
+    WaitForCustom { func }
 }
-impl<F: FnMut(&mut Game, Option<[f32; 2]>) -> Stage<L>, L> GameStepper for WaitForCustom<F> {
+
+impl<F: FnMut(&mut G) -> Stage<L>, L, G> GameStepper<G> for WaitForCustom<F> {
     type Result = L;
-    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Stage<Self::Result> {
-        (self.func)(game, mouse)
+    fn step(&mut self, game: &mut G) -> Stage<Self::Result> {
+        (self.func)(game)
     }
 }
-
-
 
 pub struct Game;
-pub trait GameStepper {
+pub trait GameStepper<G> {
     type Result;
     //Return if you are done with this stage.
-    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Stage<Self::Result>;
+    fn step(&mut self, game: &mut G) -> Stage<Self::Result>;
 
-    fn and_then<K: GameStepper, B: FnMut(Self::Result, &mut Game) -> K>(
+    fn and_then<K: GameStepper<G>, B: FnMut(Self::Result, &mut G) -> K>(
         self,
         other: B,
     ) -> AndThen<Self, B, K>
@@ -69,16 +65,15 @@ pub struct Looper<A, F> {
     a: Option<A>,
     func: F,
 }
-impl<A: GameStepper, F: FnMut(&mut Game) -> A> Looper<A, F> {
-    pub fn new(func: F) -> Self {
-        Self { a: None, func }
-    }
+pub fn looper<G, A: GameStepper<G>, F: FnMut(&mut G) -> A>(func: F) -> Looper<A, F> {
+    Looper { a: None, func }
 }
-impl<A: GameStepper, F: FnMut(&mut Game) -> A> GameStepper for Looper<A, F> {
+
+impl<G, A: GameStepper<G>, F: FnMut(&mut G) -> A> GameStepper<G> for Looper<A, F> {
     type Result = A::Result;
-    fn step(&mut self, game: &mut Game, mouse: Option<[f32; 2]>) -> Stage<Self::Result> {
+    fn step(&mut self, game: &mut G) -> Stage<Self::Result> {
         if let Some(mut a) = self.a.take() {
-            match a.step(game, mouse) {
+            match a.step(game) {
                 Stage::Stay => {
                     self.a = Some(a);
                 }

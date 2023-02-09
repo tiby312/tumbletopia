@@ -279,25 +279,26 @@ pub async fn worker_entry() {
 
     let mut turn_counter = false;
 
-    let empty=gameplay::WaitForCustom::new(|_,_|gameplay::Stage::NextStage(()));
-    let ww=gameplay::WaitForCustom::new(|_, m| {
+    let empty = gameplay::wait_custom(|_| gameplay::Stage::NextStage(()));
+    let ww = gameplay::wait_custom(|m| {
         if let Some(m) = m {
-            gameplay::Stage::NextStage(m)
+            gameplay::Stage::NextStage(*m)
         } else {
             gameplay::Stage::Stay
         }
     });
 
     //TODO use this!
-    let mut k = gameplay::Looper::new(|_| {
-        ww.clone().and_then(|w, _| {
-            log!(format!("first touch:{:?}", w));
-            ww
-        })
-        .and_then(|w, _| {
-            log!(format!("second touch:{:?}", w));
-            empty
-        })
+    let mut k = gameplay::looper(|_| {
+        ww.clone()
+            .and_then(|w, _| {
+                log!(format!("first touch:{:?}", w));
+                ww
+            })
+            .and_then(|w, _| {
+                log!(format!("second touch:{:?}", w));
+                empty
+            })
     });
 
     'outer: loop {
@@ -403,7 +404,7 @@ pub async fn worker_entry() {
             on_select = false;
         }
 
-        k.step(&mut gameplay::Game, on_select.then_some(mouse_world));
+        k.step(&mut on_select.then_some(mouse_world));
 
         if on_select && !end_turn {
             let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
