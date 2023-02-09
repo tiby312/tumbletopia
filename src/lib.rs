@@ -10,6 +10,7 @@ use shogo::utils;
 use wasm_bindgen::prelude::*;
 pub mod animation;
 pub mod dom;
+pub mod gameplay;
 pub mod grids;
 pub mod model_parse;
 pub mod movement;
@@ -17,7 +18,6 @@ pub mod projection;
 pub mod scroll;
 pub mod terrain;
 pub mod util;
-pub mod gameplay;
 use dom::MEvent;
 use projection::*;
 
@@ -192,8 +192,6 @@ impl Warrior {
     }
 }
 
-
-
 enum CellSelection {
     MoveSelection(movement::PossibleMoves, movement::PossibleMoves),
     BuildSelection(GridCoord),
@@ -283,15 +281,21 @@ pub async fn worker_entry() {
 
     //TODO use this!
     let mut k = gameplay::Looper::new(|_| {
-        gameplay::WaitForInput
-            .and_then(|w, _| {
-                log!(format!("first touch:{:?}", w));
-                gameplay::WaitForInput
-            })
-            .and_then(|w, _| {
-                log!(format!("second touch:{:?}", w));
-                gameplay::Empty
-            })
+        gameplay::WaitForCustom::new(|_, m| {
+            if let Some(m) = m {
+                gameplay::Stage::NextStage(m)
+            } else {
+                gameplay::Stage::Stay
+            }
+        })
+        .and_then(|w, _| {
+            log!(format!("first touch:{:?}", w));
+            gameplay::WaitForInput
+        })
+        .and_then(|w, _| {
+            log!(format!("second touch:{:?}", w));
+            gameplay::Empty
+        })
     });
 
     'outer: loop {
