@@ -52,12 +52,11 @@ pub fn empty() -> Empty {
 pub struct Empty;
 impl<G, E> GameStepper<G, E> for Empty {
     type Result = ();
-    fn step(&mut self, game: &mut G, events: &E) -> Stage<Self::Result> {
+    fn step(&mut self, _: &mut G, _: &E) -> Stage<Self::Result> {
         Stage::NextStage(())
     }
 }
 
-pub struct Game;
 pub trait GameStepper<G, E> {
     type Result;
     //Return if you are done with this stage.
@@ -90,7 +89,7 @@ impl<G, E, A: GameStepper<G, E>, F: FnMut(&mut G, &E) -> A> GameStepper<G, E> fo
                 Stage::Stay => {
                     self.a = Some(a);
                 }
-                Stage::NextStage(o) => self.a = Some((self.func)(game, events)),
+                Stage::NextStage(_) => self.a = Some((self.func)(game, events)),
             }
         } else {
             self.a = Some((self.func)(game, events))

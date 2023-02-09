@@ -311,7 +311,8 @@ pub async fn worker_entry() {
     //TODO use this!
     let mut k = gameplay::looper(|_, _| {
         wait_mouse_input()
-            .and_then(|w, _, _| {
+            .and_then(|w, g, _| {
+                
                 log!(format!("first touch:{:?}", w));
                 wait_mouse_input()
             })
@@ -430,64 +431,7 @@ pub async fn worker_entry() {
         }
 
         if on_select && !end_turn {
-            let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
-
-            if let Some(ss) = &mut ggame.selected_cells {
-                match ss {
-                    CellSelection::MoveSelection(ss, attack) => {
-                        let target_cat_pos = &cell;
-
-                        let current_attack = this_team.find_mut(ss.start()).unwrap().attacked;
-
-                        if !current_attack
-                            && movement::contains_coord(attack.iter_coords(), target_cat_pos)
-                            && other_team.find(target_cat_pos).is_some()
-                        {
-                            let target_cat = other_team.find_mut(target_cat_pos).unwrap();
-                            target_cat.health -= 1;
-
-                            let current_cat = this_team.find_mut(ss.start()).unwrap();
-                            current_cat.attacked = true;
-
-                            end_turn = true;
-                        } else if movement::contains_coord(ss.iter_coords(), &cell) {
-                            let mut c = this_team.remove(ss.start());
-                            let (dd, aa) = ss.get_path_data(cell).unwrap();
-                            c.position = cell;
-                            c.move_deficit = *aa;
-                            c.moved = true;
-                            animation = Some(animation::Animation::new(ss.start(), dd, &gg, c));
-                        } else {
-                            let c = this_team.find_mut(ss.start()).unwrap();
-
-                            if c.moved {
-                                c.attacked = true;
-                                end_turn = true;
-                            }
-                            //end turn?
-                        }
-                        ggame.selected_cells = None;
-                    }
-                    CellSelection::BuildSelection(_) => {
-                        //do nothing? we are waiting on user to push a button.
-                    }
-                }
-            } else {
-                if let Some(cat) = this_team.find(&cell) {
-                    if cat.is_selectable() {
-                        ggame.selected_cells = Some(get_cat_move_attack_matrix(
-                            cat,
-                            this_team.filter().chain(other_team.filter()),
-                            roads.foo(),
-                            &gg,
-                        ));
-                    }
-                } else {
-                    // selected_cell = Some(CellSelection::BuildSelection(cell));
-                    //activate the build options for that terrain
-                    // w.post_message(UiButton::ShowRoadUi);
-                }
-            }
+            
         }
 
         if end_turn {
