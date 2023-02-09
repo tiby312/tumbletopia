@@ -299,7 +299,7 @@ pub async fn worker_entry() {
     let mut turn_counter = false;
 
     let wait_mouse_input = || {
-        gameplay::wait_custom(|m: &mut Game, e: &Option<[f32; 2]>| {
+        gameplay::wait_custom(|_, e| {
             if let Some(m) = e {
                 gameplay::Stage::NextStage(*m)
             } else {
