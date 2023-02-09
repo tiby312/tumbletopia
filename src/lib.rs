@@ -298,10 +298,19 @@ pub async fn worker_entry() {
 
     let mut turn_counter = false;
 
+    struct Doopo;
+    impl gameplay::Zoo for Doopo {
+        type G<'a> = Stuff<'a>;
+    }
+    struct Stuff<'a> {
+        a: &'a mut Game,
+        mouse: Option<[f32; 2]>,
+    }
+
     let wait_mouse_input = || {
-        gameplay::wait_custom(|_, e| {
-            if let Some(m) = e {
-                gameplay::Stage::NextStage(*m)
+        gameplay::wait_custom(Doopo, |e: &mut Stuff| {
+            if let Some(m) = e.mouse {
+                gameplay::Stage::NextStage(m)
             } else {
                 gameplay::Stage::Stay
             }
@@ -309,14 +318,13 @@ pub async fn worker_entry() {
     };
 
     //TODO use this!
-    let mut k = gameplay::looper(|_, _| {
+    let mut k = gameplay::looper(Doopo, |_| {
         wait_mouse_input()
-            .and_then(|w, g, _| {
-                
+            .and_then(|w, g: &mut Stuff<'_>| {
                 log!(format!("first touch:{:?}", w));
                 wait_mouse_input()
             })
-            .and_then(|w, _, _| {
+            .and_then(|w, _| {
                 log!(format!("second touch:{:?}", w));
                 gameplay::empty()
             })
@@ -406,8 +414,12 @@ pub async fn worker_entry() {
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
         {
-            let mm = on_select.then_some(mouse_world);
-            k.step(&mut ggame, &mm);
+            let mouse = on_select.then_some(mouse_world);
+            let mut jj = Stuff {
+                a: &mut ggame,
+                mouse,
+            };
+            k.step(&mut jj);
         }
 
         let (this_team_model, this_team, other_team) = if turn_counter {
@@ -430,9 +442,7 @@ pub async fn worker_entry() {
             on_select = false;
         }
 
-        if on_select && !end_turn {
-            
-        }
+        if on_select && !end_turn {}
 
         if end_turn {
             ggame.selected_cells = None;
