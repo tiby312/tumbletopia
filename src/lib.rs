@@ -308,7 +308,7 @@ pub async fn worker_entry() {
     }
 
     let wait_mouse_input = || {
-        gameplay::wait_custom(Doopo, |e: &mut Stuff| {
+        gameplay::wait_custom(Doopo, |e| {
             if let Some(m) = e.mouse {
                 gameplay::Stage::NextStage(m)
             } else {
