@@ -266,13 +266,27 @@ pub async fn worker_entry() {
         Warrior::new(GridCoord([3, 1])),
     ]);
 
+    let mut selected_cells: Option<CellSelection> = None;
+    let mut animation = None;
+
+    pub struct Game {
+        selected_cells: Option<CellSelection>,
+        animation: Option<animation::Animation<Warrior>>,
+        dogs: UnitCollection<Warrior>,
+        cats: UnitCollection<Warrior>,
+    }
+
+    let mut ggame = Game {
+        dogs,
+        cats,
+        selected_cells,
+        animation,
+    };
+
     let mut roads = terrain::TerrainCollection {
         pos: vec![],
         func: |a: MoveUnit| MoveUnit(a.0 / 2),
     };
-
-    let mut selected_cell: Option<CellSelection> = None;
-    let mut animation = None;
 
     use cgmath::SquareMatrix;
     let mut last_matrix = cgmath::Matrix4::identity();
@@ -358,11 +372,11 @@ pub async fn worker_entry() {
 
                     scroll_manager.on_mouse_down([*x, *y]);
                 }
-                MEvent::ButtonClick => match selected_cell {
+                MEvent::ButtonClick => match ggame.selected_cells {
                     Some(CellSelection::BuildSelection(g)) => {
                         log!("adding to roads!!!!!");
                         roads.pos.push(g);
-                        selected_cell = None;
+                        ggame.selected_cells = None;
                     }
                     _ => {
                         panic!("Received button push when we did not ask for it!")
@@ -373,9 +387,9 @@ pub async fn worker_entry() {
         }
 
         let (this_team_model, this_team, other_team) = if turn_counter {
-            (&dog, &mut dogs, &mut cats)
+            (&dog, &mut ggame.dogs, &mut ggame.cats)
         } else {
-            (&cat, &mut cats, &mut dogs)
+            (&cat, &mut ggame.cats, &mut ggame.dogs)
         };
 
         let mut end_turn = false;
@@ -401,7 +415,7 @@ pub async fn worker_entry() {
 
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
-        if animation.is_some() {
+        if ggame.animation.is_some() {
             on_select = false;
         }
 
@@ -410,7 +424,7 @@ pub async fn worker_entry() {
         if on_select && !end_turn {
             let cell: GridCoord = GridCoord(gg.to_grid((mouse_world).into()).into());
 
-            if let Some(ss) = &mut selected_cell {
+            if let Some(ss) = &mut ggame.selected_cells {
                 match ss {
                     CellSelection::MoveSelection(ss, attack) => {
                         let target_cat_pos = &cell;
@@ -444,7 +458,7 @@ pub async fn worker_entry() {
                             }
                             //end turn?
                         }
-                        selected_cell = None;
+                        ggame.selected_cells = None;
                     }
                     CellSelection::BuildSelection(_) => {
                         //do nothing? we are waiting on user to push a button.
@@ -453,7 +467,7 @@ pub async fn worker_entry() {
             } else {
                 if let Some(cat) = this_team.find(&cell) {
                     if cat.is_selectable() {
-                        selected_cell = Some(get_cat_move_attack_matrix(
+                        ggame.selected_cells = Some(get_cat_move_attack_matrix(
                             cat,
                             this_team.filter().chain(other_team.filter()),
                             roads.foo(),
@@ -469,7 +483,7 @@ pub async fn worker_entry() {
         }
 
         if end_turn {
-            selected_cell = None;
+            ggame.selected_cells = None;
             turn_counter = !turn_counter;
         }
 
@@ -516,14 +530,14 @@ pub async fn worker_entry() {
             }
         }
 
-        if let Some(mut a) = animation.take() {
+        if let Some(mut a) = ggame.animation.take() {
             if let Some(pos) = a.animate_step() {
                 animation = Some(a);
             } else {
                 let cat = a.into_data();
                 animation = None;
 
-                selected_cell = Some(get_cat_move_attack_matrix(
+                ggame.selected_cells = Some(get_cat_move_attack_matrix(
                     &cat,
                     this_team.filter(),
                     roads.foo(),
@@ -533,11 +547,11 @@ pub async fn worker_entry() {
             };
         }
 
-        let cat_draw = WarriorDraw::new(&cats, &cat, &drop_shadow);
-        let dog_draw = WarriorDraw::new(&dogs, &dog, &drop_shadow);
+        let cat_draw = WarriorDraw::new(&ggame.cats, &cat, &drop_shadow);
+        let dog_draw = WarriorDraw::new(&ggame.dogs, &dog, &drop_shadow);
 
         disable_depth(&ctx, || {
-            if let Some(a) = &selected_cell {
+            if let Some(a) = &ggame.selected_cells {
                 match a {
                     CellSelection::MoveSelection(a, attack) => {
                         for GridCoord(a) in a.iter_coords() {
@@ -581,7 +595,7 @@ pub async fn worker_entry() {
             cat_draw.draw_shadow(&gg, &mut draw_sys, &matrix);
             dog_draw.draw_shadow(&gg, &mut draw_sys, &matrix);
 
-            if let Some(a) = &animation {
+            if let Some(a) = &ggame.animation {
                 let pos = a.calc_pos();
                 let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -592,7 +606,7 @@ pub async fn worker_entry() {
             }
         });
 
-        if let Some(a) = &animation {
+        if let Some(a) = &ggame.animation {
             let pos = a.calc_pos();
             let t = matrix::translation(pos[0], pos[1], 20.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
