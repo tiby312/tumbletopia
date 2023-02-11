@@ -463,6 +463,7 @@ impl ScrollController {
     }
 }
 
+//TODO don't do this every step, just when user clicks!!!
 pub fn mouse_to_world(mouse: [f32; 2], view_projection: &Matrix4<f32>, dim: [f32; 2]) -> [f32; 2] {
     //generate some mouse points
     let clip_x = mouse[0] / dim[0] * 2. - 1.;

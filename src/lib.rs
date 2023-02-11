@@ -175,13 +175,12 @@ pub struct Warrior {
     position: GridCoord,
     move_deficit: MoveUnit,
     moved: bool,
-    attacked: bool,
     health: i8,
 }
 
 impl Warrior {
     fn is_selectable(&self) -> bool {
-        !self.moved || !self.attacked
+        !self.moved
     }
 
     fn new(position: GridCoord) -> Self {
@@ -189,7 +188,6 @@ impl Warrior {
             position,
             move_deficit: MoveUnit(0),
             moved: false,
-            attacked: false,
             health: 10,
         }
     }
@@ -223,6 +221,7 @@ pub async fn worker_entry() {
 
     ctx.setup_alpha();
 
+    //TODO delete
     let gg = grids::GridMatrix::new();
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
@@ -276,21 +275,37 @@ pub async fn worker_entry() {
     //TODO store actual world pos? Less calculation each iteration.
     //Additionally removes need to special case animation.
     pub struct Game {
+        grid_matrix: grids::GridMatrix,
         selected_cells: Option<CellSelection>,
         animation: Option<animation::Animation<Warrior>>,
         dogs: UnitCollection<Warrior>,
         cats: UnitCollection<Warrior>,
     }
 
+    fn team_view(
+        a: [&mut UnitCollection<Warrior>; 2],
+        ind: usize,
+    ) -> [&mut UnitCollection<Warrior>; 2] {
+        let [a, b] = a;
+        match ind {
+            0 => [a, b],
+            1 => [b, a],
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+
     // pub struct Doop {
     //     state: Game,
     //     select: Option<[f32; 2]>,
     // }
-    let mut ga=Game {
+    let mut ga = Game {
         dogs,
         cats,
         selected_cells,
         animation,
+        grid_matrix: grids::GridMatrix::new(),
     };
 
     let (mut ggame, ggame2) = futures::lock::BiLock::new(&mut ga);
@@ -303,86 +318,140 @@ pub async fn worker_entry() {
     use cgmath::SquareMatrix;
     let mut last_matrix = cgmath::Matrix4::identity();
 
-    let mut turn_counter = false;
-
-    // struct Doopo;
-    // impl gameplay::Zoo for Doopo {
-    //     type G<'a> = Stuff<'a>;
-    // }
-    // struct Stuff<'a> {
-    //     a: &'a mut Game,
-    //     mouse: Option<[f32; 2]>,
-    // }
-
-    // let wait_mouse_input = || {
-    //     //set cell
-
-    //     gameplay::wait_custom(Doopo, |e| {
-    //         //e.draw(c);
-    //         if let Some(m) = e.mouse {
-    //             gameplay::Stage::NextStage(m)
-    //         } else {
-    //             gameplay::Stage::Stay
-    //         }
-    //     })
-    // };
-
-    // let animate = || {
-    //     let mut animator = 0;
-    //     gameplay::wait_custom(Doopo, move |e| {
-    //         animator += 1;
-    //         if animator > 30 {
-    //             gameplay::Stage::NextStage(())
-    //         } else {
-    //             gameplay::Stage::Stay
-    //         }
-    //     })
-    // };
-
-    // let player_turn = |a| {
-    //     log!(format!("starting player:{:?}", a));
-    //     //TODO make closure just take one argument.
-    //     //User has to pass game state reference across themselves?
-    //     wait_mouse_input()
-    //         .and_then(|w, g| {
-    //             log!(format!("first touch:{:?}", w));
-    //             wait_mouse_input()
-    //         })
-    //         .and_then(|w, _| {
-    //             log!(format!("second touch:{:?}", w));
-    //             gameplay::next()
-    //         })
-    //         .and_then(|_, _| animate())
-    //         .and_then(|_, _| {
-    //             log!("Finished!");
-    //             gameplay::next()
-    //         })
-    // };
-
-    // //TODO use this!
-    // let mut cc = 0;
-    // let mut k = gameplay::looper(Doopo, |_| {
-    //     cc += 1;
-    //     if cc > 2 {
-    //         None
-    //     } else {
-    //         Some(player_turn(0).and_then(|w, g| player_turn(1)))
-    //     }
-    // })
-    // .and_then(|_, _| {
-    //     log!("completely done!");
-    //     gameplay::next()
-    // });
+    //let mut turn_counter = false;
 
     let (mut tx, mut rx) = futures::channel::mpsc::channel(1);
+    let (mut animation_tx, mut animation_rx) = futures::channel::mpsc::channel(1);
 
     let testy = async {
         for i in 0..5 {
-            let mouse = rx.next().await;
+            for j in 0..2 {
+                //Wait for user to click a unit and present move options to user
+                loop {
+                    let mouse_world: [f32; 2] = rx.next().await.unwrap();
+                    let mut gg = &mut *ggame2.lock().await;
+                    let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
 
-            let gg = &mut *ggame2.lock().await;
+                    let cell: GridCoord =
+                        GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
 
-            log!(format!("got mouse pos:{:?}", &gg.dogs));
+                    let Some(unit)=this_team.find(&cell) else {
+                        continue;
+                    };
+
+                    if !unit.is_selectable() {
+                        continue;
+                    }
+
+                    //At this point we have found the friendly unit the user clicked on.
+                    gg.selected_cells = Some(get_cat_move_attack_matrix(
+                        unit,
+                        this_team.filter().chain(that_team.filter()),
+                        roads.foo(),
+                        &gg.grid_matrix,
+                    ));
+
+                    break;
+                }
+
+                //Wait for user to click on a move option and handle that.
+                loop {
+                    let mouse_world: [f32; 2] = rx.next().await.unwrap();
+                    let mut gg1 = ggame2.lock().await;
+                    let gg = &mut *gg1;
+                    let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
+
+                    let cell: GridCoord =
+                        GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
+
+                    let s = gg.selected_cells.take().unwrap();
+
+                    match s {
+                        CellSelection::MoveSelection(ss, attack) => {
+                            let target_cat_pos = &cell;
+
+                            if movement::contains_coord(ss.iter_coords(), &cell) {
+                                let mut c = this_team.remove(ss.start());
+                                let (dd, aa) = ss.get_path_data(cell).unwrap();
+                                c.position = cell;
+                                c.move_deficit = *aa;
+                                //c.moved = true;
+                                gg.animation = Some(animation::Animation::new(
+                                    ss.start(),
+                                    dd,
+                                    &gg.grid_matrix,
+                                    c,
+                                ));
+                                break;
+                            }
+                        }
+                        _ => {
+                            todo!()
+                        }
+                    }
+                }
+
+                {
+                    //Wait for the animation to finish and then show attack area
+                    animation_rx.next().await;
+                    let mut gg1 = ggame2.lock().await;
+                    let gg = &mut *gg1;
+                    let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
+                    let unit = gg.animation.take().unwrap().into_data();
+
+                    this_team.elem.push(unit);
+                    let unit = this_team.elem.last().unwrap();
+
+                    gg.selected_cells = Some(get_cat_move_attack_matrix(
+                        unit,
+                        this_team.filter(),
+                        roads.foo(),
+                        &gg.grid_matrix,
+                    ));
+                }
+
+                //Wait for user to select a valid attack cell, or no cell
+                loop {
+                    let mouse_world: [f32; 2] = rx.next().await.unwrap();
+                    let mut gg1 = ggame2.lock().await;
+                    let gg = &mut *gg1;
+                    let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
+
+                    let cell: GridCoord =
+                        GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
+
+                    let s = gg.selected_cells.take().unwrap();
+
+                    match s {
+                        CellSelection::MoveSelection(ss, attack) => {
+                            let target_cat_pos = &cell;
+
+                            if movement::contains_coord(attack.iter_coords(), target_cat_pos)
+                                && that_team.find(target_cat_pos).is_some()
+                            {
+                                //attacking!
+                                let target_cat = that_team.find_mut(target_cat_pos).unwrap();
+                                target_cat.health -= 1;
+
+                                let current_cat = this_team.find_mut(ss.start()).unwrap();
+                                current_cat.moved = true;
+
+                                //Finish user turn
+                                break;
+                            } else {
+                                let current_cat = this_team.find_mut(ss.start()).unwrap();
+                                current_cat.moved = true;
+                                break;
+                            }
+                        }
+                        _ => {
+                            todo!()
+                        }
+                    }
+                }
+            }
+
+            //log!(format!("got mouse pos:{:?}", &gg.dogs));
         }
         log!("DOOOONE");
     }
@@ -456,7 +525,7 @@ pub async fn worker_entry() {
                 MEvent::ButtonClick => match ggame.selected_cells {
                     Some(CellSelection::BuildSelection(g)) => {
                         log!("adding to roads!!!!!");
-                        roads.pos.push(g);
+                        //roads.pos.push(g);
                         ggame.selected_cells = None;
                     }
                     _ => {
@@ -492,21 +561,21 @@ pub async fn worker_entry() {
         //     k.step(&mut jj);
         // }
 
-        let (this_team_model, this_team, other_team) = if turn_counter {
-            (&dog, &mut ggame.dogs, &mut ggame.cats)
-        } else {
-            (&cat, &mut ggame.cats, &mut ggame.dogs)
-        };
+        // let (this_team_model, this_team, other_team) = if turn_counter {
+        //     (&dog, &mut ggame.dogs, &mut ggame.cats)
+        // } else {
+        //     (&cat, &mut ggame.cats, &mut ggame.dogs)
+        // };
 
         let mut end_turn = false;
 
-        if reset {
-            for a in this_team.elem.iter_mut() {
-                a.moved = false;
-                a.attacked = false;
-            }
-            end_turn = true;
-        }
+        // if reset {
+        //     for a in this_team.elem.iter_mut() {
+        //         a.moved = false;
+        //         a.attacked = false;
+        //     }
+        //     end_turn = true;
+        // }
 
         if ggame.animation.is_some() {
             on_select = false;
@@ -514,10 +583,10 @@ pub async fn worker_entry() {
 
         if on_select && !end_turn {}
 
-        if end_turn {
-            ggame.selected_cells = None;
-            turn_counter = !turn_counter;
-        }
+        // if end_turn {
+        //     ggame.selected_cells = None;
+        //     turn_counter = !turn_counter;
+        // }
 
         scroll_manager.step();
 
@@ -562,20 +631,22 @@ pub async fn worker_entry() {
             }
         }
 
-        if let Some(mut a) = ggame.animation.take() {
-            if let Some(pos) = a.animate_step() {
-                animation = Some(a);
+        if let Some(a) = ggame.animation.as_mut() {
+            if let Some(_) = a.animate_step() {
+                //animation = Some(a);
             } else {
-                let cat = a.into_data();
-                animation = None;
+                animation_tx.send(()).await;
 
-                ggame.selected_cells = Some(get_cat_move_attack_matrix(
-                    &cat,
-                    this_team.filter(),
-                    roads.foo(),
-                    &gg,
-                ));
-                this_team.elem.push(cat);
+                // let cat = a.into_data();
+                // animation = None;
+
+                // ggame.selected_cells = Some(get_cat_move_attack_matrix(
+                //     &cat,
+                //     this_team.filter(),
+                //     roads.foo(),
+                //     &gg,
+                // ));
+                // this_team.elem.push(cat);
             };
         }
 
@@ -644,7 +715,7 @@ pub async fn worker_entry() {
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
-            this_team_model.draw(&mut v);
+            //this_team_model.draw(&mut v);
         }
 
         cat_draw.draw(&gg, &mut draw_sys, &matrix);
