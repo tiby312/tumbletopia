@@ -112,7 +112,7 @@ impl Path {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
     fn advance(self, m: Moves) -> GridCoord {
@@ -125,7 +125,7 @@ impl GridCoord {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct MoveUnit(pub i8);
 impl MoveUnit {
     fn add(self, a: MoveUnit) -> Self {
@@ -160,6 +160,7 @@ pub fn contains_coord<'a, I: Iterator<Item = &'a GridCoord>>(mut it: I, b: &Grid
 }
 
 //Represents all the legal moves for a specific piece.
+#[derive(Debug)]
 pub struct PossibleMoves {
     //Has the end coord,path from current, and the remainder cost to get there.
     //cells that are the furthest away will have a move unit of zero.

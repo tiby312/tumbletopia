@@ -1,7 +1,7 @@
 use axgeom::vec2same;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use duckduckgeo::grid::Grid2D;
-use futures::{FutureExt, StreamExt, SinkExt};
+use futures::{FutureExt, SinkExt, StreamExt};
 use gloo::console::log;
 use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
@@ -105,6 +105,7 @@ impl<'a> WarriorDraw<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct UnitCollection<T: HasPos> {
     elem: Vec<T>,
 }
@@ -169,6 +170,7 @@ impl HasPos for Warrior {
 
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
+#[derive(Debug)]
 pub struct Warrior {
     position: GridCoord,
     move_deficit: MoveUnit,
@@ -193,6 +195,7 @@ impl Warrior {
     }
 }
 
+#[derive(Debug)]
 enum CellSelection {
     MoveSelection(movement::PossibleMoves, movement::PossibleMoves),
     BuildSelection(GridCoord),
@@ -279,17 +282,17 @@ pub async fn worker_entry() {
         cats: UnitCollection<Warrior>,
     }
 
-    pub struct Doop {
-        state: Game,
-        select: Option<[f32; 2]>,
-    }
+    // pub struct Doop {
+    //     state: Game,
+    //     select: Option<[f32; 2]>,
+    // }
 
-    let mut ggame = Game {
+    let (mut ggame, ggame2) = futures::lock::BiLock::new(Game {
         dogs,
         cats,
         selected_cells,
         animation,
-    };
+    });
 
     let mut roads = terrain::TerrainCollection {
         pos: vec![],
@@ -301,101 +304,99 @@ pub async fn worker_entry() {
 
     let mut turn_counter = false;
 
-    struct Doopo;
-    impl gameplay::Zoo for Doopo {
-        type G<'a> = Stuff<'a>;
-    }
-    struct Stuff<'a> {
-        a: &'a mut Game,
-        mouse: Option<[f32; 2]>,
-    }
+    // struct Doopo;
+    // impl gameplay::Zoo for Doopo {
+    //     type G<'a> = Stuff<'a>;
+    // }
+    // struct Stuff<'a> {
+    //     a: &'a mut Game,
+    //     mouse: Option<[f32; 2]>,
+    // }
 
-    let wait_mouse_input = || {
-        //set cell
+    // let wait_mouse_input = || {
+    //     //set cell
 
-        gameplay::wait_custom(Doopo, |e| {
-            //e.draw(c);
-            if let Some(m) = e.mouse {
-                gameplay::Stage::NextStage(m)
-            } else {
-                gameplay::Stage::Stay
-            }
-        })
-    };
+    //     gameplay::wait_custom(Doopo, |e| {
+    //         //e.draw(c);
+    //         if let Some(m) = e.mouse {
+    //             gameplay::Stage::NextStage(m)
+    //         } else {
+    //             gameplay::Stage::Stay
+    //         }
+    //     })
+    // };
 
-    let animate = || {
-        let mut animator = 0;
-        gameplay::wait_custom(Doopo, move |e| {
-            animator += 1;
-            if animator > 30 {
-                gameplay::Stage::NextStage(())
-            } else {
-                gameplay::Stage::Stay
-            }
-        })
-    };
+    // let animate = || {
+    //     let mut animator = 0;
+    //     gameplay::wait_custom(Doopo, move |e| {
+    //         animator += 1;
+    //         if animator > 30 {
+    //             gameplay::Stage::NextStage(())
+    //         } else {
+    //             gameplay::Stage::Stay
+    //         }
+    //     })
+    // };
 
-    let player_turn = |a| {
-        log!(format!("starting player:{:?}", a));
-        //TODO make closure just take one argument.
-        //User has to pass game state reference across themselves?
-        wait_mouse_input()
-            .and_then(|w, g| {
-                log!(format!("first touch:{:?}", w));
-                wait_mouse_input()
-            })
-            .and_then(|w, _| {
-                log!(format!("second touch:{:?}", w));
-                gameplay::next()
-            })
-            .and_then(|_, _| animate())
-            .and_then(|_, _| {
-                log!("Finished!");
-                gameplay::next()
-            })
-    };
+    // let player_turn = |a| {
+    //     log!(format!("starting player:{:?}", a));
+    //     //TODO make closure just take one argument.
+    //     //User has to pass game state reference across themselves?
+    //     wait_mouse_input()
+    //         .and_then(|w, g| {
+    //             log!(format!("first touch:{:?}", w));
+    //             wait_mouse_input()
+    //         })
+    //         .and_then(|w, _| {
+    //             log!(format!("second touch:{:?}", w));
+    //             gameplay::next()
+    //         })
+    //         .and_then(|_, _| animate())
+    //         .and_then(|_, _| {
+    //             log!("Finished!");
+    //             gameplay::next()
+    //         })
+    // };
 
-
-
-
-
-    //TODO use this!
-    let mut cc = 0;
-    let mut k = gameplay::looper(Doopo, |_| {
-        cc += 1;
-        if cc > 2 {
-            None
-        } else {
-            Some(player_turn(0).and_then(|w, g| player_turn(1)))
-        }
-    })
-    .and_then(|_, _| {
-        log!("completely done!");
-        gameplay::next()
-    });
-
+    // //TODO use this!
+    // let mut cc = 0;
+    // let mut k = gameplay::looper(Doopo, |_| {
+    //     cc += 1;
+    //     if cc > 2 {
+    //         None
+    //     } else {
+    //         Some(player_turn(0).and_then(|w, g| player_turn(1)))
+    //     }
+    // })
+    // .and_then(|_, _| {
+    //     log!("completely done!");
+    //     gameplay::next()
+    // });
 
     let (mut tx, mut rx) = futures::channel::mpsc::channel(1);
 
+    let testy = async {
+        for i in 0..5 {
+            let mouse = rx.next().await;
 
-    let testy=async{
-        for i in 0..5{
-            let mouse=rx.next().await;
+            let gg = &mut *ggame2.lock().await;
 
-            log!(format!("got mouse pos:{:?}",mouse));
+            log!(format!("got mouse pos:{:?}", &gg.dogs));
         }
         log!("DOOOONE");
-    }.fuse();
+    }
+    .fuse();
     futures::pin_mut!(testy);
-        
+
     'outer: loop {
         let mut on_select = false;
 
-        
-        let res=futures::select!{
+        let res = futures::select! {
             foo=frame_timer.next().fuse()=>foo,
             _=testy=>continue
         };
+
+        let mut ggame = &mut *ggame.lock().await;
 
         //let res = frame_timer.next().await;
         let mut reset = false;
@@ -435,7 +436,6 @@ pub async fn worker_entry() {
                 }
                 MEvent::CanvasMouseUp => {
                     if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
-                        
                         on_select = true;
                     }
                 }
@@ -479,10 +479,8 @@ pub async fn worker_entry() {
 
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
-        if on_select{
-            tx.try_send(mouse_world);
-
-            //futures::executor::block_on(tx.send(mouse_world)).unwrap();
+        if on_select {
+            tx.try_send(mouse_world).unwrap();
         }
         // {
         //     let mouse = on_select.then_some(mouse_world);
