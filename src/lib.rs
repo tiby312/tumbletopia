@@ -1,6 +1,7 @@
 use axgeom::vec2same;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use duckduckgeo::grid::Grid2D;
+use futures::FutureExt;
 use gloo::console::log;
 use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
@@ -345,14 +346,18 @@ pub async fn worker_entry() {
             })
             .and_then(|w, _| {
                 log!(format!("second touch:{:?}", w));
-                gameplay::empty()
+                gameplay::next()
             })
             .and_then(|_, _| animate())
             .and_then(|_, _| {
                 log!("Finished!");
-                gameplay::empty()
+                gameplay::next()
             })
     };
+
+
+
+
 
     //TODO use this!
     let mut cc = 0;
@@ -366,12 +371,28 @@ pub async fn worker_entry() {
     })
     .and_then(|_, _| {
         log!("completely done!");
-        gameplay::empty()
+        gameplay::next()
     });
 
+
+
+    let testy=async{
+        for i in 0..5{
+            log!(format!("count:{:?}",i));
+        }
+    }.fuse();
+    futures::pin_mut!(testy);
+        
     'outer: loop {
         let mut on_select = false;
-        let res = frame_timer.next().await;
+
+        
+        let res=futures::select!{
+            foo=frame_timer.next().fuse()=>foo,
+            _=testy=>continue
+        };
+
+        //let res = frame_timer.next().await;
         let mut reset = false;
         for e in res {
             match e {

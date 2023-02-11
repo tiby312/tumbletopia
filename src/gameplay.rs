@@ -54,13 +54,13 @@ impl<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>> GameStepper<Z> for WaitForC
     }
 }
 
-pub fn empty() -> Empty {
-    Empty
+pub fn next() -> Next {
+    Next
 }
 
 #[derive(Copy, Clone)]
-pub struct Empty;
-impl<Z: Zoo> GameStepper<Z> for Empty {
+pub struct Next;
+impl<Z: Zoo> GameStepper<Z> for Next {
     type Result = ();
     fn step(&mut self, _: &mut Z::G<'_>) -> Stage<Self::Result> {
         Stage::NextStage(())
@@ -101,7 +101,7 @@ pub fn looper<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>>(
 impl<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>> GameStepper<Z>
     for Looper<Z, A, F>
 {
-    type Result = Empty;
+    type Result = Next;
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
         if let Some(mut a) = self.a.take() {
             match a.step(game) {
@@ -114,7 +114,7 @@ impl<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>> GameSteppe
                         self.a = Some(jj);
                         Stage::Stay
                     } else {
-                        Stage::NextStage(empty())
+                        Stage::NextStage(next())
                     }
                 }
             }
@@ -123,7 +123,7 @@ impl<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>> GameSteppe
                 self.a = Some(jj);
                 Stage::Stay
             } else {
-                Stage::NextStage(empty())
+                Stage::NextStage(next())
             }
         }
     }
