@@ -286,13 +286,14 @@ pub async fn worker_entry() {
     //     state: Game,
     //     select: Option<[f32; 2]>,
     // }
-
-    let (mut ggame, ggame2) = futures::lock::BiLock::new(Game {
+    let mut ga=Game {
         dogs,
         cats,
         selected_cells,
         animation,
-    });
+    };
+
+    let (mut ggame, ggame2) = futures::lock::BiLock::new(&mut ga);
 
     let mut roads = terrain::TerrainCollection {
         pos: vec![],
