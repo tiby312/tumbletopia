@@ -72,6 +72,9 @@ pub trait GameStepper<Z: Zoo> {
     //Return if you are done with this stage.
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result>;
 
+    //TODO use this!
+    //fn draw(&mut self, game: &Z::G<'_>){}
+
     fn and_then<K: GameStepper<Z>, B: FnMut(Self::Result, &mut Z::G<'_>) -> K>(
         self,
         other: B,
@@ -88,26 +91,40 @@ pub struct Looper<Z, A, F> {
     a: Option<A>,
     func: F,
 }
-pub fn looper<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> A>(
+pub fn looper<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>>(
     zoo: Z,
     func: F,
 ) -> Looper<Z, A, F> {
     Looper { a: None, func, zoo }
 }
 
-impl<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> A> GameStepper<Z> for Looper<Z, A, F> {
-    type Result = A::Result;
+impl<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>> GameStepper<Z>
+    for Looper<Z, A, F>
+{
+    type Result = Empty;
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
         if let Some(mut a) = self.a.take() {
             match a.step(game) {
                 Stage::Stay => {
                     self.a = Some(a);
+                    Stage::Stay
                 }
-                Stage::NextStage(_) => self.a = Some((self.func)(game)),
+                Stage::NextStage(_) => {
+                    if let Some(jj) = (self.func)(game) {
+                        self.a = Some(jj);
+                        Stage::Stay
+                    } else {
+                        Stage::NextStage(empty())
+                    }
+                }
             }
         } else {
-            self.a = Some((self.func)(game))
+            if let Some(jj) = (self.func)(game) {
+                self.a = Some(jj);
+                Stage::Stay
+            } else {
+                Stage::NextStage(empty())
+            }
         }
-        Stage::Stay
     }
 }

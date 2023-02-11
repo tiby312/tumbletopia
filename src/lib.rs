@@ -310,7 +310,10 @@ pub async fn worker_entry() {
     }
 
     let wait_mouse_input = || {
+        //set cell
+
         gameplay::wait_custom(Doopo, |e| {
+            //e.draw(c);
             if let Some(m) = e.mouse {
                 gameplay::Stage::NextStage(m)
             } else {
@@ -331,7 +334,10 @@ pub async fn worker_entry() {
         })
     };
 
-    let player_turn = || {
+    let player_turn = |a| {
+        log!(format!("starting player:{:?}", a));
+        //TODO make closure just take one argument.
+        //User has to pass game state reference across themselves?
         wait_mouse_input()
             .and_then(|w, g| {
                 log!(format!("first touch:{:?}", w));
@@ -349,7 +355,19 @@ pub async fn worker_entry() {
     };
 
     //TODO use this!
-    let mut k = gameplay::looper(Doopo, |_| player_turn());
+    let mut cc = 0;
+    let mut k = gameplay::looper(Doopo, |_| {
+        cc += 1;
+        if cc > 2 {
+            None
+        } else {
+            Some(player_turn(0).and_then(|w, g| player_turn(1)))
+        }
+    })
+    .and_then(|_, _| {
+        log!("completely done!");
+        gameplay::empty()
+    });
 
     'outer: loop {
         let mut on_select = false;
