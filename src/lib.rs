@@ -1,7 +1,7 @@
 use axgeom::vec2same;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use duckduckgeo::grid::Grid2D;
-use futures::FutureExt;
+use futures::{FutureExt, StreamExt, SinkExt};
 use gloo::console::log;
 use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
@@ -375,11 +375,16 @@ pub async fn worker_entry() {
     });
 
 
+    let (mut tx, mut rx) = futures::channel::mpsc::channel(1);
+
 
     let testy=async{
         for i in 0..5{
-            log!(format!("count:{:?}",i));
+            let mouse=rx.next().await;
+
+            log!(format!("got mouse pos:{:?}",mouse));
         }
+        log!("DOOOONE");
     }.fuse();
     futures::pin_mut!(testy);
         
@@ -430,6 +435,7 @@ pub async fn worker_entry() {
                 }
                 MEvent::CanvasMouseUp => {
                     if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
+                        
                         on_select = true;
                     }
                 }
@@ -473,14 +479,19 @@ pub async fn worker_entry() {
 
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
-        {
-            let mouse = on_select.then_some(mouse_world);
-            let mut jj = Stuff {
-                a: &mut ggame,
-                mouse,
-            };
-            k.step(&mut jj);
+        if on_select{
+            tx.try_send(mouse_world);
+
+            //futures::executor::block_on(tx.send(mouse_world)).unwrap();
         }
+        // {
+        //     let mouse = on_select.then_some(mouse_world);
+        //     let mut jj = Stuff {
+        //         a: &mut ggame,
+        //         mouse,
+        //     };
+        //     k.step(&mut jj);
+        // }
 
         let (this_team_model, this_team, other_team) = if turn_counter {
             (&dog, &mut ggame.dogs, &mut ggame.cats)
