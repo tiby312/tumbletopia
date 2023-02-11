@@ -256,12 +256,12 @@ pub async fn worker_entry() {
 
     let health_numbers = NumberTextManager::new(0..=10, &ctx, &text_texture);
 
-    let mut dogs = UnitCollection::new(vec![
+    let dogs = UnitCollection::new(vec![
         Warrior::new(GridCoord([3, 3])),
         Warrior::new(GridCoord([4, 4])),
     ]);
 
-    let mut cats = UnitCollection::new(vec![
+    let cats = UnitCollection::new(vec![
         Warrior::new(GridCoord([2, 2])),
         Warrior::new(GridCoord([5, 5])),
         Warrior::new(GridCoord([6, 6])),
@@ -269,8 +269,8 @@ pub async fn worker_entry() {
         Warrior::new(GridCoord([3, 1])),
     ]);
 
-    let mut selected_cells: Option<CellSelection> = None;
-    let mut animation = None;
+    let selected_cells: Option<CellSelection> = None;
+    let animation = None;
 
     //TODO store actual world pos? Less calculation each iteration.
     //Additionally removes need to special case animation.
@@ -326,67 +326,75 @@ pub async fn worker_entry() {
     let testy = async {
         for i in 0..5 {
             for j in 0..2 {
-                //Wait for user to click a unit and present move options to user
-                loop {
-                    let mouse_world: [f32; 2] = rx.next().await.unwrap();
-                    let mut gg = &mut *ggame2.lock().await;
-                    let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
 
-                    let cell: GridCoord =
-                        GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
 
-                    let Some(unit)=this_team.find(&cell) else {
-                        continue;
-                    };
+                'outer:loop{
+                    //Wait for user to click a unit and present move options to user
+                    'inner:loop {
+                        let mouse_world: [f32; 2] = rx.next().await.unwrap();
+                        let mut gg = &mut *ggame2.lock().await;
+                        let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
 
-                    if !unit.is_selectable() {
-                        continue;
+                        let cell: GridCoord =
+                            GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
+
+                        let Some(unit)=this_team.find(&cell) else {
+                            continue;
+                        };
+
+                        if !unit.is_selectable() {
+                            continue;
+                        }
+
+                        //At this point we have found the friendly unit the user clicked on.
+                        gg.selected_cells = Some(get_cat_move_attack_matrix(
+                            unit,
+                            this_team.filter().chain(that_team.filter()),
+                            roads.foo(),
+                            &gg.grid_matrix,
+                        ));
+
+                        break 'inner;
                     }
 
-                    //At this point we have found the friendly unit the user clicked on.
-                    gg.selected_cells = Some(get_cat_move_attack_matrix(
-                        unit,
-                        this_team.filter().chain(that_team.filter()),
-                        roads.foo(),
-                        &gg.grid_matrix,
-                    ));
+                    //Wait for user to click on a move option and handle that.
+                    'inner:loop {
+                        let mouse_world: [f32; 2] = rx.next().await.unwrap();
+                        let mut gg1 = ggame2.lock().await;
+                        let gg = &mut *gg1;
+                        let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
 
-                    break;
-                }
+                        let cell: GridCoord =
+                            GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
 
-                //Wait for user to click on a move option and handle that.
-                loop {
-                    let mouse_world: [f32; 2] = rx.next().await.unwrap();
-                    let mut gg1 = ggame2.lock().await;
-                    let gg = &mut *gg1;
-                    let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
+                        let s = gg.selected_cells.as_mut().unwrap();
 
-                    let cell: GridCoord =
-                        GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
+                        match s {
+                            CellSelection::MoveSelection(ss, attack) => {
+                                let target_cat_pos = &cell;
 
-                    let s = gg.selected_cells.take().unwrap();
-
-                    match s {
-                        CellSelection::MoveSelection(ss, attack) => {
-                            let target_cat_pos = &cell;
-
-                            if movement::contains_coord(ss.iter_coords(), &cell) {
-                                let mut c = this_team.remove(ss.start());
-                                let (dd, aa) = ss.get_path_data(cell).unwrap();
-                                c.position = cell;
-                                c.move_deficit = *aa;
-                                //c.moved = true;
-                                gg.animation = Some(animation::Animation::new(
-                                    ss.start(),
-                                    dd,
-                                    &gg.grid_matrix,
-                                    c,
-                                ));
-                                break;
+                                if movement::contains_coord(ss.iter_coords(), &cell) {
+                                    let mut c = this_team.remove(ss.start());
+                                    let (dd, aa) = ss.get_path_data(cell).unwrap();
+                                    c.position = cell;
+                                    c.move_deficit = *aa;
+                                    //c.moved = true;
+                                    gg.animation = Some(animation::Animation::new(
+                                        ss.start(),
+                                        dd,
+                                        &gg.grid_matrix,
+                                        c,
+                                    ));
+                                    gg.selected_cells = None;
+                                    break 'outer;
+                                }else{
+                                    gg.selected_cells = None;
+                                    break 'inner;
+                                }
                             }
-                        }
-                        _ => {
-                            todo!()
+                            _ => {
+                                todo!()
+                            }
                         }
                     }
                 }
@@ -420,7 +428,7 @@ pub async fn worker_entry() {
                     let cell: GridCoord =
                         GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
 
-                    let s = gg.selected_cells.take().unwrap();
+                    let s = gg.selected_cells.as_mut().unwrap();
 
                     match s {
                         CellSelection::MoveSelection(ss, attack) => {
@@ -436,11 +444,15 @@ pub async fn worker_entry() {
                                 let current_cat = this_team.find_mut(ss.start()).unwrap();
                                 current_cat.moved = true;
 
+                                gg.selected_cells = None;
+
                                 //Finish user turn
                                 break;
                             } else {
                                 let current_cat = this_team.find_mut(ss.start()).unwrap();
                                 current_cat.moved = true;
+
+                                gg.selected_cells = None;
                                 break;
                             }
                         }
