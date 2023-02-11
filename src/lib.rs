@@ -21,7 +21,7 @@ pub mod terrain;
 pub mod util;
 use dom::MEvent;
 use projection::*;
-
+pub mod logic;
 pub const RESIZE: usize = 6;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -194,9 +194,19 @@ impl Warrior {
 }
 
 #[derive(Debug)]
-enum CellSelection {
+pub enum CellSelection {
     MoveSelection(movement::PossibleMoves, movement::PossibleMoves),
     BuildSelection(GridCoord),
+}
+
+//TODO store actual world pos? Less calculation each iteration.
+//Additionally removes need to special case animation.
+pub struct Game {
+    grid_matrix: grids::GridMatrix,
+    selected_cells: Option<CellSelection>,
+    animation: Option<animation::Animation<Warrior>>,
+    dogs: UnitCollection<Warrior>,
+    cats: UnitCollection<Warrior>,
 }
 
 #[wasm_bindgen]
@@ -272,30 +282,6 @@ pub async fn worker_entry() {
     let selected_cells: Option<CellSelection> = None;
     let animation = None;
 
-    //TODO store actual world pos? Less calculation each iteration.
-    //Additionally removes need to special case animation.
-    pub struct Game {
-        grid_matrix: grids::GridMatrix,
-        selected_cells: Option<CellSelection>,
-        animation: Option<animation::Animation<Warrior>>,
-        dogs: UnitCollection<Warrior>,
-        cats: UnitCollection<Warrior>,
-    }
-
-    fn team_view(
-        a: [&mut UnitCollection<Warrior>; 2],
-        ind: usize,
-    ) -> [&mut UnitCollection<Warrior>; 2] {
-        let [a, b] = a;
-        match ind {
-            0 => [a, b],
-            1 => [b, a],
-            _ => {
-                unreachable!()
-            }
-        }
-    }
-
     // pub struct Doop {
     //     state: Game,
     //     select: Option<[f32; 2]>,
@@ -308,7 +294,9 @@ pub async fn worker_entry() {
         grid_matrix: grids::GridMatrix::new(),
     };
 
-    let (mut ggame, ggame2) = futures::lock::BiLock::new(&mut ga);
+    //let (mut ggame, mut ggame2) = futures::lock::BiLock::new(&mut ga);
+    let mut ggame = std::sync::Arc::new(futures::lock::Mutex::new(&mut ga));
+    let ggame2 = ggame.clone();
 
     let mut roads = terrain::TerrainCollection {
         pos: vec![],
@@ -326,76 +314,42 @@ pub async fn worker_entry() {
     let testy = async {
         for i in 0..5 {
             for j in 0..2 {
+                // async fn handle_turn(){
+                //     let cell=loop {
+                //         let unit=select_team_unit().await;
+                //         let area=generate_movement(selected_unit);
+                //         let area_lock=send_draw_lock(area);
+                //         if let Some(cell)=select_cell_from_area(area).await {
+                //             break cell;
+                //         }
+                //     };
 
+                //     move_to(unit,cell).await;
 
-                'outer:loop{
+                //     {
+                //         let area=generate_attack(selected_unit);
+                //         let area_lock=send_draw_lock(area).await;
+                //         if let Some(cell)=select_cell_from_area_with_enemy(area).await{
+                //             attack_unit(unit,cell)
+                //         }
+                //     }
+                //     //now move unit to cell
+                // };
+
+                loop {
+                    let mut d = logic::Doop {
+                        game: ggame2.clone(),
+                        rx: &mut rx,
+                        team: j,
+                    };
                     //Wait for user to click a unit and present move options to user
-                    'inner:loop {
-                        let mouse_world: [f32; 2] = rx.next().await.unwrap();
-                        let mut gg = &mut *ggame2.lock().await;
-                        let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
 
-                        let cell: GridCoord =
-                            GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
+                    let (mut game, cell) = d.get_possible_moves().await;
+                    game.selected_cells = Some(cell);
+                    drop(game);
 
-                        let Some(unit)=this_team.find(&cell) else {
-                            continue;
-                        };
-
-                        if !unit.is_selectable() {
-                            continue;
-                        }
-
-                        //At this point we have found the friendly unit the user clicked on.
-                        gg.selected_cells = Some(get_cat_move_attack_matrix(
-                            unit,
-                            this_team.filter().chain(that_team.filter()),
-                            roads.foo(),
-                            &gg.grid_matrix,
-                        ));
-
-                        break 'inner;
-                    }
-
-                    //Wait for user to click on a move option and handle that.
-                    'inner:loop {
-                        let mouse_world: [f32; 2] = rx.next().await.unwrap();
-                        let mut gg1 = ggame2.lock().await;
-                        let gg = &mut *gg1;
-                        let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
-
-                        let cell: GridCoord =
-                            GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
-
-                        let s = gg.selected_cells.as_mut().unwrap();
-
-                        match s {
-                            CellSelection::MoveSelection(ss, attack) => {
-                                let target_cat_pos = &cell;
-
-                                if movement::contains_coord(ss.iter_coords(), &cell) {
-                                    let mut c = this_team.remove(ss.start());
-                                    let (dd, aa) = ss.get_path_data(cell).unwrap();
-                                    c.position = cell;
-                                    c.move_deficit = *aa;
-                                    //c.moved = true;
-                                    gg.animation = Some(animation::Animation::new(
-                                        ss.start(),
-                                        dd,
-                                        &gg.grid_matrix,
-                                        c,
-                                    ));
-                                    gg.selected_cells = None;
-                                    break 'outer;
-                                }else{
-                                    gg.selected_cells = None;
-                                    break 'inner;
-                                }
-                            }
-                            _ => {
-                                todo!()
-                            }
-                        }
+                    if d.pick_possible_move().await {
+                        break;
                     }
                 }
 
@@ -404,7 +358,7 @@ pub async fn worker_entry() {
                     animation_rx.next().await;
                     let mut gg1 = ggame2.lock().await;
                     let gg = &mut *gg1;
-                    let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
+                    let [this_team, that_team] = logic::team_view([&mut gg.cats, &mut gg.dogs], j);
                     let unit = gg.animation.take().unwrap().into_data();
 
                     this_team.elem.push(unit);
@@ -423,7 +377,7 @@ pub async fn worker_entry() {
                     let mouse_world: [f32; 2] = rx.next().await.unwrap();
                     let mut gg1 = ggame2.lock().await;
                     let gg = &mut *gg1;
-                    let [this_team, that_team] = team_view([&mut gg.cats, &mut gg.dogs], j);
+                    let [this_team, that_team] = logic::team_view([&mut gg.cats, &mut gg.dogs], j);
 
                     let cell: GridCoord =
                         GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
