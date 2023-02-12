@@ -150,14 +150,9 @@ impl<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>> GameStepper<Z> fo
         if let Some(func) = self.func.take() {
             let a = func(game);
             self.floop = Some(a);
-            Stage::Stay
-        } else {
-            if let Some(aa) = self.floop.as_mut() {
-                aa.step(game)
-            } else {
-                unreachable!()
-            }
         }
+
+        self.floop.as_mut().unwrap().step(game)
     }
 }
 
