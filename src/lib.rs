@@ -318,25 +318,30 @@ pub async fn worker_entry() {
     };
 
     pub struct AnimationTicker {
-        a: animation::Animation<Warrior>,
+        a: Option<animation::Animation<Warrior>>,
     }
     impl AnimationTicker {
         pub fn new(a: animation::Animation<Warrior>) -> Self {
-            Self { a }
+            Self { a: Some(a) }
         }
     }
     impl GameStepper<Doopo> for AnimationTicker {
-        type Result = gameplay::Next;
+        type Result = animation::Animation<Warrior>;
         fn step(&mut self, _game: &mut Stuff<'_>) -> gameplay::Stage<Self::Result> {
-            if let Some(_) = self.a.animate_step() {
-                gameplay::Stage::Stay
-            } else {
-                gameplay::Stage::NextStage(gameplay::next())
+            match &mut self.a {
+                Some(a) => {
+                    if let Some(_) = a.animate_step() {
+                        gameplay::Stage::Stay
+                    } else {
+                        gameplay::Stage::NextStage(self.a.take().unwrap())
+                    }
+                }
+                None => gameplay::Stage::Stay,
             }
         }
 
         fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
-            Some(&self.a)
+            self.a.as_ref()
         }
     }
 
@@ -425,7 +430,11 @@ pub async fn worker_entry() {
                                 //c.moved = true;
                                 let aa =
                                     animation::Animation::new(ss.start(), dd, &game.grid_matrix, c);
-                                let aaa = AnimationTicker::new(aa);
+                                let aaa = AnimationTicker::new(aa).and_then(|res, game| {
+                                    let warrior = res.into_data();
+                                    game.a.cats.elem.push(warrior);
+                                    gameplay::next()
+                                });
                                 gameplay::optional(Some(aaa))
                             }
                             CellSelection::BuildSelection(_) => todo!(),
