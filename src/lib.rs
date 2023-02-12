@@ -472,9 +472,36 @@ pub async fn worker_entry() {
     // };
 
 
+    pub struct AnimationTicker{
+        a:animation::Animation<Warrior>
+    }
+    impl AnimationTicker{
+        pub fn new(a:animation::Animation<Warrior>)->Self{
+            Self{a}
+        }
+    }
+    impl GameStepper<Doopo> for AnimationTicker{
+        type Result=gameplay::Next;
+        fn step(&mut self, game: &mut Stuff<'_>) -> gameplay::Stage<Self::Result>{
+            if let Some(_)=self.a.animate_step(){
+                gameplay::Stage::Stay
+            }else{
+                gameplay::Stage::NextStage(gameplay::next())
+            }
+        }
+
+        fn get_animation(&mut self, game: &Stuff<'_>)->Option<&crate::animation::Animation<Warrior>>{
+            Some(&self.a)
+        }
+    }
    
     let player_move_select=move |a:CellSelection,team:usize|{
-        gameplay::looper2(wait_mouse_input(),move |mouse_world,g|{
+        //TODO get rid of
+        let kk=a.clone();
+        gameplay::once(Doopo,move |g|{
+            g.a.selected_cells=Some(kk);
+            wait_mouse_input()
+        }).and_then(move |a,_|a).and_then(move |mouse_world,g|{
             let game=&mut g.a;
             let [this_team, that_team] = logic::team_view([&mut game.cats, &mut game.dogs], team);
 
@@ -492,31 +519,26 @@ pub async fn worker_entry() {
                         c.move_deficit = *aa;
                         //c.moved = true;
                         
-                        game.animation = Some(animation::Animation::new(
+                        let a=animation::Animation::new(
                             ss.start(),
                             dd,
                             &game.grid_matrix,
                             c,
-                        ));
+                        );
                         game.selected_cells = None;
-                        gameplay::LooperRes::Finish(gameplay::next())
-                        //return true;
+                        gameplay::optional(Some(AnimationTicker::new(a)))
                     } else {
                         game.selected_cells = None;
-                        //return false;
-                        gameplay::LooperRes::Finish(gameplay::next())
+                        gameplay::optional(None)
                     }
                 }
                 _ => {
                     todo!()
                 }
             }
-
-            
         })
     };
 
-    
 
     let select_unit = move |team| {
         gameplay::looper2(wait_mouse_input(),move |mouse_world,stuff|{
@@ -540,14 +562,33 @@ pub async fn worker_entry() {
                 terrain::Grass,
                 &game.grid_matrix,
             );
-            game.selected_cells=Some(pos.clone());
             
-            gameplay::LooperRes::Finish(player_move_select(pos,team))
+            gameplay::LooperRes::Finish(pos) //player_move_select(pos,team)
 
         })
     };
 
-    let mut testo=select_unit(0);
+
+    
+    let handle_move = move |team| {
+        let k=move |team|{select_unit(team).and_then(move |c,game|{
+            player_move_select(c,team)
+        })};
+
+        gameplay::looper2(k(team),move |res,stuff|{
+            match res{
+                Some(animation)=>{
+                    gameplay::LooperRes::Finish(gameplay::next())
+                },
+                None=>{
+                    gameplay::LooperRes::Loop(k(team))
+                }
+            }
+        })
+    };
+
+
+    let mut testo=handle_move(0);
 
     // //TODO use this!
     // let mut cc = 0;

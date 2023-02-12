@@ -70,6 +70,37 @@ impl<Z: Zoo> GameStepper<Z> for Next {
     }
 }
 
+pub struct Optional<A>{
+    a:Option<A>
+}
+
+pub fn optional<Z:Zoo,A:GameStepper<Z>>(a:Option<A>)->Optional<A>{
+    Optional{a}
+}
+
+
+impl<Z:Zoo,A:GameStepper<Z>> GameStepper<Z> for Optional<A>{
+    type Result=Option<A::Result>;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result>{
+        if let Some(a)=self.a.as_mut(){
+            match a.step(game){
+                Stage::Stay=>{
+                    Stage::Stay
+                },
+                Stage::NextStage(e)=>{
+                    Stage::NextStage(Some(e))
+                }
+            }
+        }else{
+            Stage::NextStage(None)
+        }
+    }
+    fn get_animation(&mut self, game: &Z::G<'_>)->Option<&crate::animation::Animation<Warrior>>{
+        todo!()
+        //self.a.as_ref().map(|a|a.get_animation())
+    }
+}
+
 pub trait GameStepper<Z: Zoo> {
     type Result;
     //Return if you are done with this stage.
@@ -104,6 +135,26 @@ pub struct Looper2<Z,A,F>{
     func:F,
     finished:bool
 }
+
+
+pub struct Once<Z,A>{
+    zoo:Z,
+    func:Option<A>
+}
+pub fn once<Z:Zoo,A:FnOnce(&mut Z::G<'_>)->L,L>(zoo:Z,func:A)->Once<Z,A>{
+    Once { zoo, func:Some(func) }
+}
+impl<Z:Zoo,A:FnOnce(&mut Z::G<'_>)->L,L> GameStepper<Z> for Once<Z,A>{
+    type Result=L;
+    fn step(&mut self,game:&mut Z::G<'_>)->Stage<Self::Result>{
+        if let Some(a)=self.func.take(){
+            Stage::NextStage(a(game))
+        }else{
+            Stage::Stay
+        }
+    }
+}
+
 
 // pub struct Fuse<A>{
 //     a:A,
