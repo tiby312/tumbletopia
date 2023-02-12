@@ -47,7 +47,7 @@ pub trait Zoo {
     type G<'b>
     where
         Self: 'b;
-    fn create()->Self;
+    fn create() -> Self;
 }
 
 impl<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>> GameStepper<Z> for WaitForCustom<Z, F> {
@@ -70,32 +70,27 @@ impl<Z: Zoo> GameStepper<Z> for Next {
     }
 }
 
-pub struct Optional<A>{
-    a:Option<A>
+pub struct Optional<A> {
+    a: Option<A>,
 }
 
-pub fn optional<Z:Zoo,A:GameStepper<Z>>(a:Option<A>)->Optional<A>{
-    Optional{a}
+pub fn optional<Z: Zoo, A: GameStepper<Z>>(a: Option<A>) -> Optional<A> {
+    Optional { a }
 }
 
-
-impl<Z:Zoo,A:GameStepper<Z>> GameStepper<Z> for Optional<A>{
-    type Result=Option<A::Result>;
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result>{
-        if let Some(a)=self.a.as_mut(){
-            match a.step(game){
-                Stage::Stay=>{
-                    Stage::Stay
-                },
-                Stage::NextStage(e)=>{
-                    Stage::NextStage(Some(e))
-                }
+impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
+    type Result = Option<A::Result>;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
+        if let Some(a) = self.a.as_mut() {
+            match a.step(game) {
+                Stage::Stay => Stage::Stay,
+                Stage::NextStage(e) => Stage::NextStage(Some(e)),
             }
-        }else{
+        } else {
             Stage::NextStage(None)
         }
     }
-    fn get_animation(&mut self, game: &Z::G<'_>)->Option<&crate::animation::Animation<Warrior>>{
+    fn get_animation(&mut self, game: &Z::G<'_>) -> Option<&crate::animation::Animation<Warrior>> {
         todo!()
         //self.a.as_ref().map(|a|a.get_animation())
     }
@@ -106,9 +101,7 @@ pub trait GameStepper<Z: Zoo> {
     //Return if you are done with this stage.
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result>;
 
-    
-
-    fn get_animation(&mut self, game: &Z::G<'_>)->Option<&crate::animation::Animation<Warrior>>{
+    fn get_animation(&mut self, game: &Z::G<'_>) -> Option<&crate::animation::Animation<Warrior>> {
         None
     }
 
@@ -129,32 +122,44 @@ pub struct Looper<Z, A, F> {
     func: F,
 }
 
-pub struct Looper2<Z,A,F>{
-    zoo:Z,
-    a:Option<A>,
-    func:F,
-    finished:bool
+pub struct Looper2<Z, A, F> {
+    zoo: Z,
+    a: Option<A>,
+    func: F,
+    finished: bool,
 }
 
-
-pub struct Once<Z,A>{
-    zoo:Z,
-    func:Option<A>
+pub struct Once<Z, A, K> {
+    zoo: Z,
+    func: Option<A>,
+    floop: Option<K>,
 }
-pub fn once<Z:Zoo,A:FnOnce(&mut Z::G<'_>)->L,L>(zoo:Z,func:A)->Once<Z,A>{
-    Once { zoo, func:Some(func) }
+pub fn once<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>>(
+    zoo: Z,
+    func: A,
+) -> Once<Z, A, L> {
+    Once {
+        zoo,
+        func: Some(func),
+        floop: None,
+    }
 }
-impl<Z:Zoo,A:FnOnce(&mut Z::G<'_>)->L,L> GameStepper<Z> for Once<Z,A>{
-    type Result=L;
-    fn step(&mut self,game:&mut Z::G<'_>)->Stage<Self::Result>{
-        if let Some(a)=self.func.take(){
-            Stage::NextStage(a(game))
-        }else{
+impl<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>> GameStepper<Z> for Once<Z, A, L> {
+    type Result = L::Result;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
+        if let Some(func) = self.func.take() {
+            let a = func(game);
+            self.floop = Some(a);
             Stage::Stay
+        } else {
+            if let Some(aa) = self.floop.as_mut() {
+                aa.step(game)
+            } else {
+                unreachable!()
+            }
         }
     }
 }
-
 
 // pub struct Fuse<A>{
 //     a:A,
@@ -178,60 +183,64 @@ impl<Z:Zoo,A:FnOnce(&mut Z::G<'_>)->L,L> GameStepper<Z> for Once<Z,A>{
 //     }
 // }
 
-pub enum LooperRes<A,B>{
+pub enum LooperRes<A, B> {
     Loop(A),
-    Finish(B)
+    Finish(B),
 }
 
-impl<Z: Zoo, A: GameStepper<Z>,K, F: FnMut(A::Result,&mut Z::G<'_>) -> LooperRes<A,K>> GameStepper<Z>
-    for Looper2<Z, A, F>
+impl<Z: Zoo, A: GameStepper<Z>, K, F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<A, K>>
+    GameStepper<Z> for Looper2<Z, A, F>
 {
     type Result = K;
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
-        if self.finished{
-            return Stage::Stay
+        if self.finished {
+            return Stage::Stay;
         }
 
-        let a=if let Some(a)=&mut self.a{
-            match a.step(game){
-                Stage::Stay=>{
-
+        let a = if let Some(a) = &mut self.a {
+            match a.step(game) {
+                Stage::Stay => {
                     return Stage::Stay;
                 }
-                Stage::NextStage(a)=>{
-                    a
-                }
+                Stage::NextStage(a) => a,
             }
-        }else{
+        } else {
             log!("hayaaa");
             unreachable!();
         };
 
-       match (self.func)(a,game){
-            LooperRes::Loop(a)=>{
+        match (self.func)(a, game) {
+            LooperRes::Loop(a) => {
                 log!("staying");
-                self.a=Some(a);
+                self.a = Some(a);
                 log!("staying2");
                 Stage::Stay
-            },
-            LooperRes::Finish(b)=>{
-                self.finished=true;
+            }
+            LooperRes::Finish(b) => {
+                self.finished = true;
                 log!("Finished!!!!!");
                 Stage::NextStage(b)
             }
-       }
-
+        }
     }
 }
 
-
-pub fn looper2<Z: Zoo, A: GameStepper<Z>,K, F: FnMut(A::Result,&mut Z::G<'_>) -> LooperRes<A,K>>(
-    start:A,
+pub fn looper2<
+    Z: Zoo,
+    A: GameStepper<Z>,
+    K,
+    F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<A, K>,
+>(
+    start: A,
     func: F,
 ) -> Looper2<Z, A, F> {
-    Looper2 { zoo:Z::create(),a: Some(start), func,finished:false }
+    Looper2 {
+        zoo: Z::create(),
+        a: Some(start),
+        func,
+        finished: false,
+    }
 }
-
 
 // pub fn looper<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>>(
 //     zoo: Z,

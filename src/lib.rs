@@ -193,7 +193,7 @@ impl Warrior {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub enum CellSelection {
     MoveSelection(movement::PossibleMoves, movement::PossibleMoves),
     BuildSelection(GridCoord),
@@ -212,7 +212,6 @@ pub struct Game {
 #[wasm_bindgen]
 pub async fn worker_entry() {
     console_error_panic_hook::set_once();
-
 
     let (mut w, ss) = shogo::EngineWorker::new().await;
     let mut frame_timer = shogo::FrameTimer::new(60, ss);
@@ -427,17 +426,15 @@ pub async fn worker_entry() {
     // .fuse();
     // futures::pin_mut!(testy);
 
-
     pub struct Doop {
         state: Game,
         select: Option<[f32; 2]>,
     }
 
-
     struct Doopo;
     impl gameplay::Zoo for Doopo {
         type G<'a> = Stuff<'a>;
-        fn create()->Self{
+        fn create() -> Self {
             Doopo
         }
     }
@@ -471,42 +468,44 @@ pub async fn worker_entry() {
     //     })
     // };
 
-
-    pub struct AnimationTicker{
-        a:animation::Animation<Warrior>
+    pub struct AnimationTicker {
+        a: animation::Animation<Warrior>,
     }
-    impl AnimationTicker{
-        pub fn new(a:animation::Animation<Warrior>)->Self{
-            Self{a}
+    impl AnimationTicker {
+        pub fn new(a: animation::Animation<Warrior>) -> Self {
+            Self { a }
         }
     }
-    impl GameStepper<Doopo> for AnimationTicker{
-        type Result=gameplay::Next;
-        fn step(&mut self, game: &mut Stuff<'_>) -> gameplay::Stage<Self::Result>{
-            if let Some(_)=self.a.animate_step(){
+    impl GameStepper<Doopo> for AnimationTicker {
+        type Result = gameplay::Next;
+        fn step(&mut self, game: &mut Stuff<'_>) -> gameplay::Stage<Self::Result> {
+            if let Some(_) = self.a.animate_step() {
                 gameplay::Stage::Stay
-            }else{
+            } else {
                 gameplay::Stage::NextStage(gameplay::next())
             }
         }
 
-        fn get_animation(&mut self, game: &Stuff<'_>)->Option<&crate::animation::Animation<Warrior>>{
+        fn get_animation(
+            &mut self,
+            game: &Stuff<'_>,
+        ) -> Option<&crate::animation::Animation<Warrior>> {
             Some(&self.a)
         }
     }
-   
-    let player_move_select=move |a:CellSelection,team:usize|{
+
+    let player_move_select = move |a: CellSelection, team: usize| {
         //TODO get rid of
-        let kk=a.clone();
-        gameplay::once(Doopo,move |g|{
-            g.a.selected_cells=Some(kk);
+        let kk = a.clone();
+        gameplay::once(Doopo, move |g| {
+            g.a.selected_cells = Some(kk);
             wait_mouse_input()
-        }).and_then(move |a,_|a).and_then(move |mouse_world,g|{
-            let game=&mut g.a;
+        })
+        .and_then(move |mouse_world, g| {
+            let game = &mut g.a;
             let [this_team, that_team] = logic::team_view([&mut game.cats, &mut game.dogs], team);
 
             let cell: GridCoord = GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
-
 
             match &a {
                 CellSelection::MoveSelection(ss, attack) => {
@@ -518,13 +517,8 @@ pub async fn worker_entry() {
                         c.position = cell;
                         c.move_deficit = *aa;
                         //c.moved = true;
-                        
-                        let a=animation::Animation::new(
-                            ss.start(),
-                            dd,
-                            &game.grid_matrix,
-                            c,
-                        );
+
+                        let a = animation::Animation::new(ss.start(), dd, &game.grid_matrix, c);
                         game.selected_cells = None;
                         gameplay::optional(Some(AnimationTicker::new(a)))
                     } else {
@@ -539,14 +533,12 @@ pub async fn worker_entry() {
         })
     };
 
-
     let select_unit = move |team| {
-        gameplay::looper2(wait_mouse_input(),move |mouse_world,stuff|{
-            let game=&mut stuff.a;
+        gameplay::looper2(wait_mouse_input(), move |mouse_world, stuff| {
+            let game = &mut stuff.a;
             let [this_team, that_team] = logic::team_view([&mut game.cats, &mut game.dogs], team);
 
-            let cell: GridCoord =
-                GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
+            let cell: GridCoord = GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
 
             let Some(unit)=this_team.find(&cell) else {
                 return gameplay::LooperRes::Loop(wait_mouse_input());
@@ -556,39 +548,27 @@ pub async fn worker_entry() {
                 return gameplay::LooperRes::Loop(wait_mouse_input());
             }
 
-            let pos=get_cat_move_attack_matrix(
+            let pos = get_cat_move_attack_matrix(
                 unit,
                 this_team.filter().chain(that_team.filter()),
                 terrain::Grass,
                 &game.grid_matrix,
             );
-            
+
             gameplay::LooperRes::Finish(pos) //player_move_select(pos,team)
-
         })
     };
 
-
-    
     let handle_move = move |team| {
-        let k=move |team|{select_unit(team).and_then(move |c,game|{
-            player_move_select(c,team)
-        })};
+        let k = move |team| select_unit(team).and_then(move |c, game| player_move_select(c, team));
 
-        gameplay::looper2(k(team),move |res,stuff|{
-            match res{
-                Some(animation)=>{
-                    gameplay::LooperRes::Finish(gameplay::next())
-                },
-                None=>{
-                    gameplay::LooperRes::Loop(k(team))
-                }
-            }
+        gameplay::looper2(k(team), move |res, stuff| match res {
+            Some(animation) => gameplay::LooperRes::Finish(gameplay::next()),
+            None => gameplay::LooperRes::Loop(k(team)),
         })
     };
 
-
-    let mut testo=handle_move(0);
+    let mut testo = handle_move(0);
 
     // //TODO use this!
     // let mut cc = 0;
@@ -605,12 +585,10 @@ pub async fn worker_entry() {
     //     gameplay::next()
     // });
 
-
-
     'outer: loop {
         let mut on_select = false;
 
-        let res=frame_timer.next().await;
+        let res = frame_timer.next().await;
 
         // let res = futures::select! {
         //     foo=frame_timer.next().fuse()=>foo,
