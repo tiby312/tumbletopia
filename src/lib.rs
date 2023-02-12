@@ -508,25 +508,14 @@ pub async fn worker_entry() {
         fn step(&mut self, g1: &mut Stuff<'_>) -> gameplay::Stage<Self::Result> {
             let game = &mut g1.a;
             if let Some(mouse_world) = g1.mouse {
-                let [this_team, that_team] =
-                    gameplay::team_view([&mut game.cats, &mut game.dogs], self.team);
-
+                
                 let cell: GridCoord =
                     GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
 
                 match &self.a {
-                    Some(CellSelection::MoveSelection(ss, attack)) => {
-                        let target_cat_pos = &cell;
+                    Some(CellSelection::MoveSelection(ss, _)) => {      
 
                         if movement::contains_coord(ss.iter_coords(), &cell) {
-                            // let mut c = this_team.remove(ss.start());
-                            // let (dd, aa) = ss.get_path_data(cell).unwrap();
-                            // c.position = cell;
-                            // c.move_deficit = *aa;
-                            // //c.moved = true;
-
-                            // let a = animation::Animation::new(ss.start(), dd, &game.grid_matrix, c);
-
                             gameplay::Stage::NextStage((self.a.take().unwrap(), Some(cell)))
                         } else {
                             gameplay::Stage::NextStage((self.a.take().unwrap(), None))
@@ -541,45 +530,6 @@ pub async fn worker_entry() {
             }
         }
     }
-    // let player_move_select = move |a: CellSelection, team: usize| {
-    //     //TODO get rid of
-    //     let kk = a.clone();
-    //     gameplay::once(Doopo, move |g| {
-    //         g.a.selected_cells = Some(kk);
-    //         wait_mouse_input()
-    //     })
-    //     .and_then(move |mouse_world, g| {
-    //         let game = &mut g.a;
-    //         let [this_team, that_team] =
-    //             gameplay::team_view([&mut game.cats, &mut game.dogs], team);
-
-    //         let cell: GridCoord = GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
-
-    //         match &a {
-    //             CellSelection::MoveSelection(ss, attack) => {
-    //                 let target_cat_pos = &cell;
-
-    //                 if movement::contains_coord(ss.iter_coords(), &cell) {
-    //                     let mut c = this_team.remove(ss.start());
-    //                     let (dd, aa) = ss.get_path_data(cell).unwrap();
-    //                     c.position = cell;
-    //                     c.move_deficit = *aa;
-    //                     //c.moved = true;
-
-    //                     let a = animation::Animation::new(ss.start(), dd, &game.grid_matrix, c);
-    //                     game.selected_cells = None;
-    //                     gameplay::optional(Some(AnimationTicker::new(a)))
-    //                 } else {
-    //                     game.selected_cells = None;
-    //                     gameplay::optional(None)
-    //                 }
-    //             }
-    //             _ => {
-    //                 todo!()
-    //             }
-    //         }
-    //     })
-    // };
 
     let select_unit = move |team| {
         gameplay::looper2(wait_mouse_input(), move |mouse_world, stuff| {
