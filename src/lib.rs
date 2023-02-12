@@ -203,8 +203,6 @@ pub enum CellSelection {
 //Additionally removes need to special case animation.
 pub struct Game {
     grid_matrix: grids::GridMatrix,
-    //selected_cells: Option<CellSelection>,
-    //animation: Option<animation::Animation<Warrior>>,
     dogs: UnitCollection<Warrior>,
     cats: UnitCollection<Warrior>,
 }
@@ -305,124 +303,6 @@ pub async fn worker_entry() {
 
     use cgmath::SquareMatrix;
     let mut last_matrix = cgmath::Matrix4::identity();
-
-    //let mut turn_counter = false;
-
-    //let (mut tx, mut rx) = futures::channel::mpsc::channel(1);
-    //let (mut animation_tx, mut animation_rx) = futures::channel::mpsc::channel(1);
-
-    // let testy = async {
-    //     for i in 0..5 {
-    //         for j in 0..2 {
-    //             // async fn handle_turn(){
-    //             //     let cell=loop {
-    //             //         let unit=select_team_unit().await;
-    //             //         let area=generate_movement(selected_unit);
-    //             //         let area_lock=send_draw_lock(area);
-    //             //         if let Some(cell)=select_cell_from_area(area).await {
-    //             //             break cell;
-    //             //         }
-    //             //     };
-
-    //             //     move_to(unit,cell).await;
-
-    //             //     {
-    //             //         let area=generate_attack(selected_unit);
-    //             //         let area_lock=send_draw_lock(area).await;
-    //             //         if let Some(cell)=select_cell_from_area_with_enemy(area).await{
-    //             //             attack_unit(unit,cell)
-    //             //         }
-    //             //     }
-    //             //     //now move unit to cell
-    //             // };
-
-    //             loop {
-    //                 let mut d = logic::Doop {
-    //                     game: ggame2.clone(),
-    //                     rx: &mut rx,
-    //                     team: j,
-    //                 };
-    //                 //Wait for user to click a unit and present move options to user
-
-    //                 let (mut game, cell) = d.get_possible_moves().await;
-    //                 game.selected_cells = Some(cell);
-    //                 drop(game);
-
-    //                 if d.pick_possible_move().await {
-    //                     break;
-    //                 }
-    //             }
-
-    //             {
-    //                 //Wait for the animation to finish and then show attack area
-    //                 animation_rx.next().await;
-    //                 let mut gg1 = ggame2.lock().await;
-    //                 let gg = &mut *gg1;
-    //                 let [this_team, that_team] = logic::team_view([&mut gg.cats, &mut gg.dogs], j);
-    //                 let unit = gg.animation.take().unwrap().into_data();
-
-    //                 this_team.elem.push(unit);
-    //                 let unit = this_team.elem.last().unwrap();
-
-    //                 gg.selected_cells = Some(get_cat_move_attack_matrix(
-    //                     unit,
-    //                     this_team.filter(),
-    //                     roads.foo(),
-    //                     &gg.grid_matrix,
-    //                 ));
-    //             }
-
-    //             //Wait for user to select a valid attack cell, or no cell
-    //             loop {
-    //                 let mouse_world: [f32; 2] = rx.next().await.unwrap();
-    //                 let mut gg1 = ggame2.lock().await;
-    //                 let gg = &mut *gg1;
-    //                 let [this_team, that_team] = logic::team_view([&mut gg.cats, &mut gg.dogs], j);
-
-    //                 let cell: GridCoord =
-    //                     GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
-
-    //                 let s = gg.selected_cells.as_mut().unwrap();
-
-    //                 match s {
-    //                     CellSelection::MoveSelection(ss, attack) => {
-    //                         let target_cat_pos = &cell;
-
-    //                         if movement::contains_coord(attack.iter_coords(), target_cat_pos)
-    //                             && that_team.find(target_cat_pos).is_some()
-    //                         {
-    //                             //attacking!
-    //                             let target_cat = that_team.find_mut(target_cat_pos).unwrap();
-    //                             target_cat.health -= 1;
-
-    //                             let current_cat = this_team.find_mut(ss.start()).unwrap();
-    //                             current_cat.moved = true;
-
-    //                             gg.selected_cells = None;
-
-    //                             //Finish user turn
-    //                             break;
-    //                         } else {
-    //                             let current_cat = this_team.find_mut(ss.start()).unwrap();
-    //                             current_cat.moved = true;
-
-    //                             gg.selected_cells = None;
-    //                             break;
-    //                         }
-    //                     }
-    //                     _ => {
-    //                         todo!()
-    //                     }
-    //                 }
-    //             }
-    //         }
-
-    //         //log!(format!("got mouse pos:{:?}", &gg.dogs));
-    //     }
-    //     log!("DOOOONE");
-    // }
-    // .fuse();
-    // futures::pin_mut!(testy);
 
     let wait_mouse_input = || {
         //set cell
@@ -564,7 +444,6 @@ pub async fn worker_entry() {
 
     let mut testo = handle_move(0);
 
-
     'outer: loop {
         let mut on_select = false;
 
@@ -611,30 +490,15 @@ pub async fn worker_entry() {
                     }
                 }
                 MEvent::CanvasMouseMove { x, y } => {
-                    //log!(format!("{:?}",(x,y)));
-
                     scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
                 }
                 MEvent::EndTurn => {
                     reset = true;
                 }
                 MEvent::CanvasMouseDown { x, y } => {
-                    //log!(format!("{:?}",(x,y)));
-
                     scroll_manager.on_mouse_down([*x, *y]);
                 }
-                MEvent::ButtonClick => {
-                    //     match ggame.selected_cells {
-                    //     Some(CellSelection::BuildSelection(g)) => {
-                    //         log!("adding to roads!!!!!");
-                    //         //roads.pos.push(g);
-                    //         ggame.selected_cells = None;
-                    //     }
-                    //     _ => {
-                    //         panic!("Received button push when we did not ask for it!")
-                    //     }
-                    // }
-                }
+                MEvent::ButtonClick => {}
                 MEvent::ShutdownClick => break 'outer,
             }
         }
@@ -650,9 +514,11 @@ pub async fn worker_entry() {
 
         last_matrix = matrix;
 
+        //TODO don't compute every frame?.
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
         {
+            //Advance state machine.
             let mouse = on_select.then_some(mouse_world);
             let mut jj = Stuff {
                 a: &mut ggame,
@@ -664,6 +530,9 @@ pub async fn worker_entry() {
         scroll_manager.step();
 
         use matrix::*;
+
+        //Drawing below doesnt need mutable reference.
+        let ggame = &ggame;
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
