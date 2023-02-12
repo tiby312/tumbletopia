@@ -13,7 +13,7 @@ impl<'a, Z: Zoo, A: GameStepper<Z>, K: GameStepper<Z>, B: FnMut(A::Result, &mut 
         match self {
             AndThen::First(a, b) => {
                 match a.step(game) {
-                    Stage::Stay => {Stage::Stay}
+                    Stage::Stay => Stage::Stay,
                     Stage::NextStage(j) => {
                         //TODO would be more consistent with Once if the function was called
                         //in the same iteration as the first step call to second.
@@ -22,9 +22,15 @@ impl<'a, Z: Zoo, A: GameStepper<Z>, K: GameStepper<Z>, B: FnMut(A::Result, &mut 
                         Stage::Stay
                     }
                 }
-                
             }
             AndThen::Second(n) => n.step(game),
+        }
+    }
+
+    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+        match self {
+            AndThen::First(a, _) => a.get_animation(),
+            AndThen::Second(a) => a.get_animation(),
         }
     }
 }
@@ -93,9 +99,16 @@ impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
             Stage::NextStage(None)
         }
     }
-    fn get_animation(&mut self, game: &Z::G<'_>) -> Option<&crate::animation::Animation<Warrior>> {
-        todo!()
-        //self.a.as_ref().map(|a|a.get_animation())
+    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+        if let Some(a) = self.a.as_ref() {
+            if let Some(b) = a.get_animation() {
+                Some(b)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 }
 
@@ -104,7 +117,7 @@ pub trait GameStepper<Z: Zoo> {
     //Return if you are done with this stage.
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result>;
 
-    fn get_animation(&mut self, game: &Z::G<'_>) -> Option<&crate::animation::Animation<Warrior>> {
+    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
         None
     }
 
@@ -123,13 +136,6 @@ pub struct Looper<Z, A, F> {
     zoo: Z,
     a: Option<A>,
     func: F,
-}
-
-pub struct Looper2<Z, A, F> {
-    zoo: Z,
-    a: Option<A>,
-    func: F,
-    finished: bool,
 }
 
 pub enum Once<Z, A, K> {
@@ -183,11 +189,24 @@ pub enum LooperRes<A, B> {
     Loop(A),
     Finish(B),
 }
+pub struct Looper2<Z, A, F> {
+    zoo: Z,
+    a: Option<A>,
+    func: F,
+    finished: bool,
+}
 
 impl<Z: Zoo, A: GameStepper<Z>, K, F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<A, K>>
     GameStepper<Z> for Looper2<Z, A, F>
 {
     type Result = K;
+    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+        if let Some(a) = self.a.as_ref() {
+            a.get_animation()
+        } else {
+            None
+        }
+    }
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
         if self.finished {
             return Stage::Stay;
@@ -235,6 +254,20 @@ pub fn looper2<
         a: Some(start),
         func,
         finished: false,
+    }
+}
+
+pub fn team_view(
+    a: [&mut UnitCollection<Warrior>; 2],
+    ind: usize,
+) -> [&mut UnitCollection<Warrior>; 2] {
+    let [a, b] = a;
+    match ind {
+        0 => [a, b],
+        1 => [b, a],
+        _ => {
+            unreachable!()
+        }
     }
 }
 

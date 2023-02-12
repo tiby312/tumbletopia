@@ -21,7 +21,7 @@ pub mod terrain;
 pub mod util;
 use dom::MEvent;
 use projection::*;
-pub mod logic;
+//pub mod logic;
 pub const RESIZE: usize = 6;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -204,7 +204,7 @@ pub enum CellSelection {
 pub struct Game {
     grid_matrix: grids::GridMatrix,
     selected_cells: Option<CellSelection>,
-    animation: Option<animation::Animation<Warrior>>,
+    //animation: Option<animation::Animation<Warrior>>,
     dogs: UnitCollection<Warrior>,
     cats: UnitCollection<Warrior>,
 }
@@ -282,7 +282,6 @@ pub async fn worker_entry() {
     ]);
 
     let selected_cells: Option<CellSelection> = None;
-    let animation = None;
 
     // pub struct Doop {
     //     state: Game,
@@ -292,7 +291,7 @@ pub async fn worker_entry() {
         dogs,
         cats,
         selected_cells,
-        animation,
+        //animation,
         grid_matrix: grids::GridMatrix::new(),
     };
 
@@ -486,10 +485,7 @@ pub async fn worker_entry() {
             }
         }
 
-        fn get_animation(
-            &mut self,
-            game: &Stuff<'_>,
-        ) -> Option<&crate::animation::Animation<Warrior>> {
+        fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
             Some(&self.a)
         }
     }
@@ -503,7 +499,8 @@ pub async fn worker_entry() {
         })
         .and_then(move |mouse_world, g| {
             let game = &mut g.a;
-            let [this_team, that_team] = logic::team_view([&mut game.cats, &mut game.dogs], team);
+            let [this_team, that_team] =
+                gameplay::team_view([&mut game.cats, &mut game.dogs], team);
 
             let cell: GridCoord = GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
 
@@ -536,7 +533,8 @@ pub async fn worker_entry() {
     let select_unit = move |team| {
         gameplay::looper2(wait_mouse_input(), move |mouse_world, stuff| {
             let game = &mut stuff.a;
-            let [this_team, that_team] = logic::team_view([&mut game.cats, &mut game.dogs], team);
+            let [this_team, that_team] =
+                gameplay::team_view([&mut game.cats, &mut game.dogs], team);
 
             let cell: GridCoord = GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
 
@@ -690,33 +688,6 @@ pub async fn worker_entry() {
             testo.step(&mut jj);
         }
 
-        // let (this_team_model, this_team, other_team) = if turn_counter {
-        //     (&dog, &mut ggame.dogs, &mut ggame.cats)
-        // } else {
-        //     (&cat, &mut ggame.cats, &mut ggame.dogs)
-        // };
-
-        let mut end_turn = false;
-
-        // if reset {
-        //     for a in this_team.elem.iter_mut() {
-        //         a.moved = false;
-        //         a.attacked = false;
-        //     }
-        //     end_turn = true;
-        // }
-
-        if ggame.animation.is_some() {
-            on_select = false;
-        }
-
-        if on_select && !end_turn {}
-
-        // if end_turn {
-        //     ggame.selected_cells = None;
-        //     turn_counter = !turn_counter;
-        // }
-
         scroll_manager.step();
 
         use matrix::*;
@@ -758,25 +729,6 @@ pub async fn worker_entry() {
                 let mut v = draw_sys.view(mm.as_ref());
                 grass.draw(&mut v);
             }
-        }
-
-        if let Some(a) = ggame.animation.as_mut() {
-            if let Some(_) = a.animate_step() {
-                //animation = Some(a);
-            } else {
-                //animation_tx.send(()).await;
-
-                // let cat = a.into_data();
-                // animation = None;
-
-                // ggame.selected_cells = Some(get_cat_move_attack_matrix(
-                //     &cat,
-                //     this_team.filter(),
-                //     roads.foo(),
-                //     &gg,
-                // ));
-                // this_team.elem.push(cat);
-            };
         }
 
         let cat_draw = WarriorDraw::new(&ggame.cats, &cat, &drop_shadow);
@@ -827,7 +779,7 @@ pub async fn worker_entry() {
             cat_draw.draw_shadow(&gg, &mut draw_sys, &matrix);
             dog_draw.draw_shadow(&gg, &mut draw_sys, &matrix);
 
-            if let Some(a) = &ggame.animation {
+            if let Some(a) = &testo.get_animation() {
                 let pos = a.calc_pos();
                 let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -838,13 +790,14 @@ pub async fn worker_entry() {
             }
         });
 
-        if let Some(a) = &ggame.animation {
+        if let Some(a) = &testo.get_animation() {
+            log!("animatingggg");
             let pos = a.calc_pos();
             let t = matrix::translation(pos[0], pos[1], 20.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
-            //this_team_model.draw(&mut v);
+            cat.draw(&mut v);
         }
 
         cat_draw.draw(&gg, &mut draw_sys, &matrix);

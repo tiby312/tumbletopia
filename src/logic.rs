@@ -1,18 +1,6 @@
 use super::*;
 
-pub fn team_view(
-    a: [&mut UnitCollection<Warrior>; 2],
-    ind: usize,
-) -> [&mut UnitCollection<Warrior>; 2] {
-    let [a, b] = a;
-    match ind {
-        0 => [a, b],
-        1 => [b, a],
-        _ => {
-            unreachable!()
-        }
-    }
-}
+
 pub struct Doop<'a, 'b> {
     pub team: usize,
     pub game: std::sync::Arc<futures::lock::Mutex<&'b mut Game>>,
