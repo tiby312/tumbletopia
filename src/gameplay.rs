@@ -1,42 +1,54 @@
 use super::*;
 
-pub enum AndThen<A, B, N> {
-    First(A, B),
-    Second(N),
+pub struct AndThen<A, B, N> {
+    first: Option<(A, B)>,
+    second: Option<N>,
 }
-impl<'a, Z: Zoo, A: GameStepper<Z>, K: GameStepper<Z>, B: FnMut(A::Result, &mut Z::G<'_>) -> K>
-    GameStepper<Z> for AndThen<A, B, K>
+impl<
+        'a,
+        Z: Zoo,
+        A: GameStepper<Z>,
+        K: GameStepper<Z>,
+        B: FnOnce(A::Result, &mut Z::G<'_>) -> K,
+    > GameStepper<Z> for AndThen<A, B, K>
 {
     type Result = K::Result;
     //Return if you are done with this stage.
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
-        match self {
-            AndThen::First(a, b) => {
-                match a.step(game) {
-                    Stage::Stay => Stage::Stay,
-                    Stage::NextStage(j) => {
-                        //TODO would be more consistent with Once if the function was called
-                        //in the same iteration as the first step call to second.
-                        let nn = b(j, game);
-                        *self = AndThen::Second(nn);
-                        Stage::Stay
-                    }
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
+        if let Some((a, _)) = &mut self.first {
+            match a.step(game) {
+                Stage::Stay => Stage::Stay,
+                Stage::NextStage(()) => {
+                    let (a, b) = self.first.take().unwrap();
+                    let j = a.consume(game);
+
+                    //TODO would be more consistent with Once if the function was called
+                    //in the same iteration as the first step call to second.
+                    let nn = b(j, game);
+                    self.second = Some(nn);
+                    Stage::Stay
                 }
             }
-            AndThen::Second(n) => n.step(game),
+        } else {
+            self.second.as_mut().unwrap().step(game)
         }
+    }
+    fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
+        self.second.unwrap().consume(game)
     }
 
     fn get_selection(&self) -> Option<&crate::CellSelection> {
-        match self {
-            AndThen::First(a, _) => a.get_selection(),
-            AndThen::Second(a) => a.get_selection(),
+        if let Some((a, _)) = self.first.as_ref() {
+            a.get_selection()
+        } else {
+            self.second.as_ref().unwrap().get_selection()
         }
     }
     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
-        match self {
-            AndThen::First(a, _) => a.get_animation(),
-            AndThen::Second(a) => a.get_animation(),
+        if let Some((a, _)) = self.first.as_ref() {
+            a.get_animation()
+        } else {
+            self.second.as_ref().unwrap().get_animation()
         }
     }
 }
@@ -47,15 +59,36 @@ pub enum Stage<T> {
 }
 
 #[derive(Copy, Clone)]
-pub struct WaitForCustom<Z, F> {
+pub struct WaitForCustom<Z, F, R> {
     zoo: Z,
     func: F,
+    res: Option<R>,
 }
 pub fn wait_custom<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>>(
     zoo: Z,
     func: F,
-) -> WaitForCustom<Z, F> {
-    WaitForCustom { zoo, func }
+) -> WaitForCustom<Z, F, L> {
+    WaitForCustom {
+        zoo,
+        func,
+        res: None,
+    }
+}
+
+impl<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>> GameStepper<Z> for WaitForCustom<Z, F, L> {
+    type Result = L;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
+        match (self.func)(game) {
+            Stage::Stay => Stage::Stay,
+            Stage::NextStage(o) => {
+                self.res = Some(o);
+                Stage::NextStage(())
+            }
+        }
+    }
+    fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
+        self.res.unwrap()
+    }
 }
 
 pub trait Zoo {
@@ -63,13 +96,6 @@ pub trait Zoo {
     where
         Self: 'b;
     fn create() -> Self;
-}
-
-impl<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>> GameStepper<Z> for WaitForCustom<Z, F> {
-    type Result = L;
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
-        (self.func)(game)
-    }
 }
 
 pub fn next() -> Next {
@@ -83,6 +109,9 @@ impl<Z: Zoo> GameStepper<Z> for Next {
     fn step(&mut self, _: &mut Z::G<'_>) -> Stage<Self::Result> {
         Stage::NextStage(())
     }
+    fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
+        ()
+    }
 }
 
 pub struct Optional<A> {
@@ -95,14 +124,21 @@ pub fn optional<Z: Zoo, A: GameStepper<Z>>(a: Option<A>) -> Optional<A> {
 
 impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
     type Result = Option<A::Result>;
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
         if let Some(a) = self.a.as_mut() {
             match a.step(game) {
                 Stage::Stay => Stage::Stay,
-                Stage::NextStage(e) => Stage::NextStage(Some(e)),
+                Stage::NextStage(()) => Stage::NextStage(()),
             }
         } else {
-            Stage::NextStage(None)
+            Stage::NextStage(())
+        }
+    }
+    fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
+        if let Some(a) = self.a {
+            Some(a.consume(game))
+        } else {
+            None
         }
     }
     fn get_selection(&self) -> Option<&crate::CellSelection> {
@@ -132,7 +168,14 @@ impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
 pub trait GameStepper<Z: Zoo> {
     type Result;
     //Return if you are done with this stage.
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result>;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()>;
+
+    fn consume(self, game: &mut Z::G<'_>) -> Self::Result
+    where
+        Self: Sized,
+    {
+        todo!()
+    }
 
     fn get_selection(&self) -> Option<&crate::CellSelection> {
         None
@@ -141,14 +184,17 @@ pub trait GameStepper<Z: Zoo> {
         None
     }
 
-    fn and_then<K: GameStepper<Z>, B: FnMut(Self::Result, &mut Z::G<'_>) -> K>(
+    fn and_then<K: GameStepper<Z>, B: FnOnce(Self::Result, &mut Z::G<'_>) -> K>(
         self,
         other: B,
     ) -> AndThen<Self, B, K>
     where
         Self: Sized,
     {
-        AndThen::First(self, other)
+        AndThen {
+            first: Some((self, other)),
+            second: None,
+        }
     }
 }
 
@@ -158,30 +204,34 @@ pub struct Looper<Z, A, F> {
     func: F,
 }
 
-pub enum Once<Z, A, K> {
-    Func(Z, Option<A>),
-    Floop(K),
-}
-pub fn once<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>>(
-    zoo: Z,
-    func: A,
-) -> Once<Z, A, L> {
-    Once::Func(zoo, Some(func))
-}
-impl<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>> GameStepper<Z> for Once<Z, A, L> {
-    type Result = L::Result;
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
-        match self {
-            Once::Func(_, func) => {
-                let mut a = func.take().unwrap()(game);
-                let res = a.step(game);
-                *self = Once::Floop(a);
-                res
-            }
-            Once::Floop(a) => a.step(game),
-        }
-    }
-}
+// pub enum Once<Z, A, K> {
+//     Func(Z, Option<A>),
+//     Floop(K),
+// }
+// pub fn once<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>>(
+//     zoo: Z,
+//     func: A,
+// ) -> Once<Z, A, L> {
+//     Once::Func(zoo, Some(func))
+// }
+// impl<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>> GameStepper<Z> for Once<Z, A, L> {
+//     type Result = L::Result;
+//     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
+//         match self {
+//             Once::Func(_, func) => {
+//                 let mut a = func.take().unwrap()(game);
+//                 let res = a.step(game);
+//                 *self = Once::Floop(a);
+//                 res
+//             }
+//             Once::Floop(a) => a.step(game),
+//         }
+//     }
+//     fn consume(self,game:&mut Z::G<'_>)->Self::Result{
+
+//     }
+
+// }
 
 // pub struct Fuse<A>{
 //     a:A,
@@ -209,15 +259,15 @@ pub enum LooperRes<A, B> {
     Loop(A),
     Finish(B),
 }
-pub struct Looper2<Z, A, F> {
+pub struct Looper2<Z, A, F, K> {
     zoo: Z,
     a: Option<A>,
     func: F,
-    finished: bool,
+    finished: Option<K>,
 }
 
 impl<Z: Zoo, A: GameStepper<Z>, K, F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<A, K>>
-    GameStepper<Z> for Looper2<Z, A, F>
+    GameStepper<Z> for Looper2<Z, A, F, K>
 {
     type Result = K;
     fn get_selection(&self) -> Option<&crate::CellSelection> {
@@ -234,8 +284,11 @@ impl<Z: Zoo, A: GameStepper<Z>, K, F: FnMut(A::Result, &mut Z::G<'_>) -> LooperR
             None
         }
     }
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
-        if self.finished {
+    fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
+        self.finished.unwrap()
+    }
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
+        if self.finished.is_some() {
             return Stage::Stay;
         }
 
@@ -244,24 +297,20 @@ impl<Z: Zoo, A: GameStepper<Z>, K, F: FnMut(A::Result, &mut Z::G<'_>) -> LooperR
                 Stage::Stay => {
                     return Stage::Stay;
                 }
-                Stage::NextStage(a) => a,
+                Stage::NextStage(()) => self.a.take().unwrap().consume(game),
             }
         } else {
-            log!("hayaaa");
             unreachable!();
         };
 
         match (self.func)(a, game) {
             LooperRes::Loop(a) => {
-                log!("staying");
                 self.a = Some(a);
-                log!("staying2");
                 Stage::Stay
             }
             LooperRes::Finish(b) => {
-                self.finished = true;
-                log!("Finished!!!!!");
-                Stage::NextStage(b)
+                self.finished = Some(b);
+                Stage::NextStage(())
             }
         }
     }
@@ -275,12 +324,12 @@ pub fn looper2<
 >(
     start: A,
     func: F,
-) -> Looper2<Z, A, F> {
+) -> Looper2<Z, A, F, K> {
     Looper2 {
         zoo: Z::create(),
         a: Some(start),
         func,
-        finished: false,
+        finished: None,
     }
 }
 
