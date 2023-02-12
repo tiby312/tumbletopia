@@ -209,6 +209,19 @@ pub struct Game {
     cats: UnitCollection<Warrior>,
 }
 
+struct Doopo;
+impl gameplay::Zoo for Doopo {
+    type G<'a> = Stuff<'a>;
+    fn create() -> Self {
+        Doopo
+    }
+}
+
+struct Stuff<'a> {
+    a: &'a mut Game,
+    mouse: Option<[f32; 2]>,
+}
+
 #[wasm_bindgen]
 pub async fn worker_entry() {
     console_error_panic_hook::set_once();
@@ -220,8 +233,6 @@ pub async fn worker_entry() {
     let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
 
     let mut draw_sys = ctx.shader_system();
-    let mut buffer = ctx.buffer_dynamic();
-    let cache = &mut vec![];
 
     //TODO get rid of this somehow.
     //these values are incorrect.
@@ -281,25 +292,13 @@ pub async fn worker_entry() {
         Warrior::new(GridCoord([3, 1])),
     ]);
 
-    //let selected_cells: Option<CellSelection> = None;
-
-    // pub struct Doop {
-    //     state: Game,
-    //     select: Option<[f32; 2]>,
-    // }
-    let mut ga = Game {
+    let mut ggame = Game {
         dogs,
         cats,
-        //selected_cells,
-        //animation,
         grid_matrix: grids::GridMatrix::new(),
     };
 
-    //let (mut ggame, mut ggame2) = futures::lock::BiLock::new(&mut ga);
-    let mut ggame = std::sync::Arc::new(futures::lock::Mutex::new(&mut ga));
-    let ggame2 = ggame.clone();
-
-    let mut roads = terrain::TerrainCollection {
+    let roads = terrain::TerrainCollection {
         pos: vec![],
         func: |a: MoveUnit| MoveUnit(a.0 / 2),
     };
@@ -424,23 +423,6 @@ pub async fn worker_entry() {
     // }
     // .fuse();
     // futures::pin_mut!(testy);
-
-    pub struct Doop {
-        state: Game,
-        select: Option<[f32; 2]>,
-    }
-
-    struct Doopo;
-    impl gameplay::Zoo for Doopo {
-        type G<'a> = Stuff<'a>;
-        fn create() -> Self {
-            Doopo
-        }
-    }
-    struct Stuff<'a> {
-        a: &'a mut Game,
-        mouse: Option<[f32; 2]>,
-    }
 
     let wait_mouse_input = || {
         //set cell
@@ -602,14 +584,6 @@ pub async fn worker_entry() {
 
         let res = frame_timer.next().await;
 
-        // let res = futures::select! {
-        //     foo=frame_timer.next().fuse()=>foo,
-        //     _=testy=>continue
-        // };
-
-        let mut ggame = &mut *ggame.lock().await;
-
-        //let res = frame_timer.next().await;
         let mut reset = false;
         for e in res {
             match e {
@@ -692,9 +666,6 @@ pub async fn worker_entry() {
 
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
-        // if on_select {
-        //     tx.try_send(mouse_world).unwrap();
-        // }
         {
             let mouse = on_select.then_some(mouse_world);
             let mut jj = Stuff {
@@ -707,18 +678,6 @@ pub async fn worker_entry() {
         scroll_manager.step();
 
         use matrix::*;
-
-        // simple2d::shapes(cache).rect(
-        //     simple2d::Rect {
-        //         x: mouse_world[0] - grid_viewport.spacing / 2.0,
-        //         y: mouse_world[1] - grid_viewport.spacing / 2.0,
-        //         w: grid_viewport.spacing,
-        //         h: grid_viewport.spacing,
-        //     },
-        //     mouse_world[2] - 10.0,
-        // );
-
-        buffer.update_clear(cache);
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
@@ -831,6 +790,8 @@ pub async fn worker_entry() {
 
     log!("worker thread closing");
 }
+
+fn draw_game(game: &Game, stepper: &impl GameStepper<Doopo>) {}
 
 fn disable_depth(ctx: &WebGl2RenderingContext, func: impl FnOnce()) {
     ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
