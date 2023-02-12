@@ -106,7 +106,7 @@ pub fn next() -> Next {
 pub struct Next;
 impl<Z: Zoo> GameStepper<Z> for Next {
     type Result = ();
-    fn step(&mut self, _: &mut Z::G<'_>) -> Stage<Self::Result> {
+    fn step(&mut self, _: &mut Z::G<'_>) -> Stage<()> {
         Stage::NextStage(())
     }
     fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
