@@ -1,7 +1,6 @@
 use axgeom::vec2same;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 
-use futures::{FutureExt, SinkExt, StreamExt};
 use gloo::console::log;
 use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
@@ -124,7 +123,7 @@ impl<T: HasPos> UnitCollection<T> {
         self.elem.swap_remove(i)
     }
 
-    fn find_mut(&mut self, a: &GridCoord) -> Option<&mut T> {
+    pub fn find_mut(&mut self, a: &GridCoord) -> Option<&mut T> {
         self.elem.iter_mut().find(|b| b.get_pos() == a)
     }
     fn find(&self, a: &GridCoord) -> Option<&T> {
@@ -457,7 +456,7 @@ pub async fn worker_entry() {
     };
 
     let mut counter = 0;
-    let mut testo = gameplay::looper2(handle_move(counter), move |res, stuff| {
+    let mut testo = gameplay::looper2(handle_move(counter), move |_res, _stuff| {
         counter += 1;
         if counter > 1 {
             counter = 0;
@@ -646,7 +645,6 @@ pub async fn worker_entry() {
         });
 
         if let Some(a) = &testo.get_animation() {
-            log!("animatingggg");
             let pos = a.calc_pos();
             let t = matrix::translation(pos[0], pos[1], 20.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
@@ -670,8 +668,6 @@ pub async fn worker_entry() {
 
     log!("worker thread closing");
 }
-
-fn draw_game(_game: &Game, _stepper: &impl GameStepper<Doopo>) {}
 
 fn disable_depth(ctx: &WebGl2RenderingContext, func: impl FnOnce()) {
     ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
