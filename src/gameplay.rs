@@ -129,30 +129,32 @@ pub struct Looper2<Z, A, F> {
     finished: bool,
 }
 
-pub struct Once<Z, A, K> {
-    zoo: Z,
-    func: Option<A>,
-    floop: Option<K>,
+pub enum Once<Z, A, K> {
+    Func(Z, Option<A>),
+    Floop(K),
 }
 pub fn once<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>>(
     zoo: Z,
     func: A,
 ) -> Once<Z, A, L> {
-    Once {
-        zoo,
-        func: Some(func),
-        floop: None,
-    }
+    Once::Func(zoo, Some(func))
 }
 impl<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>> GameStepper<Z> for Once<Z, A, L> {
     type Result = L::Result;
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
-        if let Some(func) = self.func.take() {
-            let a = func(game);
-            self.floop = Some(a);
+        match self {
+            Once::Func(_, func) => {
+                let a = func.take().unwrap()(game);
+                *self = Once::Floop(a)
+            }
+            _ => {}
         }
-
-        self.floop.as_mut().unwrap().step(game)
+        match self {
+            Once::Floop(a) => a.step(game),
+            _ => {
+                unreachable!()
+            }
+        }
     }
 }
 
