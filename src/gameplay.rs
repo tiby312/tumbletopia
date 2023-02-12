@@ -13,13 +13,15 @@ impl<'a, Z: Zoo, A: GameStepper<Z>, K: GameStepper<Z>, B: FnMut(A::Result, &mut 
         match self {
             AndThen::First(a, b) => {
                 match a.step(game) {
-                    Stage::Stay => {}
+                    Stage::Stay => {Stage::Stay}
                     Stage::NextStage(j) => {
                         let nn = b(j, game);
                         *self = AndThen::Second(nn);
+                        //ans
+                        Stage::Stay
                     }
                 }
-                Stage::Stay
+                
             }
             AndThen::Second(n) => n.step(game),
         }
