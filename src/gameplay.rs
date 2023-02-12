@@ -27,6 +27,12 @@ impl<'a, Z: Zoo, A: GameStepper<Z>, K: GameStepper<Z>, B: FnMut(A::Result, &mut 
         }
     }
 
+    fn get_selection(&self) -> Option<&crate::CellSelection> {
+        match self {
+            AndThen::First(a, _) => a.get_selection(),
+            AndThen::Second(a) => a.get_selection(),
+        }
+    }
     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
         match self {
             AndThen::First(a, _) => a.get_animation(),
@@ -99,6 +105,17 @@ impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
             Stage::NextStage(None)
         }
     }
+    fn get_selection(&self) -> Option<&crate::CellSelection> {
+        if let Some(a) = self.a.as_ref() {
+            if let Some(b) = a.get_selection() {
+                Some(b)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
         if let Some(a) = self.a.as_ref() {
             if let Some(b) = a.get_animation() {
@@ -117,6 +134,9 @@ pub trait GameStepper<Z: Zoo> {
     //Return if you are done with this stage.
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result>;
 
+    fn get_selection(&self) -> Option<&crate::CellSelection> {
+        None
+    }
     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
         None
     }
@@ -200,6 +220,13 @@ impl<Z: Zoo, A: GameStepper<Z>, K, F: FnMut(A::Result, &mut Z::G<'_>) -> LooperR
     GameStepper<Z> for Looper2<Z, A, F>
 {
     type Result = K;
+    fn get_selection(&self) -> Option<&crate::CellSelection> {
+        if let Some(a) = self.a.as_ref() {
+            a.get_selection()
+        } else {
+            None
+        }
+    }
     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
         if let Some(a) = self.a.as_ref() {
             a.get_animation()
