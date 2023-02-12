@@ -144,16 +144,12 @@ impl<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>> GameStepper<Z> fo
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
         match self {
             Once::Func(_, func) => {
-                let a = func.take().unwrap()(game);
-                *self = Once::Floop(a)
+                let mut a = func.take().unwrap()(game);
+                let res = a.step(game);
+                *self = Once::Floop(a);
+                res
             }
-            _ => {}
-        }
-        match self {
             Once::Floop(a) => a.step(game),
-            _ => {
-                unreachable!()
-            }
         }
     }
 }
