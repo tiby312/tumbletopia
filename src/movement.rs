@@ -160,7 +160,7 @@ pub fn contains_coord<'a, I: Iterator<Item = &'a GridCoord>>(mut it: I, b: &Grid
 }
 
 //Represents all the legal moves for a specific piece.
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct PossibleMoves {
     //Has the end coord,path from current, and the remainder cost to get there.
     //cells that are the furthest away will have a move unit of zero.

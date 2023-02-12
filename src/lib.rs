@@ -193,7 +193,7 @@ impl Warrior {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum CellSelection {
     MoveSelection(movement::PossibleMoves, movement::PossibleMoves),
     BuildSelection(GridCoord),
@@ -540,9 +540,9 @@ pub async fn worker_entry() {
                 terrain::Grass,
                 &game.grid_matrix,
             );
-            game.selected_cells=Some(pos);
+            game.selected_cells=Some(pos.clone());
             
-            gameplay::LooperRes::Finish(())
+            gameplay::LooperRes::Finish(player_move_select(pos,team))
 
         })
     };

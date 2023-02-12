@@ -76,10 +76,6 @@ pub trait GameStepper<Z: Zoo> {
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result>;
 
     
-    //TODO use this!
-    fn get_cell(&mut self, game: &Z::G<'_>)->Option<&CellSelection>{
-        None
-    }
 
     fn get_animation(&mut self, game: &Z::G<'_>)->Option<&crate::animation::Animation<Warrior>>{
         None
