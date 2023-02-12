@@ -455,18 +455,6 @@ pub async fn worker_entry() {
         })
     };
 
-    // let animate = || {
-    //     let mut animator = 0;
-    //     gameplay::wait_custom(Doopo, move |e| {
-    //         animator += 1;
-    //         if animator > 30 {
-    //             gameplay::Stage::NextStage(())
-    //         } else {
-    //             gameplay::Stage::Stay
-    //         }
-    //     })
-    // };
-
     pub struct AnimationTicker {
         a: animation::Animation<Warrior>,
     }
@@ -508,13 +496,11 @@ pub async fn worker_entry() {
         fn step(&mut self, g1: &mut Stuff<'_>) -> gameplay::Stage<Self::Result> {
             let game = &mut g1.a;
             if let Some(mouse_world) = g1.mouse {
-                
                 let cell: GridCoord =
                     GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
 
                 match &self.a {
-                    Some(CellSelection::MoveSelection(ss, _)) => {      
-
+                    Some(CellSelection::MoveSelection(ss, _)) => {
                         if movement::contains_coord(ss.iter_coords(), &cell) {
                             gameplay::Stage::NextStage((self.a.take().unwrap(), Some(cell)))
                         } else {
