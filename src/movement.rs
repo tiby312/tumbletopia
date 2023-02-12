@@ -205,7 +205,7 @@ impl PossibleMoves {
         filter: &F,
         mo: &M,
         current_path: Path,
-        mut remaining_moves: MoveUnit,
+        remaining_moves: MoveUnit,
     ) {
         if remaining_moves.0 == 0 {
             return;

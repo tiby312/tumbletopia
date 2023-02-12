@@ -1,6 +1,6 @@
 use axgeom::vec2same;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
-use duckduckgeo::grid::Grid2D;
+
 use futures::{FutureExt, SinkExt, StreamExt};
 use gloo::console::log;
 use model::matrix::{self, MyMatrix};
@@ -327,7 +327,7 @@ pub async fn worker_entry() {
     }
     impl GameStepper<Doopo> for AnimationTicker {
         type Result = gameplay::Next;
-        fn step(&mut self, game: &mut Stuff<'_>) -> gameplay::Stage<Self::Result> {
+        fn step(&mut self, _game: &mut Stuff<'_>) -> gameplay::Stage<Self::Result> {
             if let Some(_) = self.a.animate_step() {
                 gameplay::Stage::Stay
             } else {
@@ -409,15 +409,15 @@ pub async fn worker_entry() {
     let handle_move = move |team| {
         let k = move |team| {
             select_unit(team)
-                .and_then(move |c, game| PlayerCellAsk::new(c, team))
+                .and_then(move |c, _game| PlayerCellAsk::new(c, team))
                 .and_then(move |(c, cell), g1| {
                     let game = &mut g1.a;
                     if let Some(cell) = cell {
-                        let [this_team, that_team] =
+                        let [this_team, _that_team] =
                             gameplay::team_view([&mut game.cats, &mut game.dogs], team);
 
                         match c {
-                            CellSelection::MoveSelection(ss, attack) => {
+                            CellSelection::MoveSelection(ss, _attack) => {
                                 let mut c = this_team.remove(ss.start());
                                 let (dd, aa) = ss.get_path_data(cell).unwrap();
                                 c.position = cell;
@@ -436,8 +436,8 @@ pub async fn worker_entry() {
                 })
         };
 
-        gameplay::looper2(k(team), move |res, stuff| match res {
-            Some(animation) => gameplay::LooperRes::Finish(gameplay::next()),
+        gameplay::looper2(k(team), move |res, _stuff| match res {
+            Some(_animation) => gameplay::LooperRes::Finish(gameplay::next()),
             None => gameplay::LooperRes::Loop(k(team)),
         })
     };
@@ -646,7 +646,7 @@ pub async fn worker_entry() {
     log!("worker thread closing");
 }
 
-fn draw_game(game: &Game, stepper: &impl GameStepper<Doopo>) {}
+fn draw_game(_game: &Game, _stepper: &impl GameStepper<Doopo>) {}
 
 fn disable_depth(ctx: &WebGl2RenderingContext, func: impl FnOnce()) {
     ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
