@@ -564,20 +564,6 @@ pub async fn worker_entry() {
 
     let mut testo = handle_move(0);
 
-    // //TODO use this!
-    // let mut cc = 0;
-    // let mut k = gameplay::looper(Doopo, |_| {
-    //     cc += 1;
-    //     if cc > 2 {
-    //         None
-    //     } else {
-    //         Some(player_turn(0).and_then(|w, g| player_turn(1)))
-    //     }
-    // })
-    // .and_then(|_, _| {
-    //     log!("completely done!");
-    //     gameplay::next()
-    // });
 
     'outer: loop {
         let mut on_select = false;
