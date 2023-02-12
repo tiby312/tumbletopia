@@ -127,8 +127,7 @@ pub fn text_texture(text: &str, width: usize, height: usize) -> web_sys::HtmlCan
 
 #[wasm_bindgen]
 pub async fn main_entry() {
-    console_error_panic_hook::set_once();
-
+    
     use futures::StreamExt;
 
     log!("demo start");

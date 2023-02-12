@@ -1,3 +1,5 @@
+use super::*;
+
 pub enum AndThen<A, B, N> {
     First(A, B),
     Second(N),
@@ -45,6 +47,7 @@ pub trait Zoo {
     type G<'b>
     where
         Self: 'b;
+    fn create()->Self;
 }
 
 impl<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>> GameStepper<Z> for WaitForCustom<Z, F> {
@@ -91,6 +94,91 @@ pub struct Looper<Z, A, F> {
     a: Option<A>,
     func: F,
 }
+
+pub struct Looper2<Z,A,F>{
+    zoo:Z,
+    a:Option<A>,
+    func:F,
+    finished:bool
+}
+
+// pub struct Fuse<A>{
+//     a:A,
+//     voo:bool
+// }
+// impl<Z:Zoo,A:GameStepper<Z>> GameStepper<Z> for Fuse<A>{
+//     type Result=A::Result;
+//     fn step(&mut self,game:&mut Z::G<'_>)->Stage<Self::Result>{
+//         if voo{
+
+//         }
+//         match self.a.step(game){
+//             Stage::NextStage(a)=>{
+//                 Stage::NextStage(a)
+//             },
+//             Stage::Stay=>{
+//                 Stage::Stay
+//             }
+//         }
+
+//     }
+// }
+
+pub enum LooperRes<A,B>{
+    Loop(A),
+    Finish(B)
+}
+
+impl<Z: Zoo, A: GameStepper<Z>,K:GameStepper<Z>, F: FnMut(A::Result,&mut Z::G<'_>) -> LooperRes<A,K>> GameStepper<Z>
+    for Looper2<Z, A, F>
+{
+    type Result = K;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
+        if self.finished{
+            return Stage::Stay
+        }
+
+        let a=if let Some(a)=&mut self.a{
+            match a.step(game){
+                Stage::Stay=>{
+                    
+                    return Stage::Stay;
+                }
+                Stage::NextStage(a)=>{
+                    a
+                }
+            }
+        }else{
+            log!("hayaaa");
+            unreachable!();
+        };
+
+       match (self.func)(a,game){
+            LooperRes::Loop(a)=>{
+                log!("staying");
+                self.a=Some(a);
+                log!("staying2");
+                Stage::Stay
+            },
+            LooperRes::Finish(b)=>{
+                self.finished=true;
+                log!("Finished!!!!!");
+                Stage::NextStage(b)
+            }
+       }
+
+    }
+}
+
+
+pub fn looper2<Z: Zoo, A: GameStepper<Z>,K:GameStepper<Z>, F: FnMut(A::Result,&mut Z::G<'_>) -> LooperRes<A,K>>(
+    start:A,
+    func: F,
+) -> Looper2<Z, A, F> {
+    Looper2 { zoo:Z::create(),a: Some(start), func,finished:false }
+}
+
+
 pub fn looper<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>>(
     zoo: Z,
     func: F,

@@ -211,6 +211,9 @@ pub struct Game {
 
 #[wasm_bindgen]
 pub async fn worker_entry() {
+    console_error_panic_hook::set_once();
+
+
     let (mut w, ss) = shogo::EngineWorker::new().await;
     let mut frame_timer = shogo::FrameTimer::new(60, ss);
 
@@ -308,129 +311,262 @@ pub async fn worker_entry() {
 
     //let mut turn_counter = false;
 
-    let (mut tx, mut rx) = futures::channel::mpsc::channel(1);
-    let (mut animation_tx, mut animation_rx) = futures::channel::mpsc::channel(1);
+    //let (mut tx, mut rx) = futures::channel::mpsc::channel(1);
+    //let (mut animation_tx, mut animation_rx) = futures::channel::mpsc::channel(1);
 
-    let testy = async {
-        for i in 0..5 {
-            for j in 0..2 {
-                // async fn handle_turn(){
-                //     let cell=loop {
-                //         let unit=select_team_unit().await;
-                //         let area=generate_movement(selected_unit);
-                //         let area_lock=send_draw_lock(area);
-                //         if let Some(cell)=select_cell_from_area(area).await {
-                //             break cell;
-                //         }
-                //     };
+    // let testy = async {
+    //     for i in 0..5 {
+    //         for j in 0..2 {
+    //             // async fn handle_turn(){
+    //             //     let cell=loop {
+    //             //         let unit=select_team_unit().await;
+    //             //         let area=generate_movement(selected_unit);
+    //             //         let area_lock=send_draw_lock(area);
+    //             //         if let Some(cell)=select_cell_from_area(area).await {
+    //             //             break cell;
+    //             //         }
+    //             //     };
 
-                //     move_to(unit,cell).await;
+    //             //     move_to(unit,cell).await;
 
-                //     {
-                //         let area=generate_attack(selected_unit);
-                //         let area_lock=send_draw_lock(area).await;
-                //         if let Some(cell)=select_cell_from_area_with_enemy(area).await{
-                //             attack_unit(unit,cell)
-                //         }
-                //     }
-                //     //now move unit to cell
-                // };
+    //             //     {
+    //             //         let area=generate_attack(selected_unit);
+    //             //         let area_lock=send_draw_lock(area).await;
+    //             //         if let Some(cell)=select_cell_from_area_with_enemy(area).await{
+    //             //             attack_unit(unit,cell)
+    //             //         }
+    //             //     }
+    //             //     //now move unit to cell
+    //             // };
 
-                loop {
-                    let mut d = logic::Doop {
-                        game: ggame2.clone(),
-                        rx: &mut rx,
-                        team: j,
-                    };
-                    //Wait for user to click a unit and present move options to user
+    //             loop {
+    //                 let mut d = logic::Doop {
+    //                     game: ggame2.clone(),
+    //                     rx: &mut rx,
+    //                     team: j,
+    //                 };
+    //                 //Wait for user to click a unit and present move options to user
 
-                    let (mut game, cell) = d.get_possible_moves().await;
-                    game.selected_cells = Some(cell);
-                    drop(game);
+    //                 let (mut game, cell) = d.get_possible_moves().await;
+    //                 game.selected_cells = Some(cell);
+    //                 drop(game);
 
-                    if d.pick_possible_move().await {
-                        break;
-                    }
-                }
+    //                 if d.pick_possible_move().await {
+    //                     break;
+    //                 }
+    //             }
 
-                {
-                    //Wait for the animation to finish and then show attack area
-                    animation_rx.next().await;
-                    let mut gg1 = ggame2.lock().await;
-                    let gg = &mut *gg1;
-                    let [this_team, that_team] = logic::team_view([&mut gg.cats, &mut gg.dogs], j);
-                    let unit = gg.animation.take().unwrap().into_data();
+    //             {
+    //                 //Wait for the animation to finish and then show attack area
+    //                 animation_rx.next().await;
+    //                 let mut gg1 = ggame2.lock().await;
+    //                 let gg = &mut *gg1;
+    //                 let [this_team, that_team] = logic::team_view([&mut gg.cats, &mut gg.dogs], j);
+    //                 let unit = gg.animation.take().unwrap().into_data();
 
-                    this_team.elem.push(unit);
-                    let unit = this_team.elem.last().unwrap();
+    //                 this_team.elem.push(unit);
+    //                 let unit = this_team.elem.last().unwrap();
 
-                    gg.selected_cells = Some(get_cat_move_attack_matrix(
-                        unit,
-                        this_team.filter(),
-                        roads.foo(),
-                        &gg.grid_matrix,
-                    ));
-                }
+    //                 gg.selected_cells = Some(get_cat_move_attack_matrix(
+    //                     unit,
+    //                     this_team.filter(),
+    //                     roads.foo(),
+    //                     &gg.grid_matrix,
+    //                 ));
+    //             }
 
-                //Wait for user to select a valid attack cell, or no cell
-                loop {
-                    let mouse_world: [f32; 2] = rx.next().await.unwrap();
-                    let mut gg1 = ggame2.lock().await;
-                    let gg = &mut *gg1;
-                    let [this_team, that_team] = logic::team_view([&mut gg.cats, &mut gg.dogs], j);
+    //             //Wait for user to select a valid attack cell, or no cell
+    //             loop {
+    //                 let mouse_world: [f32; 2] = rx.next().await.unwrap();
+    //                 let mut gg1 = ggame2.lock().await;
+    //                 let gg = &mut *gg1;
+    //                 let [this_team, that_team] = logic::team_view([&mut gg.cats, &mut gg.dogs], j);
 
-                    let cell: GridCoord =
-                        GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
+    //                 let cell: GridCoord =
+    //                     GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
 
-                    let s = gg.selected_cells.as_mut().unwrap();
+    //                 let s = gg.selected_cells.as_mut().unwrap();
 
-                    match s {
-                        CellSelection::MoveSelection(ss, attack) => {
-                            let target_cat_pos = &cell;
+    //                 match s {
+    //                     CellSelection::MoveSelection(ss, attack) => {
+    //                         let target_cat_pos = &cell;
 
-                            if movement::contains_coord(attack.iter_coords(), target_cat_pos)
-                                && that_team.find(target_cat_pos).is_some()
-                            {
-                                //attacking!
-                                let target_cat = that_team.find_mut(target_cat_pos).unwrap();
-                                target_cat.health -= 1;
+    //                         if movement::contains_coord(attack.iter_coords(), target_cat_pos)
+    //                             && that_team.find(target_cat_pos).is_some()
+    //                         {
+    //                             //attacking!
+    //                             let target_cat = that_team.find_mut(target_cat_pos).unwrap();
+    //                             target_cat.health -= 1;
 
-                                let current_cat = this_team.find_mut(ss.start()).unwrap();
-                                current_cat.moved = true;
+    //                             let current_cat = this_team.find_mut(ss.start()).unwrap();
+    //                             current_cat.moved = true;
 
-                                gg.selected_cells = None;
+    //                             gg.selected_cells = None;
 
-                                //Finish user turn
-                                break;
-                            } else {
-                                let current_cat = this_team.find_mut(ss.start()).unwrap();
-                                current_cat.moved = true;
+    //                             //Finish user turn
+    //                             break;
+    //                         } else {
+    //                             let current_cat = this_team.find_mut(ss.start()).unwrap();
+    //                             current_cat.moved = true;
 
-                                gg.selected_cells = None;
-                                break;
-                            }
-                        }
-                        _ => {
-                            todo!()
-                        }
-                    }
-                }
+    //                             gg.selected_cells = None;
+    //                             break;
+    //                         }
+    //                     }
+    //                     _ => {
+    //                         todo!()
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         //log!(format!("got mouse pos:{:?}", &gg.dogs));
+    //     }
+    //     log!("DOOOONE");
+    // }
+    // .fuse();
+    // futures::pin_mut!(testy);
+
+
+    pub struct Doop {
+        state: Game,
+        select: Option<[f32; 2]>,
+    }
+
+
+    struct Doopo;
+    impl gameplay::Zoo for Doopo {
+        type G<'a> = Stuff<'a>;
+        fn create()->Self{
+            Doopo
+        }
+    }
+    struct Stuff<'a> {
+        a: &'a mut Game,
+        mouse: Option<[f32; 2]>,
+    }
+
+    let wait_mouse_input = || {
+        //set cell
+
+        gameplay::wait_custom(Doopo, |e| {
+            //e.draw(c);
+            if let Some(m) = e.mouse {
+                gameplay::Stage::NextStage(m)
+            } else {
+                gameplay::Stage::Stay
+            }
+        })
+    };
+
+    // let animate = || {
+    //     let mut animator = 0;
+    //     gameplay::wait_custom(Doopo, move |e| {
+    //         animator += 1;
+    //         if animator > 30 {
+    //             gameplay::Stage::NextStage(())
+    //         } else {
+    //             gameplay::Stage::Stay
+    //         }
+    //     })
+    // };
+
+
+    // let player_move_select=|a:CellSelection,team:usize|{
+    //     gameplay::looper2(wait_mouse_input(),|(mouse,game)|{
+            
+    //         let [this_team, that_team] = team_view([&mut game.cats, &mut game.dogs], team);
+
+    //         let cell: GridCoord = GridCoord(gg.grid_matrix.to_grid((mouse_world).into()).into());
+
+
+    //         match a {
+    //             CellSelection::MoveSelection(ss, attack) => {
+    //                 let target_cat_pos = &cell;
+
+    //                 if movement::contains_coord(ss.iter_coords(), &cell) {
+    //                     let mut c = this_team.remove(ss.start());
+    //                     let (dd, aa) = ss.get_path_data(cell).unwrap();
+    //                     c.position = cell;
+    //                     c.move_deficit = *aa;
+    //                     //c.moved = true;
+    //                     gg.animation = Some(animation::Animation::new(
+    //                         ss.start(),
+    //                         dd,
+    //                         &gg.grid_matrix,
+    //                         c,
+    //                     ));
+    //                     gg.selected_cells = None;
+    //                     return true;
+    //                 } else {
+    //                     gg.selected_cells = None;
+    //                     return false;
+    //                 }
+    //             }
+    //             _ => {
+    //                 todo!()
+    //             }
+    //         }
+    //     })
+    // };
+
+    let player_turn = move |team| {
+        gameplay::looper2(wait_mouse_input(),move |mouse_world,stuff|{
+            let game=&mut stuff.a;
+            let [this_team, that_team] = logic::team_view([&mut game.cats, &mut game.dogs], team);
+
+            let cell: GridCoord =
+                GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
+
+            let Some(unit)=this_team.find(&cell) else {
+                return gameplay::LooperRes::Loop(wait_mouse_input());
+            };
+
+            if !unit.is_selectable() {
+                return gameplay::LooperRes::Loop(wait_mouse_input());
             }
 
-            //log!(format!("got mouse pos:{:?}", &gg.dogs));
-        }
-        log!("DOOOONE");
-    }
-    .fuse();
-    futures::pin_mut!(testy);
+            let pos=get_cat_move_attack_matrix(
+                unit,
+                this_team.filter().chain(that_team.filter()),
+                terrain::Grass,
+                &game.grid_matrix,
+            );
+            game.selected_cells=Some(pos);
+            
+            gameplay::LooperRes::Finish(wait_mouse_input())
+
+        })
+    };
+
+    let mut testo=player_turn(0);
+
+    // //TODO use this!
+    // let mut cc = 0;
+    // let mut k = gameplay::looper(Doopo, |_| {
+    //     cc += 1;
+    //     if cc > 2 {
+    //         None
+    //     } else {
+    //         Some(player_turn(0).and_then(|w, g| player_turn(1)))
+    //     }
+    // })
+    // .and_then(|_, _| {
+    //     log!("completely done!");
+    //     gameplay::next()
+    // });
+
+
 
     'outer: loop {
         let mut on_select = false;
 
-        let res = futures::select! {
-            foo=frame_timer.next().fuse()=>foo,
-            _=testy=>continue
-        };
+        let res=frame_timer.next().await;
+
+        // let res = futures::select! {
+        //     foo=frame_timer.next().fuse()=>foo,
+        //     _=testy=>continue
+        // };
 
         let mut ggame = &mut *ggame.lock().await;
 
@@ -515,17 +651,17 @@ pub async fn worker_entry() {
 
         let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
-        if on_select {
-            tx.try_send(mouse_world).unwrap();
-        }
-        // {
-        //     let mouse = on_select.then_some(mouse_world);
-        //     let mut jj = Stuff {
-        //         a: &mut ggame,
-        //         mouse,
-        //     };
-        //     k.step(&mut jj);
+        // if on_select {
+        //     tx.try_send(mouse_world).unwrap();
         // }
+        {
+            let mouse = on_select.then_some(mouse_world);
+            let mut jj = Stuff {
+                a: &mut ggame,
+                mouse,
+            };
+            testo.step(&mut jj);
+        }
 
         // let (this_team_model, this_team, other_team) = if turn_counter {
         //     (&dog, &mut ggame.dogs, &mut ggame.cats)
@@ -601,7 +737,7 @@ pub async fn worker_entry() {
             if let Some(_) = a.animate_step() {
                 //animation = Some(a);
             } else {
-                animation_tx.send(()).await;
+                //animation_tx.send(()).await;
 
                 // let cat = a.into_data();
                 // animation = None;
