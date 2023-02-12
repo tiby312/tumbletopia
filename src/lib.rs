@@ -430,9 +430,14 @@ pub async fn worker_entry() {
                                 //c.moved = true;
                                 let aa =
                                     animation::Animation::new(ss.start(), dd, &game.grid_matrix, c);
-                                let aaa = AnimationTicker::new(aa).and_then(|res, game| {
+                                let aaa = AnimationTicker::new(aa).and_then(move |res, game| {
                                     let warrior = res.into_data();
-                                    game.a.cats.elem.push(warrior);
+                                    let [this_team, _that_team] = gameplay::team_view(
+                                        [&mut game.a.cats, &mut game.a.dogs],
+                                        team,
+                                    );
+
+                                    this_team.elem.push(warrior);
                                     gameplay::next()
                                 });
                                 gameplay::optional(Some(aaa))
@@ -451,7 +456,18 @@ pub async fn worker_entry() {
         })
     };
 
-    let mut testo = handle_move(0);
+    let mut counter = 0;
+    let mut testo = gameplay::looper2(handle_move(counter), move |res, stuff| {
+        counter += 1;
+        if counter > 1 {
+            counter = 0;
+        }
+
+        if false {
+            return gameplay::LooperRes::Finish(gameplay::next());
+        }
+        gameplay::LooperRes::Loop(handle_move(counter))
+    });
 
     'outer: loop {
         let mut on_select = false;
