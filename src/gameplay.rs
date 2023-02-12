@@ -15,9 +15,10 @@ impl<'a, Z: Zoo, A: GameStepper<Z>, K: GameStepper<Z>, B: FnMut(A::Result, &mut 
                 match a.step(game) {
                     Stage::Stay => {Stage::Stay}
                     Stage::NextStage(j) => {
+                        //TODO would be more consistent with Once if the function was called
+                        //in the same iteration as the first step call to second.
                         let nn = b(j, game);
                         *self = AndThen::Second(nn);
-                        //ans
                         Stage::Stay
                     }
                 }
