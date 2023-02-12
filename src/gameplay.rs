@@ -75,8 +75,15 @@ pub trait GameStepper<Z: Zoo> {
     //Return if you are done with this stage.
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result>;
 
+    
     //TODO use this!
-    //fn draw(&mut self, game: &Z::G<'_>){}
+    fn get_cell(&mut self, game: &Z::G<'_>)->Option<&CellSelection>{
+        None
+    }
+
+    fn get_animation(&mut self, game: &Z::G<'_>)->Option<&crate::animation::Animation<Warrior>>{
+        None
+    }
 
     fn and_then<K: GameStepper<Z>, B: FnMut(Self::Result, &mut Z::G<'_>) -> K>(
         self,
@@ -129,7 +136,7 @@ pub enum LooperRes<A,B>{
     Finish(B)
 }
 
-impl<Z: Zoo, A: GameStepper<Z>,K:GameStepper<Z>, F: FnMut(A::Result,&mut Z::G<'_>) -> LooperRes<A,K>> GameStepper<Z>
+impl<Z: Zoo, A: GameStepper<Z>,K, F: FnMut(A::Result,&mut Z::G<'_>) -> LooperRes<A,K>> GameStepper<Z>
     for Looper2<Z, A, F>
 {
     type Result = K;
@@ -141,7 +148,7 @@ impl<Z: Zoo, A: GameStepper<Z>,K:GameStepper<Z>, F: FnMut(A::Result,&mut Z::G<'_
         let a=if let Some(a)=&mut self.a{
             match a.step(game){
                 Stage::Stay=>{
-                    
+
                     return Stage::Stay;
                 }
                 Stage::NextStage(a)=>{
@@ -171,7 +178,7 @@ impl<Z: Zoo, A: GameStepper<Z>,K:GameStepper<Z>, F: FnMut(A::Result,&mut Z::G<'_
 }
 
 
-pub fn looper2<Z: Zoo, A: GameStepper<Z>,K:GameStepper<Z>, F: FnMut(A::Result,&mut Z::G<'_>) -> LooperRes<A,K>>(
+pub fn looper2<Z: Zoo, A: GameStepper<Z>,K, F: FnMut(A::Result,&mut Z::G<'_>) -> LooperRes<A,K>>(
     start:A,
     func: F,
 ) -> Looper2<Z, A, F> {
@@ -179,40 +186,40 @@ pub fn looper2<Z: Zoo, A: GameStepper<Z>,K:GameStepper<Z>, F: FnMut(A::Result,&m
 }
 
 
-pub fn looper<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>>(
-    zoo: Z,
-    func: F,
-) -> Looper<Z, A, F> {
-    Looper { a: None, func, zoo }
-}
+// pub fn looper<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>>(
+//     zoo: Z,
+//     func: F,
+// ) -> Looper<Z, A, F> {
+//     Looper { a: None, func, zoo }
+// }
 
-impl<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>> GameStepper<Z>
-    for Looper<Z, A, F>
-{
-    type Result = Next;
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
-        if let Some(mut a) = self.a.take() {
-            match a.step(game) {
-                Stage::Stay => {
-                    self.a = Some(a);
-                    Stage::Stay
-                }
-                Stage::NextStage(_) => {
-                    if let Some(jj) = (self.func)(game) {
-                        self.a = Some(jj);
-                        Stage::Stay
-                    } else {
-                        Stage::NextStage(next())
-                    }
-                }
-            }
-        } else {
-            if let Some(jj) = (self.func)(game) {
-                self.a = Some(jj);
-                Stage::Stay
-            } else {
-                Stage::NextStage(next())
-            }
-        }
-    }
-}
+// impl<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>> GameStepper<Z>
+//     for Looper<Z, A, F>
+// {
+//     type Result = Next;
+//     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
+//         if let Some(mut a) = self.a.take() {
+//             match a.step(game) {
+//                 Stage::Stay => {
+//                     self.a = Some(a);
+//                     Stage::Stay
+//                 }
+//                 Stage::NextStage(_) => {
+//                     if let Some(jj) = (self.func)(game) {
+//                         self.a = Some(jj);
+//                         Stage::Stay
+//                     } else {
+//                         Stage::NextStage(next())
+//                     }
+//                 }
+//             }
+//         } else {
+//             if let Some(jj) = (self.func)(game) {
+//                 self.a = Some(jj);
+//                 Stage::Stay
+//             } else {
+//                 Stage::NextStage(next())
+//             }
+//         }
+//     }
+// }
