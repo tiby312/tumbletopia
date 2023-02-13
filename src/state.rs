@@ -14,8 +14,6 @@ pub struct Stuff<'a> {
 }
 
 pub fn create_state_machine() -> impl GameStepper<Doopo> {
-
-    
     let wait_mouse_input = || {
         gameplay::wait_custom(Doopo, |e| {
             if let Some(m) = e.mouse {
@@ -26,7 +24,6 @@ pub fn create_state_machine() -> impl GameStepper<Doopo> {
         })
     };
 
-    
     let select_unit = move |team| {
         gameplay::looper(
             move |()| wait_mouse_input(),
@@ -124,7 +121,6 @@ pub fn create_state_machine() -> impl GameStepper<Doopo> {
     testo
 }
 
-
 struct AnimationTicker {
     a: animation::Animation<Warrior>,
 }
@@ -177,8 +173,7 @@ impl GameStepper<Doopo> for PlayerCellAsk {
     fn step(&mut self, g1: &mut Stuff<'_>) -> gameplay::Stage<()> {
         let game = &mut g1.a;
         if let Some(mouse_world) = g1.mouse {
-            let cell: GridCoord =
-                GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
+            let cell: GridCoord = GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
 
             match &self.a {
                 CellSelection::MoveSelection(ss, _) => {

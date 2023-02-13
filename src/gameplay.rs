@@ -1,57 +1,81 @@
 use super::*;
 
-pub struct AndThen<A, B, N> {
-    first: Option<(A, B)>,
-    second: Option<N>,
+pub struct Map<Z, A, F> {
+    zoo: Z,
+    elem: A,
+    func: F,
 }
-impl<
-        'a,
-        Z: Zoo,
-        A: GameStepper<Z>,
-        K: GameStepper<Z>,
-        B: FnOnce(A::Result, &mut Z::G<'_>) -> K,
-    > GameStepper<Z> for AndThen<A, B, K>
+impl<Z: Zoo, A: GameStepper<Z>, F: FnOnce(A::Result, &mut Z::G<'_>) -> X, X> GameStepper<Z>
+    for Map<Z, A, F>
 {
-    type Result = K::Result;
-    //Return if you are done with this stage.
+    type Result = X;
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
-        if let Some((a, _)) = &mut self.first {
-            match a.step(game) {
-                Stage::Stay => Stage::Stay,
-                Stage::NextStage(()) => {
-                    let (a, b) = self.first.take().unwrap();
-                    let j = a.consume(game);
-
-                    //TODO would be more consistent with Once if the function was called
-                    //in the same iteration as the first step call to second.
-                    let nn = b(j, game);
-                    self.second = Some(nn);
-                    Stage::Stay
-                }
-            }
-        } else {
-            self.second.as_mut().unwrap().step(game)
-        }
+        self.elem.step(game)
     }
     fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
-        self.second.unwrap().consume(game)
+        let s = self.elem.consume(game);
+        (self.func)(s, game)
     }
-
     fn get_selection(&self) -> Option<&crate::CellSelection> {
-        if let Some((a, _)) = self.first.as_ref() {
-            a.get_selection()
-        } else {
-            self.second.as_ref().unwrap().get_selection()
-        }
+        self.elem.get_selection()
     }
     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
-        if let Some((a, _)) = self.first.as_ref() {
-            a.get_animation()
-        } else {
-            self.second.as_ref().unwrap().get_animation()
-        }
+        self.elem.get_animation()
     }
 }
+
+// pub struct AndThen<A, B, N> {
+//     first: Option<(A, B)>,
+//     second: Option<N>,
+// }
+// impl<
+//         'a,
+//         Z: Zoo,
+//         A: GameStepper<Z>,
+//         K: GameStepper<Z>,
+//         B: FnOnce(A::Result, &mut Z::G<'_>) -> K,
+//     > GameStepper<Z> for AndThen<A, B, K>
+// {
+//     type Result = K::Result;
+//     //Return if you are done with this stage.
+//     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
+//         if let Some((a, _)) = &mut self.first {
+//             match a.step(game) {
+//                 Stage::Stay => Stage::Stay,
+//                 Stage::NextStage(()) => {
+//                     let (a, b) = self.first.take().unwrap();
+//                     let j = a.consume(game);
+
+//                     //TODO would be more consistent with Once if the function was called
+//                     //in the same iteration as the first step call to second.
+//                     let nn = b(j, game);
+//                     self.second = Some(nn);
+//                     Stage::Stay
+//                 }
+//             }
+//         } else {
+//             self.second.as_mut().unwrap().step(game)
+//         }
+//     }
+//     fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
+//         self.second.unwrap().consume(game)
+//     }
+
+//     fn get_selection(&self) -> Option<&crate::CellSelection> {
+//         if let Some((a, _)) = self.first.as_ref() {
+//             a.get_selection()
+//         } else {
+//             self.second.as_ref().unwrap().get_selection()
+//         }
+//     }
+//     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+//         if let Some((a, _)) = self.first.as_ref() {
+//             a.get_animation()
+//         } else {
+//             self.second.as_ref().unwrap().get_animation()
+//         }
+//     }
+// }
 
 pub enum Stage<T> {
     NextStage(T),
@@ -165,17 +189,65 @@ impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
     }
 }
 
+pub struct Chain<A, B> {
+    first: Option<A>,
+    second: Option<B>,
+}
+impl<Z: Zoo, A: GameStepper<Z, Result = B>, B: GameStepper<Z>> GameStepper<Z> for Chain<A, B> {
+    type Result = B::Result;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
+        if let Some(a) = &mut self.first {
+            match a.step(game) {
+                Stage::Stay => Stage::Stay,
+                Stage::NextStage(()) => {
+                    let b = self.first.take().unwrap().consume(game);
+                    self.second = Some(b);
+                    Stage::Stay
+                }
+            }
+        } else {
+            self.second.as_mut().unwrap().step(game)
+        }
+    }
+    fn consume(self, game: &mut Z::G<'_>) -> B::Result {
+        self.second.unwrap().consume(game)
+    }
+
+    fn get_selection(&self) -> Option<&crate::CellSelection> {
+        if let Some(a) = self.first.as_ref() {
+            a.get_selection()
+        } else {
+            self.second.as_ref().unwrap().get_selection()
+        }
+    }
+    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+        if let Some(a) = self.first.as_ref() {
+            a.get_animation()
+        } else {
+            self.second.as_ref().unwrap().get_animation()
+        }
+    }
+}
+
 pub trait GameStepper<Z: Zoo> {
     type Result;
     //Return if you are done with this stage.
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()>;
 
-    fn consume(self, _: &mut Z::G<'_>) -> Self::Result
+    fn chain(self) -> Chain<Self, Self::Result>
     where
+        Self::Result: GameStepper<Z> + Sized,
         Self: Sized,
     {
-        todo!()
+        Chain {
+            first: Some(self),
+            second: None,
+        }
     }
+
+    fn consume(self, _: &mut Z::G<'_>) -> Self::Result
+    where
+        Self: Sized;
 
     fn get_selection(&self) -> Option<&crate::CellSelection> {
         None
@@ -184,17 +256,25 @@ pub trait GameStepper<Z: Zoo> {
         None
     }
 
-    fn and_then<K: GameStepper<Z>, B: FnOnce(Self::Result, &mut Z::G<'_>) -> K>(
-        self,
-        other: B,
-    ) -> AndThen<Self, B, K>
+    fn map<K, B: FnOnce(Self::Result, &mut Z::G<'_>) -> K>(self, func: B) -> Map<Z, Self, B>
     where
         Self: Sized,
     {
-        AndThen {
-            first: Some((self, other)),
-            second: None,
+        Map {
+            zoo: Z::create(),
+            elem: self,
+            func,
         }
+    }
+
+    fn and_then<K: GameStepper<Z>, B: FnOnce(Self::Result, &mut Z::G<'_>) -> K>(
+        self,
+        func: B,
+    ) -> Chain<Map<Z, Self, B>, K>
+    where
+        Self: Sized,
+    {
+        self.map(func).chain()
     }
 }
 

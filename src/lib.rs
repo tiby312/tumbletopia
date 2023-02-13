@@ -381,6 +381,7 @@ pub async fn worker_entry() {
         use matrix::*;
 
         //Drawing below doesnt need mutable reference.
+        //TODO move drawing to a function?
         let ggame = &ggame;
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
