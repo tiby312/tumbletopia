@@ -5,7 +5,7 @@ pub struct Map<A, F> {
     func: F,
 }
 impl<Z: Zoo, A: GameStepper<Z>, F: FnOnce(A::Result, &mut Z::G<'_>) -> X, X> GameStepper<Z>
-    for Map< A, F>
+    for Map<A, F>
 {
     type Result = X;
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
@@ -206,10 +206,7 @@ pub trait GameStepper<Z: Zoo> {
     where
         Self: Sized,
     {
-        Map {
-            elem: self,
-            func,
-        }
+        Map { elem: self, func }
     }
 
     fn and_then<K: GameStepper<Z>, B: FnOnce(Self::Result, &mut Z::G<'_>) -> K>(
@@ -233,12 +230,8 @@ impl<A> LooperRes<A, ()> {
     }
 }
 
-
-
-
-pub struct Looper<Z, A, F, K,  H> {
+pub struct Looper<A, F, K, H> {
     start_func: H,
-    _zoo: Z,
     a: Option<A>,
     func: F,
     finished: Option<K>,
@@ -251,7 +244,7 @@ impl<
         F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<P, K>,
         P,
         H: FnMut(P) -> A,
-    > GameStepper<Z> for Looper<Z, A, F, K,  H>
+    > GameStepper<Z> for Looper<A, F, K, H>
 {
     type Result = K;
     fn get_selection(&self) -> Option<&crate::CellSelection> {
@@ -311,18 +304,16 @@ pub fn looper<
     start_val: P,
     mut start: H,
     func: F,
-) -> Looper<Z, A, F, K,  H> {
+) -> Looper<A, F, K, H> {
     let elem = start(start_val);
 
     Looper {
-        _zoo: Z::create(),
         a: Some(elem),
         func,
         finished: None,
         start_func: start,
     }
 }
-
 
 //TODO move this
 pub fn team_view(
