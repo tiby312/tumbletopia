@@ -469,6 +469,8 @@ pub async fn worker_entry() {
         gameplay::LooperRes::Loop(handle_move(counter)).infinite()
     });
 
+
+
     'outer: loop {
         let mut on_select = false;
 
