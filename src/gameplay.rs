@@ -204,57 +204,6 @@ pub struct Looper<Z, A, F> {
     func: F,
 }
 
-// pub enum Once<Z, A, K> {
-//     Func(Z, Option<A>),
-//     Floop(K),
-// }
-// pub fn once<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>>(
-//     zoo: Z,
-//     func: A,
-// ) -> Once<Z, A, L> {
-//     Once::Func(zoo, Some(func))
-// }
-// impl<Z: Zoo, A: FnOnce(&mut Z::G<'_>) -> L, L: GameStepper<Z>> GameStepper<Z> for Once<Z, A, L> {
-//     type Result = L::Result;
-//     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
-//         match self {
-//             Once::Func(_, func) => {
-//                 let mut a = func.take().unwrap()(game);
-//                 let res = a.step(game);
-//                 *self = Once::Floop(a);
-//                 res
-//             }
-//             Once::Floop(a) => a.step(game),
-//         }
-//     }
-//     fn consume(self,game:&mut Z::G<'_>)->Self::Result{
-
-//     }
-
-// }
-
-// pub struct Fuse<A>{
-//     a:A,
-//     voo:bool
-// }
-// impl<Z:Zoo,A:GameStepper<Z>> GameStepper<Z> for Fuse<A>{
-//     type Result=A::Result;
-//     fn step(&mut self,game:&mut Z::G<'_>)->Stage<Self::Result>{
-//         if voo{
-
-//         }
-//         match self.a.step(game){
-//             Stage::NextStage(a)=>{
-//                 Stage::NextStage(a)
-//             },
-//             Stage::Stay=>{
-//                 Stage::Stay
-//             }
-//         }
-
-//     }
-// }
-
 pub enum LooperRes<A, B> {
     Loop(A),
     Finish(B),
@@ -351,41 +300,3 @@ pub fn team_view(
         }
     }
 }
-
-// pub fn looper<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>>(
-//     zoo: Z,
-//     func: F,
-// ) -> Looper<Z, A, F> {
-//     Looper { a: None, func, zoo }
-// }
-
-// impl<Z: Zoo, A: GameStepper<Z>, F: FnMut(&mut Z::G<'_>) -> Option<A>> GameStepper<Z>
-//     for Looper<Z, A, F>
-// {
-//     type Result = Next;
-//     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Result> {
-//         if let Some(mut a) = self.a.take() {
-//             match a.step(game) {
-//                 Stage::Stay => {
-//                     self.a = Some(a);
-//                     Stage::Stay
-//                 }
-//                 Stage::NextStage(_) => {
-//                     if let Some(jj) = (self.func)(game) {
-//                         self.a = Some(jj);
-//                         Stage::Stay
-//                     } else {
-//                         Stage::NextStage(next())
-//                     }
-//                 }
-//             }
-//         } else {
-//             if let Some(jj) = (self.func)(game) {
-//                 self.a = Some(jj);
-//                 Stage::Stay
-//             } else {
-//                 Stage::NextStage(next())
-//             }
-//         }
-//     }
-// }

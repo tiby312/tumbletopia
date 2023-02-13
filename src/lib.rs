@@ -455,7 +455,7 @@ pub async fn worker_entry() {
         };
 
         gameplay::looper2(k(team), move |res, _stuff| match res {
-            Some(_animation) => gameplay::LooperRes::Finish(gameplay::next()),
+            Some(_animation) => gameplay::LooperRes::Finish(()),
             None => gameplay::LooperRes::Loop(k(team)),
         })
     };
@@ -468,8 +468,6 @@ pub async fn worker_entry() {
         }
         gameplay::LooperRes::Loop(handle_move(counter)).infinite()
     });
-
-
 
     'outer: loop {
         let mut on_select = false;
