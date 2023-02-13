@@ -360,8 +360,8 @@ pub fn looper<
     K,
     F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<P, K>,
 >(
-    mut start: H,
     start_val: P,
+    mut start: H,
     func: F,
 ) -> Looper<Z, A, F, K, P, H> {
     let elem = start(start_val);

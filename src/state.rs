@@ -26,8 +26,8 @@ pub fn create_state_machine() -> impl GameStepper<Doopo> {
 
     let select_unit = move |team| {
         gameplay::looper(
-            move |()| wait_mouse_input(),
             (),
+            move |()| wait_mouse_input(),
             move |mouse_world, stuff| {
                 let game = &mut stuff.a;
                 let [this_team, that_team] =
@@ -96,8 +96,8 @@ pub fn create_state_machine() -> impl GameStepper<Doopo> {
         };
 
         gameplay::looper(
-            move |()| k(team),
             (),
+            move |()| k(team),
             move |res, _stuff| match res {
                 Some(_animation) => gameplay::LooperRes::Finish(()),
                 None => gameplay::LooperRes::Loop(()),
@@ -107,8 +107,8 @@ pub fn create_state_machine() -> impl GameStepper<Doopo> {
 
     let mut counter = 0;
     let testo = gameplay::looper(
-        move |c| handle_move(c),
         0,
+        move |c| handle_move(c),
         move |_res, _stuff| {
             counter += 1;
             if counter > 1 {
