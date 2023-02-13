@@ -147,17 +147,6 @@ pub trait GameStepper<Z: Zoo> {
     //Return if you are done with this stage.
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()>;
 
-    fn chain(self) -> Chain<Self, Self::Result>
-    where
-        Self::Result: GameStepper<Z> + Sized,
-        Self: Sized,
-    {
-        Chain {
-            first: Some(self),
-            second: None,
-        }
-    }
-
     fn consume(self, _: &mut Z::G<'_>) -> Self::Result
     where
         Self: Sized;
@@ -167,6 +156,17 @@ pub trait GameStepper<Z: Zoo> {
     }
     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
         None
+    }
+
+    fn chain(self) -> Chain<Self, Self::Result>
+    where
+        Self::Result: GameStepper<Z> + Sized,
+        Self: Sized,
+    {
+        Chain {
+            first: Some(self),
+            second: None,
+        }
     }
 
     fn map<K, B: FnOnce(Self::Result, &mut Z::G<'_>) -> K>(self, func: B) -> Map<Self, B>
