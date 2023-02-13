@@ -17,7 +17,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     let select_unit = move |team| {
         gameplay::looper(
             (),
-            move |()| WaitMouseInput,
+            |()| WaitMouseInput,
             move |mouse_world, stuff| {
                 let game = &mut stuff.a;
                 let [this_team, that_team] =
