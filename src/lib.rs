@@ -389,30 +389,35 @@ pub async fn worker_entry() {
     }
 
     let select_unit = move |team| {
-        gameplay::looper2(wait_mouse_input(), move |mouse_world, stuff| {
-            let game = &mut stuff.a;
-            let [this_team, that_team] =
-                gameplay::team_view([&mut game.cats, &mut game.dogs], team);
+        gameplay::looper(
+            move |()| wait_mouse_input(),
+            (),
+            move |mouse_world, stuff| {
+                let game = &mut stuff.a;
+                let [this_team, that_team] =
+                    gameplay::team_view([&mut game.cats, &mut game.dogs], team);
 
-            let cell: GridCoord = GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
+                let cell: GridCoord =
+                    GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
 
-            let Some(unit)=this_team.find(&cell) else {
-                return gameplay::LooperRes::Loop(wait_mouse_input());
+                let Some(unit)=this_team.find(&cell) else {
+                return gameplay::LooperRes::Loop(());
             };
 
-            if !unit.is_selectable() {
-                return gameplay::LooperRes::Loop(wait_mouse_input());
-            }
+                if !unit.is_selectable() {
+                    return gameplay::LooperRes::Loop(());
+                }
 
-            let pos = get_cat_move_attack_matrix(
-                unit,
-                this_team.filter().chain(that_team.filter()),
-                terrain::Grass,
-                &game.grid_matrix,
-            );
+                let pos = get_cat_move_attack_matrix(
+                    unit,
+                    this_team.filter().chain(that_team.filter()),
+                    terrain::Grass,
+                    &game.grid_matrix,
+                );
 
-            gameplay::LooperRes::Finish(pos) //player_move_select(pos,team)
-        })
+                gameplay::LooperRes::Finish(pos) //player_move_select(pos,team)
+            },
+        )
     };
 
     let handle_move = move |team| {
@@ -454,20 +459,28 @@ pub async fn worker_entry() {
                 })
         };
 
-        gameplay::looper2(k(team), move |res, _stuff| match res {
-            Some(_animation) => gameplay::LooperRes::Finish(()),
-            None => gameplay::LooperRes::Loop(k(team)),
-        })
+        gameplay::looper(
+            move |()| k(team),
+            (),
+            move |res, _stuff| match res {
+                Some(_animation) => gameplay::LooperRes::Finish(()),
+                None => gameplay::LooperRes::Loop(()),
+            },
+        )
     };
 
     let mut counter = 0;
-    let mut testo = gameplay::looper2(handle_move(counter), move |_res, _stuff| {
-        counter += 1;
-        if counter > 1 {
-            counter = 0;
-        }
-        gameplay::LooperRes::Loop(handle_move(counter)).infinite()
-    });
+    let mut testo = gameplay::looper(
+        |c| handle_move(c),
+        0,
+        move |_res, _stuff| {
+            counter += 1;
+            if counter > 1 {
+                counter = 0;
+            }
+            gameplay::LooperRes::Loop(counter).infinite()
+        },
+    );
 
     'outer: loop {
         let mut on_select = false;

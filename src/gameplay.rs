@@ -213,15 +213,23 @@ impl<A> LooperRes<A, ()> {
         self
     }
 }
-pub struct Looper2<Z, A, F, K> {
-    zoo: Z,
+pub struct Looper2<Z, A, F, K, P, H> {
+    _start_val: std::marker::PhantomData<P>,
+    start_func: H,
+    _zoo: Z,
     a: Option<A>,
     func: F,
     finished: Option<K>,
 }
 
-impl<Z: Zoo, A: GameStepper<Z>, K, F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<A, K>>
-    GameStepper<Z> for Looper2<Z, A, F, K>
+impl<
+        Z: Zoo,
+        A: GameStepper<Z>,
+        K,
+        F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<P, K>,
+        P,
+        H: FnMut(P) -> A,
+    > GameStepper<Z> for Looper2<Z, A, F, K, P, H>
 {
     type Result = K;
     fn get_selection(&self) -> Option<&crate::CellSelection> {
@@ -258,8 +266,8 @@ impl<Z: Zoo, A: GameStepper<Z>, K, F: FnMut(A::Result, &mut Z::G<'_>) -> LooperR
         };
 
         match (self.func)(a, game) {
-            LooperRes::Loop(a) => {
-                self.a = Some(a);
+            LooperRes::Loop(p) => {
+                self.a = Some((self.start_func)(p));
                 Stage::Stay
             }
             LooperRes::Finish(b) => {
@@ -270,22 +278,46 @@ impl<Z: Zoo, A: GameStepper<Z>, K, F: FnMut(A::Result, &mut Z::G<'_>) -> LooperR
     }
 }
 
-pub fn looper2<
+pub fn looper<
     Z: Zoo,
+    P,
     A: GameStepper<Z>,
+    H: FnMut(P) -> A,
     K,
-    F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<A, K>,
+    F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<P, K>,
 >(
-    start: A,
+    mut start: H,
+    start_val: P,
     func: F,
-) -> Looper2<Z, A, F, K> {
+) -> Looper2<Z, A, F, K, P, H> {
+    let elem = start(start_val);
+
     Looper2 {
-        zoo: Z::create(),
-        a: Some(start),
+        _zoo: Z::create(),
+        a: Some(elem),
         func,
         finished: None,
+        _start_val: std::marker::PhantomData,
+        start_func: start,
     }
 }
+
+// pub fn looper2<
+//     Z: Zoo,
+//     A: GameStepper<Z>,
+//     K,
+//     F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<A, K>,
+// >(
+//     start: A,
+//     func: F,
+// ) -> Looper2<Z, A, F, K> {
+//     Looper2 {
+//         zoo: Z::create(),
+//         a: Some(start),
+//         func,
+//         finished: None,
+//     }
+// }
 
 pub fn team_view(
     a: [&mut UnitCollection<Warrior>; 2],
