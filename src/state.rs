@@ -14,7 +14,7 @@ pub struct Stuff<'a> {
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
-    let select_unit = move |team| {
+    let select_unit =  |team| {
         gameplay::looper(
             (),
             |()| WaitMouseInput,
