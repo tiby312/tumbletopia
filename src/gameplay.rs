@@ -287,8 +287,11 @@ impl<A> LooperRes<A, ()> {
         self
     }
 }
-pub struct Looper<Z, A, F, K, P, H> {
-    _start_val: std::marker::PhantomData<P>,
+
+
+
+
+pub struct Looper<Z, A, F, K,  H> {
     start_func: H,
     _zoo: Z,
     a: Option<A>,
@@ -303,7 +306,7 @@ impl<
         F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<P, K>,
         P,
         H: FnMut(P) -> A,
-    > GameStepper<Z> for Looper<Z, A, F, K, P, H>
+    > GameStepper<Z> for Looper<Z, A, F, K,  H>
 {
     type Result = K;
     fn get_selection(&self) -> Option<&crate::CellSelection> {
@@ -363,7 +366,7 @@ pub fn looper<
     start_val: P,
     mut start: H,
     func: F,
-) -> Looper<Z, A, F, K, P, H> {
+) -> Looper<Z, A, F, K,  H> {
     let elem = start(start_val);
 
     Looper {
@@ -371,28 +374,12 @@ pub fn looper<
         a: Some(elem),
         func,
         finished: None,
-        _start_val: std::marker::PhantomData,
         start_func: start,
     }
 }
 
-// pub fn looper2<
-//     Z: Zoo,
-//     A: GameStepper<Z>,
-//     K,
-//     F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<A, K>,
-// >(
-//     start: A,
-//     func: F,
-// ) -> Looper2<Z, A, F, K> {
-//     Looper2 {
-//         zoo: Z::create(),
-//         a: Some(start),
-//         func,
-//         finished: None,
-//     }
-// }
 
+//TODO move this
 pub fn team_view(
     a: [&mut UnitCollection<Warrior>; 2],
     ind: usize,
