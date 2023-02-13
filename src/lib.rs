@@ -401,8 +401,8 @@ pub async fn worker_entry() {
                     GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
 
                 let Some(unit)=this_team.find(&cell) else {
-                return gameplay::LooperRes::Loop(());
-            };
+                    return gameplay::LooperRes::Loop(());
+                };
 
                 if !unit.is_selectable() {
                     return gameplay::LooperRes::Loop(());
