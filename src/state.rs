@@ -14,11 +14,10 @@ pub struct Stuff<'a> {
 }
 
 pub fn create_state_machine() -> impl GameStepper<Doopo> {
-    let wait_mouse_input = || {
-        //set cell
 
+    
+    let wait_mouse_input = || {
         gameplay::wait_custom(Doopo, |e| {
-            //e.draw(c);
             if let Some(m) = e.mouse {
                 gameplay::Stage::NextStage(m)
             } else {
@@ -27,78 +26,7 @@ pub fn create_state_machine() -> impl GameStepper<Doopo> {
         })
     };
 
-    pub struct AnimationTicker {
-        a: animation::Animation<Warrior>,
-    }
-    impl AnimationTicker {
-        pub fn new(a: animation::Animation<Warrior>) -> Self {
-            Self { a }
-        }
-    }
-    impl GameStepper<Doopo> for AnimationTicker {
-        type Result = animation::Animation<Warrior>;
-        fn consume(self, _: &mut Stuff<'_>) -> Self::Result {
-            self.a
-        }
-        fn step(&mut self, _game: &mut Stuff<'_>) -> gameplay::Stage<()> {
-            if let Some(_) = self.a.animate_step() {
-                gameplay::Stage::Stay
-            } else {
-                gameplay::Stage::NextStage(())
-            }
-        }
-
-        fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
-            Some(&self.a)
-        }
-    }
-
-    pub struct PlayerCellAsk {
-        a: CellSelection,
-        team: usize,
-        found_cell: Option<GridCoord>,
-    }
-
-    impl PlayerCellAsk {
-        pub fn new(a: CellSelection, team: usize) -> Self {
-            Self {
-                a,
-                team,
-                found_cell: None,
-            }
-        }
-    }
-    impl GameStepper<Doopo> for PlayerCellAsk {
-        type Result = (CellSelection, Option<GridCoord>);
-        fn get_selection(&self) -> Option<&CellSelection> {
-            Some(&self.a)
-        }
-        fn consume(self, _: &mut Stuff<'_>) -> Self::Result {
-            (self.a, self.found_cell)
-        }
-        fn step(&mut self, g1: &mut Stuff<'_>) -> gameplay::Stage<()> {
-            let game = &mut g1.a;
-            if let Some(mouse_world) = g1.mouse {
-                let cell: GridCoord =
-                    GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
-
-                match &self.a {
-                    CellSelection::MoveSelection(ss, _) => {
-                        if movement::contains_coord(ss.iter_coords(), &cell) {
-                            self.found_cell = Some(cell);
-                        }
-                        gameplay::Stage::NextStage(())
-                    }
-                    _ => {
-                        todo!()
-                    }
-                }
-            } else {
-                gameplay::Stage::Stay
-            }
-        }
-    }
-
+    
     let select_unit = move |team| {
         gameplay::looper(
             move |()| wait_mouse_input(),
@@ -194,4 +122,77 @@ pub fn create_state_machine() -> impl GameStepper<Doopo> {
     );
 
     testo
+}
+
+
+struct AnimationTicker {
+    a: animation::Animation<Warrior>,
+}
+impl AnimationTicker {
+    pub fn new(a: animation::Animation<Warrior>) -> Self {
+        Self { a }
+    }
+}
+impl GameStepper<Doopo> for AnimationTicker {
+    type Result = animation::Animation<Warrior>;
+    fn consume(self, _: &mut Stuff<'_>) -> Self::Result {
+        self.a
+    }
+    fn step(&mut self, _game: &mut Stuff<'_>) -> gameplay::Stage<()> {
+        if let Some(_) = self.a.animate_step() {
+            gameplay::Stage::Stay
+        } else {
+            gameplay::Stage::NextStage(())
+        }
+    }
+
+    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+        Some(&self.a)
+    }
+}
+
+struct PlayerCellAsk {
+    a: CellSelection,
+    team: usize,
+    found_cell: Option<GridCoord>,
+}
+
+impl PlayerCellAsk {
+    pub fn new(a: CellSelection, team: usize) -> Self {
+        Self {
+            a,
+            team,
+            found_cell: None,
+        }
+    }
+}
+impl GameStepper<Doopo> for PlayerCellAsk {
+    type Result = (CellSelection, Option<GridCoord>);
+    fn get_selection(&self) -> Option<&CellSelection> {
+        Some(&self.a)
+    }
+    fn consume(self, _: &mut Stuff<'_>) -> Self::Result {
+        (self.a, self.found_cell)
+    }
+    fn step(&mut self, g1: &mut Stuff<'_>) -> gameplay::Stage<()> {
+        let game = &mut g1.a;
+        if let Some(mouse_world) = g1.mouse {
+            let cell: GridCoord =
+                GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
+
+            match &self.a {
+                CellSelection::MoveSelection(ss, _) => {
+                    if movement::contains_coord(ss.iter_coords(), &cell) {
+                        self.found_cell = Some(cell);
+                    }
+                    gameplay::Stage::NextStage(())
+                }
+                _ => {
+                    todo!()
+                }
+            }
+        } else {
+            gameplay::Stage::Stay
+        }
+    }
 }
