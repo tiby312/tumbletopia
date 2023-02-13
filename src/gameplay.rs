@@ -28,38 +28,38 @@ pub enum Stage<T> {
     Stay,
 }
 
-#[derive(Copy, Clone)]
-pub struct WaitForCustom<Z, F, R> {
-    _zoo: Z,
-    func: F,
-    res: Option<R>,
-}
-pub fn wait_custom<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>>(
-    zoo: Z,
-    func: F,
-) -> WaitForCustom<Z, F, L> {
-    WaitForCustom {
-        _zoo: zoo,
-        func,
-        res: None,
-    }
-}
+// #[derive(Copy, Clone)]
+// pub struct WaitForCustom<Z, F, R> {
+//     _zoo: Z,
+//     func: F,
+//     res: Option<R>,
+// }
+// pub fn wait_custom<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>>(
+//     zoo: Z,
+//     func: F,
+// ) -> WaitForCustom<Z, F, L> {
+//     WaitForCustom {
+//         _zoo: zoo,
+//         func,
+//         res: None,
+//     }
+// }
 
-impl<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>> GameStepper<Z> for WaitForCustom<Z, F, L> {
-    type Result = L;
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
-        match (self.func)(game) {
-            Stage::Stay => Stage::Stay,
-            Stage::NextStage(o) => {
-                self.res = Some(o);
-                Stage::NextStage(())
-            }
-        }
-    }
-    fn consume(self, _: &mut Z::G<'_>) -> Self::Result {
-        self.res.unwrap()
-    }
-}
+// impl<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>> GameStepper<Z> for WaitForCustom<Z, F, L> {
+//     type Result = L;
+//     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
+//         match (self.func)(game) {
+//             Stage::Stay => Stage::Stay,
+//             Stage::NextStage(o) => {
+//                 self.res = Some(o);
+//                 Stage::NextStage(())
+//             }
+//         }
+//     }
+//     fn consume(self, _: &mut Z::G<'_>) -> Self::Result {
+//         self.res.unwrap()
+//     }
+// }
 
 pub trait Zoo {
     type G<'b>

@@ -14,20 +14,10 @@ pub struct Stuff<'a> {
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
-    let wait_mouse_input = || {
-        gameplay::wait_custom(GameHandle, |e| {
-            if let Some(m) = e.mouse {
-                gameplay::Stage::NextStage(m)
-            } else {
-                gameplay::Stage::Stay
-            }
-        })
-    };
-
     let select_unit = move |team| {
         gameplay::looper(
             (),
-            move |()| wait_mouse_input(),
+            move |()| WaitMouseInput,
             move |mouse_world, stuff| {
                 let game = &mut stuff.a;
                 let [this_team, that_team] =
@@ -119,6 +109,21 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     );
 
     testo
+}
+
+struct WaitMouseInput;
+impl GameStepper<GameHandle> for WaitMouseInput {
+    type Result = [f32; 2];
+    fn step(&mut self, game: &mut Stuff<'_>) -> gameplay::Stage<()> {
+        if let Some(_) = game.mouse {
+            gameplay::Stage::NextStage(())
+        } else {
+            gameplay::Stage::Stay
+        }
+    }
+    fn consume(self, game: &mut Stuff<'_>) -> Self::Result {
+        game.mouse.unwrap()
+    }
 }
 
 struct AnimationTicker {
