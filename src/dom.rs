@@ -40,7 +40,6 @@ impl MEvent {
 
 //convert DOM coordinate to canvas relative coordinate
 fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
-    use wasm_bindgen::JsCast;
     shogo::simple2d::convert_coord(
         canvas.dyn_ref().unwrap_throw(),
         event.dyn_ref().unwrap_throw(),
@@ -50,7 +49,6 @@ fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32;
 fn convert_coord_touch(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> scroll::Touches {
     event.prevent_default();
     event.stop_propagation();
-    use wasm_bindgen::JsCast;
     convert_coord_touch_inner(canvas, event.dyn_ref().unwrap_throw())
 }
 
@@ -61,8 +59,6 @@ pub fn convert_coord_touch_inner(
     canvas: &web_sys::EventTarget,
     e: &web_sys::TouchEvent,
 ) -> scroll::Touches {
-    use wasm_bindgen::JsCast;
-
     let canvas: &web_sys::HtmlElement = canvas.dyn_ref().unwrap_throw();
     let rect = canvas.get_bounding_client_rect();
 
@@ -107,7 +103,6 @@ pub fn convert_coord_touch_inner(
 }
 
 pub fn text_texture(text: &str, width: usize, height: usize) -> web_sys::HtmlCanvasElement {
-    use wasm_bindgen::JsCast;
     let canvas = gloo::utils::document().create_element("canvas").unwrap();
     let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into().unwrap();
     let ctx = canvas.get_context("2d").unwrap().unwrap();

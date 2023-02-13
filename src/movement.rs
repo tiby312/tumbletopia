@@ -128,10 +128,10 @@ impl GridCoord {
 #[derive(Debug, Copy, Clone)]
 pub struct MoveUnit(pub i8);
 impl MoveUnit {
-    fn add(self, a: MoveUnit) -> Self {
+    pub fn add(self, a: MoveUnit) -> Self {
         MoveUnit(self.0 + a.0)
     }
-    fn sub(self, a: MoveUnit) -> Self {
+    pub fn sub(self, a: MoveUnit) -> Self {
         MoveUnit(self.0 - a.0)
     }
 }

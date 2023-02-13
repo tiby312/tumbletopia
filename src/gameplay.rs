@@ -60,7 +60,7 @@ pub enum Stage<T> {
 
 #[derive(Copy, Clone)]
 pub struct WaitForCustom<Z, F, R> {
-    zoo: Z,
+    _zoo: Z,
     func: F,
     res: Option<R>,
 }
@@ -69,7 +69,7 @@ pub fn wait_custom<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>>(
     func: F,
 ) -> WaitForCustom<Z, F, L> {
     WaitForCustom {
-        zoo,
+        _zoo: zoo,
         func,
         res: None,
     }
@@ -86,7 +86,7 @@ impl<L, Z: Zoo, F: FnMut(&mut Z::G<'_>) -> Stage<L>> GameStepper<Z> for WaitForC
             }
         }
     }
-    fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
+    fn consume(self, _: &mut Z::G<'_>) -> Self::Result {
         self.res.unwrap()
     }
 }
@@ -109,7 +109,7 @@ impl<Z: Zoo> GameStepper<Z> for Next {
     fn step(&mut self, _: &mut Z::G<'_>) -> Stage<()> {
         Stage::NextStage(())
     }
-    fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
+    fn consume(self, _: &mut Z::G<'_>) -> Self::Result {
         ()
     }
 }
@@ -170,7 +170,7 @@ pub trait GameStepper<Z: Zoo> {
     //Return if you are done with this stage.
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()>;
 
-    fn consume(self, game: &mut Z::G<'_>) -> Self::Result
+    fn consume(self, _: &mut Z::G<'_>) -> Self::Result
     where
         Self: Sized,
     {
@@ -198,12 +198,6 @@ pub trait GameStepper<Z: Zoo> {
     }
 }
 
-pub struct Looper<Z, A, F> {
-    zoo: Z,
-    a: Option<A>,
-    func: F,
-}
-
 pub enum LooperRes<A, B> {
     Loop(A),
     Finish(B),
@@ -213,7 +207,7 @@ impl<A> LooperRes<A, ()> {
         self
     }
 }
-pub struct Looper2<Z, A, F, K, P, H> {
+pub struct Looper<Z, A, F, K, P, H> {
     _start_val: std::marker::PhantomData<P>,
     start_func: H,
     _zoo: Z,
@@ -229,7 +223,7 @@ impl<
         F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<P, K>,
         P,
         H: FnMut(P) -> A,
-    > GameStepper<Z> for Looper2<Z, A, F, K, P, H>
+    > GameStepper<Z> for Looper<Z, A, F, K, P, H>
 {
     type Result = K;
     fn get_selection(&self) -> Option<&crate::CellSelection> {
@@ -246,7 +240,7 @@ impl<
             None
         }
     }
-    fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
+    fn consume(self, _: &mut Z::G<'_>) -> Self::Result {
         self.finished.unwrap()
     }
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
@@ -289,10 +283,10 @@ pub fn looper<
     mut start: H,
     start_val: P,
     func: F,
-) -> Looper2<Z, A, F, K, P, H> {
+) -> Looper<Z, A, F, K, P, H> {
     let elem = start(start_val);
 
-    Looper2 {
+    Looper {
         _zoo: Z::create(),
         a: Some(elem),
         func,
