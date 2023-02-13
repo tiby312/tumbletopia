@@ -1,10 +1,10 @@
 use super::*;
 
-pub struct Doopo;
-impl gameplay::Zoo for Doopo {
+pub struct GameHandle;
+impl gameplay::Zoo for GameHandle {
     type G<'a> = Stuff<'a>;
     fn create() -> Self {
-        Doopo
+        GameHandle
     }
 }
 
@@ -13,9 +13,9 @@ pub struct Stuff<'a> {
     pub mouse: Option<[f32; 2]>,
 }
 
-pub fn create_state_machine() -> impl GameStepper<Doopo> {
+pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     let wait_mouse_input = || {
-        gameplay::wait_custom(Doopo, |e| {
+        gameplay::wait_custom(GameHandle, |e| {
             if let Some(m) = e.mouse {
                 gameplay::Stage::NextStage(m)
             } else {
@@ -129,7 +129,7 @@ impl AnimationTicker {
         Self { a }
     }
 }
-impl GameStepper<Doopo> for AnimationTicker {
+impl GameStepper<GameHandle> for AnimationTicker {
     type Result = animation::Animation<Warrior>;
     fn consume(self, _: &mut Stuff<'_>) -> Self::Result {
         self.a
@@ -162,7 +162,7 @@ impl PlayerCellAsk {
         }
     }
 }
-impl GameStepper<Doopo> for PlayerCellAsk {
+impl GameStepper<GameHandle> for PlayerCellAsk {
     type Result = (CellSelection, Option<GridCoord>);
     fn get_selection(&self) -> Option<&CellSelection> {
         Some(&self.a)
