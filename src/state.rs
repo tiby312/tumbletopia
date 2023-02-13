@@ -66,18 +66,15 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                 c.moved = true;
                                 let aa =
                                     animation::Animation::new(ss.start(), dd, &game.grid_matrix, c);
-                                let aaa = AnimationTicker::new(aa)
-                                    .map(move |res, game| {
-                                        let warrior = res.into_data();
-                                        let [this_team, _that_team] = gameplay::team_view(
-                                            [&mut game.a.cats, &mut game.a.dogs],
-                                            team,
-                                        );
+                                let aaa = AnimationTicker::new(aa).map(move |res, game| {
+                                    let warrior = res.into_data();
+                                    let [this_team, _that_team] = gameplay::team_view(
+                                        [&mut game.a.cats, &mut game.a.dogs],
+                                        team,
+                                    );
 
-                                        this_team.elem.push(warrior);
-                                        gameplay::next()
-                                    })
-                                    .chain();
+                                    this_team.elem.push(warrior);
+                                });
                                 gameplay::optional(Some(aaa))
                             }
                             CellSelection::BuildSelection(_) => todo!(),
