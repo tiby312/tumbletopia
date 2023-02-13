@@ -14,14 +14,13 @@ pub struct Stuff<'a> {
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
-    let select_unit =  |team| {
+    let select_unit = || {
         gameplay::looper(
             (),
             |()| WaitMouseInput,
-            move |mouse_world, stuff| {
+            |mouse_world, stuff| {
                 let game = &mut stuff.a;
-                let [this_team, that_team] =
-                    team_view([&mut game.cats, &mut game.dogs], team);
+                let [this_team, that_team] = team_view([&mut game.cats, &mut game.dogs], game.team);
 
                 let cell: GridCoord =
                     GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
@@ -46,16 +45,16 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
         )
     };
 
-    let handle_move = move |team| {
-        let k = move |team| {
-            select_unit(team)
-                .map(move |c, _game| PlayerCellAsk::new(c, team))
+    let handle_move = move || {
+        let k = move || {
+            select_unit()
+                .map(|c, _| PlayerCellAsk::new(c))
                 .chain()
-                .map(move |(c, cell), g1| {
+                .map(|(c, cell), g1| {
                     let game = &mut g1.a;
                     if let Some(cell) = cell {
                         let [this_team, _that_team] =
-                            team_view([&mut game.cats, &mut game.dogs], team);
+                            team_view([&mut game.cats, &mut game.dogs], game.team);
 
                         match c {
                             CellSelection::MoveSelection(ss, _attack) => {
@@ -70,7 +69,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                     let warrior = res.into_data();
                                     let [this_team, _that_team] = team_view(
                                         [&mut game.a.cats, &mut game.a.dogs],
-                                        team,
+                                        game.a.team,
                                     );
 
                                     this_team.elem.push(warrior);
@@ -88,7 +87,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
 
         gameplay::looper(
             (),
-            move |()| k(team),
+            move |()| k(),
             move |res, _stuff| match res {
                 Some(_animation) => gameplay::LooperRes::Finish(()),
                 None => gameplay::LooperRes::Loop(()),
@@ -96,16 +95,15 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
         )
     };
 
-    let mut counter = 0;
     let testo = gameplay::looper(
-        0,
-        move |c| handle_move(c),
-        move |_res, _stuff| {
-            counter += 1;
-            if counter > 1 {
-                counter = 0;
+        (),
+        move |()| handle_move(),
+        move |(), stuff| {
+            stuff.a.team += 1;
+            if stuff.a.team > 1 {
+                stuff.a.team = 0;
             }
-            gameplay::LooperRes::Loop(counter).infinite()
+            gameplay::LooperRes::Loop(()).infinite()
         },
     );
 
@@ -155,15 +153,13 @@ impl GameStepper<GameHandle> for AnimationTicker {
 
 struct PlayerCellAsk {
     a: CellSelection,
-    team: usize,
     found_cell: Option<GridCoord>,
 }
 
 impl PlayerCellAsk {
-    pub fn new(a: CellSelection, team: usize) -> Self {
+    pub fn new(a: CellSelection) -> Self {
         Self {
             a,
-            team,
             found_cell: None,
         }
     }
@@ -197,8 +193,6 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
         }
     }
 }
-
-
 
 pub fn team_view(
     a: [&mut UnitCollection<Warrior>; 2],

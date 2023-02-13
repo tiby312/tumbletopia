@@ -202,6 +202,7 @@ pub enum CellSelection {
 //TODO store actual world pos? Less calculation each iteration.
 //Additionally removes need to special case animation.
 pub struct Game {
+    team: usize,
     grid_matrix: grids::GridMatrix,
     dogs: UnitCollection<Warrior>,
     cats: UnitCollection<Warrior>,
@@ -278,6 +279,7 @@ pub async fn worker_entry() {
     ]);
 
     let mut ggame = Game {
+        team: 0,
         dogs,
         cats,
         grid_matrix: grids::GridMatrix::new(),
