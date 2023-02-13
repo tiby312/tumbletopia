@@ -21,7 +21,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
             move |mouse_world, stuff| {
                 let game = &mut stuff.a;
                 let [this_team, that_team] =
-                    gameplay::team_view([&mut game.cats, &mut game.dogs], team);
+                    team_view([&mut game.cats, &mut game.dogs], team);
 
                 let cell: GridCoord =
                     GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
@@ -55,7 +55,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                     let game = &mut g1.a;
                     if let Some(cell) = cell {
                         let [this_team, _that_team] =
-                            gameplay::team_view([&mut game.cats, &mut game.dogs], team);
+                            team_view([&mut game.cats, &mut game.dogs], team);
 
                         match c {
                             CellSelection::MoveSelection(ss, _attack) => {
@@ -68,7 +68,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                     animation::Animation::new(ss.start(), dd, &game.grid_matrix, c);
                                 let aaa = AnimationTicker::new(aa).map(move |res, game| {
                                     let warrior = res.into_data();
-                                    let [this_team, _that_team] = gameplay::team_view(
+                                    let [this_team, _that_team] = team_view(
                                         [&mut game.a.cats, &mut game.a.dogs],
                                         team,
                                     );
@@ -194,6 +194,22 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
             }
         } else {
             gameplay::Stage::Stay
+        }
+    }
+}
+
+
+
+pub fn team_view(
+    a: [&mut UnitCollection<Warrior>; 2],
+    ind: usize,
+) -> [&mut UnitCollection<Warrior>; 2] {
+    let [a, b] = a;
+    match ind {
+        0 => [a, b],
+        1 => [b, a],
+        _ => {
+            unreachable!()
         }
     }
 }

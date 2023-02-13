@@ -281,18 +281,3 @@ pub fn looper<
         start_func: start,
     }
 }
-
-//TODO move this
-pub fn team_view(
-    a: [&mut UnitCollection<Warrior>; 2],
-    ind: usize,
-) -> [&mut UnitCollection<Warrior>; 2] {
-    let [a, b] = a;
-    match ind {
-        0 => [a, b],
-        1 => [b, a],
-        _ => {
-            unreachable!()
-        }
-    }
-}
