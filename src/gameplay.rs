@@ -23,59 +23,6 @@ impl<Z: Zoo, A: GameStepper<Z>, F: FnOnce(A::Result, &mut Z::G<'_>) -> X, X> Gam
     }
 }
 
-// pub struct AndThen<A, B, N> {
-//     first: Option<(A, B)>,
-//     second: Option<N>,
-// }
-// impl<
-//         'a,
-//         Z: Zoo,
-//         A: GameStepper<Z>,
-//         K: GameStepper<Z>,
-//         B: FnOnce(A::Result, &mut Z::G<'_>) -> K,
-//     > GameStepper<Z> for AndThen<A, B, K>
-// {
-//     type Result = K::Result;
-//     //Return if you are done with this stage.
-//     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
-//         if let Some((a, _)) = &mut self.first {
-//             match a.step(game) {
-//                 Stage::Stay => Stage::Stay,
-//                 Stage::NextStage(()) => {
-//                     let (a, b) = self.first.take().unwrap();
-//                     let j = a.consume(game);
-
-//                     //TODO would be more consistent with Once if the function was called
-//                     //in the same iteration as the first step call to second.
-//                     let nn = b(j, game);
-//                     self.second = Some(nn);
-//                     Stage::Stay
-//                 }
-//             }
-//         } else {
-//             self.second.as_mut().unwrap().step(game)
-//         }
-//     }
-//     fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
-//         self.second.unwrap().consume(game)
-//     }
-
-//     fn get_selection(&self) -> Option<&crate::CellSelection> {
-//         if let Some((a, _)) = self.first.as_ref() {
-//             a.get_selection()
-//         } else {
-//             self.second.as_ref().unwrap().get_selection()
-//         }
-//     }
-//     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
-//         if let Some((a, _)) = self.first.as_ref() {
-//             a.get_animation()
-//         } else {
-//             self.second.as_ref().unwrap().get_animation()
-//         }
-//     }
-// }
-
 pub enum Stage<T> {
     NextStage(T),
     Stay,
