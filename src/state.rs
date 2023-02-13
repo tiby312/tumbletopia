@@ -49,8 +49,9 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     let handle_move = move |team| {
         let k = move |team| {
             select_unit(team)
-                .and_then(move |c, _game| PlayerCellAsk::new(c, team))
-                .and_then(move |(c, cell), g1| {
+                .map(move |c, _game| PlayerCellAsk::new(c, team))
+                .chain()
+                .map(move |(c, cell), g1| {
                     let game = &mut g1.a;
                     if let Some(cell) = cell {
                         let [this_team, _that_team] =
@@ -65,16 +66,18 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                 c.moved = true;
                                 let aa =
                                     animation::Animation::new(ss.start(), dd, &game.grid_matrix, c);
-                                let aaa = AnimationTicker::new(aa).and_then(move |res, game| {
-                                    let warrior = res.into_data();
-                                    let [this_team, _that_team] = gameplay::team_view(
-                                        [&mut game.a.cats, &mut game.a.dogs],
-                                        team,
-                                    );
+                                let aaa = AnimationTicker::new(aa)
+                                    .map(move |res, game| {
+                                        let warrior = res.into_data();
+                                        let [this_team, _that_team] = gameplay::team_view(
+                                            [&mut game.a.cats, &mut game.a.dogs],
+                                            team,
+                                        );
 
-                                    this_team.elem.push(warrior);
-                                    gameplay::next()
-                                });
+                                        this_team.elem.push(warrior);
+                                        gameplay::next()
+                                    })
+                                    .chain();
                                 gameplay::optional(Some(aaa))
                             }
                             CellSelection::BuildSelection(_) => todo!(),
@@ -83,6 +86,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                         gameplay::optional(None)
                     }
                 })
+                .chain()
         };
 
         gameplay::looper(
