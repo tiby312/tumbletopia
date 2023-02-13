@@ -466,11 +466,7 @@ pub async fn worker_entry() {
         if counter > 1 {
             counter = 0;
         }
-
-        if false {
-            return gameplay::LooperRes::Finish(gameplay::next());
-        }
-        gameplay::LooperRes::Loop(handle_move(counter))
+        gameplay::LooperRes::Loop(handle_move(counter)).infinite()
     });
 
     'outer: loop {

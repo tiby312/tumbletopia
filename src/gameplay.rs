@@ -259,6 +259,11 @@ pub enum LooperRes<A, B> {
     Loop(A),
     Finish(B),
 }
+impl<A> LooperRes<A, ()> {
+    pub fn infinite(self) -> LooperRes<A, ()> {
+        self
+    }
+}
 pub struct Looper2<Z, A, F, K> {
     zoo: Z,
     a: Option<A>,
