@@ -1,12 +1,11 @@
 use super::*;
 
-pub struct Map<Z, A, F> {
-    zoo: Z,
+pub struct Map<A, F> {
     elem: A,
     func: F,
 }
 impl<Z: Zoo, A: GameStepper<Z>, F: FnOnce(A::Result, &mut Z::G<'_>) -> X, X> GameStepper<Z>
-    for Map<Z, A, F>
+    for Map< A, F>
 {
     type Result = X;
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
@@ -256,12 +255,11 @@ pub trait GameStepper<Z: Zoo> {
         None
     }
 
-    fn map<K, B: FnOnce(Self::Result, &mut Z::G<'_>) -> K>(self, func: B) -> Map<Z, Self, B>
+    fn map<K, B: FnOnce(Self::Result, &mut Z::G<'_>) -> K>(self, func: B) -> Map<Self, B>
     where
         Self: Sized,
     {
         Map {
-            zoo: Z::create(),
             elem: self,
             func,
         }
@@ -270,7 +268,7 @@ pub trait GameStepper<Z: Zoo> {
     fn and_then<K: GameStepper<Z>, B: FnOnce(Self::Result, &mut Z::G<'_>) -> K>(
         self,
         func: B,
-    ) -> Chain<Map<Z, Self, B>, K>
+    ) -> Chain<Map<Self, B>, K>
     where
         Self: Sized,
     {
