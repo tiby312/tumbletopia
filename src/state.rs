@@ -11,6 +11,7 @@ impl gameplay::Zoo for GameHandle {
 pub struct Stuff<'a> {
     pub a: &'a mut Game,
     pub mouse: Option<[f32; 2]>,
+    pub reset:bool
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
