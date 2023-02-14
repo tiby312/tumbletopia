@@ -53,29 +53,44 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                 .map(|(c, cell), g1| {
                     let game = &mut g1.a;
                     if let Some(cell) = cell {
-                        let [this_team, _that_team] =
+                        let [this_team, that_team] =
                             team_view([&mut game.cats, &mut game.dogs], game.team);
-
                         match c {
-                            CellSelection::MoveSelection(ss, _attack) => {
-                                let mut c = this_team.remove(ss.start());
-                                let (dd, aa) = ss.get_path_data(cell).unwrap();
-                                c.position = cell;
-                                c.move_deficit = *aa;
-                                c.moved = true;
-                                let aa =
-                                    animation::Animation::new(ss.start(), dd, &game.grid_matrix, c);
-                                let aaa = AnimationTicker::new(aa).map(move |res, game| {
-                                    let warrior = res.into_data();
-                                    let [this_team, _that_team] = team_view(
-                                        [&mut game.a.cats, &mut game.a.dogs],
-                                        game.a.team,
-                                    );
+                            CellSelection::MoveSelection(ss, _attack) => match cell {
+                                PlayerCellAskRes::Attack(cell) => {
+                                    let target_cat_pos = &cell;
 
-                                    this_team.elem.push(warrior);
-                                });
-                                gameplay::optional(Some(aaa))
-                            }
+                                    let target_cat = that_team.find_mut(target_cat_pos).unwrap();
+                                    target_cat.health -= 1;
+
+                                    let current_cat = this_team.find_mut(ss.start()).unwrap();
+                                    current_cat.moved = true;
+                                    gameplay::optional(Some(gameplay::Either::A(gameplay::Next)))
+                                }
+                                PlayerCellAskRes::MoveTo(cell) => {
+                                    let mut c = this_team.remove(ss.start());
+                                    let (dd, aa) = ss.get_path_data(cell).unwrap();
+                                    c.position = cell;
+                                    c.move_deficit = *aa;
+                                    c.moved = true;
+                                    let aa = animation::Animation::new(
+                                        ss.start(),
+                                        dd,
+                                        &game.grid_matrix,
+                                        c,
+                                    );
+                                    let aaa = AnimationTicker::new(aa).map(move |res, game| {
+                                        let warrior = res.into_data();
+                                        let [this_team, _that_team] = team_view(
+                                            [&mut game.a.cats, &mut game.a.dogs],
+                                            game.a.team,
+                                        );
+
+                                        this_team.elem.push(warrior);
+                                    });
+                                    gameplay::optional(Some(gameplay::Either::B(aaa)))
+                                }
+                            },
                             CellSelection::BuildSelection(_) => todo!(),
                         }
                     } else {
@@ -162,9 +177,13 @@ impl PlayerCellAsk {
         Self { a }
     }
 }
+enum PlayerCellAskRes {
+    Attack(GridCoord),
+    MoveTo(GridCoord),
+}
 impl GameStepper<GameHandle> for PlayerCellAsk {
-    type Result = (CellSelection, Option<GridCoord>);
-    type Int = Option<GridCoord>;
+    type Result = (CellSelection, Option<PlayerCellAskRes>);
+    type Int = Option<PlayerCellAskRes>;
     fn get_selection(&self) -> Option<&CellSelection> {
         Some(&self.a)
     }
@@ -177,12 +196,26 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
             let cell: GridCoord = GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
 
             match &self.a {
-                CellSelection::MoveSelection(ss, _) => {
-                    if movement::contains_coord(ss.iter_coords(), &cell) {
-                        gameplay::Stage::NextStage(Some(cell))
+                CellSelection::MoveSelection(ss, attack) => {
+                    let [this_team, other_team] =
+                        team_view([&mut game.cats, &mut game.dogs], game.team);
+
+                    let target_cat_pos = &cell;
+
+                    let current_attack = this_team.find_mut(ss.start()).unwrap().moved;
+
+                    let aa = if !current_attack
+                        && movement::contains_coord(attack.iter_coords(), target_cat_pos)
+                        && other_team.find(target_cat_pos).is_some()
+                    {
+                        Some(PlayerCellAskRes::Attack(cell))
+                    } else if movement::contains_coord(ss.iter_coords(), &cell) {
+                        Some(PlayerCellAskRes::MoveTo(cell))
                     } else {
-                        gameplay::Stage::NextStage(None)
-                    }
+                        None
+                    };
+
+                    gameplay::Stage::NextStage(aa)
                 }
                 _ => {
                     todo!()

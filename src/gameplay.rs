@@ -53,6 +53,50 @@ impl<Z: Zoo> GameStepper<Z> for Next {
     }
 }
 
+pub enum Either<A, B> {
+    A(A),
+    B(B),
+}
+impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z>> GameStepper<Z> for Either<A, B> {
+    type Result = Either<A::Result, B::Result>;
+    type Int = Either<A::Int, B::Int>;
+
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
+        match self {
+            Either::A(a) => match a.step(game) {
+                Stage::NextStage(a) => Stage::NextStage(Either::A(a)),
+                Stage::Stay => Stage::Stay,
+            },
+            Either::B(a) => match a.step(game) {
+                Stage::NextStage(a) => Stage::NextStage(Either::B(a)),
+                Stage::Stay => Stage::Stay,
+            },
+        }
+    }
+
+    fn consume(self, game: &mut Z::G<'_>, i: Self::Int) -> Self::Result {
+        match (self, i) {
+            (Either::A(a), Either::A(aa)) => Either::A(a.consume(game, aa)),
+            (Either::B(b), Either::B(bb)) => Either::B(b.consume(game, bb)),
+            _ => unreachable!(),
+        }
+    }
+
+    fn get_selection(&self) -> Option<&crate::CellSelection> {
+        match self {
+            Either::A(a) => a.get_selection(),
+            Either::B(a) => a.get_selection(),
+        }
+    }
+
+    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+        match self {
+            Either::A(a) => a.get_animation(),
+            Either::B(a) => a.get_animation(),
+        }
+    }
+}
+
 pub struct Optional<A> {
     a: Option<A>,
 }
