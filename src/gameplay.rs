@@ -229,8 +229,6 @@ impl<
         a
     }
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<K> {
-        
-
         let a = if let Some(a) = &mut self.a {
             match a.step(game) {
                 Stage::Stay => {

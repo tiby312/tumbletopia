@@ -416,6 +416,8 @@ pub async fn worker_entry() {
         let cat_draw = WarriorDraw::new(&ggame.cats, &cat, &drop_shadow);
         let dog_draw = WarriorDraw::new(&ggame.dogs, &dog, &drop_shadow);
 
+        let animation_draw = if ggame.team == 0 { &cat } else { &dog };
+
         disable_depth(&ctx, || {
             if let Some(a) = testo.get_selection() {
                 match a {
@@ -478,7 +480,8 @@ pub async fn worker_entry() {
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
-            cat.draw(&mut v);
+
+            animation_draw.draw(&mut v);
         }
 
         cat_draw.draw(&gg, &mut draw_sys, &matrix);
