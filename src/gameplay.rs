@@ -220,18 +220,10 @@ impl<
     type Result = K;
     type Int = K;
     fn get_selection(&self) -> Option<&crate::CellSelection> {
-        if let Some(a) = self.a.as_ref() {
-            a.get_selection()
-        } else {
-            None
-        }
+        self.a.as_ref().unwrap().get_selection()
     }
     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
-        if let Some(a) = self.a.as_ref() {
-            a.get_animation()
-        } else {
-            None
-        }
+        self.a.as_ref().unwrap().get_animation()
     }
     fn consume(self, _: &mut Z::G<'_>, a: K) -> Self::Result {
         a
