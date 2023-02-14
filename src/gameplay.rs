@@ -53,54 +53,46 @@ impl<Z: Zoo> GameStepper<Z> for Next {
     }
 }
 
-
-
-
-pub struct Or<A,B>{
-    a:A,
-    b:B
+pub struct Or<A, B> {
+    a: A,
+    b: B,
 }
 impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z>> GameStepper<Z> for Or<A, B> {
     type Result = Either<A::Result, B::Result>;
     type Int = Either<A::Int, B::Int>;
 
-    fn step(&mut self,game:&mut Z::G<'_>)->Stage<Self::Int>{
-        let a=self.a.step(game);
-        
-        match a{
-            Stage::NextStage(a)=>{
-                return Stage::NextStage(Either::A(a))
-            },
-            Stage::Stay=>{}
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
+        let a = self.a.step(game);
+
+        match a {
+            Stage::NextStage(a) => return Stage::NextStage(Either::A(a)),
+            Stage::Stay => {}
         }
 
-        let b=self.b.step(game);
+        let b = self.b.step(game);
 
-        match b{
-            Stage::NextStage(a)=>{
-                return Stage::NextStage(Either::B(a))
-            },
-            Stage::Stay=>{}
+        match b {
+            Stage::NextStage(a) => return Stage::NextStage(Either::B(a)),
+            Stage::Stay => {}
         }
 
         Stage::Stay
-
     }
 
     fn consume(self, game: &mut Z::G<'_>, i: Self::Int) -> Self::Result {
-        match i{
-            Either::A(a)=>Either::A(self.a.consume(game,a)),
-            Either::B(a)=>Either::B(self.b.consume(game,a)),
+        match i {
+            Either::A(a) => Either::A(self.a.consume(game, a)),
+            Either::B(a) => Either::B(self.b.consume(game, a)),
         }
     }
     fn get_selection(&self) -> Option<&crate::CellSelection> {
-        todo!()
+        //TODO correct behavior?
+        self.a.get_selection()
     }
 
     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
-        todo!()
+        self.a.get_animation()
     }
-
 }
 
 pub enum Either<A, B> {
@@ -257,7 +249,10 @@ pub trait GameStepper<Z: Zoo> {
         None
     }
 
-    fn or<O:GameStepper<Z>>(self,other:O)->Or<Self,O> where Self:Sized{
+    fn or<O: GameStepper<Z>>(self, other: O) -> Or<Self, O>
+    where
+        Self: Sized,
+    {
         Or { a: self, b: other }
     }
 

@@ -374,7 +374,7 @@ pub async fn worker_entry() {
             let mut jj = state::Stuff {
                 a: &mut ggame,
                 mouse,
-                reset
+                reset,
             };
             testo.step(&mut jj);
         }

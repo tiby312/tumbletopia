@@ -11,7 +11,7 @@ impl gameplay::Zoo for GameHandle {
 pub struct Stuff<'a> {
     pub a: &'a mut Game,
     pub mouse: Option<[f32; 2]>,
-    pub reset:bool
+    pub reset: bool,
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
@@ -111,10 +111,22 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
         )
     };
 
+    let wait_reset_button = || {
+        WaitResetButton.map(move |_, g1| {
+            let game = &mut g1.a;
+            let [this_team, that_team] = team_view([&mut game.cats, &mut game.dogs], game.team);
+            for a in this_team.elem.iter_mut() {
+                a.moved = false;
+            }
+        })
+    };
+
+    //let handle_move2=move ||;
+
     let testo = gameplay::looper(
         (),
-        move |()| handle_move(),
-        move |(), stuff| {
+        move |()| handle_move().or(wait_reset_button()),
+        move |_, stuff| {
             stuff.a.team += 1;
             if stuff.a.team > 1 {
                 stuff.a.team = 0;
@@ -124,6 +136,22 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     );
 
     testo
+}
+
+struct WaitResetButton;
+impl GameStepper<GameHandle> for WaitResetButton {
+    type Result = ();
+    type Int = ();
+    fn step(&mut self, game: &mut Stuff<'_>) -> gameplay::Stage<()> {
+        if game.reset {
+            gameplay::Stage::NextStage(())
+        } else {
+            gameplay::Stage::Stay
+        }
+    }
+    fn consume(self, game: &mut Stuff<'_>, _: ()) -> Self::Result {
+        ()
+    }
 }
 
 struct WaitMouseInput;
