@@ -155,27 +155,23 @@ impl GameStepper<GameHandle> for AnimationTicker {
 
 struct PlayerCellAsk {
     a: CellSelection,
-    found_cell: Option<GridCoord>,
 }
 
 impl PlayerCellAsk {
     pub fn new(a: CellSelection) -> Self {
-        Self {
-            a,
-            found_cell: None,
-        }
+        Self { a }
     }
 }
 impl GameStepper<GameHandle> for PlayerCellAsk {
     type Result = (CellSelection, Option<GridCoord>);
-    type Int = ();
+    type Int = Option<GridCoord>;
     fn get_selection(&self) -> Option<&CellSelection> {
         Some(&self.a)
     }
-    fn consume(self, _: &mut Stuff<'_>, _: ()) -> Self::Result {
-        (self.a, self.found_cell)
+    fn consume(self, _: &mut Stuff<'_>, grid_coord: Self::Int) -> Self::Result {
+        (self.a, grid_coord)
     }
-    fn step(&mut self, g1: &mut Stuff<'_>) -> gameplay::Stage<()> {
+    fn step(&mut self, g1: &mut Stuff<'_>) -> gameplay::Stage<Self::Int> {
         let game = &mut g1.a;
         if let Some(mouse_world) = g1.mouse {
             let cell: GridCoord = GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
@@ -183,9 +179,10 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
             match &self.a {
                 CellSelection::MoveSelection(ss, _) => {
                     if movement::contains_coord(ss.iter_coords(), &cell) {
-                        self.found_cell = Some(cell);
+                        gameplay::Stage::NextStage(Some(cell))
+                    } else {
+                        gameplay::Stage::NextStage(None)
                     }
-                    gameplay::Stage::NextStage(())
                 }
                 _ => {
                     todo!()
