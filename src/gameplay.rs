@@ -8,11 +8,12 @@ impl<Z: Zoo, A: GameStepper<Z>, F: FnOnce(A::Result, &mut Z::G<'_>) -> X, X> Gam
     for Map<A, F>
 {
     type Result = X;
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
+    type Int = A::Int;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
         self.elem.step(game)
     }
-    fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
-        let s = self.elem.consume(game);
+    fn consume(self, game: &mut Z::G<'_>, a: Self::Int) -> Self::Result {
+        let s = self.elem.consume(game, a);
         (self.func)(s, game)
     }
     fn get_selection(&self) -> Option<&crate::CellSelection> {
@@ -43,10 +44,11 @@ pub fn next() -> Next {
 pub struct Next;
 impl<Z: Zoo> GameStepper<Z> for Next {
     type Result = ();
+    type Int = ();
     fn step(&mut self, _: &mut Z::G<'_>) -> Stage<()> {
         Stage::NextStage(())
     }
-    fn consume(self, _: &mut Z::G<'_>) -> Self::Result {
+    fn consume(self, _: &mut Z::G<'_>, _: ()) -> Self::Result {
         ()
     }
 }
@@ -61,19 +63,20 @@ pub fn optional<Z: Zoo, A: GameStepper<Z>>(a: Option<A>) -> Optional<A> {
 
 impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
     type Result = Option<A::Result>;
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
+    type Int = Option<A::Int>;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
         if let Some(a) = self.a.as_mut() {
             match a.step(game) {
                 Stage::Stay => Stage::Stay,
-                Stage::NextStage(()) => Stage::NextStage(()),
+                Stage::NextStage(a) => Stage::NextStage(Some(a)),
             }
         } else {
-            Stage::NextStage(())
+            Stage::NextStage(None)
         }
     }
-    fn consume(self, game: &mut Z::G<'_>) -> Self::Result {
+    fn consume(self, game: &mut Z::G<'_>, i: Self::Int) -> Self::Result {
         if let Some(a) = self.a {
-            Some(a.consume(game))
+            Some(a.consume(game, i.unwrap()))
         } else {
             None
         }
@@ -108,12 +111,13 @@ pub struct Chain<A, B> {
 }
 impl<Z: Zoo, A: GameStepper<Z, Result = B>, B: GameStepper<Z>> GameStepper<Z> for Chain<A, B> {
     type Result = B::Result;
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
+    type Int = B::Int;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
         if let Some(a) = &mut self.first {
             match a.step(game) {
                 Stage::Stay => Stage::Stay,
-                Stage::NextStage(()) => {
-                    let b = self.first.take().unwrap().consume(game);
+                Stage::NextStage(i) => {
+                    let b = self.first.take().unwrap().consume(game, i);
                     self.second = Some(b);
                     Stage::Stay
                 }
@@ -122,8 +126,8 @@ impl<Z: Zoo, A: GameStepper<Z, Result = B>, B: GameStepper<Z>> GameStepper<Z> fo
             self.second.as_mut().unwrap().step(game)
         }
     }
-    fn consume(self, game: &mut Z::G<'_>) -> B::Result {
-        self.second.unwrap().consume(game)
+    fn consume(self, game: &mut Z::G<'_>, a: Self::Int) -> B::Result {
+        self.second.unwrap().consume(game, a)
     }
 
     fn get_selection(&self) -> Option<&crate::CellSelection> {
@@ -144,10 +148,11 @@ impl<Z: Zoo, A: GameStepper<Z, Result = B>, B: GameStepper<Z>> GameStepper<Z> fo
 
 pub trait GameStepper<Z: Zoo> {
     type Result;
+    type Int;
     //Return if you are done with this stage.
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()>;
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int>;
 
-    fn consume(self, _: &mut Z::G<'_>) -> Self::Result
+    fn consume(self, _: &mut Z::G<'_>, _: Self::Int) -> Self::Result
     where
         Self: Sized;
 
@@ -197,11 +202,10 @@ impl<A> LooperRes<A, ()> {
     }
 }
 
-pub struct Looper<A, F, K, H> {
+pub struct Looper<A, F, H> {
     start_func: H,
     a: Option<A>,
     func: F,
-    finished: Option<K>,
 }
 
 impl<
@@ -211,9 +215,10 @@ impl<
         F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<P, K>,
         P,
         H: FnMut(P) -> A,
-    > GameStepper<Z> for Looper<A, F, K, H>
+    > GameStepper<Z> for Looper<A, F, H>
 {
     type Result = K;
+    type Int = K;
     fn get_selection(&self) -> Option<&crate::CellSelection> {
         if let Some(a) = self.a.as_ref() {
             a.get_selection()
@@ -228,20 +233,18 @@ impl<
             None
         }
     }
-    fn consume(self, _: &mut Z::G<'_>) -> Self::Result {
-        self.finished.unwrap()
+    fn consume(self, _: &mut Z::G<'_>, a: K) -> Self::Result {
+        a
     }
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<()> {
-        if self.finished.is_some() {
-            return Stage::Stay;
-        }
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<K> {
+        
 
         let a = if let Some(a) = &mut self.a {
             match a.step(game) {
                 Stage::Stay => {
                     return Stage::Stay;
                 }
-                Stage::NextStage(()) => self.a.take().unwrap().consume(game),
+                Stage::NextStage(o) => self.a.take().unwrap().consume(game, o),
             }
         } else {
             unreachable!();
@@ -252,10 +255,7 @@ impl<
                 self.a = Some((self.start_func)(p));
                 Stage::Stay
             }
-            LooperRes::Finish(b) => {
-                self.finished = Some(b);
-                Stage::NextStage(())
-            }
+            LooperRes::Finish(b) => Stage::NextStage(b),
         }
     }
 }
@@ -271,13 +271,12 @@ pub fn looper<
     start_val: P,
     mut start: H,
     func: F,
-) -> Looper<A, F, K, H> {
+) -> Looper<A, F, H> {
     let elem = start(start_val);
 
     Looper {
         a: Some(elem),
         func,
-        finished: None,
         start_func: start,
     }
 }

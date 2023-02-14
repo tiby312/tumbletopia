@@ -113,6 +113,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
 struct WaitMouseInput;
 impl GameStepper<GameHandle> for WaitMouseInput {
     type Result = [f32; 2];
+    type Int = ();
     fn step(&mut self, game: &mut Stuff<'_>) -> gameplay::Stage<()> {
         if let Some(_) = game.mouse {
             gameplay::Stage::NextStage(())
@@ -120,7 +121,7 @@ impl GameStepper<GameHandle> for WaitMouseInput {
             gameplay::Stage::Stay
         }
     }
-    fn consume(self, game: &mut Stuff<'_>) -> Self::Result {
+    fn consume(self, game: &mut Stuff<'_>, _: ()) -> Self::Result {
         game.mouse.unwrap()
     }
 }
@@ -135,7 +136,8 @@ impl AnimationTicker {
 }
 impl GameStepper<GameHandle> for AnimationTicker {
     type Result = animation::Animation<Warrior>;
-    fn consume(self, _: &mut Stuff<'_>) -> Self::Result {
+    type Int = ();
+    fn consume(self, _: &mut Stuff<'_>, _: ()) -> Self::Result {
         self.a
     }
     fn step(&mut self, _game: &mut Stuff<'_>) -> gameplay::Stage<()> {
@@ -166,10 +168,11 @@ impl PlayerCellAsk {
 }
 impl GameStepper<GameHandle> for PlayerCellAsk {
     type Result = (CellSelection, Option<GridCoord>);
+    type Int = ();
     fn get_selection(&self) -> Option<&CellSelection> {
         Some(&self.a)
     }
-    fn consume(self, _: &mut Stuff<'_>) -> Self::Result {
+    fn consume(self, _: &mut Stuff<'_>, _: ()) -> Self::Result {
         (self.a, self.found_cell)
     }
     fn step(&mut self, g1: &mut Stuff<'_>) -> gameplay::Stage<()> {
