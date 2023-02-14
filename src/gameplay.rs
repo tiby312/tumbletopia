@@ -191,43 +191,67 @@ impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
     }
 }
 
+enum EitherOr<A, B> {
+    A(A),
+    B(B),
+    None,
+}
+impl<A, B> EitherOr<A, B> {
+    fn take(&mut self) -> Self {
+        let mut k = EitherOr::None;
+        std::mem::swap(&mut k, self);
+        k
+    }
+    fn unwrap_a(self) -> A {
+        match self {
+            EitherOr::A(a) => a,
+            _ => unreachable!(),
+        }
+    }
+
+    fn unwrap_b(self) -> B {
+        match self {
+            EitherOr::B(a) => a,
+            _ => unreachable!(),
+        }
+    }
+}
 pub struct Chain<A, B> {
-    first: Option<A>,
-    second: Option<B>,
+    inner: EitherOr<A, B>,
 }
 impl<Z: Zoo, A: GameStepper<Z, Result = B>, B: GameStepper<Z>> GameStepper<Z> for Chain<A, B> {
     type Result = B::Result;
     type Int = B::Int;
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
-        if let Some(a) = &mut self.first {
-            match a.step(game) {
+        match &mut self.inner {
+            EitherOr::A(a) => match a.step(game) {
                 Stage::Stay => Stage::Stay,
                 Stage::NextStage(i) => {
-                    let b = self.first.take().unwrap().consume(game, i);
-                    self.second = Some(b);
+                    let b = self.inner.take().unwrap_a().consume(game, i);
+                    self.inner = EitherOr::B(b);
                     Stage::Stay
                 }
-            }
-        } else {
-            self.second.as_mut().unwrap().step(game)
+            },
+            EitherOr::B(b) => b.step(game),
+            EitherOr::None => unreachable!(),
         }
     }
     fn consume(self, game: &mut Z::G<'_>, a: Self::Int) -> B::Result {
-        self.second.unwrap().consume(game, a)
+        self.inner.unwrap_b().consume(game, a)
     }
 
     fn get_selection(&self) -> Option<&crate::CellSelection> {
-        if let Some(a) = self.first.as_ref() {
-            a.get_selection()
-        } else {
-            self.second.as_ref().unwrap().get_selection()
+        match &self.inner {
+            EitherOr::A(a) => a.get_selection(),
+            EitherOr::B(a) => a.get_selection(),
+            EitherOr::None => unreachable!(),
         }
     }
     fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
-        if let Some(a) = self.first.as_ref() {
-            a.get_animation()
-        } else {
-            self.second.as_ref().unwrap().get_animation()
+        match &self.inner {
+            EitherOr::A(a) => a.get_animation(),
+            EitherOr::B(a) => a.get_animation(),
+            EitherOr::None => unreachable!(),
         }
     }
 }
@@ -262,8 +286,7 @@ pub trait GameStepper<Z: Zoo> {
         Self: Sized,
     {
         Chain {
-            first: Some(self),
-            second: None,
+            inner: EitherOr::A(self),
         }
     }
 
