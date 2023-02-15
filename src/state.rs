@@ -57,6 +57,10 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
         current_cat.moved = true;
     }
 
+    // fn move_unit(g1:&mut Stuff,moves:PossibleMoves){
+
+    // }
+
     let handle_move = move || {
         let k = move || {
             select_unit()
@@ -71,11 +75,12 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                     gameplay::optional(Some(gameplay::Either::A(gameplay::Next)))
                                 }
                                 PlayerCellAskRes::MoveTo(cell) => {
+                                    
                                     let mut c = g1.this_team.remove(ss.start());
                                     let (dd, aa) = ss.get_path_data(cell).unwrap();
                                     c.position = cell;
                                     c.move_deficit = *aa;
-                                    //c.moved = true;
+
                                     let aa = animation::Animation::new(
                                         ss.start(),
                                         dd,
@@ -90,7 +95,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
 
                                             let unit = game.this_team.elem.last().unwrap();
 
-                                            let pos = get_cat_move_attack_matrix(
+                                            get_cat_move_attack_matrix(
                                                 unit,
                                                 game.this_team
                                                     .filter()
@@ -98,8 +103,10 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                                 terrain::Grass,
                                                 &game.grid_matrix,
                                                 true,
-                                            );
+                                            )
 
+                                        })
+                                        .map(|pos,_|{
                                             PlayerCellAsk::new(pos)
                                         })
                                         .wait()
