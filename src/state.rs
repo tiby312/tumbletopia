@@ -103,7 +103,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                 };
 
                 let aaa = animator(&ss, ss.start(), &target, g1)
-                    .map(move |target, game| {
+                    .map(|target, game| {
                         let unit = game.this_team.find(&target).unwrap();
                         let pos = get_cat_move_attack_matrix(
                             unit,
@@ -115,7 +115,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                         PlayerCellAsk::new(pos)
                     })
                     .wait()
-                    .map(move |(ss, b), game| {
+                    .map(|(ss, b), game| {
                         let ss = match ss {
                             CellSelection::MoveSelection(ss, _) => ss,
                             _ => unreachable!(),
