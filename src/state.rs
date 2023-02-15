@@ -17,69 +17,68 @@ pub struct Stuff<'a> {
     pub reset: bool,
 }
 
-pub fn create_state_machine() -> impl GameStepper<GameHandle> {
-    let select_unit = || {
-        gameplay::looper(
-            (),
-            |()| WaitMouseInput,
-            |mouse_world, stuff| {
-                let cell: GridCoord =
-                    GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
+fn select_unit() -> impl GameStepper<GameHandle, Result = CellSelection> {
+    gameplay::looper(
+        (),
+        |()| WaitMouseInput,
+        |mouse_world, stuff| {
+            let cell: GridCoord = GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
 
-                let Some(unit)=stuff.this_team.find(&cell) else {
-                    return gameplay::LooperRes::Loop(());
-                };
+            let Some(unit)=stuff.this_team.find(&cell) else {
+                return gameplay::LooperRes::Loop(());
+            };
 
-                if !unit.is_selectable() {
-                    return gameplay::LooperRes::Loop(());
-                }
+            if !unit.is_selectable() {
+                return gameplay::LooperRes::Loop(());
+            }
 
-                let pos = get_cat_move_attack_matrix(
-                    unit,
-                    stuff.this_team.filter().chain(stuff.that_team.filter()),
-                    terrain::Grass,
-                    &stuff.grid_matrix,
-                    false,
-                );
+            let pos = get_cat_move_attack_matrix(
+                unit,
+                stuff.this_team.filter().chain(stuff.that_team.filter()),
+                terrain::Grass,
+                &stuff.grid_matrix,
+                false,
+            );
 
-                gameplay::LooperRes::Finish(pos)
-            },
-        )
-    };
+            gameplay::LooperRes::Finish(pos)
+        },
+    )
+}
 
-    fn attack(g1: &mut Stuff, current: &GridCoord, target: &GridCoord) {
-        let target_cat_pos = target;
+fn attack(g1: &mut Stuff, current: &GridCoord, target: &GridCoord) {
+    let target_cat_pos = target;
 
-        let target_cat = g1.that_team.find_mut(target_cat_pos).unwrap();
-        target_cat.health -= 1;
+    let target_cat = g1.that_team.find_mut(target_cat_pos).unwrap();
+    target_cat.health -= 1;
 
-        let current_cat = g1.this_team.find_mut(current).unwrap();
-        current_cat.moved = true;
-    }
+    let current_cat = g1.this_team.find_mut(current).unwrap();
+    current_cat.moved = true;
+}
 
-    fn animator(
-        ss: &movement::PossibleMoves,
-        start: &GridCoord,
-        target: &GridCoord,
-        g1: &mut Stuff,
-    ) -> impl GameStepper<GameHandle, Result = GridCoord> {
-        let mut c = g1.this_team.remove(start);
-        let (dd, aa) = ss.get_path_data(target).unwrap();
-        c.position = *target;
-        c.move_deficit = *aa;
+fn animator(
+    ss: &movement::PossibleMoves,
+    start: &GridCoord,
+    target: &GridCoord,
+    g1: &mut Stuff,
+) -> impl GameStepper<GameHandle, Result = GridCoord> {
+    let mut c = g1.this_team.remove(start);
+    let (dd, aa) = ss.get_path_data(target).unwrap();
+    c.position = *target;
+    c.move_deficit = *aa;
 
-        let tt = *target;
-        let aa = animation::Animation::new(ss.start(), dd, &g1.grid_matrix, c);
-        let aaa = AnimationTicker::new(aa).map(move |res, game| {
-            let warrior = res.into_data();
+    let tt = *target;
+    let aa = animation::Animation::new(ss.start(), dd, &g1.grid_matrix, c);
+    let aaa = AnimationTicker::new(aa).map(move |res, game| {
+        let warrior = res.into_data();
 
-            game.this_team.elem.push(warrior);
+        game.this_team.elem.push(warrior);
 
-            tt
-        });
-        aaa
-    }
+        tt
+    });
+    aaa
+}
 
+fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
     let k = move || {
         select_unit()
             .map(|c, _| PlayerCellAsk::new(c))
@@ -138,17 +137,17 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
             .wait()
     };
 
-    let handle_move = move || {
-        gameplay::looper(
-            (),
-            move |()| k(),
-            move |res, _stuff| match res {
-                Some(_animation) => gameplay::LooperRes::Finish(()),
-                None => gameplay::LooperRes::Loop(()),
-            },
-        )
-    };
+    gameplay::looper(
+        (),
+        move |()| k(),
+        move |res, _stuff| match res {
+            Some(_animation) => gameplay::LooperRes::Finish(()),
+            None => gameplay::LooperRes::Loop(()),
+        },
+    )
+}
 
+pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     let wait_reset_button = || {
         WaitResetButton.map(move |_, g1| {
             for a in g1.this_team.elem.iter_mut() {
@@ -157,11 +156,9 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
         })
     };
 
-    //let handle_move2=move ||;
-
     let testo = gameplay::looper(
         (),
-        move |()| handle_move().or(wait_reset_button()),
+        move |()| handle_player_move().or(wait_reset_button()),
         move |_, stuff| {
             *stuff.team += 1;
             if *stuff.team > 1 {
