@@ -149,26 +149,24 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     let wait_reset_button = || {
-        WaitResetButton.map(move |_, g1| {
+        WaitResetButton.map(|_, g1| {
             for a in g1.this_team.elem.iter_mut() {
                 a.moved = false;
             }
         })
     };
 
-    let testo = gameplay::looper(
+    gameplay::looper(
         (),
         move |()| handle_player_move().or(wait_reset_button()),
-        move |_, stuff| {
+        |_, stuff| {
             *stuff.team += 1;
             if *stuff.team > 1 {
                 *stuff.team = 0;
             }
             gameplay::LooperRes::Loop(()).infinite()
         },
-    );
-
-    testo
+    )
 }
 
 struct WaitResetButton;
