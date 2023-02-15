@@ -165,7 +165,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     let wait_reset_button = || {
         WaitResetButton.map(move |_, g1| {
             let game = &mut g1.a;
-            let [this_team, that_team] = team_view([&mut game.cats, &mut game.dogs], game.team);
+            let [this_team, _] = team_view([&mut game.cats, &mut game.dogs], game.team);
             for a in this_team.elem.iter_mut() {
                 a.moved = false;
             }
@@ -200,7 +200,7 @@ impl GameStepper<GameHandle> for WaitResetButton {
             gameplay::Stage::Stay
         }
     }
-    fn consume(self, game: &mut Stuff<'_>, _: ()) -> Self::Result {
+    fn consume(self, _: &mut Stuff<'_>, _: ()) -> Self::Result {
         ()
     }
 }
