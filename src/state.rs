@@ -3,9 +3,6 @@ use super::*;
 pub struct GameHandle;
 impl gameplay::Zoo for GameHandle {
     type G<'a> = Stuff<'a>;
-    fn create() -> Self {
-        GameHandle
-    }
 }
 
 pub struct Stuff<'a> {
@@ -131,6 +128,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                         current_cat.moved = true;
                     }
                 });
+
             gameplay::optional(Some(gameplay::Either::B(aaa)))
         })
         .wait()

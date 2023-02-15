@@ -33,7 +33,6 @@ pub trait Zoo {
     type G<'b>
     where
         Self: 'b;
-    fn create() -> Self;
 }
 
 pub fn next() -> Next {
