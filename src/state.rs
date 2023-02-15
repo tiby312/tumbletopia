@@ -47,6 +47,16 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
         )
     };
 
+    fn attack(g1: &mut Stuff, current: &GridCoord, target: &GridCoord) {
+        let target_cat_pos = target;
+
+        let target_cat = g1.that_team.find_mut(target_cat_pos).unwrap();
+        target_cat.health -= 1;
+
+        let current_cat = g1.this_team.find_mut(current).unwrap();
+        current_cat.moved = true;
+    }
+
     let handle_move = move || {
         let k = move || {
             select_unit()
@@ -57,13 +67,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                         match c {
                             CellSelection::MoveSelection(ss, _attack) => match cell {
                                 PlayerCellAskRes::Attack(cell) => {
-                                    let target_cat_pos = &cell;
-
-                                    let target_cat = g1.that_team.find_mut(target_cat_pos).unwrap();
-                                    target_cat.health -= 1;
-
-                                    let current_cat = g1.this_team.find_mut(ss.start()).unwrap();
-                                    current_cat.moved = true;
+                                    attack(g1, ss.start(), &cell);
                                     gameplay::optional(Some(gameplay::Either::A(gameplay::Next)))
                                 }
                                 PlayerCellAskRes::MoveTo(cell) => {
@@ -108,19 +112,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                             if let Some(b) = b {
                                                 match b {
                                                     PlayerCellAskRes::Attack(cell) => {
-                                                        let target_cat_pos = &cell;
-
-                                                        let target_cat = game
-                                                            .that_team
-                                                            .find_mut(target_cat_pos)
-                                                            .unwrap();
-                                                        target_cat.health -= 1;
-
-                                                        let current_cat = game
-                                                            .this_team
-                                                            .find_mut(ss.start())
-                                                            .unwrap();
-                                                        current_cat.moved = true;
+                                                        attack(game, ss.start(), &cell);
                                                     }
                                                     _ => unreachable!(),
                                                 }
