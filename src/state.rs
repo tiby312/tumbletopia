@@ -57,6 +57,29 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
         current_cat.moved = true;
     }
 
+    fn animator(
+        ss: &movement::PossibleMoves,
+        start: &GridCoord,
+        target: &GridCoord,
+        g1: &mut Stuff,
+    ) -> impl GameStepper<GameHandle, Result = GridCoord> {
+        let mut c = g1.this_team.remove(start);
+        let (dd, aa) = ss.get_path_data(target).unwrap();
+        c.position = *target;
+        c.move_deficit = *aa;
+
+        let tt = *target;
+        let aa = animation::Animation::new(ss.start(), dd, &g1.grid_matrix, c);
+        let aaa = AnimationTicker::new(aa).map(move |res, game| {
+            let warrior = res.into_data();
+
+            game.this_team.elem.push(warrior);
+
+            tt
+        });
+        aaa
+    }
+
     let k = move || {
         select_unit()
             .map(|c, _| PlayerCellAsk::new(c))
@@ -76,30 +99,19 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                         attack(g1, att.start(), &cell);
                         gameplay::optional(Some(gameplay::Either::A(gameplay::Next)))
                     }
-                    PlayerCellAskRes::MoveTo(cell) => {
-                        let mut c = g1.this_team.remove(ss.start());
-                        let (dd, aa) = ss.get_path_data(cell).unwrap();
-                        c.position = cell;
-                        c.move_deficit = *aa;
-
-                        let aa = animation::Animation::new(ss.start(), dd, &g1.grid_matrix, c);
-                        let aaa = AnimationTicker::new(aa)
-                            .map(move |res, game| {
-                                let warrior = res.into_data();
-
-                                game.this_team.elem.push(warrior);
-
-                                let unit = game.this_team.elem.last().unwrap();
-
-                                get_cat_move_attack_matrix(
+                    PlayerCellAskRes::MoveTo(target) => {
+                        let aaa = animator(&ss, ss.start(), &target, g1)
+                            .map(move |target, game| {
+                                let unit = game.this_team.find(&target).unwrap();
+                                let pos=get_cat_move_attack_matrix(
                                     unit,
                                     game.this_team.filter().chain(game.that_team.filter()),
                                     terrain::Grass,
                                     &game.grid_matrix,
                                     true,
-                                )
+                                );
+                                PlayerCellAsk::new(pos)
                             })
-                            .map(|pos, _| PlayerCellAsk::new(pos))
                             .wait()
                             .map(move |(ss, b), game| {
                                 let ss = match ss {

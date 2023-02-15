@@ -53,7 +53,6 @@ impl<Z: Zoo> GameStepper<Z> for Next {
     }
 }
 
-
 //TODO implement and use!
 // pub struct And<A,B,C,D>{
 //     a:A,
@@ -76,7 +75,6 @@ impl<Z: Zoo> GameStepper<Z> for Next {
 //     }
 
 // }
-
 
 pub struct Or<A, B> {
     a: A,

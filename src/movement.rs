@@ -187,8 +187,8 @@ impl PossibleMoves {
         p
     }
 
-    pub fn get_path_data(&self, g: GridCoord) -> Option<(&Path, &MoveUnit)> {
-        self.moves.iter().find(|a| a.0 == g).map(|a| (&a.1, &a.2))
+    pub fn get_path_data(&self, g: &GridCoord) -> Option<(&Path, &MoveUnit)> {
+        self.moves.iter().find(|a| &a.0 == g).map(|a| (&a.1, &a.2))
     }
 
     pub fn start(&self) -> &GridCoord {
