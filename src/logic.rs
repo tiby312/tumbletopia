@@ -1,6 +1,11 @@
 use super::*;
 
 
+pub async fn animate(a:animation::Animation<Warrior>){
+    
+}
+
+
 pub struct Doop<'a, 'b> {
     pub team: usize,
     pub game: std::sync::Arc<futures::lock::Mutex<&'b mut Game>>,

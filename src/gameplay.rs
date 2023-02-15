@@ -217,8 +217,6 @@ impl<A, B> EitherOr<A, B> {
     }
 }
 
-
-
 pub struct Chain<A, B> {
     inner: EitherOr<A, B>,
 }
@@ -283,7 +281,7 @@ pub trait GameStepper<Z: Zoo> {
         Or { a: self, b: other }
     }
 
-    fn chain(self) -> Chain<Self, Self::Result>
+    fn wait(self) -> Chain<Self, Self::Result>
     where
         Self::Result: GameStepper<Z> + Sized,
         Self: Sized,

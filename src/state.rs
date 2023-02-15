@@ -39,6 +39,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                     this_team.filter().chain(that_team.filter()),
                     terrain::Grass,
                     &game.grid_matrix,
+                    false,
                 );
 
                 gameplay::LooperRes::Finish(pos)
@@ -50,7 +51,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
         let k = move || {
             select_unit()
                 .map(|c, _| PlayerCellAsk::new(c))
-                .chain()
+                .wait()
                 .map(|(c, cell), g1| {
                     let game = &mut g1.a;
                     if let Some(cell) = cell {
@@ -73,22 +74,72 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                     let (dd, aa) = ss.get_path_data(cell).unwrap();
                                     c.position = cell;
                                     c.move_deficit = *aa;
-                                    c.moved = true;
+                                    //c.moved = true;
                                     let aa = animation::Animation::new(
                                         ss.start(),
                                         dd,
                                         &game.grid_matrix,
                                         c,
                                     );
-                                    let aaa = AnimationTicker::new(aa).map(move |res, game| {
-                                        let warrior = res.into_data();
-                                        let [this_team, _that_team] = team_view(
-                                            [&mut game.a.cats, &mut game.a.dogs],
-                                            game.a.team,
-                                        );
+                                    let aaa = AnimationTicker::new(aa)
+                                        .map(move |res, game| {
+                                            let warrior = res.into_data();
+                                            let [this_team, that_team] = team_view(
+                                                [&mut game.a.cats, &mut game.a.dogs],
+                                                game.a.team,
+                                            );
 
-                                        this_team.elem.push(warrior);
-                                    });
+                                            this_team.elem.push(warrior);
+
+                                            let unit = this_team.elem.last().unwrap();
+
+                                            let pos = get_cat_move_attack_matrix(
+                                                unit,
+                                                this_team.filter().chain(that_team.filter()),
+                                                terrain::Grass,
+                                                &game.a.grid_matrix,
+                                                true,
+                                            );
+
+                                            PlayerCellAsk::new(pos)
+                                        })
+                                        .wait()
+                                        .map(move |(ss, b), game| {
+                                            let ss = match ss {
+                                                CellSelection::MoveSelection(ss, _) => ss,
+                                                _ => unreachable!(),
+                                            };
+
+                                            let game = &mut game.a;
+                                            let [this_team, that_team] = team_view(
+                                                [&mut game.cats, &mut game.dogs],
+                                                game.team,
+                                            );
+                                            if let Some(b) = b {
+                                                match b {
+                                                    PlayerCellAskRes::Attack(cell) => {
+                                                        log!("ATTACKING");
+                                                        let target_cat_pos = &cell;
+
+                                                        let target_cat = that_team
+                                                            .find_mut(target_cat_pos)
+                                                            .unwrap();
+                                                        target_cat.health -= 1;
+
+                                                        let current_cat =
+                                                            this_team.find_mut(ss.start()).unwrap();
+                                                        current_cat.moved = true;
+                                                    }
+                                                    _ => unreachable!(),
+                                                }
+                                            } else {
+                                                let current_cat =
+                                                    this_team.find_mut(ss.start()).unwrap();
+                                                current_cat.moved = true;
+                                                log!("EMPTY");
+                                            }
+                                            ()
+                                        });
                                     gameplay::optional(Some(gameplay::Either::B(aaa)))
                                 }
                             },
@@ -98,7 +149,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                         gameplay::optional(None)
                     }
                 })
-                .chain()
+                .wait()
         };
 
         gameplay::looper(

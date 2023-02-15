@@ -516,12 +516,9 @@ fn get_cat_move_attack_matrix(
     cat_filter: impl Filter,
     roads: impl MoveCost,
     gg: &grids::GridMatrix,
+    moved: bool,
 ) -> CellSelection {
-    let mm = if cat.moved {
-        MoveUnit(0)
-    } else {
-        MoveUnit(6 - 1)
-    };
+    let mm = if moved { MoveUnit(0) } else { MoveUnit(6 - 1) };
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,
