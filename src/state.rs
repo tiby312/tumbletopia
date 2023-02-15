@@ -57,9 +57,6 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
         current_cat.moved = true;
     }
 
-    // fn move_unit(g1:&mut Stuff,moves:PossibleMoves){
-
-    // }
     let k = move || {
         select_unit()
             .map(|c, _| PlayerCellAsk::new(c))
@@ -69,14 +66,14 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                     return gameplay::optional(None);
                 };
 
-                let (ss, _attack) = match c {
-                    CellSelection::MoveSelection(ss, _attack) => (ss, _attack),
+                let (ss, att) = match c {
+                    CellSelection::MoveSelection(ss, a) => (ss, a),
                     _ => unreachable!(),
                 };
 
                 match cell {
                     PlayerCellAskRes::Attack(cell) => {
-                        attack(g1, ss.start(), &cell);
+                        attack(g1, att.start(), &cell);
                         gameplay::optional(Some(gameplay::Either::A(gameplay::Next)))
                     }
                     PlayerCellAskRes::MoveTo(cell) => {
