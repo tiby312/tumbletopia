@@ -371,8 +371,14 @@ pub async fn worker_entry() {
         {
             //Advance state machine.
             let mouse = on_select.then_some(mouse_world);
+            let [this_team, that_team] =
+                state::team_view([&mut ggame.cats, &mut ggame.dogs], ggame.team);
+
             let mut jj = state::Stuff {
-                a: &mut ggame,
+                team: &mut ggame.team,
+                this_team,
+                that_team,
+                grid_matrix: &ggame.grid_matrix,
                 mouse,
                 reset,
             };

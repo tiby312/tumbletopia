@@ -9,7 +9,10 @@ impl gameplay::Zoo for GameHandle {
 }
 
 pub struct Stuff<'a> {
-    pub a: &'a mut Game,
+    pub team: &'a mut usize,
+    pub grid_matrix: &'a grids::GridMatrix,
+    pub this_team: &'a mut UnitCollection<Warrior>,
+    pub that_team: &'a mut UnitCollection<Warrior>,
     pub mouse: Option<[f32; 2]>,
     pub reset: bool,
 }
@@ -20,13 +23,10 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
             (),
             |()| WaitMouseInput,
             |mouse_world, stuff| {
-                let game = &mut stuff.a;
-                let [this_team, that_team] = team_view([&mut game.cats, &mut game.dogs], game.team);
-
                 let cell: GridCoord =
-                    GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
+                    GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
 
-                let Some(unit)=this_team.find(&cell) else {
+                let Some(unit)=stuff.this_team.find(&cell) else {
                     return gameplay::LooperRes::Loop(());
                 };
 
@@ -36,9 +36,9 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
 
                 let pos = get_cat_move_attack_matrix(
                     unit,
-                    this_team.filter().chain(that_team.filter()),
+                    stuff.this_team.filter().chain(stuff.that_team.filter()),
                     terrain::Grass,
-                    &game.grid_matrix,
+                    &stuff.grid_matrix,
                     false,
                 );
 
@@ -53,24 +53,21 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                 .map(|c, _| PlayerCellAsk::new(c))
                 .wait()
                 .map(|(c, cell), g1| {
-                    let game = &mut g1.a;
                     if let Some(cell) = cell {
-                        let [this_team, that_team] =
-                            team_view([&mut game.cats, &mut game.dogs], game.team);
                         match c {
                             CellSelection::MoveSelection(ss, _attack) => match cell {
                                 PlayerCellAskRes::Attack(cell) => {
                                     let target_cat_pos = &cell;
 
-                                    let target_cat = that_team.find_mut(target_cat_pos).unwrap();
+                                    let target_cat = g1.that_team.find_mut(target_cat_pos).unwrap();
                                     target_cat.health -= 1;
 
-                                    let current_cat = this_team.find_mut(ss.start()).unwrap();
+                                    let current_cat = g1.this_team.find_mut(ss.start()).unwrap();
                                     current_cat.moved = true;
                                     gameplay::optional(Some(gameplay::Either::A(gameplay::Next)))
                                 }
                                 PlayerCellAskRes::MoveTo(cell) => {
-                                    let mut c = this_team.remove(ss.start());
+                                    let mut c = g1.this_team.remove(ss.start());
                                     let (dd, aa) = ss.get_path_data(cell).unwrap();
                                     c.position = cell;
                                     c.move_deficit = *aa;
@@ -78,26 +75,24 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                     let aa = animation::Animation::new(
                                         ss.start(),
                                         dd,
-                                        &game.grid_matrix,
+                                        &g1.grid_matrix,
                                         c,
                                     );
                                     let aaa = AnimationTicker::new(aa)
                                         .map(move |res, game| {
                                             let warrior = res.into_data();
-                                            let [this_team, that_team] = team_view(
-                                                [&mut game.a.cats, &mut game.a.dogs],
-                                                game.a.team,
-                                            );
 
-                                            this_team.elem.push(warrior);
+                                            game.this_team.elem.push(warrior);
 
-                                            let unit = this_team.elem.last().unwrap();
+                                            let unit = game.this_team.elem.last().unwrap();
 
                                             let pos = get_cat_move_attack_matrix(
                                                 unit,
-                                                this_team.filter().chain(that_team.filter()),
+                                                game.this_team
+                                                    .filter()
+                                                    .chain(game.that_team.filter()),
                                                 terrain::Grass,
-                                                &game.a.grid_matrix,
+                                                &game.grid_matrix,
                                                 true,
                                             );
 
@@ -110,33 +105,29 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                                 _ => unreachable!(),
                                             };
 
-                                            let game = &mut game.a;
-                                            let [this_team, that_team] = team_view(
-                                                [&mut game.cats, &mut game.dogs],
-                                                game.team,
-                                            );
                                             if let Some(b) = b {
                                                 match b {
                                                     PlayerCellAskRes::Attack(cell) => {
-                                                        log!("ATTACKING");
                                                         let target_cat_pos = &cell;
 
-                                                        let target_cat = that_team
+                                                        let target_cat = game
+                                                            .that_team
                                                             .find_mut(target_cat_pos)
                                                             .unwrap();
                                                         target_cat.health -= 1;
 
-                                                        let current_cat =
-                                                            this_team.find_mut(ss.start()).unwrap();
+                                                        let current_cat = game
+                                                            .this_team
+                                                            .find_mut(ss.start())
+                                                            .unwrap();
                                                         current_cat.moved = true;
                                                     }
                                                     _ => unreachable!(),
                                                 }
                                             } else {
                                                 let current_cat =
-                                                    this_team.find_mut(ss.start()).unwrap();
+                                                    game.this_team.find_mut(ss.start()).unwrap();
                                                 current_cat.moved = true;
-                                                log!("EMPTY");
                                             }
                                             ()
                                         });
@@ -164,9 +155,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
 
     let wait_reset_button = || {
         WaitResetButton.map(move |_, g1| {
-            let game = &mut g1.a;
-            let [this_team, _] = team_view([&mut game.cats, &mut game.dogs], game.team);
-            for a in this_team.elem.iter_mut() {
+            for a in g1.this_team.elem.iter_mut() {
                 a.moved = false;
             }
         })
@@ -178,9 +167,9 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
         (),
         move |()| handle_move().or(wait_reset_button()),
         move |_, stuff| {
-            stuff.a.team += 1;
-            if stuff.a.team > 1 {
-                stuff.a.team = 0;
+            *stuff.team += 1;
+            if *stuff.team > 1 {
+                *stuff.team = 0;
             }
             gameplay::LooperRes::Loop(()).infinite()
         },
@@ -271,22 +260,18 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
         (self.a, grid_coord)
     }
     fn step(&mut self, g1: &mut Stuff<'_>) -> gameplay::Stage<Self::Int> {
-        let game = &mut g1.a;
         if let Some(mouse_world) = g1.mouse {
-            let cell: GridCoord = GridCoord(game.grid_matrix.to_grid((mouse_world).into()).into());
+            let cell: GridCoord = GridCoord(g1.grid_matrix.to_grid((mouse_world).into()).into());
 
             match &self.a {
                 CellSelection::MoveSelection(ss, attack) => {
-                    let [this_team, other_team] =
-                        team_view([&mut game.cats, &mut game.dogs], game.team);
-
                     let target_cat_pos = &cell;
 
-                    let current_attack = this_team.find_mut(ss.start()).unwrap().moved;
+                    let current_attack = g1.this_team.find_mut(ss.start()).unwrap().moved;
 
                     let aa = if !current_attack
                         && movement::contains_coord(attack.iter_coords(), target_cat_pos)
-                        && other_team.find(target_cat_pos).is_some()
+                        && g1.that_team.find(target_cat_pos).is_some()
                     {
                         Some(PlayerCellAskRes::Attack(cell))
                     } else if movement::contains_coord(ss.iter_coords(), &cell) {
