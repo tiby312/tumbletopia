@@ -118,7 +118,6 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
                                     let current_cat = game.this_team.find_mut(ss.start()).unwrap();
                                     current_cat.moved = true;
                                 }
-                                ()
                             });
                         gameplay::optional(Some(gameplay::Either::B(aaa)))
                     }

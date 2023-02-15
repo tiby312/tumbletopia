@@ -55,24 +55,27 @@ impl<Z: Zoo> GameStepper<Z> for Next {
 
 
 //TODO implement and use!
-pub struct And<A,B,C,D>{
-    a:A,
-    b:B,
-    foo:Either<C,D>
-}
-impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z>> GameStepper<Z> for And<A, B,A::Int,B::Int> {
-    type Result=(A::Result,B::Result);
-    type Int=(A::Int,B::Int);
+// pub struct And<A,B,C,D>{
+//     a:A,
+//     b:B,
+//     foo:Either<C,D>
+// }
+// impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z>> GameStepper<Z> for And<A, B,A::Int,B::Int> {
+//     type Result=(A::Result,B::Result);
+//     type Int=(A::Int,B::Int);
 
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
-        todo!();
-    }
+//     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
+//         match self.a.step(game){
+//             Stage::Stay=>{},
+//             Stage::NextStage(e)=>{self.foo=Either::A(e)};
+//         }
+//     }
 
-    fn consume(self, game: &mut Z::G<'_>, i: Self::Int) -> Self::Result {
-        todo!()
-    }
+//     fn consume(self, game: &mut Z::G<'_>, i: Self::Int) -> Self::Result {
+//         todo!()
+//     }
 
-}
+// }
 
 
 pub struct Or<A, B> {
