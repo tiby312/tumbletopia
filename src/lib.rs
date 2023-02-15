@@ -231,39 +231,9 @@ pub async fn worker_entry() {
     ctx.setup_alpha();
 
     //TODO delete
-    let gg = grids::GridMatrix::new();
+    //let gg = grids::GridMatrix::new();
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
-
-    let quick_load = |name| {
-        let (data, t) = model::load_glb(name).gen_ext(gg.spacing(), RESIZE);
-        model_parse::Foo {
-            texture: model_parse::TextureGpu::new(&ctx, &t),
-            model: model_parse::ModelGpu::new(&ctx, &data),
-        }
-    };
-
-    let drop_shadow = quick_load(DROP_SHADOW_GLB);
-
-    let dog = quick_load(DOG_GLB);
-
-    let cat = quick_load(CAT_GLB);
-
-    let road = quick_load(ROAD_GLB);
-
-    let grass = quick_load(GRASS_GLB);
-
-    let select_model = quick_load(SELECT_GLB);
-
-    let attack_model = quick_load(ATTACK_GLB);
-
-    let text_texture = {
-        let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
-
-        model_parse::TextureGpu::new(&ctx, &ascii_tex)
-    };
-
-    let health_numbers = NumberTextManager::new(0..=10, &ctx, &text_texture);
 
     let dogs = UnitCollection::new(vec![
         Warrior::new(GridCoord([3, 3])),
@@ -295,6 +265,36 @@ pub async fn worker_entry() {
 
     let mut testo = state::create_state_machine();
     //log!(format!("size={:?}",std::mem::size_of_val(&testo)));
+
+    let quick_load = |name| {
+        let (data, t) = model::load_glb(name).gen_ext(ggame.grid_matrix.spacing(), RESIZE);
+        model_parse::Foo {
+            texture: model_parse::TextureGpu::new(&ctx, &t),
+            model: model_parse::ModelGpu::new(&ctx, &data),
+        }
+    };
+
+    let drop_shadow = quick_load(DROP_SHADOW_GLB);
+
+    let dog = quick_load(DOG_GLB);
+
+    let cat = quick_load(CAT_GLB);
+
+    let road = quick_load(ROAD_GLB);
+
+    let grass = quick_load(GRASS_GLB);
+
+    let select_model = quick_load(SELECT_GLB);
+
+    let attack_model = quick_load(ATTACK_GLB);
+
+    let text_texture = {
+        let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
+
+        model_parse::TextureGpu::new(&ctx, &ascii_tex)
+    };
+
+    let health_numbers = NumberTextManager::new(0..=10, &ctx, &text_texture);
 
     'outer: loop {
         let mut on_select = false;
@@ -396,20 +396,20 @@ pub async fn worker_entry() {
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let [vvx, vvy] = get_world_rect(&matrix, &gg);
+        let [vvx, vvy] = get_world_rect(&matrix, &ggame.grid_matrix);
 
         for a in (vvx[0]..vvx[1])
             .skip_while(|&a| a < 0)
-            .take_while(|&a| a < gg.num_rows())
+            .take_while(|&a| a < ggame.grid_matrix.num_rows())
         {
             //both should be skip
             for b in (vvy[0]..vvy[1])
                 .skip_while(|&a| a < 0)
-                .take_while(|&a| a < gg.num_rows())
+                .take_while(|&a| a < ggame.grid_matrix.num_rows())
             {
                 use matrix::*;
-                let x1 = gg.spacing() * a as f32;
-                let y1 = gg.spacing() * b as f32;
+                let x1 = ggame.grid_matrix.spacing() * a as f32;
+                let y1 = ggame.grid_matrix.spacing() * b as f32;
                 let s = 0.99;
                 let mm = matrix
                     .chain(translation(x1, y1, -1.0))
@@ -431,7 +431,7 @@ pub async fn worker_entry() {
                 match a {
                     CellSelection::MoveSelection(a, attack) => {
                         for GridCoord(a) in a.iter_coords() {
-                            let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+                            let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
                             let t = matrix::translation(pos[0], pos[1], 0.0);
 
                             let m = matrix.chain(t).generate();
@@ -441,7 +441,7 @@ pub async fn worker_entry() {
                         }
 
                         for GridCoord(a) in attack.iter_coords() {
-                            let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+                            let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
                             let t = matrix::translation(pos[0], pos[1], 0.0);
 
                             let m = matrix.chain(t).generate();
@@ -455,7 +455,7 @@ pub async fn worker_entry() {
             }
 
             for GridCoord(a) in roads.pos.iter() {
-                let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+                let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
                 let t = matrix::translation(pos[0], pos[1], 3.0);
 
                 let m = matrix.chain(t).generate();
@@ -468,8 +468,8 @@ pub async fn worker_entry() {
         disable_depth(&ctx, || {
             //draw dropshadow
 
-            cat_draw.draw_shadow(&gg, &mut draw_sys, &matrix);
-            dog_draw.draw_shadow(&gg, &mut draw_sys, &matrix);
+            cat_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
+            dog_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
 
             if let Some(a) = &testo.get_animation() {
                 let pos = a.calc_pos();
@@ -492,12 +492,24 @@ pub async fn worker_entry() {
             animation_draw.draw(&mut v);
         }
 
-        cat_draw.draw(&gg, &mut draw_sys, &matrix);
-        dog_draw.draw(&gg, &mut draw_sys, &matrix);
+        cat_draw.draw(&ggame.grid_matrix, &mut draw_sys, &matrix);
+        dog_draw.draw(&ggame.grid_matrix, &mut draw_sys, &matrix);
 
         disable_depth(&ctx, || {
-            cat_draw.draw_health_text(&gg, &health_numbers, &view_proj, &proj, &mut draw_sys);
-            dog_draw.draw_health_text(&gg, &health_numbers, &view_proj, &proj, &mut draw_sys);
+            cat_draw.draw_health_text(
+                &ggame.grid_matrix,
+                &health_numbers,
+                &view_proj,
+                &proj,
+                &mut draw_sys,
+            );
+            dog_draw.draw_health_text(
+                &ggame.grid_matrix,
+                &health_numbers,
+                &view_proj,
+                &proj,
+                &mut draw_sys,
+            );
         });
 
         ctx.flush();
