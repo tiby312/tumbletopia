@@ -42,14 +42,42 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = CellSelection> {
     )
 }
 
-fn attack(g1: &mut Stuff, current: &GridCoord, target: &GridCoord) {
-    let target_cat_pos = target;
+fn attack_init(ss:&movement::PossibleMoves,g1: &mut Stuff, current: &GridCoord, target: &GridCoord)->impl GameStepper<GameHandle,Result=()> {
+    let cc=*current;
+    attack_animator(ss,current,target,g1).map(move |target,g1|{
+        let target_cat_pos = target;
 
-    let target_cat = g1.that_team.find_mut(target_cat_pos).unwrap();
-    target_cat.health -= 1;
+        let target_cat = g1.that_team.find_mut(&target_cat_pos).unwrap();
+        target_cat.health -= 1;
+    
+        let current_cat = g1.this_team.find_mut(&cc).unwrap();
+        current_cat.moved = true;
+    })
+    
+}
 
-    let current_cat = g1.this_team.find_mut(current).unwrap();
-    current_cat.moved = true;
+
+fn attack_animator(
+    ss: &movement::PossibleMoves,
+    start: &GridCoord,
+    target: &GridCoord,
+    g1: &mut Stuff,
+) -> impl GameStepper<GameHandle, Result = GridCoord> {
+    let mut c = g1.this_team.remove(start);
+    let (dd, aa) = ss.get_path_data(target).unwrap();
+    //c.position = *target;
+    c.move_deficit = *aa;
+
+    let tt = *target;
+    let aa = animation::Animation::new(ss.start(), dd, &g1.grid_matrix, c);
+    let aaa = AnimationTicker::new(aa).map(move |res, game| {
+        let warrior = res.into_data();
+
+        game.this_team.elem.push(warrior);
+
+        tt
+    });
+    aaa
 }
 
 fn animator(
@@ -91,8 +119,9 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 
             let target = match cell {
                 PlayerCellAskRes::Attack(cell) => {
-                    attack(g1, att.start(), &cell);
-                    return gameplay::optional(Some(gameplay::Either::A(gameplay::Next)));
+                    let n=attack_init(&att,g1, att.start(), &cell);
+
+                    return gameplay::optional(Some(gameplay::Either::A(n)));
                 }
                 PlayerCellAskRes::MoveTo(target) => target,
             };
@@ -111,23 +140,24 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                 })
                 .wait()
                 .map(|(ss, b), game| {
-                    let ss = match ss {
-                        CellSelection::MoveSelection(ss, _) => ss,
+                    let (ss,att) = match ss {
+                        CellSelection::MoveSelection(ss, att) => (ss,att),
                         _ => unreachable!(),
                     };
 
                     if let Some(b) = b {
                         match b {
                             PlayerCellAskRes::Attack(cell) => {
-                                attack(game, ss.start(), &cell);
+                                gameplay::Either::A(attack_init(&att,game, ss.start(), &cell))
                             }
                             _ => unreachable!(),
                         }
                     } else {
                         let current_cat = game.this_team.find_mut(ss.start()).unwrap();
                         current_cat.moved = true;
+                        gameplay::Either::B(gameplay::next())
                     }
-                });
+                }).wait();
 
             gameplay::optional(Some(gameplay::Either::B(aaa)))
         })
