@@ -319,6 +319,7 @@ impl<A> LooperRes<A, ()> {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Looper<A, F, H> {
     start_func: H,
     a: Option<A>,

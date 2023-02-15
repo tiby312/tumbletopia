@@ -60,77 +60,77 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     // fn move_unit(g1:&mut Stuff,moves:PossibleMoves){
 
     // }
+    let k = move || {
+        select_unit()
+            .map(|c, _| PlayerCellAsk::new(c))
+            .wait()
+            .map(|(c, cell), g1| {
+                let Some(cell)=cell else{
+                    return gameplay::optional(None);
+                };
+
+                let (ss, _attack) = match c {
+                    CellSelection::MoveSelection(ss, _attack) => (ss, _attack),
+                    _ => unreachable!(),
+                };
+
+                match cell {
+                    PlayerCellAskRes::Attack(cell) => {
+                        attack(g1, ss.start(), &cell);
+                        gameplay::optional(Some(gameplay::Either::A(gameplay::Next)))
+                    }
+                    PlayerCellAskRes::MoveTo(cell) => {
+                        let mut c = g1.this_team.remove(ss.start());
+                        let (dd, aa) = ss.get_path_data(cell).unwrap();
+                        c.position = cell;
+                        c.move_deficit = *aa;
+
+                        let aa = animation::Animation::new(ss.start(), dd, &g1.grid_matrix, c);
+                        let aaa = AnimationTicker::new(aa)
+                            .map(move |res, game| {
+                                let warrior = res.into_data();
+
+                                game.this_team.elem.push(warrior);
+
+                                let unit = game.this_team.elem.last().unwrap();
+
+                                get_cat_move_attack_matrix(
+                                    unit,
+                                    game.this_team.filter().chain(game.that_team.filter()),
+                                    terrain::Grass,
+                                    &game.grid_matrix,
+                                    true,
+                                )
+                            })
+                            .map(|pos, _| PlayerCellAsk::new(pos))
+                            .wait()
+                            .map(move |(ss, b), game| {
+                                let ss = match ss {
+                                    CellSelection::MoveSelection(ss, _) => ss,
+                                    _ => unreachable!(),
+                                };
+
+                                if let Some(b) = b {
+                                    match b {
+                                        PlayerCellAskRes::Attack(cell) => {
+                                            attack(game, ss.start(), &cell);
+                                        }
+                                        _ => unreachable!(),
+                                    }
+                                } else {
+                                    let current_cat = game.this_team.find_mut(ss.start()).unwrap();
+                                    current_cat.moved = true;
+                                }
+                                ()
+                            });
+                        gameplay::optional(Some(gameplay::Either::B(aaa)))
+                    }
+                }
+            })
+            .wait()
+    };
 
     let handle_move = move || {
-        let k = move || {
-            select_unit()
-                .map(|c, _| PlayerCellAsk::new(c))
-                .wait()
-                .map(|(c, cell), g1| {
-                    let Some(cell)=cell else{
-                        return gameplay::optional(None);
-                    };
-                    match c {
-                        CellSelection::MoveSelection(ss, _attack) => match cell {
-                            PlayerCellAskRes::Attack(cell) => {
-                                attack(g1, ss.start(), &cell);
-                                gameplay::optional(Some(gameplay::Either::A(gameplay::Next)))
-                            }
-                            PlayerCellAskRes::MoveTo(cell) => {
-                                let mut c = g1.this_team.remove(ss.start());
-                                let (dd, aa) = ss.get_path_data(cell).unwrap();
-                                c.position = cell;
-                                c.move_deficit = *aa;
-
-                                let aa =
-                                    animation::Animation::new(ss.start(), dd, &g1.grid_matrix, c);
-                                let aaa = AnimationTicker::new(aa)
-                                    .map(move |res, game| {
-                                        let warrior = res.into_data();
-
-                                        game.this_team.elem.push(warrior);
-
-                                        let unit = game.this_team.elem.last().unwrap();
-
-                                        get_cat_move_attack_matrix(
-                                            unit,
-                                            game.this_team.filter().chain(game.that_team.filter()),
-                                            terrain::Grass,
-                                            &game.grid_matrix,
-                                            true,
-                                        )
-                                    })
-                                    .map(|pos, _| PlayerCellAsk::new(pos))
-                                    .wait()
-                                    .map(move |(ss, b), game| {
-                                        let ss = match ss {
-                                            CellSelection::MoveSelection(ss, _) => ss,
-                                            _ => unreachable!(),
-                                        };
-
-                                        if let Some(b) = b {
-                                            match b {
-                                                PlayerCellAskRes::Attack(cell) => {
-                                                    attack(game, ss.start(), &cell);
-                                                }
-                                                _ => unreachable!(),
-                                            }
-                                        } else {
-                                            let current_cat =
-                                                game.this_team.find_mut(ss.start()).unwrap();
-                                            current_cat.moved = true;
-                                        }
-                                        ()
-                                    });
-                                gameplay::optional(Some(gameplay::Either::B(aaa)))
-                            }
-                        },
-                        CellSelection::BuildSelection(_) => todo!(),
-                    }
-                })
-                .wait()
-        };
-
         gameplay::looper(
             (),
             move |()| k(),
