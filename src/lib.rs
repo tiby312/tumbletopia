@@ -294,6 +294,7 @@ pub async fn worker_entry() {
     let mut last_matrix = cgmath::Matrix4::identity();
 
     let mut testo = state::create_state_machine();
+    //log!(format!("size={:?}",std::mem::size_of_val(&testo)));
 
     'outer: loop {
         let mut on_select = false;
