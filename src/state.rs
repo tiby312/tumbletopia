@@ -5,11 +5,6 @@ impl gameplay::Zoo for GameHandle {
     type G<'a> = Stuff<'a>;
 }
 
-impl GameHandle {
-    fn closure<A, F: FnOnce(A, &mut Stuff<'_>) -> B, B>(self, func: F) -> F {
-        func
-    }
-}
 
 pub struct Stuff<'a> {
     pub team: &'a mut usize,
@@ -136,7 +131,7 @@ fn move_animator(
 }
 
 fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()>> {
-    let aa = GameHandle.closure(move |(c, cell), g1| {
+    let aa = move |(c, cell), g1:&mut Stuff| {
         let Some(cell)=cell else{
             return gameplay::optional(None);
         };
@@ -190,7 +185,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
             .wait();
 
         gameplay::optional(Some(gameplay::Either::B(aaa)))
-    });
+    };
 
     select_unit()
         .map(|c, _| PlayerCellAsk::new(c))
