@@ -133,7 +133,7 @@ fn move_animator(
 
 fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()>> {
     //TODO why is type annotation required here?
-    let aa = move |(c, cell), g1: &mut Stuff| {
+    let aa = |(c, cell), g1: &mut Stuff| {
         let Some(cell)=cell else{
             return gameplay::optional(None);
         };
@@ -200,8 +200,8 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
     gameplay::looper(
         (),
-        move |()| handle_player_move_inner(),
-        move |res, _stuff| match res {
+        |()| handle_player_move_inner(),
+        |res, _stuff| match res {
             Some(_) => gameplay::LooperRes::Finish(()),
             None => gameplay::LooperRes::Loop(()),
         },
