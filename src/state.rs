@@ -54,7 +54,7 @@ fn attack_init(
     let target_cat = g1.that_team.find_mut(&target).unwrap();
     if target_cat.health <= damage {
         gameplay::Either::A(
-            move_animator(ss, current, target, g1).map(move |target, g1| {
+            kill_animator(ss, current, target, g1).map(move |target, g1| {
                 g1.that_team.remove(&target);
 
                 let current_cat = g1.this_team.find_mut(&target).unwrap();
@@ -98,6 +98,15 @@ fn attack_animator(
     aaa
 }
 
+
+fn kill_animator(
+    ss: &movement::PossibleMoves,
+    start: &GridCoord,
+    target: &GridCoord,
+    g1: &mut Stuff,
+) -> impl GameStepper<GameHandle, Result = GridCoord> {
+    move_animator(ss,start,target,g1)
+}
 fn move_animator(
     ss: &movement::PossibleMoves,
     start: &GridCoord,
