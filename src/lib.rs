@@ -236,17 +236,15 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let dogs = UnitCollection::new(vec![
-        Warrior::new(GridCoord([3, 0])),
-        Warrior::new(GridCoord([4, 0])),
-        Warrior::new(GridCoord([5, 0])),
-        Warrior::new(GridCoord([6, 0]))
+        Warrior::new(GridCoord([3, 3])),
+        Warrior::new(GridCoord([4, 3])),
+        Warrior::new(GridCoord([5, 3])),
     ]);
 
     let cats = UnitCollection::new(vec![
         Warrior::new(GridCoord([3, 6])),
         Warrior::new(GridCoord([4, 6])),
         Warrior::new(GridCoord([5, 6])),
-        Warrior::new(GridCoord([6, 6])),
     ]);
 
     let mut ggame = Game {
@@ -538,7 +536,7 @@ fn get_cat_move_attack_matrix(
     gg: &grids::GridMatrix,
     moved: bool,
 ) -> CellSelection {
-    let mm = if moved { MoveUnit(0) } else { MoveUnit(6 - 1) };
+    let mm = if moved { MoveUnit(0) } else { MoveUnit(2 - 1) };
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,
