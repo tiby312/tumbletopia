@@ -5,7 +5,6 @@ impl gameplay::Zoo for GameHandle {
     type G<'a> = Stuff<'a>;
 }
 
-
 pub struct Stuff<'a> {
     pub team: &'a mut usize,
     pub grid_matrix: &'a grids::GridMatrix,
@@ -50,6 +49,7 @@ fn attack_init(
     target: &GridCoord,
 ) -> impl GameStepper<GameHandle, Result = ()> {
     let damage = 5;
+    let counter_damage = 5;
     let cc = *current;
 
     let target_cat = g1.that_team.find_mut(&target).unwrap();
@@ -69,6 +69,7 @@ fn attack_init(
                 target_cat.health -= damage;
 
                 let current_cat = g1.this_team.find_mut(&cc).unwrap();
+                current_cat.health -= counter_damage;
                 current_cat.moved = true;
             }),
         )
@@ -131,7 +132,7 @@ fn move_animator(
 }
 
 fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()>> {
-    let aa = move |(c, cell), g1:&mut Stuff| {
+    let aa = move |(c, cell), g1: &mut Stuff| {
         let Some(cell)=cell else{
             return gameplay::optional(None);
         };
