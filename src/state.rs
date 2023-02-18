@@ -369,3 +369,34 @@ pub fn team_view(
         }
     }
 }
+
+
+
+fn get_cat_move_attack_matrix(
+    cat: &Warrior,
+    cat_filter: impl Filter,
+    roads: impl MoveCost,
+    gg: &grids::GridMatrix,
+    moved: bool,
+) -> CellSelection {
+    let mm = if moved { MoveUnit(0) } else { MoveUnit(2 - 1) };
+
+    let mm = movement::PossibleMoves::new(
+        &movement::WarriorMovement,
+        &gg.filter().chain(cat_filter),
+        &terrain::Grass.chain(roads),
+        cat.position,
+        mm,
+    );
+
+    let attack_range = 2 - 1;
+    let attack = movement::PossibleMoves::new(
+        &movement::WarriorMovement,
+        &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
+        &terrain::Grass,
+        cat.position,
+        MoveUnit(attack_range),
+    );
+
+    CellSelection::MoveSelection(mm, attack)
+}

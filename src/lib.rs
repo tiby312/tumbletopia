@@ -170,6 +170,8 @@ impl HasPos for Warrior {
 
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
+
+
 #[derive(Debug)]
 pub struct Warrior {
     position: GridCoord,
@@ -239,12 +241,14 @@ pub async fn worker_entry() {
         Warrior::new(GridCoord([3, 3])),
         Warrior::new(GridCoord([4, 3])),
         Warrior::new(GridCoord([5, 3])),
+        Warrior::new(GridCoord([6, 3])),
     ]);
 
     let cats = UnitCollection::new(vec![
         Warrior::new(GridCoord([3, 6])),
         Warrior::new(GridCoord([4, 6])),
         Warrior::new(GridCoord([5, 6])),
+        Warrior::new(GridCoord([6, 6])),
     ]);
 
     let mut ggame = Game {
@@ -529,34 +533,6 @@ fn disable_depth(ctx: &WebGl2RenderingContext, func: impl FnOnce()) {
     ctx.enable(WebGl2RenderingContext::CULL_FACE);
 }
 
-fn get_cat_move_attack_matrix(
-    cat: &Warrior,
-    cat_filter: impl Filter,
-    roads: impl MoveCost,
-    gg: &grids::GridMatrix,
-    moved: bool,
-) -> CellSelection {
-    let mm = if moved { MoveUnit(0) } else { MoveUnit(2 - 1) };
-
-    let mm = movement::PossibleMoves::new(
-        &movement::WarriorMovement,
-        &gg.filter().chain(cat_filter),
-        &terrain::Grass.chain(roads),
-        cat.position,
-        mm,
-    );
-
-    let attack_range = 2 - 1;
-    let attack = movement::PossibleMoves::new(
-        &movement::WarriorMovement,
-        &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
-        &terrain::Grass,
-        cat.position,
-        MoveUnit(attack_range),
-    );
-
-    CellSelection::MoveSelection(mm, attack)
-}
 
 //TODO just use reference???
 fn string_to_coords<'a>(st: &str) -> model::ModelData {
