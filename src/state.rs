@@ -52,8 +52,9 @@ fn attack_init(
     let counter_damage = 5;
     let cc = *current;
 
-    let target_cat = g1.that_team.find_mut(&target).unwrap();
-    if target_cat.health <= damage {
+    let kill_self = g1.this_team.find_mut(&current).unwrap().health <= counter_damage;
+
+    if g1.that_team.find_mut(&target).unwrap().health <= damage {
         gameplay::Either::A(
             kill_animator(ss, current, target, g1).map(move |target, g1| {
                 g1.that_team.remove(&target);
@@ -68,9 +69,13 @@ fn attack_init(
                 let target_cat = g1.that_team.find_mut(&target).unwrap();
                 target_cat.health -= damage;
 
-                let current_cat = g1.this_team.find_mut(&cc).unwrap();
-                current_cat.health -= counter_damage;
-                current_cat.moved = true;
+                if kill_self {
+                    g1.this_team.remove(&cc);
+                } else {
+                    let current_cat = g1.this_team.find_mut(&cc).unwrap();
+                    current_cat.health -= counter_damage;
+                    current_cat.moved = true;
+                }
             }),
         )
     }
