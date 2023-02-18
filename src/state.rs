@@ -69,13 +69,20 @@ fn attack_init(
                 let target_cat = g1.that_team.find_mut(&target).unwrap();
                 target_cat.health -= damage;
 
-                if kill_self {
-                    g1.this_team.remove(&cc);
-                } else {
-                    let current_cat = g1.this_team.find_mut(&cc).unwrap();
-                    current_cat.health -= counter_damage;
-                    current_cat.moved = true;
-                }
+                let current_cat = g1.this_team.find_mut(&cc).unwrap();
+                current_cat.moved = true;
+                        
+                //if !target_cat.moved{
+                    if kill_self {
+                        g1.this_team.remove(&cc);
+                    } else {
+                        current_cat.health -= counter_damage;
+                        
+                    }
+                //}
+
+
+                
             }),
         )
     }
