@@ -30,7 +30,7 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = CellSelection> {
             }
 
             let pos = get_cat_move_attack_matrix(
-                unit,
+                &unit,
                 stuff.this_team.filter().chain(stuff.that_team.filter()),
                 terrain::Grass,
                 &stuff.grid_matrix,
@@ -59,17 +59,17 @@ fn attack_init(
             kill_animator(ss, current, target, g1).map(move |target, g1| {
                 g1.that_team.remove(&target);
 
-                let current_cat = g1.this_team.find_mut(&target).unwrap();
+                let mut current_cat = g1.this_team.find_mut(&target).unwrap();
                 current_cat.moved = true;
             }),
         )
     } else {
         gameplay::Either::B(
             attack_animator(ss, current, target, g1).map(move |target, g1| {
-                let target_cat = g1.that_team.find_mut(&target).unwrap();
+                let mut target_cat = g1.that_team.find_mut(&target).unwrap();
                 target_cat.health -= damage;
 
-                let current_cat = g1.this_team.find_mut(&cc).unwrap();
+                let mut current_cat = g1.this_team.find_mut(&cc).unwrap();
                 current_cat.moved = true;
 
                 //if !target_cat.moved{
@@ -124,7 +124,7 @@ fn move_animator(
 ) -> impl GameStepper<GameHandle, Result = GridCoord> {
     let mut c = g1.this_team.remove(start);
     let (dd, aa) = ss.get_path_data(target).unwrap();
-    c.position = *target;
+    (&mut c).position = *target;
     c.move_deficit = *aa;
 
     let tt = *target;
@@ -164,7 +164,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
             .map(|target, game| {
                 let unit = game.this_team.find(&target).unwrap();
                 let pos = get_cat_move_attack_matrix(
-                    unit,
+                    &unit,
                     game.this_team.filter().chain(game.that_team.filter()),
                     terrain::Grass,
                     &game.grid_matrix,
@@ -187,7 +187,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                         _ => unreachable!(),
                     }
                 } else {
-                    let current_cat = game.this_team.find_mut(ss.start()).unwrap();
+                    let mut current_cat = game.this_team.find_mut(ss.start()).unwrap();
                     current_cat.moved = true;
                     gameplay::Either::B(gameplay::next())
                 }
@@ -269,15 +269,15 @@ impl GameStepper<GameHandle> for WaitMouseInput {
 }
 
 struct AnimationTicker {
-    a: animation::Animation<Warrior>,
+    a: animation::Animation<WarriorPointer<Warrior>>,
 }
 impl AnimationTicker {
-    pub fn new(a: animation::Animation<Warrior>) -> Self {
+    pub fn new(a: animation::Animation<WarriorPointer<Warrior>>) -> Self {
         Self { a }
     }
 }
 impl GameStepper<GameHandle> for AnimationTicker {
-    type Result = animation::Animation<Warrior>;
+    type Result = animation::Animation<WarriorPointer<Warrior>>;
     type Int = ();
     fn consume(self, _: &mut Stuff<'_>, _: ()) -> Self::Result {
         self.a
@@ -290,7 +290,7 @@ impl GameStepper<GameHandle> for AnimationTicker {
         }
     }
 
-    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+    fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
         Some(&self.a)
     }
 }

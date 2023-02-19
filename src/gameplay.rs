@@ -19,7 +19,7 @@ impl<Z: Zoo, A: GameStepper<Z>, F: FnOnce(A::Result, &mut Z::G<'_>) -> X, X> Gam
     fn get_selection(&self) -> Option<&crate::CellSelection> {
         self.elem.get_selection()
     }
-    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+    fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
         self.elem.get_animation()
     }
 }
@@ -112,7 +112,7 @@ impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z>> GameStepper<Z> for Or<A, B> {
         self.a.get_selection()
     }
 
-    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+    fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
         self.a.get_animation()
     }
 }
@@ -153,7 +153,7 @@ impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z>> GameStepper<Z> for Either<A, 
         }
     }
 
-    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+    fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
         match self {
             Either::A(a) => a.get_animation(),
             Either::B(a) => a.get_animation(),
@@ -200,7 +200,7 @@ impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
             None
         }
     }
-    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+    fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
         if let Some(a) = self.a.as_ref() {
             if let Some(b) = a.get_animation() {
                 Some(b)
@@ -270,7 +270,7 @@ impl<Z: Zoo, A: GameStepper<Z, Result = B>, B: GameStepper<Z>> GameStepper<Z> fo
             EitherOr::None => unreachable!(),
         }
     }
-    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+    fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
         match &self.inner {
             EitherOr::A(a) => a.get_animation(),
             EitherOr::B(a) => a.get_animation(),
@@ -292,7 +292,7 @@ pub trait GameStepper<Z: Zoo> {
     fn get_selection(&self) -> Option<&crate::CellSelection> {
         None
     }
-    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+    fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
         None
     }
 
@@ -362,7 +362,7 @@ impl<
     fn get_selection(&self) -> Option<&crate::CellSelection> {
         self.a.as_ref().unwrap().get_selection()
     }
-    fn get_animation(&self) -> Option<&crate::animation::Animation<Warrior>> {
+    fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
         self.a.as_ref().unwrap().get_animation()
     }
     fn consume(self, _: &mut Z::G<'_>, a: K) -> Self::Result {

@@ -208,26 +208,61 @@ impl<'a> movement::Filter for TribeFilter<'a> {
     }
 }
 
+impl<T> std::borrow::Borrow<T> for WarriorPointer<T> {
+    fn borrow(&self) -> &T {
+        &self.inner
+    }
+}
+impl<T> std::borrow::BorrowMut<T> for WarriorPointer<T> {
+    fn borrow_mut(&mut self) -> &mut T {
+        &mut self.inner
+    }
+}
+
+pub struct WarriorPointer<T> {
+    inner: T,
+    val: usize,
+}
+impl<T> std::ops::Deref for WarriorPointer<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T> std::ops::DerefMut for WarriorPointer<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
+
 pub struct Tribe {
     warriors: UnitCollection<Warrior>,
 }
 impl Tribe {
-    fn remove(&mut self, a: &GridCoord) -> Warrior {
-        self.warriors.remove(a)
+    fn remove(&mut self, a: &GridCoord) -> WarriorPointer<Warrior> {
+        WarriorPointer {
+            inner: self.warriors.remove(a),
+            val: 0,
+        }
     }
 
-    pub fn find_mut(&mut self, a: &GridCoord) -> Option<&mut Warrior> {
-        self.warriors.find_mut(a)
+    pub fn find_mut(&mut self, a: &GridCoord) -> Option<WarriorPointer<&mut Warrior>> {
+        self.warriors
+            .find_mut(a)
+            .map(|a| WarriorPointer { inner: a, val: 0 })
     }
-    fn find(&self, a: &GridCoord) -> Option<&Warrior> {
-        self.warriors.find(a)
+    fn find(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
+        self.warriors
+            .find(a)
+            .map(|a| WarriorPointer { inner: a, val: 0 })
     }
     fn filter(&self) -> TribeFilter {
         TribeFilter { tribe: self }
     }
 
-    fn add(&mut self, a: Warrior) {
-        self.warriors.elem.push(a);
+    fn add(&mut self, a: WarriorPointer<Warrior>) {
+        self.warriors.elem.push(a.inner);
     }
     fn reset(&mut self) {
         for a in self.warriors.elem.iter_mut() {
