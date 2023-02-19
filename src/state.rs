@@ -8,8 +8,8 @@ impl gameplay::Zoo for GameHandle {
 pub struct Stuff<'a> {
     pub team: &'a mut usize,
     pub grid_matrix: &'a grids::GridMatrix,
-    pub this_team: &'a mut UnitCollection<Warrior>,
-    pub that_team: &'a mut UnitCollection<Warrior>,
+    pub this_team: &'a mut Tribe,
+    pub that_team: &'a mut Tribe,
     pub mouse: Option<[f32; 2]>,
     pub reset: bool,
 }
@@ -71,18 +71,14 @@ fn attack_init(
 
                 let current_cat = g1.this_team.find_mut(&cc).unwrap();
                 current_cat.moved = true;
-                        
+
                 //if !target_cat.moved{
-                    if kill_self {
-                        g1.this_team.remove(&cc);
-                    } else {
-                        current_cat.health -= counter_damage;
-                        
-                    }
+                if kill_self {
+                    g1.this_team.remove(&cc);
+                } else {
+                    current_cat.health -= counter_damage;
+                }
                 //}
-
-
-                
             }),
         )
     }
@@ -105,7 +101,7 @@ fn attack_animator(
     let aaa = AnimationTicker::new(aa).map(move |res, game| {
         let warrior = res.into_data();
 
-        game.this_team.elem.push(warrior);
+        game.this_team.add(warrior);
 
         tt
     });
@@ -136,7 +132,7 @@ fn move_animator(
     let aaa = AnimationTicker::new(aa).map(move |res, game| {
         let warrior = res.into_data();
 
-        game.this_team.elem.push(warrior);
+        game.this_team.add(warrior);
 
         tt
     });
@@ -223,9 +219,7 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     let wait_reset_button = || {
         WaitResetButton.map(|_, g1| {
-            for a in g1.this_team.elem.iter_mut() {
-                a.moved = false;
-            }
+            g1.this_team.reset();
         })
     };
 
@@ -356,10 +350,7 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
     }
 }
 
-pub fn team_view(
-    a: [&mut UnitCollection<Warrior>; 2],
-    ind: usize,
-) -> [&mut UnitCollection<Warrior>; 2] {
+pub fn team_view(a: [&mut Tribe; 2], ind: usize) -> [&mut Tribe; 2] {
     let [a, b] = a;
     match ind {
         0 => [a, b],
@@ -369,8 +360,6 @@ pub fn team_view(
         }
     }
 }
-
-
 
 fn get_cat_move_attack_matrix(
     cat: &Warrior,

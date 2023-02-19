@@ -170,8 +170,6 @@ impl HasPos for Warrior {
 
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
-
-
 #[derive(Debug)]
 pub struct Warrior {
     position: GridCoord,
@@ -201,13 +199,50 @@ pub enum CellSelection {
     BuildSelection(GridCoord),
 }
 
+pub struct TribeFilter<'a> {
+    tribe: &'a Tribe,
+}
+impl<'a> movement::Filter for TribeFilter<'a> {
+    fn filter(&self, b: &GridCoord) -> bool {
+        self.tribe.warriors.filter().filter(b)
+    }
+}
+
+pub struct Tribe {
+    warriors: UnitCollection<Warrior>,
+}
+impl Tribe {
+    fn remove(&mut self, a: &GridCoord) -> Warrior {
+        self.warriors.remove(a)
+    }
+
+    pub fn find_mut(&mut self, a: &GridCoord) -> Option<&mut Warrior> {
+        self.warriors.find_mut(a)
+    }
+    fn find(&self, a: &GridCoord) -> Option<&Warrior> {
+        self.warriors.find(a)
+    }
+    fn filter(&self) -> TribeFilter {
+        TribeFilter { tribe: self }
+    }
+
+    fn add(&mut self, a: Warrior) {
+        self.warriors.elem.push(a);
+    }
+    fn reset(&mut self) {
+        for a in self.warriors.elem.iter_mut() {
+            a.moved = false;
+        }
+    }
+}
+
 //TODO store actual world pos? Less calculation each iteration.
 //Additionally removes need to special case animation.
 pub struct Game {
     team: usize,
     grid_matrix: grids::GridMatrix,
-    dogs: UnitCollection<Warrior>,
-    cats: UnitCollection<Warrior>,
+    dogs: Tribe,
+    cats: Tribe,
 }
 
 #[wasm_bindgen]
@@ -253,8 +288,8 @@ pub async fn worker_entry() {
 
     let mut ggame = Game {
         team: 0,
-        dogs,
-        cats,
+        dogs: Tribe { warriors: dogs },
+        cats: Tribe { warriors: cats },
         grid_matrix: grids::GridMatrix::new(),
     };
 
@@ -424,8 +459,8 @@ pub async fn worker_entry() {
             }
         }
 
-        let cat_draw = WarriorDraw::new(&ggame.cats, &cat, &drop_shadow);
-        let dog_draw = WarriorDraw::new(&ggame.dogs, &dog, &drop_shadow);
+        let cat_draw = WarriorDraw::new(&ggame.cats.warriors, &cat, &drop_shadow);
+        let dog_draw = WarriorDraw::new(&ggame.dogs.warriors, &dog, &drop_shadow);
 
         let animation_draw = if ggame.team == 0 { &cat } else { &dog };
 
@@ -532,7 +567,6 @@ fn disable_depth(ctx: &WebGl2RenderingContext, func: impl FnOnce()) {
     ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
     ctx.enable(WebGl2RenderingContext::CULL_FACE);
 }
-
 
 //TODO just use reference???
 fn string_to_coords<'a>(st: &str) -> model::ModelData {
