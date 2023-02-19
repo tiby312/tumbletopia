@@ -32,12 +32,12 @@ pub struct Animation<T> {
     data: T,
 }
 impl<T> Animation<T> {
-    pub fn new(start: &GridCoord, path: &movement::Path, v: &grids::GridMatrix, data: T) -> Self {
+    pub fn new(start: GridCoord, path: &movement::Path, v: &grids::GridMatrix, data: T) -> Self {
         let first: [f32; 2] = v.to_world_topleft(start.0.into()).into();
         let first = first.into();
 
         let mut points = vec![first];
-        let mut cc = *start;
+        let mut cc = start;
         for m in path.get_moves() {
             let a = m.to_relative();
             cc.0[0] += a.0[0];
