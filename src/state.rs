@@ -21,7 +21,7 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoo
         |mouse_world, stuff| {
             let cell: GridCoord = GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
 
-            let Some(unit)=stuff.this_team.find2(&cell) else {
+            let Some(unit)=stuff.this_team.find_slow(&cell) else {
                 return gameplay::LooperRes::Loop(());
             };
 
@@ -186,8 +186,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                         _ => unreachable!(),
                     }
                 } else {
-                    let xx = game.this_team.find2(ss.start()).unwrap().slim();
-                    let mut current_cat = game.this_team.lookup_mut(&xx);
+                    let mut current_cat = game.this_team.lookup_mut(&lll);
                     current_cat.moved = true;
                     gameplay::Either::B(gameplay::next())
                 }
@@ -343,11 +342,11 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
                 CellSelection::MoveSelection(ss, attack) => {
                     let target_cat_pos = &cell;
 
-                    let xx = g1.this_team.find2(ss.start()).unwrap().slim();
+                    let xx = g1.this_team.lookup(self.stuff).slim();
 
                     let current_attack = g1.this_team.lookup_mut(&xx).moved;
 
-                    let aa = if let Some(aaa) = g1.that_team.find2(target_cat_pos) {
+                    let aa = if let Some(aaa) = g1.that_team.find_slow(target_cat_pos) {
                         let aaa = aaa.slim();
 
                         if !current_attack

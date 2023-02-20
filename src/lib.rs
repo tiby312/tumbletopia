@@ -297,20 +297,7 @@ impl Tribe {
         self.warriors[a.val].elem.push(a.inner);
     }
 
-    // fn remove(&mut self, a: &GridCoord) -> WarriorPointer<Warrior> {
-    //     WarriorPointer {
-    //         inner: self.warriors.remove(a),
-    //         val: 0,
-    //     }
-    // }
-
-    // pub fn find_mut(&mut self, a: &GridCoord) -> Option<WarriorPointer<&mut Warrior>> {
-    //     self.warriors
-    //         .find_mut(a)
-    //         .map(|a| WarriorPointer { inner: a, val: 0 })
-    // }
-
-    fn find2(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
+    fn find_slow(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
         for (c, o) in self.warriors.iter().enumerate() {
             if let Some(k) = o.find(a) {
                 return Some(WarriorPointer { inner: k, val: c });
