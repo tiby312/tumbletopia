@@ -21,7 +21,7 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoo
         |mouse_world, stuff| {
             let cell: GridCoord = GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
 
-            let Some(unit)=stuff.this_team.find(&cell) else {
+            let Some(unit)=stuff.this_team.find2(&cell) else {
                 return gameplay::LooperRes::Loop(());
             };
 
@@ -39,24 +39,24 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoo
 fn attack_init(
     ss: &movement::PossibleMoves,
     g1: &mut Stuff,
-    current: &GridCoord,
-    target: &GridCoord,
+    current: &WarriorPointer<GridCoord>,
+    target: &WarriorPointer<GridCoord>,
 ) -> impl GameStepper<GameHandle, Result = ()> {
     let damage = 5;
     let counter_damage = 5;
     let cc = *current;
 
-    let kill_self = g1.this_team.find_mut(&current).unwrap().health <= counter_damage;
+    let kill_self = g1.this_team.lookup_mut(current).health <= counter_damage;
 
-    if g1.that_team.find_mut(&target).unwrap().health <= damage {
-        let mut c = g1.this_team.remove(current);
+    if g1.that_team.lookup_mut(target).health <= damage {
+        let c = g1.this_team.remove(current);
 
         gameplay::Either::A(kill_animator(ss, c, target, g1).map(move |this_unit, g1| {
-            let target = this_unit.position;
-            g1.that_team.remove(&target);
+            let target = this_unit.slim();
+            g1.that_team.lookup_take(target);
             g1.this_team.add(this_unit);
 
-            let mut current_cat = g1.this_team.find_mut(&target).unwrap();
+            let mut current_cat = g1.this_team.lookup_mut(&target);
             current_cat.moved = true;
         }))
     } else {
@@ -66,15 +66,15 @@ fn attack_init(
             attack_animator(ss, c, target, g1).map(move |this_unit, g1| {
                 let target = tt;
                 g1.this_team.add(this_unit);
-                let mut target_cat = g1.that_team.find_mut(&target).unwrap();
+                let mut target_cat = g1.that_team.lookup_mut(&target);
                 target_cat.health -= damage;
 
-                let mut current_cat = g1.this_team.find_mut(&cc).unwrap();
+                let mut current_cat = g1.this_team.lookup_mut(&cc);
                 current_cat.moved = true;
 
                 //if !target_cat.moved{
                 if kill_self {
-                    g1.this_team.remove(&cc);
+                    g1.this_team.lookup_take(cc);
                 } else {
                     current_cat.health -= counter_damage;
                 }
@@ -145,7 +145,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 
         let target = match cell {
             PlayerCellAskRes::Attack(cell) => {
-                let n = attack_init(&att, g1, att.start(), &cell);
+                let n = attack_init(&att, g1, &sss, &cell);
 
                 return gameplay::optional(Some(gameplay::Either::A(n)));
             }
@@ -180,7 +180,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                 if let Some(b) = b {
                     match b {
                         PlayerCellAskRes::Attack(cell) => {
-                            gameplay::Either::A(attack_init(&att, game, ss.start(), &cell))
+                            gameplay::Either::A(attack_init(&att, game, &lll, &cell))
                         }
                         _ => unreachable!(),
                     }
@@ -317,7 +317,7 @@ impl PlayerCellAsk {
     }
 }
 enum PlayerCellAskRes {
-    Attack(GridCoord),
+    Attack(WarriorPointer<GridCoord>),
     MoveTo(GridCoord),
 }
 impl GameStepper<GameHandle> for PlayerCellAsk {
@@ -343,11 +343,16 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
 
                     let current_attack = g1.this_team.find_mut(ss.start()).unwrap().moved;
 
-                    let aa = if !current_attack
-                        && movement::contains_coord(attack.iter_coords(), target_cat_pos)
-                        && g1.that_team.find(target_cat_pos).is_some()
-                    {
-                        Some(PlayerCellAskRes::Attack(cell))
+                    let aa = if let Some(aaa) = g1.that_team.find2(target_cat_pos) {
+                        let aaa = aaa.slim();
+
+                        if !current_attack
+                            && movement::contains_coord(attack.iter_coords(), target_cat_pos)
+                        {
+                            Some(PlayerCellAskRes::Attack(aaa))
+                        } else {
+                            None
+                        }
                     } else if movement::contains_coord(ss.iter_coords(), &cell) {
                         Some(PlayerCellAskRes::MoveTo(cell))
                     } else {

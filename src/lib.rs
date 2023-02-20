@@ -105,7 +105,6 @@ impl<'a> WarriorDraw<'a> {
     }
 }
 
-
 //TODO sort this by x and then y axis!!!!!!!
 #[derive(Debug)]
 pub struct UnitCollection<T: HasPos> {
@@ -264,7 +263,10 @@ pub struct Tribe {
 }
 impl Tribe {
     fn lookup(&self, a: WarriorPointer<GridCoord>) -> WarriorPointer<&Warrior> {
-        self.find(&a.inner).unwrap()
+        self.find2(&a.inner).unwrap()
+    }
+    fn lookup_mut(&mut self, a: &WarriorPointer<GridCoord>) -> WarriorPointer<&mut Warrior> {
+        self.find_mut(&a.inner).unwrap()
     }
     fn lookup_take(&mut self, a: WarriorPointer<GridCoord>) -> WarriorPointer<Warrior> {
         self.remove(&a.inner)
@@ -282,10 +284,7 @@ impl Tribe {
             .map(|a| WarriorPointer { inner: a, val: 0 })
     }
 
-    // fn find2(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
-
-    // }
-    fn find(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
+    fn find2(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
         self.warriors
             .find(a)
             .map(|a| WarriorPointer { inner: a, val: 0 })
