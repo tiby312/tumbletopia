@@ -105,6 +105,8 @@ impl<'a> WarriorDraw<'a> {
     }
 }
 
+
+//TODO sort this by x and then y axis!!!!!!!
 #[derive(Debug)]
 pub struct UnitCollection<T: HasPos> {
     elem: Vec<T>,
