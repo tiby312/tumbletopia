@@ -173,7 +173,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
             })
             .wait()
             .map(|(lll, ss, b), game| {
-                let (ss, att) = match ss {
+                let (_, att) = match ss {
                     CellSelection::MoveSelection(ss, att) => (ss, att),
                     _ => unreachable!(),
                 };
