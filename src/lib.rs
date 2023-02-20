@@ -219,22 +219,28 @@ impl<T> std::borrow::BorrowMut<T> for WarriorPointer<T> {
     }
 }
 
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub struct WarriorPointer<T> {
     inner: T,
     val: usize,
 }
 
-impl WarriorPointer<&Warrior>{
+impl WarriorPointer<&Warrior> {
     //TODO use this instead of gridcoord when you know the type!!!!!
-    fn slim(&self)->WarriorPointer<GridCoord>{
-        WarriorPointer{inner:self.inner.position,val:self.val}
+    fn slim(&self) -> WarriorPointer<GridCoord> {
+        WarriorPointer {
+            inner: self.inner.position,
+            val: self.val,
+        }
     }
 }
-impl WarriorPointer<Warrior>{
+impl WarriorPointer<Warrior> {
     //TODO use this instead of gridcoord when you know the type!!!!!
-    fn slim(&self)->WarriorPointer<GridCoord>{
-        WarriorPointer{inner:self.inner.position,val:self.val}
+    fn slim(&self) -> WarriorPointer<GridCoord> {
+        WarriorPointer {
+            inner: self.inner.position,
+            val: self.val,
+        }
     }
 }
 
@@ -255,11 +261,11 @@ pub struct Tribe {
     warriors: UnitCollection<Warrior>,
 }
 impl Tribe {
-    fn lookup(&self,a:WarriorPointer<GridCoord>)->WarriorPointer<&Warrior>{
-        todo!();
+    fn lookup(&self, a: WarriorPointer<GridCoord>) -> WarriorPointer<&Warrior> {
+        self.find(&a.inner).unwrap()
     }
-    fn lookup_take(&self,a:WarriorPointer<GridCoord>)->WarriorPointer<Warrior>{
-        todo!();
+    fn lookup_take(&mut self, a: WarriorPointer<GridCoord>) -> WarriorPointer<Warrior> {
+        self.remove(&a.inner)
     }
     fn remove(&mut self, a: &GridCoord) -> WarriorPointer<Warrior> {
         WarriorPointer {
@@ -275,7 +281,7 @@ impl Tribe {
     }
 
     // fn find2(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
-    
+
     // }
     fn find(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
         self.warriors

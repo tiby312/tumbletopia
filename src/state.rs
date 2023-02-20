@@ -29,8 +29,7 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoo
                 return gameplay::LooperRes::Loop(());
             }
 
-            let pos=unit.slim();
-
+            let pos = unit.slim();
 
             gameplay::LooperRes::Finish(pos)
         },
@@ -52,24 +51,20 @@ fn attack_init(
     if g1.that_team.find_mut(&target).unwrap().health <= damage {
         let mut c = g1.this_team.remove(current);
 
-        gameplay::Either::A(
-            kill_animator(ss, c, target, g1).map(move |this_unit, g1| {
-                let target=this_unit.position;
-                g1.that_team.remove(&target);
-                g1.this_team.add(this_unit);
+        gameplay::Either::A(kill_animator(ss, c, target, g1).map(move |this_unit, g1| {
+            let target = this_unit.position;
+            g1.that_team.remove(&target);
+            g1.this_team.add(this_unit);
 
-
-                let mut current_cat = g1.this_team.find_mut(&target).unwrap();
-                current_cat.moved = true;
-            }),
-        )
+            let mut current_cat = g1.this_team.find_mut(&target).unwrap();
+            current_cat.moved = true;
+        }))
     } else {
-
-        let mut c = g1.this_team.remove(current);
+        let c = g1.this_team.remove(current);
+        let tt = *target;
         gameplay::Either::B(
-
             attack_animator(ss, c, target, g1).map(move |this_unit, g1| {
-                let target=this_unit.position;
+                let target = tt;
                 g1.this_team.add(this_unit);
                 let mut target_cat = g1.that_team.find_mut(&target).unwrap();
                 target_cat.health -= damage;
@@ -96,14 +91,13 @@ fn attack_animator(
     target: &GridCoord,
     g1: &mut Stuff,
 ) -> impl GameStepper<GameHandle, Result = WarriorPointer<Warrior>> {
-    let (dd, aa) = ss.get_path_data(target).unwrap();
-    //start.position = *target;
+    let (dd, _) = ss.get_path_data(target).unwrap();
     //start.move_deficit = *aa;
 
-    let tt = *target;
     let aa = animation::Animation::new(start.position, dd, &g1.grid_matrix, start);
-    let aaa = AnimationTicker::new(aa).map(move |res, game| {
+    let aaa = AnimationTicker::new(aa).map(move |res, _| {
         let warrior = res.into_data();
+        //warrior.position=tt;
         warrior
     });
     aaa
@@ -117,6 +111,7 @@ fn kill_animator(
 ) -> impl GameStepper<GameHandle, Result = WarriorPointer<Warrior>> {
     move_animator(ss, start, target, g1)
 }
+
 fn move_animator(
     ss: &movement::PossibleMoves,
     mut start: WarriorPointer<Warrior>,
@@ -124,13 +119,13 @@ fn move_animator(
     g1: &mut Stuff,
 ) -> impl GameStepper<GameHandle, Result = WarriorPointer<Warrior>> {
     let (dd, aa) = ss.get_path_data(target).unwrap();
-    start.position = *target;
     start.move_deficit = *aa;
 
     let tt = *target;
     let aa = animation::Animation::new(start.position, dd, &g1.grid_matrix, start);
-    let aaa = AnimationTicker::new(aa).map(move |res, game| {
-        let warrior = res.into_data();
+    let aaa = AnimationTicker::new(aa).map(move |res, _| {
+        let mut warrior = res.into_data();
+        warrior.position = tt;
         warrior
     });
     aaa
@@ -138,7 +133,7 @@ fn move_animator(
 
 fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()>> {
     //TODO why is type annotation required here?
-    let aa = |(sss,c, cell):(WarriorPointer<GridCoord>,_,_), g1: &mut Stuff| {
+    let aa = |(sss, c, cell): (WarriorPointer<GridCoord>, _, _), g1: &mut Stuff| {
         let Some(cell)=cell else{
             return gameplay::optional(None);
         };
@@ -157,14 +152,14 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
             PlayerCellAskRes::MoveTo(target) => target,
         };
 
-        let doop=g1.this_team.lookup_take(sss);
+        let doop = g1.this_team.lookup_take(sss);
 
         let aaa = move_animator(&ss, doop, &target, g1)
             .map(|target, game| {
-                let ooo=target.slim();
+                let ooo = target.slim();
                 game.this_team.add(target);
                 //let unit = game.this_team.find(&target).unwrap();
-                let unit=game.this_team.lookup(ooo);
+                let unit = game.this_team.lookup(ooo);
 
                 let pos = get_cat_move_attack_matrix(
                     &unit,
@@ -173,10 +168,10 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                     &game.grid_matrix,
                     true,
                 );
-                PlayerCellAsk::new(pos,ooo)
+                PlayerCellAsk::new(pos, ooo)
             })
             .wait()
-            .map(|(lll,ss, b), game| {
+            .map(|(lll, ss, b), game| {
                 let (ss, att) = match ss {
                     CellSelection::MoveSelection(ss, att) => (ss, att),
                     _ => unreachable!(),
@@ -202,7 +197,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 
     select_unit()
         .map(|c, stuff| {
-            let unit=stuff.this_team.lookup(c);
+            let unit = stuff.this_team.lookup(c);
 
             let cc = get_cat_move_attack_matrix(
                 &unit,
@@ -212,7 +207,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                 false,
             );
 
-            PlayerCellAsk::new(cc,c)
+            PlayerCellAsk::new(cc, c)
         })
         .wait()
         .map(aa)
@@ -313,12 +308,12 @@ impl GameStepper<GameHandle> for AnimationTicker {
 struct PlayerCellAsk {
     a: CellSelection,
     //We know what type of warrior is selected at this point.
-    stuff:WarriorPointer<GridCoord>
+    stuff: WarriorPointer<GridCoord>,
 }
 
 impl PlayerCellAsk {
-    pub fn new(a: CellSelection,stuff:WarriorPointer<GridCoord>) -> Self {
-        Self { a,stuff }
+    pub fn new(a: CellSelection, stuff: WarriorPointer<GridCoord>) -> Self {
+        Self { a, stuff }
     }
 }
 enum PlayerCellAskRes {
@@ -326,13 +321,17 @@ enum PlayerCellAskRes {
     MoveTo(GridCoord),
 }
 impl GameStepper<GameHandle> for PlayerCellAsk {
-    type Result = (WarriorPointer<GridCoord>,CellSelection, Option<PlayerCellAskRes>);
+    type Result = (
+        WarriorPointer<GridCoord>,
+        CellSelection,
+        Option<PlayerCellAskRes>,
+    );
     type Int = Option<PlayerCellAskRes>;
     fn get_selection(&self) -> Option<&CellSelection> {
         Some(&self.a)
     }
     fn consume(self, _: &mut Stuff<'_>, grid_coord: Self::Int) -> Self::Result {
-        (self.stuff,self.a, grid_coord)
+        (self.stuff, self.a, grid_coord)
     }
     fn step(&mut self, g1: &mut Stuff<'_>) -> gameplay::Stage<Self::Int> {
         if let Some(mouse_world) = g1.mouse {
