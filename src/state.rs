@@ -49,7 +49,7 @@ fn attack_init(
     let kill_self = g1.this_team.lookup_mut(current).health <= counter_damage;
 
     if g1.that_team.lookup_mut(target).health <= damage {
-        let c = g1.this_team.remove(current);
+        let c = g1.this_team.lookup_take(*current);
 
         gameplay::Either::A(kill_animator(ss, c, target, g1).map(move |this_unit, g1| {
             let target = this_unit.slim();
@@ -60,7 +60,7 @@ fn attack_init(
             current_cat.moved = true;
         }))
     } else {
-        let c = g1.this_team.remove(current);
+        let c = g1.this_team.lookup_take(*current);
         let tt = *target;
         gameplay::Either::B(
             attack_animator(ss, c, target, g1).map(move |this_unit, g1| {
@@ -112,6 +112,7 @@ fn kill_animator(
     move_animator(ss, start, target, g1)
 }
 
+//TODO make generic!!!!???
 fn move_animator(
     ss: &movement::PossibleMoves,
     mut start: WarriorPointer<Warrior>,
@@ -185,7 +186,8 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                         _ => unreachable!(),
                     }
                 } else {
-                    let mut current_cat = game.this_team.find_mut(ss.start()).unwrap();
+                    let xx = game.this_team.find2(ss.start()).unwrap().slim();
+                    let mut current_cat = game.this_team.lookup_mut(&xx);
                     current_cat.moved = true;
                     gameplay::Either::B(gameplay::next())
                 }
@@ -341,7 +343,9 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
                 CellSelection::MoveSelection(ss, attack) => {
                     let target_cat_pos = &cell;
 
-                    let current_attack = g1.this_team.find_mut(ss.start()).unwrap().moved;
+                    let xx = g1.this_team.find2(ss.start()).unwrap().slim();
+
+                    let current_attack = g1.this_team.lookup_mut(&xx).moved;
 
                     let aa = if let Some(aaa) = g1.that_team.find2(target_cat_pos) {
                         let aaa = aaa.slim();

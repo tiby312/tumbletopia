@@ -205,7 +205,11 @@ pub struct TribeFilter<'a> {
 }
 impl<'a> movement::Filter for TribeFilter<'a> {
     fn filter(&self, b: &GridCoord) -> bool {
-        self.tribe.warriors.filter().filter(b)
+        self.tribe
+            .warriors
+            .iter()
+            .map(|a| a.filter().filter(b))
+            .fold(true, |a, b| a && b)
     }
 }
 
@@ -259,46 +263,71 @@ impl<T> std::ops::DerefMut for WarriorPointer<T> {
 }
 
 pub struct Tribe {
-    warriors: UnitCollection<Warrior>,
+    warriors: Vec<UnitCollection<Warrior>>,
 }
 impl Tribe {
     fn lookup(&self, a: WarriorPointer<GridCoord>) -> WarriorPointer<&Warrior> {
-        self.find2(&a.inner).unwrap()
+        self.warriors[a.val]
+            .find(&a.inner)
+            .map(|b| WarriorPointer {
+                inner: b,
+                val: a.val,
+            })
+            .unwrap()
     }
     fn lookup_mut(&mut self, a: &WarriorPointer<GridCoord>) -> WarriorPointer<&mut Warrior> {
-        self.find_mut(&a.inner).unwrap()
+        self.warriors[a.val]
+            .find_mut(&a.inner)
+            .map(|b| WarriorPointer {
+                inner: b,
+                val: a.val,
+            })
+            .unwrap()
     }
     fn lookup_take(&mut self, a: WarriorPointer<GridCoord>) -> WarriorPointer<Warrior> {
-        self.remove(&a.inner)
-    }
-    fn remove(&mut self, a: &GridCoord) -> WarriorPointer<Warrior> {
-        WarriorPointer {
-            inner: self.warriors.remove(a),
-            val: 0,
-        }
+        Some(self.warriors[a.val].remove(&a.inner))
+            .map(|b| WarriorPointer {
+                inner: b,
+                val: a.val,
+            })
+            .unwrap()
     }
 
-    pub fn find_mut(&mut self, a: &GridCoord) -> Option<WarriorPointer<&mut Warrior>> {
-        self.warriors
-            .find_mut(a)
-            .map(|a| WarriorPointer { inner: a, val: 0 })
+    fn add(&mut self, a: WarriorPointer<Warrior>) {
+        self.warriors[a.val].elem.push(a.inner);
     }
+
+    // fn remove(&mut self, a: &GridCoord) -> WarriorPointer<Warrior> {
+    //     WarriorPointer {
+    //         inner: self.warriors.remove(a),
+    //         val: 0,
+    //     }
+    // }
+
+    // pub fn find_mut(&mut self, a: &GridCoord) -> Option<WarriorPointer<&mut Warrior>> {
+    //     self.warriors
+    //         .find_mut(a)
+    //         .map(|a| WarriorPointer { inner: a, val: 0 })
+    // }
 
     fn find2(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
-        self.warriors
-            .find(a)
-            .map(|a| WarriorPointer { inner: a, val: 0 })
+        for (c, o) in self.warriors.iter().enumerate() {
+            if let Some(k) = o.find(a) {
+                return Some(WarriorPointer { inner: k, val: c });
+            }
+        }
+
+        None
     }
     fn filter(&self) -> TribeFilter {
         TribeFilter { tribe: self }
     }
 
-    fn add(&mut self, a: WarriorPointer<Warrior>) {
-        self.warriors.elem.push(a.inner);
-    }
     fn reset(&mut self) {
-        for a in self.warriors.elem.iter_mut() {
-            a.moved = false;
+        for a in self.warriors.iter_mut() {
+            for b in a.elem.iter_mut() {
+                b.moved = false;
+            }
         }
     }
 }
@@ -355,8 +384,12 @@ pub async fn worker_entry() {
 
     let mut ggame = Game {
         team: 0,
-        dogs: Tribe { warriors: dogs },
-        cats: Tribe { warriors: cats },
+        dogs: Tribe {
+            warriors: vec![dogs],
+        },
+        cats: Tribe {
+            warriors: vec![cats],
+        },
         grid_matrix: grids::GridMatrix::new(),
     };
 
@@ -526,8 +559,8 @@ pub async fn worker_entry() {
             }
         }
 
-        let cat_draw = WarriorDraw::new(&ggame.cats.warriors, &cat, &drop_shadow);
-        let dog_draw = WarriorDraw::new(&ggame.dogs.warriors, &dog, &drop_shadow);
+        let cat_draw = WarriorDraw::new(&ggame.cats.warriors[0], &cat, &drop_shadow);
+        let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[0], &dog, &drop_shadow);
 
         let animation_draw = if ggame.team == 0 { &cat } else { &dog };
 
