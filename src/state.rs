@@ -162,7 +162,10 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                 //let unit = game.this_team.find(&target).unwrap();
                 let unit = game.this_team.lookup(ooo);
 
+                let data = game.this_team.get_movement_data(&unit);
+
                 let pos = get_cat_move_attack_matrix(
+                    data,
                     &unit,
                     game.this_team.filter().chain(game.that_team.filter()),
                     terrain::Grass,
@@ -200,7 +203,10 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
         .map(|c, stuff| {
             let unit = stuff.this_team.lookup(c);
 
+            let data = stuff.this_team.get_movement_data(&unit);
+
             let cc = get_cat_move_attack_matrix(
+                data,
                 &unit,
                 stuff.this_team.filter().chain(stuff.that_team.filter()),
                 terrain::Grass,
@@ -386,13 +392,19 @@ pub fn team_view(a: [&mut Tribe; 2], ind: usize) -> [&mut Tribe; 2] {
 }
 
 fn get_cat_move_attack_matrix(
+    movement: (i8, i8),
     cat: &Warrior,
     cat_filter: impl Filter,
     roads: impl MoveCost,
     gg: &grids::GridMatrix,
     moved: bool,
 ) -> CellSelection {
-    let mm = if moved { MoveUnit(0) } else { MoveUnit(2 - 1) };
+    let (movement, attack) = movement;
+    let mm = if moved {
+        MoveUnit(0)
+    } else {
+        MoveUnit(movement - 1)
+    };
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,
@@ -402,7 +414,7 @@ fn get_cat_move_attack_matrix(
         mm,
     );
 
-    let attack_range = 2 - 1;
+    let attack_range = attack - 1;
     let attack = movement::PossibleMoves::new(
         &movement::WarriorMovement,
         &gg.filter().chain(SingleFilter { a: cat.get_pos() }),

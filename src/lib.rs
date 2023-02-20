@@ -266,6 +266,17 @@ pub struct Tribe {
     warriors: Vec<UnitCollection<Warrior>>,
 }
 impl Tribe {
+    fn get_movement_data<X>(&self, a: &WarriorPointer<X>) -> (i8, i8) {
+        let (movement, attack) = {
+            match a.val {
+                0 => (2, 2),
+                1 => (3, 3),
+                2 => (4, 4),
+                _ => unreachable!(),
+            }
+        };
+        (movement, attack)
+    }
     fn lookup(&self, a: WarriorPointer<GridCoord>) -> WarriorPointer<&Warrior> {
         self.warriors[a.val]
             .find(&a.inner)
