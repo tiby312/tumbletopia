@@ -47,7 +47,7 @@ impl<'a> WarriorDraw<'a> {
         for cc in self.col.elem.iter() {
             let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
 
-            let t = matrix::translation(pos[0], pos[1], 20.0);
+            let t = matrix::translation(pos[0], pos[1], 0.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
@@ -620,7 +620,7 @@ pub async fn worker_entry() {
 
         if let Some(a) = &testo.get_animation() {
             let pos = a.calc_pos();
-            let t = matrix::translation(pos[0], pos[1], 20.0);
+            let t = matrix::translation(pos[0], pos[1], 0.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
@@ -751,8 +751,8 @@ const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
 // const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
-const CAT_GLB: &'static [u8] = include_bytes!("../assets/tiger2.glb");
-const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat2.glb");
+const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
+const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_culled.glb");
 
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");
 
