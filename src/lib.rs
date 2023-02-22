@@ -22,7 +22,7 @@ use dom::MEvent;
 use projection::*;
 pub mod state;
 //pub mod logic;
-pub const RESIZE: usize = 6;
+pub const RESIZE: usize = 10;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 enum UiButton {
@@ -404,6 +404,8 @@ pub async fn worker_entry() {
 
     let quick_load = |name| {
         let (data, t) = model::load_glb(name).gen_ext(ggame.grid_matrix.spacing(), RESIZE);
+
+        log!(format!("texture:{:?}",(t.width,t.height)));
         model_parse::Foo {
             texture: model_parse::TextureGpu::new(&ctx, &t),
             model: model_parse::ModelGpu::new(&ctx, &data),
