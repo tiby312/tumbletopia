@@ -51,10 +51,10 @@ pub struct ModelData {
 }
 
 impl Doop {
-    pub fn gen_ext(&self, ss: f32, foo: usize) -> (ModelData, Img) {
+    pub fn gen_ext(&self, ss: f32, foo: usize, custom_alpha: Option<f64>) -> (ModelData, Img) {
         use matrix::*;
         use std::f32::consts::PI;
-        let (mut m, tex) = self.gen(foo);
+        let (mut m, tex) = self.gen(foo, custom_alpha);
 
         let v = ss;
         let s = matrix::translation(v / 2.0, v / 2.0, 0.0)
@@ -75,7 +75,7 @@ impl Doop {
         (m, tex)
     }
     //TODO return a read only reference instead!
-    pub fn gen(&self, foo: usize) -> (ModelData, Img) {
+    pub fn gen(&self, foo: usize, custom_alpha: Option<f64>) -> (ModelData, Img) {
         // TODO use this: https://www.nayuki.io/page/png-file-chunk-inspector
         let mut positions = Vec::new();
         let mut indices = Vec::new();
@@ -110,8 +110,16 @@ impl Doop {
 
                     let width = image.width();
                     let height = image.height();
-                    
-                    let rgba_image = image.to_rgba8();
+                    let mut rgba_image = image.to_rgba8();
+
+                    if let Some(custom_alpha) = custom_alpha {
+                        for a in rgba_image.pixels_mut() {
+                            let mut alpha = a.0[3] as f64 / 256.0;
+                            alpha *= custom_alpha;
+                            a.0[3] = (alpha * 256.0) as u8;
+                        }
+                    }
+
                     let data = rgba_image.into_raw();
 
                     Img {

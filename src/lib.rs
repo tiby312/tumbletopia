@@ -402,29 +402,29 @@ pub async fn worker_entry() {
     let mut testo = state::create_state_machine();
     //log!(format!("size={:?}",std::mem::size_of_val(&testo)));
 
-    let quick_load = |name,res| {
-        let (data, t) = model::load_glb(name).gen_ext(ggame.grid_matrix.spacing(), res);
+    let quick_load = |name, res, alpha| {
+        let (data, t) = model::load_glb(name).gen_ext(ggame.grid_matrix.spacing(), res, alpha);
 
-        log!(format!("texture:{:?}",(t.width,t.height)));
+        log!(format!("texture:{:?}", (t.width, t.height)));
         model_parse::Foo {
             texture: model_parse::TextureGpu::new(&ctx, &t),
             model: model_parse::ModelGpu::new(&ctx, &data),
         }
     };
 
-    let drop_shadow = quick_load(DROP_SHADOW_GLB,1);
+    let drop_shadow = quick_load(DROP_SHADOW_GLB, 1, Some(0.5));
 
-    let dog = quick_load(DOG_GLB,RESIZE);
+    let dog = quick_load(DOG_GLB, RESIZE, None);
 
-    let cat = quick_load(CAT_GLB,RESIZE);
+    let cat = quick_load(CAT_GLB, RESIZE, None);
 
-    let road = quick_load(ROAD_GLB,1);
+    let road = quick_load(ROAD_GLB, 1, None);
 
-    let grass = quick_load(GRASS_GLB,RESIZE);
+    let grass = quick_load(GRASS_GLB, RESIZE, None);
 
-    let select_model = quick_load(SELECT_GLB,1);
+    let select_model = quick_load(SELECT_GLB, 1, None);
 
-    let attack_model = quick_load(ATTACK_GLB,1);
+    let attack_model = quick_load(ATTACK_GLB, 1, None);
 
     let text_texture = {
         let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
