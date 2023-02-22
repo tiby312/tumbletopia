@@ -402,8 +402,8 @@ pub async fn worker_entry() {
     let mut testo = state::create_state_machine();
     //log!(format!("size={:?}",std::mem::size_of_val(&testo)));
 
-    let quick_load = |name| {
-        let (data, t) = model::load_glb(name).gen_ext(ggame.grid_matrix.spacing(), RESIZE);
+    let quick_load = |name,res| {
+        let (data, t) = model::load_glb(name).gen_ext(ggame.grid_matrix.spacing(), res);
 
         log!(format!("texture:{:?}",(t.width,t.height)));
         model_parse::Foo {
@@ -412,19 +412,19 @@ pub async fn worker_entry() {
         }
     };
 
-    let drop_shadow = quick_load(DROP_SHADOW_GLB);
+    let drop_shadow = quick_load(DROP_SHADOW_GLB,1);
 
-    let dog = quick_load(DOG_GLB);
+    let dog = quick_load(DOG_GLB,RESIZE);
 
-    let cat = quick_load(CAT_GLB);
+    let cat = quick_load(CAT_GLB,RESIZE);
 
-    let road = quick_load(ROAD_GLB);
+    let road = quick_load(ROAD_GLB,1);
 
-    let grass = quick_load(GRASS_GLB);
+    let grass = quick_load(GRASS_GLB,RESIZE);
 
-    let select_model = quick_load(SELECT_GLB);
+    let select_model = quick_load(SELECT_GLB,1);
 
-    let attack_model = quick_load(ATTACK_GLB);
+    let attack_model = quick_load(ATTACK_GLB,1);
 
     let text_texture = {
         let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
