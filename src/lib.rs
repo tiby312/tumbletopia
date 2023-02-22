@@ -752,7 +752,7 @@ const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
 // const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
 const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
-const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_culled.glb");
+const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
 
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");
 
