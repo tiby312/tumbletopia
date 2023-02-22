@@ -105,10 +105,11 @@ impl Doop {
                     let width = image.width();
                     let height = image.height();
                     //TODO pass as argument
-                    let image =
-                        image.resize(width * foo as u32, height * foo as u32, FilterType::Nearest);
-                    let width = image.width();
-                    let height = image.height();
+                    // let image =
+                    //     image.resize(width * foo as u32, height * foo as u32, FilterType::Nearest);
+
+                    // let width = image.width();
+                    // let height = image.height();
 
                     let rgba_image = image.to_rgba8();
                     let data = rgba_image.into_raw();
