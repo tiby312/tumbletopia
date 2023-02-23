@@ -269,7 +269,7 @@ impl Tribe {
     fn get_movement_data<X>(&self, a: &WarriorPointer<X>) -> (i8, i8) {
         let (movement, attack) = {
             match a.val {
-                0 => (2, 2),
+                0 => (6, 4),
                 1 => (3, 3),
                 2 => (4, 4),
                 _ => unreachable!(),
