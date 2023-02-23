@@ -32,9 +32,17 @@ impl<A: Borrow<TextureGpu>, B: Borrow<ModelGpu>> Foo<A, B> {
             false,
             false,
             false,
+            true,
         );
     }
-    pub fn draw_ext(&self, view: &mut simple2d::View, grayscale: bool, text: bool, linear: bool) {
+    pub fn draw_ext(
+        &self,
+        view: &mut simple2d::View,
+        grayscale: bool,
+        text: bool,
+        linear: bool,
+        lighting: bool,
+    ) {
         let model = self.model.borrow();
         let tex = self.texture.borrow();
         view.draw(
@@ -46,7 +54,8 @@ impl<A: Borrow<TextureGpu>, B: Borrow<ModelGpu>> Foo<A, B> {
             &model.normals,
             grayscale,
             text,
-            linear,
+            false,
+            lighting,
         );
     }
 }

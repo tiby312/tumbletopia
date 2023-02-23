@@ -53,7 +53,7 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model
-                .draw_ext(&mut v, !cc.is_selectable(), false, false);
+                .draw_ext(&mut v, !cc.is_selectable(), false, false, true);
         }
     }
 
@@ -98,7 +98,7 @@ impl<'a> WarriorDraw<'a> {
 
             let nn = health_numbers.get_number(ccat.health);
             let mut v = draw_sys.view(m.as_ref());
-            nn.draw_ext(&mut v, false, false, true);
+            nn.draw_ext(&mut v, false, false, true, false);
 
             //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
         }
@@ -575,7 +575,10 @@ pub async fn worker_entry() {
                             let m = matrix.chain(t).generate();
 
                             let mut v = draw_sys.view(m.as_ref());
-                            select_model.draw(&mut v);
+
+                            select_model.draw_ext(&mut v, false, false, false, false);
+
+                            //select_model.draw(&mut v);
                         }
 
                         for GridCoord(a) in attack.iter_coords() {
@@ -585,7 +588,8 @@ pub async fn worker_entry() {
                             let m = matrix.chain(t).generate();
 
                             let mut v = draw_sys.view(m.as_ref());
-                            attack_model.draw(&mut v);
+                            //attack_model.draw(&mut v);
+                            attack_model.draw_ext(&mut v, false, false, false, false);
                         }
                     }
                     CellSelection::BuildSelection(_) => {}
