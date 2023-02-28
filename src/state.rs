@@ -11,7 +11,7 @@ pub struct Stuff<'a> {
     pub this_team: &'a mut Tribe,
     pub that_team: &'a mut Tribe,
     pub mouse: Option<[f32; 2]>,
-    pub reset: bool,
+    pub end_turn: bool,
 }
 
 fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoord>> {
@@ -57,7 +57,7 @@ fn attack_init(
             g1.this_team.add(this_unit);
 
             let mut current_cat = g1.this_team.lookup_mut(&target);
-            current_cat.moved = true;
+            //current_cat.moved = true;
         }))
     } else {
         let c = g1.this_team.lookup_take(*current);
@@ -70,7 +70,7 @@ fn attack_init(
                 target_cat.health -= damage;
 
                 let mut current_cat = g1.this_team.lookup_mut(&cc);
-                current_cat.moved = true;
+                //current_cat.moved = true;
 
                 //if !target_cat.moved{
                 if kill_self {
@@ -120,7 +120,7 @@ fn move_animator(
     g1: &mut Stuff,
 ) -> impl GameStepper<GameHandle, Result = WarriorPointer<Warrior>> {
     let (dd, aa) = ss.get_path_data(target).unwrap();
-    start.move_deficit = *aa;
+    start.move_bank = *aa;
 
     let tt = *target;
     let aa = animation::Animation::new(start.position, dd, &g1.grid_matrix, start);
@@ -189,8 +189,8 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                         _ => unreachable!(),
                     }
                 } else {
-                    let mut current_cat = game.this_team.lookup_mut(&lll);
-                    current_cat.moved = true;
+                    //let mut current_cat = game.this_team.lookup_mut(&lll);
+                    //current_cat.moved = true;
                     gameplay::Either::B(gameplay::next())
                 }
             })
@@ -234,20 +234,20 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
-    let wait_reset_button = || {
-        WaitResetButton.map(|_, g1| {
-            g1.this_team.reset();
+    let wait_end_turn_button = || {
+        WaitResetButton.map(|_, stuff| {
+            stuff.this_team.end_turn();
+            *stuff.team += 1;
+            if *stuff.team > 1 {
+                *stuff.team = 0;
+            }
         })
     };
 
     gameplay::looper(
         (),
-        move |()| handle_player_move().or(wait_reset_button()),
-        |_, stuff| {
-            *stuff.team += 1;
-            if *stuff.team > 1 {
-                *stuff.team = 0;
-            }
+        move |()| handle_player_move().or(wait_end_turn_button()),
+        |_, _| {
             gameplay::LooperRes::Loop(()).infinite()
         },
     )
@@ -258,7 +258,7 @@ impl GameStepper<GameHandle> for WaitResetButton {
     type Result = ();
     type Int = ();
     fn step(&mut self, game: &mut Stuff<'_>) -> gameplay::Stage<()> {
-        if game.reset {
+        if game.end_turn {
             gameplay::Stage::NextStage(())
         } else {
             gameplay::Stage::Stay
@@ -400,11 +400,12 @@ fn get_cat_move_attack_matrix(
     moved: bool,
 ) -> CellSelection {
     let (movement, attack) = movement;
-    let mm = if moved {
-        MoveUnit(0)
-    } else {
-        MoveUnit(movement - 1)
-    };
+    let mm=cat.move_bank;
+    // let mm = if moved {
+    //     MoveUnit(0)
+    // } else {
+    //     MoveUnit(movement - 1)
+    // };
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,

@@ -53,7 +53,7 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model
-                .draw_ext(&mut v, !cc.is_selectable(), false, false, true);
+                .draw_ext(&mut v, cc.move_bank.0<=1, false, false, true);
         }
     }
 
@@ -97,6 +97,27 @@ impl<'a> WarriorDraw<'a> {
             let m = new_proj.chain(s).generate();
 
             let nn = health_numbers.get_number(ccat.health);
+            let mut v = draw_sys.view(m.as_ref());
+            nn.draw_ext(&mut v, false, false, true, false);
+
+            //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
+        }
+
+
+        for ccat in self.col.elem.iter() {
+            let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
+
+            let t = matrix::translation(pos[0]+20.0, pos[1], 20.0);
+
+            let jj = view_proj.chain(t).generate();
+            let jj: &[f32; 16] = jj.as_ref();
+            let tt = matrix::translation(jj[12], jj[13], jj[14]);
+            let new_proj = proj.clone().chain(tt);
+
+            let s = matrix::scale(5.0, 5.0, 5.0);
+            let m = new_proj.chain(s).generate();
+
+            let nn = health_numbers.get_number(ccat.move_bank.0);
             let mut v = draw_sys.view(m.as_ref());
             nn.draw_ext(&mut v, false, false, true, false);
 
@@ -174,7 +195,7 @@ type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 #[derive(Debug)]
 pub struct Warrior {
     position: GridCoord,
-    move_deficit: MoveUnit,
+    move_bank: MoveUnit,
     moved: bool,
     health: i8,
 }
@@ -187,7 +208,7 @@ impl Warrior {
     fn new(position: GridCoord) -> Self {
         Warrior {
             position,
-            move_deficit: MoveUnit(0),
+            move_bank: MoveUnit(0),
             moved: false,
             health: 10,
         }
@@ -321,10 +342,12 @@ impl Tribe {
         TribeFilter { tribe: self }
     }
 
-    fn reset(&mut self) {
+    fn end_turn(&mut self) {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
-                b.moved = false;
+                if b.move_bank.0<10{
+                    b.move_bank.0+=1;
+                }
             }
         }
     }
@@ -439,7 +462,7 @@ pub async fn worker_entry() {
 
         let res = frame_timer.next().await;
 
-        let mut reset = false;
+        let mut end_turn = false;
         for e in res {
             match e {
                 MEvent::Resize {
@@ -483,7 +506,7 @@ pub async fn worker_entry() {
                     scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
                 }
                 MEvent::EndTurn => {
-                    reset = true;
+                    end_turn = true;
                 }
                 MEvent::CanvasMouseDown { x, y } => {
                     scroll_manager.on_mouse_down([*x, *y]);
@@ -519,7 +542,7 @@ pub async fn worker_entry() {
                 that_team,
                 grid_matrix: &ggame.grid_matrix,
                 mouse,
-                reset,
+                end_turn,
             };
             testo.step(&mut jj);
         }
