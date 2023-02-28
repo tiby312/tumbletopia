@@ -122,6 +122,9 @@ fn move_animator(
     let (dd, aa) = ss.get_path_data(target).unwrap();
     start.move_bank = *aa;
 
+    //let extra=dd.diag_move_cost();
+    //start.move_bank.0-=extra.0;
+
     let tt = *target;
     let aa = animation::Animation::new(start.position, dd, &g1.grid_matrix, start);
     let aaa = AnimationTicker::new(aa).map(move |res, _| {
@@ -415,7 +418,7 @@ fn get_cat_move_attack_matrix(
         mm,
     );
 
-    let attack_range = attack - 1;
+    let attack_range = attack;
     let attack = movement::PossibleMoves::new(
         &movement::WarriorMovement,
         &gg.filter().chain(SingleFilter { a: cat.get_pos() }),

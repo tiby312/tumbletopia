@@ -53,7 +53,7 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model
-                .draw_ext(&mut v, cc.move_bank.0<=1, false, false, true);
+                .draw_ext(&mut v, cc.move_bank.0<=0, false, false, true);
         }
     }
 
@@ -290,9 +290,9 @@ impl Tribe {
     fn get_movement_data<X>(&self, a: &WarriorPointer<X>) -> (i8, i8) {
         let (movement, attack) = {
             match a.val {
-                0 => (6, 4),
-                1 => (3, 3),
-                2 => (4, 4),
+                0 => (0, 3),
+                1 => (0, 3),
+                2 => (0, 4),
                 _ => unreachable!(),
             }
         };
@@ -455,7 +455,7 @@ pub async fn worker_entry() {
         model_parse::TextureGpu::new(&ctx, &ascii_tex)
     };
 
-    let health_numbers = NumberTextManager::new(0..=10, &ctx, &text_texture);
+    let health_numbers = NumberTextManager::new(&ctx, &text_texture);
 
     'outer: loop {
         let mut on_select = false;
@@ -791,10 +791,10 @@ pub struct NumberTextManager<'a> {
 }
 impl<'a> NumberTextManager<'a> {
     fn new(
-        range: impl IntoIterator<Item = i8>,
         ctx: &WebGl2RenderingContext,
         texture: &'a model_parse::TextureGpu,
     ) -> Self {
+        let range=-10..=10;
         fn generate_number(number: i8, ctx: &WebGl2RenderingContext) -> model_parse::ModelGpu {
             let data = string_to_coords(&format!("{}", number));
             model_parse::ModelGpu::new(ctx, &data)
@@ -808,7 +808,7 @@ impl<'a> NumberTextManager<'a> {
         &self,
         num: i8,
     ) -> model_parse::Foo<&model_parse::TextureGpu, &model_parse::ModelGpu> {
-        let gpu = &self.numbers[num as usize];
+        let gpu = &self.numbers[(num+10) as usize];
 
         model_parse::Foo {
             texture: &self.texture,

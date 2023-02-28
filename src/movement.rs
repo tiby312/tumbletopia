@@ -73,39 +73,28 @@ impl Path {
         start
     }
 
+    
+    // pub fn diag_move_cost(&self) -> MoveUnit {
+    //     let mut counter=0;
+    //     for m in self.get_moves(){
+    //         use Moves::*;
+    //         match m {
+    //             UpLeft | DownLeft | UpRight | DownRight => {
+    //                 counter+=1;
+    //                 //MoveUnit(1)
+                    
+    //             }
+    //             _ => {},
+    //         }
+    //     }
+    //     MoveUnit(counter)
+    // }
     fn move_cost(&self, m: Moves) -> MoveUnit {
         use Moves::*;
         match m {
             UpLeft | DownLeft | UpRight | DownRight => {
-                //MoveUnit(1)
-
-                // if self.num_moves==0 {
-                //     MoveUnit(1)
-                // }else{
-                //     MoveUnit(2)
-                // }
                 MoveUnit(3)
-                // let num = self
-                //     .moves
-                //     .iter()
-                //     .take(self.num_moves as usize)
-                //     .filter(|&&a| a == m)
-                //     .count();
-
-                // //if num % 3 == 0 || num % 3==1  {
-                // if num!=0 && num % 2 == 0 {
-
-                //     MoveUnit(0)
-                // } else {
-
-                //     //Technically should have the penalty all the time.
-                //     //But it looks better with this so roads work on corners for warriors (1 move unit)
-                //     //if num>0{
-                //     MoveUnit(2) //TODO 2 better?
-                //     //}else{
-                //     //    MoveUnit(0)
-                //     //}
-                // }
+                
             }
             _ => MoveUnit(2),
         }
@@ -254,12 +243,12 @@ impl PossibleMoves {
 
             //as long as we have SOME remainv moves, we can go to this square even
             //if it is really expensive.
-            // if !(remaining_moves.0 > 0) {
-            //     continue;
-            // }
-            if !(remaining_moves.0 >= cost.0) {
+            if !(remaining_moves.0 > 0) {
                 continue;
             }
+            // if !(remaining_moves.0 >= cost.0) {
+            //     continue;
+            // }
 
             //subtract move cost
             let rr = remaining_moves.sub(cost);
