@@ -243,9 +243,13 @@ impl PossibleMoves {
 
             //as long as we have SOME remainv moves, we can go to this square even
             //if it is really expensive.
-            if !(remaining_moves.0 > 0) {
+            // if !(remaining_moves.0 > 0) {
+            //     continue;
+            // }
+            if !(remaining_moves.0 > 1) {
                 continue;
             }
+
             // if !(remaining_moves.0 >= cost.0) {
             //     continue;
             // }
