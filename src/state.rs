@@ -446,7 +446,7 @@ fn get_cat_move_attack_matrix(
     );
 
     //let attack_range = if cat.stamina.0 >= 0 { attack } else { 0 };
-    nlet attack_range=attack;
+    let attack_range=attack;
 
     let attack = movement::PossibleMoves::new(
         &movement::WarriorMovement,

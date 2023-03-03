@@ -53,7 +53,7 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model
-                .draw_ext(&mut v, cc.stamina.0 < 0, false, false, true);
+                .draw_ext(&mut v, cc.stamina.0 < 2, false, false, true);
         }
     }
 
