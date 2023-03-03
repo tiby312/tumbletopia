@@ -43,12 +43,20 @@ fn attack_init(
     target: &WarriorPointer<GridCoord>,
 ) -> impl GameStepper<GameHandle, Result = ()> {
     let damage = 5;
-    let counter_damage = 5;
+
+    //Only counter if non neg
+    // let counter_damage = if g1.this_team.lookup_mut(current).move_bank.0>=0{
+    //     5
+    // }else{
+    //     0
+    // };
+    let counter_damage=5;
+
     let cc = *current;
 
     let kill_self = g1.this_team.lookup_mut(current).health <= counter_damage;
 
-    let (path, rem) = ss.get_path_data(target).unwrap();
+    let (path, _) = ss.get_path_data(target).unwrap();
 
     let total_cost = path.total_cost();
     log!(format!("total_cost:{:?}", total_cost));
@@ -61,7 +69,7 @@ fn attack_init(
             g1.that_team.lookup_take(target);
             g1.this_team.add(this_unit);
 
-            let mut current_cat = g1.this_team.lookup_mut(&target);
+            //let mut current_cat = g1.this_team.lookup_mut(&target);
             //current_cat.move_bank.0-=total_cost.0;
 
             //current_cat.moved = true;
