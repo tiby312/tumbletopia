@@ -53,7 +53,7 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model
-                .draw_ext(&mut v, cc.stamina.0 < 2, false, false, true);
+                .draw_ext(&mut v, !cc.can_attack(), false, false, true);
         }
     }
 
@@ -195,20 +195,20 @@ type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 pub struct Warrior {
     position: GridCoord,
     stamina: MoveUnit,
-    moved: bool,
+    attacked: bool,
     health: i8,
 }
 
 impl Warrior {
-    fn is_selectable(&self) -> bool {
-        !self.moved
+    fn can_attack(&self) -> bool {
+        !self.attacked
     }
 
     fn new(position: GridCoord) -> Self {
         Warrior {
             position,
             stamina: MoveUnit(0),
-            moved: false,
+            attacked: false,
             health: 10,
         }
     }
@@ -341,6 +341,13 @@ impl Tribe {
         TribeFilter { tribe: self }
     }
 
+    fn reset_attacked(&mut self) {
+        for a in self.warriors.iter_mut() {
+            for b in a.elem.iter_mut() {
+                b.attacked = false;
+            }
+        }
+    }
     fn replenish_stamina(&mut self) {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {

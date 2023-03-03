@@ -28,7 +28,7 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoo
                 return gameplay::LooperRes::Loop(());
             };
 
-            if !unit.is_selectable() {
+            if !unit.can_attack() {
                 return gameplay::LooperRes::Loop(());
             }
 
@@ -45,7 +45,6 @@ fn attack_init(
     current: &WarriorPointer<GridCoord>,
     target: &WarriorPointer<GridCoord>,
 ) -> impl GameStepper<GameHandle, Result = ()> {
-    
     //Only counter if non neg
     // let counter_damage = if g1.this_team.lookup_mut(current).move_bank.0>=0{
     //     5
@@ -75,10 +74,11 @@ fn attack_init(
             g1.that_team.lookup_take(target);
             g1.this_team.add(this_unit);
 
-            //let mut current_cat = g1.this_team.lookup_mut(&target);
+            let mut current_cat = g1.this_team.lookup_mut(&target);
+
+            current_cat.attacked = true;
             //dont need to double sub because we moved there
             //current_cat.stamina.0-=attack_stamina_cost;
-
         }))
     } else {
         let c = g1.this_team.lookup_take(*current);
@@ -91,10 +91,11 @@ fn attack_init(
                 target_cat.health -= damage;
 
                 let mut current_cat = g1.this_team.lookup_mut(&cc);
-                
+
                 if kill_self {
                     g1.this_team.lookup_take(cc);
                 } else {
+                    current_cat.attacked = true;
                     current_cat.health -= counter_damage;
                     current_cat.stamina.0 -= total_cost.0;
                     //current_cat.stamina.0 -= attack_stamina_cost;
@@ -271,6 +272,9 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
             )
         })
         .wait()
+        .map(|_, stuff| {
+            stuff.this_team.reset_attacked();
+        })
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
@@ -385,7 +389,7 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
 
                     let xx = g1.this_team.lookup(self.stuff).slim();
 
-                    let current_attack = g1.this_team.lookup_mut(&xx).moved;
+                    let current_attack = g1.this_team.lookup_mut(&xx).attacked;
 
                     let aa = if let Some(aaa) = g1.that_team.find_slow(target_cat_pos) {
                         let aaa = aaa.slim();
@@ -445,8 +449,9 @@ fn get_cat_move_attack_matrix(
         mm,
     );
 
-    //let attack_range = if cat.stamina.0 >= 0 { attack } else { 0 };
-    let attack_range=attack;
+    let attack_range = if !cat.attacked { attack } else { 0 };
+
+    //let attack_range=attack;
 
     let attack = movement::PossibleMoves::new(
         &movement::WarriorMovement,
