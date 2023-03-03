@@ -345,7 +345,7 @@ impl Tribe {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
                 if b.stamina.0 < 10 {
-                    b.stamina.0 += 1;
+                    b.stamina.0 += 2;
                 }
             }
         }
