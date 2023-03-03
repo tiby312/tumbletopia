@@ -53,7 +53,7 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model
-                .draw_ext(&mut v, cc.move_bank.0 < 0, false, false, true);
+                .draw_ext(&mut v, cc.stamina.0 < 0, false, false, true);
         }
     }
 
@@ -116,7 +116,7 @@ impl<'a> WarriorDraw<'a> {
             let s = matrix::scale(5.0, 5.0, 5.0);
             let m = new_proj.chain(s).generate();
 
-            let nn = health_numbers.get_number(ccat.move_bank.0);
+            let nn = health_numbers.get_number(ccat.stamina.0);
             let mut v = draw_sys.view(m.as_ref());
             nn.draw_ext(&mut v, false, false, true, false);
 
@@ -194,7 +194,7 @@ type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 #[derive(Debug)]
 pub struct Warrior {
     position: GridCoord,
-    move_bank: MoveUnit,
+    stamina: MoveUnit,
     moved: bool,
     health: i8,
 }
@@ -207,7 +207,7 @@ impl Warrior {
     fn new(position: GridCoord) -> Self {
         Warrior {
             position,
-            move_bank: MoveUnit(0),
+            stamina: MoveUnit(0),
             moved: false,
             health: 10,
         }
@@ -341,11 +341,11 @@ impl Tribe {
         TribeFilter { tribe: self }
     }
 
-    fn end_turn(&mut self) {
+    fn replenish_stamina(&mut self) {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
-                if b.move_bank.0 < 10 {
-                    b.move_bank.0 += 1;
+                if b.stamina.0 < 10 {
+                    b.stamina.0 += 1;
                 }
             }
         }

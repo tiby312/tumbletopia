@@ -92,7 +92,7 @@ fn attack_init(
                     g1.this_team.lookup_take(cc);
                 } else {
                     current_cat.health -= counter_damage;
-                    current_cat.move_bank.0 -= total_cost.0;
+                    current_cat.stamina.0 -= total_cost.0;
                 }
                 //}
             }),
@@ -136,7 +136,7 @@ fn move_animator(
     g1: &mut Stuff,
 ) -> impl GameStepper<GameHandle, Result = WarriorPointer<Warrior>> {
     let (dd, aa) = ss.get_path_data(target).unwrap();
-    start.move_bank.0 -= dd.total_cost().0;
+    start.stamina.0 -= dd.total_cost().0;
 
     //let extra=dd.diag_move_cost();
     //start.move_bank.0-=extra.0;
@@ -255,11 +255,12 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     let wait_end_turn_button = || {
         WaitResetButton.map(|_, stuff| {
-            stuff.this_team.end_turn();
+            
             *stuff.team += 1;
             if *stuff.team > 1 {
                 *stuff.team = 0;
             }
+            stuff.that_team.replenish_stamina();
         })
     };
 
@@ -417,7 +418,7 @@ fn get_cat_move_attack_matrix(
     moved: bool,
 ) -> CellSelection {
     let (movement, attack) = movement;
-    let mm = cat.move_bank;
+    let mm = cat.stamina;
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,
@@ -427,7 +428,7 @@ fn get_cat_move_attack_matrix(
         mm,
     );
 
-    let attack_range = if cat.move_bank.0 >= 0 { attack } else { 0 };
+    let attack_range = if cat.stamina.0 >= 0 { attack } else { 0 };
 
     let attack = movement::PossibleMoves::new(
         &movement::WarriorMovement,
