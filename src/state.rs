@@ -45,14 +45,16 @@ fn attack_init(
     current: &WarriorPointer<GridCoord>,
     target: &WarriorPointer<GridCoord>,
 ) -> impl GameStepper<GameHandle, Result = ()> {
-    let damage = 5;
-
+    
     //Only counter if non neg
     // let counter_damage = if g1.this_team.lookup_mut(current).move_bank.0>=0{
     //     5
     // }else{
     //     0
     // };
+    // let damage = 5;
+    // let counter_damage = 5;
+    let damage = 5;
     let counter_damage = 5;
 
     let cc = *current;
@@ -72,10 +74,10 @@ fn attack_init(
             g1.that_team.lookup_take(target);
             g1.this_team.add(this_unit);
 
-            //let mut current_cat = g1.this_team.lookup_mut(&target);
-            //current_cat.move_bank.0-=total_cost.0;
+            let mut current_cat = g1.this_team.lookup_mut(&target);
+            //dont need to double sub because we moved there
+            current_cat.stamina.0-=total_cost.0;
 
-            //current_cat.moved = true;
         }))
     } else {
         let c = g1.this_team.lookup_take(*current);
@@ -88,16 +90,14 @@ fn attack_init(
                 target_cat.health -= damage;
 
                 let mut current_cat = g1.this_team.lookup_mut(&cc);
-                //current_cat.moved = true;
-
-                //if !target_cat.moved{
+                
                 if kill_self {
                     g1.this_team.lookup_take(cc);
                 } else {
                     current_cat.health -= counter_damage;
                     current_cat.stamina.0 -= total_cost.0;
+                    current_cat.stamina.0 -= total_cost.0;
                 }
-                //}
             }),
         )
     }
@@ -444,7 +444,8 @@ fn get_cat_move_attack_matrix(
         mm,
     );
 
-    let attack_range = if cat.stamina.0 >= 0 { attack } else { 0 };
+    //let attack_range = if cat.stamina.0 >= 0 { attack } else { 0 };
+    let attack_range=attack;
 
     let attack = movement::PossibleMoves::new(
         &movement::WarriorMovement,
