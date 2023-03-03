@@ -48,15 +48,22 @@ fn attack_init(
 
     let kill_self = g1.this_team.lookup_mut(current).health <= counter_damage;
 
+    let (path,rem)=ss.get_path_data(target).unwrap();
+    
+    let total_cost=path.total_cost();
+    log!(format!("total_cost:{:?}",total_cost));
     if g1.that_team.lookup_mut(target).health <= damage {
         let c = g1.this_team.lookup_take(*current);
 
+        //TODO pass path instead!!!
         gameplay::Either::A(kill_animator(ss, c, target, g1).map(move |this_unit, g1| {
             let target = this_unit.slim();
             g1.that_team.lookup_take(target);
             g1.this_team.add(this_unit);
 
             let mut current_cat = g1.this_team.lookup_mut(&target);
+            //current_cat.move_bank.0-=total_cost.0;
+
             //current_cat.moved = true;
         }))
     } else {
@@ -77,6 +84,8 @@ fn attack_init(
                     g1.this_team.lookup_take(cc);
                 } else {
                     current_cat.health -= counter_damage;
+                    current_cat.move_bank.0-=total_cost.0;
+            
                 }
                 //}
             }),
@@ -120,7 +129,7 @@ fn move_animator(
     g1: &mut Stuff,
 ) -> impl GameStepper<GameHandle, Result = WarriorPointer<Warrior>> {
     let (dd, aa) = ss.get_path_data(target).unwrap();
-    start.move_bank = *aa;
+    start.move_bank.0 -= dd.total_cost().0;
 
     //let extra=dd.diag_move_cost();
     //start.move_bank.0-=extra.0;

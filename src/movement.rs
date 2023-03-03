@@ -73,22 +73,13 @@ impl Path {
         start
     }
 
-    
-    // pub fn diag_move_cost(&self) -> MoveUnit {
-    //     let mut counter=0;
-    //     for m in self.get_moves(){
-    //         use Moves::*;
-    //         match m {
-    //             UpLeft | DownLeft | UpRight | DownRight => {
-    //                 counter+=1;
-    //                 //MoveUnit(1)
-                    
-    //             }
-    //             _ => {},
-    //         }
-    //     }
-    //     MoveUnit(counter)
-    // }
+    pub fn total_cost(&self)->MoveUnit{
+        let mut total=0;
+        for a in self.get_moves(){
+            total+=self.move_cost(*a).0;
+        }
+        MoveUnit(total)
+    }
     fn move_cost(&self, m: Moves) -> MoveUnit {
         use Moves::*;
         match m {
