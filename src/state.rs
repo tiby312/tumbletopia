@@ -63,6 +63,7 @@ fn attack_init(
 
     let (path, _) = ss.get_path_data(target).unwrap();
 
+    //let attack_stamina_cost=2;
     let total_cost = path.total_cost();
     log!(format!("total_cost:{:?}", total_cost));
     if g1.that_team.lookup_mut(target).health <= damage {
@@ -74,9 +75,9 @@ fn attack_init(
             g1.that_team.lookup_take(target);
             g1.this_team.add(this_unit);
 
-            let mut current_cat = g1.this_team.lookup_mut(&target);
+            //let mut current_cat = g1.this_team.lookup_mut(&target);
             //dont need to double sub because we moved there
-            current_cat.stamina.0-=total_cost.0;
+            //current_cat.stamina.0-=attack_stamina_cost;
 
         }))
     } else {
@@ -96,7 +97,7 @@ fn attack_init(
                 } else {
                     current_cat.health -= counter_damage;
                     current_cat.stamina.0 -= total_cost.0;
-                    current_cat.stamina.0 -= total_cost.0;
+                    //current_cat.stamina.0 -= attack_stamina_cost;
                 }
             }),
         )
@@ -445,7 +446,7 @@ fn get_cat_move_attack_matrix(
     );
 
     //let attack_range = if cat.stamina.0 >= 0 { attack } else { 0 };
-    let attack_range=attack;
+    nlet attack_range=attack;
 
     let attack = movement::PossibleMoves::new(
         &movement::WarriorMovement,
