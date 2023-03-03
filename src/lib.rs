@@ -53,7 +53,7 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model
-                .draw_ext(&mut v, cc.move_bank.0<=0, false, false, true);
+                .draw_ext(&mut v, cc.move_bank.0 <= 0, false, false, true);
         }
     }
 
@@ -103,11 +103,10 @@ impl<'a> WarriorDraw<'a> {
             //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
         }
 
-
         for ccat in self.col.elem.iter() {
             let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
 
-            let t = matrix::translation(pos[0]+20.0, pos[1], 20.0);
+            let t = matrix::translation(pos[0] + 20.0, pos[1], 20.0);
 
             let jj = view_proj.chain(t).generate();
             let jj: &[f32; 16] = jj.as_ref();
@@ -345,8 +344,8 @@ impl Tribe {
     fn end_turn(&mut self) {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
-                if b.move_bank.0<10{
-                    b.move_bank.0+=1;
+                if b.move_bank.0 < 10 {
+                    b.move_bank.0 += 1;
                 }
             }
         }
@@ -790,11 +789,8 @@ pub struct NumberTextManager<'a> {
     texture: &'a model_parse::TextureGpu,
 }
 impl<'a> NumberTextManager<'a> {
-    fn new(
-        ctx: &WebGl2RenderingContext,
-        texture: &'a model_parse::TextureGpu,
-    ) -> Self {
-        let range=-10..=10;
+    fn new(ctx: &WebGl2RenderingContext, texture: &'a model_parse::TextureGpu) -> Self {
+        let range = -10..=10;
         fn generate_number(number: i8, ctx: &WebGl2RenderingContext) -> model_parse::ModelGpu {
             let data = string_to_coords(&format!("{}", number));
             model_parse::ModelGpu::new(ctx, &data)
@@ -808,7 +804,7 @@ impl<'a> NumberTextManager<'a> {
         &self,
         num: i8,
     ) -> model_parse::Foo<&model_parse::TextureGpu, &model_parse::ModelGpu> {
-        let gpu = &self.numbers[(num+10) as usize];
+        let gpu = &self.numbers[(num + 10) as usize];
 
         model_parse::Foo {
             texture: &self.texture,

@@ -73,20 +73,17 @@ impl Path {
         start
     }
 
-    pub fn total_cost(&self)->MoveUnit{
-        let mut total=0;
-        for a in self.get_moves(){
-            total+=self.move_cost(*a).0;
+    pub fn total_cost(&self) -> MoveUnit {
+        let mut total = 0;
+        for a in self.get_moves() {
+            total += self.move_cost(*a).0;
         }
         MoveUnit(total)
     }
     fn move_cost(&self, m: Moves) -> MoveUnit {
         use Moves::*;
         match m {
-            UpLeft | DownLeft | UpRight | DownRight => {
-                MoveUnit(3)
-                
-            }
+            UpLeft | DownLeft | UpRight | DownRight => MoveUnit(3),
             _ => MoveUnit(2),
         }
     }

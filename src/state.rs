@@ -48,10 +48,10 @@ fn attack_init(
 
     let kill_self = g1.this_team.lookup_mut(current).health <= counter_damage;
 
-    let (path,rem)=ss.get_path_data(target).unwrap();
-    
-    let total_cost=path.total_cost();
-    log!(format!("total_cost:{:?}",total_cost));
+    let (path, rem) = ss.get_path_data(target).unwrap();
+
+    let total_cost = path.total_cost();
+    log!(format!("total_cost:{:?}", total_cost));
     if g1.that_team.lookup_mut(target).health <= damage {
         let c = g1.this_team.lookup_take(*current);
 
@@ -84,8 +84,7 @@ fn attack_init(
                     g1.this_team.lookup_take(cc);
                 } else {
                     current_cat.health -= counter_damage;
-                    current_cat.move_bank.0-=total_cost.0;
-            
+                    current_cat.move_bank.0 -= total_cost.0;
                 }
                 //}
             }),
@@ -259,9 +258,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
     gameplay::looper(
         (),
         move |()| handle_player_move().or(wait_end_turn_button()),
-        |_, _| {
-            gameplay::LooperRes::Loop(()).infinite()
-        },
+        |_, _| gameplay::LooperRes::Loop(()).infinite(),
     )
 }
 
@@ -412,12 +409,7 @@ fn get_cat_move_attack_matrix(
     moved: bool,
 ) -> CellSelection {
     let (movement, attack) = movement;
-    let mm=cat.move_bank;
-    // let mm = if moved {
-    //     MoveUnit(0)
-    // } else {
-    //     MoveUnit(movement - 1)
-    // };
+    let mm = cat.move_bank;
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,
@@ -427,7 +419,8 @@ fn get_cat_move_attack_matrix(
         mm,
     );
 
-    let attack_range = attack;
+    let attack_range = if cat.move_bank.0 >= 0 { attack } else { 0 };
+
     let attack = movement::PossibleMoves::new(
         &movement::WarriorMovement,
         &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
