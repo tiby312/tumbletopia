@@ -3,6 +3,9 @@ use super::*;
 pub struct GameHandle;
 impl gameplay::Zoo for GameHandle {
     type G<'a> = Stuff<'a>;
+    fn create() -> Self {
+        GameHandle
+    }
 }
 
 pub struct Stuff<'a> {
@@ -50,7 +53,7 @@ fn attack_init(
     // }else{
     //     0
     // };
-    let counter_damage=5;
+    let counter_damage = 5;
 
     let cc = *current;
 
@@ -242,32 +245,45 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 }
 
 fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
-    gameplay::looper(
-        (),
-        |()| handle_player_move_inner(),
-        |res, _stuff| match res {
-            Some(_) => gameplay::LooperRes::Finish(()),
-            None => gameplay::LooperRes::Loop(()),
-        },
-    )
+    let wait_end_turn_button = || WaitResetButton.map(|_, _| true);
+
+    let loops = move || {
+        handle_player_move_inner()
+            .map(|_, _| false)
+            .or(wait_end_turn_button().map(|_, _| true))
+    };
+
+    gameplay::next::<GameHandle>()
+        .map(move |_, stuff: &mut Stuff| {
+            stuff.this_team.replenish_stamina();
+
+            gameplay::looper(
+                (),
+                move |()| loops(),
+                |res, _stuff| {
+                    if res {
+                        gameplay::LooperRes::Finish(())
+                    } else {
+                        gameplay::LooperRes::Loop(())
+                    }
+                },
+            )
+        })
+        .wait()
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
-    let wait_end_turn_button = || {
-        WaitResetButton.map(|_, stuff| {
-            
-            *stuff.team += 1;
-            if *stuff.team > 1 {
-                *stuff.team = 0;
-            }
-            stuff.that_team.replenish_stamina();
-        })
-    };
-
     gameplay::looper(
         (),
-        move |()| handle_player_move().or(wait_end_turn_button()),
-        |_, _| gameplay::LooperRes::Loop(()).infinite(),
+        move |()| {
+            handle_player_move().map(|_, stuff| {
+                *stuff.team += 1;
+                if *stuff.team > 1 {
+                    *stuff.team = 0;
+                }
+            })
+        },
+        |_, _: &mut Stuff| gameplay::LooperRes::Loop(()).infinite(),
     )
 }
 

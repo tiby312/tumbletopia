@@ -33,15 +33,17 @@ pub trait Zoo {
     type G<'b>
     where
         Self: 'b;
+
+    fn create() -> Self;
 }
 
-pub fn next() -> Next {
-    Next
+pub fn next<Z: Zoo>() -> Next<Z> {
+    Next(Z::create())
 }
 
 #[derive(Copy, Clone)]
-pub struct Next;
-impl<Z: Zoo> GameStepper<Z> for Next {
+pub struct Next<Z>(Z);
+impl<Z: Zoo> GameStepper<Z> for Next<Z> {
     type Result = ();
     type Int = ();
     fn step(&mut self, _: &mut Z::G<'_>) -> Stage<()> {
@@ -79,8 +81,8 @@ pub struct Or<A, B> {
     a: A,
     b: B,
 }
-impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z>> GameStepper<Z> for Or<A, B> {
-    type Result = Either<A::Result, B::Result>;
+impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z, Result = A::Result>> GameStepper<Z> for Or<A, B> {
+    type Result = A::Result;
     type Int = Either<A::Int, B::Int>;
 
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
@@ -103,8 +105,8 @@ impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z>> GameStepper<Z> for Or<A, B> {
 
     fn consume(self, game: &mut Z::G<'_>, i: Self::Int) -> Self::Result {
         match i {
-            Either::A(a) => Either::A(self.a.consume(game, a)),
-            Either::B(a) => Either::B(self.b.consume(game, a)),
+            Either::A(a) => self.a.consume(game, a),
+            Either::B(a) => self.b.consume(game, a),
         }
     }
     fn get_selection(&self) -> Option<&crate::CellSelection> {
@@ -296,7 +298,7 @@ pub trait GameStepper<Z: Zoo> {
         None
     }
 
-    fn or<O: GameStepper<Z>>(self, other: O) -> Or<Self, O>
+    fn or<O: GameStepper<Z, Result = Self::Result>>(self, other: O) -> Or<Self, O>
     where
         Self: Sized,
     {
