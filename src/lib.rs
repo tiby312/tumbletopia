@@ -53,7 +53,7 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model
-                .draw_ext(&mut v, !cc.can_attack(), false, false, true);
+                .draw_ext(&mut v, !cc.selectable(), false, false, true);
         }
     }
 
@@ -200,9 +200,13 @@ pub struct Warrior {
 }
 
 impl Warrior {
-    fn can_attack(&self) -> bool {
-        !self.attacked
+    fn selectable(&self) -> bool {
+        !self.attacked && self.stamina.0 > 0
     }
+
+    // fn can_attack(&self) -> bool {
+    //     !self.attacked
+    // }
 
     fn new(position: GridCoord) -> Self {
         Warrior {
@@ -244,7 +248,7 @@ impl<T> std::borrow::BorrowMut<T> for WarriorPointer<T> {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone)]
 pub struct WarriorPointer<T> {
     inner: T,
     val: usize,

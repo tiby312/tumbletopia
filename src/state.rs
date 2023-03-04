@@ -28,7 +28,7 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoo
                 return gameplay::LooperRes::Loop(());
             };
 
-            if !unit.can_attack() {
+            if !unit.selectable() {
                 return gameplay::LooperRes::Loop(());
             }
 
@@ -189,16 +189,18 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                 //let unit = game.this_team.find(&target).unwrap();
                 let unit = game.this_team.lookup(ooo);
 
-                let data = game.this_team.get_movement_data(&unit);
+                let pos = select_a_unit(&unit, game);
 
-                let pos = get_cat_move_attack_matrix(
-                    data,
-                    &unit,
-                    game.this_team.filter().chain(game.that_team.filter()),
-                    terrain::Grass,
-                    &game.grid_matrix,
-                    true,
-                );
+                // let data = game.this_team.get_movement_data(&unit);
+
+                // let pos = get_cat_move_attack_matrix(
+                //     data,
+                //     &unit,
+                //     game.this_team.filter().chain(game.that_team.filter()),
+                //     terrain::Grass,
+                //     &game.grid_matrix,
+                //     true,
+                // );
 
                 //check if there are enemies in range.
                 let enemy_in_range = {
@@ -252,16 +254,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
         .map(|c, stuff| {
             let unit = stuff.this_team.lookup(c);
 
-            let data = stuff.this_team.get_movement_data(&unit);
-
-            let cc = get_cat_move_attack_matrix(
-                data,
-                &unit,
-                stuff.this_team.filter().chain(stuff.that_team.filter()),
-                terrain::Grass,
-                &stuff.grid_matrix,
-                false,
-            );
+            let cc = select_a_unit(&unit, stuff);
 
             PlayerCellAsk::new(cc, c)
         })
@@ -429,8 +422,20 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
                     } else if movement::contains_coord(ss.iter_coords(), &cell) {
                         Some(PlayerCellAskRes::MoveTo(cell))
                     } else {
-                        //TODO change to select this unit instead!
-                        None
+                        let va = g1.this_team.find_slow(&cell).and_then(|a| {
+                            if a.selectable() && a.slim() != self.stuff {
+                                Some(a)
+                            } else {
+                                None
+                            }
+                        });
+                        if let Some(va) = va {
+                            self.a = select_a_unit(&va, g1);
+                            self.stuff = va.slim();
+                            return gameplay::Stage::Stay;
+                        } else {
+                            None
+                        }
                     };
 
                     gameplay::Stage::NextStage(aa)
@@ -456,40 +461,53 @@ pub fn team_view(a: [&mut Tribe; 2], ind: usize) -> [&mut Tribe; 2] {
     }
 }
 
-fn get_cat_move_attack_matrix(
-    movement: (i8, i8),
-    cat: &Warrior,
-    cat_filter: impl Filter,
-    roads: impl MoveCost,
-    gg: &grids::GridMatrix,
-    moved: bool,
-) -> CellSelection {
-    let (movement, attack) = movement;
-    let mm = if !cat.attacked {
-        cat.stamina
-    } else {
-        MoveUnit(0)
-    };
+fn select_a_unit(unit: &WarriorPointer<&Warrior>, game: &Stuff) -> CellSelection {
+    fn get_cat_move_attack_matrix(
+        movement: (i8, i8),
+        cat: &Warrior,
+        cat_filter: impl Filter,
+        roads: impl MoveCost,
+        gg: &grids::GridMatrix,
+        moved: bool,
+    ) -> CellSelection {
+        let (movement, attack) = movement;
+        let mm = if !cat.attacked {
+            cat.stamina
+        } else {
+            MoveUnit(0)
+        };
 
-    let mm = movement::PossibleMoves::new(
-        &movement::WarriorMovement,
-        &gg.filter().chain(cat_filter),
-        &terrain::Grass.chain(roads),
-        cat.position,
-        mm,
-    );
+        let mm = movement::PossibleMoves::new(
+            &movement::WarriorMovement,
+            &gg.filter().chain(cat_filter),
+            &terrain::Grass.chain(roads),
+            cat.position,
+            mm,
+        );
 
-    let attack_range = if !cat.attacked { attack } else { 0 };
+        let attack_range = if !cat.attacked { attack } else { 0 };
 
-    //let attack_range=attack;
+        //let attack_range=attack;
 
-    let attack = movement::PossibleMoves::new(
-        &movement::WarriorMovement,
-        &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
-        &terrain::Grass,
-        cat.position,
-        MoveUnit(attack_range),
-    );
+        let attack = movement::PossibleMoves::new(
+            &movement::WarriorMovement,
+            &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
+            &terrain::Grass,
+            cat.position,
+            MoveUnit(attack_range),
+        );
 
-    CellSelection::MoveSelection(mm, attack)
+        CellSelection::MoveSelection(mm, attack)
+    }
+
+    let data = game.this_team.get_movement_data(&unit);
+
+    get_cat_move_attack_matrix(
+        data,
+        &unit,
+        game.this_team.filter().chain(game.that_team.filter()),
+        terrain::Grass,
+        &game.grid_matrix,
+        true,
+    )
 }
