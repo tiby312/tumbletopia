@@ -341,6 +341,19 @@ pub trait GameStepper<Z: Zoo> {
         Map { elem: self, func }
     }
 
+    fn either_a<X>(self) -> Either<Self, X>
+    where
+        Self: Sized,
+    {
+        Either::A(self)
+    }
+
+    fn either_b<X>(self) -> Either<X, Self>
+    where
+        Self: Sized,
+    {
+        Either::B(self)
+    }
     // fn and_then<K: GameStepper<Z>, B: FnOnce(Self::Result, &mut Z::G<'_>) -> K>(
     //     self,
     //     func: B,

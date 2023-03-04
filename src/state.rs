@@ -69,22 +69,25 @@ fn attack_init(
         let c = g1.this_team.lookup_take(*current);
 
         //TODO pass path instead!!!
-        gameplay::Either::A(kill_animator(ss, c, target, g1).map(move |this_unit, g1| {
-            let target = this_unit.slim();
-            g1.that_team.lookup_take(target);
-            g1.this_team.add(this_unit);
+        kill_animator(ss, c, target, g1)
+            .map(move |this_unit, g1| {
+                let target = this_unit.slim();
+                g1.that_team.lookup_take(target);
+                g1.this_team.add(this_unit);
 
-            let mut current_cat = g1.this_team.lookup_mut(&target);
+                let mut current_cat = g1.this_team.lookup_mut(&target);
 
-            current_cat.attacked = true;
-            //dont need to double sub because we moved there
-            //current_cat.stamina.0-=attack_stamina_cost;
-        }))
+                current_cat.attacked = true;
+                //dont need to double sub because we moved there
+                //current_cat.stamina.0-=attack_stamina_cost;
+            })
+            .either_a()
     } else {
         let c = g1.this_team.lookup_take(*current);
         let tt = *target;
-        gameplay::Either::B(
-            attack_animator(ss, c, target, g1).map(move |this_unit, g1| {
+
+        attack_animator(ss, c, target, g1)
+            .map(move |this_unit, g1| {
                 let target = tt;
                 g1.this_team.add(this_unit);
                 let mut target_cat = g1.that_team.lookup_mut(&target);
@@ -100,8 +103,8 @@ fn attack_init(
                     current_cat.stamina.0 -= total_cost.0;
                     //current_cat.stamina.0 -= attack_stamina_cost;
                 }
-            }),
-        )
+            })
+            .either_b()
     }
     .map(|_, _| ())
 }
@@ -172,7 +175,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
             PlayerCellAskRes::Attack(cell) => {
                 let n = attack_init(&att, g1, &sss, &cell);
 
-                return gameplay::optional(Some(gameplay::Either::A(n)));
+                return gameplay::optional(Some(n.either_a()));
             }
             PlayerCellAskRes::MoveTo(target) => target,
         };
@@ -215,35 +218,34 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                 };
 
                 if !enemy_in_range {
-                    gameplay::Either::A(gameplay::next())
+                    gameplay::next().either_a()
                 } else {
-                    gameplay::Either::B(
-                        PlayerCellAsk::new(pos, ooo)
-                            .map(|(lll, ss, b), game| {
-                                let (_, att) = match ss {
-                                    CellSelection::MoveSelection(ss, att) => (ss, att),
+                    PlayerCellAsk::new(pos, ooo)
+                        .map(|(lll, ss, b), game| {
+                            let (_, att) = match ss {
+                                CellSelection::MoveSelection(ss, att) => (ss, att),
+                                _ => unreachable!(),
+                            };
+
+                            if let Some(b) = b {
+                                let cell = match b {
+                                    PlayerCellAskRes::Attack(cell) => cell,
                                     _ => unreachable!(),
                                 };
-
-                                if let Some(b) = b {
-                                    let cell = match b {
-                                        PlayerCellAskRes::Attack(cell) => cell,
-                                        _ => unreachable!(),
-                                    };
-                                    gameplay::Either::A(attack_init(&att, game, &lll, &cell))
-                                } else {
-                                    //let mut current_cat = game.this_team.lookup_mut(&lll);
-                                    //current_cat.moved = true;
-                                    gameplay::Either::B(gameplay::next())
-                                }
-                            })
-                            .wait(),
-                    )
+                                attack_init(&att, game, &lll, &cell).either_a()
+                            } else {
+                                //let mut current_cat = game.this_team.lookup_mut(&lll);
+                                //current_cat.moved = true;
+                                gameplay::next().either_b()
+                            }
+                        })
+                        .wait()
+                        .either_b()
                 }
             })
             .wait();
 
-        gameplay::optional(Some(gameplay::Either::B(aaa)))
+        gameplay::optional(Some(aaa.either_b()))
     };
 
     select_unit()
@@ -427,6 +429,7 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
                     } else if movement::contains_coord(ss.iter_coords(), &cell) {
                         Some(PlayerCellAskRes::MoveTo(cell))
                     } else {
+                        //TODO change to select this unit instead!
                         None
                     };
 

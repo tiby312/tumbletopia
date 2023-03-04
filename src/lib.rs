@@ -351,7 +351,7 @@ impl Tribe {
     fn replenish_stamina(&mut self) {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
-                if b.stamina.0 <= 10-2 {
+                if b.stamina.0 <= 10 - 2 {
                     b.stamina.0 += 2;
                 }
             }
