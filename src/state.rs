@@ -159,9 +159,13 @@ fn move_animator(
     aaa
 }
 
+
+
+
+
 fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()>> {
     //TODO why is type annotation required here?
-    let aa = |(sss, c, cell): (WarriorPointer<GridCoord>, _, _), g1: &mut Stuff| {
+    let attack_or_move = |(sss, c, cell): (WarriorPointer<GridCoord>, _, _), g1: &mut Stuff| {
         let Some(cell)=cell else{
             return gameplay::optional(None);
         };
@@ -180,12 +184,17 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
             PlayerCellAskRes::MoveTo(target) => target,
         };
 
+
+        //TODO do the below in a loop!!!!!
+
         let doop = g1.this_team.lookup_take(sss);
 
         let aaa = move_animator(&ss, doop, &target, g1)
             .map(|target, game| {
                 let ooo = target.slim();
+                
                 game.this_team.add(target);
+                
                 //let unit = game.this_team.find(&target).unwrap();
                 let unit = game.this_team.lookup(ooo);
 
@@ -222,27 +231,43 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                 if !enemy_in_range {
                     gameplay::next().either_a()
                 } else {
-                    PlayerCellAsk::new(pos, ooo)
-                        .map(|(lll, ss, b), game| {
-                            let (_, att) = match ss {
-                                CellSelection::MoveSelection(ss, att) => (ss, att),
-                                _ => unreachable!(),
-                            };
+                    gameplay::next().either_b()
+                    // PlayerCellAsk::new(pos, ooo)
+                    //     .map(move |(lll, ss, b), game| {
+                    //         let (mov, att) = match ss {
+                    //             CellSelection::MoveSelection(ss, att) => (ss, att),
+                    //             _ => unreachable!(),
+                    //         };
 
-                            if let Some(b) = b {
-                                let cell = match b {
-                                    PlayerCellAskRes::Attack(cell) => cell,
-                                    _ => unreachable!(),
-                                };
-                                attack_init(&att, game, &lll, &cell).either_a()
-                            } else {
-                                //let mut current_cat = game.this_team.lookup_mut(&lll);
-                                //current_cat.moved = true;
-                                gameplay::next().either_b()
-                            }
-                        })
-                        .wait()
-                        .either_b()
+                    //         if let Some(b) = b {
+                    //             let cell = match b {
+                    //                 PlayerCellAskRes::Attack(cell) => {
+                    //                     attack_init(&att, game, &lll, &cell).either_a()
+                    //                     //cell
+                    //                 },
+                    //                 PlayerCellAskRes::MoveTo(cell)=>{
+                    //                     //TODO fix this!
+                    //                     let doop = game.this_team.lookup_take(lll);
+
+                    //                     move_animator(&mov, doop, &cell, game)
+                    //                     .map(|target,game|{
+                    //                         game.this_team.add(target);
+                    //                     }).
+                                        
+                    //                     either_b()
+                    //                 }
+                    //             };
+
+                    //             cell.either_a()
+                                
+                    //         } else {
+                    //             //let mut current_cat = game.this_team.lookup_mut(&lll);
+                    //             //current_cat.moved = true;
+                    //             gameplay::next().either_b()
+                    //         }
+                    //     })
+                    //     .wait()
+                    //     .either_b()
                 }
             })
             .wait();
@@ -259,7 +284,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
             PlayerCellAsk::new(cc, c)
         })
         .wait()
-        .map(aa)
+        .map(attack_or_move)
         .wait()
         .map(|a, _| a.map(|_| ()))
 }

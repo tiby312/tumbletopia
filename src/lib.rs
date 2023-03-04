@@ -201,7 +201,7 @@ pub struct Warrior {
 
 impl Warrior {
     fn selectable(&self) -> bool {
-        !self.attacked && self.stamina.0 > 0
+        !self.attacked || self.stamina.0 > 0
     }
 
     // fn can_attack(&self) -> bool {
