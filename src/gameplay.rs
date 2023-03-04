@@ -376,33 +376,26 @@ impl<A> LooperRes<A, ()> {
 }
 
 #[derive(Copy, Clone)]
-pub struct Looper<A, F, H> {
+pub struct Looper<A, H> {
     start_func: H,
     a: Option<A>,
-    func: F,
 }
 
-impl<
-        Z: Zoo,
-        A: GameStepper<Z>,
-        K,
-        F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<P, K>,
-        P,
-        H: FnMut(P) -> A,
-    > GameStepper<Z> for Looper<A, F, H>
+impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<(), Res>>, Res, H: FnMut() -> A> GameStepper<Z>
+    for Looper<A, H>
 {
-    type Result = K;
-    type Int = K;
+    type Result = Res;
+    type Int = Res;
     fn get_selection(&self) -> Option<&crate::CellSelection> {
         self.a.as_ref().unwrap().get_selection()
     }
     fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
         self.a.as_ref().unwrap().get_animation()
     }
-    fn consume(self, _: &mut Z::G<'_>, a: K) -> Self::Result {
+    fn consume(self, g: &mut Z::G<'_>, a: Self::Int) -> Self::Result {
         a
     }
-    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<K> {
+    fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
         let a = if let Some(a) = &mut self.a {
             match a.step(game) {
                 Stage::Stay => {
@@ -414,33 +407,23 @@ impl<
             unreachable!();
         };
 
-        match (self.func)(a, game) {
-            LooperRes::Loop(p) => {
-                self.a = Some((self.start_func)(p));
+        match a {
+            LooperRes::Loop(()) => {
+                self.a = Some((self.start_func)());
                 Stage::Stay
             }
-            LooperRes::Finish(b) => Stage::NextStage(b),
+            LooperRes::Finish(res) => Stage::NextStage(res),
         }
     }
 }
 
-pub fn looper<
-    Z: Zoo,
-    P,
-    A: GameStepper<Z>,
-    H: FnMut(P) -> A,
-    K,
-    F: FnMut(A::Result, &mut Z::G<'_>) -> LooperRes<P, K>,
->(
-    start_val: P,
+pub fn looper<Z: Zoo, Res, A: GameStepper<Z, Result = LooperRes<(), Res>>, H: FnMut() -> A>(
     mut start: H,
-    func: F,
-) -> Looper<A, F, H> {
-    let elem = start(start_val);
+) -> Looper<A, H> {
+    let elem = start();
 
     Looper {
         a: Some(elem),
-        func,
         start_func: start,
     }
 }

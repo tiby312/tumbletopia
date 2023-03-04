@@ -18,10 +18,8 @@ pub struct Stuff<'a> {
 }
 
 fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoord>> {
-    gameplay::looper(
-        (),
-        |()| WaitMouseInput,
-        |mouse_world, stuff| {
+    let func = || {
+        WaitMouseInput.map(|mouse_world, stuff| {
             let cell: GridCoord = GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
 
             let Some(unit)=stuff.this_team.find_slow(&cell) else {
@@ -35,8 +33,10 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoo
             let pos = unit.slim();
 
             gameplay::LooperRes::Finish(pos)
-        },
-    )
+        })
+    };
+
+    gameplay::looper(func)
 }
 
 fn attack_init(
@@ -159,10 +159,6 @@ fn move_animator(
     aaa
 }
 
-
-
-
-
 fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()>> {
     //TODO why is type annotation required here?
     let attack_or_move = |(sss, c, cell): (WarriorPointer<GridCoord>, _, _), g1: &mut Stuff| {
@@ -184,7 +180,6 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
             PlayerCellAskRes::MoveTo(target) => target,
         };
 
-
         //TODO do the below in a loop!!!!!
 
         let doop = g1.this_team.lookup_take(sss);
@@ -192,9 +187,9 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
         let aaa = move_animator(&ss, doop, &target, g1)
             .map(|target, game| {
                 let ooo = target.slim();
-                
+
                 game.this_team.add(target);
-                
+
                 //let unit = game.this_team.find(&target).unwrap();
                 let unit = game.this_team.lookup(ooo);
 
@@ -253,13 +248,13 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                     //                     .map(|target,game|{
                     //                         game.this_team.add(target);
                     //                     }).
-                                        
+
                     //                     either_b()
                     //                 }
                     //             };
 
                     //             cell.either_a()
-                                
+
                     //         } else {
                     //             //let mut current_cat = game.this_team.lookup_mut(&lll);
                     //             //current_cat.moved = true;
@@ -302,17 +297,15 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
         .map(move |_, stuff: &mut Stuff| {
             stuff.this_team.replenish_stamina();
 
-            gameplay::looper(
-                (),
-                move |()| loops(),
-                |res, _stuff| {
+            gameplay::looper(move || {
+                loops().map(|res, _| {
                     if res {
                         gameplay::LooperRes::Finish(())
                     } else {
                         gameplay::LooperRes::Loop(())
                     }
-                },
-            )
+                })
+            })
         })
         .wait()
         .map(|_, stuff| {
@@ -321,18 +314,15 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
-    gameplay::looper(
-        (),
-        move |()| {
-            handle_player_move().map(|_, stuff| {
-                *stuff.team += 1;
-                if *stuff.team > 1 {
-                    *stuff.team = 0;
-                }
-            })
-        },
-        |_, _: &mut Stuff| gameplay::LooperRes::Loop(()).infinite(),
-    )
+    gameplay::looper(move || {
+        handle_player_move().map(|_, stuff| {
+            *stuff.team += 1;
+            if *stuff.team > 1 {
+                *stuff.team = 0;
+            }
+            gameplay::LooperRes::Loop(()).infinite()
+        })
+    })
 }
 
 struct WaitResetButton;
