@@ -41,6 +41,25 @@ pub fn next<Z: Zoo>() -> Next<Z> {
     Next(Z::create())
 }
 
+// pub struct Before<F,G>{
+//     func:F,
+//     g:G
+// }
+// impl<Z: Zoo,G:GameStepper<Z>,F:FnOnce(&mut Z::G<'_>)> GameStepper<Z> for Before<F,G> {
+//     type Result = G::Result;
+//     type Int = G::Int;
+//     fn step(&mut self, a: &mut Z::G<'_>) -> Stage<Self::Int> {
+//         self.g.step(a)
+//     }
+//     fn consume(self, s: &mut Z::G<'_>, a: Self::Int) -> Self::Result {
+//         (self.func)(s);
+//         self.g.consume(s,a)
+//     }
+// }
+// pub fn before<Z:Zoo,A:FnOnce(&mut Z::G<'_>),G:GameStepper<Z>>(func:A,g:G)->Before<A,G>{
+//     Before { func, g }
+// }
+
 #[derive(Copy, Clone)]
 pub struct Next<Z>(Z);
 impl<Z: Zoo> GameStepper<Z> for Next<Z> {

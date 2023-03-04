@@ -196,26 +196,50 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                     &game.grid_matrix,
                     true,
                 );
-                PlayerCellAsk::new(pos, ooo)
-            })
-            .wait()
-            .map(|(lll, ss, b), game| {
-                let (_, att) = match ss {
-                    CellSelection::MoveSelection(ss, att) => (ss, att),
-                    _ => unreachable!(),
+
+                //check if there are enemies in range.
+                let enemy_in_range = {
+                    let (_, att) = match &pos {
+                        CellSelection::MoveSelection(ss, att) => (ss, att),
+                        _ => unreachable!(),
+                    };
+
+                    let mut found = false;
+                    for a in att.iter_coords() {
+                        if let Some(_) = game.that_team.find_slow(a) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    found
                 };
 
-                if let Some(b) = b {
-                    match b {
-                        PlayerCellAskRes::Attack(cell) => {
-                            gameplay::Either::A(attack_init(&att, game, &lll, &cell))
-                        }
-                        _ => unreachable!(),
-                    }
+                if !enemy_in_range {
+                    gameplay::Either::A(gameplay::next())
                 } else {
-                    //let mut current_cat = game.this_team.lookup_mut(&lll);
-                    //current_cat.moved = true;
-                    gameplay::Either::B(gameplay::next())
+                    gameplay::Either::B(
+                        PlayerCellAsk::new(pos, ooo)
+                            .map(|(lll, ss, b), game| {
+                                let (_, att) = match ss {
+                                    CellSelection::MoveSelection(ss, att) => (ss, att),
+                                    _ => unreachable!(),
+                                };
+
+                                if let Some(b) = b {
+                                    match b {
+                                        PlayerCellAskRes::Attack(cell) => gameplay::Either::A(
+                                            attack_init(&att, game, &lll, &cell),
+                                        ),
+                                        _ => unreachable!(),
+                                    }
+                                } else {
+                                    //let mut current_cat = game.this_team.lookup_mut(&lll);
+                                    //current_cat.moved = true;
+                                    gameplay::Either::B(gameplay::next())
+                                }
+                            })
+                            .wait(),
+                    )
                 }
             })
             .wait();
@@ -439,7 +463,11 @@ fn get_cat_move_attack_matrix(
     moved: bool,
 ) -> CellSelection {
     let (movement, attack) = movement;
-    let mm = cat.stamina;
+    let mm = if !cat.attacked {
+        cat.stamina
+    } else {
+        MoveUnit(0)
+    };
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,
