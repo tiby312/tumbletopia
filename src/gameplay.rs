@@ -365,12 +365,12 @@ pub trait GameStepper<Z: Zoo> {
     // }
 }
 
-pub enum LooperRes<A, B> {
-    Loop(A),
+pub enum LooperRes<B> {
+    Loop,
     Finish(B),
 }
-impl<A> LooperRes<A, ()> {
-    pub fn infinite(self) -> LooperRes<A, ()> {
+impl LooperRes<()> {
+    pub fn infinite(self) -> LooperRes<()> {
         self
     }
 }
@@ -381,7 +381,7 @@ pub struct Looper<A, H> {
     a: Option<A>,
 }
 
-impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<(), Res>>, Res, H: FnMut() -> A> GameStepper<Z>
+impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut() -> A> GameStepper<Z>
     for Looper<A, H>
 {
     type Result = Res;
@@ -408,7 +408,7 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<(), Res>>, Res, H: FnMut() -> 
         };
 
         match a {
-            LooperRes::Loop(()) => {
+            LooperRes::Loop => {
                 self.a = Some((self.start_func)());
                 Stage::Stay
             }
@@ -417,7 +417,7 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<(), Res>>, Res, H: FnMut() -> 
     }
 }
 
-pub fn looper<Z: Zoo, Res, A: GameStepper<Z, Result = LooperRes<(), Res>>, H: FnMut() -> A>(
+pub fn looper<Z: Zoo, Res, A: GameStepper<Z, Result = LooperRes<Res>>, H: FnMut() -> A>(
     mut start: H,
 ) -> Looper<A, H> {
     let elem = start();

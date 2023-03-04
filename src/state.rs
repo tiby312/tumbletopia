@@ -23,11 +23,11 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoo
             let cell: GridCoord = GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
 
             let Some(unit)=stuff.this_team.find_slow(&cell) else {
-                return gameplay::LooperRes::Loop(());
+                return gameplay::LooperRes::Loop;
             };
 
             if !unit.selectable() {
-                return gameplay::LooperRes::Loop(());
+                return gameplay::LooperRes::Loop;
             }
 
             let pos = unit.slim();
@@ -302,7 +302,7 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
                     if res {
                         gameplay::LooperRes::Finish(())
                     } else {
-                        gameplay::LooperRes::Loop(())
+                        gameplay::LooperRes::Loop
                     }
                 })
             })
@@ -320,7 +320,7 @@ pub fn create_state_machine() -> impl GameStepper<GameHandle> {
             if *stuff.team > 1 {
                 *stuff.team = 0;
             }
-            gameplay::LooperRes::Loop(()).infinite()
+            gameplay::LooperRes::Loop.infinite()
         })
     })
 }
