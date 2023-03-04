@@ -226,12 +226,11 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                                 };
 
                                 if let Some(b) = b {
-                                    match b {
-                                        PlayerCellAskRes::Attack(cell) => gameplay::Either::A(
-                                            attack_init(&att, game, &lll, &cell),
-                                        ),
+                                    let cell = match b {
+                                        PlayerCellAskRes::Attack(cell) => cell,
                                         _ => unreachable!(),
-                                    }
+                                    };
+                                    gameplay::Either::A(attack_init(&att, game, &lll, &cell))
                                 } else {
                                     //let mut current_cat = game.this_team.lookup_mut(&lll);
                                     //current_cat.moved = true;
