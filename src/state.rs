@@ -195,16 +195,6 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 
                 let pos = select_a_unit(&unit, game);
 
-                // let data = game.this_team.get_movement_data(&unit);
-
-                // let pos = get_cat_move_attack_matrix(
-                //     data,
-                //     &unit,
-                //     game.this_team.filter().chain(game.that_team.filter()),
-                //     terrain::Grass,
-                //     &game.grid_matrix,
-                //     true,
-                // );
 
                 //check if there are enemies in range.
                 let enemy_in_range = {
