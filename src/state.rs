@@ -201,77 +201,13 @@ fn handle_one_execution(
 }
 
 fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()>> {
-    //TODO why is type annotation required here?
-    // let attack_or_move = |(sss, c, cell): (WarriorPointer<GridCoord>, _, _), g1: &mut Stuff| {
-    //     let Some(cell)=cell else{
-    //         //Deselect no valid cell was selected
-    //         return gameplay::optional(None);
-    //     };
-
-    //     let (ss, att) = match c {
-    //         CellSelection::MoveSelection(ss, a) => (ss, a),
-    //         _ => unreachable!(),
-    //     };
-
-    //     let target = match cell {
-    //         PlayerCellAskRes::Attack(cell) => {
-    //             //If attack handle attack.
-    //             let n = attack_init(&att, g1, &sss, &cell);
-
-    //             return gameplay::optional(Some(n.either_a()));
-    //         }
-    //         PlayerCellAskRes::MoveTo(target) => target,
-    //     };
-
-    //     let doop = g1.this_team.lookup_take(sss);
-
-    //     let aaa = move_animator(&ss, doop, &target, g1)
-    //         .map(|target, game| {
-    //             let ooo = target.slim();
-
-    //             game.this_team.add(target);
-
-    //             //let unit = game.this_team.find(&target).unwrap();
-    //             let unit = game.this_team.lookup(ooo);
-
-    //             let pos = select_a_unit(&unit, game);
-
-    //             //check if there are enemies in range.
-    //             let enemy_in_range = {
-    //                 let (_, att) = match &pos {
-    //                     CellSelection::MoveSelection(ss, att) => (ss, att),
-    //                     _ => unreachable!(),
-    //                 };
-
-    //                 let mut found = false;
-    //                 for a in att.iter_coords() {
-    //                     if let Some(_) = game.that_team.find_slow(a) {
-    //                         found = true;
-    //                         break;
-    //                     }
-    //                 }
-    //                 found
-    //             };
-
-    //             if !enemy_in_range {
-    //                 gameplay::next().either_a()
-    //             } else {
-    //                 gameplay::next().either_b()
-    //             }
-    //         })
-    //         .wait();
-
-    //     gameplay::optional(Some(aaa.either_b()))
-    // };
 
     select_unit()
         .map(move |c, stuff| {
             gameplay::looper(c, |c, stuff| {
-                //TODO do this part in a loop!!!
                 let unit = stuff.this_team.lookup(c);
-
                 let cc = generate_unit_possible_moves(&unit, stuff);
-
+                //Ask the user to pick a possible move and execute it.
                 let v = PlayerCellAsk::new(cc, c)
                     .map(|c, stuff| {
                         if let Some(cc) = c.2 {
@@ -283,6 +219,8 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                     })
                     .flatten();
 
+                //Now check and see if there are any additional moves possible, if so
+                //keep the unit selected and loop.
                 v.map(|a, game| {
                     match a {
                         Some(Some(a)) => {
@@ -306,8 +244,11 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                                 }
                                 found
                             };
+                            
+                            //TODO move this and the above into an high-level "Has possible moves function"
+                            let has_stamina_to_move=unit.stamina.0>1;
 
-                            if enemy_in_range {
+                            if enemy_in_range || has_stamina_to_move{
                                 gameplay::LooperRes::Loop(a)
                             } else {
                                 gameplay::LooperRes::Finish(())
