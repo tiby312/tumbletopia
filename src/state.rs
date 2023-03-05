@@ -19,7 +19,7 @@ pub struct Stuff<'a> {
     pub end_turn: bool,
 }
 
-fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoord>> {
+fn select_unit() -> impl GameStepper<GameHandle, Result = PlayerCellAsk> {
     gameplay::looper(|_| {
         WaitMouseInput.map(|mouse_world, stuff| {
             let cell: GridCoord = GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
@@ -36,6 +36,13 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoo
 
             gameplay::LooperRes::Finish(pos)
         })
+    })
+    .map(|c, stuff| {
+        let unit = stuff.this_team.lookup(c);
+
+        let cc = select_a_unit(&unit, stuff);
+
+        PlayerCellAsk::new(cc, c)
     })
 }
 
@@ -265,13 +272,6 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
     // };
 
     select_unit()
-        .map(|c, stuff| {
-            let unit = stuff.this_team.lookup(c);
-
-            let cc = select_a_unit(&unit, stuff);
-
-            PlayerCellAsk::new(cc, c)
-        })
         .wait()
         .map(|c, g1| {
             if let Some(cc) = c.2 {
