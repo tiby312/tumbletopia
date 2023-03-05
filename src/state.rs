@@ -19,7 +19,7 @@ pub struct Stuff<'a> {
     pub end_turn: bool,
 }
 
-fn select_unit() -> impl GameStepper<GameHandle, Result = PlayerCellAsk> {
+fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoord>> {
     gameplay::looper(|_| {
         WaitMouseInput.map(|mouse_world, stuff| {
             let cell: GridCoord = GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
@@ -36,13 +36,6 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = PlayerCellAsk> {
 
             gameplay::LooperRes::Finish(pos)
         })
-    })
-    .map(|c, stuff| {
-        let unit = stuff.this_team.lookup(c);
-
-        let cc = select_a_unit(&unit, stuff);
-
-        PlayerCellAsk::new(cc, c)
     })
 }
 
@@ -272,16 +265,21 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
     // };
 
     select_unit()
-        .wait()
-        .map(|c, g1| {
-            if let Some(cc) = c.2 {
-                gameplay::optional(Some(handle_one_execution(c.0, c.1, cc, g1)))
-            } else {
-                gameplay::optional(None)
-            }
+        .map(move |c, stuff| {
+            let unit = stuff.this_team.lookup(c);
+
+            let cc = select_a_unit(&unit, stuff);
+
+            PlayerCellAsk::new(cc, c).map(|c, stuff| {
+                if let Some(cc) = c.2 {
+                    gameplay::optional(Some(handle_one_execution(c.0, c.1, cc, stuff)))
+                } else {
+                    gameplay::optional(None)
+                }
+            }).flatten()
         })
-        .wait()
-        .map(|a, _| a.map(|_| ()))
+        .flatten()
+        .map(|a, _| Some(()))
 }
 
 fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
@@ -307,7 +305,7 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
                 })
             })
         })
-        .wait()
+        .flatten()
         .map(|_, stuff| {
             stuff.this_team.reset_attacked();
         })

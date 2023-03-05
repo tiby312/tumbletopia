@@ -326,7 +326,7 @@ pub trait GameStepper<Z: Zoo> {
         Or { a: self, b: other }
     }
 
-    fn wait(self) -> Chain<Self, Self::Result>
+    fn flatten(self) -> Chain<Self, Self::Result>
     where
         Self::Result: GameStepper<Z> + Sized,
         Self: Sized,
