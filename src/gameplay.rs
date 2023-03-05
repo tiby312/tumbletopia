@@ -389,10 +389,10 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut(&mut Z::G
     type Result = Res;
     type Int = Res;
     fn get_selection(&self) -> Option<&crate::CellSelection> {
-        self.a.as_ref().unwrap().get_selection()
+        self.a.as_ref().map(|a|a.get_selection()).flatten()
     }
     fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
-        self.a.as_ref().unwrap().get_animation()
+        self.a.as_ref().map(|a|a.get_animation()).flatten()
     }
     fn consume(self, g: &mut Z::G<'_>, a: Self::Int) -> Self::Result {
         a
