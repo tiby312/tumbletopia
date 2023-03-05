@@ -1,0 +1,17 @@
+[package]
+name = "model"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gltf={version="*", features=["import"]}
+image="*"
+cgmath="0.17"
+
+[dependencies.gloo]
+version = "0.8"
+features=[
+  'futures'
+  ]
