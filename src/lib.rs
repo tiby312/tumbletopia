@@ -200,10 +200,37 @@ pub struct Warrior {
 }
 
 impl Warrior {
+    //TODO replace with has possible moves
     fn selectable(&self) -> bool {
         !self.attacked || self.stamina.0 > 0
     }
 
+    pub fn has_possible_moves(unit:&WarriorPointer<&Self>,game:&state::Stuff)->bool{
+        
+        let pos = state::generate_unit_possible_moves(unit, game);
+
+        //check if there are enemies in range.
+        let enemy_in_range = {
+            let (_, att) = match &pos {
+                CellSelection::MoveSelection(ss, att) => (ss, att),
+                _ => unreachable!(),
+            };
+
+            let mut found = false;
+            for a in att.iter_coords() {
+                if let Some(_) = game.that_team.find_slow(a) {
+                    found = true;
+                    break;
+                }
+            }
+            found
+        };
+        
+        //TODO move this and the above into an high-level "Has possible moves function"
+        let has_stamina_to_move=unit.stamina.0>1;
+
+        enemy_in_range || has_stamina_to_move
+    }
     // fn can_attack(&self) -> bool {
     //     !self.attacked
     // }

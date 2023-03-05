@@ -226,29 +226,8 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                         Some(Some(a)) => {
                             let unit = game.this_team.lookup(a);
 
-                            let pos = generate_unit_possible_moves(&unit, game);
-
-                            //check if there are enemies in range.
-                            let enemy_in_range = {
-                                let (_, att) = match &pos {
-                                    CellSelection::MoveSelection(ss, att) => (ss, att),
-                                    _ => unreachable!(),
-                                };
-
-                                let mut found = false;
-                                for a in att.iter_coords() {
-                                    if let Some(_) = game.that_team.find_slow(a) {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                found
-                            };
-                            
-                            //TODO move this and the above into an high-level "Has possible moves function"
-                            let has_stamina_to_move=unit.stamina.0>1;
-
-                            if enemy_in_range || has_stamina_to_move{
+                            if Warrior::has_possible_moves(&unit,game)
+                            {
                                 gameplay::LooperRes::Loop(a)
                             } else {
                                 gameplay::LooperRes::Finish(())
@@ -455,7 +434,7 @@ pub fn team_view(a: [&mut Tribe; 2], ind: usize) -> [&mut Tribe; 2] {
     }
 }
 
-fn generate_unit_possible_moves(unit: &WarriorPointer<&Warrior>, game: &Stuff) -> CellSelection {
+pub fn generate_unit_possible_moves(unit: &WarriorPointer<&Warrior>, game: &Stuff) -> CellSelection {
     fn get_cat_move_attack_matrix(
         movement: (i8, i8),
         cat: &Warrior,
