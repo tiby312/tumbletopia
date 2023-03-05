@@ -20,7 +20,7 @@ pub struct Stuff<'a> {
 }
 
 fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoord>> {
-    gameplay::looper(|_,_| {
+    gameplay::looper((), |_, _| {
         WaitMouseInput.map(|mouse_world, stuff| {
             let cell: GridCoord = GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
 
@@ -266,21 +266,57 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 
     select_unit()
         .map(move |c, stuff| {
-            //TODO do this part in a loop!!!
-            let unit = stuff.this_team.lookup(c);
+            gameplay::looper(c, |c, stuff| {
+                //TODO do this part in a loop!!!
+                let unit = stuff.this_team.lookup(c);
 
-            let cc = select_a_unit(&unit, stuff);
+                let cc = generate_unit_possible_moves(&unit, stuff);
 
-            PlayerCellAsk::new(cc, c)
-                .map(|c, stuff| {
-                    if let Some(cc) = c.2 {
-                        handle_one_execution(c.0, c.1, cc, stuff).optional_some()
-                    } else {
-                        //TODO break out of the loop here!!!!
-                        None
+                let v = PlayerCellAsk::new(cc, c)
+                    .map(|c, stuff| {
+                        if let Some(cc) = c.2 {
+                            handle_one_execution(c.0, c.1, cc, stuff).optional_some()
+                        } else {
+                            //TODO break out of the loop here!!!!
+                            None
+                        }
+                    })
+                    .flatten();
+
+                v.map(|a, game| {
+                    match a {
+                        Some(Some(a)) => {
+                            let unit = game.this_team.lookup(a);
+
+                            let pos = generate_unit_possible_moves(&unit, game);
+
+                            //check if there are enemies in range.
+                            let enemy_in_range = {
+                                let (_, att) = match &pos {
+                                    CellSelection::MoveSelection(ss, att) => (ss, att),
+                                    _ => unreachable!(),
+                                };
+
+                                let mut found = false;
+                                for a in att.iter_coords() {
+                                    if let Some(_) = game.that_team.find_slow(a) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                found
+                            };
+
+                            if enemy_in_range {
+                                gameplay::LooperRes::Loop(a)
+                            } else {
+                                gameplay::LooperRes::Finish(())
+                            }
+                        }
+                        _ => gameplay::LooperRes::Finish(()),
                     }
                 })
-                .flatten()
+            })
         })
         .flatten()
         .map(|a, _| Some(()))
@@ -299,7 +335,7 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
         .map(move |_, stuff: &mut Stuff| {
             stuff.this_team.replenish_stamina();
 
-            gameplay::looper(move |_,_| {
+            gameplay::looper((), move |_, _| {
                 loops().map(|res, _| {
                     if res {
                         gameplay::LooperRes::Finish(())
@@ -316,7 +352,7 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
-    gameplay::looper(move |_,_| {
+    gameplay::looper((), move |_, _| {
         handle_player_move().map(|_, stuff| {
             *stuff.team += 1;
             if *stuff.team > 1 {
@@ -447,7 +483,7 @@ impl GameStepper<GameHandle> for PlayerCellAsk {
                             }
                         });
                         if let Some(va) = va {
-                            self.a = select_a_unit(&va, g1);
+                            self.a = generate_unit_possible_moves(&va, g1);
                             self.stuff = va.slim();
                             return gameplay::Stage::Stay;
                         } else {
@@ -478,7 +514,7 @@ pub fn team_view(a: [&mut Tribe; 2], ind: usize) -> [&mut Tribe; 2] {
     }
 }
 
-fn select_a_unit(unit: &WarriorPointer<&Warrior>, game: &Stuff) -> CellSelection {
+fn generate_unit_possible_moves(unit: &WarriorPointer<&Warrior>, game: &Stuff) -> CellSelection {
     fn get_cat_move_attack_matrix(
         movement: (i8, i8),
         cat: &Warrior,

@@ -374,24 +374,30 @@ pub trait GameStepper<Z: Zoo> {
     // }
 }
 
-pub enum LooperRes<A,B> {
+pub enum LooperRes<A, B> {
     Loop(A),
     Finish(B),
 }
-impl<A> LooperRes<A,()> {
-    pub fn infinite(self) -> LooperRes<A,()> {
+impl<A> LooperRes<A, ()> {
+    pub fn infinite(self) -> LooperRes<A, ()> {
         self
     }
 }
 
 #[derive(Copy, Clone)]
-pub struct Looper<A, H> {
+pub struct Looper<A, H, Lo> {
+    val: Option<Lo>,
     start_func: H,
     a: Option<A>,
 }
 
-impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Lo,Res>>,Lo, Res, H: FnMut(Option<Lo>,&mut Z::G<'_>) -> A>
-    GameStepper<Z> for Looper<A, H>
+impl<
+        Z: Zoo,
+        A: GameStepper<Z, Result = LooperRes<Lo, Res>>,
+        Lo,
+        Res,
+        H: FnMut(Lo, &mut Z::G<'_>) -> A,
+    > GameStepper<Z> for Looper<A, H, Lo>
 {
     type Result = Res;
     type Int = Res;
@@ -407,7 +413,7 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Lo,Res>>,Lo, Res, H: FnMut(Opt
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
         if self.a.is_none() {
             //First iteration
-            self.a = Some((self.start_func)(None,game));
+            self.a = Some((self.start_func)(self.val.take().unwrap(), game));
         }
         let a = if let Some(a) = &mut self.a {
             match a.step(game) {
@@ -422,7 +428,7 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Lo,Res>>,Lo, Res, H: FnMut(Opt
 
         match a {
             LooperRes::Loop(lll) => {
-                self.a = Some((self.start_func)(Some(lll),game));
+                self.a = Some((self.start_func)(lll, game));
                 Stage::Stay
             }
             LooperRes::Finish(res) => Stage::NextStage(res),
@@ -433,12 +439,14 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Lo,Res>>,Lo, Res, H: FnMut(Opt
 pub fn looper<
     Res,
     Lo,
-    A: GameStepper<GameHandle, Result = LooperRes<Lo,Res>>,
-    H: FnMut(Option<Lo>,&mut Stuff) -> A,
+    A: GameStepper<GameHandle, Result = LooperRes<Lo, Res>>,
+    H: FnMut(Lo, &mut Stuff) -> A,
 >(
+    val: Lo,
     mut start: H,
-) -> Looper<A, H> {
+) -> Looper<A, H, Lo> {
     Looper {
+        val: Some(val),
         a: None,
         start_func: start,
     }
