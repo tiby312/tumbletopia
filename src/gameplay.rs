@@ -374,12 +374,12 @@ pub trait GameStepper<Z: Zoo> {
     // }
 }
 
-pub enum LooperRes<B> {
-    Loop,
+pub enum LooperRes<A,B> {
+    Loop(A),
     Finish(B),
 }
-impl LooperRes<()> {
-    pub fn infinite(self) -> LooperRes<()> {
+impl<A> LooperRes<A,()> {
+    pub fn infinite(self) -> LooperRes<A,()> {
         self
     }
 }
@@ -390,7 +390,7 @@ pub struct Looper<A, H> {
     a: Option<A>,
 }
 
-impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut(&mut Z::G<'_>) -> A>
+impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Lo,Res>>,Lo, Res, H: FnMut(Option<Lo>,&mut Z::G<'_>) -> A>
     GameStepper<Z> for Looper<A, H>
 {
     type Result = Res;
@@ -407,7 +407,7 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut(&mut Z::G
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
         if self.a.is_none() {
             //First iteration
-            self.a = Some((self.start_func)(game));
+            self.a = Some((self.start_func)(None,game));
         }
         let a = if let Some(a) = &mut self.a {
             match a.step(game) {
@@ -421,8 +421,8 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut(&mut Z::G
         };
 
         match a {
-            LooperRes::Loop => {
-                self.a = Some((self.start_func)(game));
+            LooperRes::Loop(lll) => {
+                self.a = Some((self.start_func)(Some(lll),game));
                 Stage::Stay
             }
             LooperRes::Finish(res) => Stage::NextStage(res),
@@ -432,8 +432,9 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut(&mut Z::G
 
 pub fn looper<
     Res,
-    A: GameStepper<GameHandle, Result = LooperRes<Res>>,
-    H: FnMut(&mut Stuff) -> A,
+    Lo,
+    A: GameStepper<GameHandle, Result = LooperRes<Lo,Res>>,
+    H: FnMut(Option<Lo>,&mut Stuff) -> A,
 >(
     mut start: H,
 ) -> Looper<A, H> {
