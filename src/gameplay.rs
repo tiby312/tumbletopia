@@ -1,3 +1,5 @@
+use crate::state::{GameHandle, Stuff};
+
 use super::*;
 
 pub struct Map<A, F> {
@@ -381,8 +383,8 @@ pub struct Looper<A, H> {
     a: Option<A>,
 }
 
-impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut() -> A> GameStepper<Z>
-    for Looper<A, H>
+impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut(&mut Z::G<'_>) -> A>
+    GameStepper<Z> for Looper<A, H>
 {
     type Result = Res;
     type Int = Res;
@@ -396,6 +398,10 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut() -> A> G
         a
     }
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
+        if self.a.is_none() {
+            //First iteration
+            self.a = Some((self.start_func)(game));
+        }
         let a = if let Some(a) = &mut self.a {
             match a.step(game) {
                 Stage::Stay => {
@@ -409,7 +415,7 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut() -> A> G
 
         match a {
             LooperRes::Loop => {
-                self.a = Some((self.start_func)());
+                self.a = Some((self.start_func)(game));
                 Stage::Stay
             }
             LooperRes::Finish(res) => Stage::NextStage(res),
@@ -417,13 +423,15 @@ impl<Z: Zoo, A: GameStepper<Z, Result = LooperRes<Res>>, Res, H: FnMut() -> A> G
     }
 }
 
-pub fn looper<Z: Zoo, Res, A: GameStepper<Z, Result = LooperRes<Res>>, H: FnMut() -> A>(
+pub fn looper<
+    Res,
+    A: GameStepper<GameHandle, Result = LooperRes<Res>>,
+    H: FnMut(&mut Stuff) -> A,
+>(
     mut start: H,
 ) -> Looper<A, H> {
-    let elem = start();
-
     Looper {
-        a: Some(elem),
+        a: None,
         start_func: start,
     }
 }

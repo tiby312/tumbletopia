@@ -1,3 +1,5 @@
+use crate::gameplay::Zoo;
+
 use super::*;
 
 pub struct GameHandle;
@@ -18,7 +20,7 @@ pub struct Stuff<'a> {
 }
 
 fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoord>> {
-    let func = || {
+    gameplay::looper(|_| {
         WaitMouseInput.map(|mouse_world, stuff| {
             let cell: GridCoord = GridCoord(stuff.grid_matrix.to_grid((mouse_world).into()).into());
 
@@ -34,9 +36,7 @@ fn select_unit() -> impl GameStepper<GameHandle, Result = WarriorPointer<GridCoo
 
             gameplay::LooperRes::Finish(pos)
         })
-    };
-
-    gameplay::looper(func)
+    })
 }
 
 fn attack_init(
@@ -163,6 +163,7 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
     //TODO why is type annotation required here?
     let attack_or_move = |(sss, c, cell): (WarriorPointer<GridCoord>, _, _), g1: &mut Stuff| {
         let Some(cell)=cell else{
+            //Deselect no valid cell was selected
             return gameplay::optional(None);
         };
 
@@ -173,14 +174,13 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 
         let target = match cell {
             PlayerCellAskRes::Attack(cell) => {
+                //If attack handle attack.
                 let n = attack_init(&att, g1, &sss, &cell);
 
                 return gameplay::optional(Some(n.either_a()));
             }
             PlayerCellAskRes::MoveTo(target) => target,
         };
-
-        //TODO do the below in a loop!!!!!
 
         let doop = g1.this_team.lookup_take(sss);
 
@@ -194,7 +194,6 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                 let unit = game.this_team.lookup(ooo);
 
                 let pos = select_a_unit(&unit, game);
-
 
                 //check if there are enemies in range.
                 let enemy_in_range = {
@@ -217,42 +216,6 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
                     gameplay::next().either_a()
                 } else {
                     gameplay::next().either_b()
-                    // PlayerCellAsk::new(pos, ooo)
-                    //     .map(move |(lll, ss, b), game| {
-                    //         let (mov, att) = match ss {
-                    //             CellSelection::MoveSelection(ss, att) => (ss, att),
-                    //             _ => unreachable!(),
-                    //         };
-
-                    //         if let Some(b) = b {
-                    //             let cell = match b {
-                    //                 PlayerCellAskRes::Attack(cell) => {
-                    //                     attack_init(&att, game, &lll, &cell).either_a()
-                    //                     //cell
-                    //                 },
-                    //                 PlayerCellAskRes::MoveTo(cell)=>{
-                    //                     //TODO fix this!
-                    //                     let doop = game.this_team.lookup_take(lll);
-
-                    //                     move_animator(&mov, doop, &cell, game)
-                    //                     .map(|target,game|{
-                    //                         game.this_team.add(target);
-                    //                     }).
-
-                    //                     either_b()
-                    //                 }
-                    //             };
-
-                    //             cell.either_a()
-
-                    //         } else {
-                    //             //let mut current_cat = game.this_team.lookup_mut(&lll);
-                    //             //current_cat.moved = true;
-                    //             gameplay::next().either_b()
-                    //         }
-                    //     })
-                    //     .wait()
-                    //     .either_b()
                 }
             })
             .wait();
@@ -287,7 +250,7 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
         .map(move |_, stuff: &mut Stuff| {
             stuff.this_team.replenish_stamina();
 
-            gameplay::looper(move || {
+            gameplay::looper(move |_| {
                 loops().map(|res, _| {
                     if res {
                         gameplay::LooperRes::Finish(())
@@ -304,7 +267,7 @@ fn handle_player_move() -> impl GameStepper<GameHandle, Result = ()> {
 }
 
 pub fn create_state_machine() -> impl GameStepper<GameHandle> {
-    gameplay::looper(move || {
+    gameplay::looper(move |_| {
         handle_player_move().map(|_, stuff| {
             *stuff.team += 1;
             if *stuff.team > 1 {
