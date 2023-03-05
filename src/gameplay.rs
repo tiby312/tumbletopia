@@ -184,19 +184,19 @@ impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z>> GameStepper<Z> for Either<A, 
     }
 }
 
-pub struct Optional<A> {
-    a: Option<A>,
-}
+// pub struct Optional<A> {
+//     a: Option<A>,
+// }
 
-pub fn optional<Z: Zoo, A: GameStepper<Z>>(a: Option<A>) -> Optional<A> {
-    Optional { a }
-}
+// pub fn optional<Z: Zoo, A: GameStepper<Z>>(a: Option<A>) -> Option<A> {
+//     a
+// }
 
-impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
+impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Option<A> {
     type Result = Option<A::Result>;
     type Int = Option<A::Int>;
     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
-        if let Some(a) = self.a.as_mut() {
+        if let Some(a) = self.as_mut() {
             match a.step(game) {
                 Stage::Stay => Stage::Stay,
                 Stage::NextStage(a) => Stage::NextStage(Some(a)),
@@ -206,14 +206,14 @@ impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
         }
     }
     fn consume(self, game: &mut Z::G<'_>, i: Self::Int) -> Self::Result {
-        if let Some(a) = self.a {
+        if let Some(a) = self {
             Some(a.consume(game, i.unwrap()))
         } else {
             None
         }
     }
     fn get_selection(&self) -> Option<&crate::CellSelection> {
-        if let Some(a) = self.a.as_ref() {
+        if let Some(a) = self.as_ref() {
             if let Some(b) = a.get_selection() {
                 Some(b)
             } else {
@@ -224,7 +224,7 @@ impl<Z: Zoo, A: GameStepper<Z>> GameStepper<Z> for Optional<A> {
         }
     }
     fn get_animation(&self) -> Option<&crate::animation::Animation<WarriorPointer<Warrior>>> {
-        if let Some(a) = self.a.as_ref() {
+        if let Some(a) = self.as_ref() {
             if let Some(b) = a.get_animation() {
                 Some(b)
             } else {
@@ -324,6 +324,13 @@ pub trait GameStepper<Z: Zoo> {
         Self: Sized,
     {
         Or { a: self, b: other }
+    }
+
+    fn optional_some(self) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        Some(self)
     }
 
     fn flatten(self) -> Chain<Self, Self::Result>

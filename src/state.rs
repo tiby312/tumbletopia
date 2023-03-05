@@ -266,17 +266,21 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 
     select_unit()
         .map(move |c, stuff| {
+            //TODO do this part in a loop!!!
             let unit = stuff.this_team.lookup(c);
 
             let cc = select_a_unit(&unit, stuff);
 
-            PlayerCellAsk::new(cc, c).map(|c, stuff| {
-                if let Some(cc) = c.2 {
-                    gameplay::optional(Some(handle_one_execution(c.0, c.1, cc, stuff)))
-                } else {
-                    gameplay::optional(None)
-                }
-            }).flatten()
+            PlayerCellAsk::new(cc, c)
+                .map(|c, stuff| {
+                    if let Some(cc) = c.2 {
+                        handle_one_execution(c.0, c.1, cc, stuff).optional_some()
+                    } else {
+                        //TODO break out of the loop here!!!!
+                        None
+                    }
+                })
+                .flatten()
         })
         .flatten()
         .map(|a, _| Some(()))
