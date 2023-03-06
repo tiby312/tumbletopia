@@ -1,4 +1,4 @@
-use crate::gameplay::Zoo;
+use crate::{gameplay::Zoo, grids::GridMatrix};
 
 use super::*;
 
@@ -201,7 +201,6 @@ fn handle_one_execution(
 }
 
 fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()>> {
-
     select_unit()
         .map(move |c, stuff| {
             gameplay::looper(c, |c, stuff| {
@@ -221,20 +220,17 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 
                 //Now check and see if there are any additional moves possible, if so
                 //keep the unit selected and loop.
-                v.map(|a, game| {
-                    match a {
-                        Some(Some(a)) => {
-                            let unit = game.this_team.lookup(a);
+                v.map(|a, game| match a {
+                    Some(Some(a)) => {
+                        let unit = game.this_team.lookup(a);
 
-                            if Warrior::has_possible_moves(&unit,game)
-                            {
-                                gameplay::LooperRes::Loop(a)
-                            } else {
-                                gameplay::LooperRes::Finish(())
-                            }
+                        if Warrior::has_possible_moves(&unit, game) {
+                            gameplay::LooperRes::Loop(a)
+                        } else {
+                            gameplay::LooperRes::Finish(())
                         }
-                        _ => gameplay::LooperRes::Finish(()),
                     }
+                    _ => gameplay::LooperRes::Finish(()),
                 })
             })
         })
@@ -434,7 +430,10 @@ pub fn team_view(a: [&mut Tribe; 2], ind: usize) -> [&mut Tribe; 2] {
     }
 }
 
-pub fn generate_unit_possible_moves(unit: &WarriorPointer<&Warrior>, game: &Stuff) -> CellSelection {
+pub fn generate_unit_possible_moves(
+    unit: &WarriorPointer<&Warrior>,
+    game: &Stuff,
+) -> CellSelection {
     fn get_cat_move_attack_matrix(
         movement: (i8, i8),
         cat: &Warrior,
@@ -484,3 +483,63 @@ pub fn generate_unit_possible_moves(unit: &WarriorPointer<&Warrior>, game: &Stuf
         true,
     )
 }
+
+
+
+
+pub fn generate_unit_possible_moves2(
+    unit: &WarriorPointer<&Warrior>,
+    this_team:&Tribe,
+    that_team:&Tribe,
+    grid_matrix:&GridMatrix
+) -> CellSelection {
+    fn get_cat_move_attack_matrix(
+        movement: (i8, i8),
+        cat: &Warrior,
+        cat_filter: impl Filter,
+        roads: impl MoveCost,
+        gg: &grids::GridMatrix,
+        moved: bool,
+    ) -> CellSelection {
+        let (movement, attack) = movement;
+        let mm = if !cat.attacked {
+            cat.stamina
+        } else {
+            MoveUnit(0)
+        };
+
+        let mm = movement::PossibleMoves::new(
+            &movement::WarriorMovement,
+            &gg.filter().chain(cat_filter),
+            &terrain::Grass.chain(roads),
+            cat.position,
+            mm,
+        );
+
+        let attack_range = if !cat.attacked { attack } else { 0 };
+
+        //let attack_range=attack;
+
+        let attack = movement::PossibleMoves::new(
+            &movement::WarriorMovement,
+            &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
+            &terrain::Grass,
+            cat.position,
+            MoveUnit(attack_range),
+        );
+
+        CellSelection::MoveSelection(mm, attack)
+    }
+
+    let data = this_team.get_movement_data(&unit);
+
+    get_cat_move_attack_matrix(
+        data,
+        &unit,
+        this_team.filter().chain(that_team.filter()),
+        terrain::Grass,
+        grid_matrix,
+        true,
+    )
+}
+

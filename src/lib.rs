@@ -1,7 +1,7 @@
 use axgeom::vec2same;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 
-use futures::{StreamExt, SinkExt};
+use futures::{SinkExt, StreamExt};
 use gloo::console::log;
 use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
@@ -21,8 +21,8 @@ pub mod terrain;
 pub mod util;
 use dom::MEvent;
 use projection::*;
-pub mod state;
 pub mod ace;
+pub mod state;
 //pub mod logic;
 pub const RESIZE: usize = 10;
 
@@ -207,8 +207,7 @@ impl Warrior {
         !self.attacked || self.stamina.0 > 0
     }
 
-    pub fn has_possible_moves(unit:&WarriorPointer<&Self>,game:&state::Stuff)->bool{
-        
+    pub fn has_possible_moves(unit: &WarriorPointer<&Self>, game: &state::Stuff) -> bool {
         let pos = state::generate_unit_possible_moves(unit, game);
 
         //check if there are enemies in range.
@@ -227,9 +226,9 @@ impl Warrior {
             }
             found
         };
-        
+
         //TODO move this and the above into an high-level "Has possible moves function"
-        let has_stamina_to_move=unit.stamina.0>1;
+        let has_stamina_to_move = unit.stamina.0 > 1;
 
         enemy_in_range || has_stamina_to_move
     }
@@ -498,20 +497,19 @@ pub async fn worker_entry() {
 
     let health_numbers = NumberTextManager::new(&ctx, &text_texture);
 
+    let (mut command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
+    let (mut response_sender, mut response_recv) = futures::channel::mpsc::channel(5);
 
-    let (mut command_sender,mut command_recv)=futures::channel::mpsc::channel(5);
-    let (mut response_sender,mut response_recv)=futures::channel::mpsc::channel(5);
-
-    
-    let main_logic=async{
-        ace::main_logic(command_sender, response_recv,&mut ggame).await;
-        
+    let main_logic = async {
+        ace::main_logic(command_sender, response_recv, &mut ggame,&grids::GridMatrix::new()).await;
     };
 
-    let render_thread=async{
-        loop{
-            let ace::GameWrap{game:mut ggame,data:mut command}=command_recv.next().await.unwrap();
-
+    let render_thread = async {
+        loop {
+            let ace::GameWrap {
+                game: mut ggame,
+                data: mut command,
+            } = command_recv.next().await.unwrap();
 
             'outer: loop {
                 let mut on_select = false;
@@ -584,39 +582,50 @@ pub async fn worker_entry() {
                 last_matrix = matrix;
 
                 //TODO don't compute every frame?.
-                let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
+                let mouse_world =
+                    scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
-                
-                match &mut command{
-                    ace::Command::Animate(a)=>{
-                        if let Some(_)=a.animate_step(){
-                    
-                        }else{
-                            let a=command.take_animation();
-                            response_sender.send(ace::GameWrap{game:ggame,data:ace::Response::AnimationFinish(a)}).await.unwrap();
+                match &mut command {
+                    ace::Command::Animate(a) => {
+                        if let Some(_) = a.animate_step() {
+                        } else {
+                            let a = command.take_animation();
+                            response_sender
+                                .send(ace::GameWrap {
+                                    game: ggame,
+                                    data: ace::Response::AnimationFinish(a),
+                                })
+                                .await
+                                .unwrap();
                             break 'outer;
                         }
-                    },
-                    ace::Command::GetMouseInput=>{
-                        if on_select{
-                            response_sender.send(ace::GameWrap{game:ggame,data:ace::Response::Mouse(mouse_world)}).await.unwrap();
-                            break 'outer;
-                        }
-                    },
-                    ace::Command::GetPlayerSelection(e)=>{
-                        if on_select{
-                            response_sender.send(ace::GameWrap{game:ggame,data:ace::Response::PlayerSelection(mouse_world)}).await.unwrap();
-                            break 'outer;
-                        }
-                    },
-                    ace::Command::Nothing=>{
-
                     }
+                    ace::Command::GetMouseInput => {
+                        if on_select {
+                            response_sender
+                                .send(ace::GameWrap {
+                                    game: ggame,
+                                    data: ace::Response::Mouse(mouse_world),
+                                })
+                                .await
+                                .unwrap();
+                            break 'outer;
+                        }
+                    }
+                    ace::Command::GetPlayerSelection(e) => {
+                        if on_select {
+                            response_sender
+                                .send(ace::GameWrap {
+                                    game: ggame,
+                                    data: ace::Response::PlayerSelection(mouse_world),
+                                })
+                                .await
+                                .unwrap();
+                            break 'outer;
+                        }
+                    }
+                    ace::Command::Nothing => {}
                 }
-            
-
-
-
 
                 // {
                 //     //Advance state machine.
@@ -676,13 +685,13 @@ pub async fn worker_entry() {
                 let animation_draw = if ggame.team == 0 { &cat } else { &dog };
 
                 disable_depth(&ctx, || {
-                    
-                    if let ace::Command::GetPlayerSelection(a)=&command{
-                    //if let Some(a) = testo.get_selection() {
+                    if let ace::Command::GetPlayerSelection(a) = &command {
+                        //if let Some(a) = testo.get_selection() {
                         match a {
                             CellSelection::MoveSelection(a, attack) => {
                                 for GridCoord(a) in a.iter_coords() {
-                                    let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
+                                    let pos: [f32; 2] =
+                                        ggame.grid_matrix.to_world_topleft(a.into()).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
 
                                     let m = matrix.chain(t).generate();
@@ -695,7 +704,8 @@ pub async fn worker_entry() {
                                 }
 
                                 for GridCoord(a) in attack.iter_coords() {
-                                    let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
+                                    let pos: [f32; 2] =
+                                        ggame.grid_matrix.to_world_topleft(a.into()).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
 
                                     let m = matrix.chain(t).generate();
@@ -720,17 +730,12 @@ pub async fn worker_entry() {
                     }
                 });
 
-
-
-
                 disable_depth(&ctx, || {
                     //draw dropshadow
 
                     cat_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
 
-
-                
                     if let Some(a) = &testo.get_animation() {
                         let pos = a.calc_pos();
                         let t = matrix::translation(pos[0], pos[1], 1.0);
@@ -742,7 +747,7 @@ pub async fn worker_entry() {
                     }
                 });
 
-                if let ace::Command::Animate(a)=&command{
+                if let ace::Command::Animate(a) = &command {
                     let pos = a.calc_pos();
                     let t = matrix::translation(pos[0], pos[1], 0.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
@@ -777,12 +782,11 @@ pub async fn worker_entry() {
         }
     };
 
-
     futures::pin_mut!(main_logic);
     futures::pin_mut!(render_thread);
-    
-    futures::join!(main_logic,render_thread);
-    
+
+    futures::join!(main_logic, render_thread);
+
     w.post_message(UiButton::NoUi);
 
     log!("worker thread closing");
