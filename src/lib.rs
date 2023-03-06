@@ -1,6 +1,7 @@
 use axgeom::vec2same;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 
+use futures::{StreamExt, SinkExt};
 use gloo::console::log;
 use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
@@ -21,6 +22,7 @@ pub mod util;
 use dom::MEvent;
 use projection::*;
 pub mod state;
+pub mod ace;
 //pub mod logic;
 pub const RESIZE: usize = 10;
 
@@ -313,6 +315,7 @@ impl<T> std::ops::DerefMut for WarriorPointer<T> {
     }
 }
 
+#[derive(Debug)]
 pub struct Tribe {
     warriors: Vec<UnitCollection<Warrior>>,
 }
@@ -392,6 +395,7 @@ impl Tribe {
 
 //TODO store actual world pos? Less calculation each iteration.
 //Additionally removes need to special case animation.
+#[derive(Debug)]
 pub struct Game {
     team: usize,
     grid_matrix: grids::GridMatrix,
@@ -494,229 +498,291 @@ pub async fn worker_entry() {
 
     let health_numbers = NumberTextManager::new(&ctx, &text_texture);
 
-    'outer: loop {
-        let mut on_select = false;
 
-        let res = frame_timer.next().await;
+    let (mut command_sender,mut command_recv)=futures::channel::mpsc::channel(5);
+    let (mut response_sender,mut response_recv)=futures::channel::mpsc::channel(5);
 
-        let mut end_turn = false;
-        for e in res {
-            match e {
-                MEvent::Resize {
-                    canvasx: _canvasx,
-                    canvasy: _canvasy,
-                    x,
-                    y,
-                } => {
-                    let xx = *x as u32;
-                    let yy = *y as u32;
-                    canvas.set_width(xx);
-                    canvas.set_height(yy);
-                    ctx.viewport(0, 0, xx as i32, yy as i32);
+    
+    let main_logic=async{
+        ace::main_logic(command_sender, response_recv,&mut ggame).await;
+        
+    };
 
-                    viewport = [xx as f32, yy as f32];
-                    log!(format!("updating viewport to be:{:?}", viewport));
-                }
-                MEvent::TouchMove { touches } => {
-                    scroll_manager.on_touch_move(touches, &last_matrix, viewport);
-                }
-                MEvent::TouchDown { touches } => {
-                    //log!(format!("touch down:{:?}",touches));
-                    scroll_manager.on_new_touch(touches);
-                }
-                MEvent::TouchEnd { touches } => {
-                    //log!(format!("touch end:{:?}",touches));
-                    if let scroll::MouseUp::Select = scroll_manager.on_touch_up(&touches) {
-                        on_select = true;
+    let render_thread=async{
+        loop{
+            let ace::GameWrap{game:mut ggame,data:mut command}=command_recv.next().await.unwrap();
+
+
+            'outer: loop {
+                let mut on_select = false;
+
+                let res = frame_timer.next().await;
+
+                let mut end_turn = false;
+                for e in res {
+                    match e {
+                        MEvent::Resize {
+                            canvasx: _canvasx,
+                            canvasy: _canvasy,
+                            x,
+                            y,
+                        } => {
+                            let xx = *x as u32;
+                            let yy = *y as u32;
+                            canvas.set_width(xx);
+                            canvas.set_height(yy);
+                            ctx.viewport(0, 0, xx as i32, yy as i32);
+
+                            viewport = [xx as f32, yy as f32];
+                            log!(format!("updating viewport to be:{:?}", viewport));
+                        }
+                        MEvent::TouchMove { touches } => {
+                            scroll_manager.on_touch_move(touches, &last_matrix, viewport);
+                        }
+                        MEvent::TouchDown { touches } => {
+                            //log!(format!("touch down:{:?}",touches));
+                            scroll_manager.on_new_touch(touches);
+                        }
+                        MEvent::TouchEnd { touches } => {
+                            //log!(format!("touch end:{:?}",touches));
+                            if let scroll::MouseUp::Select = scroll_manager.on_touch_up(&touches) {
+                                on_select = true;
+                            }
+                        }
+                        MEvent::CanvasMouseLeave => {
+                            log!("mouse leaving!");
+                            let _ = scroll_manager.on_mouse_up();
+                        }
+                        MEvent::CanvasMouseUp => {
+                            if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
+                                on_select = true;
+                            }
+                        }
+                        MEvent::CanvasMouseMove { x, y } => {
+                            scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
+                        }
+                        MEvent::EndTurn => {
+                            end_turn = true;
+                        }
+                        MEvent::CanvasMouseDown { x, y } => {
+                            scroll_manager.on_mouse_down([*x, *y]);
+                        }
+                        MEvent::ButtonClick => {}
+                        MEvent::ShutdownClick => break 'outer,
                     }
                 }
-                MEvent::CanvasMouseLeave => {
-                    log!("mouse leaving!");
-                    let _ = scroll_manager.on_mouse_up();
-                }
-                MEvent::CanvasMouseUp => {
-                    if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
-                        on_select = true;
+
+                let proj = projection::projection(viewport).generate();
+                let view_proj = projection::view_matrix(
+                    scroll_manager.camera(),
+                    scroll_manager.zoom(),
+                    scroll_manager.rot(),
+                );
+
+                let matrix = proj.chain(view_proj).generate();
+
+                last_matrix = matrix;
+
+                //TODO don't compute every frame?.
+                let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
+
+                
+                match &mut command{
+                    ace::Command::Animate(a)=>{
+                        if let Some(_)=a.animate_step(){
+                    
+                        }else{
+                            let a=command.take_animation();
+                            response_sender.send(ace::GameWrap{game:ggame,data:ace::Response::AnimationFinish(a)}).await.unwrap();
+                            break 'outer;
+                        }
+                    },
+                    ace::Command::GetMouseInput=>{
+                        if on_select{
+                            response_sender.send(ace::GameWrap{game:ggame,data:ace::Response::Mouse(mouse_world)}).await.unwrap();
+                            break 'outer;
+                        }
+                    },
+                    ace::Command::GetPlayerSelection(e)=>{
+                        if on_select{
+                            response_sender.send(ace::GameWrap{game:ggame,data:ace::Response::PlayerSelection(mouse_world)}).await.unwrap();
+                            break 'outer;
+                        }
+                    },
+                    ace::Command::Nothing=>{
+
                     }
                 }
-                MEvent::CanvasMouseMove { x, y } => {
-                    scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
-                }
-                MEvent::EndTurn => {
-                    end_turn = true;
-                }
-                MEvent::CanvasMouseDown { x, y } => {
-                    scroll_manager.on_mouse_down([*x, *y]);
-                }
-                MEvent::ButtonClick => {}
-                MEvent::ShutdownClick => break 'outer,
-            }
-        }
+            
 
-        let proj = projection::projection(viewport).generate();
-        let view_proj = projection::view_matrix(
-            scroll_manager.camera(),
-            scroll_manager.zoom(),
-            scroll_manager.rot(),
-        );
 
-        let matrix = proj.chain(view_proj).generate();
 
-        last_matrix = matrix;
 
-        //TODO don't compute every frame?.
-        let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
+                // {
+                //     //Advance state machine.
+                //     let mouse = on_select.then_some(mouse_world);
+                //     let [this_team, that_team] =
+                //         state::team_view([&mut ggame.cats, &mut ggame.dogs], ggame.team);
 
-        {
-            //Advance state machine.
-            let mouse = on_select.then_some(mouse_world);
-            let [this_team, that_team] =
-                state::team_view([&mut ggame.cats, &mut ggame.dogs], ggame.team);
+                //     let mut jj = state::Stuff {
+                //         team: &mut ggame.team,
+                //         this_team,
+                //         that_team,
+                //         grid_matrix: &ggame.grid_matrix,
+                //         mouse,
+                //         end_turn,
+                //     };
+                //     testo.step(&mut jj);
+                // }
 
-            let mut jj = state::Stuff {
-                team: &mut ggame.team,
-                this_team,
-                that_team,
-                grid_matrix: &ggame.grid_matrix,
-                mouse,
-                end_turn,
-            };
-            testo.step(&mut jj);
-        }
+                scroll_manager.step();
 
-        scroll_manager.step();
-
-        use matrix::*;
-
-        //Drawing below doesnt need mutable reference.
-        //TODO move drawing to a function?
-        let ggame = &ggame;
-
-        ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
-
-        let [vvx, vvy] = get_world_rect(&matrix, &ggame.grid_matrix);
-
-        for a in (vvx[0]..vvx[1])
-            .skip_while(|&a| a < 0)
-            .take_while(|&a| a < ggame.grid_matrix.num_rows())
-        {
-            //both should be skip
-            for b in (vvy[0]..vvy[1])
-                .skip_while(|&a| a < 0)
-                .take_while(|&a| a < ggame.grid_matrix.num_rows())
-            {
                 use matrix::*;
-                let x1 = ggame.grid_matrix.spacing() * a as f32;
-                let y1 = ggame.grid_matrix.spacing() * b as f32;
-                let s = 0.99;
-                let mm = matrix
-                    .chain(translation(x1, y1, -1.0))
-                    .chain(scale(s, s, s))
-                    .generate();
 
-                let mut v = draw_sys.view(mm.as_ref());
-                grass.draw(&mut v);
-            }
-        }
+                //Drawing below doesnt need mutable reference.
+                //TODO move drawing to a function?
+                let ggame = &ggame;
 
-        let cat_draw = WarriorDraw::new(&ggame.cats.warriors[0], &cat, &drop_shadow);
-        let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[0], &dog, &drop_shadow);
+                ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let animation_draw = if ggame.team == 0 { &cat } else { &dog };
+                let [vvx, vvy] = get_world_rect(&matrix, &ggame.grid_matrix);
 
-        disable_depth(&ctx, || {
-            if let Some(a) = testo.get_selection() {
-                match a {
-                    CellSelection::MoveSelection(a, attack) => {
-                        for GridCoord(a) in a.iter_coords() {
-                            let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
-                            let t = matrix::translation(pos[0], pos[1], 0.0);
+                for a in (vvx[0]..vvx[1])
+                    .skip_while(|&a| a < 0)
+                    .take_while(|&a| a < ggame.grid_matrix.num_rows())
+                {
+                    //both should be skip
+                    for b in (vvy[0]..vvy[1])
+                        .skip_while(|&a| a < 0)
+                        .take_while(|&a| a < ggame.grid_matrix.num_rows())
+                    {
+                        use matrix::*;
+                        let x1 = ggame.grid_matrix.spacing() * a as f32;
+                        let y1 = ggame.grid_matrix.spacing() * b as f32;
+                        let s = 0.99;
+                        let mm = matrix
+                            .chain(translation(x1, y1, -1.0))
+                            .chain(scale(s, s, s))
+                            .generate();
 
-                            let m = matrix.chain(t).generate();
+                        let mut v = draw_sys.view(mm.as_ref());
+                        grass.draw(&mut v);
+                    }
+                }
 
-                            let mut v = draw_sys.view(m.as_ref());
+                let cat_draw = WarriorDraw::new(&ggame.cats.warriors[0], &cat, &drop_shadow);
+                let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[0], &dog, &drop_shadow);
 
-                            select_model.draw_ext(&mut v, false, false, false, false);
+                let animation_draw = if ggame.team == 0 { &cat } else { &dog };
 
-                            //select_model.draw(&mut v);
-                        }
+                disable_depth(&ctx, || {
+                    
+                    if let ace::Command::GetPlayerSelection(a)=&command{
+                    //if let Some(a) = testo.get_selection() {
+                        match a {
+                            CellSelection::MoveSelection(a, attack) => {
+                                for GridCoord(a) in a.iter_coords() {
+                                    let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
+                                    let t = matrix::translation(pos[0], pos[1], 0.0);
 
-                        for GridCoord(a) in attack.iter_coords() {
-                            let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
-                            let t = matrix::translation(pos[0], pos[1], 0.0);
+                                    let m = matrix.chain(t).generate();
 
-                            let m = matrix.chain(t).generate();
+                                    let mut v = draw_sys.view(m.as_ref());
 
-                            let mut v = draw_sys.view(m.as_ref());
-                            //attack_model.draw(&mut v);
-                            attack_model.draw_ext(&mut v, false, false, false, false);
+                                    select_model.draw_ext(&mut v, false, false, false, false);
+
+                                    //select_model.draw(&mut v);
+                                }
+
+                                for GridCoord(a) in attack.iter_coords() {
+                                    let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
+                                    let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                                    let m = matrix.chain(t).generate();
+
+                                    let mut v = draw_sys.view(m.as_ref());
+                                    //attack_model.draw(&mut v);
+                                    attack_model.draw_ext(&mut v, false, false, false, false);
+                                }
+                            }
+                            CellSelection::BuildSelection(_) => {}
                         }
                     }
-                    CellSelection::BuildSelection(_) => {}
+
+                    for GridCoord(a) in roads.pos.iter() {
+                        let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
+                        let t = matrix::translation(pos[0], pos[1], 3.0);
+
+                        let m = matrix.chain(t).generate();
+
+                        let mut v = draw_sys.view(m.as_ref());
+                        road.draw(&mut v);
+                    }
+                });
+
+
+
+
+                disable_depth(&ctx, || {
+                    //draw dropshadow
+
+                    cat_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
+                    dog_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
+
+
+                
+                    if let Some(a) = &testo.get_animation() {
+                        let pos = a.calc_pos();
+                        let t = matrix::translation(pos[0], pos[1], 1.0);
+
+                        let m = matrix.chain(t).generate();
+
+                        let mut v = draw_sys.view(m.as_ref());
+                        drop_shadow.draw(&mut v);
+                    }
+                });
+
+                if let ace::Command::Animate(a)=&command{
+                    let pos = a.calc_pos();
+                    let t = matrix::translation(pos[0], pos[1], 0.0);
+                    let s = matrix::scale(1.0, 1.0, 1.0);
+                    let m = matrix.chain(t).chain(s).generate();
+                    let mut v = draw_sys.view(m.as_ref());
+
+                    animation_draw.draw(&mut v);
                 }
+
+                cat_draw.draw(&ggame.grid_matrix, &mut draw_sys, &matrix);
+                dog_draw.draw(&ggame.grid_matrix, &mut draw_sys, &matrix);
+
+                disable_depth(&ctx, || {
+                    cat_draw.draw_health_text(
+                        &ggame.grid_matrix,
+                        &health_numbers,
+                        &view_proj,
+                        &proj,
+                        &mut draw_sys,
+                    );
+                    dog_draw.draw_health_text(
+                        &ggame.grid_matrix,
+                        &health_numbers,
+                        &view_proj,
+                        &proj,
+                        &mut draw_sys,
+                    );
+                });
+
+                ctx.flush();
             }
-
-            for GridCoord(a) in roads.pos.iter() {
-                let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
-                let t = matrix::translation(pos[0], pos[1], 3.0);
-
-                let m = matrix.chain(t).generate();
-
-                let mut v = draw_sys.view(m.as_ref());
-                road.draw(&mut v);
-            }
-        });
-
-        disable_depth(&ctx, || {
-            //draw dropshadow
-
-            cat_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
-            dog_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
-
-            if let Some(a) = &testo.get_animation() {
-                let pos = a.calc_pos();
-                let t = matrix::translation(pos[0], pos[1], 1.0);
-
-                let m = matrix.chain(t).generate();
-
-                let mut v = draw_sys.view(m.as_ref());
-                drop_shadow.draw(&mut v);
-            }
-        });
-
-        if let Some(a) = &testo.get_animation() {
-            let pos = a.calc_pos();
-            let t = matrix::translation(pos[0], pos[1], 0.0);
-            let s = matrix::scale(1.0, 1.0, 1.0);
-            let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref());
-
-            animation_draw.draw(&mut v);
         }
+    };
 
-        cat_draw.draw(&ggame.grid_matrix, &mut draw_sys, &matrix);
-        dog_draw.draw(&ggame.grid_matrix, &mut draw_sys, &matrix);
 
-        disable_depth(&ctx, || {
-            cat_draw.draw_health_text(
-                &ggame.grid_matrix,
-                &health_numbers,
-                &view_proj,
-                &proj,
-                &mut draw_sys,
-            );
-            dog_draw.draw_health_text(
-                &ggame.grid_matrix,
-                &health_numbers,
-                &view_proj,
-                &proj,
-                &mut draw_sys,
-            );
-        });
-
-        ctx.flush();
-    }
-
+    futures::pin_mut!(main_logic);
+    futures::pin_mut!(render_thread);
+    
+    futures::join!(main_logic,render_thread);
+    
     w.post_message(UiButton::NoUi);
 
     log!("worker thread closing");

@@ -1,5 +1,7 @@
 use super::*;
 
+
+#[derive(Debug,Clone)]
 struct Doop {
     current: Vector2<f32>,
     next: Vector2<f32>,
@@ -25,6 +27,7 @@ impl Doop {
         self.current + self.dir * val
     }
 }
+#[derive(Debug,Clone)]
 pub struct Animation<T> {
     points: std::vec::IntoIter<Vector2<f32>>,
     doop: Doop,
