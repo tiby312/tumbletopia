@@ -54,13 +54,13 @@ use futures::{
 use gloo::console::log;
 
 async fn get_mouse<'a>(
-    game: &'a mut Game,
+    game: &mut Option<&'a mut Game>,
     sender: &mut Sender<GameWrap<'a, Command>>,
     recv: &mut Receiver<GameWrap<'a, Response>>,
-) -> (&'a mut Game, [f32; 2]) {
+) -> [f32; 2] {
     sender
         .send(GameWrap {
-            game: game,
+            game: game.take().unwrap(),
             data: Command::GetMouseInput,
         })
         .await
@@ -72,18 +72,19 @@ async fn get_mouse<'a>(
         unreachable!();
     };
 
-    (gg, o)
+    *game=Some(gg);
+    o
 }
 
 async fn get_user_selection<'a>(
     cell: CellSelection,
-    game: &'a mut Game,
+    game: &mut Option<&'a mut Game>,
     sender: &mut Sender<GameWrap<'a, Command>>,
     recv: &mut Receiver<GameWrap<'a, Response>>,
-) -> (&'a mut Game, [f32; 2]) {
+) -> [f32; 2] {
     sender
         .send(GameWrap {
-            game: game,
+            game: game.take().unwrap(),
             data: Command::GetPlayerSelection(cell),
         })
         .await
@@ -94,8 +95,9 @@ async fn get_user_selection<'a>(
     let Response::PlayerSelection(o)=data else{
         unreachable!();
     };
+    *game=Some(gg);
 
-    (gg, o)
+    o
 }
 
 pub async fn main_logic<'a>(
@@ -108,21 +110,21 @@ pub async fn main_logic<'a>(
     let mut game = Some(game);
 
     let pos = loop {
-        let (gg, mouse_world) = get_mouse(
-            game.take().unwrap(),
+        let mouse_world = get_mouse(
+            &mut game,
             &mut command_sender,
             &mut response_recv,
         )
         .await;
-        game = Some(gg);
-        let game = game.as_mut().unwrap();
+
+        let gg = game.as_mut().unwrap();
 
         log!(format!("Got mouse input!={:?}", mouse_world));
 
         let this_team = if team_index == 0 {
-            &mut game.cats
+            &mut gg.cats
         } else {
-            &mut game.dogs
+            &mut gg.dogs
         };
 
         let cell: GridCoord = GridCoord(grid_matrix.to_grid((mouse_world).into()).into());
@@ -150,9 +152,9 @@ pub async fn main_logic<'a>(
     let unit = this_team.lookup(pos);
     let cc = crate::state::generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
 
-    let (game, mouse_world) = get_user_selection(
+    let mouse_world = get_user_selection(
         cc,
-        game.take().unwrap(),
+        &mut game,
         &mut command_sender,
         &mut response_recv,
     )
