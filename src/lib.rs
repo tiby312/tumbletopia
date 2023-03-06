@@ -276,7 +276,7 @@ impl<T> std::borrow::BorrowMut<T> for WarriorPointer<T> {
     }
 }
 
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct WarriorPointer<T> {
     inner: T,
     val: usize,
@@ -462,9 +462,6 @@ pub async fn worker_entry() {
     use cgmath::SquareMatrix;
     let mut last_matrix = cgmath::Matrix4::identity();
 
-    let mut testo = state::create_state_machine();
-    //log!(format!("size={:?}",std::mem::size_of_val(&testo)));
-
     let quick_load = |name, res, alpha| {
         let (data, t) = model::load_glb(name).gen_ext(ggame.grid_matrix.spacing(), res, alpha);
 
@@ -623,7 +620,10 @@ pub async fn worker_entry() {
                             response_sender
                                 .send(ace::GameWrap {
                                     game: ggame,
-                                    data: ace::Response::PlayerSelection(command.take_selection(),mouse_world),
+                                    data: ace::Response::PlayerSelection(
+                                        command.take_selection(),
+                                        mouse_world,
+                                    ),
                                 })
                                 .await
                                 .unwrap();
@@ -742,7 +742,7 @@ pub async fn worker_entry() {
                     cat_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
 
-                    if let Some(a) = &testo.get_animation() {
+                    if let ace::Command::Animate(a) = &command {
                         let pos = a.calc_pos();
                         let t = matrix::translation(pos[0], pos[1], 1.0);
 
