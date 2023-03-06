@@ -2,7 +2,7 @@ use crate::{
     animation::{self, Animation},
     grids::GridMatrix,
     movement::{self, GridCoord},
-    CellSelection, Game, Warrior, WarriorPointer,
+    CellSelection, Game, Tribe, Warrior, WarriorPointer,
 };
 
 pub struct GameWrap<'a, T> {
@@ -53,109 +53,131 @@ use futures::{
 };
 use gloo::console::log;
 
-async fn wait_animation<'a>(
-    animation: Animation<WarriorPointer<Warrior>>,
-    game: &mut Option<&'a mut Game>,
-    sender: &mut Sender<GameWrap<'a, Command>>,
-    recv: &mut Receiver<GameWrap<'a, Response>>,
-) -> Animation<WarriorPointer<Warrior>> {
-    sender
-        .send(GameWrap {
-            game: game.take().unwrap(),
-            data: Command::Animate(animation),
-        })
-        .await
-        .unwrap();
+pub struct Doop<'a> {
+    sender: Sender<GameWrap<'a, Command>>,
+    receiver: Receiver<GameWrap<'a, Response>>,
+}
+impl<'a> Doop<'a> {
+    async fn wait_animation(
+        &mut self,
+        animation: Animation<WarriorPointer<Warrior>>,
+        game: &mut GameHolder<'a>,
+    ) -> Animation<WarriorPointer<Warrior>> {
+        self.sender
+            .send(GameWrap {
+                game: game.game.take().unwrap(),
+                data: Command::Animate(animation),
+            })
+            .await
+            .unwrap();
 
-    let GameWrap { game: gg, data } = recv.next().await.unwrap();
+        let GameWrap { game: gg, data } = self.receiver.next().await.unwrap();
 
-    let Response::AnimationFinish(o)=data else{
-        unreachable!();
-    };
+        let Response::AnimationFinish(o)=data else{
+            unreachable!();
+        };
 
-    *game = Some(gg);
-    o
+        game.game = Some(gg);
+        o
+    }
+    async fn get_mouse(&mut self, game: &mut GameHolder<'a>) -> [f32; 2] {
+        self.sender
+            .send(GameWrap {
+                game: game.game.take().unwrap(),
+                data: Command::GetMouseInput,
+            })
+            .await
+            .unwrap();
+
+        let GameWrap { game: gg, data } = self.receiver.next().await.unwrap();
+
+        let Response::Mouse(o)=data else{
+            unreachable!();
+        };
+
+        game.game = Some(gg);
+        o
+    }
+    async fn get_user_selection(
+        &mut self,
+        cell: CellSelection,
+        game: &mut GameHolder<'a>,
+    ) -> (CellSelection, [f32; 2]) {
+        self.sender
+            .send(GameWrap {
+                game: game.game.take().unwrap(),
+                data: Command::GetPlayerSelection(cell),
+            })
+            .await
+            .unwrap();
+
+        let GameWrap { game: gg, data } = self.receiver.next().await.unwrap();
+
+        let Response::PlayerSelection(c,o)=data else{
+            unreachable!();
+        };
+        game.game = Some(gg);
+
+        (c, o)
+    }
 }
 
-async fn get_mouse<'a>(
-    game: &mut Option<&'a mut Game>,
-    sender: &mut Sender<GameWrap<'a, Command>>,
-    recv: &mut Receiver<GameWrap<'a, Response>>,
-) -> [f32; 2] {
-    sender
-        .send(GameWrap {
-            game: game.take().unwrap(),
-            data: Command::GetMouseInput,
-        })
-        .await
-        .unwrap();
-
-    let GameWrap { game: gg, data } = recv.next().await.unwrap();
-
-    let Response::Mouse(o)=data else{
-        unreachable!();
-    };
-
-    *game = Some(gg);
-    o
+pub struct GameView<'a> {
+    this_team: &'a mut Tribe,
+    that_team: &'a mut Tribe,
 }
 
-async fn get_user_selection<'a>(
-    cell: CellSelection,
-    game: &mut Option<&'a mut Game>,
-    sender: &mut Sender<GameWrap<'a, Command>>,
-    recv: &mut Receiver<GameWrap<'a, Response>>,
-) -> (CellSelection, [f32; 2]) {
-    sender
-        .send(GameWrap {
-            game: game.take().unwrap(),
-            data: Command::GetPlayerSelection(cell),
-        })
-        .await
-        .unwrap();
-
-    let GameWrap { game: gg, data } = recv.next().await.unwrap();
-
-    let Response::PlayerSelection(c,o)=data else{
-        unreachable!();
-    };
-    *game = Some(gg);
-
-    (c, o)
+pub struct GameHolder<'a> {
+    game: Option<&'a mut Game>,
+    team_index: usize,
 }
 
+impl<'a> GameHolder<'a> {
+    fn view(&mut self) -> GameView {
+        let gg = self.game.as_mut().unwrap();
+        let (this_team, that_team) = if self.team_index == 0 {
+            (&mut gg.cats, &mut gg.dogs)
+        } else {
+            (&mut gg.dogs, &mut gg.cats)
+        };
+
+        GameView {
+            this_team,
+            that_team,
+        }
+    }
+}
 pub async fn main_logic<'a>(
-    mut command_sender: Sender<GameWrap<'a, Command>>,
-    mut response_recv: Receiver<GameWrap<'a, Response>>,
+    command_sender: Sender<GameWrap<'a, Command>>,
+    response_recv: Receiver<GameWrap<'a, Response>>,
     game: &'a mut Game,
     grid_matrix: &GridMatrix,
 ) {
+    let mut doop = Doop {
+        sender: command_sender,
+        receiver: response_recv,
+    };
+
     for _ in 0..4 {
         game.cats.replenish_stamina();
         game.dogs.replenish_stamina();
     }
-    let team_index = 0;
-    let mut game = Some(game);
+
+    let mut game = GameHolder {
+        game: Some(game),
+        team_index: 0,
+    };
 
     loop {
         let current_unit = loop {
-            let mouse_world = get_mouse(&mut game, &mut command_sender, &mut response_recv).await;
-
-            let gg = game.as_mut().unwrap();
-
-            log!(format!("Got mouse input!={:?}", mouse_world));
-
-            let this_team = if team_index == 0 {
-                &mut gg.cats
-            } else {
-                &mut gg.dogs
-            };
+            let mouse_world = doop.get_mouse(&mut game).await;
+            let view = game.view();
 
             let cell: GridCoord = GridCoord(grid_matrix.to_grid((mouse_world).into()).into());
 
-            let Some(unit)= this_team.find_slow(&cell) else {
-            continue;
-        };
+            let Some(unit)= view.this_team.find_slow(&cell) else {
+                continue;
+            };
 
             if !unit.selectable() {
                 continue;
@@ -165,29 +187,19 @@ pub async fn main_logic<'a>(
             break pos;
         };
 
-        let gg = game.as_mut().unwrap();
+        let view = game.view();
 
-        let (this_team, that_team) = if team_index == 0 {
-            (&mut gg.cats, &mut gg.dogs)
-        } else {
-            (&mut gg.dogs, &mut gg.cats)
-        };
+        let mut unit = view.this_team.lookup(current_unit);
 
-        let mut unit = this_team.lookup(current_unit);
+        let cc = crate::state::generate_unit_possible_moves2(
+            &unit,
+            view.this_team,
+            view.that_team,
+            grid_matrix,
+        );
 
-        let cc =
-            crate::state::generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
-
-        let (cell, mouse_world) =
-            get_user_selection(cc, &mut game, &mut command_sender, &mut response_recv).await;
-
-        let gg = game.as_mut().unwrap();
-
-        let (this_team, that_team) = if team_index == 0 {
-            (&mut gg.cats, &mut gg.dogs)
-        } else {
-            (&mut gg.dogs, &mut gg.cats)
-        };
+        let (cell, mouse_world) = doop.get_user_selection(cc, &mut game).await;
+        let view = game.view();
 
         let (ss, attack) = match cell {
             CellSelection::MoveSelection(ss, attack) => (ss, attack),
@@ -201,11 +213,11 @@ pub async fn main_logic<'a>(
 
         let target_cat_pos = &target_cell;
 
-        let xx = this_team.lookup(current_unit).slim();
+        let xx = view.this_team.lookup(current_unit).slim();
 
-        let current_attack = this_team.lookup_mut(&xx).attacked;
+        let current_attack = view.this_team.lookup_mut(&xx).attacked;
 
-        let aa = if let Some(aaa) = that_team.find_slow(target_cat_pos) {
+        let aa = if let Some(aaa) = view.that_team.find_slow(target_cat_pos) {
             let aaa = aaa.slim();
 
             if !current_attack && movement::contains_coord(attack.iter_coords(), target_cat_pos) {
@@ -215,27 +227,21 @@ pub async fn main_logic<'a>(
             }
         } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
             let (dd, _) = ss.get_path_data(&target_cell).unwrap();
-            let start = this_team.lookup_take(current_unit);
+            let start = view.this_team.lookup_take(current_unit);
 
             let aa = animation::Animation::new(start.position, dd, grid_matrix, start);
 
-            let aa = wait_animation(aa, &mut game, &mut command_sender, &mut response_recv).await;
+            let aa = doop.wait_animation(aa, &mut game).await;
             let mut warrior = aa.into_data();
             warrior.stamina.0 -= dd.total_cost().0;
             warrior.position = target_cell;
 
             //Add it back!
+            let view = game.view();
 
-            let gg = game.as_mut().unwrap();
-
-            let (this_team, that_team) = if team_index == 0 {
-                (&mut gg.cats, &mut gg.dogs)
-            } else {
-                (&mut gg.dogs, &mut gg.cats)
-            };
-            this_team.add(warrior);
+            view.this_team.add(warrior);
         } else {
-            let va = this_team.find_slow(&target_cell).and_then(|a| {
+            let va = view.this_team.find_slow(&target_cell).and_then(|a| {
                 if a.selectable() && a.slim() != current_unit {
                     //TODO quick switch to another unit!!!!!
                     //Some(a)
