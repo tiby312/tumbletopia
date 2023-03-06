@@ -501,7 +501,13 @@ pub async fn worker_entry() {
     let (mut response_sender, mut response_recv) = futures::channel::mpsc::channel(5);
 
     let main_logic = async {
-        ace::main_logic(command_sender, response_recv, &mut ggame,&grids::GridMatrix::new()).await;
+        ace::main_logic(
+            command_sender,
+            response_recv,
+            &mut ggame,
+            &grids::GridMatrix::new(),
+        )
+        .await;
     };
 
     let render_thread = async {

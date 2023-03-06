@@ -484,14 +484,11 @@ pub fn generate_unit_possible_moves(
     )
 }
 
-
-
-
 pub fn generate_unit_possible_moves2(
     unit: &WarriorPointer<&Warrior>,
-    this_team:&Tribe,
-    that_team:&Tribe,
-    grid_matrix:&GridMatrix
+    this_team: &Tribe,
+    that_team: &Tribe,
+    grid_matrix: &GridMatrix,
 ) -> CellSelection {
     fn get_cat_move_attack_matrix(
         movement: (i8, i8),
@@ -542,4 +539,3 @@ pub fn generate_unit_possible_moves2(
         true,
     )
 }
-
