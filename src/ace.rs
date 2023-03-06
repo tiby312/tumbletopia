@@ -11,6 +11,11 @@ pub struct GameWrap<'a, T> {
     pub data: T,
 }
 
+pub struct GameWrapResponse<'a, T> {
+    pub game: &'a mut Game,
+    pub data: T,
+}
+
 #[derive(Debug)]
 pub enum Command {
     Animate(Animation<WarriorPointer<Warrior>>),
@@ -56,7 +61,7 @@ use gloo::console::log;
 
 pub struct Doop<'a> {
     sender: Sender<GameWrap<'a, Command>>,
-    receiver: Receiver<GameWrap<'a, Response>>,
+    receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
 impl<'a> Doop<'a> {
     async fn wait_animation<'c>(
@@ -73,12 +78,7 @@ impl<'a> Doop<'a> {
             .await
             .unwrap();
 
-        let GameWrap {
-            game: gg,
-            data,
-            team,
-        } = self.receiver.next().await.unwrap();
-        assert_eq!(team, game.team_index);
+        let GameWrapResponse { game: gg, data } = self.receiver.next().await.unwrap();
         let Response::AnimationFinish(o)=data else{
             unreachable!();
         };
@@ -96,12 +96,7 @@ impl<'a> Doop<'a> {
             .await
             .unwrap();
 
-        let GameWrap {
-            game: gg,
-            data,
-            team,
-        } = self.receiver.next().await.unwrap();
-        assert_eq!(team, game.team_index);
+        let GameWrapResponse { game: gg, data } = self.receiver.next().await.unwrap();
 
         let Response::Mouse(o)=data else{
             unreachable!();
@@ -124,12 +119,7 @@ impl<'a> Doop<'a> {
             .await
             .unwrap();
 
-        let GameWrap {
-            game: gg,
-            data,
-            team,
-        } = self.receiver.next().await.unwrap();
-        assert_eq!(team, game.team_index);
+        let GameWrapResponse { game: gg, data } = self.receiver.next().await.unwrap();
 
         let Response::PlayerSelection(c,o)=data else{
             unreachable!();
@@ -168,7 +158,7 @@ impl<'a> GameHolder<'a> {
 
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
-    response_recv: Receiver<GameWrap<'a, Response>>,
+    response_recv: Receiver<GameWrapResponse<'a, Response>>,
     game: &'a mut Game,
     grid_matrix: &GridMatrix,
 ) {

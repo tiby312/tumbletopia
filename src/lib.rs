@@ -586,10 +586,9 @@ pub async fn worker_entry() {
                         } else {
                             let a = command.take_animation();
                             response_sender
-                                .send(ace::GameWrap {
+                                .send(ace::GameWrapResponse {
                                     game: ggame,
                                     data: ace::Response::AnimationFinish(a),
-                                    team,
                                 })
                                 .await
                                 .unwrap();
@@ -599,10 +598,9 @@ pub async fn worker_entry() {
                     ace::Command::GetMouseInput => {
                         if on_select {
                             response_sender
-                                .send(ace::GameWrap {
+                                .send(ace::GameWrapResponse {
                                     game: ggame,
                                     data: ace::Response::Mouse(mouse_world),
-                                    team,
                                 })
                                 .await
                                 .unwrap();
@@ -612,13 +610,12 @@ pub async fn worker_entry() {
                     ace::Command::GetPlayerSelection(e) => {
                         if on_select {
                             response_sender
-                                .send(ace::GameWrap {
+                                .send(ace::GameWrapResponse {
                                     game: ggame,
                                     data: ace::Response::PlayerSelection(
                                         command.take_selection(),
                                         mouse_world,
                                     ),
-                                    team,
                                 })
                                 .await
                                 .unwrap();
