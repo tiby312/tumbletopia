@@ -133,7 +133,7 @@ pub struct GameHolder<'a> {
 }
 
 impl<'a> GameHolder<'a> {
-    fn view(&mut self) -> GameView {
+    fn get_view(&mut self) -> GameView {
         let gg = self.game.as_mut().unwrap();
         let (this_team, that_team) = if self.team_index == 0 {
             (&mut gg.cats, &mut gg.dogs)
@@ -169,9 +169,9 @@ pub async fn main_logic<'a>(
     };
 
     loop {
-        let current_unit = loop {
+        let (current_unit,view) = loop {
             let mouse_world = doop.get_mouse(&mut game).await;
-            let view = game.view();
+            let view = game.get_view();
 
             let cell: GridCoord = GridCoord(grid_matrix.to_grid((mouse_world).into()).into());
 
@@ -184,12 +184,11 @@ pub async fn main_logic<'a>(
             }
 
             let pos = unit.slim();
-            break pos;
+            break (pos,view);
         };
 
-        let view = game.view();
-
-        let mut unit = view.this_team.lookup(current_unit);
+        
+        let unit = view.this_team.lookup(current_unit);
 
         let cc = crate::state::generate_unit_possible_moves2(
             &unit,
@@ -199,7 +198,7 @@ pub async fn main_logic<'a>(
         );
 
         let (cell, mouse_world) = doop.get_user_selection(cc, &mut game).await;
-        let view = game.view();
+        let view = game.get_view();
 
         let (ss, attack) = match cell {
             CellSelection::MoveSelection(ss, attack) => (ss, attack),
@@ -232,13 +231,14 @@ pub async fn main_logic<'a>(
             let aa = animation::Animation::new(start.position, dd, grid_matrix, start);
 
             let aa = doop.wait_animation(aa, &mut game).await;
+            let view = game.get_view();
+
             let mut warrior = aa.into_data();
             warrior.stamina.0 -= dd.total_cost().0;
             warrior.position = target_cell;
 
             //Add it back!
-            let view = game.view();
-
+            
             view.this_team.add(warrior);
         } else {
             let va = view.this_team.find_slow(&target_cell).and_then(|a| {
