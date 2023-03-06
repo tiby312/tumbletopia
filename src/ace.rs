@@ -59,11 +59,11 @@ pub struct Doop<'a> {
     receiver: Receiver<GameWrap<'a, Response>>,
 }
 impl<'a> Doop<'a> {
-    async fn wait_animation(
+    async fn wait_animation<'c>(
         &mut self,
         animation: Animation<WarriorPointer<Warrior>>,
-        game: &mut GameHolder<'a>,
-    ) -> Animation<WarriorPointer<Warrior>> {
+        game: &'c mut GameHolder<'a>,
+    ) -> (GameView<'c>, Animation<WarriorPointer<Warrior>>) {
         self.sender
             .send(GameWrap {
                 team: game.team_index,
@@ -84,9 +84,9 @@ impl<'a> Doop<'a> {
         };
 
         game.game = Some(gg);
-        o
+        (game.get_view(), o)
     }
-    async fn get_mouse(&mut self, game: &mut GameHolder<'a>) -> [f32; 2] {
+    async fn get_mouse<'c>(&mut self, game: &'c mut GameHolder<'a>) -> (GameView<'c>, [f32; 2]) {
         self.sender
             .send(GameWrap {
                 game: game.game.take().unwrap(),
@@ -108,13 +108,13 @@ impl<'a> Doop<'a> {
         };
 
         game.game = Some(gg);
-        o
+        (game.get_view(), o)
     }
-    async fn get_user_selection(
+    async fn get_user_selection<'c>(
         &mut self,
         cell: CellSelection,
-        game: &mut GameHolder<'a>,
-    ) -> (CellSelection, [f32; 2]) {
+        game: &'c mut GameHolder<'a>,
+    ) -> (GameView<'c>, CellSelection, [f32; 2]) {
         self.sender
             .send(GameWrap {
                 game: game.game.take().unwrap(),
@@ -136,7 +136,7 @@ impl<'a> Doop<'a> {
         };
         game.game = Some(gg);
 
-        (c, o)
+        (game.get_view(), c, o)
     }
 }
 
@@ -165,6 +165,7 @@ impl<'a> GameHolder<'a> {
         }
     }
 }
+
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrap<'a, Response>>,
@@ -188,8 +189,7 @@ pub async fn main_logic<'a>(
 
     loop {
         let (current_unit, view) = loop {
-            let mouse_world = doop.get_mouse(&mut game).await;
-            let view = game.get_view();
+            let (view, mouse_world) = doop.get_mouse(&mut game).await;
 
             let cell: GridCoord = GridCoord(grid_matrix.to_grid((mouse_world).into()).into());
 
@@ -214,8 +214,7 @@ pub async fn main_logic<'a>(
             grid_matrix,
         );
 
-        let (cell, mouse_world) = doop.get_user_selection(cc, &mut game).await;
-        let view = game.get_view();
+        let (view, cell, mouse_world) = doop.get_user_selection(cc, &mut game).await;
 
         let (ss, attack) = match cell {
             CellSelection::MoveSelection(ss, attack) => (ss, attack),
@@ -247,8 +246,7 @@ pub async fn main_logic<'a>(
 
             let aa = animation::Animation::new(start.position, dd, grid_matrix, start);
 
-            let aa = doop.wait_animation(aa, &mut game).await;
-            let view = game.get_view();
+            let (view, aa) = doop.wait_animation(aa, &mut game).await;
 
             let mut warrior = aa.into_data();
             warrior.stamina.0 -= dd.total_cost().0;
