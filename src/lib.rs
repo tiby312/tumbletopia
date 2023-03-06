@@ -623,7 +623,7 @@ pub async fn worker_entry() {
                             response_sender
                                 .send(ace::GameWrap {
                                     game: ggame,
-                                    data: ace::Response::PlayerSelection(mouse_world),
+                                    data: ace::Response::PlayerSelection(command.take_selection(),mouse_world),
                                 })
                                 .await
                                 .unwrap();

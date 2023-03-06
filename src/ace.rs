@@ -1,5 +1,5 @@
 use crate::{
-    animation::Animation, grids::GridMatrix, movement::GridCoord, CellSelection, Game, Warrior,
+    animation::Animation, grids::GridMatrix, movement::{GridCoord, self}, CellSelection, Game, Warrior,
 };
 
 pub struct GameWrap<'a, T> {
@@ -18,13 +18,16 @@ impl Command {
     pub fn take_animation(&mut self) -> Animation<Warrior> {
         todo!()
     }
+    pub fn take_selection(&mut self) -> CellSelection {
+        todo!()
+    }
 }
 
 #[derive(Debug)]
 pub enum Response {
     Mouse([f32; 2]), //TODO make grid coord
     AnimationFinish(Animation<Warrior>),
-    PlayerSelection([f32; 2]), //TODO make grid coord
+    PlayerSelection(CellSelection,[f32; 2]), //TODO make grid coord
 }
 pub struct RendererFacingEngine {}
 impl RendererFacingEngine {
@@ -81,7 +84,7 @@ async fn get_user_selection<'a>(
     game: &mut Option<&'a mut Game>,
     sender: &mut Sender<GameWrap<'a, Command>>,
     recv: &mut Receiver<GameWrap<'a, Response>>,
-) -> [f32; 2] {
+) -> (CellSelection,[f32; 2]) {
     sender
         .send(GameWrap {
             game: game.take().unwrap(),
@@ -92,12 +95,12 @@ async fn get_user_selection<'a>(
 
     let GameWrap { game: gg, data } = recv.next().await.unwrap();
 
-    let Response::PlayerSelection(o)=data else{
+    let Response::PlayerSelection(c,o)=data else{
         unreachable!();
     };
     *game=Some(gg);
 
-    o
+    (c,o)
 }
 
 pub async fn main_logic<'a>(
@@ -109,7 +112,7 @@ pub async fn main_logic<'a>(
     let team_index = 0;
     let mut game = Some(game);
 
-    let pos = loop {
+    let current_unit = loop {
         let mouse_world = get_mouse(
             &mut game,
             &mut command_sender,
@@ -149,16 +152,68 @@ pub async fn main_logic<'a>(
         (&mut gg.dogs, &mut gg.cats)
     };
 
-    let unit = this_team.lookup(pos);
+    let unit = this_team.lookup(current_unit);
     let cc = crate::state::generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
 
-    let mouse_world = get_user_selection(
+    let (cell,mouse_world) = get_user_selection(
         cc,
         &mut game,
         &mut command_sender,
         &mut response_recv,
     )
     .await;
+    
+    let gg = game.as_mut().unwrap();
+
+    let (this_team, that_team) = if team_index == 0 {
+        (&mut gg.cats, &mut gg.dogs)
+    } else {
+        (&mut gg.dogs, &mut gg.cats)
+    };
+
+    let (ss,attack)=match cell {
+        CellSelection::MoveSelection(ss, attack) => {
+            (ss,attack)
+        },
+        _=>{unreachable!()}
+    };
+
+    //This is the cell the user selected from the pool of available moves for the unit
+    let target_cell: GridCoord = GridCoord(grid_matrix.to_grid((mouse_world).into()).into());
+
+    let target_cat_pos = &target_cell;
+
+    let xx = this_team.lookup(current_unit).slim();
+
+    let current_attack = this_team.lookup_mut(&xx).attacked;
+
+    let aa = if let Some(aaa) = that_team.find_slow(target_cat_pos) {
+        let aaa = aaa.slim();
+
+        if !current_attack
+            && movement::contains_coord(attack.iter_coords(), target_cat_pos)
+        {
+            //TODO attack aaa
+        } else {
+            //TODO
+        }
+    } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
+        //TODO move to cell
+    } else {
+        let va = this_team.find_slow(&target_cell).and_then(|a| {
+            if a.selectable() && a.slim() != current_unit {
+                //TODO quick switch to another unit!!!!!
+                //Some(a)
+                Some(a)
+            } else {
+                None
+                //None
+            }
+        });
+        //Deselect?
+    };
+
+
 
     log!(format!("User selected!={:?}", mouse_world));
 }
