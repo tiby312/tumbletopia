@@ -7,6 +7,7 @@ use crate::{
 
 pub struct GameWrap<'a, T> {
     pub game: &'a mut Game,
+    pub team: usize,
     pub data: T,
 }
 
@@ -65,14 +66,19 @@ impl<'a> Doop<'a> {
     ) -> Animation<WarriorPointer<Warrior>> {
         self.sender
             .send(GameWrap {
+                team: game.team_index,
                 game: game.game.take().unwrap(),
                 data: Command::Animate(animation),
             })
             .await
             .unwrap();
 
-        let GameWrap { game: gg, data } = self.receiver.next().await.unwrap();
-
+        let GameWrap {
+            game: gg,
+            data,
+            team,
+        } = self.receiver.next().await.unwrap();
+        assert_eq!(team, game.team_index);
         let Response::AnimationFinish(o)=data else{
             unreachable!();
         };
@@ -85,11 +91,17 @@ impl<'a> Doop<'a> {
             .send(GameWrap {
                 game: game.game.take().unwrap(),
                 data: Command::GetMouseInput,
+                team: game.team_index,
             })
             .await
             .unwrap();
 
-        let GameWrap { game: gg, data } = self.receiver.next().await.unwrap();
+        let GameWrap {
+            game: gg,
+            data,
+            team,
+        } = self.receiver.next().await.unwrap();
+        assert_eq!(team, game.team_index);
 
         let Response::Mouse(o)=data else{
             unreachable!();
@@ -107,11 +119,17 @@ impl<'a> Doop<'a> {
             .send(GameWrap {
                 game: game.game.take().unwrap(),
                 data: Command::GetPlayerSelection(cell),
+                team: game.team_index,
             })
             .await
             .unwrap();
 
-        let GameWrap { game: gg, data } = self.receiver.next().await.unwrap();
+        let GameWrap {
+            game: gg,
+            data,
+            team,
+        } = self.receiver.next().await.unwrap();
+        assert_eq!(team, game.team_index);
 
         let Response::PlayerSelection(c,o)=data else{
             unreachable!();
@@ -169,7 +187,7 @@ pub async fn main_logic<'a>(
     };
 
     loop {
-        let (current_unit,view) = loop {
+        let (current_unit, view) = loop {
             let mouse_world = doop.get_mouse(&mut game).await;
             let view = game.get_view();
 
@@ -184,10 +202,9 @@ pub async fn main_logic<'a>(
             }
 
             let pos = unit.slim();
-            break (pos,view);
+            break (pos, view);
         };
 
-        
         let unit = view.this_team.lookup(current_unit);
 
         let cc = crate::state::generate_unit_possible_moves2(
@@ -238,7 +255,7 @@ pub async fn main_logic<'a>(
             warrior.position = target_cell;
 
             //Add it back!
-            
+
             view.this_team.add(warrior);
         } else {
             let va = view.this_team.find_slow(&target_cell).and_then(|a| {

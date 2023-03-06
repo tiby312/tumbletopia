@@ -396,8 +396,6 @@ impl Tribe {
 //Additionally removes need to special case animation.
 #[derive(Debug)]
 pub struct Game {
-    team: usize,
-    grid_matrix: grids::GridMatrix,
     dogs: Tribe,
     cats: Tribe,
 }
@@ -444,14 +442,12 @@ pub async fn worker_entry() {
     ]);
 
     let mut ggame = Game {
-        team: 0,
         dogs: Tribe {
             warriors: vec![dogs],
         },
         cats: Tribe {
             warriors: vec![cats],
         },
-        grid_matrix: grids::GridMatrix::new(),
     };
 
     let roads = terrain::TerrainCollection {
@@ -462,8 +458,9 @@ pub async fn worker_entry() {
     use cgmath::SquareMatrix;
     let mut last_matrix = cgmath::Matrix4::identity();
 
+    let grid_matrix = grids::GridMatrix::new();
     let quick_load = |name, res, alpha| {
-        let (data, t) = model::load_glb(name).gen_ext(ggame.grid_matrix.spacing(), res, alpha);
+        let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
 
         log!(format!("texture:{:?}", (t.width, t.height)));
         model_parse::Foo {
@@ -498,13 +495,7 @@ pub async fn worker_entry() {
     let (mut response_sender, mut response_recv) = futures::channel::mpsc::channel(5);
 
     let main_logic = async {
-        ace::main_logic(
-            command_sender,
-            response_recv,
-            &mut ggame,
-            &grids::GridMatrix::new(),
-        )
-        .await;
+        ace::main_logic(command_sender, response_recv, &mut ggame, &grid_matrix).await;
     };
 
     let render_thread = async {
@@ -512,6 +503,7 @@ pub async fn worker_entry() {
             let ace::GameWrap {
                 game: mut ggame,
                 data: mut command,
+                team,
             } = command_recv.next().await.unwrap();
 
             'outer: loop {
@@ -597,6 +589,7 @@ pub async fn worker_entry() {
                                 .send(ace::GameWrap {
                                     game: ggame,
                                     data: ace::Response::AnimationFinish(a),
+                                    team,
                                 })
                                 .await
                                 .unwrap();
@@ -609,6 +602,7 @@ pub async fn worker_entry() {
                                 .send(ace::GameWrap {
                                     game: ggame,
                                     data: ace::Response::Mouse(mouse_world),
+                                    team,
                                 })
                                 .await
                                 .unwrap();
@@ -624,6 +618,7 @@ pub async fn worker_entry() {
                                         command.take_selection(),
                                         mouse_world,
                                     ),
+                                    team,
                                 })
                                 .await
                                 .unwrap();
@@ -660,20 +655,20 @@ pub async fn worker_entry() {
 
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-                let [vvx, vvy] = get_world_rect(&matrix, &ggame.grid_matrix);
+                let [vvx, vvy] = get_world_rect(&matrix, &grid_matrix);
 
                 for a in (vvx[0]..vvx[1])
                     .skip_while(|&a| a < 0)
-                    .take_while(|&a| a < ggame.grid_matrix.num_rows())
+                    .take_while(|&a| a < grid_matrix.num_rows())
                 {
                     //both should be skip
                     for b in (vvy[0]..vvy[1])
                         .skip_while(|&a| a < 0)
-                        .take_while(|&a| a < ggame.grid_matrix.num_rows())
+                        .take_while(|&a| a < grid_matrix.num_rows())
                     {
                         use matrix::*;
-                        let x1 = ggame.grid_matrix.spacing() * a as f32;
-                        let y1 = ggame.grid_matrix.spacing() * b as f32;
+                        let x1 = grid_matrix.spacing() * a as f32;
+                        let y1 = grid_matrix.spacing() * b as f32;
                         let s = 0.99;
                         let mm = matrix
                             .chain(translation(x1, y1, -1.0))
@@ -688,7 +683,7 @@ pub async fn worker_entry() {
                 let cat_draw = WarriorDraw::new(&ggame.cats.warriors[0], &cat, &drop_shadow);
                 let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[0], &dog, &drop_shadow);
 
-                let animation_draw = if ggame.team == 0 { &cat } else { &dog };
+                let animation_draw = if team == 0 { &cat } else { &dog };
 
                 disable_depth(&ctx, || {
                     if let ace::Command::GetPlayerSelection(a) = &command {
@@ -697,7 +692,7 @@ pub async fn worker_entry() {
                             CellSelection::MoveSelection(a, attack) => {
                                 for GridCoord(a) in a.iter_coords() {
                                     let pos: [f32; 2] =
-                                        ggame.grid_matrix.to_world_topleft(a.into()).into();
+                                        grid_matrix.to_world_topleft(a.into()).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
 
                                     let m = matrix.chain(t).generate();
@@ -711,7 +706,7 @@ pub async fn worker_entry() {
 
                                 for GridCoord(a) in attack.iter_coords() {
                                     let pos: [f32; 2] =
-                                        ggame.grid_matrix.to_world_topleft(a.into()).into();
+                                        grid_matrix.to_world_topleft(a.into()).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
 
                                     let m = matrix.chain(t).generate();
@@ -726,7 +721,7 @@ pub async fn worker_entry() {
                     }
 
                     for GridCoord(a) in roads.pos.iter() {
-                        let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
+                        let pos: [f32; 2] = grid_matrix.to_world_topleft(a.into()).into();
                         let t = matrix::translation(pos[0], pos[1], 3.0);
 
                         let m = matrix.chain(t).generate();
@@ -739,8 +734,8 @@ pub async fn worker_entry() {
                 disable_depth(&ctx, || {
                     //draw dropshadow
 
-                    cat_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
-                    dog_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
+                    cat_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
+                    dog_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
 
                     if let ace::Command::Animate(a) = &command {
                         let pos = a.calc_pos();
@@ -763,19 +758,19 @@ pub async fn worker_entry() {
                     animation_draw.draw(&mut v);
                 }
 
-                cat_draw.draw(&ggame.grid_matrix, &mut draw_sys, &matrix);
-                dog_draw.draw(&ggame.grid_matrix, &mut draw_sys, &matrix);
+                cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
+                dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
 
                 disable_depth(&ctx, || {
                     cat_draw.draw_health_text(
-                        &ggame.grid_matrix,
+                        &grid_matrix,
                         &health_numbers,
                         &view_proj,
                         &proj,
                         &mut draw_sys,
                     );
                     dog_draw.draw_health_text(
-                        &ggame.grid_matrix,
+                        &grid_matrix,
                         &health_numbers,
                         &view_proj,
                         &proj,
