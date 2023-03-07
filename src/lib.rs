@@ -3,6 +3,7 @@ use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 
 use futures::{SinkExt, StreamExt};
 use gloo::console::log;
+use grids::GridMatrix;
 use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
 use serde::{Deserialize, Serialize};
@@ -11,7 +12,7 @@ use shogo::utils;
 use wasm_bindgen::prelude::*;
 pub mod animation;
 pub mod dom;
-pub mod gameplay;
+//pub mod gameplay;
 pub mod grids;
 pub mod model_parse;
 pub mod movement;
@@ -22,7 +23,7 @@ pub mod util;
 use dom::MEvent;
 use projection::*;
 pub mod ace;
-pub mod state;
+//pub mod state;
 //pub mod logic;
 pub const RESIZE: usize = 10;
 
@@ -45,7 +46,13 @@ impl<'a> WarriorDraw<'a> {
             col,
         }
     }
-    fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
+    fn draw(
+        &self,
+        gg: &grids::GridMatrix,
+        draw_sys: &mut ShaderSystem,
+        matrix: &Matrix4<f32>,
+        game: &Game,
+    ) {
         for cc in self.col.elem.iter() {
             let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
 
@@ -54,8 +61,10 @@ impl<'a> WarriorDraw<'a> {
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
 
-            self.model
-                .draw_ext(&mut v, !cc.selectable(), false, false, true);
+            self.model.draw_ext(
+                &mut v, false, /*  !cc.selectable(game)  */
+                false, false, true,
+            );
         }
     }
 
@@ -201,14 +210,14 @@ pub struct Warrior {
     health: i8,
 }
 
-impl Warrior {
-    //TODO replace with has possible moves
-    fn selectable(&self) -> bool {
-        !self.attacked || self.stamina.0 > 0
-    }
-
-    pub fn has_possible_moves(unit: &WarriorPointer<&Self>, game: &state::Stuff) -> bool {
-        let pos = state::generate_unit_possible_moves(unit, game);
+impl WarriorPointer<&Warrior> {
+    pub fn selectable(
+        &self,
+        this_team: &Tribe,
+        that_team: &Tribe,
+        grid_matrix: &GridMatrix,
+    ) -> bool {
+        let pos = ace::generate_unit_possible_moves2(self, this_team, that_team, grid_matrix);
 
         //check if there are enemies in range.
         let enemy_in_range = {
@@ -219,7 +228,7 @@ impl Warrior {
 
             let mut found = false;
             for a in att.iter_coords() {
-                if let Some(_) = game.that_team.find_slow(a) {
+                if let Some(_) = that_team.find_slow(a) {
                     found = true;
                     break;
                 }
@@ -228,10 +237,18 @@ impl Warrior {
         };
 
         //TODO move this and the above into an high-level "Has possible moves function"
-        let has_stamina_to_move = unit.stamina.0 > 1;
+        let has_stamina_to_move = self.stamina.0 > 1;
 
         enemy_in_range || has_stamina_to_move
     }
+}
+impl Warrior {
+    //TODO replace with has possible moves
+    // fn selectable(&self) -> bool {
+    //     self.has_possible_moves()
+    //     //!self.attacked || self.stamina.0 > 0
+    // }
+
     // fn can_attack(&self) -> bool {
     //     !self.attacked
     // }
@@ -768,8 +785,8 @@ pub async fn worker_entry() {
                     animation_draw.draw(&mut v);
                 }
 
-                cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
-                dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
+                cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix, &ggame);
+                dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix, &ggame);
 
                 disable_depth(&ctx, || {
                     cat_draw.draw_health_text(
@@ -887,7 +904,7 @@ fn string_to_coords<'a>(st: &str) -> model::ModelData {
 use web_sys::WebGl2RenderingContext;
 
 use crate::ace::Pototo;
-use crate::gameplay::GameStepper;
+//use crate::gameplay::GameStepper;
 use crate::movement::{Filter, MoveUnit};
 use crate::terrain::MoveCost;
 

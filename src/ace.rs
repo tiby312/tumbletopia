@@ -1,8 +1,9 @@
 use crate::{
     animation::{self, Animation},
-    grids::GridMatrix,
-    movement::{self, GridCoord},
-    CellSelection, Game, Tribe, Warrior, WarriorPointer,
+    grids::{self, GridMatrix},
+    movement::{self, Filter, GridCoord, MoveUnit},
+    terrain::{self, MoveCost},
+    CellSelection, Game, HasPos, SingleFilter, Tribe, Warrior, WarriorPointer,
 };
 
 pub struct GameWrap<'a, T> {
@@ -205,7 +206,7 @@ pub async fn main_logic<'a>(
                     continue;
                 };
 
-                if !unit.selectable() {
+                if !unit.selectable(view.this_team, view.that_team, grid_matrix) {
                     continue;
                 }
 
@@ -220,7 +221,7 @@ pub async fn main_logic<'a>(
                 let view = game.get_view();
                 let unit = view.this_team.lookup(current_warrior_pos);
 
-                let cc = crate::state::generate_unit_possible_moves2(
+                let cc = generate_unit_possible_moves2(
                     &unit,
                     view.this_team,
                     view.that_team,
@@ -334,11 +335,10 @@ pub async fn main_logic<'a>(
 
                     view.this_team.add(warrior);
                 } else {
-                    if let Some(a) = view
-                        .this_team
-                        .find_slow(&target_cell)
-                        .filter(|a| a.selectable() && a.slim() != current_warrior_pos)
-                    {
+                    if let Some(a) = view.this_team.find_slow(&target_cell).filter(|a| {
+                        a.selectable(view.this_team, view.that_team, grid_matrix)
+                            && a.slim() != current_warrior_pos
+                    }) {
                         //Quick switch to another unit
                         current_warrior_pos = a.slim();
                     } else {
@@ -346,6 +346,17 @@ pub async fn main_logic<'a>(
                         break;
                     }
                 };
+
+                let view = game.get_view();
+
+                if !view.this_team.lookup(current_warrior_pos).selectable(
+                    view.this_team,
+                    view.that_team,
+                    grid_matrix,
+                ) {
+                    //Deselect
+                    break;
+                }
             }
 
             //log!(format!("User selected!={:?}", mouse_world));
@@ -374,3 +385,59 @@ pub async fn main_logic<'a>(
 //         moveanimator.await
 //     }
 // }
+
+pub fn generate_unit_possible_moves2(
+    unit: &WarriorPointer<&Warrior>,
+    this_team: &Tribe,
+    that_team: &Tribe,
+    grid_matrix: &GridMatrix,
+) -> CellSelection {
+    fn get_cat_move_attack_matrix(
+        movement: (i8, i8),
+        cat: &Warrior,
+        cat_filter: impl Filter,
+        roads: impl MoveCost,
+        gg: &grids::GridMatrix,
+        moved: bool,
+    ) -> CellSelection {
+        let (movement, attack) = movement;
+        let mm = if !cat.attacked {
+            cat.stamina
+        } else {
+            MoveUnit(0)
+        };
+
+        let mm = movement::PossibleMoves::new(
+            &movement::WarriorMovement,
+            &gg.filter().chain(cat_filter),
+            &terrain::Grass.chain(roads),
+            cat.position,
+            mm,
+        );
+
+        let attack_range = if !cat.attacked { attack } else { 0 };
+
+        //let attack_range=attack;
+
+        let attack = movement::PossibleMoves::new(
+            &movement::WarriorMovement,
+            &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
+            &terrain::Grass,
+            cat.position,
+            MoveUnit(attack_range),
+        );
+
+        CellSelection::MoveSelection(mm, attack)
+    }
+
+    let data = this_team.get_movement_data(&unit);
+
+    get_cat_move_attack_matrix(
+        data,
+        &unit,
+        this_team.filter().chain(that_team.filter()),
+        terrain::Grass,
+        grid_matrix,
+        true,
+    )
+}
