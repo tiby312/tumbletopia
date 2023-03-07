@@ -202,8 +202,8 @@ pub async fn main_logic<'a>(
                 };
 
                 let Some(unit)= view.this_team.find_slow(&cell) else {
-                continue;
-            };
+                    continue;
+                };
 
                 if !unit.selectable() {
                     continue;
