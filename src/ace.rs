@@ -244,14 +244,77 @@ pub async fn main_logic<'a>(
 
             let current_attack = view.this_team.lookup_mut(&xx).attacked;
 
-            let aa = if let Some(aaa) = view.that_team.find_slow(target_cat_pos) {
-                let aaa = aaa.slim();
+            if let Some(target) = view.that_team.find_slow(target_cat_pos) {
+                let aaa = target.slim();
 
                 if !current_attack && movement::contains_coord(attack.iter_coords(), target_cat_pos)
                 {
                     //TODO attack aaa
+
+
+                    //Only counter if non neg
+                    // let counter_damage = if g1.this_team.lookup_mut(current).move_bank.0>=0{
+                    //     5
+                    // }else{
+                    //     0
+                    // };
+                    // let damage = 5;
+                    // let counter_damage = 5;
+                    let damage = 5;
+                    let counter_damage = 5;
+
+                    let kill_self = view.this_team.lookup_mut(&current_warrior_pos).health <= counter_damage;
+
+                    let (path, _) = attack.get_path_data(target_cat_pos).unwrap();
+
+                    //let attack_stamina_cost=2;
+                    let total_cost = path.total_cost();
+                    log!(format!("total_cost:{:?}", total_cost));
+                    if target.health <= damage {
+                        let c = view.this_team.lookup_take(current_warrior_pos);
+
+
+                        let aa = animation::Animation::new(c.position, path, grid_matrix, c);
+
+                        let (view, aa) = doop.wait_animation(aa, &mut game).await;
+        
+                        let this_unit=aa.into_data();
+                        let target = this_unit.slim();
+                        view.that_team.lookup_take(target);
+                        view.this_team.add(this_unit);
+
+                        let mut current_cat = view.this_team.lookup_mut(&target);
+
+                        current_cat.attacked = true;
+                        
+                    } else {
+                        let c = view.this_team.lookup_take(current_warrior_pos);
+                        
+                        let aa = animation::Animation::new(c.position, path, grid_matrix, c);
+                        let (view, aa) = doop.wait_animation(aa, &mut game).await;
+        
+                        let this_unit=aa.into_data();
+                        view.this_team.add(this_unit);
+                        let mut target_cat = view.that_team.lookup_mut(&aaa);
+                        target_cat.health -= damage;
+
+                        let mut current_cat = view.this_team.lookup_mut(&current_warrior_pos);
+
+                        if kill_self {
+                            view.this_team.lookup_take(current_warrior_pos);
+                        } else {
+                            current_cat.attacked = true;
+                            current_cat.health -= counter_damage;
+                            current_cat.stamina.0 -= total_cost.0;
+                            //current_cat.stamina.0 -= attack_stamina_cost;
+                        }
+                    }
+
+
+
                 } else {
-                    //TODO
+                    //Deselect
+                    break;
                 }
             } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
                 let (dd, _) = ss.get_path_data(&target_cell).unwrap();
