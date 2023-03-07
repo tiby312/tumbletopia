@@ -193,7 +193,7 @@ pub async fn main_logic<'a>(
     //Loop
     'outer: loop {
         //Loop until the user clicks on a selectable unit in their team.
-        let (current_unit, view) = loop {
+        let current_unit = loop {
             let (view, data) = doop.get_mouse_no_selection(&mut game).await;
             let cell = match data {
                 Pototo::Normal(a) => a,
@@ -212,71 +212,76 @@ pub async fn main_logic<'a>(
             }
 
             let pos = unit.slim();
-            break (pos, view);
+            break pos;
         };
 
-        let unit = view.this_team.lookup(current_unit);
+        let mut current_warrior_pos = current_unit;
+        loop {
+            let view = game.get_view();
+            let unit = view.this_team.lookup(current_warrior_pos);
 
-        let cc = crate::state::generate_unit_possible_moves2(
-            &unit,
-            view.this_team,
-            view.that_team,
-            grid_matrix,
-        );
+            let cc = crate::state::generate_unit_possible_moves2(
+                &unit,
+                view.this_team,
+                view.that_team,
+                grid_matrix,
+            );
 
-        let (view, cell, mouse_world) = doop.get_mouse_selection(cc, &mut game).await;
+            let (view, cell, mouse_world) = doop.get_mouse_selection(cc, &mut game).await;
 
-        //This is the cell the user selected from the pool of available moves for the unit
-        let target_cell = mouse_world.unwrap();
-        let (ss, attack) = match cell {
-            CellSelection::MoveSelection(ss, attack) => (ss, attack),
-            _ => {
-                unreachable!()
-            }
-        };
-
-        let target_cat_pos = &target_cell;
-
-        let xx = view.this_team.lookup(current_unit).slim();
-
-        let current_attack = view.this_team.lookup_mut(&xx).attacked;
-
-        let aa = if let Some(aaa) = view.that_team.find_slow(target_cat_pos) {
-            let aaa = aaa.slim();
-
-            if !current_attack && movement::contains_coord(attack.iter_coords(), target_cat_pos) {
-                //TODO attack aaa
-            } else {
-                //TODO
-            }
-        } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
-            let (dd, _) = ss.get_path_data(&target_cell).unwrap();
-            let start = view.this_team.lookup_take(current_unit);
-
-            let aa = animation::Animation::new(start.position, dd, grid_matrix, start);
-
-            let (view, aa) = doop.wait_animation(aa, &mut game).await;
-
-            let mut warrior = aa.into_data();
-            warrior.stamina.0 -= dd.total_cost().0;
-            warrior.position = target_cell;
-
-            //Add it back!
-
-            view.this_team.add(warrior);
-        } else {
-            let va = view.this_team.find_slow(&target_cell).and_then(|a| {
-                if a.selectable() && a.slim() != current_unit {
-                    //TODO quick switch to another unit!!!!!
-                    //Some(a)
-                    Some(a)
-                } else {
-                    None
-                    //None
+            //This is the cell the user selected from the pool of available moves for the unit
+            let target_cell = mouse_world.unwrap();
+            let (ss, attack) = match cell {
+                CellSelection::MoveSelection(ss, attack) => (ss, attack),
+                _ => {
+                    unreachable!()
                 }
-            });
-            //Deselect?
-        };
+            };
+
+            let target_cat_pos = &target_cell;
+
+            let xx = view.this_team.lookup(current_warrior_pos).slim();
+
+            let current_attack = view.this_team.lookup_mut(&xx).attacked;
+
+            let aa = if let Some(aaa) = view.that_team.find_slow(target_cat_pos) {
+                let aaa = aaa.slim();
+
+                if !current_attack && movement::contains_coord(attack.iter_coords(), target_cat_pos)
+                {
+                    //TODO attack aaa
+                } else {
+                    //TODO
+                }
+            } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
+                let (dd, _) = ss.get_path_data(&target_cell).unwrap();
+                let start = view.this_team.lookup_take(current_warrior_pos);
+
+                let aa = animation::Animation::new(start.position, dd, grid_matrix, start);
+
+                let (view, aa) = doop.wait_animation(aa, &mut game).await;
+
+                let mut warrior = aa.into_data();
+                warrior.stamina.0 -= dd.total_cost().0;
+                warrior.position = target_cell;
+
+                current_warrior_pos = warrior.slim();
+
+                view.this_team.add(warrior);
+            } else {
+                if let Some(a) = view
+                    .this_team
+                    .find_slow(&target_cell)
+                    .filter(|a| a.selectable() && a.slim() != current_warrior_pos)
+                {
+                    //Quick switch to another unit
+                    current_warrior_pos = a.slim();
+                } else {
+                    //Deselect
+                    break;
+                }
+            };
+        }
 
         //log!(format!("User selected!={:?}", mouse_world));
     }
