@@ -275,7 +275,6 @@ pub async fn main_logic<'a>(
 
                         //let attack_stamina_cost=2;
                         let total_cost = path.total_cost();
-                        log!(format!("total_cost:{:?}", total_cost));
                         if target.health <= damage {
                             let c = view.this_team.lookup_take(current_warrior_pos);
 
