@@ -19,8 +19,7 @@ pub struct GameWrapResponse<'a, T> {
 #[derive(Debug)]
 pub enum Command {
     Animate(Animation<WarriorPointer<Warrior>>),
-    GetMouseInput,
-    GetPlayerSelection(CellSelection),
+    GetMouseInput(Option<CellSelection>),
     Nothing,
 }
 impl Command {
@@ -34,16 +33,27 @@ impl Command {
 
         a
     }
-    pub fn take_selection(&mut self) -> CellSelection {
+
+    pub fn take_cell(&mut self) -> Option<CellSelection> {
         let mut a = Command::Nothing;
         std::mem::swap(self, &mut a);
 
-        let Command::GetPlayerSelection(a)=a else{
+        let Command::GetMouseInput(a)=a else{
             panic!();
         };
 
         a
     }
+    // pub fn take_selection(&mut self) -> CellSelection {
+    //     let mut a = Command::Nothing;
+    //     std::mem::swap(self, &mut a);
+
+    //     let Command::GetPlayerSelection(a)=a else{
+    //         panic!();
+    //     };
+
+    //     a
+    // }
 }
 
 #[derive(Debug)]
@@ -51,12 +61,21 @@ pub enum Pototo<T> {
     Normal(T),
     EndTurn,
 }
+impl<T> Pototo<T> {
+    fn unwrap(self) -> T {
+        match self {
+            Pototo::Normal(a) => a,
+            Pototo::EndTurn => {
+                unreachable!();
+            }
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum Response {
-    Mouse(Pototo<[f32; 2]>), //TODO make grid coord
+    Mouse(Option<CellSelection>, Pototo<[f32; 2]>), //TODO make grid coord
     AnimationFinish(Animation<WarriorPointer<Warrior>>),
-    PlayerSelection(CellSelection, [f32; 2]), //TODO make grid coord
 }
 
 use futures::{
@@ -94,12 +113,13 @@ impl<'a> Doop<'a> {
     }
     async fn get_mouse<'c>(
         &mut self,
+        cell: Option<CellSelection>,
         game: &'c mut GameHolder<'a>,
-    ) -> (GameView<'c>, Pototo<[f32; 2]>) {
+    ) -> (GameView<'c>, Option<CellSelection>, Pototo<[f32; 2]>) {
         self.sender
             .send(GameWrap {
                 game: game.game.take().unwrap(),
-                data: Command::GetMouseInput,
+                data: Command::GetMouseInput(cell),
                 team: game.team_index,
             })
             .await
@@ -107,36 +127,36 @@ impl<'a> Doop<'a> {
 
         let GameWrapResponse { game: gg, data } = self.receiver.next().await.unwrap();
 
-        let Response::Mouse(o)=data else{
+        let Response::Mouse(cell,o)=data else{
             unreachable!();
         };
 
         game.game = Some(gg);
-        (game.get_view(), o)
+        (game.get_view(), cell, o)
     }
-    async fn get_user_selection<'c>(
-        &mut self,
-        cell: CellSelection,
-        game: &'c mut GameHolder<'a>,
-    ) -> (GameView<'c>, CellSelection, [f32; 2]) {
-        self.sender
-            .send(GameWrap {
-                game: game.game.take().unwrap(),
-                data: Command::GetPlayerSelection(cell),
-                team: game.team_index,
-            })
-            .await
-            .unwrap();
+    // async fn get_user_selection<'c>(
+    //     &mut self,
+    //     cell: CellSelection,
+    //     game: &'c mut GameHolder<'a>,
+    // ) -> (GameView<'c>, CellSelection, [f32; 2]) {
+    //     self.sender
+    //         .send(GameWrap {
+    //             game: game.game.take().unwrap(),
+    //             data: Command::GetPlayerSelection(cell),
+    //             team: game.team_index,
+    //         })
+    //         .await
+    //         .unwrap();
 
-        let GameWrapResponse { game: gg, data } = self.receiver.next().await.unwrap();
+    //     let GameWrapResponse { game: gg, data } = self.receiver.next().await.unwrap();
 
-        let Response::PlayerSelection(c,o)=data else{
-            unreachable!();
-        };
-        game.game = Some(gg);
+    //     let Response::PlayerSelection(c,o)=data else{
+    //         unreachable!();
+    //     };
+    //     game.game = Some(gg);
 
-        (game.get_view(), c, o)
-    }
+    //     (game.get_view(), c, o)
+    // }
 }
 
 pub struct GameView<'a> {
@@ -186,10 +206,12 @@ pub async fn main_logic<'a>(
         team_index: 0,
     };
 
+    //Loop
     'outer: loop {
+        //Loop until the user clicks on a selectable unit in their team.
         let (current_unit, view) = loop {
-            let (view, data) = doop.get_mouse(&mut game).await;
-
+            let (view, c, data) = doop.get_mouse(None, &mut game).await;
+            assert!(c.is_none());
             let mouse_world = match data {
                 Pototo::Normal(a) => a,
                 Pototo::EndTurn => {
@@ -221,8 +243,9 @@ pub async fn main_logic<'a>(
             grid_matrix,
         );
 
-        let (view, cell, mouse_world) = doop.get_user_selection(cc, &mut game).await;
-
+        let (view, cell, mouse_world) = doop.get_mouse(Some(cc), &mut game).await;
+        let cell = cell.unwrap();
+        let mouse_world = mouse_world.unwrap();
         let (ss, attack) = match cell {
             CellSelection::MoveSelection(ss, attack) => (ss, attack),
             _ => {

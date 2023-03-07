@@ -595,12 +595,15 @@ pub async fn worker_entry() {
                             break 'outer;
                         }
                     }
-                    ace::Command::GetMouseInput => {
+                    ace::Command::GetMouseInput(c) => {
                         if end_turn {
                             response_sender
                                 .send(ace::GameWrapResponse {
                                     game: ggame,
-                                    data: ace::Response::Mouse(Pototo::EndTurn),
+                                    data: ace::Response::Mouse(
+                                        command.take_cell(),
+                                        Pototo::EndTurn,
+                                    ),
                                 })
                                 .await
                                 .unwrap();
@@ -609,21 +612,9 @@ pub async fn worker_entry() {
                             response_sender
                                 .send(ace::GameWrapResponse {
                                     game: ggame,
-                                    data: ace::Response::Mouse(Pototo::Normal(mouse_world)),
-                                })
-                                .await
-                                .unwrap();
-                            break 'outer;
-                        }
-                    }
-                    ace::Command::GetPlayerSelection(e) => {
-                        if on_select {
-                            response_sender
-                                .send(ace::GameWrapResponse {
-                                    game: ggame,
-                                    data: ace::Response::PlayerSelection(
-                                        command.take_selection(),
-                                        mouse_world,
+                                    data: ace::Response::Mouse(
+                                        command.take_cell(),
+                                        Pototo::Normal(mouse_world),
                                     ),
                                 })
                                 .await
@@ -692,7 +683,7 @@ pub async fn worker_entry() {
                 let animation_draw = if team == 0 { &cat } else { &dog };
 
                 disable_depth(&ctx, || {
-                    if let ace::Command::GetPlayerSelection(a) = &command {
+                    if let ace::Command::GetMouseInput(Some(a)) = &command {
                         //if let Some(a) = testo.get_selection() {
                         match a {
                             CellSelection::MoveSelection(a, attack) => {
