@@ -282,6 +282,16 @@ pub struct WarriorPointer<T> {
     val: usize,
 }
 
+impl WarriorPointer<&mut Warrior> {
+    //TODO use this instead of gridcoord when you know the type!!!!!
+    fn slim(&self) -> WarriorPointer<GridCoord> {
+        WarriorPointer {
+            inner: self.inner.position,
+            val: self.val,
+        }
+    }
+}
+
 impl WarriorPointer<&Warrior> {
     //TODO use this instead of gridcoord when you know the type!!!!!
     fn slim(&self) -> WarriorPointer<GridCoord> {
