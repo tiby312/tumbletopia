@@ -609,12 +609,15 @@ pub async fn worker_entry() {
                                 .unwrap();
                             break 'outer;
                         } else if on_select {
+                            let mouse: GridCoord =
+                                GridCoord(grid_matrix.to_grid((mouse_world).into()).into());
+
                             response_sender
                                 .send(ace::GameWrapResponse {
                                     game: ggame,
                                     data: ace::Response::Mouse(
                                         command.take_cell(),
-                                        Pototo::Normal(mouse_world),
+                                        Pototo::Normal(mouse),
                                     ),
                                 })
                                 .await

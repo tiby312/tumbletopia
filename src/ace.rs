@@ -44,16 +44,6 @@ impl Command {
 
         a
     }
-    // pub fn take_selection(&mut self) -> CellSelection {
-    //     let mut a = Command::Nothing;
-    //     std::mem::swap(self, &mut a);
-
-    //     let Command::GetPlayerSelection(a)=a else{
-    //         panic!();
-    //     };
-
-    //     a
-    // }
 }
 
 #[derive(Debug)]
@@ -74,7 +64,7 @@ impl<T> Pototo<T> {
 
 #[derive(Debug)]
 pub enum Response {
-    Mouse(Option<CellSelection>, Pototo<[f32; 2]>), //TODO make grid coord
+    Mouse(Option<CellSelection>, Pototo<GridCoord>), //TODO make grid coord
     AnimationFinish(Animation<WarriorPointer<Warrior>>),
 }
 
@@ -111,11 +101,28 @@ impl<'a> Doop<'a> {
         game.game = Some(gg);
         (game.get_view(), o)
     }
+
+    async fn get_mouse_no_selection<'c>(
+        &mut self,
+        game: &'c mut GameHolder<'a>,
+    ) -> (GameView<'c>, Pototo<GridCoord>) {
+        let (a, _, c) = self.get_mouse(None, game).await;
+        (a, c)
+    }
+    async fn get_mouse_selection<'c>(
+        &mut self,
+        cell: CellSelection,
+        game: &'c mut GameHolder<'a>,
+    ) -> (GameView<'c>, CellSelection, Pototo<GridCoord>) {
+        let (a, b, c) = self.get_mouse(Some(cell), game).await;
+        (a, b.unwrap(), c)
+    }
+
     async fn get_mouse<'c>(
         &mut self,
         cell: Option<CellSelection>,
         game: &'c mut GameHolder<'a>,
-    ) -> (GameView<'c>, Option<CellSelection>, Pototo<[f32; 2]>) {
+    ) -> (GameView<'c>, Option<CellSelection>, Pototo<GridCoord>) {
         self.sender
             .send(GameWrap {
                 game: game.game.take().unwrap(),
@@ -134,29 +141,6 @@ impl<'a> Doop<'a> {
         game.game = Some(gg);
         (game.get_view(), cell, o)
     }
-    // async fn get_user_selection<'c>(
-    //     &mut self,
-    //     cell: CellSelection,
-    //     game: &'c mut GameHolder<'a>,
-    // ) -> (GameView<'c>, CellSelection, [f32; 2]) {
-    //     self.sender
-    //         .send(GameWrap {
-    //             game: game.game.take().unwrap(),
-    //             data: Command::GetPlayerSelection(cell),
-    //             team: game.team_index,
-    //         })
-    //         .await
-    //         .unwrap();
-
-    //     let GameWrapResponse { game: gg, data } = self.receiver.next().await.unwrap();
-
-    //     let Response::PlayerSelection(c,o)=data else{
-    //         unreachable!();
-    //     };
-    //     game.game = Some(gg);
-
-    //     (game.get_view(), c, o)
-    // }
 }
 
 pub struct GameView<'a> {
@@ -210,17 +194,14 @@ pub async fn main_logic<'a>(
     'outer: loop {
         //Loop until the user clicks on a selectable unit in their team.
         let (current_unit, view) = loop {
-            let (view, c, data) = doop.get_mouse(None, &mut game).await;
-            assert!(c.is_none());
-            let mouse_world = match data {
+            let (view, data) = doop.get_mouse_no_selection(&mut game).await;
+            let cell = match data {
                 Pototo::Normal(a) => a,
                 Pototo::EndTurn => {
                     log!("End the turn!");
                     break 'outer;
                 }
             };
-
-            let cell: GridCoord = GridCoord(grid_matrix.to_grid((mouse_world).into()).into());
 
             let Some(unit)= view.this_team.find_slow(&cell) else {
                 continue;
@@ -243,18 +224,16 @@ pub async fn main_logic<'a>(
             grid_matrix,
         );
 
-        let (view, cell, mouse_world) = doop.get_mouse(Some(cc), &mut game).await;
-        let cell = cell.unwrap();
-        let mouse_world = mouse_world.unwrap();
+        let (view, cell, mouse_world) = doop.get_mouse_selection(cc, &mut game).await;
+
+        //This is the cell the user selected from the pool of available moves for the unit
+        let target_cell = mouse_world.unwrap();
         let (ss, attack) = match cell {
             CellSelection::MoveSelection(ss, attack) => (ss, attack),
             _ => {
                 unreachable!()
             }
         };
-
-        //This is the cell the user selected from the pool of available moves for the unit
-        let target_cell: GridCoord = GridCoord(grid_matrix.to_grid((mouse_world).into()).into());
 
         let target_cat_pos = &target_cell;
 
@@ -299,7 +278,7 @@ pub async fn main_logic<'a>(
             //Deselect?
         };
 
-        log!(format!("User selected!={:?}", mouse_world));
+        //log!(format!("User selected!={:?}", mouse_world));
     }
 }
 
