@@ -47,8 +47,14 @@ impl Command {
 }
 
 #[derive(Debug)]
+pub enum Pototo<T> {
+    Normal(T),
+    EndTurn,
+}
+
+#[derive(Debug)]
 pub enum Response {
-    Mouse([f32; 2]), //TODO make grid coord
+    Mouse(Pototo<[f32; 2]>), //TODO make grid coord
     AnimationFinish(Animation<WarriorPointer<Warrior>>),
     PlayerSelection(CellSelection, [f32; 2]), //TODO make grid coord
 }
@@ -86,7 +92,10 @@ impl<'a> Doop<'a> {
         game.game = Some(gg);
         (game.get_view(), o)
     }
-    async fn get_mouse<'c>(&mut self, game: &'c mut GameHolder<'a>) -> (GameView<'c>, [f32; 2]) {
+    async fn get_mouse<'c>(
+        &mut self,
+        game: &'c mut GameHolder<'a>,
+    ) -> (GameView<'c>, Pototo<[f32; 2]>) {
         self.sender
             .send(GameWrap {
                 game: game.game.take().unwrap(),
@@ -177,9 +186,17 @@ pub async fn main_logic<'a>(
         team_index: 0,
     };
 
-    loop {
+    'outer: loop {
         let (current_unit, view) = loop {
-            let (view, mouse_world) = doop.get_mouse(&mut game).await;
+            let (view, data) = doop.get_mouse(&mut game).await;
+
+            let mouse_world = match data {
+                Pototo::Normal(a) => a,
+                Pototo::EndTurn => {
+                    log!("End the turn!");
+                    break 'outer;
+                }
+            };
 
             let cell: GridCoord = GridCoord(grid_matrix.to_grid((mouse_world).into()).into());
 

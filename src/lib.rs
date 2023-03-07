@@ -596,11 +596,20 @@ pub async fn worker_entry() {
                         }
                     }
                     ace::Command::GetMouseInput => {
-                        if on_select {
+                        if end_turn {
                             response_sender
                                 .send(ace::GameWrapResponse {
                                     game: ggame,
-                                    data: ace::Response::Mouse(mouse_world),
+                                    data: ace::Response::Mouse(Pototo::EndTurn),
+                                })
+                                .await
+                                .unwrap();
+                            break 'outer;
+                        } else if on_select {
+                            response_sender
+                                .send(ace::GameWrapResponse {
+                                    game: ggame,
+                                    data: ace::Response::Mouse(Pototo::Normal(mouse_world)),
                                 })
                                 .await
                                 .unwrap();
@@ -873,6 +882,7 @@ fn string_to_coords<'a>(st: &str) -> model::ModelData {
 
 use web_sys::WebGl2RenderingContext;
 
+use crate::ace::Pototo;
 use crate::gameplay::GameStepper;
 use crate::movement::{Filter, MoveUnit};
 use crate::terrain::MoveCost;
