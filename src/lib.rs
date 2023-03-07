@@ -62,8 +62,11 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model.draw_ext(
-                &mut v, false, /*  !cc.selectable(game)  */
-                false, false, true,
+                &mut v,
+                !cc.selectable, /*  !cc.selectable(game)  */
+                false,
+                false,
+                true,
             );
         }
     }
@@ -208,16 +211,18 @@ pub struct Warrior {
     stamina: MoveUnit,
     attacked: bool,
     health: i8,
+    selectable: bool,
 }
 
 impl WarriorPointer<&Warrior> {
-    pub fn selectable(
+    pub fn calculate_selectable(
         &self,
         this_team: &Tribe,
         that_team: &Tribe,
         grid_matrix: &GridMatrix,
     ) -> bool {
-        let pos = ace::generate_unit_possible_moves2(self, this_team, that_team, grid_matrix);
+        let s = self; //this_team.lookup(*self);
+        let pos = ace::generate_unit_possible_moves2(&s, this_team, that_team, grid_matrix);
 
         //check if there are enemies in range.
         let enemy_in_range = {
@@ -237,9 +242,10 @@ impl WarriorPointer<&Warrior> {
         };
 
         //TODO move this and the above into an high-level "Has possible moves function"
-        let has_stamina_to_move = self.stamina.0 > 1;
+        let has_stamina_to_move = s.stamina.0 > 1;
 
-        enemy_in_range || has_stamina_to_move
+        let ret = enemy_in_range || has_stamina_to_move;
+        ret
     }
 }
 impl Warrior {
@@ -259,6 +265,7 @@ impl Warrior {
             stamina: MoveUnit(0),
             attacked: false,
             health: 10,
+            selectable: true,
         }
     }
 }
@@ -299,12 +306,26 @@ pub struct WarriorPointer<T> {
     val: usize,
 }
 
-impl WarriorPointer<&mut Warrior> {
+impl<'a> WarriorPointer<&'a mut Warrior> {
     //TODO use this instead of gridcoord when you know the type!!!!!
     fn slim(&self) -> WarriorPointer<GridCoord> {
         WarriorPointer {
             inner: self.inner.position,
             val: self.val,
+        }
+    }
+
+    fn as_ref(&self) -> WarriorPointer<&Warrior> {
+        WarriorPointer {
+            inner: self.inner,
+            val: self.val,
+        }
+    }
+    fn to_ref(self) -> WarriorPointer<&'a Warrior> {
+        let val = self.val;
+        WarriorPointer {
+            inner: self.inner,
+            val,
         }
     }
 }
@@ -397,6 +418,16 @@ impl Tribe {
 
         None
     }
+
+    fn find_slow_mut(&mut self, a: &GridCoord) -> Option<WarriorPointer<&mut Warrior>> {
+        for (c, o) in self.warriors.iter_mut().enumerate() {
+            if let Some(k) = o.find_mut(a) {
+                return Some(WarriorPointer { inner: k, val: c });
+            }
+        }
+
+        None
+    }
     fn filter(&self) -> TribeFilter {
         TribeFilter { tribe: self }
     }
@@ -405,6 +436,7 @@ impl Tribe {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
                 b.attacked = false;
+                b.selectable = true;
             }
         }
     }

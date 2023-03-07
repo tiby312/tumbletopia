@@ -205,12 +205,15 @@ pub async fn main_logic<'a>(
                 let Some(unit)= view.this_team.find_slow(&cell) else {
                     continue;
                 };
+                let pos = unit.slim();
 
-                if !unit.selectable(view.this_team, view.that_team, grid_matrix) {
+                let ss = unit.calculate_selectable(view.this_team, view.that_team, grid_matrix);
+
+                view.this_team.lookup_mut(&pos).selectable = ss;
+                if !ss {
                     continue;
                 }
 
-                let pos = unit.slim();
                 break pos;
             };
 
@@ -268,9 +271,6 @@ pub async fn main_logic<'a>(
                         let damage = 5;
                         let counter_damage = 5;
 
-                        let kill_self = view.this_team.lookup_mut(&current_warrior_pos).health
-                            <= counter_damage;
-
                         let (path, _) = attack.get_path_data(target_cat_pos).unwrap();
 
                         //let attack_stamina_cost=2;
@@ -304,15 +304,19 @@ pub async fn main_logic<'a>(
                             let mut target_cat = view.that_team.lookup_mut(&aaa);
                             target_cat.health -= damage;
 
+                            let kill_self =
+                                view.this_team.lookup(current_warrior_pos).health <= counter_damage;
+
                             let mut current_cat = view.this_team.lookup_mut(&current_warrior_pos);
 
                             if kill_self {
                                 view.this_team.lookup_take(current_warrior_pos);
+                                //Deselect!!!!
+                                break;
                             } else {
                                 current_cat.attacked = true;
                                 current_cat.health -= counter_damage;
                                 current_cat.stamina.0 -= total_cost.0;
-                                //current_cat.stamina.0 -= attack_stamina_cost;
                             }
                         }
                     } else {
@@ -335,12 +339,20 @@ pub async fn main_logic<'a>(
 
                     view.this_team.add(warrior);
                 } else {
-                    if let Some(a) = view.this_team.find_slow(&target_cell).filter(|a| {
-                        a.selectable(view.this_team, view.that_team, grid_matrix)
-                            && a.slim() != current_warrior_pos
-                    }) {
-                        //Quick switch to another unit
-                        current_warrior_pos = a.slim();
+                    if let Some(a) = view.this_team.find_slow(&target_cell) {
+                        let vv =
+                            a.calculate_selectable(view.this_team, view.that_team, grid_matrix);
+                        let k = a.slim();
+
+                        view.this_team.lookup_mut(&k).selectable = vv;
+
+                        if vv && k != current_warrior_pos {
+                            //Quick switch to another unit
+                            current_warrior_pos = k;
+                        } else {
+                            //Deselect
+                            break;
+                        }
                     } else {
                         //Deselect
                         break;
@@ -349,11 +361,12 @@ pub async fn main_logic<'a>(
 
                 let view = game.get_view();
 
-                if !view.this_team.lookup(current_warrior_pos).selectable(
-                    view.this_team,
-                    view.that_team,
-                    grid_matrix,
-                ) {
+                let wwa = view.this_team.lookup(current_warrior_pos);
+                let vv = wwa.calculate_selectable(view.this_team, view.that_team, grid_matrix);
+                let mut wwa = view.this_team.lookup_mut(&current_warrior_pos);
+                wwa.selectable = vv;
+
+                if !vv {
                     //Deselect
                     break;
                 }
