@@ -134,33 +134,6 @@ impl<'a> Doop<'a> {
     }
 }
 
-pub struct GameView<'a> {
-    this_team: &'a mut Tribe,
-    that_team: &'a mut Tribe,
-}
-
-pub struct GameHolder<'a> {
-    game: &'a mut Game,
-    team_index: usize,
-}
-
-impl<'a> GameHolder<'a> {
-    fn get_view(&mut self) -> GameView {
-        //let gg = self.game.as_mut().unwrap();
-        let gg = &mut *self.game;
-        let (this_team, that_team) = if self.team_index == 0 {
-            (&mut gg.cats, &mut gg.dogs)
-        } else {
-            (&mut gg.dogs, &mut gg.cats)
-        };
-
-        GameView {
-            this_team,
-            that_team,
-        }
-    }
-}
-
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
@@ -174,18 +147,17 @@ pub async fn main_logic<'a>(
         receiver: response_recv,
     };
 
-    let mut game = GameHolder {
-        game,
-        team_index: 0,
-    };
-
+    let mut team_index = 0;
     //Loop over each team!
     loop {
-        let team_index = game.team_index;
-        let view = game.get_view();
-        view.this_team.replenish_stamina();
-        view.this_team
-            .calculate_selectable_all(view.that_team, grid_matrix);
+        let (this_team, that_team) = if team_index == 0 {
+            (&mut game.cats, &mut game.dogs)
+        } else {
+            (&mut game.dogs, &mut game.cats)
+        };
+
+        this_team.replenish_stamina();
+        this_team.calculate_selectable_all(that_team, grid_matrix);
 
         //Keep allowing the user to select units
         'outer: loop {
@@ -200,14 +172,14 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-                let Some(unit)= view.this_team.find_slow(&cell) else {
+                let Some(unit)= this_team.find_slow(&cell) else {
                     continue;
                 };
                 let pos = unit.slim();
 
-                let ss = unit.calculate_selectable(view.this_team, view.that_team, grid_matrix);
+                let ss = unit.calculate_selectable(this_team, that_team, grid_matrix);
 
-                view.this_team.lookup_mut(&pos).selectable = ss;
+                this_team.lookup_mut(&pos).selectable = ss;
                 if !ss {
                     continue;
                 }
@@ -220,14 +192,9 @@ pub async fn main_logic<'a>(
             //Until the unit is deselected.
             loop {
                 //let view = game.get_view();
-                let unit = view.this_team.lookup(current_warrior_pos);
+                let unit = this_team.lookup(current_warrior_pos);
 
-                let cc = generate_unit_possible_moves2(
-                    &unit,
-                    view.this_team,
-                    view.that_team,
-                    grid_matrix,
-                );
+                let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
 
                 let (cell, pototo) = doop.get_mouse_selection(cc, team_index).await;
                 let mouse_world = match pototo {
@@ -247,11 +214,11 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-                let xx = view.this_team.lookup(current_warrior_pos).slim();
+                let xx = this_team.lookup(current_warrior_pos).slim();
 
-                let current_attack = view.this_team.lookup_mut(&xx).attacked;
+                let current_attack = this_team.lookup_mut(&xx).attacked;
 
-                if let Some(target) = view.that_team.find_slow(&target_cell) {
+                if let Some(target) = that_team.find_slow(&target_cell) {
                     let aaa = target.slim();
 
                     if !current_attack
@@ -275,7 +242,7 @@ pub async fn main_logic<'a>(
                         //let attack_stamina_cost=2;
                         let total_cost = path.total_cost();
                         if target.health <= damage {
-                            let c = view.this_team.lookup_take(current_warrior_pos);
+                            let c = this_team.lookup_take(current_warrior_pos);
 
                             let aa = animation::Animation::new(c.position, path, grid_matrix, c);
 
@@ -283,32 +250,32 @@ pub async fn main_logic<'a>(
 
                             let mut this_unit = aa.into_data();
 
-                            this_unit.position = view.that_team.lookup(aaa).position;
+                            this_unit.position = that_team.lookup(aaa).position;
 
-                            view.that_team.lookup_take(aaa);
-                            view.this_team.add(this_unit);
-                            let mut current_cat = view.this_team.lookup_mut(&aaa);
+                            that_team.lookup_take(aaa);
+                            this_team.add(this_unit);
+                            let mut current_cat = this_team.lookup_mut(&aaa);
 
                             current_cat.attacked = true;
                             current_warrior_pos = current_cat.slim();
                         } else {
-                            let c = view.this_team.lookup_take(current_warrior_pos);
+                            let c = this_team.lookup_take(current_warrior_pos);
 
                             let aa = animation::Animation::new(c.position, path, grid_matrix, c);
                             let aa = doop.wait_animation(aa, team_index).await;
 
                             let this_unit = aa.into_data();
-                            view.this_team.add(this_unit);
-                            let mut target_cat = view.that_team.lookup_mut(&aaa);
+                            this_team.add(this_unit);
+                            let mut target_cat = that_team.lookup_mut(&aaa);
                             target_cat.health -= damage;
 
                             let kill_self =
-                                view.this_team.lookup(current_warrior_pos).health <= counter_damage;
+                                this_team.lookup(current_warrior_pos).health <= counter_damage;
 
-                            let mut current_cat = view.this_team.lookup_mut(&current_warrior_pos);
+                            let mut current_cat = this_team.lookup_mut(&current_warrior_pos);
 
                             if kill_self {
-                                view.this_team.lookup_take(current_warrior_pos);
+                                this_team.lookup_take(current_warrior_pos);
                                 //Deselect!!!!
                                 break;
                             } else {
@@ -323,7 +290,7 @@ pub async fn main_logic<'a>(
                     }
                 } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
                     let (dd, _) = ss.get_path_data(&target_cell).unwrap();
-                    let start = view.this_team.lookup_take(current_warrior_pos);
+                    let start = this_team.lookup_take(current_warrior_pos);
 
                     let aa = animation::Animation::new(start.position, dd, grid_matrix, start);
 
@@ -335,14 +302,13 @@ pub async fn main_logic<'a>(
 
                     current_warrior_pos = warrior.slim();
 
-                    view.this_team.add(warrior);
+                    this_team.add(warrior);
                 } else {
-                    if let Some(a) = view.this_team.find_slow(&target_cell) {
-                        let vv =
-                            a.calculate_selectable(view.this_team, view.that_team, grid_matrix);
+                    if let Some(a) = this_team.find_slow(&target_cell) {
+                        let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
                         let k = a.slim();
 
-                        view.this_team.lookup_mut(&k).selectable = vv;
+                        this_team.lookup_mut(&k).selectable = vv;
 
                         if vv && k != current_warrior_pos {
                             //Quick switch to another unit
@@ -359,9 +325,9 @@ pub async fn main_logic<'a>(
 
                 //let view = game.get_view();
 
-                let wwa = view.this_team.lookup(current_warrior_pos);
-                let vv = wwa.calculate_selectable(view.this_team, view.that_team, grid_matrix);
-                let mut wwa = view.this_team.lookup_mut(&current_warrior_pos);
+                let wwa = this_team.lookup(current_warrior_pos);
+                let vv = wwa.calculate_selectable(this_team, that_team, grid_matrix);
+                let mut wwa = this_team.lookup_mut(&current_warrior_pos);
                 wwa.selectable = vv;
 
                 if !vv {
@@ -373,12 +339,12 @@ pub async fn main_logic<'a>(
             //log!(format!("User selected!={:?}", mouse_world));
         }
 
-        game.get_view().this_team.reset_attacked();
+        this_team.reset_attacked();
 
-        if game.team_index == 1 {
-            game.team_index = 0;
+        if team_index == 1 {
+            team_index = 0;
         } else {
-            game.team_index = 1;
+            team_index = 1;
         }
     }
 }
