@@ -238,7 +238,10 @@ pub async fn main_logic<'a>(
                 let (view, cell, pototo) = doop.get_mouse_selection(cc, &mut game).await;
                 let mouse_world = match pototo {
                     Pototo::Normal(t) => t,
-                    Pototo::EndTurn => continue, //Ignore
+                    Pototo::EndTurn => {
+                        //End the turn. Ok because we are not int he middle of anything.
+                        break 'outer;
+                    }
                 };
 
                 //This is the cell the user selected from the pool of available moves for the unit
