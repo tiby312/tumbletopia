@@ -46,13 +46,7 @@ impl<'a> WarriorDraw<'a> {
             col,
         }
     }
-    fn draw(
-        &self,
-        gg: &grids::GridMatrix,
-        draw_sys: &mut ShaderSystem,
-        matrix: &Matrix4<f32>,
-        game: &Game,
-    ) {
+    fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
         for cc in self.col.elem.iter() {
             let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
 
@@ -308,20 +302,20 @@ pub struct WarriorPointer<T> {
 
 impl<'a> WarriorPointer<&'a mut Warrior> {
     //TODO use this instead of gridcoord when you know the type!!!!!
-    fn slim(&self) -> WarriorPointer<GridCoord> {
+    pub fn slim(&self) -> WarriorPointer<GridCoord> {
         WarriorPointer {
             inner: self.inner.position,
             val: self.val,
         }
     }
 
-    fn as_ref(&self) -> WarriorPointer<&Warrior> {
+    pub fn as_ref(&self) -> WarriorPointer<&Warrior> {
         WarriorPointer {
             inner: self.inner,
             val: self.val,
         }
     }
-    fn to_ref(self) -> WarriorPointer<&'a Warrior> {
+    pub fn to_ref(self) -> WarriorPointer<&'a Warrior> {
         let val = self.val;
         WarriorPointer {
             inner: self.inner,
@@ -420,7 +414,7 @@ impl Tribe {
         None
     }
 
-    fn find_slow_mut(&mut self, a: &GridCoord) -> Option<WarriorPointer<&mut Warrior>> {
+    pub fn find_slow_mut(&mut self, a: &GridCoord) -> Option<WarriorPointer<&mut Warrior>> {
         for (c, o) in self.warriors.iter_mut().enumerate() {
             if let Some(k) = o.find_mut(a) {
                 return Some(WarriorPointer { inner: k, val: c });
@@ -700,7 +694,7 @@ pub async fn worker_entry() {
                             break 'outer;
                         }
                     }
-                    ace::Command::GetMouseInput(c) => {
+                    ace::Command::GetMouseInput(_) => {
                         if end_turn {
                             response_sender
                                 .send(ace::GameWrapResponse {
@@ -863,8 +857,8 @@ pub async fn worker_entry() {
                     animation_draw.draw(&mut v);
                 }
 
-                cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix, &ggame);
-                dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix, &ggame);
+                cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
+                dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
 
                 disable_depth(&ctx, || {
                     cat_draw.draw_health_text(
@@ -983,7 +977,7 @@ use web_sys::WebGl2RenderingContext;
 
 use crate::ace::Pototo;
 //use crate::gameplay::GameStepper;
-use crate::movement::{Filter, MoveUnit};
+use crate::movement::MoveUnit;
 use crate::terrain::MoveCost;
 
 const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");

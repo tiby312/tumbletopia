@@ -52,16 +52,6 @@ pub enum Pototo<T> {
     Normal(T),
     EndTurn,
 }
-impl<T> Pototo<T> {
-    fn unwrap(self) -> T {
-        match self {
-            Pototo::Normal(a) => a,
-            Pototo::EndTurn => {
-                unreachable!();
-            }
-        }
-    }
-}
 
 #[derive(Debug)]
 pub enum Response {
@@ -253,17 +243,15 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-                let target_cat_pos = &target_cell;
-
                 let xx = view.this_team.lookup(current_warrior_pos).slim();
 
                 let current_attack = view.this_team.lookup_mut(&xx).attacked;
 
-                if let Some(target) = view.that_team.find_slow(target_cat_pos) {
+                if let Some(target) = view.that_team.find_slow(&target_cell) {
                     let aaa = target.slim();
 
                     if !current_attack
-                        && movement::contains_coord(attack.iter_coords(), target_cat_pos)
+                        && movement::contains_coord(attack.iter_coords(), &target_cell)
                     {
                         //TODO attack aaa
 
@@ -278,7 +266,7 @@ pub async fn main_logic<'a>(
                         let damage = 5;
                         let counter_damage = 5;
 
-                        let (path, _) = attack.get_path_data(target_cat_pos).unwrap();
+                        let (path, _) = attack.get_path_data(&target_cell).unwrap();
 
                         //let attack_stamina_cost=2;
                         let total_cost = path.total_cost();
@@ -417,9 +405,9 @@ pub fn generate_unit_possible_moves2(
         cat_filter: impl Filter,
         roads: impl MoveCost,
         gg: &grids::GridMatrix,
-        moved: bool,
+        _moved: bool,
     ) -> CellSelection {
-        let (movement, attack) = movement;
+        let (_movement, attack) = movement;
         let mm = if !cat.attacked {
             cat.stamina
         } else {
