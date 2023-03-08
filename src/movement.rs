@@ -154,7 +154,6 @@ impl PossibleMoves {
         coord: GridCoord,
         remaining_moves: MoveUnit,
     ) -> Self {
-        //A typical move costs 2, so scale everything as if it cost 1.
         let remaining_moves = MoveUnit(remaining_moves.0);
         let mut p = PossibleMoves {
             moves: vec![],
@@ -184,9 +183,9 @@ impl PossibleMoves {
         current_path: Path,
         remaining_moves: MoveUnit,
     ) {
-        if remaining_moves.0 == 0 {
-            return;
-        }
+        // if remaining_moves.0 == 0 {
+        //     return;
+        // }
 
         // 2-OG
         // warrior has 2 move points
@@ -229,18 +228,23 @@ impl PossibleMoves {
             //TODO road should HALF the cost?
             let cost = mo.foop(target_pos, move_cost);
 
+
+            //todo!("Need to allow cardinal movement at 1 point. Not working???");
+
+
             //as long as we have SOME remainv moves, we can go to this square even
             //if it is really expensive.
             // if !(remaining_moves.0 > 0) {
             //     continue;
             // }
-            if !(remaining_moves.0 > 1) {
-                continue;
-            }
-
-            // if !(remaining_moves.0 >= cost.0) {
+            //Allow 1 point remainder!!!!
+            // if remaining_moves.0 <= 1 {
             //     continue;
             // }
+
+            if !(remaining_moves.0 >= cost.0) {
+                continue;
+            }
 
             //subtract move cost
             let rr = remaining_moves.sub(cost);

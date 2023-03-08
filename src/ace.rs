@@ -159,6 +159,7 @@ pub async fn main_logic<'a>(
         this_team.replenish_stamina();
         this_team.calculate_selectable_all(that_team, grid_matrix);
 
+
         //Keep allowing the user to select units
         'outer: loop {
             //Loop until the user clicks on a selectable unit in their team.
@@ -379,7 +380,13 @@ pub fn generate_unit_possible_moves2(
     ) -> CellSelection {
         let (_movement, attack) = movement;
         let mm = if !cat.attacked {
-            cat.stamina
+            //TODO make this more explicit somehow??
+            MoveUnit(if cat.stamina.0 % 2 ==1{
+                cat.stamina.0
+            }else{
+                cat.stamina.0-1
+            })
+
         } else {
             MoveUnit(0)
         };

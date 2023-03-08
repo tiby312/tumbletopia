@@ -236,7 +236,7 @@ impl WarriorPointer<&Warrior> {
         };
 
         //TODO move this and the above into an high-level "Has possible moves function"
-        let has_stamina_to_move = s.stamina.0 > 1;
+        let has_stamina_to_move = s.stamina.0 >= 0; //0f??? TODO
 
         let ret = enemy_in_range || has_stamina_to_move;
         ret
@@ -256,7 +256,7 @@ impl Warrior {
     fn new(position: GridCoord) -> Self {
         Warrior {
             position,
-            stamina: MoveUnit(0),
+            stamina: MoveUnit(1),
             attacked: false,
             health: 10,
             selectable: true,
@@ -457,6 +457,7 @@ impl Tribe {
     fn replenish_stamina(&mut self) {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
+                
                 if b.stamina.0 <= 10 - 2 {
                     b.stamina.0 += 2;
                 }
