@@ -7,13 +7,13 @@ use crate::{
 };
 
 pub struct GameWrap<'a, T> {
-    pub game: &'a mut Game,
+    pub game: &'a Game,
     pub team: usize,
     pub data: T,
 }
 
 pub struct GameWrapResponse<'a, T> {
-    pub game: &'a mut Game,
+    pub game: &'a Game,
     pub data: T,
 }
 
@@ -66,6 +66,8 @@ use futures::{
 use gloo::console::log;
 
 pub struct Doop<'a> {
+    game: *mut Game,
+    team_index: usize,
     sender: Sender<GameWrap<'a, Command>>,
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
@@ -73,12 +75,13 @@ impl<'a> Doop<'a> {
     async fn wait_animation<'c>(
         &mut self,
         animation: Animation<WarriorPointer<Warrior>>,
-        game: &'c mut GameHolder<'a>,
-    ) -> (GameView<'c>, Animation<WarriorPointer<Warrior>>) {
+        team_index: usize,
+    ) -> Animation<WarriorPointer<Warrior>> {
+        let game = unsafe { &*self.game };
         self.sender
             .send(GameWrap {
-                team: game.team_index,
-                game: game.game.take().unwrap(),
+                team: team_index,
+                game,
                 data: Command::Animate(animation),
             })
             .await
@@ -89,36 +92,34 @@ impl<'a> Doop<'a> {
             unreachable!();
         };
 
-        game.game = Some(gg);
-        (game.get_view(), o)
+        o
     }
 
-    async fn get_mouse_no_selection<'c>(
-        &mut self,
-        game: &'c mut GameHolder<'a>,
-    ) -> (GameView<'c>, Pototo<GridCoord>) {
-        let (a, _, c) = self.get_mouse(None, game).await;
-        (a, c)
+    async fn get_mouse_no_selection<'c>(&mut self, team_index: usize) -> Pototo<GridCoord> {
+        let (_, c) = self.get_mouse(None, team_index).await;
+        c
     }
     async fn get_mouse_selection<'c>(
         &mut self,
         cell: CellSelection,
-        game: &'c mut GameHolder<'a>,
-    ) -> (GameView<'c>, CellSelection, Pototo<GridCoord>) {
-        let (a, b, c) = self.get_mouse(Some(cell), game).await;
-        (a, b.unwrap(), c)
+        team_index: usize,
+    ) -> (CellSelection, Pototo<GridCoord>) {
+        let (b, c) = self.get_mouse(Some(cell), team_index).await;
+        (b.unwrap(), c)
     }
 
     async fn get_mouse<'c>(
         &mut self,
         cell: Option<CellSelection>,
-        game: &'c mut GameHolder<'a>,
-    ) -> (GameView<'c>, Option<CellSelection>, Pototo<GridCoord>) {
+        team_index: usize,
+    ) -> (Option<CellSelection>, Pototo<GridCoord>) {
+        let game = unsafe { &*self.game };
+
         self.sender
             .send(GameWrap {
-                game: game.game.take().unwrap(),
+                game,
                 data: Command::GetMouseInput(cell),
-                team: game.team_index,
+                team: team_index,
             })
             .await
             .unwrap();
@@ -129,8 +130,7 @@ impl<'a> Doop<'a> {
             unreachable!();
         };
 
-        game.game = Some(gg);
-        (game.get_view(), cell, o)
+        (cell, o)
     }
 }
 
@@ -140,13 +140,14 @@ pub struct GameView<'a> {
 }
 
 pub struct GameHolder<'a> {
-    game: Option<&'a mut Game>,
+    game: &'a mut Game,
     team_index: usize,
 }
 
 impl<'a> GameHolder<'a> {
     fn get_view(&mut self) -> GameView {
-        let gg = self.game.as_mut().unwrap();
+        //let gg = self.game.as_mut().unwrap();
+        let gg = &mut *self.game;
         let (this_team, that_team) = if self.team_index == 0 {
             (&mut gg.cats, &mut gg.dogs)
         } else {
@@ -167,17 +168,20 @@ pub async fn main_logic<'a>(
     grid_matrix: &GridMatrix,
 ) {
     let mut doop = Doop {
+        game: game as *mut _,
+        team_index: 0,
         sender: command_sender,
         receiver: response_recv,
     };
 
     let mut game = GameHolder {
-        game: Some(game),
+        game,
         team_index: 0,
     };
 
     //Loop over each team!
     loop {
+        let team_index = game.team_index;
         let view = game.get_view();
         view.this_team.replenish_stamina();
         view.this_team
@@ -187,7 +191,7 @@ pub async fn main_logic<'a>(
         'outer: loop {
             //Loop until the user clicks on a selectable unit in their team.
             let current_unit = loop {
-                let (view, data) = doop.get_mouse_no_selection(&mut game).await;
+                let data = doop.get_mouse_no_selection(team_index).await;
                 let cell = match data {
                     Pototo::Normal(a) => a,
                     Pototo::EndTurn => {
@@ -215,7 +219,7 @@ pub async fn main_logic<'a>(
             //Keep showing the selected unit's options and keep handling the users selections
             //Until the unit is deselected.
             loop {
-                let view = game.get_view();
+                //let view = game.get_view();
                 let unit = view.this_team.lookup(current_warrior_pos);
 
                 let cc = generate_unit_possible_moves2(
@@ -225,7 +229,7 @@ pub async fn main_logic<'a>(
                     grid_matrix,
                 );
 
-                let (view, cell, pototo) = doop.get_mouse_selection(cc, &mut game).await;
+                let (cell, pototo) = doop.get_mouse_selection(cc, team_index).await;
                 let mouse_world = match pototo {
                     Pototo::Normal(t) => t,
                     Pototo::EndTurn => {
@@ -275,7 +279,7 @@ pub async fn main_logic<'a>(
 
                             let aa = animation::Animation::new(c.position, path, grid_matrix, c);
 
-                            let (view, aa) = doop.wait_animation(aa, &mut game).await;
+                            let aa = doop.wait_animation(aa, team_index).await;
 
                             let mut this_unit = aa.into_data();
 
@@ -291,7 +295,7 @@ pub async fn main_logic<'a>(
                             let c = view.this_team.lookup_take(current_warrior_pos);
 
                             let aa = animation::Animation::new(c.position, path, grid_matrix, c);
-                            let (view, aa) = doop.wait_animation(aa, &mut game).await;
+                            let aa = doop.wait_animation(aa, team_index).await;
 
                             let this_unit = aa.into_data();
                             view.this_team.add(this_unit);
@@ -323,7 +327,7 @@ pub async fn main_logic<'a>(
 
                     let aa = animation::Animation::new(start.position, dd, grid_matrix, start);
 
-                    let (view, aa) = doop.wait_animation(aa, &mut game).await;
+                    let aa = doop.wait_animation(aa, team_index).await;
 
                     let mut warrior = aa.into_data();
                     warrior.stamina.0 -= dd.total_cost().0;
@@ -353,7 +357,7 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-                let view = game.get_view();
+                //let view = game.get_view();
 
                 let wwa = view.this_team.lookup(current_warrior_pos);
                 let vv = wwa.calculate_selectable(view.this_team, view.that_team, grid_matrix);
