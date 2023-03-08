@@ -186,8 +186,12 @@ pub async fn main_logic<'a>(
         team_index: 0,
     };
 
+    //Loop over each team!
     loop {
-        game.get_view().this_team.replenish_stamina();
+        let view = game.get_view();
+        view.this_team.replenish_stamina();
+        view.this_team
+            .calculate_selectable_all(view.that_team, grid_matrix);
 
         //Keep allowing the user to select units
         'outer: loop {
@@ -442,7 +446,7 @@ pub fn generate_unit_possible_moves2(
         CellSelection::MoveSelection(mm, attack)
     }
 
-    let data = this_team.get_movement_data(&unit);
+    let data = crate::get_movement_data(&unit);
 
     get_cat_move_attack_matrix(
         data,

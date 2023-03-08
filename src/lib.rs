@@ -362,22 +362,23 @@ impl<T> std::ops::DerefMut for WarriorPointer<T> {
     }
 }
 
+fn get_movement_data<X>(a: &WarriorPointer<X>) -> (i8, i8) {
+    let (movement, attack) = {
+        match a.val {
+            0 => (0, 2),
+            1 => (0, 3),
+            2 => (0, 4),
+            _ => unreachable!(),
+        }
+    };
+    (movement, attack)
+}
+
 #[derive(Debug)]
 pub struct Tribe {
     warriors: Vec<UnitCollection<Warrior>>,
 }
 impl Tribe {
-    fn get_movement_data<X>(&self, a: &WarriorPointer<X>) -> (i8, i8) {
-        let (movement, attack) = {
-            match a.val {
-                0 => (0, 2),
-                1 => (0, 3),
-                2 => (0, 4),
-                _ => unreachable!(),
-            }
-        };
-        (movement, attack)
-    }
     fn lookup(&self, a: WarriorPointer<GridCoord>) -> WarriorPointer<&Warrior> {
         self.warriors[a.val]
             .find(&a.inner)
@@ -436,7 +437,26 @@ impl Tribe {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
                 b.attacked = false;
+                //Just set it selectable during other peoples turns so its not gray,
+                //even though it is not selectable.
                 b.selectable = true;
+            }
+        }
+    }
+    fn calculate_selectable_all(&mut self, that_team: &mut Tribe, grid_matrix: &GridMatrix) {
+        let this_team = self;
+        for i in 0..this_team.warriors.len() {
+            let a = &this_team.warriors[i];
+            for ii in 0..a.elem.len() {
+                let a = &this_team.warriors[i];
+
+                let b = &a.elem[ii];
+                let b = WarriorPointer { inner: b, val: i };
+
+                let vv = b.calculate_selectable(this_team, that_team, grid_matrix);
+
+                this_team.warriors[i].elem[ii].selectable = vv;
+                //b.selectable=vv;
             }
         }
     }
@@ -449,6 +469,32 @@ impl Tribe {
             }
         }
     }
+}
+
+pub struct RestOfUnits<'a, T> {
+    first: &'a mut [T],
+    second: &'a mut [T],
+}
+
+fn get_unit<'a>(
+    a: &'a mut UnitCollection<Warrior>,
+    coord: &GridCoord,
+) -> (&'a mut Warrior, RestOfUnits<'a, Warrior>) {
+    let (unit, _) = a
+        .elem
+        .iter()
+        .enumerate()
+        .find(|(_, b)| b.get_pos() == coord)
+        .unwrap();
+
+    let (first, mid, second) = split_at_mid_mut(&mut a.elem, unit);
+    (mid, RestOfUnits { first, second })
+}
+
+fn split_at_mid_mut<T>(a: &mut [T], ind: usize) -> (&mut [T], &mut T, &mut [T]) {
+    let (left, right) = a.split_at_mut(ind);
+    let (mid, rest) = right.split_first_mut().unwrap();
+    (left, mid, rest)
 }
 
 //TODO store actual world pos? Less calculation each iteration.
