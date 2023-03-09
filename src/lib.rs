@@ -256,7 +256,7 @@ impl Warrior {
     fn new(position: GridCoord) -> Self {
         Warrior {
             position,
-            stamina: MoveUnit(1),
+            stamina: MoveUnit(0),
             attacked: false,
             health: 10,
             selectable: true,
@@ -359,7 +359,7 @@ impl<T> std::ops::DerefMut for WarriorPointer<T> {
 fn get_movement_data<X>(a: &WarriorPointer<X>) -> (i8, i8) {
     let (movement, attack) = {
         match a.val {
-            0 => (0, 2),
+            0 => (0, 3),
             1 => (0, 3),
             2 => (0, 4),
             _ => unreachable!(),
@@ -457,7 +457,6 @@ impl Tribe {
     fn replenish_stamina(&mut self) {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
-                
                 if b.stamina.0 <= 10 - 2 {
                     b.stamina.0 += 2;
                 }
