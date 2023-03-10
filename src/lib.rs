@@ -522,6 +522,11 @@ pub async fn worker_entry() {
 
     ctx.setup_alpha();
 
+
+    let hex_world=hex::world();
+
+
+
     //TODO delete
     //let gg = grids::GridMatrix::new();
 
@@ -757,28 +762,7 @@ pub async fn worker_entry() {
 
                 let [vvx, vvy] = get_world_rect(&matrix, &grid_matrix);
 
-                for a in (vvx[0]..vvx[1])
-                    .skip_while(|&a| a < 0)
-                    .take_while(|&a| a < grid_matrix.num_rows())
-                {
-                    //both should be skip
-                    for b in (vvy[0]..vvy[1])
-                        .skip_while(|&a| a < 0)
-                        .take_while(|&a| a < grid_matrix.num_rows())
-                    {
-                        use matrix::*;
-                        let x1 = grid_matrix.spacing() * a as f32;
-                        let y1 = grid_matrix.spacing() * b as f32;
-                        let s = 0.99;
-                        let mm = matrix
-                            .chain(translation(x1, y1, -1.0))
-                            .chain(scale(s, s, s))
-                            .generate();
-
-                        let mut v = draw_sys.view(mm.as_ref());
-                        grass.draw(&mut v);
-                    }
-                }
+                //  
 
                 let cat_draw = WarriorDraw::new(&ggame.cats.warriors[0], &cat, &drop_shadow);
                 let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[0], &dog, &drop_shadow);
@@ -833,7 +817,6 @@ pub async fn worker_entry() {
 
                 disable_depth(&ctx, || {
                     //draw dropshadow
-
                     cat_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
 
@@ -856,6 +839,25 @@ pub async fn worker_entry() {
                     let mut v = draw_sys.view(m.as_ref());
 
                     animation_draw.draw(&mut v);
+                }
+
+
+                for c in hex_world.iter(){
+                    let scale=cgmath::Matrix2::new(40.0,0.0,0.0,40.0);
+
+                    let v=cgmath::Vector2::new(c.0[0] as f32,c.0[1] as f32);
+                    let pos=hex::HEX_PROJ*scale*v;
+                    
+
+
+
+                    //let pos = a.calc_pos();
+                    let t = matrix::translation(pos[0], pos[1], 0.0);
+                    let s = matrix::scale(1.0, 1.0, 1.0);
+                    let m = matrix.chain(t).chain(s).generate();
+                    let mut v = draw_sys.view(m.as_ref());
+
+                    grass.draw(&mut v);
                 }
 
                 cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);

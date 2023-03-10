@@ -9,19 +9,23 @@ const OFFSETS: [[i16; 3]; 6] = [
 
 
 
-const SQRT_3:f64=1.73205080757;
+const SQRT_3:f32=1.73205080757;
 
 // https://www.redblobgames.com/grids/hexagons/#hex-to-pixel
-const HEX_PROJECTION:[[f64;2];2]=[
-    [SQRT_3,SQRT_3/2.0],
-    [0.0,3.0/2.0]
-];
+
+pub const HEX_PROJ: cgmath::Matrix2<f32>=cgmath::Matrix2::new(SQRT_3,SQRT_3/2.0,0.0,3.0/2.0);
+
+//This is world
+pub fn world()->Vec<Cube>{
+    Cube([0;3]).range(2).collect()
+}
 
 
 //q r s
 #[derive(Copy,Clone)]
 pub struct Cube(pub [i16; 3]);
 impl Cube {
+    
     pub fn neighbour(&self,dir:i16)->Cube{
         self.add(Cube::direction(dir))
     }
