@@ -23,6 +23,7 @@ pub mod util;
 use dom::MEvent;
 use projection::*;
 pub mod ace;
+pub mod hex;
 //pub mod state;
 //pub mod logic;
 pub const RESIZE: usize = 10;
