@@ -21,6 +21,14 @@ impl movement::Filter for GridFilter {
     }
 }
 impl GridMatrix {
+    pub fn hex_axial_to_square(&self,coord:GridCoord)->cgmath::Vector2<f32>{
+        let sc=19.0;
+        let scale=cgmath::Matrix2::new(sc,0.0,0.0,sc);
+
+        let v=cgmath::Vector2::new(coord.0[0] as f32,coord.0[1] as f32);
+        scale*hex::HEX_PROJ_FLAT*v
+    }
+    
     pub fn filter(&self) -> GridFilter {
         GridFilter {
             grid_width: self.grid_width,

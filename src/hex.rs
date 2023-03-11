@@ -22,7 +22,7 @@ pub const HEX_PROJ_FLAT:cgmath::Matrix2<f32>=cgmath::Matrix2::new(3.0/2.0,SQRT_3
 
 //This is world
 pub fn world()->Vec<Cube>{
-    Cube([0;3]).range(2).collect()
+    Cube([0,5,0]).range(5).collect()
 }
 
 
@@ -63,10 +63,11 @@ impl Cube {
     }
 
     pub fn range(&self,n:i16)->impl Iterator<Item=Cube>{
+        let o=*self;
         (-n..n+1).flat_map(move |q|{
             ((-n).max(-q-n)..n.min(-q+n)+1).map(move |r|{
                 let s=-q-r;
-                Cube([q,r,s])
+                o.add(Cube([q,r,s]))
             })
         })
     }

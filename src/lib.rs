@@ -49,8 +49,11 @@ impl<'a> WarriorDraw<'a> {
     }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
         for cc in self.col.elem.iter() {
-            let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
+            
+            let pos=gg.hex_axial_to_square(cc.position);
 
+            // let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
+            
             let t = matrix::translation(pos[0], pos[1], 0.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
@@ -842,12 +845,13 @@ pub async fn worker_entry() {
                 }
 
 
+
                 for c in hex_world.iter(){
                     let sc=19.0;
                     let scale=cgmath::Matrix2::new(sc,0.0,0.0,sc);
 
                     let v=cgmath::Vector2::new(c.0[0] as f32,c.0[1] as f32);
-                    let mut pos=scale*hex::HEX_PROJ_FLAT*v;
+                    let pos=scale*hex::HEX_PROJ_FLAT*v;
                     
 
 
