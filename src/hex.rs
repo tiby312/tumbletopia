@@ -13,7 +13,12 @@ const SQRT_3:f32=1.73205080757;
 
 // https://www.redblobgames.com/grids/hexagons/#hex-to-pixel
 
-pub const HEX_PROJ: cgmath::Matrix2<f32>=cgmath::Matrix2::new(SQRT_3,SQRT_3/2.0,0.0,3.0/2.0);
+
+
+pub const HEX_PROJ_POINTY:cgmath::Matrix2<f32>=cgmath::Matrix2::new(SQRT_3,0.0,SQRT_3/2.0,3.0/2.0);
+
+pub const HEX_PROJ_FLAT:cgmath::Matrix2<f32>=cgmath::Matrix2::new(3.0/2.0,SQRT_3/2.0,0.0,SQRT_3);
+
 
 //This is world
 pub fn world()->Vec<Cube>{

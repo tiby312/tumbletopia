@@ -843,12 +843,12 @@ pub async fn worker_entry() {
 
 
                 for c in hex_world.iter(){
-                    let scale=cgmath::Matrix2::new(40.0,0.0,0.0,40.0);
+                    let sc=19.0;
+                    let scale=cgmath::Matrix2::new(sc,0.0,0.0,sc);
 
                     let v=cgmath::Vector2::new(c.0[0] as f32,c.0[1] as f32);
-                    let pos=hex::HEX_PROJ*scale*v;
+                    let mut pos=scale*hex::HEX_PROJ_FLAT*v;
                     
-
 
 
                     //let pos = a.calc_pos();
@@ -994,7 +994,8 @@ const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
 const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
 const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
 
-const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");
+const GRASS_GLB: &'static [u8] = include_bytes!("../assets/hex-grass.glb");
+
 
 pub struct NumberTextManager<'a> {
     numbers: Vec<model_parse::ModelGpu>,
