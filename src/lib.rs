@@ -370,9 +370,9 @@ pub struct DefendData {
 }
 
 fn get_defend_data(a: &WarriorType<&Warrior>) -> DefendData {
-    let mut counter_attack_damage=5;
-    if a.val==1{
-        counter_attack_damage=0;
+    let mut counter_attack_damage = 5;
+    if a.val == 1 {
+        counter_attack_damage = 0;
     }
     DefendData {
         counter_attack_damage,

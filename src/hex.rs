@@ -92,12 +92,12 @@ impl Cube {
 
     pub fn range(&self, n: i16) -> impl Iterator<Item = Cube> {
         let o = *self;
-        (-n..n + 1).flat_map(move |q| {
-            ((-n).max(-q - n)..n.min(-q + n) + 1).map(move |r| {
+        (-n..n + 1)
+            .flat_map(move |q| ((-n).max(-q - n)..n.min(-q + n) + 1).map(move |r| (q, r)))
+            .map(move |(q, r)| {
                 let s = -q - r;
                 o.add(Cube([q, r, s]))
             })
-        })
     }
     pub fn neighbours(&self) -> impl Iterator<Item = Cube> {
         let k = self.0.clone();

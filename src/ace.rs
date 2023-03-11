@@ -224,28 +224,13 @@ pub async fn main_logic<'a>(
                     let aaa = target.slim();
 
                     if !current_attack && movement::contains_coord(attack.iter(), &target_cell) {
-                        //TODO attack aaa
-
-                        //Only counter if non neg
-                        // let counter_damage = if g1.this_team.lookup_mut(current).move_bank.0>=0{
-                        //     5
-                        // }else{
-                        //     0
-                        // };
-                        // let damage = 5;
-                        // let counter_damage = 5;
                         let damage = attack_data.damage;
                         let counter_damage = if attack_data.counter_attackable {
-                            //TODO retrieve counter attack from target
                             crate::get_defend_data(&target).counter_attack_damage
                         } else {
                             0
                         };
 
-                        //let (path, _) = attack.get_path_data(&target_cell).unwrap();
-
-                        //let attack_stamina_cost=2;
-                        //let total_cost = path.total_cost();
                         if target.health <= damage {
                             let c = this_team.lookup_take(current_warrior_pos);
                             //let aa = animation::Animation::new(c.position, path, grid_matrix, c);
