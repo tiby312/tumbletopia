@@ -9,7 +9,7 @@ pub const OFFSETS: [[i16; 3]; 6] = [
     [-1, 1, 0],
 ];
 
-const SQRT_3: f32 = 1.73205080757;
+pub(crate) const SQRT_3: f32 = 1.73205080757;
 
 // https://www.redblobgames.com/grids/hexagons/#hex-to-pixel
 

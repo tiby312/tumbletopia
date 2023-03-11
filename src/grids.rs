@@ -4,14 +4,10 @@ use axgeom::*;
 ///A way to map a grid to world coordinates and vice versa
 #[derive(Debug)]
 pub struct GridMatrix {
-    grid_width: i16,
-    grid_dim: [f32; 2],
     spacing: f32,
 }
 
-pub struct GridFilter {
-    grid_width: i16,
-}
+pub struct GridFilter {}
 impl movement::Filter for GridFilter {
     fn filter(&self, a: &GridCoord) -> bool {
         world().find(|b| b.to_axial() == *a).is_some()
@@ -21,57 +17,51 @@ impl movement::Filter for GridFilter {
         // x >= 0 && y >= 0 && x < self.grid_width && y < self.grid_width
     }
 }
-pub fn hex_axial_to_square_matrix() -> cgmath::Matrix2<f32> {
-    let sc = 19.0;
-    let scale = cgmath::Matrix2::new(sc, 0.0, 0.0, sc);
-    scale * hex::HEX_PROJ_FLAT
-}
 
 fn world() -> impl Iterator<Item = hex::Cube> {
     hex::Cube::new(0, 0).range(5)
 }
 
+const FOO: f32 = hex::SQRT_3;
+const EPSILON: f32 = 1.01;
+
 impl GridMatrix {
+    pub fn hex_axial_to_square_matrix(&self) -> cgmath::Matrix2<f32> {
+        let sc = EPSILON * self.spacing() / FOO;
+        let scale = cgmath::Matrix2::new(sc, 0.0, 0.0, sc);
+        scale * hex::HEX_PROJ_FLAT
+    }
+
     //This is world
     pub fn world(&self) -> impl Iterator<Item = hex::Cube> {
         world()
     }
     pub fn world_to_hex(&self, pos: cgmath::Vector2<f32>) -> GridCoord {
         use cgmath::SquareMatrix;
-        let k = hex_axial_to_square_matrix().invert().unwrap() * pos;
+        let k = self.hex_axial_to_square_matrix().invert().unwrap() * pos;
         let q = k.x;
         let r = k.y;
         let s = -k.x - k.y;
         hex::Cube::round([q, r, s]).to_axial()
     }
     pub fn center_world_to_hex(&self, mut pos: cgmath::Vector2<f32>) -> GridCoord {
-        pos.x -= 19.0;
-        pos.y -= 19.0;
+        pos.x -= EPSILON * self.spacing() / FOO;
+        pos.y -= EPSILON * self.spacing() / FOO;
         self.world_to_hex(pos)
     }
 
     pub fn hex_axial_to_world(&self, coord: &GridCoord) -> cgmath::Vector2<f32> {
         let v = cgmath::Vector2::new(coord.0[0] as f32, coord.0[1] as f32);
-        hex_axial_to_square_matrix() * v
+        self.hex_axial_to_square_matrix() * v
     }
 
     pub fn filter(&self) -> GridFilter {
-        GridFilter {
-            grid_width: self.grid_width,
-        }
+        GridFilter {}
     }
     pub fn new() -> Self {
-        let grid_width = 32;
-
-        let grid_dim = [1000.0f32, 1000.0];
-
-        let spacing = grid_dim[0] / (grid_width as f32);
-
-        Self {
-            grid_width,
-            grid_dim,
-            spacing,
-        }
+        let spacing = 30.0; //grid_dim[0] / (grid_width as f32);
+        log!(format!("spacing{:?}", spacing));
+        Self { spacing }
     }
     // pub fn to_world_topleft(&self, pos: Vec2<i16>) -> Vec2<f32> {
     //     pos.inner_as() * self.spacing
@@ -91,12 +81,12 @@ impl GridMatrix {
     //     result.inner_as()
     // }
 
-    pub fn num_rows(&self) -> i16 {
-        self.grid_width
-    }
-    pub fn dim(&self) -> &[f32; 2] {
-        &self.grid_dim
-    }
+    // pub fn num_rows(&self) -> i16 {
+    //     self.grid_width
+    // }
+    // pub fn dim(&self) -> &[f32; 2] {
+    //     &self.grid_dim
+    // }
     pub fn spacing(&self) -> f32 {
         self.spacing
     }
