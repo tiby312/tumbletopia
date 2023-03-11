@@ -224,7 +224,7 @@ impl WarriorType<&Warrior> {
         //check if there are enemies in range.
         let enemy_in_range = {
             let (_, att) = match &pos {
-                CellSelection::MoveSelection(ss, att) => (ss, att),
+                CellSelection::MoveSelection(ss, _, att) => (ss, att),
                 _ => unreachable!(),
             };
 
@@ -269,7 +269,7 @@ impl Warrior {
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(movement::PossibleMoves, Vec<GridCoord>),
+    MoveSelection(movement::PossibleMoves, AttackData, Vec<GridCoord>),
     BuildSelection(GridCoord),
 }
 
@@ -359,9 +359,26 @@ impl<T> std::ops::DerefMut for WarriorType<T> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct AttackData {
+    counter_attackable: bool,
+    damage: i8,
+}
+
+pub struct DefendData {
+    counter_attack_damage: i8,
+}
+
+fn get_defend_data(a: &WarriorType<&Warrior>) -> DefendData {
+    DefendData {
+        counter_attack_damage: 5,
+    }
+}
+
 //TODO additionally return a animation??.
-fn get_attack_data(a: &WarriorType<&Warrior>) -> impl Iterator<Item = hex::Cube> {
+fn get_attack_data(a: &WarriorType<&Warrior>) -> (AttackData, impl Iterator<Item = GridCoord>) {
     assert!(a.val < 3);
+    let mut counter_attackable = true;
     let first = if a.val == 1 {
         Some(a.position.to_cube().range(1))
     } else {
@@ -369,6 +386,7 @@ fn get_attack_data(a: &WarriorType<&Warrior>) -> impl Iterator<Item = hex::Cube>
     };
 
     let second = if a.val == 0 {
+        counter_attackable = false;
         Some(a.position.to_cube().ring(2))
     } else {
         None
@@ -379,11 +397,20 @@ fn get_attack_data(a: &WarriorType<&Warrior>) -> impl Iterator<Item = hex::Cube>
     } else {
         None
     };
-    first
+    let it = first
         .into_iter()
         .flatten()
         .chain(second.into_iter().flatten())
         .chain(third.into_iter().flatten())
+        .map(|x| x.to_axial());
+
+    (
+        AttackData {
+            counter_attackable,
+            damage: 5,
+        },
+        it,
+    )
 }
 
 fn get_movement_data<X>(a: &WarriorType<X>) -> (i8, i8) {
@@ -810,7 +837,7 @@ pub async fn worker_entry() {
                     if let ace::Command::GetMouseInput(Some(a)) = &command {
                         //if let Some(a) = testo.get_selection() {
                         match a {
-                            CellSelection::MoveSelection(a, attack) => {
+                            CellSelection::MoveSelection(a, _, attack) => {
                                 for a in a.iter_coords() {
                                     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);

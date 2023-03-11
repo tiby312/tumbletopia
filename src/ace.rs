@@ -207,8 +207,10 @@ pub async fn main_logic<'a>(
 
                 //This is the cell the user selected from the pool of available moves for the unit
                 let target_cell = mouse_world;
-                let (ss, attack) = match cell {
-                    CellSelection::MoveSelection(ss, attack) => (ss, attack),
+                let (ss, attack_data, attack) = match cell {
+                    CellSelection::MoveSelection(ss, attack_data, attack) => {
+                        (ss, attack_data, attack)
+                    }
                     _ => {
                         unreachable!()
                     }
@@ -232,8 +234,13 @@ pub async fn main_logic<'a>(
                         // };
                         // let damage = 5;
                         // let counter_damage = 5;
-                        let damage = 5;
-                        let counter_damage = 5;
+                        let damage = attack_data.damage;
+                        let counter_damage = if attack_data.counter_attackable {
+                            //TODO retrieve counter attack from target
+                            crate::get_defend_data(&target).counter_attack_damage
+                        } else {
+                            0
+                        };
 
                         //let (path, _) = attack.get_path_data(&target_cell).unwrap();
 
@@ -399,7 +406,8 @@ pub fn generate_unit_possible_moves2(
 
         //let attack_range=attack;
 
-        let attack = crate::get_attack_data(cat).map(|x| x.to_axial()).collect();
+        let (attack, attack_coords) = crate::get_attack_data(cat);
+        let attack_coords = attack_coords.collect();
 
         // let attack = movement::PossibleMoves::new(
         //     &movement::WarriorMovement,
@@ -409,7 +417,7 @@ pub fn generate_unit_possible_moves2(
         //     MoveUnit(attack_range),
         // );
 
-        CellSelection::MoveSelection(mm, attack)
+        CellSelection::MoveSelection(mm, attack, attack_coords)
     }
 
     let data = crate::get_movement_data(&unit);
