@@ -717,7 +717,7 @@ pub async fn worker_entry() {
                                 .unwrap();
                             break 'outer;
                         } else if on_select {
-                            let mouse: GridCoord =grid_matrix.world_to_hex(mouse_world.into());
+                            let mouse: GridCoord =grid_matrix.center_world_to_hex(mouse_world.into());
 
                             response_sender
                                 .send(ace::GameWrapResponse {

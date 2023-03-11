@@ -33,6 +33,16 @@ impl GridMatrix {
         let k=[k.x.round() as i16,k.y.round() as i16];
         GridCoord(k)
     }
+    pub fn center_world_to_hex(&self,mut pos:cgmath::Vector2<f32>)->GridCoord{
+        pos.x-=19.0/2.0;
+        pos.y-=19.0/2.0;
+
+        use cgmath::SquareMatrix;
+        let k=hex_axial_to_square_matrix().invert().unwrap()*pos;
+        let k=[k.x.round() as i16,k.y.round() as i16];
+        GridCoord(k)
+    }
+    
     pub fn hex_axial_to_world(&self,coord:&GridCoord)->cgmath::Vector2<f32>{
         let v=cgmath::Vector2::new(coord.0[0] as f32,coord.0[1] as f32);
         hex_axial_to_square_matrix()*v
