@@ -1,12 +1,21 @@
 use crate::movement::GridCoord;
 
+// pub const OFFSETS: [[i16; 3]; 6] = [
+//     [0, 1, -1],
+//     [1, 0, -1],
+//     [1, -1, 0],
+//     [0, -1, 1],
+//     [-1, 0, 1],
+//     [-1, 1, 0],
+// ];
+
 pub const OFFSETS: [[i16; 3]; 6] = [
-    [0, 1, -1],
     [1, 0, -1],
     [1, -1, 0],
     [0, -1, 1],
     [-1, 0, 1],
     [-1, 1, 0],
+    [0, 1, -1],
 ];
 
 pub(crate) const SQRT_3: f32 = 1.73205080757;
@@ -20,7 +29,7 @@ pub const HEX_PROJ_FLAT: cgmath::Matrix2<f32> =
     cgmath::Matrix2::new(3.0 / 2.0, SQRT_3 / 2.0, 0.0, SQRT_3);
 
 //q r s
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Cube(pub [i16; 3]);
 impl Cube {
     pub fn new(q: i16, r: i16) -> Self {
@@ -67,13 +76,13 @@ impl Cube {
     pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> {
         let mut hex = self.add(Cube::direction(4).scale(n));
 
-        (0..6).flat_map(move |i| {
-            (0..n).map(move |_| {
+        (0..6)
+            .flat_map(move |i| std::iter::repeat(i).take(n as usize))
+            .map(move |i| {
                 let h = hex;
                 hex = hex.neighbour(i);
                 h
             })
-        })
     }
 
     pub fn scale(self, n: i16) -> Cube {

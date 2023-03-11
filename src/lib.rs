@@ -114,25 +114,25 @@ impl<'a> WarriorDraw<'a> {
             //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
         }
 
-        for ccat in self.col.elem.iter() {
-            let pos: [f32; 2] = gg.hex_axial_to_world(&ccat.position).into();
+        // for ccat in self.col.elem.iter() {
+        //     let pos: [f32; 2] = gg.hex_axial_to_world(&ccat.position).into();
 
-            let t = matrix::translation(pos[0] + 20.0, pos[1], 20.0);
+        //     let t = matrix::translation(pos[0] + 20.0, pos[1], 20.0);
 
-            let jj = view_proj.chain(t).generate();
-            let jj: &[f32; 16] = jj.as_ref();
-            let tt = matrix::translation(jj[12], jj[13], jj[14]);
-            let new_proj = proj.clone().chain(tt);
+        //     let jj = view_proj.chain(t).generate();
+        //     let jj: &[f32; 16] = jj.as_ref();
+        //     let tt = matrix::translation(jj[12], jj[13], jj[14]);
+        //     let new_proj = proj.clone().chain(tt);
 
-            let s = matrix::scale(5.0, 5.0, 5.0);
-            let m = new_proj.chain(s).generate();
+        //     let s = matrix::scale(5.0, 5.0, 5.0);
+        //     let m = new_proj.chain(s).generate();
 
-            let nn = health_numbers.get_number(ccat.stamina.0);
-            let mut v = draw_sys.view(m.as_ref());
-            nn.draw_ext(&mut v, false, false, true, false);
+        //     let nn = health_numbers.get_number(ccat.stamina.0);
+        //     let mut v = draw_sys.view(m.as_ref());
+        //     nn.draw_ext(&mut v, false, false, true, false);
 
-            //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
-        }
+        //     //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
+        // }
     }
 }
 
@@ -211,7 +211,7 @@ pub struct Warrior {
     selectable: bool,
 }
 
-impl WarriorPointer<&Warrior> {
+impl WarriorType<&Warrior> {
     pub fn calculate_selectable(
         &self,
         this_team: &Tribe,
@@ -229,7 +229,7 @@ impl WarriorPointer<&Warrior> {
             };
 
             let mut found = false;
-            for a in att.iter_coords() {
+            for a in att.iter() {
                 if let Some(_) = that_team.find_slow(a) {
                     found = true;
                     break;
@@ -269,7 +269,7 @@ impl Warrior {
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(movement::PossibleMoves, movement::PossibleMoves),
+    MoveSelection(movement::PossibleMoves, Vec<GridCoord>),
     BuildSelection(GridCoord),
 }
 
@@ -286,85 +286,112 @@ impl<'a> movement::Filter for TribeFilter<'a> {
     }
 }
 
-impl<T> std::borrow::Borrow<T> for WarriorPointer<T> {
+impl<T> std::borrow::Borrow<T> for WarriorType<T> {
     fn borrow(&self) -> &T {
         &self.inner
     }
 }
-impl<T> std::borrow::BorrowMut<T> for WarriorPointer<T> {
+impl<T> std::borrow::BorrowMut<T> for WarriorType<T> {
     fn borrow_mut(&mut self) -> &mut T {
         &mut self.inner
     }
 }
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub struct WarriorPointer<T> {
+pub struct WarriorType<T> {
     inner: T,
     val: usize,
 }
 
-impl<'a> WarriorPointer<&'a mut Warrior> {
+impl<'a> WarriorType<&'a mut Warrior> {
     //TODO use this instead of gridcoord when you know the type!!!!!
-    pub fn slim(&self) -> WarriorPointer<GridCoord> {
-        WarriorPointer {
+    pub fn slim(&self) -> WarriorType<GridCoord> {
+        WarriorType {
             inner: self.inner.position,
             val: self.val,
         }
     }
 
-    pub fn as_ref(&self) -> WarriorPointer<&Warrior> {
-        WarriorPointer {
+    pub fn as_ref(&self) -> WarriorType<&Warrior> {
+        WarriorType {
             inner: self.inner,
             val: self.val,
         }
     }
-    pub fn to_ref(self) -> WarriorPointer<&'a Warrior> {
+    pub fn to_ref(self) -> WarriorType<&'a Warrior> {
         let val = self.val;
-        WarriorPointer {
+        WarriorType {
             inner: self.inner,
             val,
         }
     }
 }
 
-impl WarriorPointer<&Warrior> {
+impl WarriorType<&Warrior> {
     //TODO use this instead of gridcoord when you know the type!!!!!
-    fn slim(&self) -> WarriorPointer<GridCoord> {
-        WarriorPointer {
+    fn slim(&self) -> WarriorType<GridCoord> {
+        WarriorType {
             inner: self.inner.position,
             val: self.val,
         }
     }
 }
-impl WarriorPointer<Warrior> {
+impl WarriorType<Warrior> {
     //TODO use this instead of gridcoord when you know the type!!!!!
-    fn slim(&self) -> WarriorPointer<GridCoord> {
-        WarriorPointer {
+    fn slim(&self) -> WarriorType<GridCoord> {
+        WarriorType {
             inner: self.inner.position,
             val: self.val,
         }
     }
 }
 
-impl<T> std::ops::Deref for WarriorPointer<T> {
+impl<T> std::ops::Deref for WarriorType<T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl<T> std::ops::DerefMut for WarriorPointer<T> {
+impl<T> std::ops::DerefMut for WarriorType<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }
 
-fn get_movement_data<X>(a: &WarriorPointer<X>) -> (i8, i8) {
+//TODO additionally return a animation??.
+fn get_attack_data(a: &WarriorType<&Warrior>) -> impl Iterator<Item = hex::Cube> {
+    assert!(a.val < 3);
+    let first = if a.val == 1 {
+        Some(a.position.to_cube().range(1))
+    } else {
+        None
+    };
+
+    let second = if a.val == 0 {
+        Some(a.position.to_cube().ring(2))
+    } else {
+        None
+    };
+
+    let third = if a.val == 2 {
+        Some(a.position.to_cube().ring(3))
+    } else {
+        None
+    };
+    first
+        .into_iter()
+        .flatten()
+        .chain(second.into_iter().flatten())
+        .chain(third.into_iter().flatten())
+}
+
+fn get_movement_data<X>(a: &WarriorType<X>) -> (i8, i8) {
     let (movement, attack) = {
         match a.val {
-            0 => (0, 1),
-            1 => (0, 2),
-            2 => (0, 3),
+            0 => (1, 1),
+            1 => (2, 2),
+            2 => (3, 3),
             _ => unreachable!(),
         }
     };
@@ -376,51 +403,51 @@ pub struct Tribe {
     warriors: Vec<UnitCollection<Warrior>>,
 }
 impl Tribe {
-    fn lookup(&self, a: WarriorPointer<GridCoord>) -> WarriorPointer<&Warrior> {
+    fn lookup(&self, a: WarriorType<GridCoord>) -> WarriorType<&Warrior> {
         self.warriors[a.val]
             .find(&a.inner)
-            .map(|b| WarriorPointer {
+            .map(|b| WarriorType {
                 inner: b,
                 val: a.val,
             })
             .unwrap()
     }
-    fn lookup_mut(&mut self, a: &WarriorPointer<GridCoord>) -> WarriorPointer<&mut Warrior> {
+    fn lookup_mut(&mut self, a: &WarriorType<GridCoord>) -> WarriorType<&mut Warrior> {
         self.warriors[a.val]
             .find_mut(&a.inner)
-            .map(|b| WarriorPointer {
+            .map(|b| WarriorType {
                 inner: b,
                 val: a.val,
             })
             .unwrap()
     }
-    fn lookup_take(&mut self, a: WarriorPointer<GridCoord>) -> WarriorPointer<Warrior> {
+    fn lookup_take(&mut self, a: WarriorType<GridCoord>) -> WarriorType<Warrior> {
         Some(self.warriors[a.val].remove(&a.inner))
-            .map(|b| WarriorPointer {
+            .map(|b| WarriorType {
                 inner: b,
                 val: a.val,
             })
             .unwrap()
     }
 
-    fn add(&mut self, a: WarriorPointer<Warrior>) {
+    fn add(&mut self, a: WarriorType<Warrior>) {
         self.warriors[a.val].elem.push(a.inner);
     }
 
-    fn find_slow(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
+    fn find_slow(&self, a: &GridCoord) -> Option<WarriorType<&Warrior>> {
         for (c, o) in self.warriors.iter().enumerate() {
             if let Some(k) = o.find(a) {
-                return Some(WarriorPointer { inner: k, val: c });
+                return Some(WarriorType { inner: k, val: c });
             }
         }
 
         None
     }
 
-    pub fn find_slow_mut(&mut self, a: &GridCoord) -> Option<WarriorPointer<&mut Warrior>> {
+    pub fn find_slow_mut(&mut self, a: &GridCoord) -> Option<WarriorType<&mut Warrior>> {
         for (c, o) in self.warriors.iter_mut().enumerate() {
             if let Some(k) = o.find_mut(a) {
-                return Some(WarriorPointer { inner: k, val: c });
+                return Some(WarriorType { inner: k, val: c });
             }
         }
 
@@ -448,7 +475,7 @@ impl Tribe {
                 let a = &this_team.warriors[i];
 
                 let b = &a.elem[ii];
-                let b = WarriorPointer { inner: b, val: i };
+                let b = WarriorType { inner: b, val: i };
 
                 let vv = b.calculate_selectable(this_team, that_team, grid_matrix);
 
@@ -797,7 +824,7 @@ pub async fn worker_entry() {
                                     //select_model.draw(&mut v);
                                 }
 
-                                for a in attack.iter_coords() {
+                                for a in attack.iter() {
                                     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
 

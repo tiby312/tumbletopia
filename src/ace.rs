@@ -3,7 +3,7 @@ use crate::{
     grids::{self, GridMatrix},
     movement::{self, Filter, GridCoord, MoveUnit},
     terrain::{self, MoveCost},
-    CellSelection, Game, HasPos, SingleFilter, Tribe, Warrior, WarriorPointer,
+    CellSelection, Game, HasPos, SingleFilter, Tribe, Warrior, WarriorType,
 };
 
 pub struct GameWrap<'a, T> {
@@ -19,12 +19,12 @@ pub struct GameWrapResponse<'a, T> {
 
 #[derive(Debug)]
 pub enum Command {
-    Animate(Animation<WarriorPointer<Warrior>>),
+    Animate(Animation<WarriorType<Warrior>>),
     GetMouseInput(Option<CellSelection>),
     Nothing,
 }
 impl Command {
-    pub fn take_animation(&mut self) -> Animation<WarriorPointer<Warrior>> {
+    pub fn take_animation(&mut self) -> Animation<WarriorType<Warrior>> {
         let mut a = Command::Nothing;
         std::mem::swap(self, &mut a);
 
@@ -56,7 +56,7 @@ pub enum Pototo<T> {
 #[derive(Debug)]
 pub enum Response {
     Mouse(Option<CellSelection>, Pototo<GridCoord>), //TODO make grid coord
-    AnimationFinish(Animation<WarriorPointer<Warrior>>),
+    AnimationFinish(Animation<WarriorType<Warrior>>),
 }
 
 use futures::{
@@ -74,9 +74,9 @@ pub struct Doop<'a> {
 impl<'a> Doop<'a> {
     async fn wait_animation<'c>(
         &mut self,
-        animation: Animation<WarriorPointer<Warrior>>,
+        animation: Animation<WarriorType<Warrior>>,
         team_index: usize,
-    ) -> Animation<WarriorPointer<Warrior>> {
+    ) -> Animation<WarriorType<Warrior>> {
         let game = unsafe { &*self.game };
         self.sender
             .send(GameWrap {
@@ -221,9 +221,7 @@ pub async fn main_logic<'a>(
                 if let Some(target) = that_team.find_slow(&target_cell) {
                     let aaa = target.slim();
 
-                    if !current_attack
-                        && movement::contains_coord(attack.iter_coords(), &target_cell)
-                    {
+                    if !current_attack && movement::contains_coord(attack.iter(), &target_cell) {
                         //TODO attack aaa
 
                         //Only counter if non neg
@@ -237,18 +235,17 @@ pub async fn main_logic<'a>(
                         let damage = 5;
                         let counter_damage = 5;
 
-                        let (path, _) = attack.get_path_data(&target_cell).unwrap();
+                        //let (path, _) = attack.get_path_data(&target_cell).unwrap();
 
                         //let attack_stamina_cost=2;
-                        let total_cost = path.total_cost();
+                        //let total_cost = path.total_cost();
                         if target.health <= damage {
                             let c = this_team.lookup_take(current_warrior_pos);
+                            //let aa = animation::Animation::new(c.position, path, grid_matrix, c);
 
-                            let aa = animation::Animation::new(c.position, path, grid_matrix, c);
+                            //let aa = doop.wait_animation(aa, team_index).await;
 
-                            let aa = doop.wait_animation(aa, team_index).await;
-
-                            let mut this_unit = aa.into_data();
+                            let mut this_unit = c; //aa.into_data();
 
                             this_unit.position = that_team.lookup(aaa).position;
 
@@ -261,10 +258,10 @@ pub async fn main_logic<'a>(
                         } else {
                             let c = this_team.lookup_take(current_warrior_pos);
 
-                            let aa = animation::Animation::new(c.position, path, grid_matrix, c);
-                            let aa = doop.wait_animation(aa, team_index).await;
+                            //let aa = animation::Animation::new(c.position, path, grid_matrix, c);
+                            //let aa = doop.wait_animation(aa, team_index).await;
 
-                            let this_unit = aa.into_data();
+                            let this_unit = c; //aa.into_data();
                             this_team.add(this_unit);
                             let mut target_cat = that_team.lookup_mut(&aaa);
                             target_cat.health -= damage;
@@ -281,7 +278,7 @@ pub async fn main_logic<'a>(
                             } else {
                                 current_cat.attacked = true;
                                 current_cat.health -= counter_damage;
-                                current_cat.stamina.0 -= total_cost.0;
+                                //current_cat.stamina.0 -= total_cost.0;
                             }
                         }
                     } else {
@@ -364,14 +361,14 @@ pub async fn main_logic<'a>(
 // }
 
 pub fn generate_unit_possible_moves2(
-    unit: &WarriorPointer<&Warrior>,
+    unit: &WarriorType<&Warrior>,
     this_team: &Tribe,
     that_team: &Tribe,
     grid_matrix: &GridMatrix,
 ) -> CellSelection {
     fn get_cat_move_attack_matrix(
         movement: (i8, i8),
-        cat: &Warrior,
+        cat: &WarriorType<&Warrior>,
         cat_filter: impl Filter,
         roads: impl MoveCost,
         gg: &grids::GridMatrix,
@@ -402,13 +399,15 @@ pub fn generate_unit_possible_moves2(
 
         //let attack_range=attack;
 
-        let attack = movement::PossibleMoves::new(
-            &movement::WarriorMovement,
-            &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
-            &terrain::Grass,
-            cat.position,
-            MoveUnit(attack_range),
-        );
+        let attack = crate::get_attack_data(cat).map(|x| x.to_axial()).collect();
+
+        // let attack = movement::PossibleMoves::new(
+        //     &movement::WarriorMovement,
+        //     &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
+        //     &terrain::Grass,
+        //     cat.position,
+        //     MoveUnit(attack_range),
+        // );
 
         CellSelection::MoveSelection(mm, attack)
     }
