@@ -20,15 +20,24 @@ impl movement::Filter for GridFilter {
         x >= 0 && y >= 0 && x < self.grid_width && y < self.grid_width
     }
 }
-impl GridMatrix {
-    pub fn hex_axial_to_square(&self,coord:GridCoord)->cgmath::Vector2<f32>{
-        let sc=19.0;
-        let scale=cgmath::Matrix2::new(sc,0.0,0.0,sc);
+pub fn hex_axial_to_square_matrix()->cgmath::Matrix2<f32>{
+    let sc=19.0;
+    let scale=cgmath::Matrix2::new(sc,0.0,0.0,sc);
+    scale*hex::HEX_PROJ_FLAT
+}
 
-        let v=cgmath::Vector2::new(coord.0[0] as f32,coord.0[1] as f32);
-        scale*hex::HEX_PROJ_FLAT*v
+impl GridMatrix {
+    pub fn world_to_hex(&self,pos:cgmath::Vector2<f32>)->GridCoord{
+        use cgmath::SquareMatrix;
+        let k=hex_axial_to_square_matrix().invert().unwrap()*pos;
+        let k=[k.x.round() as i16,k.y.round() as i16];
+        GridCoord(k)
     }
-    
+    pub fn hex_axial_to_world(&self,coord:&GridCoord)->cgmath::Vector2<f32>{
+        let v=cgmath::Vector2::new(coord.0[0] as f32,coord.0[1] as f32);
+        hex_axial_to_square_matrix()*v
+    }
+
     pub fn filter(&self) -> GridFilter {
         GridFilter {
             grid_width: self.grid_width,
@@ -47,23 +56,23 @@ impl GridMatrix {
             spacing,
         }
     }
-    pub fn to_world_topleft(&self, pos: Vec2<i16>) -> Vec2<f32> {
-        pos.inner_as() * self.spacing
-    }
+    // pub fn to_world_topleft(&self, pos: Vec2<i16>) -> Vec2<f32> {
+    //     pos.inner_as() * self.spacing
+    // }
 
-    pub fn to_world_center(&self, pos: Vec2<i16>) -> Vec2<f32> {
-        self.to_world_topleft(pos) + vec2same(self.spacing) / 2.0
-    }
+    // pub fn to_world_center(&self, pos: Vec2<i16>) -> Vec2<f32> {
+    //     self.to_world_topleft(pos) + vec2same(self.spacing) / 2.0
+    // }
 
-    pub fn to_grid_mod(&self, pos: Vec2<f32>) -> Vec2<f32> {
-        let k = self.to_grid(pos);
-        let k = k.inner_as() * self.spacing;
-        pos - k
-    }
-    pub fn to_grid(&self, pos: Vec2<f32>) -> Vec2<i16> {
-        let result = pos / self.spacing;
-        result.inner_as()
-    }
+    // pub fn to_grid_mod(&self, pos: Vec2<f32>) -> Vec2<f32> {
+    //     let k = self.to_grid(pos);
+    //     let k = k.inner_as() * self.spacing;
+    //     pos - k
+    // }
+    // pub fn to_grid(&self, pos: Vec2<f32>) -> Vec2<i16> {
+    //     let result = pos / self.spacing;
+    //     result.inner_as()
+    // }
 
     pub fn num_rows(&self) -> i16 {
         self.grid_width

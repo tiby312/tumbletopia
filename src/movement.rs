@@ -6,37 +6,20 @@ pub trait MoveStrategy {
 }
 pub struct WarriorMovement;
 impl MoveStrategy for WarriorMovement {
-    type It = std::array::IntoIter<Moves, 8>;
+    type It = std::array::IntoIter<Moves, 6>;
     fn adjacent() -> Self::It {
-        use Moves::*;
-        [Up, UpLeft, Left, DownLeft, Down, DownRight, Right, UpRight].into_iter()
+        [0,1,2,3,4,5].map(|dir|Moves{dir}).into_iter()
     }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Moves {
-    Up,
-    UpLeft,
-    Left,
-    DownLeft,
-    Down,
-    DownRight,
-    Right,
-    UpRight,
+pub struct Moves {
+    dir:i16
 }
+
 impl Moves {
     pub fn to_relative(&self) -> GridCoord {
-        use Moves::*;
-        GridCoord(match self {
-            Up => [0, 1],
-            UpLeft => [-1, 1],
-            Left => [-1, 0],
-            DownLeft => [-1, -1],
-            Down => [0, -1],
-            DownRight => [1, -1],
-            Right => [1, 0],
-            UpRight => [1, 1],
-        })
+        hex::Cube(hex::OFFSETS[self.dir as usize]).to_axial()
     }
 }
 #[derive(Copy, Clone, Debug)]
@@ -49,7 +32,7 @@ pub struct Path {
 impl Path {
     pub fn new() -> Self {
         Path {
-            moves: [Moves::Up; 20],
+            moves: [Moves{dir:0}; 20],
             num_moves: 0,
         }
     }
@@ -81,17 +64,17 @@ impl Path {
         MoveUnit(total)
     }
     fn move_cost(&self, m: Moves) -> MoveUnit {
-        use Moves::*;
-        match m {
-            UpLeft | DownLeft | UpRight | DownRight => MoveUnit(3),
-            _ => MoveUnit(2),
-        }
+        MoveUnit(1)
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
+    pub fn to_cube(self)->hex::Cube{
+        let a=self.0;
+        hex::Cube([a[0],a[1],-a[0]-a[1]])
+    }
     fn advance(self, m: Moves) -> GridCoord {
         self.add(m.to_relative())
     }
@@ -210,6 +193,7 @@ impl PossibleMoves {
 
         //log!(format!("rem:{:?}",remaining_moves.0));
         for a in K::adjacent() {
+            
             let target_pos = curr_pos.advance(a);
 
             if !filter.filter(&target_pos) {

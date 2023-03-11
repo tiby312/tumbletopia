@@ -1,4 +1,6 @@
-const OFFSETS: [[i16; 3]; 6] = [
+use crate::movement::GridCoord;
+
+pub const OFFSETS: [[i16; 3]; 6] = [
     [0, 1, -1],
     [1, 0, -1],
     [1, -1, 0],
@@ -30,6 +32,9 @@ pub fn world()->Vec<Cube>{
 #[derive(Copy,Clone)]
 pub struct Cube(pub [i16; 3]);
 impl Cube {
+    pub fn to_axial(&self)->GridCoord{
+        GridCoord([self.0[0],self.0[1]])
+    }
     
     pub fn neighbour(&self,dir:i16)->Cube{
         self.add(Cube::direction(dir))

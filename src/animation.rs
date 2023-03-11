@@ -35,7 +35,7 @@ pub struct Animation<T> {
 }
 impl<T> Animation<T> {
     pub fn new(start: GridCoord, path: &movement::Path, v: &grids::GridMatrix, data: T) -> Self {
-        let first: [f32; 2] = v.to_world_topleft(start.0.into()).into();
+        let first: [f32; 2] = v.hex_axial_to_world(&start).into();
         let first = first.into();
 
         let mut points = vec![first];
@@ -44,7 +44,7 @@ impl<T> Animation<T> {
             let a = m.to_relative();
             cc.0[0] += a.0[0];
             cc.0[1] += a.0[1];
-            let k: [f32; 2] = v.to_world_topleft(cc.0.into()).into();
+            let k: [f32; 2] = v.hex_axial_to_world(&cc).into();
             points.push(k.into());
         }
 
