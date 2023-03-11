@@ -14,10 +14,11 @@ pub struct GridFilter {
 }
 impl movement::Filter for GridFilter {
     fn filter(&self, a: &GridCoord) -> bool {
-        let x = a.0[0];
-        let y = a.0[1];
+        world().find(|b| b.to_axial() == *a).is_some()
+        // let x = a.0[0];
+        // let y = a.0[1];
 
-        x >= 0 && y >= 0 && x < self.grid_width && y < self.grid_width
+        // x >= 0 && y >= 0 && x < self.grid_width && y < self.grid_width
     }
 }
 pub fn hex_axial_to_square_matrix() -> cgmath::Matrix2<f32> {
@@ -26,7 +27,15 @@ pub fn hex_axial_to_square_matrix() -> cgmath::Matrix2<f32> {
     scale * hex::HEX_PROJ_FLAT
 }
 
+fn world() -> impl Iterator<Item = hex::Cube> {
+    hex::Cube::new(0, 0).range(5)
+}
+
 impl GridMatrix {
+    //This is world
+    pub fn world(&self) -> impl Iterator<Item = hex::Cube> {
+        world()
+    }
     pub fn world_to_hex(&self, pos: cgmath::Vector2<f32>) -> GridCoord {
         use cgmath::SquareMatrix;
         let k = hex_axial_to_square_matrix().invert().unwrap() * pos;

@@ -19,15 +19,13 @@ pub const HEX_PROJ_POINTY: cgmath::Matrix2<f32> =
 pub const HEX_PROJ_FLAT: cgmath::Matrix2<f32> =
     cgmath::Matrix2::new(3.0 / 2.0, SQRT_3 / 2.0, 0.0, SQRT_3);
 
-//This is world
-pub fn world() -> Vec<Cube> {
-    Cube([0, 5, 0]).range(5).collect()
-}
-
 //q r s
 #[derive(Copy, Clone)]
 pub struct Cube(pub [i16; 3]);
 impl Cube {
+    pub fn new(q: i16, r: i16) -> Self {
+        Cube([q, r, -q - r])
+    }
     pub fn round(frac: [f32; 3]) -> Cube {
         let mut q = frac[0].round() as i16;
         let mut r = frac[1].round() as i16;
@@ -60,9 +58,10 @@ impl Cube {
     pub fn add(mut self, other: Cube) -> Cube {
         let a = &mut self.0;
         let b = other.0;
-        for (a, b) in a.iter_mut().zip(b.iter()) {
-            *a += b;
-        }
+        a[0] += b[0];
+        a[1] += b[1];
+        a[2] += b[2];
+
         self
     }
     pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> {

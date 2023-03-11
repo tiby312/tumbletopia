@@ -362,9 +362,9 @@ impl<T> std::ops::DerefMut for WarriorPointer<T> {
 fn get_movement_data<X>(a: &WarriorPointer<X>) -> (i8, i8) {
     let (movement, attack) = {
         match a.val {
-            0 => (0, 3),
-            1 => (0, 3),
-            2 => (0, 4),
+            0 => (0, 1),
+            1 => (0, 2),
+            2 => (0, 3),
             _ => unreachable!(),
         }
     };
@@ -460,8 +460,8 @@ impl Tribe {
     fn replenish_stamina(&mut self) {
         for a in self.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
-                if b.stamina.0 <= 10 - 2 {
-                    b.stamina.0 += 2;
+                if b.stamina.0 <= 10 - 1 {
+                    b.stamina.0 += 1;
                 }
             }
         }
@@ -524,25 +524,23 @@ pub async fn worker_entry() {
 
     ctx.setup_alpha();
 
-    let hex_world = hex::world();
-
     //TODO delete
     //let gg = grids::GridMatrix::new();
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let dogs = UnitCollection::new(vec![
-        Warrior::new(GridCoord([3, 3])),
-        Warrior::new(GridCoord([4, 3])),
-        Warrior::new(GridCoord([5, 3])),
-        Warrior::new(GridCoord([6, 3])),
+        Warrior::new(GridCoord([1, 1])),
+        Warrior::new(GridCoord([2, 1])),
+        Warrior::new(GridCoord([3, 1])),
+        Warrior::new(GridCoord([4, 1])),
     ]);
 
     let cats = UnitCollection::new(vec![
-        Warrior::new(GridCoord([3, 6])),
-        Warrior::new(GridCoord([4, 6])),
-        Warrior::new(GridCoord([5, 6])),
-        Warrior::new(GridCoord([6, 6])),
+        Warrior::new(GridCoord([1, -2])),
+        Warrior::new(GridCoord([2, -2])),
+        Warrior::new(GridCoord([3, -2])),
+        Warrior::new(GridCoord([4, -2])),
     ]);
 
     let mut ggame = Game {
@@ -765,7 +763,7 @@ pub async fn worker_entry() {
 
                 //
 
-                for c in hex_world.iter() {
+                for c in grid_matrix.world() {
                     let pos = grid_matrix.hex_axial_to_world(&c.to_axial());
 
                     //let pos = a.calc_pos();
