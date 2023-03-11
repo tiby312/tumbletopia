@@ -20,32 +20,30 @@ impl movement::Filter for GridFilter {
         x >= 0 && y >= 0 && x < self.grid_width && y < self.grid_width
     }
 }
-pub fn hex_axial_to_square_matrix()->cgmath::Matrix2<f32>{
-    let sc=19.0;
-    let scale=cgmath::Matrix2::new(sc,0.0,0.0,sc);
-    scale*hex::HEX_PROJ_FLAT
+pub fn hex_axial_to_square_matrix() -> cgmath::Matrix2<f32> {
+    let sc = 19.0;
+    let scale = cgmath::Matrix2::new(sc, 0.0, 0.0, sc);
+    scale * hex::HEX_PROJ_FLAT
 }
 
 impl GridMatrix {
-    pub fn world_to_hex(&self,pos:cgmath::Vector2<f32>)->GridCoord{
+    pub fn world_to_hex(&self, pos: cgmath::Vector2<f32>) -> GridCoord {
         use cgmath::SquareMatrix;
-        let k=hex_axial_to_square_matrix().invert().unwrap()*pos;
-        let k=[k.x.round() as i16,k.y.round() as i16];
-        GridCoord(k)
+        let k = hex_axial_to_square_matrix().invert().unwrap() * pos;
+        let q = k.x;
+        let r = k.y;
+        let s = -k.x - k.y;
+        hex::Cube::round([q, r, s]).to_axial()
     }
-    pub fn center_world_to_hex(&self,mut pos:cgmath::Vector2<f32>)->GridCoord{
-        pos.x-=19.0/2.0;
-        pos.y-=19.0/2.0;
+    pub fn center_world_to_hex(&self, mut pos: cgmath::Vector2<f32>) -> GridCoord {
+        pos.x -= 19.0;
+        pos.y -= 19.0;
+        self.world_to_hex(pos)
+    }
 
-        use cgmath::SquareMatrix;
-        let k=hex_axial_to_square_matrix().invert().unwrap()*pos;
-        let k=[k.x.round() as i16,k.y.round() as i16];
-        GridCoord(k)
-    }
-    
-    pub fn hex_axial_to_world(&self,coord:&GridCoord)->cgmath::Vector2<f32>{
-        let v=cgmath::Vector2::new(coord.0[0] as f32,coord.0[1] as f32);
-        hex_axial_to_square_matrix()*v
+    pub fn hex_axial_to_world(&self, coord: &GridCoord) -> cgmath::Vector2<f32> {
+        let v = cgmath::Vector2::new(coord.0[0] as f32, coord.0[1] as f32);
+        hex_axial_to_square_matrix() * v
     }
 
     pub fn filter(&self) -> GridFilter {

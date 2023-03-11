@@ -8,13 +8,13 @@ pub struct WarriorMovement;
 impl MoveStrategy for WarriorMovement {
     type It = std::array::IntoIter<Moves, 6>;
     fn adjacent() -> Self::It {
-        [0,1,2,3,4,5].map(|dir|Moves{dir}).into_iter()
+        [0, 1, 2, 3, 4, 5].map(|dir| Moves { dir }).into_iter()
     }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Moves {
-    dir:i16
+    dir: i16,
 }
 
 impl Moves {
@@ -32,7 +32,7 @@ pub struct Path {
 impl Path {
     pub fn new() -> Self {
         Path {
-            moves: [Moves{dir:0}; 20],
+            moves: [Moves { dir: 0 }; 20],
             num_moves: 0,
         }
     }
@@ -71,9 +71,9 @@ impl Path {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
-    pub fn to_cube(self)->hex::Cube{
-        let a=self.0;
-        hex::Cube([a[0],a[1],-a[0]-a[1]])
+    pub fn to_cube(self) -> hex::Cube {
+        let a = self.0;
+        hex::Cube([a[0], a[1], -a[0] - a[1]])
     }
     fn advance(self, m: Moves) -> GridCoord {
         self.add(m.to_relative())
@@ -193,7 +193,6 @@ impl PossibleMoves {
 
         //log!(format!("rem:{:?}",remaining_moves.0));
         for a in K::adjacent() {
-            
             let target_pos = curr_pos.advance(a);
 
             if !filter.filter(&target_pos) {

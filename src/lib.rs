@@ -49,11 +49,10 @@ impl<'a> WarriorDraw<'a> {
     }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
         for cc in self.col.elem.iter() {
-            
-            let pos=gg.hex_axial_to_world(&cc.position);
+            let pos = gg.hex_axial_to_world(&cc.position);
 
             // let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
-            
+
             let t = matrix::translation(pos[0], pos[1], 0.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
@@ -525,10 +524,7 @@ pub async fn worker_entry() {
 
     ctx.setup_alpha();
 
-
-    let hex_world=hex::world();
-
-
+    let hex_world = hex::world();
 
     //TODO delete
     //let gg = grids::GridMatrix::new();
@@ -606,6 +602,7 @@ pub async fn worker_entry() {
         ace::main_logic(command_sender, response_recv, &mut ggame, &grid_matrix).await;
     };
 
+    let mut mouse_mouse = [0.0; 2];
     let render_thread = async {
         loop {
             let ace::GameWrap {
@@ -660,6 +657,7 @@ pub async fn worker_entry() {
                             }
                         }
                         MEvent::CanvasMouseMove { x, y } => {
+                            mouse_mouse = [*x, *y];
                             scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
                         }
                         MEvent::EndTurn => {
@@ -717,7 +715,8 @@ pub async fn worker_entry() {
                                 .unwrap();
                             break 'outer;
                         } else if on_select {
-                            let mouse: GridCoord =grid_matrix.center_world_to_hex(mouse_world.into());
+                            let mouse: GridCoord =
+                                grid_matrix.center_world_to_hex(mouse_world.into());
 
                             response_sender
                                 .send(ace::GameWrapResponse {
@@ -764,12 +763,10 @@ pub async fn worker_entry() {
 
                 let [vvx, vvy] = get_world_rect(&matrix, &grid_matrix);
 
-                //  
+                //
 
-
-                for c in hex_world.iter(){
-                    let pos=grid_matrix.hex_axial_to_world(&c.to_axial());
-
+                for c in hex_world.iter() {
+                    let pos = grid_matrix.hex_axial_to_world(&c.to_axial());
 
                     //let pos = a.calc_pos();
                     let t = matrix::translation(pos[0], pos[1], -10.0);
@@ -790,8 +787,7 @@ pub async fn worker_entry() {
                         match a {
                             CellSelection::MoveSelection(a, attack) => {
                                 for a in a.iter_coords() {
-                                    let pos: [f32; 2] =
-                                        grid_matrix.hex_axial_to_world(a).into();
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
 
                                     let m = matrix.chain(t).generate();
@@ -804,8 +800,7 @@ pub async fn worker_entry() {
                                 }
 
                                 for a in attack.iter_coords() {
-                                    let pos: [f32; 2] =
-                                        grid_matrix.hex_axial_to_world(a).into();
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
 
                                     let m = matrix.chain(t).generate();
@@ -819,15 +814,30 @@ pub async fn worker_entry() {
                         }
                     }
 
-                    for a in roads.pos.iter() {
-                        let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
-                        let t = matrix::translation(pos[0], pos[1], 3.0);
+                    // { TEST MOUSE
+                    //     let mouse_mouse= scroll::mouse_to_world(mouse_mouse, &matrix, viewport);
 
-                        let m = matrix.chain(t).generate();
+                    //     let a: GridCoord =grid_matrix.center_world_to_hex(mouse_mouse.into());
 
-                        let mut v = draw_sys.view(m.as_ref());
-                        road.draw(&mut v);
-                    }
+                    //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                    //     let t = matrix::translation(pos[0], pos[1], 3.0);
+
+                    //     let m = matrix.chain(t).generate();
+
+                    //     let mut v = draw_sys.view(m.as_ref());
+                    //     road.draw(&mut v);
+                    // }
+                    //for a in roads.pos.iter() {
+                    // let a: GridCoord =grid_matrix.center_world_to_hex(mouse_world.into());
+
+                    // let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                    // let t = matrix::translation(pos[0], pos[1], 3.0);
+
+                    // let m = matrix.chain(t).generate();
+
+                    // let mut v = draw_sys.view(m.as_ref());
+                    // road.draw(&mut v);
+                    //}
                 });
 
                 disable_depth(&ctx, || {
@@ -855,8 +865,6 @@ pub async fn worker_entry() {
 
                     animation_draw.draw(&mut v);
                 }
-
-
 
                 cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                 dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
@@ -993,7 +1001,6 @@ const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
 const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
 
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/hex-grass.glb");
-
 
 pub struct NumberTextManager<'a> {
     numbers: Vec<model_parse::ModelGpu>,
