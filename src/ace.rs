@@ -228,17 +228,17 @@ pub async fn main_logic<'a>(
                 let current_attack = this_team.lookup_mut(&xx).attacked;
 
                 if let Some(target) = that_team.find_slow(&target_cell) {
-                    let aaa = target.slim();
+                    let target_coord = target.slim();
 
                     if !current_attack && movement::contains_coord(attack.iter(), &target_cell) {
                         let c = this_team.lookup_take(current_warrior_pos);
-                        let d = that_team.lookup_take(aaa);
+                        let d = that_team.lookup_take(target_coord);
 
-                        let j = doop
+                        match doop
                             .await_data(grid_matrix, team_index)
                             .resolve_attack(c, d)
-                            .await;
-                        match j {
+                            .await
+                        {
                             unit::Pair(Some(a), None) => {
                                 current_warrior_pos = a.as_ref().slim();
 
