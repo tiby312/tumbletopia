@@ -24,7 +24,7 @@ impl Moves {
 }
 
 //TODO a direction is only 6 values. Left over values when
-//put into 3 bits.  
+//put into 3 bits.
 #[derive(Copy, Clone, Debug)]
 pub struct Path {
     //TODO optimize this to be just one 64bit integer?

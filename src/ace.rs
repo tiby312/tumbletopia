@@ -69,11 +69,17 @@ use gloo::console::log;
 
 pub struct Doop<'a> {
     game: *mut Game,
-    team_index: usize,
     sender: Sender<GameWrap<'a, Command>>,
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
 impl<'a> Doop<'a> {
+    pub fn await_data<'b>(
+        &'b mut self,
+        grid_matrix: &'b GridMatrix,
+        team_index: usize,
+    ) -> AwaitData<'a, 'b> {
+        AwaitData::new(self, grid_matrix, team_index)
+    }
     pub async fn wait_animation<'c>(
         &mut self,
         animation: Animation<WarriorType<UnitData>>,
@@ -144,7 +150,6 @@ pub async fn main_logic<'a>(
 ) {
     let mut doop = Doop {
         game: game as *mut _,
-        team_index: 0,
         sender: command_sender,
         receiver: response_recv,
     };
@@ -229,7 +234,11 @@ pub async fn main_logic<'a>(
                         let c = this_team.lookup_take(current_warrior_pos);
                         let d = that_team.lookup_take(aaa);
 
-                        match unit::resolve_attack(c, d).await {
+                        let j = doop
+                            .await_data(grid_matrix, team_index)
+                            .resolve_attack(c, d)
+                            .await;
+                        match j {
                             unit::Pair(Some(a), None) => {
                                 current_warrior_pos = a.as_ref().slim();
 
@@ -258,9 +267,10 @@ pub async fn main_logic<'a>(
                     let (path, _) = ss.get_path_data(&target_cell).unwrap();
                     let this_unit = this_team.lookup_take(current_warrior_pos);
 
-                    let this_unit =
-                        unit::resolve_movement(&mut doop, this_unit, path, grid_matrix, team_index)
-                            .await;
+                    let this_unit = doop
+                        .await_data(grid_matrix, team_index)
+                        .resolve_movement(this_unit, path)
+                        .await;
 
                     current_warrior_pos = this_unit.as_ref().slim();
 

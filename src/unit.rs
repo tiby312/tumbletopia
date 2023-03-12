@@ -215,64 +215,81 @@ impl<T> std::ops::DerefMut for WarriorType<T> {
     }
 }
 
-pub async fn resolve_movement<'a>(
-    doop: &mut ace::Doop<'a>,
-    start: WarriorType<UnitData>,
-    path: &movement::Path,
-    grid_matrix: &GridMatrix,
+pub struct AwaitData<'a, 'b> {
+    doop: &'b mut ace::Doop<'a>,
+    grid_matrix: &'b GridMatrix,
     team_index: usize,
-) -> WarriorType<UnitData> {
-    let aa = animation::Animation::new(start.position, path, grid_matrix, start);
+}
+impl<'a, 'b> AwaitData<'a, 'b> {
+    pub fn new(
+        doop: &'b mut ace::Doop<'a>,
+        grid_matrix: &'b GridMatrix,
+        team_index: usize,
+    ) -> Self {
+        AwaitData {
+            doop,
+            grid_matrix,
+            team_index,
+        }
+    }
 
-    let aa = doop.wait_animation(aa, team_index).await;
+    pub async fn resolve_movement(
+        &mut self,
+        start: WarriorType<UnitData>,
+        path: &movement::Path,
+    ) -> WarriorType<UnitData> {
+        let aa = animation::Animation::new(start.position, path, self.grid_matrix, start);
 
-    let mut start = aa.into_data();
-    start.stamina.0 -= path.total_cost().0;
-    start.position = path.get_end_coord(start.position);
+        let aa = self.doop.wait_animation(aa, self.team_index).await;
 
-    start
+        let mut start = aa.into_data();
+        start.stamina.0 -= path.total_cost().0;
+        start.position = path.get_end_coord(start.position);
+
+        start
+    }
+    pub async fn resolve_attack(
+        &mut self,
+        mut this_unit: WarriorType<UnitData>,
+        mut target: WarriorType<UnitData>,
+    ) -> Pair {
+        match (this_unit.val, target.val) {
+            (Type::Warrior, Type::Warrior) => {
+                let damage = 5;
+                let counter_damage = 5;
+
+                if target.health <= damage {
+                    //todo kill target animate
+                    this_unit.position = target.position;
+                    this_unit.attacked = true;
+                    Pair(Some(this_unit), None)
+                } else {
+                    target.health -= damage;
+
+                    let kill_self = this_unit.health <= counter_damage;
+
+                    if kill_self {
+                        //todo self die animation.
+                        Pair(None, Some(target))
+                    } else {
+                        //todo normal attack animation..
+                        this_unit.attacked = true;
+                        this_unit.health -= counter_damage;
+                        Pair(Some(this_unit), Some(target))
+                    }
+                }
+            }
+            _ => {
+                todo!()
+            }
+        }
+    }
 }
 
 pub struct Pair(
     pub Option<WarriorType<UnitData>>,
     pub Option<WarriorType<UnitData>>,
 );
-
-pub async fn resolve_attack(
-    mut this_unit: WarriorType<UnitData>,
-    mut target: WarriorType<UnitData>,
-) -> Pair {
-    match (this_unit.val, target.val) {
-        (Type::Warrior, Type::Warrior) => {
-            let damage = 5;
-            let counter_damage = 5;
-
-            if target.health <= damage {
-                //todo kill target animate
-                this_unit.position = target.position;
-                this_unit.attacked = true;
-                Pair(Some(this_unit), None)
-            } else {
-                target.health -= damage;
-
-                let kill_self = this_unit.health <= counter_damage;
-
-                if kill_self {
-                    //todo self die animation.
-                    Pair(None, Some(target))
-                } else {
-                    //todo normal attack animation..
-                    this_unit.attacked = true;
-                    this_unit.health -= counter_damage;
-                    Pair(Some(this_unit), Some(target))
-                }
-            }
-        }
-        _ => {
-            todo!()
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct Tribe {
