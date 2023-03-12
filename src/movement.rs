@@ -14,7 +14,7 @@ impl MoveStrategy for WarriorMovement {
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Moves {
-    dir: i16,
+    dir: u8,
 }
 
 impl Moves {
@@ -22,6 +22,9 @@ impl Moves {
         hex::Cube(hex::OFFSETS[self.dir as usize]).to_axial()
     }
 }
+
+//TODO a direction is only 6 values. Left over values when
+//put into 3 bits.  
 #[derive(Copy, Clone, Debug)]
 pub struct Path {
     //TODO optimize this to be just one 64bit integer?
