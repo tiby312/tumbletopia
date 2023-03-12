@@ -215,6 +215,24 @@ impl<T> std::ops::DerefMut for WarriorType<T> {
     }
 }
 
+pub async fn resolve_movement<'a>(
+    doop: &mut ace::Doop<'a>,
+    start: WarriorType<UnitData>,
+    path: &movement::Path,
+    grid_matrix: &GridMatrix,
+    team_index: usize,
+) -> WarriorType<UnitData> {
+    let aa = animation::Animation::new(start.position, path, grid_matrix, start);
+
+    let aa = doop.wait_animation(aa, team_index).await;
+
+    let mut start = aa.into_data();
+    start.stamina.0 -= path.total_cost().0;
+    start.position = path.get_end_coord(start.position);
+
+    start
+}
+
 pub struct Pair(
     pub Option<WarriorType<UnitData>>,
     pub Option<WarriorType<UnitData>>,

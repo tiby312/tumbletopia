@@ -74,7 +74,7 @@ pub struct Doop<'a> {
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
 impl<'a> Doop<'a> {
-    async fn wait_animation<'c>(
+    pub async fn wait_animation<'c>(
         &mut self,
         animation: Animation<WarriorType<UnitData>>,
         team_index: usize,
@@ -255,20 +255,16 @@ pub async fn main_logic<'a>(
                         break;
                     }
                 } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
-                    let (dd, _) = ss.get_path_data(&target_cell).unwrap();
-                    let start = this_team.lookup_take(current_warrior_pos);
+                    let (path, _) = ss.get_path_data(&target_cell).unwrap();
+                    let this_unit = this_team.lookup_take(current_warrior_pos);
 
-                    let aa = animation::Animation::new(start.position, dd, grid_matrix, start);
+                    let this_unit =
+                        unit::resolve_movement(&mut doop, this_unit, path, grid_matrix, team_index)
+                            .await;
 
-                    let aa = doop.wait_animation(aa, team_index).await;
+                    current_warrior_pos = this_unit.as_ref().slim();
 
-                    let mut warrior = aa.into_data();
-                    warrior.stamina.0 -= dd.total_cost().0;
-                    warrior.position = target_cell;
-
-                    current_warrior_pos = warrior.as_ref().slim();
-
-                    this_team.add(warrior);
+                    this_team.add(this_unit);
                 } else {
                     if let Some(a) = this_team.find_slow(&target_cell) {
                         let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
