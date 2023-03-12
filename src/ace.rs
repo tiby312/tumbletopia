@@ -1,9 +1,11 @@
+use super::*;
+
 use crate::{
     animation::{self, Animation},
     grids::{self, GridMatrix},
     movement::{self, Filter, GridCoord, MoveUnit},
     terrain::{self, MoveCost},
-    CellSelection, Game, HasPos, SingleFilter, Tribe, Warrior, WarriorType,
+    CellSelection, Game, HasPos, SingleFilter, Tribe, UnitData, WarriorType,
 };
 
 pub struct GameWrap<'a, T> {
@@ -19,12 +21,12 @@ pub struct GameWrapResponse<'a, T> {
 
 #[derive(Debug)]
 pub enum Command {
-    Animate(Animation<WarriorType<Warrior>>),
+    Animate(Animation<WarriorType<UnitData>>),
     GetMouseInput(Option<CellSelection>),
     Nothing,
 }
 impl Command {
-    pub fn take_animation(&mut self) -> Animation<WarriorType<Warrior>> {
+    pub fn take_animation(&mut self) -> Animation<WarriorType<UnitData>> {
         let mut a = Command::Nothing;
         std::mem::swap(self, &mut a);
 
@@ -56,7 +58,7 @@ pub enum Pototo<T> {
 #[derive(Debug)]
 pub enum Response {
     Mouse(Option<CellSelection>, Pototo<GridCoord>), //TODO make grid coord
-    AnimationFinish(Animation<WarriorType<Warrior>>),
+    AnimationFinish(Animation<WarriorType<UnitData>>),
 }
 
 use futures::{
@@ -74,9 +76,9 @@ pub struct Doop<'a> {
 impl<'a> Doop<'a> {
     async fn wait_animation<'c>(
         &mut self,
-        animation: Animation<WarriorType<Warrior>>,
+        animation: Animation<WarriorType<UnitData>>,
         team_index: usize,
-    ) -> Animation<WarriorType<Warrior>> {
+    ) -> Animation<WarriorType<UnitData>> {
         let game = unsafe { &*self.game };
         self.sender
             .send(GameWrap {
@@ -224,53 +226,28 @@ pub async fn main_logic<'a>(
                     let aaa = target.slim();
 
                     if !current_attack && movement::contains_coord(attack.iter(), &target_cell) {
-                        let damage = attack_data.damage;
-                        let counter_damage = if attack_data.counter_attackable {
-                            crate::get_defend_data(&target).counter_attack_damage
-                        } else {
-                            0
-                        };
+                        let c = this_team.lookup_take(current_warrior_pos);
+                        let d = that_team.lookup_take(aaa);
 
-                        if target.health <= damage {
-                            let c = this_team.lookup_take(current_warrior_pos);
-                            //let aa = animation::Animation::new(c.position, path, grid_matrix, c);
+                        match unit::resolve_attack(c, d).await {
+                            unit::Pair(Some(a), None) => {
+                                current_warrior_pos = a.as_ref().slim();
 
-                            //let aa = doop.wait_animation(aa, team_index).await;
-
-                            let mut this_unit = c; //aa.into_data();
-
-                            this_unit.position = that_team.lookup(aaa).position;
-
-                            that_team.lookup_take(aaa);
-                            this_team.add(this_unit);
-                            let mut current_cat = this_team.lookup_mut(&aaa);
-
-                            current_cat.attacked = true;
-                            current_warrior_pos = current_cat.slim();
-                        } else {
-                            let c = this_team.lookup_take(current_warrior_pos);
-
-                            //let aa = animation::Animation::new(c.position, path, grid_matrix, c);
-                            //let aa = doop.wait_animation(aa, team_index).await;
-
-                            let this_unit = c; //aa.into_data();
-                            this_team.add(this_unit);
-                            let mut target_cat = that_team.lookup_mut(&aaa);
-                            target_cat.health -= damage;
-
-                            let kill_self =
-                                this_team.lookup(current_warrior_pos).health <= counter_damage;
-
-                            let mut current_cat = this_team.lookup_mut(&current_warrior_pos);
-
-                            if kill_self {
-                                this_team.lookup_take(current_warrior_pos);
-                                //Deselect!!!!
+                                this_team.add(a);
+                            }
+                            unit::Pair(None, Some(a)) => {
+                                that_team.add(a);
+                                //Deselect unit because it died.
                                 break;
-                            } else {
-                                current_cat.attacked = true;
-                                current_cat.health -= counter_damage;
-                                //current_cat.stamina.0 -= total_cost.0;
+                            }
+                            unit::Pair(Some(a), Some(b)) => {
+                                current_warrior_pos = a.as_ref().slim();
+
+                                this_team.add(a);
+                                that_team.add(b)
+                            }
+                            unit::Pair(None, None) => {
+                                unreachable!();
                             }
                         }
                     } else {
@@ -289,7 +266,7 @@ pub async fn main_logic<'a>(
                     warrior.stamina.0 -= dd.total_cost().0;
                     warrior.position = target_cell;
 
-                    current_warrior_pos = warrior.slim();
+                    current_warrior_pos = warrior.as_ref().slim();
 
                     this_team.add(warrior);
                 } else {
@@ -353,14 +330,14 @@ pub async fn main_logic<'a>(
 // }
 
 pub fn generate_unit_possible_moves2(
-    unit: &WarriorType<&Warrior>,
+    unit: &WarriorType<&UnitData>,
     this_team: &Tribe,
     that_team: &Tribe,
     grid_matrix: &GridMatrix,
 ) -> CellSelection {
     fn get_cat_move_attack_matrix(
         movement: (i8, i8),
-        cat: &WarriorType<&Warrior>,
+        cat: &WarriorType<&UnitData>,
         cat_filter: impl Filter,
         roads: impl MoveCost,
         gg: &grids::GridMatrix,
@@ -391,8 +368,7 @@ pub fn generate_unit_possible_moves2(
 
         //let attack_range=attack;
 
-        let (attack, attack_coords) = crate::get_attack_data(cat);
-        let attack_coords = attack_coords.collect();
+        let attack_coords = cat.get_attack_data().collect();
 
         // let attack = movement::PossibleMoves::new(
         //     &movement::WarriorMovement,
@@ -402,10 +378,10 @@ pub fn generate_unit_possible_moves2(
         //     MoveUnit(attack_range),
         // );
 
-        CellSelection::MoveSelection(mm, attack, attack_coords)
+        CellSelection::MoveSelection(mm, (), attack_coords)
     }
 
-    let data = crate::get_movement_data(&unit);
+    let data = unit.get_movement_data();
 
     get_cat_move_attack_matrix(
         data,

@@ -24,6 +24,10 @@ use dom::MEvent;
 use projection::*;
 pub mod ace;
 pub mod hex;
+pub mod unit;
+
+use unit::*;
+
 //pub mod state;
 //pub mod logic;
 pub const RESIZE: usize = 10;
@@ -37,10 +41,14 @@ enum UiButton {
 pub struct WarriorDraw<'a> {
     model: &'a MyModel,
     drop_shadow: &'a MyModel,
-    col: &'a UnitCollection<Warrior>,
+    col: &'a UnitCollection<UnitData>,
 }
 impl<'a> WarriorDraw<'a> {
-    fn new(col: &'a UnitCollection<Warrior>, model: &'a MyModel, drop_shadow: &'a MyModel) -> Self {
+    fn new(
+        col: &'a UnitCollection<UnitData>,
+        model: &'a MyModel,
+        drop_shadow: &'a MyModel,
+    ) -> Self {
         Self {
             model,
             drop_shadow,
@@ -136,395 +144,7 @@ impl<'a> WarriorDraw<'a> {
     }
 }
 
-//TODO sort this by x and then y axis!!!!!!!
-#[derive(Debug)]
-pub struct UnitCollection<T: HasPos> {
-    elem: Vec<T>,
-}
-
-impl<T: HasPos> UnitCollection<T> {
-    fn new(elem: Vec<T>) -> Self {
-        UnitCollection { elem }
-    }
-    fn remove(&mut self, a: &GridCoord) -> T {
-        let (i, _) = self
-            .elem
-            .iter()
-            .enumerate()
-            .find(|(_, b)| b.get_pos() == a)
-            .unwrap();
-        self.elem.swap_remove(i)
-    }
-
-    pub fn find_mut(&mut self, a: &GridCoord) -> Option<&mut T> {
-        self.elem.iter_mut().find(|b| b.get_pos() == a)
-    }
-    fn find(&self, a: &GridCoord) -> Option<&T> {
-        self.elem.iter().find(|b| b.get_pos() == a)
-    }
-    fn filter(&self) -> UnitCollectionFilter<T> {
-        UnitCollectionFilter { a: &self.elem }
-    }
-}
-
-pub struct SingleFilter<'a> {
-    a: &'a GridCoord,
-}
-impl<'a> movement::Filter for SingleFilter<'a> {
-    fn filter(&self, a: &GridCoord) -> bool {
-        self.a != a
-    }
-}
-
-pub struct UnitCollectionFilter<'a, T> {
-    a: &'a [T],
-}
-impl<'a, T: HasPos> movement::Filter for UnitCollectionFilter<'a, T> {
-    fn filter(&self, b: &GridCoord) -> bool {
-        self.a.iter().find(|a| a.get_pos() == b).is_none()
-    }
-}
-
-pub trait HasPos {
-    fn get_pos(&self) -> &GridCoord;
-}
-impl HasPos for GridCoord {
-    fn get_pos(&self) -> &GridCoord {
-        self
-    }
-}
-
-impl HasPos for Warrior {
-    fn get_pos(&self) -> &GridCoord {
-        &self.position
-    }
-}
-
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
-
-#[derive(Debug)]
-pub struct Warrior {
-    position: GridCoord,
-    stamina: MoveUnit,
-    attacked: bool,
-    health: i8,
-    selectable: bool,
-}
-
-impl WarriorType<&Warrior> {
-    pub fn calculate_selectable(
-        &self,
-        this_team: &Tribe,
-        that_team: &Tribe,
-        grid_matrix: &GridMatrix,
-    ) -> bool {
-        let s = self; //this_team.lookup(*self);
-        let pos = ace::generate_unit_possible_moves2(&s, this_team, that_team, grid_matrix);
-
-        //check if there are enemies in range.
-        let enemy_in_range = {
-            let (_, att) = match &pos {
-                CellSelection::MoveSelection(ss, _, att) => (ss, att),
-                _ => unreachable!(),
-            };
-
-            let mut found = false;
-            for a in att.iter() {
-                if let Some(_) = that_team.find_slow(a) {
-                    found = true;
-                    break;
-                }
-            }
-            found
-        };
-
-        //TODO move this and the above into an high-level "Has possible moves function"
-        let has_stamina_to_move = s.stamina.0 >= 0; //0f??? TODO
-
-        let ret = enemy_in_range || has_stamina_to_move;
-        ret
-    }
-}
-impl Warrior {
-    //TODO replace with has possible moves
-    // fn selectable(&self) -> bool {
-    //     self.has_possible_moves()
-    //     //!self.attacked || self.stamina.0 > 0
-    // }
-
-    // fn can_attack(&self) -> bool {
-    //     !self.attacked
-    // }
-
-    fn new(position: GridCoord) -> Self {
-        Warrior {
-            position,
-            stamina: MoveUnit(0),
-            attacked: false,
-            health: 10,
-            selectable: true,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum CellSelection {
-    MoveSelection(movement::PossibleMoves, AttackData, Vec<GridCoord>),
-    BuildSelection(GridCoord),
-}
-
-pub struct TribeFilter<'a> {
-    tribe: &'a Tribe,
-}
-impl<'a> movement::Filter for TribeFilter<'a> {
-    fn filter(&self, b: &GridCoord) -> bool {
-        self.tribe
-            .warriors
-            .iter()
-            .map(|a| a.filter().filter(b))
-            .fold(true, |a, b| a && b)
-    }
-}
-
-impl<T> std::borrow::Borrow<T> for WarriorType<T> {
-    fn borrow(&self) -> &T {
-        &self.inner
-    }
-}
-impl<T> std::borrow::BorrowMut<T> for WarriorType<T> {
-    fn borrow_mut(&mut self) -> &mut T {
-        &mut self.inner
-    }
-}
-
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub struct WarriorType<T> {
-    inner: T,
-    val: usize,
-}
-
-impl<'a> WarriorType<&'a mut Warrior> {
-    //TODO use this instead of gridcoord when you know the type!!!!!
-    pub fn slim(&self) -> WarriorType<GridCoord> {
-        WarriorType {
-            inner: self.inner.position,
-            val: self.val,
-        }
-    }
-
-    pub fn as_ref(&self) -> WarriorType<&Warrior> {
-        WarriorType {
-            inner: self.inner,
-            val: self.val,
-        }
-    }
-    pub fn to_ref(self) -> WarriorType<&'a Warrior> {
-        let val = self.val;
-        WarriorType {
-            inner: self.inner,
-            val,
-        }
-    }
-}
-
-impl WarriorType<&Warrior> {
-    //TODO use this instead of gridcoord when you know the type!!!!!
-    fn slim(&self) -> WarriorType<GridCoord> {
-        WarriorType {
-            inner: self.inner.position,
-            val: self.val,
-        }
-    }
-}
-impl WarriorType<Warrior> {
-    //TODO use this instead of gridcoord when you know the type!!!!!
-    fn slim(&self) -> WarriorType<GridCoord> {
-        WarriorType {
-            inner: self.inner.position,
-            val: self.val,
-        }
-    }
-}
-
-impl<T> std::ops::Deref for WarriorType<T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl<T> std::ops::DerefMut for WarriorType<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct AttackData {
-    counter_attackable: bool,
-    damage: i8,
-}
-
-pub struct DefendData {
-    counter_attack_damage: i8,
-}
-
-fn get_defend_data(a: &WarriorType<&Warrior>) -> DefendData {
-    let mut counter_attack_damage = 5;
-    if a.val == 1 {
-        counter_attack_damage = 0;
-    }
-    DefendData {
-        counter_attack_damage,
-    }
-}
-
-//TODO additionally return a animation??.
-fn get_attack_data(a: &WarriorType<&Warrior>) -> (AttackData, impl Iterator<Item = GridCoord>) {
-    assert!(a.val < 3);
-    let mut counter_attackable = true;
-    let first = if a.val == 1 {
-        Some(a.position.to_cube().range(1))
-    } else {
-        None
-    };
-
-    let second = if a.val == 0 {
-        counter_attackable = false;
-        Some(a.position.to_cube().ring(2))
-    } else {
-        None
-    };
-
-    let third = if a.val == 2 {
-        Some(a.position.to_cube().ring(3))
-    } else {
-        None
-    };
-    let it = first
-        .into_iter()
-        .flatten()
-        .chain(second.into_iter().flatten())
-        .chain(third.into_iter().flatten())
-        .map(|x| x.to_axial());
-
-    (
-        AttackData {
-            counter_attackable,
-            damage: 5,
-        },
-        it,
-    )
-}
-
-fn get_movement_data<X>(a: &WarriorType<X>) -> (i8, i8) {
-    let (movement, attack) = {
-        match a.val {
-            0 => (1, 1),
-            1 => (2, 2),
-            2 => (3, 3),
-            _ => unreachable!(),
-        }
-    };
-    (movement, attack)
-}
-
-#[derive(Debug)]
-pub struct Tribe {
-    warriors: Vec<UnitCollection<Warrior>>,
-}
-impl Tribe {
-    fn lookup(&self, a: WarriorType<GridCoord>) -> WarriorType<&Warrior> {
-        self.warriors[a.val]
-            .find(&a.inner)
-            .map(|b| WarriorType {
-                inner: b,
-                val: a.val,
-            })
-            .unwrap()
-    }
-    fn lookup_mut(&mut self, a: &WarriorType<GridCoord>) -> WarriorType<&mut Warrior> {
-        self.warriors[a.val]
-            .find_mut(&a.inner)
-            .map(|b| WarriorType {
-                inner: b,
-                val: a.val,
-            })
-            .unwrap()
-    }
-    fn lookup_take(&mut self, a: WarriorType<GridCoord>) -> WarriorType<Warrior> {
-        Some(self.warriors[a.val].remove(&a.inner))
-            .map(|b| WarriorType {
-                inner: b,
-                val: a.val,
-            })
-            .unwrap()
-    }
-
-    fn add(&mut self, a: WarriorType<Warrior>) {
-        self.warriors[a.val].elem.push(a.inner);
-    }
-
-    fn find_slow(&self, a: &GridCoord) -> Option<WarriorType<&Warrior>> {
-        for (c, o) in self.warriors.iter().enumerate() {
-            if let Some(k) = o.find(a) {
-                return Some(WarriorType { inner: k, val: c });
-            }
-        }
-
-        None
-    }
-
-    pub fn find_slow_mut(&mut self, a: &GridCoord) -> Option<WarriorType<&mut Warrior>> {
-        for (c, o) in self.warriors.iter_mut().enumerate() {
-            if let Some(k) = o.find_mut(a) {
-                return Some(WarriorType { inner: k, val: c });
-            }
-        }
-
-        None
-    }
-    fn filter(&self) -> TribeFilter {
-        TribeFilter { tribe: self }
-    }
-
-    fn reset_attacked(&mut self) {
-        for a in self.warriors.iter_mut() {
-            for b in a.elem.iter_mut() {
-                b.attacked = false;
-                //Just set it selectable during other peoples turns so its not gray,
-                //even though it is not selectable.
-                b.selectable = true;
-            }
-        }
-    }
-    fn calculate_selectable_all(&mut self, that_team: &mut Tribe, grid_matrix: &GridMatrix) {
-        let this_team = self;
-        for i in 0..this_team.warriors.len() {
-            let a = &this_team.warriors[i];
-            for ii in 0..a.elem.len() {
-                let a = &this_team.warriors[i];
-
-                let b = &a.elem[ii];
-                let b = WarriorType { inner: b, val: i };
-
-                let vv = b.calculate_selectable(this_team, that_team, grid_matrix);
-
-                this_team.warriors[i].elem[ii].selectable = vv;
-                //b.selectable=vv;
-            }
-        }
-    }
-    fn replenish_stamina(&mut self) {
-        for a in self.warriors.iter_mut() {
-            for b in a.elem.iter_mut() {
-                if b.stamina.0 <= 10 - 1 {
-                    b.stamina.0 += 1;
-                }
-            }
-        }
-    }
-}
 
 // pub struct RestOfUnits<'a, T> {
 //     first: &'a mut [T],
@@ -588,17 +208,17 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let dogs = UnitCollection::new(vec![
-        Warrior::new(GridCoord([1, 1])),
-        Warrior::new(GridCoord([2, 1])),
-        Warrior::new(GridCoord([3, 1])),
-        Warrior::new(GridCoord([4, 1])),
+        UnitData::new(GridCoord([1, 1])),
+        UnitData::new(GridCoord([2, 1])),
+        UnitData::new(GridCoord([3, 1])),
+        UnitData::new(GridCoord([4, 1])),
     ]);
 
     let cats = UnitCollection::new(vec![
-        Warrior::new(GridCoord([1, -2])),
-        Warrior::new(GridCoord([2, -2])),
-        Warrior::new(GridCoord([3, -2])),
-        Warrior::new(GridCoord([4, -2])),
+        UnitData::new(GridCoord([1, -2])),
+        UnitData::new(GridCoord([2, -2])),
+        UnitData::new(GridCoord([3, -2])),
+        UnitData::new(GridCoord([4, -2])),
     ]);
 
     let mut ggame = Game {
