@@ -39,6 +39,10 @@ impl Path {
             num_moves: 0,
         }
     }
+    pub fn into_moves(self) -> impl Iterator<Item = Moves> {
+        self.moves.into_iter().take(self.num_moves as usize)
+    }
+
     pub fn get_moves(&self) -> &[Moves] {
         &self.moves[0..self.num_moves as usize]
     }

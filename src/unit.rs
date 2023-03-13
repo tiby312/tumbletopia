@@ -262,13 +262,11 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                     //todo kill target animate
                     this_unit.position = target.position;
                     this_unit.attacked = true;
-                    Pair(Some(this_unit), None)
+                    return Pair(Some(this_unit), None);
                 } else {
                     target.health -= damage;
 
-                    let kill_self = this_unit.health <= counter_damage;
-
-                    if kill_self {
+                    if this_unit.health <= counter_damage {
                         //todo self die animation.
                         Pair(None, Some(target))
                     } else {

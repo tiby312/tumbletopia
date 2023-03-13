@@ -2,7 +2,7 @@ use super::*;
 
 use axgeom::*;
 ///A way to map a grid to world coordinates and vice versa
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GridMatrix {
     spacing: f32,
 }
