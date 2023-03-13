@@ -78,12 +78,27 @@ impl Path {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
+    pub fn dir_to(&self,other:&GridCoord)->Moves{
+        let offset=other.sub(self);
+        assert!(offset.0[0].abs()<=1);
+        assert!(offset.0[1].abs()<=1);
+        
+        let offset=offset.to_cube();
+
+        hex::OFFSETS.iter().enumerate().find(|(_,x)|**x==offset.0).map(|(i,x)|Moves{dir:i as u8}).unwrap()
+
+    }
     pub fn to_cube(self) -> hex::Cube {
         let a = self.0;
         hex::Cube([a[0], a[1], -a[0] - a[1]])
     }
     fn advance(self, m: Moves) -> GridCoord {
         self.add(m.to_relative())
+    }
+    fn sub(mut self, o: &GridCoord) -> Self {
+        self.0[0] -= o.0[0];
+        self.0[1] -= o.0[1];
+        self
     }
     fn add(mut self, o: GridCoord) -> Self {
         self.0[0] += o.0[0];

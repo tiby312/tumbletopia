@@ -238,7 +238,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start: WarriorType<UnitData>,
         path: &movement::Path,
     ) -> WarriorType<UnitData> {
-        let aa = animation::Animation::new(start.position, path, self.grid_matrix, start);
+        let it=animation::movement(start.position, path.clone(), self.grid_matrix);
+
+        let aa = animation::Animation::new(it, start);
 
         let aa = self.doop.wait_animation(aa, self.team_index).await;
 
@@ -259,6 +261,15 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 let counter_damage = 5;
 
                 if target.health <= damage {
+                    let path=movement::Path::new();
+                    let m=this_unit.position.dir_to(&target.position);
+                    let path=path.add(m).unwrap();
+
+                    let it=animation::movement(this_unit.position, path, self.grid_matrix);
+                    let aa = animation::Animation::new(it, this_unit);
+                    let aa = self.doop.wait_animation(aa, self.team_index).await;
+                    let mut this_unit = aa.into_data();
+                    
                     //todo kill target animate
                     this_unit.position = target.position;
                     this_unit.attacked = true;
@@ -266,10 +277,22 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 } else {
                     target.health -= damage;
 
+                    let it=animation::attack(this_unit.position, target.position, self.grid_matrix);
+                    let aa = animation::Animation::new(it, this_unit);
+                    let aa=self.doop.wait_animation(aa, self.team_index).await;
+                    let mut this_unit=aa.into_data();
+
+
+                    let it=animation::attack(target.position, this_unit.position, self.grid_matrix);
+                    let aa = animation::Animation::new(it, target);
+                    let aa=self.doop.wait_animation(aa, self.team_index).await;
+                    let mut target=aa.into_data();
+
                     if this_unit.health <= counter_damage {
                         //todo self die animation.
                         Pair(None, Some(target))
                     } else {
+                        
                         //todo normal attack animation..
                         this_unit.attacked = true;
                         this_unit.health -= counter_damage;
