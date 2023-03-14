@@ -208,6 +208,15 @@ pub async fn main_logic<'a>(
                 //let view = game.get_view();
                 let unit = this_team.lookup(current_warrior_pos);
 
+                {
+                    let k = unit.calculate_selectable(this_team, that_team, grid_matrix);
+                    if !k {
+                        this_team.lookup_mut(&current_warrior_pos).selectable = k;
+                        //Deselect not selecftable!!!
+                        break;
+                    }
+                }
+
                 let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
 
                 let (cell, pototo) = doop.get_mouse_selection(cc, team_index).await;

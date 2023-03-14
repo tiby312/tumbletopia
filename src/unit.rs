@@ -82,9 +82,8 @@ impl WarriorType<&UnitData> {
         };
 
         //TODO move this and the above into an high-level "Has possible moves function"
-        let has_stamina_to_move = s.stamina.0 >= 0; //0f??? TODO
-
-        let ret = enemy_in_range || has_stamina_to_move;
+        let has_stamina_to_move = s.stamina.0 > 0; //0f??? TODO
+        let ret = enemy_in_range && !s.attacked || has_stamina_to_move;
         ret
     }
 }
