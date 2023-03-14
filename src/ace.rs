@@ -357,37 +357,7 @@ pub fn generate_unit_possible_moves2(
     that_team: &Tribe,
     grid_matrix: &GridMatrix,
 ) -> CellSelection {
-    // fn get_cat_move_attack_matrix(
-    //     movement: (i8, i8),
-    //     cat: &WarriorType<&UnitData>,
-    //     cat_filter: impl Filter,
-    //     roads: impl MoveCost,
-    //     gg: &grids::GridMatrix,
-    //     _moved: bool,
-    // ) -> CellSelection {
-        
-    //     // let attack = movement::PossibleMoves::new(
-    //     //     &movement::WarriorMovement,
-    //     //     &gg.filter().chain(SingleFilter { a: cat.get_pos() }),
-    //     //     &terrain::Grass,
-    //     //     cat.position,
-    //     //     MoveUnit(attack_range),
-    //     // );
-
-    //     CellSelection::MoveSelection(mm, (), attack_coords)
-    // }
-
-    let data = unit.get_movement_data();
-
-
-    let (_movement, attack) = data;
     let mm = if !unit.attacked {
-        //TODO make this more explicit somehow??
-        // MoveUnit(if cat.stamina.0 % 2 ==0{
-        //     cat.stamina.0-1
-        // }else{
-        //     cat.stamina.0
-        // })
         MoveUnit(unit.stamina.0)
     } else {
         MoveUnit(0)
@@ -401,20 +371,10 @@ pub fn generate_unit_possible_moves2(
         mm,
     );
 
-    let attack_range = if !unit.attacked { attack } else { 0 };
-
-    //let attack_range=attack;
-
-    let attack_coords = unit.get_attack_data().filter(|a|this_team.filter().filter(a)).collect();
-
+    let attack_coords = unit
+        .get_attack_data()
+        .filter(|a| this_team.filter().filter(a))
+        .collect();
 
     CellSelection::MoveSelection(mm, (), attack_coords)
-    // get_cat_move_attack_matrix(
-    //     data,
-    //     &unit,
-    //     this_team.filter().chain(that_team.filter()),
-    //     terrain::Grass,
-    //     grid_matrix,
-    //     true,
-    // )
 }

@@ -233,7 +233,7 @@ pub async fn worker_entry() {
             warriors: vec![dogs, d2],
         },
         cats: Tribe {
-            warriors: vec![cats,d3],
+            warriors: vec![cats, d3],
         },
     };
 
@@ -563,7 +563,6 @@ pub async fn worker_entry() {
                     });
                 }
 
-
                 if let ace::Command::Animate(a) = &command {
                     let this_draw = if team == 0 { &cat } else { &dog };
                     let that_draw = if team == 1 { &cat } else { &dog };
@@ -572,9 +571,7 @@ pub async fn worker_entry() {
 
                     let (a, b) = match ty {
                         AnimationOptions::Movement(m) => ((this_draw, m), None),
-                        AnimationOptions::Attack([a, b]) => {
-                            ((this_draw, a), Some((that_draw, b)))
-                        }
+                        AnimationOptions::Attack([a, b]) => ((this_draw, a), Some((that_draw, b))),
                         AnimationOptions::CounterAttack([a, b]) => {
                             ((that_draw, b), Some((this_draw, a)))
                         }
@@ -589,8 +586,7 @@ pub async fn worker_entry() {
                         drop_shadow.draw(&mut v);
 
                         if let Some((_, b)) = b {
-                            let pos: [f32; 2] =
-                                grid_matrix.hex_axial_to_world(&b.position).into();
+                            let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&b.position).into();
                             let t = matrix::translation(pos[0], pos[1], 1.0);
 
                             let m = matrix.chain(t).generate();
@@ -616,7 +612,6 @@ pub async fn worker_entry() {
                         a.draw(&mut v);
                     }
                 }
-
 
                 ctx.flush();
             }

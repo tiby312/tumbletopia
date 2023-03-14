@@ -10,13 +10,13 @@ pub struct UnitData {
 }
 
 impl WarriorType<&UnitData> {
-    pub fn get_movement_data(&self) -> (i8, i8) {
+    pub fn get_movement_data(&self) -> i8 {
         let a = self;
         match a.val {
-            Type::Warrior => (1, 1),
-            Type::Archer => (1, 1),
-            Type::Mage => (1, 1),
-            Type::Knight => (1, 1),
+            Type::Warrior => 1,
+            Type::Archer => 1,
+            Type::Mage => 1,
+            Type::Knight => 2,
         }
     }
 
@@ -425,11 +425,13 @@ impl Tribe {
         }
     }
     pub fn replenish_stamina(&mut self) {
-        for a in self.warriors.iter_mut() {
-            for b in a.elem.iter_mut() {
-                if b.stamina.0 <= 10 - 1 {
-                    b.stamina.0 += 1;
-                }
+        for (i, val) in self.warriors.iter_mut().enumerate() {
+            for unit in val.elem.iter_mut() {
+                let mut k = WarriorType {
+                    val: Type::type_index_inverse(i),
+                    inner: unit,
+                };
+                k.stamina.0 = k.as_ref().get_movement_data();
             }
         }
     }
