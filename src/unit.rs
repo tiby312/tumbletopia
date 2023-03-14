@@ -24,7 +24,7 @@ impl WarriorType<&UnitData> {
     pub fn get_attack_data(&self) -> impl Iterator<Item = GridCoord> {
         let a = self;
         let first = if let Type::Warrior = a.val {
-            Some(a.position.to_cube().range(1))
+            Some(a.position.to_cube().ring(1))
         } else {
             None
         };
