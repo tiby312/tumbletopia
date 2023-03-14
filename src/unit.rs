@@ -255,7 +255,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
     }
     pub async fn resolve_attack(
         &mut self,
-        mut this_unit: WarriorType<UnitData>,
+        this_unit: WarriorType<UnitData>,
         mut target: WarriorType<UnitData>,
     ) -> Pair {
         match (this_unit.val, target.val) {
@@ -292,7 +292,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                         AnimationOptions::Attack([this_unit, target]),
                     );
                     let aa = self.doop.wait_animation(aa, self.team_index).await;
-                    let AnimationOptions::Attack([mut this_unit,target])=aa.into_data() else{
+                    let AnimationOptions::Attack([this_unit,target])=aa.into_data() else{
                         unreachable!();
                     };
 
@@ -303,7 +303,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                         AnimationOptions::CounterAttack([this_unit, target]),
                     );
                     let aa = self.doop.wait_animation(aa, self.team_index).await;
-                    let AnimationOptions::CounterAttack([mut this_unit,mut target])=aa.into_data() else{
+                    let AnimationOptions::CounterAttack([mut this_unit,target])=aa.into_data() else{
                         unreachable!()
                     };
 

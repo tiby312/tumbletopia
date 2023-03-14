@@ -86,6 +86,7 @@ impl<'a> Doop<'a> {
     ) -> AwaitData<'a, 'b> {
         AwaitData::new(self, grid_matrix, team_index)
     }
+
     pub async fn wait_animation<'c>(
         &mut self,
         animation: Animation<AnimationOptions>,
