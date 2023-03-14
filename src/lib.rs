@@ -211,23 +211,29 @@ pub async fn worker_entry() {
     let dogs = UnitCollection::new(vec![
         UnitData::new(GridCoord([1, 1])),
         UnitData::new(GridCoord([2, 1])),
-        UnitData::new(GridCoord([3, 1])),
-        UnitData::new(GridCoord([4, 1])),
     ]);
 
     let cats = UnitCollection::new(vec![
         UnitData::new(GridCoord([1, -2])),
         UnitData::new(GridCoord([2, -2])),
-        UnitData::new(GridCoord([3, -2])),
-        UnitData::new(GridCoord([4, -2])),
+    ]);
+
+    let d2 = UnitCollection::new(vec![
+        UnitData::new(GridCoord([1, 2])),
+        UnitData::new(GridCoord([2, 2])),
+    ]);
+
+    let d3 = UnitCollection::new(vec![
+        UnitData::new(GridCoord([1, -3])),
+        UnitData::new(GridCoord([2, -3])),
     ]);
 
     let mut ggame = Game {
         dogs: Tribe {
-            warriors: vec![dogs],
+            warriors: vec![dogs, d2],
         },
         cats: Tribe {
-            warriors: vec![cats],
+            warriors: vec![cats,d3],
         },
     };
 
@@ -453,84 +459,110 @@ pub async fn worker_entry() {
 
                     grass.draw(&mut v);
                 }
-                let cat_draw = WarriorDraw::new(&ggame.cats.warriors[0], &cat, &drop_shadow);
-                let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[0], &dog, &drop_shadow);
 
-                disable_depth(&ctx, || {
-                    if let ace::Command::GetMouseInput(Some(a)) = &command {
-                        //if let Some(a) = testo.get_selection() {
-                        match a {
-                            CellSelection::MoveSelection(a, _, attack) => {
-                                for a in a.iter_coords() {
-                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
-                                    let t = matrix::translation(pos[0], pos[1], 0.0);
+                for i in 0..2 {
+                    let cat_draw = WarriorDraw::new(&ggame.cats.warriors[i], &cat, &drop_shadow);
+                    let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
 
-                                    let m = matrix.chain(t).generate();
+                    disable_depth(&ctx, || {
+                        if let ace::Command::GetMouseInput(Some(a)) = &command {
+                            //if let Some(a) = testo.get_selection() {
+                            match a {
+                                CellSelection::MoveSelection(a, _, attack) => {
+                                    for a in a.iter_coords() {
+                                        let pos: [f32; 2] =
+                                            grid_matrix.hex_axial_to_world(a).into();
+                                        let t = matrix::translation(pos[0], pos[1], 0.0);
 
-                                    let mut v = draw_sys.view(m.as_ref());
+                                        let m = matrix.chain(t).generate();
 
-                                    select_model.draw_ext(&mut v, false, false, false, false);
+                                        let mut v = draw_sys.view(m.as_ref());
 
-                                    //select_model.draw(&mut v);
+                                        select_model.draw_ext(&mut v, false, false, false, false);
+
+                                        //select_model.draw(&mut v);
+                                    }
+
+                                    for a in attack.iter() {
+                                        let pos: [f32; 2] =
+                                            grid_matrix.hex_axial_to_world(a).into();
+                                        let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                                        let m = matrix.chain(t).generate();
+
+                                        let mut v = draw_sys.view(m.as_ref());
+                                        //attack_model.draw(&mut v);
+                                        attack_model.draw_ext(&mut v, false, false, false, false);
+                                    }
                                 }
-
-                                for a in attack.iter() {
-                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
-                                    let t = matrix::translation(pos[0], pos[1], 0.0);
-
-                                    let m = matrix.chain(t).generate();
-
-                                    let mut v = draw_sys.view(m.as_ref());
-                                    //attack_model.draw(&mut v);
-                                    attack_model.draw_ext(&mut v, false, false, false, false);
-                                }
+                                CellSelection::BuildSelection(_) => {}
                             }
-                            CellSelection::BuildSelection(_) => {}
                         }
-                    }
 
-                    // { TEST MOUSE
-                    //     let mouse_mouse= scroll::mouse_to_world(mouse_mouse, &matrix, viewport);
+                        // { TEST MOUSE
+                        //     let mouse_mouse= scroll::mouse_to_world(mouse_mouse, &matrix, viewport);
 
-                    //     let a: GridCoord =grid_matrix.center_world_to_hex(mouse_mouse.into());
+                        //     let a: GridCoord =grid_matrix.center_world_to_hex(mouse_mouse.into());
 
-                    //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                    //     let t = matrix::translation(pos[0], pos[1], 3.0);
+                        //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                        //     let t = matrix::translation(pos[0], pos[1], 3.0);
 
-                    //     let m = matrix.chain(t).generate();
+                        //     let m = matrix.chain(t).generate();
 
-                    //     let mut v = draw_sys.view(m.as_ref());
-                    //     road.draw(&mut v);
-                    // }
-                    //for a in roads.pos.iter() {
-                    // let a: GridCoord =grid_matrix.center_world_to_hex(mouse_world.into());
+                        //     let mut v = draw_sys.view(m.as_ref());
+                        //     road.draw(&mut v);
+                        // }
+                        //for a in roads.pos.iter() {
+                        // let a: GridCoord =grid_matrix.center_world_to_hex(mouse_world.into());
 
-                    // let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                    // let t = matrix::translation(pos[0], pos[1], 3.0);
+                        // let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                        // let t = matrix::translation(pos[0], pos[1], 3.0);
 
-                    // let m = matrix.chain(t).generate();
+                        // let m = matrix.chain(t).generate();
 
-                    // let mut v = draw_sys.view(m.as_ref());
-                    // road.draw(&mut v);
-                    //}
-                });
+                        // let mut v = draw_sys.view(m.as_ref());
+                        // road.draw(&mut v);
+                        //}
+                    });
 
-                disable_depth(&ctx, || {
-                    //draw dropshadow
-                    cat_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
-                    dog_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
+                    disable_depth(&ctx, || {
+                        //draw dropshadow
+                        cat_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
+                        dog_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
 
-                    //TODO finish this!!!!
-                    // if let ace::Command::Animate(a) = &command {
-                    //     let (pos,ty) = a.calc_pos();
-                    //     let t = matrix::translation(pos[0], pos[1], 1.0);
+                        //TODO finish this!!!!
+                        // if let ace::Command::Animate(a) = &command {
+                        //     let (pos,ty) = a.calc_pos();
+                        //     let t = matrix::translation(pos[0], pos[1], 1.0);
 
-                    //     let m = matrix.chain(t).generate();
+                        //     let m = matrix.chain(t).generate();
 
-                    //     let mut v = draw_sys.view(m.as_ref());
-                    //     drop_shadow.draw(&mut v);
-                    // }
-                });
+                        //     let mut v = draw_sys.view(m.as_ref());
+                        //     drop_shadow.draw(&mut v);
+                        // }
+                    });
+
+                    cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
+                    dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
+
+                    disable_depth(&ctx, || {
+                        cat_draw.draw_health_text(
+                            &grid_matrix,
+                            &health_numbers,
+                            &view_proj,
+                            &proj,
+                            &mut draw_sys,
+                        );
+                        dog_draw.draw_health_text(
+                            &grid_matrix,
+                            &health_numbers,
+                            &view_proj,
+                            &proj,
+                            &mut draw_sys,
+                        );
+                    });
+                }
+
 
                 if let ace::Command::Animate(a) = &command {
                     let this_draw = if team == 0 { &cat } else { &dog };
@@ -540,7 +572,9 @@ pub async fn worker_entry() {
 
                     let (a, b) = match ty {
                         AnimationOptions::Movement(m) => ((this_draw, m), None),
-                        AnimationOptions::Attack([a, b]) => ((this_draw, a), Some((that_draw, b))),
+                        AnimationOptions::Attack([a, b]) => {
+                            ((this_draw, a), Some((that_draw, b)))
+                        }
                         AnimationOptions::CounterAttack([a, b]) => {
                             ((that_draw, b), Some((this_draw, a)))
                         }
@@ -555,7 +589,8 @@ pub async fn worker_entry() {
                         drop_shadow.draw(&mut v);
 
                         if let Some((_, b)) = b {
-                            let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&b.position).into();
+                            let pos: [f32; 2] =
+                                grid_matrix.hex_axial_to_world(&b.position).into();
                             let t = matrix::translation(pos[0], pos[1], 1.0);
 
                             let m = matrix.chain(t).generate();
@@ -582,25 +617,6 @@ pub async fn worker_entry() {
                     }
                 }
 
-                cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
-                dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
-
-                disable_depth(&ctx, || {
-                    cat_draw.draw_health_text(
-                        &grid_matrix,
-                        &health_numbers,
-                        &view_proj,
-                        &proj,
-                        &mut draw_sys,
-                    );
-                    dog_draw.draw_health_text(
-                        &grid_matrix,
-                        &health_numbers,
-                        &view_proj,
-                        &proj,
-                        &mut draw_sys,
-                    );
-                });
 
                 ctx.flush();
             }
