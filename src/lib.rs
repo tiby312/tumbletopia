@@ -546,6 +546,25 @@ pub async fn worker_entry() {
                         }
                     };
 
+                    disable_depth(&ctx, || {
+                        let t = matrix::translation(pos[0], pos[1], 1.0);
+
+                        let m = matrix.chain(t).generate();
+
+                        let mut v = draw_sys.view(m.as_ref());
+                        drop_shadow.draw(&mut v);
+
+                        if let Some((_, b)) = b {
+                            let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&b.position).into();
+                            let t = matrix::translation(pos[0], pos[1], 1.0);
+
+                            let m = matrix.chain(t).generate();
+
+                            let mut v = draw_sys.view(m.as_ref());
+                            drop_shadow.draw(&mut v);
+                        }
+                    });
+
                     let t = matrix::translation(pos[0], pos[1], 0.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
                     let m = matrix.chain(t).chain(s).generate();
