@@ -238,13 +238,16 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start: WarriorType<UnitData>,
         path: &movement::Path,
     ) -> WarriorType<UnitData> {
-        let it=animation::movement(start.position, path.clone(), self.grid_matrix);
+        let it = animation::movement(start.position, path.clone(), self.grid_matrix);
 
-        let aa = animation::Animation::new(it, start);
+        let aa = animation::Animation::new(it, AnimationOptions::Movement(start));
 
         let aa = self.doop.wait_animation(aa, self.team_index).await;
 
-        let mut start = aa.into_data();
+        let AnimationOptions::Movement(mut start)=aa.into_data()else{
+            unreachable!()
+        };
+
         start.stamina.0 -= path.total_cost().0;
         start.position = path.get_end_coord(start.position);
 
@@ -261,15 +264,20 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 let counter_damage = 5;
 
                 if target.health <= damage {
-                    let path=movement::Path::new();
-                    let m=this_unit.position.dir_to(&target.position);
-                    let path=path.add(m).unwrap();
+                    let path = movement::Path::new();
+                    let m = this_unit.position.dir_to(&target.position);
+                    let path = path.add(m).unwrap();
 
-                    let it=animation::movement(this_unit.position, path, self.grid_matrix);
-                    let aa = animation::Animation::new(it, this_unit);
+                    let it = animation::movement(this_unit.position, path, self.grid_matrix);
+                    let aa = animation::Animation::new(
+                        it,
+                        AnimationOptions::Attack([this_unit, target]),
+                    );
                     let aa = self.doop.wait_animation(aa, self.team_index).await;
-                    let mut this_unit = aa.into_data();
-                    
+
+                    let AnimationOptions::Attack([mut this_unit,target])=aa.into_data() else{
+                        unreachable!();
+                    };
                     //todo kill target animate
                     this_unit.position = target.position;
                     this_unit.attacked = true;
@@ -277,22 +285,32 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 } else {
                     target.health -= damage;
 
-                    let it=animation::attack(this_unit.position, target.position, self.grid_matrix);
-                    let aa = animation::Animation::new(it, this_unit);
-                    let aa=self.doop.wait_animation(aa, self.team_index).await;
-                    let mut this_unit=aa.into_data();
+                    let it =
+                        animation::attack(this_unit.position, target.position, self.grid_matrix);
+                    let aa = animation::Animation::new(
+                        it,
+                        AnimationOptions::Attack([this_unit, target]),
+                    );
+                    let aa = self.doop.wait_animation(aa, self.team_index).await;
+                    let AnimationOptions::Attack([mut this_unit,target])=aa.into_data() else{
+                        unreachable!();
+                    };
 
-
-                    let it=animation::attack(target.position, this_unit.position, self.grid_matrix);
-                    let aa = animation::Animation::new(it, target);
-                    let aa=self.doop.wait_animation(aa, self.team_index).await;
-                    let mut target=aa.into_data();
+                    let it =
+                        animation::attack(target.position, this_unit.position, self.grid_matrix);
+                    let aa = animation::Animation::new(
+                        it,
+                        AnimationOptions::CounterAttack([this_unit, target]),
+                    );
+                    let aa = self.doop.wait_animation(aa, self.team_index).await;
+                    let AnimationOptions::CounterAttack([mut this_unit,mut target])=aa.into_data() else{
+                        unreachable!()
+                    };
 
                     if this_unit.health <= counter_damage {
                         //todo self die animation.
                         Pair(None, Some(target))
                     } else {
-                        
                         //todo normal attack animation..
                         this_unit.attacked = true;
                         this_unit.health -= counter_damage;

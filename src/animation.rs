@@ -38,15 +38,12 @@ impl Iterator for Interpolate {
     fn next(&mut self) -> Option<Self::Item> {
         self.curr += ((self.target - self.curr) * self.tt).min(self.max);
 
-        if (self.curr - self.target).abs()< self.tt {
+        if (self.curr - self.target).abs() < self.tt {
             return None;
         }
         Some(self.curr)
     }
 }
-
-
-
 
 pub fn attack(
     start: GridCoord,
@@ -57,23 +54,22 @@ pub fn attack(
     let start = v.hex_axial_to_world(&start);
     let end = v.hex_axial_to_world(&target);
     let dir = (end - start).normalize();
-    let dis =v.spacing()/3.0;
+    let dis = v.spacing() / 3.0;
 
     Interpolate {
         curr: 0.0,
         target: dis,
         tt: 0.2,
         max: 4.0,
-    }.chain(
-        Interpolate {
-            curr: dis,
-            target: 0.0,
-            tt: 0.2,
-            max: 4.0,
-        }   
-    ).map(move |val|{start + dir * val})
+    }
+    .chain(Interpolate {
+        curr: dis,
+        target: 0.0,
+        tt: 0.2,
+        max: 4.0,
+    })
+    .map(move |val| start + dir * val)
 }
-
 
 pub fn movement(
     start: GridCoord,
@@ -116,17 +112,17 @@ impl<T> fmt::Debug for Animation<T> {
     }
 }
 impl<T> Animation<T> {
-    pub fn new(it:impl Iterator<Item=Vector2<f32>>+'static, data: T) -> Self {
+    pub fn new(it: impl Iterator<Item = Vector2<f32>> + 'static, data: T) -> Self {
         Self {
-            it:Box::new(it),
+            it: Box::new(it),
             data,
             last: None,
         }
     }
-    pub fn animate_step(&mut self) -> Option<[f32; 2]> {
+    pub fn animate_step(&mut self) -> Option<()> {
         if let Some(x) = self.it.next() {
             self.last = Some(x);
-            Some(x.into())
+            Some(())
         } else {
             None
         }
@@ -134,7 +130,7 @@ impl<T> Animation<T> {
     pub fn into_data(self) -> T {
         self.data
     }
-    pub fn calc_pos(&self) -> [f32; 2] {
-        self.last.unwrap().into()
+    pub fn calc_pos(&self) -> ([f32; 2], &T) {
+        (self.last.unwrap().into(), &self.data)
     }
 }

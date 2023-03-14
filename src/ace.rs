@@ -19,14 +19,20 @@ pub struct GameWrapResponse<'a, T> {
     pub data: T,
 }
 
+pub enum AnimationOptions {
+    Movement(WarriorType<UnitData>),
+    Attack([WarriorType<UnitData>; 2]),
+    CounterAttack([WarriorType<UnitData>; 2]),
+}
+
 #[derive(Debug)]
 pub enum Command {
-    Animate(Animation<WarriorType<UnitData>>),
+    Animate(Animation<AnimationOptions>),
     GetMouseInput(Option<CellSelection>),
     Nothing,
 }
 impl Command {
-    pub fn take_animation(&mut self) -> Animation<WarriorType<UnitData>> {
+    pub fn take_animation(&mut self) -> Animation<AnimationOptions> {
         let mut a = Command::Nothing;
         std::mem::swap(self, &mut a);
 
@@ -58,7 +64,7 @@ pub enum Pototo<T> {
 #[derive(Debug)]
 pub enum Response {
     Mouse(Option<CellSelection>, Pototo<GridCoord>), //TODO make grid coord
-    AnimationFinish(Animation<WarriorType<UnitData>>),
+    AnimationFinish(Animation<AnimationOptions>),
 }
 
 use futures::{
@@ -82,9 +88,9 @@ impl<'a> Doop<'a> {
     }
     pub async fn wait_animation<'c>(
         &mut self,
-        animation: Animation<WarriorType<UnitData>>,
+        animation: Animation<AnimationOptions>,
         team_index: usize,
-    ) -> Animation<WarriorType<UnitData>> {
+    ) -> Animation<AnimationOptions> {
         let game = unsafe { &*self.game };
         self.sender
             .send(GameWrap {

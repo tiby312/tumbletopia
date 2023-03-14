@@ -1,3 +1,4 @@
+use ace::AnimationOptions;
 use axgeom::vec2same;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 
@@ -455,8 +456,6 @@ pub async fn worker_entry() {
                 let cat_draw = WarriorDraw::new(&ggame.cats.warriors[0], &cat, &drop_shadow);
                 let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[0], &dog, &drop_shadow);
 
-                let animation_draw = if team == 0 { &cat } else { &dog };
-
                 disable_depth(&ctx, || {
                     if let ace::Command::GetMouseInput(Some(a)) = &command {
                         //if let Some(a) = testo.get_selection() {
@@ -521,25 +520,47 @@ pub async fn worker_entry() {
                     cat_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
 
-                    if let ace::Command::Animate(a) = &command {
-                        let pos = a.calc_pos();
-                        let t = matrix::translation(pos[0], pos[1], 1.0);
+                    //TODO finish this!!!!
+                    // if let ace::Command::Animate(a) = &command {
+                    //     let (pos,ty) = a.calc_pos();
+                    //     let t = matrix::translation(pos[0], pos[1], 1.0);
 
-                        let m = matrix.chain(t).generate();
+                    //     let m = matrix.chain(t).generate();
 
-                        let mut v = draw_sys.view(m.as_ref());
-                        drop_shadow.draw(&mut v);
-                    }
+                    //     let mut v = draw_sys.view(m.as_ref());
+                    //     drop_shadow.draw(&mut v);
+                    // }
                 });
 
                 if let ace::Command::Animate(a) = &command {
-                    let pos = a.calc_pos();
+                    let this_draw = if team == 0 { &cat } else { &dog };
+                    let that_draw = if team == 1 { &cat } else { &dog };
+
+                    let (pos, ty) = a.calc_pos();
+
+                    let (a, b) = match ty {
+                        AnimationOptions::Movement(m) => ((this_draw, m), None),
+                        AnimationOptions::Attack([a, b]) => ((this_draw, a), Some((that_draw, b))),
+                        AnimationOptions::CounterAttack([a, b]) => {
+                            ((that_draw, b), Some((this_draw, a)))
+                        }
+                    };
+
                     let t = matrix::translation(pos[0], pos[1], 0.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
                     let m = matrix.chain(t).chain(s).generate();
                     let mut v = draw_sys.view(m.as_ref());
+                    a.0.draw(&mut v);
 
-                    animation_draw.draw(&mut v);
+                    if let Some((a, b)) = b {
+                        let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&b.position).into();
+
+                        let t = matrix::translation(pos[0], pos[1], 0.0);
+                        let s = matrix::scale(1.0, 1.0, 1.0);
+                        let m = matrix.chain(t).chain(s).generate();
+                        let mut v = draw_sys.view(m.as_ref());
+                        a.draw(&mut v);
+                    }
                 }
 
                 cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
