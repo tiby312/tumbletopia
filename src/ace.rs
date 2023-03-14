@@ -357,11 +357,7 @@ pub fn generate_unit_possible_moves2(
     that_team: &Tribe,
     grid_matrix: &GridMatrix,
 ) -> CellSelection {
-    let mm = if !unit.attacked {
-        MoveUnit(unit.stamina.0)
-    } else {
-        MoveUnit(0)
-    };
+    let mm = MoveUnit(unit.stamina.0);
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,

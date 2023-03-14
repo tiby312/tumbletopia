@@ -19,7 +19,16 @@ impl movement::Filter for GridFilter {
 }
 
 fn world() -> impl Iterator<Item = hex::Cube> {
-    hex::Cube::new(0, 0).range(5)
+    let og = hex::Cube::new(9, -9);
+    (0..10)
+        .flat_map(move |i| (0..10).map(move |j| (i, j)))
+        .map(move |(x, y)| {
+            let a = hex::Cube::new(x, y);
+            let a = a.0;
+            og.add(hex::Cube([-a[0], -a[2], -a[1]]))
+        })
+
+    //hex::Cube::new(0, 0).range(5)
 }
 
 const FOO: f32 = hex::SQRT_3;

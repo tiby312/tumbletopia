@@ -214,8 +214,8 @@ pub async fn worker_entry() {
     ]);
 
     let cats = UnitCollection::new(vec![
-        UnitData::new(GridCoord([1, -2])),
-        UnitData::new(GridCoord([2, -2])),
+        UnitData::new(GridCoord([1, 5])),
+        UnitData::new(GridCoord([2, 5])),
     ]);
 
     let d2 = UnitCollection::new(vec![
@@ -224,8 +224,8 @@ pub async fn worker_entry() {
     ]);
 
     let d3 = UnitCollection::new(vec![
-        UnitData::new(GridCoord([1, -3])),
-        UnitData::new(GridCoord([2, -3])),
+        UnitData::new(GridCoord([1, 6])),
+        UnitData::new(GridCoord([2, 6])),
     ]);
 
     let mut ggame = Game {
@@ -400,6 +400,7 @@ pub async fn worker_entry() {
                         } else if on_select {
                             let mouse: GridCoord =
                                 grid_matrix.center_world_to_hex(mouse_world.into());
+                            log!(format!("pos:{:?}", mouse));
 
                             response_sender
                                 .send(ace::GameWrapResponse {
