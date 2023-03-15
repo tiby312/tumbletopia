@@ -208,33 +208,39 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-    let dogs = UnitCollection::new(vec![
-        UnitData::new(GridCoord([1, 1])),
-        UnitData::new(GridCoord([2, 1])),
-    ]);
+    let dogs = vec![
+        UnitCollection::new(vec![
+            UnitData::new(GridCoord([1, 1])),
+            UnitData::new(GridCoord([2, 1])),
+        ]),
+        UnitCollection::new(vec![
+            UnitData::new(GridCoord([1, 2])),
+            UnitData::new(GridCoord([2, 2])),
+        ]),
+        UnitCollection::new(vec![
+            UnitData::new(GridCoord([1, 3])),
+            UnitData::new(GridCoord([2, 3])),
+        ]),
+    ];
 
-    let cats = UnitCollection::new(vec![
-        UnitData::new(GridCoord([1, 5])),
-        UnitData::new(GridCoord([2, 5])),
-    ]);
-
-    let d2 = UnitCollection::new(vec![
-        UnitData::new(GridCoord([1, 2])),
-        UnitData::new(GridCoord([2, 2])),
-    ]);
-
-    let d3 = UnitCollection::new(vec![
-        UnitData::new(GridCoord([1, 6])),
-        UnitData::new(GridCoord([2, 6])),
-    ]);
+    let cats = vec![
+        UnitCollection::new(vec![
+            UnitData::new(GridCoord([1, 5])),
+            UnitData::new(GridCoord([2, 5])),
+        ]),
+        UnitCollection::new(vec![
+            UnitData::new(GridCoord([1, 6])),
+            UnitData::new(GridCoord([2, 6])),
+        ]),
+        UnitCollection::new(vec![
+            UnitData::new(GridCoord([1, 7])),
+            UnitData::new(GridCoord([2, 7])),
+        ]),
+    ];
 
     let mut ggame = Game {
-        dogs: Tribe {
-            warriors: vec![dogs, d2],
-        },
-        cats: Tribe {
-            warriors: vec![cats, d3],
-        },
+        dogs: Tribe { warriors: dogs },
+        cats: Tribe { warriors: cats },
     };
 
     let roads = terrain::TerrainCollection {
@@ -461,7 +467,7 @@ pub async fn worker_entry() {
                     grass.draw(&mut v);
                 }
 
-                for i in 0..2 {
+                for i in 0..3 {
                     let cat_draw = WarriorDraw::new(&ggame.cats.warriors[i], &cat, &drop_shadow);
                     let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
 

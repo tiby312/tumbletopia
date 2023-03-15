@@ -361,7 +361,10 @@ pub fn generate_unit_possible_moves2(
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,
-        &this_team.filter().chain(that_team.filter()),
+        &grid_matrix
+            .filter()
+            .chain(this_team.filter())
+            .chain(that_team.filter()),
         &terrain::Grass,
         unit.position,
         mm,
@@ -369,7 +372,7 @@ pub fn generate_unit_possible_moves2(
 
     let attack_coords = unit
         .get_attack_data()
-        .filter(|a| this_team.filter().filter(a))
+        .filter(|a| this_team.filter().chain(grid_matrix.filter()).filter(a))
         .collect();
 
     CellSelection::MoveSelection(mm, (), attack_coords)

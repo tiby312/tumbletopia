@@ -36,7 +36,7 @@ impl WarriorType<&UnitData> {
         };
 
         let third = if let Type::Knight = a.val {
-            Some(a.position.to_cube().ring(3))
+            Some(a.position.to_cube().ring(1))
         } else {
             None
         };
@@ -263,6 +263,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             (Type::Archer, _) => None,
             (_, Type::Warrior) => Some(5),
             (_, Type::Archer) => None,
+            (_, Type::Knight) => None,
             _ => {
                 todo!()
             }
@@ -271,6 +272,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let move_on_kill = match (this_unit.val, target.val) {
             (Type::Archer, _) => false,
             (Type::Warrior, _) => true,
+            (Type::Knight, _) => true,
             _ => {
                 todo!()
             }
