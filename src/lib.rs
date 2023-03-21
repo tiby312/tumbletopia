@@ -210,32 +210,29 @@ pub async fn worker_entry() {
 
     let dogs = vec![
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([1, 1])),
-            UnitData::new(GridCoord([2, 1])),
+            UnitData::new(GridCoord([2, -3])),
+            UnitData::new(GridCoord([2, -2])),
+            UnitData::new(GridCoord([3, -2])),
+            
         ]),
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([1, 2])),
-            UnitData::new(GridCoord([2, 2])),
-        ]),
-        UnitCollection::new(vec![
-            UnitData::new(GridCoord([1, 3])),
-            UnitData::new(GridCoord([2, 3])),
-        ]),
+            UnitData::new(GridCoord([3, -4])),
+            UnitData::new(GridCoord([4, -4])),
+            UnitData::new(GridCoord([4, -3])),
+        ])
     ];
 
     let cats = vec![
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([1, 5])),
-            UnitData::new(GridCoord([2, 5])),
+            UnitData::new(GridCoord([-3, 2])),
+            UnitData::new(GridCoord([-2, 2])),
+            UnitData::new(GridCoord([-2, 3])),
         ]),
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([1, 6])),
-            UnitData::new(GridCoord([2, 6])),
-        ]),
-        UnitCollection::new(vec![
-            UnitData::new(GridCoord([1, 7])),
-            UnitData::new(GridCoord([2, 7])),
-        ]),
+            UnitData::new(GridCoord([-4, 3])),
+            UnitData::new(GridCoord([-4, 4])),
+            UnitData::new(GridCoord([-3, 4]))
+        ])
     ];
 
     let mut ggame = Game {
@@ -467,7 +464,7 @@ pub async fn worker_entry() {
                     grass.draw(&mut v);
                 }
 
-                for i in 0..3 {
+                for i in 0..2 {
                     let cat_draw = WarriorDraw::new(&ggame.cats.warriors[i], &cat, &drop_shadow);
                     let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
 

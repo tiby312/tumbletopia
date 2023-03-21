@@ -311,6 +311,8 @@ pub async fn main_logic<'a>(
                     }
                 };
 
+
+
                 //let view = game.get_view();
 
                 let wwa = this_team.lookup(current_warrior_pos);
@@ -319,11 +321,12 @@ pub async fn main_logic<'a>(
                 wwa.selectable = vv;
 
                 if !vv {
-                    //Deselect
-                    break;
+                    //FInish turn
+                    break 'outer;
                 }
             }
 
+            
             //log!(format!("User selected!={:?}", mouse_world));
         }
 

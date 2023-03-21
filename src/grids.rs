@@ -30,7 +30,7 @@ fn world() -> impl Iterator<Item = hex::Cube> {
     //         og.add(hex::Cube([-a[0], -a[2], -a[1]]))
     //     })
 
-    hex::Cube::new(0, 0).range(10)
+    hex::Cube::new(0, 0).range(4)
 }
 
 const FOO: f32 = hex::SQRT_3;

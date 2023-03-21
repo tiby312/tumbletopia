@@ -214,6 +214,13 @@ impl<T> std::ops::DerefMut for WarriorType<T> {
     }
 }
 
+
+
+pub struct Dash{
+    pub has_dash:bool
+}
+
+
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
     grid_matrix: &'b GridMatrix,
@@ -250,6 +257,17 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start.stamina.0 -= path.total_cost().0;
         start.position = path.get_end_coord(start.position);
 
+        // let has_dash = match start.val {
+        //     Type::Archer => false,
+        //     _ => {
+        //         true
+        //     }
+        // };
+        
+        // if !has_dash{
+        //     start.attacked=true;
+        // }
+        start.attacked=true;
         start
     }
     pub async fn resolve_attack(
@@ -260,13 +278,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let damage = 5;
 
         let counter_damage = match (this_unit.val, target.val) {
-            (Type::Archer, _) => None,
-            (_, Type::Warrior) => Some(5),
-            (_, Type::Archer) => None,
-            (_, Type::Knight) => None,
-            _ => {
-                todo!()
-            }
+            (Type::Archer, Type::Archer) | (Type::Warrior,Type::Warrior) => Some(5),
+            _=>None
         };
 
         let move_on_kill = match (this_unit.val, target.val) {
@@ -277,6 +290,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 todo!()
             }
         };
+
 
         target.health -= damage;
         this_unit.attacked = true;
