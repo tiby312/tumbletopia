@@ -103,7 +103,7 @@ impl UnitData {
             position,
             stamina: MoveUnit(0),
             attacked: false,
-            health: 10,
+            health: 2,
             selectable: true,
         }
     }
@@ -275,10 +275,10 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         mut this_unit: WarriorType<UnitData>,
         mut target: WarriorType<UnitData>,
     ) -> Pair {
-        let damage = 5;
+        let damage = 1;
 
         let counter_damage = match (this_unit.val, target.val) {
-            (Type::Archer, Type::Archer) | (Type::Warrior,Type::Warrior) => Some(5),
+            (Type::Archer, Type::Archer) | (Type::Warrior,Type::Warrior) => Some(1),
             _=>None
         };
 
