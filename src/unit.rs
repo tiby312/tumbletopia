@@ -214,12 +214,9 @@ impl<T> std::ops::DerefMut for WarriorType<T> {
     }
 }
 
-
-
-pub struct Dash{
-    pub has_dash:bool
+pub struct Dash {
+    pub has_dash: bool,
 }
-
 
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
@@ -263,24 +260,28 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         //         true
         //     }
         // };
-        
+
         // if !has_dash{
         //     start.attacked=true;
         // }
-        start.attacked=true;
+        start.attacked = true;
         start
     }
     pub async fn resolve_attack(
         &mut self,
         mut this_unit: WarriorType<UnitData>,
         mut target: WarriorType<UnitData>,
+        support_attack: bool,
     ) -> Pair {
+        //TODO store somewhere
         let damage = 1;
 
         let counter_damage = match (this_unit.val, target.val) {
-            (Type::Archer, Type::Archer) | (Type::Warrior,Type::Warrior) => Some(1),
-            _=>None
+            (Type::Archer, Type::Archer) | (Type::Warrior, Type::Warrior) => Some(1),
+            _ => None,
         };
+
+        let counter_damage = if support_attack { None } else { counter_damage };
 
         let move_on_kill = match (this_unit.val, target.val) {
             (Type::Archer, _) => false,
@@ -291,11 +292,11 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             }
         };
 
-
         target.health -= damage;
         this_unit.attacked = true;
 
         if target.health <= 0 {
+            assert!(!support_attack);
             let this_unit = if move_on_kill {
                 let path = movement::Path::new();
                 let m = this_unit.position.dir_to(&target.position);
@@ -367,6 +368,23 @@ pub struct Tribe {
     pub warriors: Vec<UnitCollection<UnitData>>,
 }
 impl Tribe {
+    pub fn other_units_in_range_of_target(
+        &self,
+        target: GridCoord,
+    ) -> impl Iterator<Item = WarriorType<&UnitData>> {
+        self.warriors.iter().enumerate().flat_map(move |(i, o)| {
+            o.elem.iter().filter_map(move |u| {
+                let unit = WarriorType {
+                    inner: u,
+                    val: Type::type_index_inverse(i),
+                };
+
+                unit.get_attack_data()
+                    .find(|&f| f == target)
+                    .map(move |_| unit)
+            })
+        })
+    }
     pub fn lookup(&self, a: WarriorType<GridCoord>) -> WarriorType<&UnitData> {
         self.warriors[a.val.type_index()]
             .find(&a.inner)

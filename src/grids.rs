@@ -19,7 +19,7 @@ impl movement::Filter for GridFilter {
 }
 
 fn world() -> impl Iterator<Item = hex::Cube> {
-    // let dim=20;
+    // let dim=8;
 
     // let og = hex::Cube::new(dim-1, -(dim-1));
     // (0..dim)

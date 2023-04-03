@@ -230,10 +230,8 @@ pub async fn main_logic<'a>(
 
                 //This is the cell the user selected from the pool of available moves for the unit
                 let target_cell = mouse_world;
-                let (ss, attack_data, attack) = match cell {
-                    CellSelection::MoveSelection(ss, attack_data, attack) => {
-                        (ss, attack_data, attack)
-                    }
+                let (ss, (), attack) = match cell {
+                    CellSelection::MoveSelection(ss, (), attack) => (ss, (), attack),
                     _ => {
                         unreachable!()
                     }
@@ -247,12 +245,47 @@ pub async fn main_logic<'a>(
                     let target_coord = target.slim();
 
                     if !current_attack && movement::contains_coord(attack.iter(), &target_cell) {
-                        let c = this_team.lookup_take(current_warrior_pos);
                         let d = that_team.lookup_take(target_coord);
+
+                        //TODO remve unsafe. Use a macro to rename the variable?
+
+                        //Attack using supports.
+                        let d = {
+                            let v: Vec<_> = this_team
+                                .other_units_in_range_of_target(target_cell)
+                                .map(|x| x.slim())
+                                .collect();
+
+                            let mut d = Some(d);
+                            for &a in v.iter().filter(|&&f| f != xx) {
+                                let damage = 1;
+                                if d.as_ref().unwrap().health <= damage {
+                                    break;
+                                }
+                                let warrir = this_team.lookup_take(a);
+
+                                match doop
+                                    .await_data(grid_matrix, team_index)
+                                    .resolve_attack(warrir, d.take().unwrap(), false)
+                                    .await
+                                {
+                                    unit::Pair(Some(a), Some(b)) => {
+                                        this_team.add(a);
+                                        d = Some(b);
+                                    }
+                                    _ => {
+                                        unreachable!()
+                                    }
+                                }
+                            }
+                            d.unwrap()
+                        };
+
+                        let c = this_team.lookup_take(current_warrior_pos);
 
                         match doop
                             .await_data(grid_matrix, team_index)
-                            .resolve_attack(c, d)
+                            .resolve_attack(c, d, false)
                             .await
                         {
                             unit::Pair(Some(a), None) => {
@@ -311,8 +344,6 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-
-
                 //let view = game.get_view();
 
                 let wwa = this_team.lookup(current_warrior_pos);
@@ -326,7 +357,6 @@ pub async fn main_logic<'a>(
                 }
             }
 
-            
             //log!(format!("User selected!={:?}", mouse_world));
         }
 
@@ -373,6 +403,7 @@ pub fn generate_unit_possible_moves2(
         mm,
     );
 
+    //TODO don't collect.
     let attack_coords = unit
         .get_attack_data()
         .filter(|a| this_team.filter().chain(grid_matrix.filter()).filter(a))
