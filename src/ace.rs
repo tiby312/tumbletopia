@@ -265,7 +265,7 @@ pub async fn main_logic<'a>(
 
                                 match doop
                                     .await_data(grid_matrix, team_index)
-                                    .resolve_attack(warrir, d.take().unwrap(), false)
+                                    .resolve_attack(warrir, d.take().unwrap(), true)
                                     .await
                                 {
                                     unit::Pair(Some(a), Some(b)) => {
