@@ -247,17 +247,16 @@ pub async fn main_logic<'a>(
                     if !current_attack && movement::contains_coord(attack.iter(), &target_cell) {
                         let d = that_team.lookup_take(target_coord);
 
-                        //TODO remve unsafe. Use a macro to rename the variable?
-
                         //Attack using supports.
                         let d = {
                             let v: Vec<_> = this_team
                                 .other_units_in_range_of_target(target_cell)
                                 .map(|x| x.slim())
+                                .filter(|&f| f != xx)
                                 .collect();
 
                             let mut d = Some(d);
-                            for &a in v.iter().filter(|&&f| f != xx) {
+                            for a in v {
                                 let damage = 1;
                                 if d.as_ref().unwrap().health <= damage {
                                     break;
