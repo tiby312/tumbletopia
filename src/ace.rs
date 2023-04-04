@@ -22,6 +22,7 @@ pub struct GameWrapResponse<'a, T> {
 pub enum AnimationOptions {
     Movement(WarriorType<UnitData>),
     Attack([WarriorType<UnitData>; 2]),
+    Heal([WarriorType<UnitData>; 2]),
     CounterAttack([WarriorType<UnitData>; 2]),
 }
 
@@ -230,8 +231,8 @@ pub async fn main_logic<'a>(
 
                 //This is the cell the user selected from the pool of available moves for the unit
                 let target_cell = mouse_world;
-                let (ss, (), attack) = match cell {
-                    CellSelection::MoveSelection(ss, (), attack) => (ss, (), attack),
+                let (ss, friendly, attack) = match cell {
+                    CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
                     _ => {
                         unreachable!()
                     }
@@ -325,17 +326,34 @@ pub async fn main_logic<'a>(
                     this_team.add(this_unit);
                 } else {
                     if let Some(a) = this_team.find_slow(&target_cell) {
-                        let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
-                        let k = a.slim();
+                        if !current_attack
+                            && movement::contains_coord(friendly.iter(), &target_cell)
+                        {
+                            let target_coord = a.slim();
 
-                        this_team.lookup_mut(&k).selectable = vv;
+                            let c = this_team.lookup_take(current_warrior_pos);
 
-                        if vv && k != current_warrior_pos {
-                            //Quick switch to another unit
-                            current_warrior_pos = k;
+                            let d = this_team.lookup_take(target_coord);
+
+                            let unit::Pair(Some(a),Some(b))= doop.await_data(grid_matrix,team_index).resolve_heal(c, d).await else{
+                                unreachable!()
+                            };
+
+                            this_team.add(a);
+                            this_team.add(b)
                         } else {
-                            //Deselect
-                            break;
+                            let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
+                            let k = a.slim();
+
+                            this_team.lookup_mut(&k).selectable = vv;
+
+                            if vv && k != current_warrior_pos {
+                                //Quick switch to another unit
+                                current_warrior_pos = k;
+                            } else {
+                                //Deselect
+                                break;
+                            }
                         }
                     } else {
                         //Deselect
@@ -402,11 +420,16 @@ pub fn generate_unit_possible_moves2(
         mm,
     );
 
+    let friendly_coords = unit
+        .get_friendly_data()
+        .filter(|a| that_team.filter().chain(grid_matrix.filter()).filter(a))
+        .collect();
+
     //TODO don't collect.
     let attack_coords = unit
         .get_attack_data()
         .filter(|a| this_team.filter().chain(grid_matrix.filter()).filter(a))
         .collect();
 
-    CellSelection::MoveSelection(mm, (), attack_coords)
+    CellSelection::MoveSelection(mm, friendly_coords, attack_coords)
 }

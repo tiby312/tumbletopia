@@ -219,6 +219,7 @@ pub async fn worker_entry() {
             UnitData::new(GridCoord([4, -4])),
             UnitData::new(GridCoord([4, -3])),
         ]),
+        UnitCollection::new(vec![UnitData::new(GridCoord([0, -3]))]),
     ];
 
     let cats = vec![
@@ -232,6 +233,7 @@ pub async fn worker_entry() {
             UnitData::new(GridCoord([-4, 4])),
             UnitData::new(GridCoord([-3, 4])),
         ]),
+        UnitCollection::new(vec![UnitData::new(GridCoord([-3, 0]))]),
     ];
 
     let mut ggame = Game {
@@ -271,6 +273,8 @@ pub async fn worker_entry() {
     let select_model = quick_load(SELECT_GLB, 1, None);
 
     let attack_model = quick_load(ATTACK_GLB, 1, None);
+
+    let friendly_model = quick_load(FRIENDLY_GLB, 1, None);
 
     let text_texture = {
         let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
@@ -463,7 +467,7 @@ pub async fn worker_entry() {
                     grass.draw(&mut v);
                 }
 
-                for i in 0..2 {
+                for i in 0..3 {
                     let cat_draw = WarriorDraw::new(&ggame.cats.warriors[i], &cat, &drop_shadow);
                     let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
 
@@ -471,7 +475,7 @@ pub async fn worker_entry() {
                         if let ace::Command::GetMouseInput(Some(a)) = &command {
                             //if let Some(a) = testo.get_selection() {
                             match a {
-                                CellSelection::MoveSelection(a, _, attack) => {
+                                CellSelection::MoveSelection(a, friendly, attack) => {
                                     for a in a.iter_coords() {
                                         let pos: [f32; 2] =
                                             grid_matrix.hex_axial_to_world(a).into();
@@ -496,6 +500,18 @@ pub async fn worker_entry() {
                                         let mut v = draw_sys.view(m.as_ref());
                                         //attack_model.draw(&mut v);
                                         attack_model.draw_ext(&mut v, false, false, false, false);
+                                    }
+
+                                    for a in friendly.iter() {
+                                        let pos: [f32; 2] =
+                                            grid_matrix.hex_axial_to_world(a).into();
+                                        let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                                        let m = matrix.chain(t).generate();
+
+                                        let mut v = draw_sys.view(m.as_ref());
+                                        //attack_model.draw(&mut v);
+                                        friendly_model.draw_ext(&mut v, false, false, false, false);
                                     }
                                 }
                                 CellSelection::BuildSelection(_) => {}
@@ -573,6 +589,7 @@ pub async fn worker_entry() {
                     let (pos, ty) = a.calc_pos();
 
                     let (a, b) = match ty {
+                        AnimationOptions::Heal([a, b]) => ((this_draw, a), Some((this_draw, b))),
                         AnimationOptions::Movement(m) => ((this_draw, m), None),
                         AnimationOptions::Attack([a, b]) => ((this_draw, a), Some((that_draw, b))),
                         AnimationOptions::CounterAttack([a, b]) => {
@@ -723,6 +740,7 @@ const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
 const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
 const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
+const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
 
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");

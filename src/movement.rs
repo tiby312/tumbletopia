@@ -79,9 +79,11 @@ impl Path {
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
     pub fn dir_to(&self, other: &GridCoord) -> Moves {
-        let offset = other.sub(self);
-        assert!(offset.0[0].abs() <= 1);
-        assert!(offset.0[1].abs() <= 1);
+        let mut offset = other.sub(self);
+        //assert!(offset.0[0].abs() <= 1);
+        //assert!(offset.0[1].abs() <= 1);
+        offset.0[0] = offset.0[0].clamp(-1, 1);
+        offset.0[1] = offset.0[1].clamp(-1, 1);
 
         let offset = offset.to_cube();
 

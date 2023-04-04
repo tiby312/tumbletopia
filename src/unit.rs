@@ -20,6 +20,16 @@ impl WarriorType<&UnitData> {
         }
     }
 
+    pub fn get_friendly_data(&self) -> impl Iterator<Item = GridCoord> {
+        let first = if let Type::Mage = self.val {
+            Some(self.position.to_cube().ring(2))
+        } else {
+            None
+        };
+
+        first.into_iter().flatten().map(|x| x.to_axial())
+    }
+
     //TODO additionally return a animation??.
     pub fn get_attack_data(&self) -> impl Iterator<Item = GridCoord> {
         let a = self;
@@ -111,7 +121,7 @@ impl UnitData {
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(movement::PossibleMoves, (), Vec<GridCoord>),
+    MoveSelection(movement::PossibleMoves, Vec<GridCoord>, Vec<GridCoord>),
     BuildSelection(GridCoord),
 }
 
@@ -159,8 +169,8 @@ impl Type {
         match a {
             Type::Warrior => 0,
             Type::Archer => 1,
-            Type::Knight => 2,
-            Type::Mage => 3,
+            Type::Mage => 2,
+            Type::Knight => 3,
         }
     }
 
@@ -168,8 +178,8 @@ impl Type {
         match a {
             0 => Type::Warrior,
             1 => Type::Archer,
-            2 => Type::Knight,
-            3 => Type::Mage,
+            2 => Type::Mage,
+            3 => Type::Knight,
             _ => unreachable!(),
         }
     }
@@ -266,6 +276,31 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         // }
         start.attacked = true;
         start
+    }
+
+    pub async fn resolve_heal(
+        &mut self,
+        mut this_unit: WarriorType<UnitData>,
+        mut target: WarriorType<UnitData>,
+    ) -> Pair {
+        if target.health < 10 {
+            target.health += 1;
+        }
+        this_unit.attacked = true;
+
+        let path = movement::Path::new();
+        let m = this_unit.position.dir_to(&target.position);
+        let path = path.add(m).unwrap();
+
+        let it = animation::movement(this_unit.position, path, self.grid_matrix);
+        let aa = animation::Animation::new(it, AnimationOptions::Heal([this_unit, target]));
+        let aa = self.doop.wait_animation(aa, self.team_index).await;
+
+        let AnimationOptions::Heal([this_unit,target])=aa.into_data() else{
+            unreachable!();
+        };
+
+        Pair(Some(this_unit), Some(target))
     }
     pub async fn resolve_attack(
         &mut self,
