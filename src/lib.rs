@@ -638,8 +638,8 @@ pub async fn worker_entry() {
         }
     };
 
-    futures::pin_mut!(main_logic);
-    futures::pin_mut!(render_thread);
+    //futures::pin_mut!(main_logic);
+    //futures::pin_mut!(render_thread);
 
     futures::join!(main_logic, render_thread);
 
@@ -740,7 +740,7 @@ const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
 const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
 const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
-const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
+const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
 
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
