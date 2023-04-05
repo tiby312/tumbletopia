@@ -283,9 +283,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         mut this_unit: WarriorType<UnitData>,
         mut target: WarriorType<UnitData>,
     ) -> Pair {
-        if target.health < 10 {
-            target.health += 1;
-        }
+        target.health = target.health.clamp(target.health + 2, 4);
+
         this_unit.attacked = true;
 
         let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
