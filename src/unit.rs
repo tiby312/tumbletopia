@@ -288,11 +288,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         }
         this_unit.attacked = true;
 
-        let path = movement::Path::new();
-        let m = this_unit.position.dir_to(&target.position);
-        let path = path.add(m).unwrap();
-
-        let it = animation::movement(this_unit.position, path, self.grid_matrix);
+        let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
         let aa = animation::Animation::new(it, AnimationOptions::Heal([this_unit, target]));
         let aa = self.doop.wait_animation(aa, self.team_index).await;
 

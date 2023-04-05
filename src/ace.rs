@@ -324,42 +324,38 @@ pub async fn main_logic<'a>(
                     current_warrior_pos = this_unit.as_ref().slim();
 
                     this_team.add(this_unit);
-                } else {
-                    if let Some(a) = this_team.find_slow(&target_cell) {
-                        if !current_attack
-                            && movement::contains_coord(friendly.iter(), &target_cell)
-                        {
-                            let target_coord = a.slim();
+                } else if let Some(a) = this_team.find_slow(&target_cell) {
+                    if !current_attack && movement::contains_coord(friendly.iter(), &target_cell) {
+                        let target_coord = a.slim();
 
-                            let c = this_team.lookup_take(current_warrior_pos);
+                        let c = this_team.lookup_take(current_warrior_pos);
 
-                            let d = this_team.lookup_take(target_coord);
+                        let d = this_team.lookup_take(target_coord);
 
-                            let unit::Pair(Some(a),Some(b))= doop.await_data(grid_matrix,team_index).resolve_heal(c, d).await else{
+                        let unit::Pair(Some(a),Some(b))= doop.await_data(grid_matrix,team_index).resolve_heal(c, d).await else{
                                 unreachable!()
                             };
 
-                            this_team.add(a);
-                            this_team.add(b)
-                        } else {
-                            let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
-                            let k = a.slim();
-
-                            this_team.lookup_mut(&k).selectable = vv;
-
-                            if vv && k != current_warrior_pos {
-                                //Quick switch to another unit
-                                current_warrior_pos = k;
-                            } else {
-                                //Deselect
-                                break;
-                            }
-                        }
+                        this_team.add(a);
+                        this_team.add(b)
                     } else {
-                        //Deselect
-                        break;
+                        let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
+                        let k = a.slim();
+
+                        this_team.lookup_mut(&k).selectable = vv;
+
+                        if vv && k != current_warrior_pos {
+                            //Quick switch to another unit
+                            current_warrior_pos = k;
+                        } else {
+                            //Deselect
+                            break;
+                        }
                     }
-                };
+                } else {
+                    //Deselect
+                    break;
+                }
 
                 //let view = game.get_view();
 
