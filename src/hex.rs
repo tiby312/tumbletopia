@@ -74,12 +74,14 @@ impl Cube {
         self
     }
 
-    pub fn rays(&self, n: i16, ff: impl Filter + Copy) -> impl Iterator<Item = Cube> {
+    pub fn rays(&self, start: i16, end: i16, ff: impl Filter + Copy) -> impl Iterator<Item = Cube> {
         let o = *self;
         OFFSETS.iter().flat_map(move |&i| {
-            (1..n)
-                .map(move |a| o.add(Cube(i).scale(a)))
-                .take_while(move |o| ff.filter(&o.to_axial()))
+            (1..end)
+                .map(move |a| (a, o.add(Cube(i).scale(a))))
+                .take_while(move |(_, o)| ff.filter(&o.to_axial()))
+                .filter(move |(a, _)| *a >= start)
+                .map(|(_, a)| a)
         })
     }
     pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> {
