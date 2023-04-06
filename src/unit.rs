@@ -40,7 +40,7 @@ impl WarriorType<&UnitData> {
         };
 
         let second = if let Type::Archer = a.val {
-            Some(a.position.to_cube().ring(2))
+            Some(a.position.to_cube().rays(5))
         } else {
             None
         };

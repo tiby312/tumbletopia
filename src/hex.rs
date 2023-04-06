@@ -73,6 +73,13 @@ impl Cube {
 
         self
     }
+
+    pub fn rays(&self,n:i16)->impl Iterator<Item=Cube>{
+        let o=*self;
+        OFFSETS.iter().flat_map(move |&i|{
+            (0..n).map(move |a|o.add(Cube(i).scale(a)))
+        })
+    }
     pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> {
         let mut hex = self.add(Cube::direction(4).scale(n));
 
