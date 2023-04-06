@@ -1,4 +1,4 @@
-use crate::movement::GridCoord;
+use crate::movement::{Filter, GridCoord};
 
 // pub const OFFSETS: [[i16; 3]; 6] = [
 //     [0, 1, -1],
@@ -74,10 +74,12 @@ impl Cube {
         self
     }
 
-    pub fn rays(&self,n:i16)->impl Iterator<Item=Cube>{
-        let o=*self;
-        OFFSETS.iter().flat_map(move |&i|{
-            (0..n).map(move |a|o.add(Cube(i).scale(a)))
+    pub fn rays(&self, n: i16, ff: impl Filter + Copy) -> impl Iterator<Item = Cube> {
+        let o = *self;
+        OFFSETS.iter().flat_map(move |&i| {
+            (1..n)
+                .map(move |a| o.add(Cube(i).scale(a)))
+                .take_while(move |o| ff.filter(&o.to_axial()))
         })
     }
     pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> {

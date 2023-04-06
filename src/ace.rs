@@ -251,7 +251,7 @@ pub async fn main_logic<'a>(
                         //Attack using supports.
                         let d = {
                             let v: Vec<_> = this_team
-                                .other_units_in_range_of_target(target_cell)
+                                .other_units_in_range_of_target(target_cell, grid_matrix)
                                 .map(|x| x.slim())
                                 .filter(|&f| f != xx)
                                 .collect();
@@ -423,8 +423,7 @@ pub fn generate_unit_possible_moves2(
 
     //TODO don't collect.
     let attack_coords = unit
-        .get_attack_data()
-        .filter(|a| this_team.filter().chain(grid_matrix.filter()).filter(a))
+        .get_attack_data(&this_team.filter().chain(grid_matrix.filter()))
         .collect();
 
     CellSelection::MoveSelection(mm, friendly_coords, attack_coords)

@@ -1,3 +1,5 @@
+use crate::movement::Filter;
+
 use super::*;
 
 #[derive(Debug)]
@@ -31,7 +33,7 @@ impl WarriorType<&UnitData> {
     }
 
     //TODO additionally return a animation??.
-    pub fn get_attack_data(&self) -> impl Iterator<Item = GridCoord> {
+    pub fn get_attack_data(&self, ff: impl Filter + Copy) -> impl Iterator<Item = GridCoord> {
         let a = self;
         let first = if let Type::Warrior = a.val {
             Some(a.position.to_cube().ring(1))
@@ -40,7 +42,7 @@ impl WarriorType<&UnitData> {
         };
 
         let second = if let Type::Archer = a.val {
-            Some(a.position.to_cube().rays(5))
+            Some(a.position.to_cube().rays(5, ff))
         } else {
             None
         };
@@ -328,9 +330,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         if target.health <= 0 {
             assert!(!support_attack);
             let this_unit = if move_on_kill {
-                this_unit.health+=1;
-                this_unit.health=this_unit.health.clamp(this_unit.health,4);
-            
+                this_unit.health += 1;
+                this_unit.health = this_unit.health.clamp(this_unit.health, 4);
 
                 let path = movement::Path::new();
                 let m = this_unit.position.dir_to(&target.position);
@@ -402,10 +403,11 @@ pub struct Tribe {
     pub warriors: Vec<UnitCollection<UnitData>>,
 }
 impl Tribe {
-    pub fn other_units_in_range_of_target(
-        &self,
+    pub fn other_units_in_range_of_target<'b>(
+        &'b self,
         target: GridCoord,
-    ) -> impl Iterator<Item = WarriorType<&UnitData>> {
+        grid_matrix: &'b GridMatrix,
+    ) -> impl Iterator<Item = WarriorType<&UnitData>> + 'b {
         self.warriors.iter().enumerate().flat_map(move |(i, o)| {
             o.elem.iter().filter_map(move |u| {
                 let unit = WarriorType {
@@ -413,7 +415,7 @@ impl Tribe {
                     val: Type::type_index_inverse(i),
                 };
 
-                unit.get_attack_data()
+                unit.get_attack_data(&self.filter().chain(grid_matrix.filter()))
                     .find(|&f| f == target)
                     .map(move |_| unit)
             })

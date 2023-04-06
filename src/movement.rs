@@ -121,6 +121,11 @@ impl MoveUnit {
     }
 }
 
+impl<T: Filter> Filter for &T {
+    fn filter(&self, a: &GridCoord) -> bool {
+        (**self).filter(a)
+    }
+}
 pub trait Filter {
     fn filter(&self, a: &GridCoord) -> bool;
     fn chain<K: Filter>(self, other: K) -> Chain<Self, K>
