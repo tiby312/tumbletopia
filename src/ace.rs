@@ -325,20 +325,22 @@ pub async fn main_logic<'a>(
 
                     this_team.add(this_unit);
                 } else if let Some(a) = this_team.find_slow(&target_cell) {
-                    if !current_attack && movement::contains_coord(friendly.iter(), &target_cell) {
-                        let target_coord = a.slim();
+                    // if !current_attack && movement::contains_coord(friendly.iter(), &target_cell) {
+                    //     let target_coord = a.slim();
 
-                        let c = this_team.lookup_take(current_warrior_pos);
+                    //     let c = this_team.lookup_take(current_warrior_pos);
 
-                        let d = this_team.lookup_take(target_coord);
+                    //     let d = this_team.lookup_take(target_coord);
 
-                        let unit::Pair(Some(a),Some(b))= doop.await_data(grid_matrix,team_index).resolve_heal(c, d).await else{
-                                unreachable!()
-                            };
+                    //     let unit::Pair(Some(a),Some(b))= doop.await_data(grid_matrix,team_index).resolve_heal(c, d).await else{
+                    //             unreachable!()
+                    //         };
 
-                        this_team.add(a);
-                        this_team.add(b)
-                    } else {
+                    //     this_team.add(a);
+                    //     this_team.add(b)
+                    // }
+                    // else
+                    {
                         let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
                         let k = a.slim();
 
@@ -371,6 +373,37 @@ pub async fn main_logic<'a>(
             }
 
             //log!(format!("User selected!={:?}", mouse_world));
+        }
+
+        //Loop through healers and apply healing.
+        let mages: Vec<_> = this_team.warriors[Type::Mage.type_index()]
+            .elem
+            .iter()
+            .map(|x| WarriorType {
+                inner: x.position,
+                val: Type::Mage,
+            })
+            .collect();
+        for unit in mages.iter() {
+            let unit = this_team.lookup(*unit);
+
+            let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
+            let (_, friendly, attack) = match cc {
+                CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
+                _ => {
+                    unreachable!()
+                }
+            };
+
+            assert!(attack.is_empty());
+
+            for a in friendly {
+                if let Some(mut a) = this_team.find_slow_mut(&a) {
+                    if a.health < 2 {
+                        a.health = 2.min(a.health + 1)
+                    }
+                }
+            }
         }
 
         this_team.reset_attacked();

@@ -1,4 +1,4 @@
-use crate::movement::Filter;
+use crate::{ace::generate_unit_possible_moves2, movement::Filter};
 
 use super::*;
 
@@ -16,9 +16,9 @@ impl WarriorType<&UnitData> {
         let a = self;
         match a.val {
             Type::Warrior => 1,
-            Type::Archer => 1,
+            Type::Rook => 1,
             Type::Mage => 1,
-            Type::Knight => 2,
+            Type::Archer => 1,
         }
     }
 
@@ -41,14 +41,14 @@ impl WarriorType<&UnitData> {
             None
         };
 
-        let second = if let Type::Archer = a.val {
+        let second = if let Type::Rook = a.val {
             Some(a.position.to_cube().rays(2, 10, ff))
         } else {
             None
         };
 
-        let third = if let Type::Knight = a.val {
-            Some(a.position.to_cube().ring(1))
+        let third = if let Type::Archer = a.val {
+            Some(a.position.to_cube().ring(2))
         } else {
             None
         };
@@ -153,35 +153,35 @@ impl<T> std::borrow::BorrowMut<T> for WarriorType<T> {
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct WarriorType<T> {
-    inner: T,
-    val: Type,
+    pub inner: T,
+    pub val: Type,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {
     Warrior,
-    Knight,
     Archer,
+    Rook,
     Mage,
 }
 
 impl Type {
-    fn type_index(&self) -> usize {
+    pub fn type_index(&self) -> usize {
         let a = self;
         match a {
             Type::Warrior => 0,
-            Type::Archer => 1,
+            Type::Rook => 1,
             Type::Mage => 2,
-            Type::Knight => 3,
+            Type::Archer => 3,
         }
     }
 
-    fn type_index_inverse(a: usize) -> Type {
+    pub fn type_index_inverse(a: usize) -> Type {
         match a {
             0 => Type::Warrior,
-            1 => Type::Archer,
+            1 => Type::Rook,
             2 => Type::Mage,
-            3 => Type::Knight,
+            3 => Type::Archer,
             _ => unreachable!(),
         }
     }
@@ -285,7 +285,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         mut this_unit: WarriorType<UnitData>,
         mut target: WarriorType<UnitData>,
     ) -> Pair {
-        target.health = target.health.clamp(target.health + 2, 4);
+        //TODO make the user not able to perform a no-op heal thus wasting a turn.
+        target.health = (target.health + 1).min(2);
 
         this_unit.attacked = true;
 
@@ -309,16 +310,16 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let damage = 1;
 
         let counter_damage = match (this_unit.val, target.val) {
-            (Type::Archer, Type::Archer) | (Type::Warrior, Type::Warrior) => Some(1),
+            (Type::Warrior, Type::Warrior) => Some(1),
             _ => None,
         };
 
         let counter_damage = if support_attack { None } else { counter_damage };
 
         let move_on_kill = match (this_unit.val, target.val) {
-            (Type::Archer, _) => false,
+            (Type::Rook, _) => false,
             (Type::Warrior, _) => true,
-            (Type::Knight, _) => true,
+            (Type::Archer, _) => false,
             _ => {
                 todo!()
             }
