@@ -171,7 +171,6 @@ pub async fn main_logic<'a>(
             (&mut game.dogs, &mut game.cats)
         };
 
-
         this_team.replenish_stamina();
         this_team.calculate_selectable_all(that_team, grid_matrix);
 
@@ -385,6 +384,14 @@ pub async fn main_logic<'a>(
                 val: Type::Mage,
             })
             .collect();
+
+        for unit in mages.iter() {
+            let mut a = this_team.lookup_mut(unit);
+
+            if a.health < 2 {
+                a.health = 2.min(a.health + 1)
+            }
+        }
         for unit in mages.iter() {
             let unit = this_team.lookup(*unit);
 

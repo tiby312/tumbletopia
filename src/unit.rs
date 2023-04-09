@@ -334,7 +334,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         if target.health <= 0 {
             assert!(!support_attack);
             let this_unit = if move_on_kill {
-                this_unit.health = (this_unit.health+1).min( 2);
+                this_unit.health = (this_unit.health + 1).min(2);
 
                 let path = movement::Path::new();
                 let m = this_unit.position.dir_to(&target.position);

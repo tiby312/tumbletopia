@@ -214,13 +214,12 @@ pub async fn worker_entry() {
             UnitData::new(GridCoord([2, -2])),
             UnitData::new(GridCoord([3, -2])),
         ]),
+        UnitCollection::new(vec![UnitData::new(GridCoord([4, -4]))]),
+        UnitCollection::new(vec![UnitData::new(GridCoord([3, -3]))]),
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([3, -4])),
-            UnitData::new(GridCoord([4, -4])),
-            UnitData::new(GridCoord([4, -3])),
+            UnitData::new(GridCoord([3, 0])),
+            UnitData::new(GridCoord([0, -3])),
         ]),
-        UnitCollection::new(vec![UnitData::new(GridCoord([0, -3]))]),
-        UnitCollection::new(vec![UnitData::new(GridCoord([3, 0]))]),
     ];
 
     let cats = vec![
@@ -229,13 +228,12 @@ pub async fn worker_entry() {
             UnitData::new(GridCoord([-2, 2])),
             UnitData::new(GridCoord([-2, 3])),
         ]),
+        UnitCollection::new(vec![UnitData::new(GridCoord([-4, 4]))]),
+        UnitCollection::new(vec![UnitData::new(GridCoord([-3, 3]))]),
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([-4, 3])),
-            UnitData::new(GridCoord([-4, 4])),
-            UnitData::new(GridCoord([-3, 4])),
+            UnitData::new(GridCoord([0, 3])),
+            UnitData::new(GridCoord([-3, 0])),
         ]),
-        UnitCollection::new(vec![UnitData::new(GridCoord([-3, 0]))]),
-        UnitCollection::new(vec![UnitData::new(GridCoord([0, 3]))]),
     ];
 
     let mut ggame = Game {
