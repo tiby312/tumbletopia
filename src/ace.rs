@@ -171,36 +171,6 @@ pub async fn main_logic<'a>(
             (&mut game.dogs, &mut game.cats)
         };
 
-        //Loop through healers and apply healing.
-        let mages: Vec<_> = this_team.warriors[Type::Mage.type_index()]
-            .elem
-            .iter()
-            .map(|x| WarriorType {
-                inner: x.position,
-                val: Type::Mage,
-            })
-            .collect();
-        for unit in mages.iter() {
-            let unit = this_team.lookup(*unit);
-
-            let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
-            let (_, friendly, attack) = match cc {
-                CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
-                _ => {
-                    unreachable!()
-                }
-            };
-
-            assert!(attack.is_empty());
-
-            for a in friendly {
-                if let Some(mut a) = this_team.find_slow_mut(&a) {
-                    if a.health < 2 {
-                        a.health = 2.min(a.health + 1)
-                    }
-                }
-            }
-        }
 
         this_team.replenish_stamina();
         this_team.calculate_selectable_all(that_team, grid_matrix);
@@ -406,6 +376,36 @@ pub async fn main_logic<'a>(
             //log!(format!("User selected!={:?}", mouse_world));
         }
 
+        //Loop through healers and apply healing.
+        let mages: Vec<_> = this_team.warriors[Type::Mage.type_index()]
+            .elem
+            .iter()
+            .map(|x| WarriorType {
+                inner: x.position,
+                val: Type::Mage,
+            })
+            .collect();
+        for unit in mages.iter() {
+            let unit = this_team.lookup(*unit);
+
+            let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
+            let (_, friendly, attack) = match cc {
+                CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
+                _ => {
+                    unreachable!()
+                }
+            };
+
+            assert!(attack.is_empty());
+
+            for a in friendly {
+                if let Some(mut a) = this_team.find_slow_mut(&a) {
+                    if a.health < 2 {
+                        a.health = 2.min(a.health + 1)
+                    }
+                }
+            }
+        }
         this_team.reset_attacked();
 
         if team_index == 1 {
