@@ -311,6 +311,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 
         let counter_damage = match (this_unit.val, target.val) {
             (Type::Warrior, Type::Warrior) => Some(1),
+            (Type::Rook, Type::Rook) => Some(1),
+            (Type::Archer, Type::Archer) => Some(1),
+
             _ => None,
         };
 
