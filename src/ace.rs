@@ -191,47 +191,72 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-                // //Show enemy ranges
-                // let cell=if let Some(unit)= that_team.find_slow(&cell){
-                //     let cc = generate_unit_possible_moves2(&unit, that_team, this_team, grid_matrix);
-
-                //     let (_, pototo) = doop.get_mouse_selection(cc, team_index).await;
-                //     match pototo {
-                //         Pototo::Normal(a) => a,
-                //         Pototo::EndTurn => {
-                //             log!("End the turn!");
-                //             break 'outer;
-                //         }
-                //     }
-
-                // }else{
-                //     cell
-                // };
-
-                let Some(unit)= this_team.find_slow(&cell) else {
-                    continue;
-                };
-                let pos = unit.slim();
-
-                // if !this_team.lookup_mut(&pos).selectable {
-                //     continue;
-                // }
-
-                break pos;
+                if let Some(unit) = this_team.find_slow(&cell) {
+                    break TeamType::ThisTeam(unit.slim());
+                }
+                if let Some(unit) = that_team.find_slow(&cell) {
+                    break TeamType::ThatTeam(unit.slim());
+                }
             };
+
+            #[derive(Copy, Clone, Debug)]
+            pub enum TeamType<A> {
+                ThisTeam(A),
+                ThatTeam(A),
+            }
+            impl<A> TeamType<A> {
+                pub fn unwrap_this(self) -> A {
+                    let TeamType::ThisTeam(a)=self else{
+                        unreachable!()
+                    };
+                    a
+                }
+            }
 
             let mut current_warrior_pos = current_unit;
             //Keep showing the selected unit's options and keep handling the users selections
             //Until the unit is deselected.
             loop {
+                match current_warrior_pos {
+                    TeamType::ThisTeam(a) => a,
+                    TeamType::ThatTeam(curr_warrior_pos) => {
+                        let unit = that_team.lookup(curr_warrior_pos);
+
+                        let cc =
+                            generate_unit_possible_moves2(&unit, that_team, this_team, grid_matrix);
+
+                        let (_, pototo) = doop.get_mouse_selection(cc, team_index).await;
+                        let target_cell = match pototo {
+                            Pototo::Normal(t) => t,
+                            Pototo::EndTurn => {
+                                //End the turn. Ok because we are not int he middle of anything.
+                                break 'outer;
+                            }
+                        };
+
+                        if let Some(target) = this_team.find_slow(&target_cell) {
+                            current_warrior_pos = TeamType::ThisTeam(target.slim());
+                            continue;
+                        }
+                        if let Some(target) = that_team.find_slow(&target_cell) {
+                            current_warrior_pos = TeamType::ThatTeam(target.slim());
+                            continue;
+                        }
+
+                        break;
+                    }
+                };
+
                 //let view = game.get_view();
-                let unit = this_team.lookup(current_warrior_pos);
+                let unit = this_team.lookup(current_warrior_pos.unwrap_this());
 
                 {
                     //TODO only need to calculate when we mutate?
                     let k = unit.calculate_selectable(this_team, that_team, grid_matrix);
                     if !k {
-                        this_team.lookup_mut(&current_warrior_pos).selectable = k;
+                        this_team
+                            .lookup_mut(&current_warrior_pos.unwrap_this())
+                            .selectable = k;
                         //Deselect not selecftable!!!
                         break;
                     }
@@ -257,7 +282,7 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-                let xx = this_team.lookup(current_warrior_pos).slim();
+                let xx = this_team.lookup(current_warrior_pos.unwrap_this()).slim();
 
                 let current_attack = this_team.lookup_mut(&xx).attacked;
 
@@ -300,7 +325,7 @@ pub async fn main_logic<'a>(
                             d.unwrap()
                         };
 
-                        let c = this_team.lookup_take(current_warrior_pos);
+                        let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
                         match doop
                             .await_data(grid_matrix, team_index)
@@ -308,7 +333,7 @@ pub async fn main_logic<'a>(
                             .await
                         {
                             unit::Pair(Some(a), None) => {
-                                current_warrior_pos = a.as_ref().slim();
+                                current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
                                 this_team.add(a);
                             }
@@ -318,7 +343,7 @@ pub async fn main_logic<'a>(
                                 break;
                             }
                             unit::Pair(Some(a), Some(b)) => {
-                                current_warrior_pos = a.as_ref().slim();
+                                current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
                                 this_team.add(a);
                                 that_team.add(b)
@@ -328,19 +353,19 @@ pub async fn main_logic<'a>(
                             }
                         }
                     } else {
-                        //Deselect
-                        break;
+                        current_warrior_pos = TeamType::ThatTeam(target_coord);
+                        continue;
                     }
                 } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
                     let (path, _) = ss.get_path_data(&target_cell).unwrap();
-                    let this_unit = this_team.lookup_take(current_warrior_pos);
+                    let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
                     let this_unit = doop
                         .await_data(grid_matrix, team_index)
                         .resolve_movement(this_unit, path)
                         .await;
 
-                    current_warrior_pos = this_unit.as_ref().slim();
+                    current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
 
                     this_team.add(this_unit);
                 } else if let Some(a) = this_team.find_slow(&target_cell) {
@@ -365,9 +390,9 @@ pub async fn main_logic<'a>(
 
                         this_team.lookup_mut(&k).selectable = vv;
 
-                        if vv && k != current_warrior_pos {
+                        if vv && k != current_warrior_pos.unwrap_this() {
                             //Quick switch to another unit
-                            current_warrior_pos = k;
+                            current_warrior_pos = TeamType::ThisTeam(k);
                         } else {
                             //Deselect
                             break;
@@ -380,9 +405,9 @@ pub async fn main_logic<'a>(
 
                 //let view = game.get_view();
 
-                let wwa = this_team.lookup(current_warrior_pos);
+                let wwa = this_team.lookup(current_warrior_pos.unwrap_this());
                 let vv = wwa.calculate_selectable(this_team, that_team, grid_matrix);
-                let mut wwa = this_team.lookup_mut(&current_warrior_pos);
+                let mut wwa = this_team.lookup_mut(&current_warrior_pos.unwrap_this());
                 wwa.selectable = vv;
 
                 if !vv {
