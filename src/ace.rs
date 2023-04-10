@@ -164,7 +164,7 @@ pub async fn main_logic<'a>(
 
     {
         game.cats.replenish_stamina();
-        game.dogs.replenish_stamina();   
+        game.dogs.replenish_stamina();
     }
 
     let mut team_index = 0;
@@ -191,8 +191,7 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-
-                // //Show enemy ranges 
+                // //Show enemy ranges
                 // let cell=if let Some(unit)= that_team.find_slow(&cell){
                 //     let cc = generate_unit_possible_moves2(&unit, that_team, this_team, grid_matrix);
 
