@@ -162,6 +162,11 @@ pub async fn main_logic<'a>(
         receiver: response_recv,
     };
 
+    {
+        game.cats.replenish_stamina();
+        game.dogs.replenish_stamina();   
+    }
+
     let mut team_index = 0;
     //Loop over each team!
     loop {
@@ -171,7 +176,6 @@ pub async fn main_logic<'a>(
             (&mut game.dogs, &mut game.cats)
         };
 
-        this_team.replenish_stamina();
         this_team.calculate_selectable_all(that_team, grid_matrix);
 
         //Keep allowing the user to select units
@@ -187,17 +191,32 @@ pub async fn main_logic<'a>(
                     }
                 };
 
+
+                // //Show enemy ranges 
+                // let cell=if let Some(unit)= that_team.find_slow(&cell){
+                //     let cc = generate_unit_possible_moves2(&unit, that_team, this_team, grid_matrix);
+
+                //     let (_, pototo) = doop.get_mouse_selection(cc, team_index).await;
+                //     match pototo {
+                //         Pototo::Normal(a) => a,
+                //         Pototo::EndTurn => {
+                //             log!("End the turn!");
+                //             break 'outer;
+                //         }
+                //     }
+
+                // }else{
+                //     cell
+                // };
+
                 let Some(unit)= this_team.find_slow(&cell) else {
                     continue;
                 };
                 let pos = unit.slim();
 
-                let ss = unit.calculate_selectable(this_team, that_team, grid_matrix);
-
-                this_team.lookup_mut(&pos).selectable = ss;
-                if !ss {
-                    continue;
-                }
+                // if !this_team.lookup_mut(&pos).selectable {
+                //     continue;
+                // }
 
                 break pos;
             };
@@ -210,6 +229,7 @@ pub async fn main_logic<'a>(
                 let unit = this_team.lookup(current_warrior_pos);
 
                 {
+                    //TODO only need to calculate when we mutate?
                     let k = unit.calculate_selectable(this_team, that_team, grid_matrix);
                     if !k {
                         this_team.lookup_mut(&current_warrior_pos).selectable = k;
@@ -413,6 +433,7 @@ pub async fn main_logic<'a>(
                 }
             }
         }
+        this_team.replenish_stamina();
         this_team.reset_attacked();
 
         if team_index == 1 {
