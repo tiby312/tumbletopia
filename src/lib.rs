@@ -467,82 +467,79 @@ pub async fn worker_entry() {
                     grass.draw(&mut v);
                 }
 
+                disable_depth(&ctx, || {
+                    if let ace::Command::GetMouseInput(Some(a)) = &command {
+                        //if let Some(a) = testo.get_selection() {
+                        match a {
+                            CellSelection::MoveSelection(a, friendly, attack) => {
+                                for a in a.iter_coords() {
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
+                                    let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                                    let m = matrix.chain(t).generate();
+
+                                    let mut v = draw_sys.view(m.as_ref());
+
+                                    select_model.draw_ext(&mut v, false, false, false, false);
+
+                                    //select_model.draw(&mut v);
+                                }
+
+                                for a in attack.iter() {
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
+                                    let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                                    let m = matrix.chain(t).generate();
+
+                                    let mut v = draw_sys.view(m.as_ref());
+                                    //attack_model.draw(&mut v);
+                                    attack_model.draw_ext(&mut v, false, false, false, false);
+                                }
+
+                                for a in friendly.iter() {
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
+                                    let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                                    let m = matrix.chain(t).generate();
+
+                                    let mut v = draw_sys.view(m.as_ref());
+                                    //attack_model.draw(&mut v);
+                                    friendly_model.draw_ext(&mut v, false, false, false, false);
+                                }
+                            }
+                            CellSelection::BuildSelection(_) => {}
+                        }
+                    }
+
+                    // { TEST MOUSE
+                    //     let mouse_mouse= scroll::mouse_to_world(mouse_mouse, &matrix, viewport);
+
+                    //     let a: GridCoord =grid_matrix.center_world_to_hex(mouse_mouse.into());
+
+                    //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                    //     let t = matrix::translation(pos[0], pos[1], 3.0);
+
+                    //     let m = matrix.chain(t).generate();
+
+                    //     let mut v = draw_sys.view(m.as_ref());
+                    //     road.draw(&mut v);
+                    // }
+                    //for a in roads.pos.iter() {
+                    // let a: GridCoord =grid_matrix.center_world_to_hex(mouse_world.into());
+
+                    // let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                    // let t = matrix::translation(pos[0], pos[1], 3.0);
+
+                    // let m = matrix.chain(t).generate();
+
+                    // let mut v = draw_sys.view(m.as_ref());
+                    // road.draw(&mut v);
+                    //}
+                });
+
                 for i in 0..4 {
                     let cat_draw = WarriorDraw::new(&ggame.cats.warriors[i], &cat, &drop_shadow);
                     let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
-
-                    disable_depth(&ctx, || {
-                        if let ace::Command::GetMouseInput(Some(a)) = &command {
-                            //if let Some(a) = testo.get_selection() {
-                            match a {
-                                CellSelection::MoveSelection(a, friendly, attack) => {
-                                    for a in a.iter_coords() {
-                                        let pos: [f32; 2] =
-                                            grid_matrix.hex_axial_to_world(a).into();
-                                        let t = matrix::translation(pos[0], pos[1], 0.0);
-
-                                        let m = matrix.chain(t).generate();
-
-                                        let mut v = draw_sys.view(m.as_ref());
-
-                                        select_model.draw_ext(&mut v, false, false, false, false);
-
-                                        //select_model.draw(&mut v);
-                                    }
-
-                                    for a in attack.iter() {
-                                        let pos: [f32; 2] =
-                                            grid_matrix.hex_axial_to_world(a).into();
-                                        let t = matrix::translation(pos[0], pos[1], 0.0);
-
-                                        let m = matrix.chain(t).generate();
-
-                                        let mut v = draw_sys.view(m.as_ref());
-                                        //attack_model.draw(&mut v);
-                                        attack_model.draw_ext(&mut v, false, false, false, false);
-                                    }
-
-                                    for a in friendly.iter() {
-                                        let pos: [f32; 2] =
-                                            grid_matrix.hex_axial_to_world(a).into();
-                                        let t = matrix::translation(pos[0], pos[1], 0.0);
-
-                                        let m = matrix.chain(t).generate();
-
-                                        let mut v = draw_sys.view(m.as_ref());
-                                        //attack_model.draw(&mut v);
-                                        friendly_model.draw_ext(&mut v, false, false, false, false);
-                                    }
-                                }
-                                CellSelection::BuildSelection(_) => {}
-                            }
-                        }
-
-                        // { TEST MOUSE
-                        //     let mouse_mouse= scroll::mouse_to_world(mouse_mouse, &matrix, viewport);
-
-                        //     let a: GridCoord =grid_matrix.center_world_to_hex(mouse_mouse.into());
-
-                        //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                        //     let t = matrix::translation(pos[0], pos[1], 3.0);
-
-                        //     let m = matrix.chain(t).generate();
-
-                        //     let mut v = draw_sys.view(m.as_ref());
-                        //     road.draw(&mut v);
-                        // }
-                        //for a in roads.pos.iter() {
-                        // let a: GridCoord =grid_matrix.center_world_to_hex(mouse_world.into());
-
-                        // let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                        // let t = matrix::translation(pos[0], pos[1], 3.0);
-
-                        // let m = matrix.chain(t).generate();
-
-                        // let mut v = draw_sys.view(m.as_ref());
-                        // road.draw(&mut v);
-                        //}
-                    });
 
                     disable_depth(&ctx, || {
                         //draw dropshadow
@@ -560,7 +557,11 @@ pub async fn worker_entry() {
                         //     drop_shadow.draw(&mut v);
                         // }
                     });
+                }
 
+                for i in 0..4 {
+                    let cat_draw = WarriorDraw::new(&ggame.cats.warriors[i], &cat, &drop_shadow);
+                    let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
                     cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
 
