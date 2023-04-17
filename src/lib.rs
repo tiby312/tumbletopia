@@ -570,7 +570,11 @@ pub async fn worker_entry() {
                     let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
                     cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
+                }
 
+                for i in 0..4 {
+                    let cat_draw = WarriorDraw::new(&ggame.cats.warriors[i], &cat, &drop_shadow);
+                    let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
                     disable_depth(&ctx, || {
                         cat_draw.draw_health_text(
                             &grid_matrix,
