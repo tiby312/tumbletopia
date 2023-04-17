@@ -468,7 +468,13 @@ pub async fn worker_entry() {
                 }
 
                 disable_depth(&ctx, || {
-                    if let ace::Command::GetMouseInput(Some(a)) = &command {
+                    if let ace::Command::GetMouseInput(a) = &command {
+                        let (a, greyscale) = match a {
+                            MousePrompt::Friendly(c) => (c, false),
+                            MousePrompt::Enemy(c) => (c, true),
+                            MousePrompt::None => return,
+                        };
+
                         //if let Some(a) = testo.get_selection() {
                         match a {
                             CellSelection::MoveSelection(a, friendly, attack) => {
@@ -480,7 +486,7 @@ pub async fn worker_entry() {
 
                                     let mut v = draw_sys.view(m.as_ref());
 
-                                    select_model.draw_ext(&mut v, false, false, false, false);
+                                    select_model.draw_ext(&mut v, greyscale, false, false, false);
 
                                     //select_model.draw(&mut v);
                                 }
@@ -493,7 +499,7 @@ pub async fn worker_entry() {
 
                                     let mut v = draw_sys.view(m.as_ref());
                                     //attack_model.draw(&mut v);
-                                    attack_model.draw_ext(&mut v, false, false, false, false);
+                                    attack_model.draw_ext(&mut v, greyscale, false, false, false);
                                 }
 
                                 for a in friendly.iter() {
@@ -504,7 +510,7 @@ pub async fn worker_entry() {
 
                                     let mut v = draw_sys.view(m.as_ref());
                                     //attack_model.draw(&mut v);
-                                    friendly_model.draw_ext(&mut v, false, false, false, false);
+                                    friendly_model.draw_ext(&mut v, greyscale, false, false, false);
                                 }
                             }
                             CellSelection::BuildSelection(_) => {}
@@ -732,7 +738,7 @@ fn string_to_coords<'a>(st: &str) -> model::ModelData {
 
 use web_sys::WebGl2RenderingContext;
 
-use crate::ace::Pototo;
+use crate::ace::{MousePrompt, Pototo};
 //use crate::gameplay::GameStepper;
 use crate::movement::MoveUnit;
 use crate::terrain::MoveCost;

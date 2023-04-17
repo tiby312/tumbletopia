@@ -27,9 +27,16 @@ pub enum AnimationOptions {
 }
 
 #[derive(Debug)]
+pub enum MousePrompt {
+    Friendly(CellSelection),
+    Enemy(CellSelection),
+    None,
+}
+
+#[derive(Debug)]
 pub enum Command {
     Animate(Animation<AnimationOptions>),
-    GetMouseInput(Option<CellSelection>),
+    GetMouseInput(MousePrompt),
     Nothing,
 }
 impl Command {
@@ -44,7 +51,7 @@ impl Command {
         a
     }
 
-    pub fn take_cell(&mut self) -> Option<CellSelection> {
+    pub fn take_cell(&mut self) -> MousePrompt {
         let mut a = Command::Nothing;
         std::mem::swap(self, &mut a);
 
@@ -64,7 +71,7 @@ pub enum Pototo<T> {
 
 #[derive(Debug)]
 pub enum Response {
-    Mouse(Option<CellSelection>, Pototo<GridCoord>), //TODO make grid coord
+    Mouse(MousePrompt, Pototo<GridCoord>), //TODO make grid coord
     AnimationFinish(Animation<AnimationOptions>),
 }
 
@@ -112,23 +119,44 @@ impl<'a> Doop<'a> {
     }
 
     async fn get_mouse_no_selection<'c>(&mut self, team_index: usize) -> Pototo<GridCoord> {
-        let (_, c) = self.get_mouse(None, team_index).await;
+        let (_, c) = self.get_mouse(MousePrompt::None, team_index).await;
         c
     }
-    async fn get_mouse_selection<'c>(
+    async fn get_mouse_selection_friendly<'c>(
         &mut self,
         cell: CellSelection,
         team_index: usize,
     ) -> (CellSelection, Pototo<GridCoord>) {
-        let (b, c) = self.get_mouse(Some(cell), team_index).await;
-        (b.unwrap(), c)
+        let (b, c) = self
+            .get_mouse(MousePrompt::Friendly(cell), team_index)
+            .await;
+
+        let MousePrompt::Friendly(b)=b else{
+            unreachable!()
+        };
+
+        (b, c)
+    }
+
+    async fn get_mouse_selection_enemy<'c>(
+        &mut self,
+        cell: CellSelection,
+        team_index: usize,
+    ) -> (CellSelection, Pototo<GridCoord>) {
+        let (b, c) = self.get_mouse(MousePrompt::Enemy(cell), team_index).await;
+
+        let MousePrompt::Enemy(b)=b else{
+            unreachable!()
+        };
+
+        (b, c)
     }
 
     async fn get_mouse<'c>(
         &mut self,
-        cell: Option<CellSelection>,
+        cell: MousePrompt,
         team_index: usize,
-    ) -> (Option<CellSelection>, Pototo<GridCoord>) {
+    ) -> (MousePrompt, Pototo<GridCoord>) {
         let game = unsafe { &*self.game };
 
         self.sender
@@ -225,7 +253,7 @@ pub async fn main_logic<'a>(
                         let cc =
                             generate_unit_possible_moves2(&unit, that_team, this_team, grid_matrix);
 
-                        let (_, pototo) = doop.get_mouse_selection(cc, team_index).await;
+                        let (_, pototo) = doop.get_mouse_selection_enemy(cc, team_index).await;
                         let target_cell = match pototo {
                             Pototo::Normal(t) => t,
                             Pototo::EndTurn => {
@@ -264,7 +292,7 @@ pub async fn main_logic<'a>(
 
                 let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
 
-                let (cell, pototo) = doop.get_mouse_selection(cc, team_index).await;
+                let (cell, pototo) = doop.get_mouse_selection_friendly(cc, team_index).await;
                 let mouse_world = match pototo {
                     Pototo::Normal(t) => t,
                     Pototo::EndTurn => {
