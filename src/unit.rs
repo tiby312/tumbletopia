@@ -15,7 +15,7 @@ impl WarriorType<&UnitData> {
     pub fn get_movement_data(&self) -> i8 {
         let a = self;
         match a.val {
-            Type::Warrior => 1,
+            Type::Warrior => 2,
             Type::Rook => 1,
             Type::Mage => 1,
             Type::Archer => 1,
