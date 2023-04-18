@@ -262,6 +262,10 @@ pub async fn main_logic<'a>(
                             }
                         };
 
+                        if target_cell==*curr_warrior_pos{
+                            break;
+                        }
+
                         if let Some(target) = this_team.find_slow(&target_cell) {
                             current_warrior_pos = TeamType::ThisTeam(target.slim());
                             continue;

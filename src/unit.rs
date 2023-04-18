@@ -36,7 +36,7 @@ impl WarriorType<&UnitData> {
     pub fn get_attack_data(&self, ff: impl Filter + Copy) -> impl Iterator<Item = GridCoord> {
         let a = self;
         let first = if let Type::Warrior = a.val {
-            Some(a.position.to_cube().ring(1))
+            Some(a.position.to_cube().ring(1).filter(move |o|ff.filter(&o.to_axial())))
         } else {
             None
         };
@@ -48,7 +48,7 @@ impl WarriorType<&UnitData> {
         };
 
         let third = if let Type::Archer = a.val {
-            Some(a.position.to_cube().ring(2))
+            Some(a.position.to_cube().ring(2).filter(move |o|ff.filter(&o.to_axial())))
         } else {
             None
         };
