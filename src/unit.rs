@@ -15,6 +15,12 @@ pub struct UnitData {
 }
 
 impl WarriorType<&UnitData> {
+    pub fn dodge_counter(&self)->bool{
+        match self.val{
+            Type::Warrior=>true,
+            _=>false
+        }
+    }
     pub fn get_movement_data(&self) -> i8 {
         let a = self;
         match a.val {
@@ -333,13 +339,13 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         };
 
         
-        let counter_damage = match (this_unit.val, target.val) {
-            (Type::Warrior, Type::Rook) => None,
-            (Type::Warrior, Type::Archer) => None,
-            _ => counter_damage,
-        };
+        // let counter_damage = match (this_unit.val, target.val) {
+        //     (Type::Warrior, Type::Rook) => None,
+        //     (Type::Warrior, Type::Archer) => None,
+        //     _ => counter_damage,
+        // };
 
-        let counter_damage = if support_attack { None } else { counter_damage };
+        // let counter_damage = if support_attack { None } else { counter_damage };
 
         let move_on_kill = match (this_unit.val, target.val) {
             (Type::Rook, _) => false,
@@ -404,13 +410,19 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                             unreachable!()
                         };
 
-                this_unit.health -= counter_damage;
-                if this_unit.health <= 0 {
-                    //todo self die animation.
-                    Pair(None, Some(target))
-                } else {
+                if !this_unit.as_ref().dodge_counter(){
+                    this_unit.health -= counter_damage;
+                    if this_unit.health <= 0 {
+                        //todo self die animation.
+                        Pair(None, Some(target))
+                    } else {
+                        Pair(Some(this_unit), Some(target))
+                    }
+                }else{
                     Pair(Some(this_unit), Some(target))
                 }
+
+                
             } else {
                 Pair(Some(this_unit), Some(target))
             }
