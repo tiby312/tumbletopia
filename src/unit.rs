@@ -332,19 +332,12 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             None
         };
 
-        let counter_damage = if target.val == Type::Archer || target.val==Type::Rook {
-            None
-        } else {
-            counter_damage
+        
+        let counter_damage = match (this_unit.val, target.val) {
+            (Type::Warrior, Type::Rook) => None,
+            (Type::Warrior, Type::Archer) => None,
+            _ => counter_damage,
         };
-
-        // let counter_damage = match (this_unit.val, target.val) {
-        //     (Type::Warrior, Type::Warrior) => Some(1),
-        //     (Type::Rook, Type::Rook) => Some(1),
-        //     (Type::Archer, Type::Archer) => Some(1),
-
-        //     _ => None,
-        // };
 
         let counter_damage = if support_attack { None } else { counter_damage };
 
