@@ -1,4 +1,7 @@
-use crate::{ace::generate_unit_possible_moves2, movement::Filter};
+use crate::{
+    ace::generate_unit_possible_moves2,
+    movement::{Filter, NoFilter},
+};
 
 use super::*;
 
@@ -36,19 +39,29 @@ impl WarriorType<&UnitData> {
     pub fn get_attack_data(&self, ff: impl Filter + Copy) -> impl Iterator<Item = GridCoord> {
         let a = self;
         let first = if let Type::Warrior = a.val {
-            Some(a.position.to_cube().ring(1).filter(move |o|ff.filter(&o.to_axial())))
+            Some(
+                a.position
+                    .to_cube()
+                    .ring(1)
+                    .filter(move |o| ff.filter(&o.to_axial())),
+            )
         } else {
             None
         };
 
         let second = if let Type::Rook = a.val {
-            Some(a.position.to_cube().rays(2, 10, ff))
+            Some(a.position.to_cube().rays(1, 10, ff))
         } else {
             None
         };
 
         let third = if let Type::Archer = a.val {
-            Some(a.position.to_cube().ring(2).filter(move |o|ff.filter(&o.to_axial())))
+            Some(
+                a.position
+                    .to_cube()
+                    .range(2)
+                    .filter(move |o| ff.filter(&o.to_axial())),
+            )
         } else {
             None
         };
@@ -309,13 +322,29 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         //TODO store somewhere
         let damage = 1;
 
-        let counter_damage = match (this_unit.val, target.val) {
-            (Type::Warrior, Type::Warrior) => Some(1),
-            (Type::Rook, Type::Rook) => Some(1),
-            (Type::Archer, Type::Archer) => Some(1),
-
-            _ => None,
+        let counter_damage = if let Some(_) = target
+            .as_ref()
+            .get_attack_data(NoFilter)
+            .find(|&a| a == *this_unit.as_ref().slim())
+        {
+            Some(damage)
+        } else {
+            None
         };
+
+        let counter_damage = if target.val == Type::Archer {
+            None
+        } else {
+            counter_damage
+        };
+
+        // let counter_damage = match (this_unit.val, target.val) {
+        //     (Type::Warrior, Type::Warrior) => Some(1),
+        //     (Type::Rook, Type::Rook) => Some(1),
+        //     (Type::Archer, Type::Archer) => Some(1),
+
+        //     _ => None,
+        // };
 
         let counter_damage = if support_attack { None } else { counter_damage };
 

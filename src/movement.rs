@@ -126,6 +126,15 @@ impl<T: Filter> Filter for &T {
         (**self).filter(a)
     }
 }
+
+#[derive(Copy, Clone, Debug)]
+pub struct NoFilter;
+
+impl Filter for NoFilter {
+    fn filter(&self, a: &GridCoord) -> bool {
+        true
+    }
+}
 pub trait Filter {
     fn filter(&self, a: &GridCoord) -> bool;
     fn chain<K: Filter>(self, other: K) -> Chain<Self, K>
