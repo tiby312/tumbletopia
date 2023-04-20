@@ -332,7 +332,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             None
         };
 
-        let counter_damage = if target.val == Type::Archer {
+        let counter_damage = if target.val == Type::Archer || target.val==Type::Rook {
             None
         } else {
             counter_damage
