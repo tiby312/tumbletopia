@@ -421,28 +421,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                     unreachable!()
                 };
 
-        if this_unit.as_ref().block_counter() {
-            if target.as_ref().pierce_attack() {
-                let it = animation::attack(target.position, this_unit.position, self.grid_matrix);
-                let aa = animation::Animation::new(
-                    it,
-                    AnimationOptions::CounterAttack([this_unit, target]),
-                );
-                let aa = self.doop.wait_animation(aa, self.team_index).await;
-                let AnimationOptions::CounterAttack([mut this_unit,target])=aa.into_data() else{
-                            unreachable!()
-                        };
-
-                this_unit.health -= counter_damage;
-                if this_unit.health <= 0 {
-                    //todo self die animation.
-                    Pair(None, Some(target))
-                } else {
-                    Pair(Some(this_unit), Some(target))
-                }
-            } else {
-                Pair(Some(this_unit), Some(target))
-            }
+        if this_unit.as_ref().block_counter() && !target.as_ref().pierce_attack() {
+            Pair(Some(this_unit), Some(target))
         } else {
             this_unit.health -= counter_damage;
             if this_unit.health <= 0 {
