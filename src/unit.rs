@@ -15,7 +15,7 @@ pub struct UnitData {
 }
 
 impl WarriorType<&UnitData> {
-    pub fn dodge_counter(&self) -> bool {
+    pub fn block_counter(&self) -> bool {
         match self.val {
             Type::Warrior => true,
             _ => false,
@@ -24,7 +24,7 @@ impl WarriorType<&UnitData> {
 
     // TODO use
     // Attack again if first attack was dodged
-    pub fn second_attack(&self) -> bool {
+    pub fn pierce_attack(&self) -> bool {
         match self.val {
             Type::Warrior => true,
             _ => false,
@@ -421,8 +421,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                     unreachable!()
                 };
 
-        if this_unit.as_ref().dodge_counter() {
-            if target.as_ref().second_attack() {
+        if this_unit.as_ref().block_counter() {
+            if target.as_ref().pierce_attack() {
                 let it = animation::attack(target.position, this_unit.position, self.grid_matrix);
                 let aa = animation::Animation::new(
                     it,
