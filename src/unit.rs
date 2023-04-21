@@ -15,12 +15,22 @@ pub struct UnitData {
 }
 
 impl WarriorType<&UnitData> {
-    pub fn dodge_counter(&self)->bool{
-        match self.val{
-            Type::Warrior=>true,
-            _=>false
+    pub fn dodge_counter(&self) -> bool {
+        match self.val {
+            Type::Warrior => true,
+            _ => false,
         }
     }
+
+    // TODO use
+    // Attack again if first attack was dodged
+    pub fn second_attack(&self) -> bool {
+        match self.val {
+            Type::Warrior => true,
+            _ => false,
+        }
+    }
+
     pub fn get_movement_data(&self) -> i8 {
         let a = self;
         match a.val {
@@ -338,7 +348,6 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             None
         };
 
-        
         // let counter_damage = match (this_unit.val, target.val) {
         //     (Type::Warrior, Type::Rook) => None,
         //     (Type::Warrior, Type::Archer) => None,
@@ -391,15 +400,29 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 this_unit
             };
             return Pair(Some(this_unit), None);
-        } else {
-            let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-            let aa = animation::Animation::new(it, AnimationOptions::Attack([this_unit, target]));
-            let aa = self.doop.wait_animation(aa, self.team_index).await;
-            let AnimationOptions::Attack([this_unit,target])=aa.into_data() else{
-                        unreachable!();
-                    };
+        }
 
-            if let Some(counter_damage) = counter_damage {
+        let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
+        let aa = animation::Animation::new(it, AnimationOptions::Attack([this_unit, target]));
+        let aa = self.doop.wait_animation(aa, self.team_index).await;
+        let AnimationOptions::Attack([this_unit,target])=aa.into_data() else{
+            unreachable!();
+        };
+
+        let Some(counter_damage)=counter_damage else{
+            return  Pair(Some(this_unit), Some(target))
+        };
+
+        let it = animation::attack(target.position, this_unit.position, self.grid_matrix);
+        let aa =
+            animation::Animation::new(it, AnimationOptions::CounterAttack([this_unit, target]));
+        let aa = self.doop.wait_animation(aa, self.team_index).await;
+        let AnimationOptions::CounterAttack([mut this_unit,target])=aa.into_data() else{
+                    unreachable!()
+                };
+
+        if this_unit.as_ref().dodge_counter() {
+            if target.as_ref().second_attack() {
                 let it = animation::attack(target.position, this_unit.position, self.grid_matrix);
                 let aa = animation::Animation::new(
                     it,
@@ -410,19 +433,21 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                             unreachable!()
                         };
 
-                if !this_unit.as_ref().dodge_counter(){
-                    this_unit.health -= counter_damage;
-                    if this_unit.health <= 0 {
-                        //todo self die animation.
-                        Pair(None, Some(target))
-                    } else {
-                        Pair(Some(this_unit), Some(target))
-                    }
-                }else{
+                this_unit.health -= counter_damage;
+                if this_unit.health <= 0 {
+                    //todo self die animation.
+                    Pair(None, Some(target))
+                } else {
                     Pair(Some(this_unit), Some(target))
                 }
-
-                
+            } else {
+                Pair(Some(this_unit), Some(target))
+            }
+        } else {
+            this_unit.health -= counter_damage;
+            if this_unit.health <= 0 {
+                //todo self die animation.
+                Pair(None, Some(target))
             } else {
                 Pair(Some(this_unit), Some(target))
             }
