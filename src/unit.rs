@@ -284,14 +284,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         path: &movement::Path,
     ) -> WarriorType<UnitData> {
         let it = animation::movement(start.position, path.clone(), self.grid_matrix);
-
-        let aa = animation::Animation::new(it, AnimationOptions::Movement(start));
-
-        let aa = self.doop.wait_animation(aa, self.team_index).await;
-
-        let AnimationOptions::Movement(mut start)=aa.into_data()else{
-            unreachable!()
-        };
+        let aa = AnimationOptions::movement(start);
+        let mut start = self.wait_animation(it, aa).await;
 
         start.stamina.0 -= path.total_cost().0;
         start.position = path.get_end_coord(start.position);
