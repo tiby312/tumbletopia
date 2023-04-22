@@ -19,11 +19,78 @@ pub struct GameWrapResponse<'a, T> {
     pub data: T,
 }
 
+pub trait UnwrapMe {
+    type Item;
+    fn unwrapme(self, a: AnimationOptions) -> Self::Item;
+}
+pub struct Movement;
+impl UnwrapMe for Movement {
+    type Item = WarriorType<UnitData>;
+
+    fn unwrapme(self, a: AnimationOptions) -> Self::Item {
+        let AnimationOptions::Movement(a)=a else{
+            unreachable!()
+        };
+        a
+    }
+}
+
+pub struct Attack;
+impl UnwrapMe for Attack {
+    type Item = [WarriorType<UnitData>; 2];
+
+    fn unwrapme(self, a: AnimationOptions) -> Self::Item {
+        let AnimationOptions::Attack(a)=a else{
+            unreachable!()
+        };
+        a
+    }
+}
+
+pub struct CounterAttack;
+impl UnwrapMe for CounterAttack {
+    type Item = [WarriorType<UnitData>; 2];
+
+    fn unwrapme(self, a: AnimationOptions) -> Self::Item {
+        let AnimationOptions::CounterAttack(a)=a else{
+            unreachable!()
+        };
+        a
+    }
+}
+
+pub struct AnimationWrapper<K> {
+    pub unwrapper: K,
+    pub enu: AnimationOptions,
+}
+
 pub enum AnimationOptions {
     Movement(WarriorType<UnitData>),
     Attack([WarriorType<UnitData>; 2]),
     Heal([WarriorType<UnitData>; 2]),
     CounterAttack([WarriorType<UnitData>; 2]),
+}
+impl AnimationOptions {
+    pub fn movement(a: WarriorType<UnitData>) -> AnimationWrapper<Movement> {
+        AnimationWrapper {
+            unwrapper: Movement,
+            enu: AnimationOptions::Movement(a),
+        }
+    }
+
+    pub fn attack(a: [WarriorType<UnitData>; 2]) -> AnimationWrapper<Attack> {
+        AnimationWrapper {
+            unwrapper: Attack,
+            enu: AnimationOptions::Attack(a),
+        }
+    }
+
+    pub fn counter_attack(a: [WarriorType<UnitData>; 2]) -> AnimationWrapper<CounterAttack> {
+        AnimationWrapper {
+            unwrapper: CounterAttack,
+            enu: AnimationOptions::CounterAttack(a),
+        }
+    }
 }
 
 #[derive(Debug)]

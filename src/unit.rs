@@ -1,5 +1,6 @@
 use crate::{
-    ace::generate_unit_possible_moves2,
+    ace::{generate_unit_possible_moves2, AnimationWrapper, Doop, UnwrapMe},
+    animation::Animation,
     movement::{Filter, NoFilter},
 };
 
@@ -378,24 +379,16 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 let path = path.add(m).unwrap();
 
                 let it = animation::movement(this_unit.position, path, self.grid_matrix);
-                let aa =
-                    animation::Animation::new(it, AnimationOptions::Attack([this_unit, target]));
-                let aa = self.doop.wait_animation(aa, self.team_index).await;
+                let aa = AnimationOptions::attack([this_unit, target]);
+                let [mut this_unit, target] = self.wait_animation(it, aa).await;
 
-                let AnimationOptions::Attack([mut this_unit,target])=aa.into_data() else{
-                            unreachable!();
-                        };
                 //todo kill target animate
                 this_unit.position = target.position;
                 this_unit
             } else {
                 let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-                let aa =
-                    animation::Animation::new(it, AnimationOptions::Attack([this_unit, target]));
-                let aa = self.doop.wait_animation(aa, self.team_index).await;
-                let AnimationOptions::Attack([this_unit,target])=aa.into_data() else{
-                        unreachable!();
-                    };
+                let aa = AnimationOptions::attack([this_unit, target]);
+                let [this_unit, _target] = self.wait_animation(it, aa).await;
 
                 this_unit
             };
@@ -403,35 +396,37 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         }
 
         let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-        let aa = animation::Animation::new(it, AnimationOptions::Attack([this_unit, target]));
-        let aa = self.doop.wait_animation(aa, self.team_index).await;
-        let AnimationOptions::Attack([this_unit,target])=aa.into_data() else{
-            unreachable!();
-        };
+        let aa = AnimationOptions::attack([this_unit, target]);
+        let [this_unit, target] = self.wait_animation(it, aa).await;
 
         let Some(counter_damage)=counter_damage else{
             return  Pair(Some(this_unit), Some(target))
         };
 
         let it = animation::attack(target.position, this_unit.position, self.grid_matrix);
-        let aa =
-            animation::Animation::new(it, AnimationOptions::CounterAttack([this_unit, target]));
-        let aa = self.doop.wait_animation(aa, self.team_index).await;
-        let AnimationOptions::CounterAttack([mut this_unit,target])=aa.into_data() else{
-                    unreachable!()
-                };
+        let aa = AnimationOptions::counter_attack([this_unit, target]);
+        let [mut this_unit, target] = self.wait_animation(it, aa).await;
 
-        if this_unit.as_ref().block_counter() && !target.as_ref().pierce_attack() {
-            Pair(Some(this_unit), Some(target))
-        } else {
+        if !this_unit.as_ref().block_counter()
+            || this_unit.as_ref().block_counter() && target.as_ref().pierce_attack()
+        {
             this_unit.health -= counter_damage;
             if this_unit.health <= 0 {
                 //todo self die animation.
-                Pair(None, Some(target))
-            } else {
-                Pair(Some(this_unit), Some(target))
+                return Pair(None, Some(target));
             }
         }
+        Pair(Some(this_unit), Some(target))
+    }
+
+    async fn wait_animation<'c, K: UnwrapMe, I: Iterator<Item = Vector2<f32>> + 'static>(
+        &mut self,
+        it: I,
+        wrapper: AnimationWrapper<K>,
+    ) -> K::Item {
+        let aa = animation::Animation::new(it, wrapper.enu);
+        let aa = self.doop.wait_animation(aa, self.team_index).await;
+        wrapper.unwrapper.unwrapme(aa.into_data())
     }
 }
 
