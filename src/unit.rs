@@ -560,6 +560,17 @@ impl Tribe {
             }
         }
     }
+    pub fn replenish_health(&mut self) {
+        for (i, val) in self.warriors.iter_mut().enumerate() {
+            for unit in val.elem.iter_mut() {
+                let mut k = WarriorType {
+                    val: Type::type_index_inverse(i),
+                    inner: unit,
+                };
+                k.health = (k.health + 1).min(k.val.max_health());
+            }
+        }
+    }
     pub fn replenish_stamina(&mut self) {
         for (i, val) in self.warriors.iter_mut().enumerate() {
             for unit in val.elem.iter_mut() {

@@ -273,6 +273,9 @@ pub async fn main_logic<'a>(
             (&mut game.dogs, &mut game.cats)
         };
 
+        //this_team.replenish_health();
+        //that_team.replenish_health();
+
         this_team.calculate_selectable_all(that_team, grid_matrix);
 
         //Keep allowing the user to select units
@@ -441,7 +444,8 @@ pub async fn main_logic<'a>(
                             unit::Pair(None, Some(a)) => {
                                 that_team.add(a);
                                 //Deselect unit because it died.
-                                break;
+                                break 'outer;
+                                //continue 'outer;
                             }
                             unit::Pair(Some(a), Some(b)) => {
                                 current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
