@@ -145,7 +145,7 @@ impl UnitData {
             position,
             stamina: MoveUnit(0),
             attacked: false,
-            health: 2,
+            health: 0,
             selectable: true,
         }
     }
@@ -196,6 +196,12 @@ pub enum Type {
 }
 
 impl Type {
+    pub fn max_health(&self) -> i8 {
+        let a = self;
+        match a {
+            _ => 2,
+        }
+    }
     pub fn type_index(&self) -> usize {
         let a = self;
         match a {
@@ -310,7 +316,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         mut target: WarriorType<UnitData>,
     ) -> Pair {
         //TODO make the user not able to perform a no-op heal thus wasting a turn.
-        target.health = (target.health + 1).min(2);
+        target.health = (target.health + 1).min(target.val.max_health());
 
         this_unit.attacked = true;
 
@@ -366,7 +372,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         if target.health <= 0 {
             assert!(!support_attack);
             let this_unit = if move_on_kill {
-                this_unit.health = (this_unit.health + 1).min(2);
+                //TODO do this but after a delay maybe?
+                //this_unit.health = (this_unit.health + 1).min(this_unit.val.max_health());
 
                 let path = movement::Path::new();
                 let m = this_unit.position.dir_to(&target.position);
@@ -539,6 +546,17 @@ impl Tribe {
 
                 this_team.warriors[i].elem[ii].selectable = vv;
                 //b.selectable=vv;
+            }
+        }
+    }
+    pub fn set_health(&mut self) {
+        for (i, val) in self.warriors.iter_mut().enumerate() {
+            for unit in val.elem.iter_mut() {
+                let mut k = WarriorType {
+                    val: Type::type_index_inverse(i),
+                    inner: unit,
+                };
+                k.health = k.val.max_health();
             }
         }
     }

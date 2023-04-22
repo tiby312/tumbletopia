@@ -258,6 +258,8 @@ pub async fn main_logic<'a>(
     };
 
     {
+        game.cats.set_health();
+        game.dogs.set_health();
         game.cats.replenish_stamina();
         game.dogs.replenish_stamina();
     }

@@ -221,14 +221,14 @@ pub async fn worker_entry() {
         // UnitData::new(GridCoord([3, -3]))
         ]),
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([3, 0])),
-            UnitData::new(GridCoord([0, -3])),
+            // UnitData::new(GridCoord([3, 0])),
+            // UnitData::new(GridCoord([0, -3])),
         ]),
     ];
 
     let cats = vec![
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([-2, 1])),
+            // UnitData::new(GridCoord([-2, 1])),
             //  UnitData::new(GridCoord([-1, 1])),
             // UnitData::new(GridCoord([-1, 2])),
         ]),
