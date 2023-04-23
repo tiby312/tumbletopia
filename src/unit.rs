@@ -44,7 +44,7 @@ impl WarriorType<&UnitData> {
 
     pub fn get_friendly_data(&self) -> impl Iterator<Item = GridCoord> {
         let first = if let Type::Mage = self.val {
-            Some(self.position.to_cube().ring(2))
+            Some(self.position.to_cube().ring(1))
         } else {
             None
         };
@@ -355,7 +355,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         //     _ => counter_damage,
         // };
 
-        // let counter_damage = if support_attack { None } else { counter_damage };
+        let counter_damage = if support_attack { None } else { counter_damage };
 
         let move_on_kill = match (this_unit.val, target.val) {
             (Type::Rook, _) => false,
@@ -366,6 +366,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             }
         };
 
+        
         target.health -= damage;
         this_unit.attacked = true;
 
