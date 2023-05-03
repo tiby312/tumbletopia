@@ -103,30 +103,10 @@ impl<'a> WarriorDraw<'a> {
         draw_sys: &mut ShaderSystem,
     ) {
         //draw text
-        for ccat in self.col.elem.iter() {
-            let pos: [f32; 2] = gg.hex_axial_to_world(&ccat.position).into();
-
-            let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
-
-            let jj = view_proj.chain(t).generate();
-            let jj: &[f32; 16] = jj.as_ref();
-            let tt = matrix::translation(jj[12], jj[13], jj[14]);
-            let new_proj = proj.clone().chain(tt);
-
-            let s = matrix::scale(5.0, 5.0, 5.0);
-            let m = new_proj.chain(s).generate();
-
-            let nn = health_numbers.get_number(ccat.health);
-            let mut v = draw_sys.view(m.as_ref());
-            nn.draw_ext(&mut v, false, false, true, false);
-
-            //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
-        }
-
         // for ccat in self.col.elem.iter() {
         //     let pos: [f32; 2] = gg.hex_axial_to_world(&ccat.position).into();
 
-        //     let t = matrix::translation(pos[0] + 20.0, pos[1], 20.0);
+        //     let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
 
         //     let jj = view_proj.chain(t).generate();
         //     let jj: &[f32; 16] = jj.as_ref();
@@ -136,12 +116,13 @@ impl<'a> WarriorDraw<'a> {
         //     let s = matrix::scale(5.0, 5.0, 5.0);
         //     let m = new_proj.chain(s).generate();
 
-        //     let nn = health_numbers.get_number(ccat.stamina.0);
+        //     let nn = health_numbers.get_number(ccat.health);
         //     let mut v = draw_sys.view(m.as_ref());
         //     nn.draw_ext(&mut v, false, false, true, false);
 
         //     //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
         // }
+
     }
 }
 
@@ -211,17 +192,17 @@ pub async fn worker_entry() {
     let dogs = vec![
         UnitCollection::new(vec![
             UnitData::new(GridCoord([1, -2])),
-             UnitData::new(GridCoord([1, -1])),
-            //UnitData::new(GridCoord([2, -1])),
+            UnitData::new(GridCoord([1, -1])),
+            UnitData::new(GridCoord([2, -1])),
         ]),
         UnitCollection::new(vec![
-         UnitData::new(GridCoord([2, -2]))
+         //UnitData::new(GridCoord([2, -2]))
         ]),
         UnitCollection::new(vec![
         //UnitData::new(GridCoord([3, -3]))
         ]),
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([3, 0])),
+            // UnitData::new(GridCoord([3, 0])),
             // UnitData::new(GridCoord([0, -3])),
         ]),
     ];
@@ -229,19 +210,19 @@ pub async fn worker_entry() {
     let cats = vec![
         UnitCollection::new(vec![
             UnitData::new(GridCoord([-2, 1])),
-              UnitData::new(GridCoord([-1, 1])),
-            // UnitData::new(GridCoord([-1, 2])),
+             UnitData::new(GridCoord([-1, 1])),
+            UnitData::new(GridCoord([-1, 2])),
         ]),
         UnitCollection::new(vec![
-         UnitData::new(GridCoord([-2, 2])),
-        // UnitData::new(GridCoord([-3, 3]))
+        // UnitData::new(GridCoord([-2, 2])),
+        //  UnitData::new(GridCoord([-3, 3]))
 
         ]),
         UnitCollection::new(vec![
         //UnitData::new(GridCoord([-3, 3]))
         ]),
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([0, 3])),
+            //UnitData::new(GridCoord([0, 3])),
             // UnitData::new(GridCoord([-3, 0])),
         ]),
     ];
