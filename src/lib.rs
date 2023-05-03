@@ -69,7 +69,7 @@ impl<'a> WarriorDraw<'a> {
 
             self.model.draw_ext(
                 &mut v,
-                !cc.selectable, /*  !cc.selectable(game)  */
+                cc.health==0, /*  !cc.selectable(game)  */
                 false,
                 false,
                 true,

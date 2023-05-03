@@ -35,7 +35,7 @@ impl WarriorType<&UnitData> {
     pub fn get_movement_data(&self) -> i8 {
         let a = self;
         match a.val {
-            Type::Warrior => 2,
+            Type::Warrior => 1,
             Type::Rook => 1,
             Type::Mage => 1,
             Type::Archer => 1,
@@ -76,7 +76,7 @@ impl WarriorType<&UnitData> {
             Some(
                 a.position
                     .to_cube()
-                    .range(2)
+                    .ring(2)
                     .filter(move |o| ff.filter(&o.to_axial())),
             )
         } else {
@@ -103,30 +103,31 @@ impl WarriorType<&UnitData> {
         that_team: &Tribe,
         grid_matrix: &GridMatrix,
     ) -> bool {
-        let s = self; //this_team.lookup(*self);
-        let pos = ace::generate_unit_possible_moves2(&s, this_team, that_team, grid_matrix);
+        // let s = self; //this_team.lookup(*self);
+        // let pos = ace::generate_unit_possible_moves2(&s, this_team, that_team, grid_matrix);
 
-        //check if there are enemies in range.
-        let enemy_in_range = {
-            let (_, att) = match &pos {
-                CellSelection::MoveSelection(ss, _, att) => (ss, att),
-                _ => unreachable!(),
-            };
+        // //check if there are enemies in range.
+        // let enemy_in_range = {
+        //     let (_, att) = match &pos {
+        //         CellSelection::MoveSelection(ss, _, att) => (ss, att),
+        //         _ => unreachable!(),
+        //     };
 
-            let mut found = false;
-            for a in att.iter() {
-                if let Some(_) = that_team.find_slow(a) {
-                    found = true;
-                    break;
-                }
-            }
-            found
-        };
+        //     let mut found = false;
+        //     for a in att.iter() {
+        //         if let Some(_) = that_team.find_slow(a) {
+        //             found = true;
+        //             break;
+        //         }
+        //     }
+        //     found
+        // };
 
-        //TODO move this and the above into an high-level "Has possible moves function"
-        let has_stamina_to_move = s.stamina.0 > 0; //0f??? TODO
-        let ret = enemy_in_range && !s.attacked || has_stamina_to_move && !s.attacked;
-        ret
+        // //TODO move this and the above into an high-level "Has possible moves function"
+        // let has_stamina_to_move = s.stamina.0 > 0; //0f??? TODO
+        // let ret = enemy_in_range && !s.attacked || has_stamina_to_move && !s.attacked;
+        // ret
+        self.stamina.0>0 && self.health!=0
     }
 }
 impl UnitData {
@@ -337,17 +338,17 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         support_attack: bool,
     ) -> Pair {
         //TODO store somewhere
-        let damage = 1;
+        // let damage = 1;
 
-        let counter_damage = if let Some(_) = target
-            .as_ref()
-            .get_attack_data(NoFilter)
-            .find(|&a| a == *this_unit.as_ref().slim())
-        {
-            Some(damage)
-        } else {
-            None
-        };
+        // let counter_damage = if let Some(_) = target
+        //     .as_ref()
+        //     .get_attack_data(NoFilter)
+        //     .find(|&a| a == *this_unit.as_ref().slim())
+        // {
+        //     Some(damage)
+        // } else {
+        //     None
+        // };
 
         // let counter_damage = match (this_unit.val, target.val) {
         //     (Type::Warrior, Type::Rook) => None,
@@ -355,70 +356,72 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         //     _ => counter_damage,
         // };
 
-        let counter_damage = if support_attack { None } else { counter_damage };
+        // let counter_damage = if support_attack { None } else { counter_damage };
 
-        let move_on_kill = match (this_unit.val, target.val) {
-            (Type::Rook, _) => false,
-            (Type::Warrior, _) => true,
-            (Type::Archer, _) => false,
-            _ => {
-                todo!()
-            }
-        };
+        // let move_on_kill = match (this_unit.val, target.val) {
+        //     (Type::Rook, _) => false,
+        //     (Type::Warrior, _) => true,
+        //     (Type::Archer, _) => false,
+        //     _ => {
+        //         todo!()
+        //     }
+        // };
 
         
-        target.health -= damage;
+        //target.health -= damage;
+        target.health=0;
+
         this_unit.attacked = true;
 
-        if target.health <= 0 {
+        //if target.health <= 0 {
             assert!(!support_attack);
-            let this_unit = if move_on_kill {
-                //TODO do this but after a delay maybe?
-                //this_unit.health = (this_unit.health + 1).min(this_unit.val.max_health());
+            // let this_unit = if move_on_kill {
+            //     //TODO do this but after a delay maybe?
+            //     //this_unit.health = (this_unit.health + 1).min(this_unit.val.max_health());
 
-                let path = movement::Path::new();
-                let m = this_unit.position.dir_to(&target.position);
-                let path = path.add(m).unwrap();
+            //     let path = movement::Path::new();
+            //     let m = this_unit.position.dir_to(&target.position);
+            //     let path = path.add(m).unwrap();
 
-                let it = animation::movement(this_unit.position, path, self.grid_matrix);
-                let aa = AnimationOptions::attack([this_unit, target]);
-                let [mut this_unit, target] = self.wait_animation(it, aa).await;
+            //     let it = animation::movement(this_unit.position, path, self.grid_matrix);
+            //     let aa = AnimationOptions::attack([this_unit, target]);
+            //     let [mut this_unit, target] = self.wait_animation(it, aa).await;
 
-                //todo kill target animate
-                this_unit.position = target.position;
-                this_unit
-            } else {
+            //     //todo kill target animate
+            //     this_unit.position = target.position;
+            //     this_unit
+            // } else {
                 let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
                 let aa = AnimationOptions::attack([this_unit, target]);
-                let [this_unit, _target] = self.wait_animation(it, aa).await;
+                let [this_unit, target] = self.wait_animation(it, aa).await;
 
-                this_unit
-            };
-            return Pair(Some(this_unit), None);
-        }
+            //    this_unit
+            //};
+            return Pair(Some(this_unit), Some(target));
+        //}
 
-        let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-        let aa = AnimationOptions::attack([this_unit, target]);
-        let [this_unit, target] = self.wait_animation(it, aa).await;
+        // let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
+        // let aa = AnimationOptions::attack([this_unit, target]);
+        // let [this_unit, target] = self.wait_animation(it, aa).await;
 
-        let Some(counter_damage)=counter_damage else{
-            return  Pair(Some(this_unit), Some(target))
-        };
+        // let Some(counter_damage)=counter_damage else{
+        //     return  Pair(Some(this_unit), Some(target))
+        // };
 
-        let it = animation::attack(target.position, this_unit.position, self.grid_matrix);
-        let aa = AnimationOptions::counter_attack([this_unit, target]);
-        let [mut this_unit, target] = self.wait_animation(it, aa).await;
+        // let it = animation::attack(target.position, this_unit.position, self.grid_matrix);
+        // let aa = AnimationOptions::counter_attack([this_unit, target]);
+        // let [mut this_unit, target] = self.wait_animation(it, aa).await;
 
-        if !this_unit.as_ref().block_counter()
-            || this_unit.as_ref().block_counter() && target.as_ref().pierce_attack()
-        {
-            this_unit.health -= counter_damage;
-            if this_unit.health <= 0 {
-                //todo self die animation.
-                return Pair(None, Some(target));
-            }
-        }
-        Pair(Some(this_unit), Some(target))
+        // if !this_unit.as_ref().block_counter()
+        //     || this_unit.as_ref().block_counter() && target.as_ref().pierce_attack()
+        // {
+        //     this_unit.health -= counter_damage;
+        //     if this_unit.health <= 0 {
+        //         //todo self die animation.
+        //         return Pair(None, Some(target));
+        //     }
+        // }
+        // Pair(Some(this_unit), Some(target))
     }
 
     async fn wait_animation<'c, K: UnwrapMe, I: Iterator<Item = Vector2<f32>> + 'static>(
@@ -628,9 +631,9 @@ impl<'a> movement::Filter for SingleFilter<'a> {
 pub struct UnitCollectionFilter<'a, T> {
     a: &'a [T],
 }
-impl<'a, T: HasPos> movement::Filter for UnitCollectionFilter<'a, T> {
+impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
     fn filter(&self, b: &GridCoord) -> bool {
-        self.a.iter().find(|a| a.get_pos() == b).is_none()
+        self.a.iter().filter(|a|a.health!=0).find(|a| a.get_pos() == b).is_none()
     }
 }
 

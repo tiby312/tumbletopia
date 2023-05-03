@@ -396,38 +396,38 @@ pub async fn main_logic<'a>(
                     if !current_attack && movement::contains_coord(attack.iter(), &target_cell) {
                         let d = that_team.lookup_take(target_coord);
 
-                        //Attack using supports.
-                        let d = {
-                            let v: Vec<_> = this_team
-                                .other_units_in_range_of_target(target_cell, grid_matrix)
-                                .map(|x| x.slim())
-                                .filter(|&f| f != xx)
-                                .collect();
+                        // //Attack using supports.
+                        // let d = {
+                        //     let v: Vec<_> = this_team
+                        //         .other_units_in_range_of_target(target_cell, grid_matrix)
+                        //         .map(|x| x.slim())
+                        //         .filter(|&f| f != xx)
+                        //         .collect();
 
-                            let mut d = Some(d);
-                            for a in v {
-                                let damage = 1;
-                                if d.as_ref().unwrap().health <= damage {
-                                    break;
-                                }
-                                let warrir = this_team.lookup_take(a);
+                        //     let mut d = Some(d);
+                        //     for a in v {
+                        //         let damage = 1;
+                        //         if d.as_ref().unwrap().health <= damage {
+                        //             break;
+                        //         }
+                        //         let warrir = this_team.lookup_take(a);
 
-                                match doop
-                                    .await_data(grid_matrix, team_index)
-                                    .resolve_attack(warrir, d.take().unwrap(), true)
-                                    .await
-                                {
-                                    unit::Pair(Some(a), Some(b)) => {
-                                        this_team.add(a);
-                                        d = Some(b);
-                                    }
-                                    _ => {
-                                        unreachable!()
-                                    }
-                                }
-                            }
-                            d.unwrap()
-                        };
+                        //         match doop
+                        //             .await_data(grid_matrix, team_index)
+                        //             .resolve_attack(warrir, d.take().unwrap(), true)
+                        //             .await
+                        //         {
+                        //             unit::Pair(Some(a), Some(b)) => {
+                        //                 this_team.add(a);
+                        //                 d = Some(b);
+                        //             }
+                        //             _ => {
+                        //                 unreachable!()
+                        //             }
+                        //         }
+                        //     }
+                        //     d.unwrap()
+                        // };
 
                         let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
@@ -440,18 +440,22 @@ pub async fn main_logic<'a>(
                                 current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
                                 this_team.add(a);
+                                unreachable!()
                             }
                             unit::Pair(None, Some(a)) => {
+
+                                unreachable!();
                                 that_team.add(a);
                                 //Deselect unit because it died.
                                 break 'outer;
-                                //continue 'outer;
                             }
                             unit::Pair(Some(a), Some(b)) => {
                                 current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
                                 this_team.add(a);
-                                that_team.add(b)
+                                that_team.add(b);
+
+                                break 'outer
                             }
                             unit::Pair(None, None) => {
                                 unreachable!();
@@ -462,14 +466,34 @@ pub async fn main_logic<'a>(
                         continue;
                     }
                 } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
+
+
+                    
+
+
                     let (path, _) = ss.get_path_data(&target_cell).unwrap();
                     let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
-                    let this_unit = doop
+                    
+
+                    let mut this_unit = doop
                         .await_data(grid_matrix, team_index)
                         .resolve_movement(this_unit, path)
                         .await;
 
+                    if let Some(a)=this_team.find_slow(&target_cell).map(|a|a.slim()){
+
+                        let t=this_team.lookup_take(a);
+                        assert!(t.health==0);
+                        //We are moving to a wounded teamate.
+                        //this_unit.stamina    
+                        this_unit.stamina.0 = t.as_ref().get_movement_data();
+                        this_unit.attacked = false;
+
+                        //remove teammate.
+                        //grant unit one more turn.
+                        //move unit
+                    }
                     current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
 
                     this_team.add(this_unit);
