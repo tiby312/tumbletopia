@@ -358,14 +358,14 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 
         // let counter_damage = if support_attack { None } else { counter_damage };
 
-        // let move_on_kill = match (this_unit.val, target.val) {
-        //     (Type::Rook, _) => false,
-        //     (Type::Warrior, _) => true,
-        //     (Type::Archer, _) => false,
-        //     _ => {
-        //         todo!()
-        //     }
-        // };
+        let move_on_kill = match (this_unit.val, target.val) {
+            (Type::Rook, _) => false,
+            (Type::Warrior, _) => true,
+            (Type::Archer, _) => false,
+            _ => {
+                todo!()
+            }
+        };
 
         
         //target.health -= damage;
@@ -375,25 +375,28 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 
         //if target.health <= 0 {
             assert!(!support_attack);
-            // let this_unit = if move_on_kill {
+            // if move_on_kill {
             //     //TODO do this but after a delay maybe?
             //     //this_unit.health = (this_unit.health + 1).min(this_unit.val.max_health());
 
             //     let path = movement::Path::new();
             //     let m = this_unit.position.dir_to(&target.position);
             //     let path = path.add(m).unwrap();
-
+            //     this_unit.stamina.0 -= path.total_cost().0;
+        
             //     let it = animation::movement(this_unit.position, path, self.grid_matrix);
             //     let aa = AnimationOptions::attack([this_unit, target]);
             //     let [mut this_unit, target] = self.wait_animation(it, aa).await;
 
             //     //todo kill target animate
             //     this_unit.position = target.position;
-            //     this_unit
-            // } else {
-                let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-                let aa = AnimationOptions::attack([this_unit, target]);
-                let [this_unit, target] = self.wait_animation(it, aa).await;
+                
+            //     return Pair(Some(this_unit),None)
+            // }
+
+            let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
+            let aa = AnimationOptions::attack([this_unit, target]);
+            let [this_unit, target] = self.wait_animation(it, aa).await;
 
             //    this_unit
             //};

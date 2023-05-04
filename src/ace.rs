@@ -440,7 +440,6 @@ pub async fn main_logic<'a>(
                                 current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
                                 this_team.add(a);
-                                unreachable!()
                             }
                             unit::Pair(None, Some(a)) => {
 
