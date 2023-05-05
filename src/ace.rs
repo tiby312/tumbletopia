@@ -480,22 +480,42 @@ pub async fn main_logic<'a>(
                         .resolve_movement(this_unit, path)
                         .await;
 
+                    
                     if let Some(a)=this_team.find_slow(&target_cell).map(|a|a.slim()){
 
-                        let t=this_team.lookup_take(a);
+                        let mut t=this_team.lookup_take(a);
                         assert!(t.health==0);
+
+
+                        if t.as_ref().priority()<this_unit.as_ref().priority(){
+                            this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
+                            this_unit.attacked = false;
+    
+                            current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
+                            this_team.add(this_unit);
+
+                        }else{
+                            t.stamina.0 = t.as_ref().get_movement_data();
+                            t.health=2;
+                            t.attacked=false;
+
+                            current_warrior_pos = TeamType::ThisTeam(t.as_ref().slim());
+                            this_team.add(t);
+                        }
+
                         //We are moving to a wounded teamate.
                         //this_unit.stamina    
-                        this_unit.stamina.0 = t.as_ref().get_movement_data();
-                        this_unit.attacked = false;
-
+                        
                         //remove teammate.
                         //grant unit one more turn.
                         //move unit
-                    }
-                    current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
+                    }else{
+                        current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
 
-                    this_team.add(this_unit);
+                        this_team.add(this_unit);
+                    }
+                    
+                    
                 } else if let Some(a) = this_team.find_slow(&target_cell) {
                     // if !current_attack && movement::contains_coord(friendly.iter(), &target_cell) {
                     //     let target_coord = a.slim();
