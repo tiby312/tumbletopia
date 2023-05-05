@@ -303,7 +303,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let aa = AnimationOptions::movement(start);
         let mut start = self.wait_animation(it, aa).await;
 
-        start.stamina.0 -= path.total_cost().0;
+        //start.stamina.0 -= path.total_cost().0;
+        start.stamina.0 = 0;
+
         start.position = path.get_end_coord(start.position);
 
         // let has_dash = match start.val {

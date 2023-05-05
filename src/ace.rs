@@ -553,6 +553,10 @@ pub async fn main_logic<'a>(
             //log!(format!("User selected!={:?}", mouse_world));
         }
 
+        for a in this_team.warriors.iter_mut() {
+            a.elem.retain(|a| a.health > 0);
+        }
+
         //Loop through healers and apply healing.
         let mages: Vec<_> = this_team.warriors[Type::Mage.type_index()]
             .elem
