@@ -442,7 +442,6 @@ pub async fn main_logic<'a>(
                                 this_team.add(a);
                             }
                             unit::Pair(None, Some(a)) => {
-
                                 unreachable!();
                                 that_team.add(a);
                                 //Deselect unit because it died.
@@ -454,7 +453,7 @@ pub async fn main_logic<'a>(
                                 this_team.add(a);
                                 that_team.add(b);
 
-                                break 'outer
+                                break 'outer;
                             }
                             unit::Pair(None, None) => {
                                 unreachable!();
@@ -465,57 +464,44 @@ pub async fn main_logic<'a>(
                         continue;
                     }
                 } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
-
-
-                    
-
-
                     let (path, _) = ss.get_path_data(&target_cell).unwrap();
                     let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
-
-                    
 
                     let mut this_unit = doop
                         .await_data(grid_matrix, team_index)
                         .resolve_movement(this_unit, path)
                         .await;
 
-                    
-                    if let Some(a)=this_team.find_slow(&target_cell).map(|a|a.slim()){
+                    if let Some(a) = this_team.find_slow(&target_cell).map(|a| a.slim()) {
+                        let mut t = this_team.lookup_take(a);
+                        assert!(t.health == 0);
 
-                        let mut t=this_team.lookup_take(a);
-                        assert!(t.health==0);
-
-
-                        if t.as_ref().priority()<this_unit.as_ref().priority(){
+                        if t.as_ref().priority() < this_unit.as_ref().priority() {
                             this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
                             this_unit.attacked = false;
-    
+
                             current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
                             this_team.add(this_unit);
-
-                        }else{
+                        } else {
                             t.stamina.0 = t.as_ref().get_movement_data();
-                            t.health=2;
-                            t.attacked=false;
+                            t.health = 2;
+                            t.attacked = false;
 
                             current_warrior_pos = TeamType::ThisTeam(t.as_ref().slim());
                             this_team.add(t);
                         }
 
                         //We are moving to a wounded teamate.
-                        //this_unit.stamina    
-                        
+                        //this_unit.stamina
+
                         //remove teammate.
                         //grant unit one more turn.
                         //move unit
-                    }else{
+                    } else {
                         current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
 
                         this_team.add(this_unit);
                     }
-                    
-                    
                 } else if let Some(a) = this_team.find_slow(&target_cell) {
                     // if !current_attack && movement::contains_coord(friendly.iter(), &target_cell) {
                     //     let target_coord = a.slim();

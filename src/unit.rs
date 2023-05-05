@@ -32,12 +32,12 @@ impl WarriorType<&UnitData> {
         }
     }
 
-    pub fn priority(&self)->i8{
-        match self.val{
-            Type::Warrior=>1,
-            Type::Archer=>2,
-            Type::Rook=>3,
-            _=>unreachable!()
+    pub fn priority(&self) -> i8 {
+        match self.val {
+            Type::Warrior => 1,
+            Type::Archer => 2,
+            Type::Rook => 3,
+            _ => unreachable!(),
         }
     }
 
@@ -136,7 +136,7 @@ impl WarriorType<&UnitData> {
         // let has_stamina_to_move = s.stamina.0 > 0; //0f??? TODO
         // let ret = enemy_in_range && !s.attacked || has_stamina_to_move && !s.attacked;
         // ret
-        self.stamina.0>0 && self.health!=0
+        self.stamina.0 > 0 && self.health != 0
     }
 }
 impl UnitData {
@@ -376,40 +376,39 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             }
         };
 
-        
         //target.health -= damage;
-        target.health=0;
+        target.health = 0;
 
         this_unit.attacked = true;
 
         //if target.health <= 0 {
-            assert!(!support_attack);
-            // if move_on_kill {
-            //     //TODO do this but after a delay maybe?
-            //     //this_unit.health = (this_unit.health + 1).min(this_unit.val.max_health());
+        assert!(!support_attack);
+        // if move_on_kill {
+        //     //TODO do this but after a delay maybe?
+        //     //this_unit.health = (this_unit.health + 1).min(this_unit.val.max_health());
 
-            //     let path = movement::Path::new();
-            //     let m = this_unit.position.dir_to(&target.position);
-            //     let path = path.add(m).unwrap();
-            //     this_unit.stamina.0 -= path.total_cost().0;
-        
-            //     let it = animation::movement(this_unit.position, path, self.grid_matrix);
-            //     let aa = AnimationOptions::attack([this_unit, target]);
-            //     let [mut this_unit, target] = self.wait_animation(it, aa).await;
+        //     let path = movement::Path::new();
+        //     let m = this_unit.position.dir_to(&target.position);
+        //     let path = path.add(m).unwrap();
+        //     this_unit.stamina.0 -= path.total_cost().0;
 
-            //     //todo kill target animate
-            //     this_unit.position = target.position;
-                
-            //     return Pair(Some(this_unit),None)
-            // }
+        //     let it = animation::movement(this_unit.position, path, self.grid_matrix);
+        //     let aa = AnimationOptions::attack([this_unit, target]);
+        //     let [mut this_unit, target] = self.wait_animation(it, aa).await;
 
-            let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-            let aa = AnimationOptions::attack([this_unit, target]);
-            let [this_unit, target] = self.wait_animation(it, aa).await;
+        //     //todo kill target animate
+        //     this_unit.position = target.position;
 
-            //    this_unit
-            //};
-            return Pair(Some(this_unit), Some(target));
+        //     return Pair(Some(this_unit),None)
+        // }
+
+        let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
+        let aa = AnimationOptions::attack([this_unit, target]);
+        let [this_unit, target] = self.wait_animation(it, aa).await;
+
+        //    this_unit
+        //};
+        return Pair(Some(this_unit), Some(target));
         //}
 
         // let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
@@ -645,7 +644,11 @@ pub struct UnitCollectionFilter<'a, T> {
 }
 impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
     fn filter(&self, b: &GridCoord) -> bool {
-        self.a.iter().filter(|a|a.health!=0).find(|a| a.get_pos() == b).is_none()
+        self.a
+            .iter()
+            .filter(|a| a.health != 0)
+            .find(|a| a.get_pos() == b)
+            .is_none()
     }
 }
 
