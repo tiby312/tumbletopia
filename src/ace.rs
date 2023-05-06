@@ -476,20 +476,20 @@ pub async fn main_logic<'a>(
                         let mut t = this_team.lookup_take(a);
                         assert!(t.health == 0);
 
-                        if t.as_ref().priority() < this_unit.as_ref().priority() {
+                        //if t.as_ref().priority() < this_unit.as_ref().priority() {
                             this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
                             this_unit.attacked = false;
 
                             current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
                             this_team.add(this_unit);
-                        } else {
-                            t.stamina.0 = t.as_ref().get_movement_data();
-                            t.health = 2;
-                            t.attacked = false;
+                        // } else {
+                        //     t.stamina.0 = t.as_ref().get_movement_data();
+                        //     t.health = 2;
+                        //     t.attacked = false;
 
-                            current_warrior_pos = TeamType::ThisTeam(t.as_ref().slim());
-                            this_team.add(t);
-                        }
+                        //     current_warrior_pos = TeamType::ThisTeam(t.as_ref().slim());
+                        //     this_team.add(t);
+                        // }
 
                         //We are moving to a wounded teamate.
                         //this_unit.stamina
