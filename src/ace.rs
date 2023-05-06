@@ -480,8 +480,8 @@ pub async fn main_logic<'a>(
                         this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
                         this_unit.attacked = false;
 
-                        current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
-                        this_team.add(this_unit);
+                        //current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
+                        //this_team.add(this_unit);
                         // } else {
                         //     t.stamina.0 = t.as_ref().get_movement_data();
                         //     t.health = 2;
@@ -497,11 +497,11 @@ pub async fn main_logic<'a>(
                         //remove teammate.
                         //grant unit one more turn.
                         //move unit
-                    } else {
-                        current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
-
-                        this_team.add(this_unit);
                     }
+
+                    current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
+
+                    this_team.add(this_unit);
                 } else if let Some(a) = this_team.find_slow(&target_cell) {
                     // if !current_attack && movement::contains_coord(friendly.iter(), &target_cell) {
                     //     let target_coord = a.slim();
@@ -626,7 +626,19 @@ pub fn generate_unit_possible_moves2(
     that_team: &Tribe,
     grid_matrix: &GridMatrix,
 ) -> CellSelection {
-    let mm = MoveUnit(unit.stamina.0);
+    let j = if let Some(_) = unit
+        .position
+        .to_cube()
+        .ring(1)
+        .map(|s| that_team.find_slow(&s.to_axial()).is_some())
+        .find(|a| *a)
+    {
+        1
+    } else {
+        unit.stamina.0
+    };
+
+    let mm = MoveUnit(j);
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,
