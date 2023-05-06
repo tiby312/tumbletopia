@@ -477,11 +477,11 @@ pub async fn main_logic<'a>(
                         assert!(t.health == 0);
 
                         //if t.as_ref().priority() < this_unit.as_ref().priority() {
-                            this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
-                            this_unit.attacked = false;
+                        this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
+                        this_unit.attacked = false;
 
-                            current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
-                            this_team.add(this_unit);
+                        current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
+                        this_team.add(this_unit);
                         // } else {
                         //     t.stamina.0 = t.as_ref().get_movement_data();
                         //     t.health = 2;

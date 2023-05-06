@@ -44,10 +44,10 @@ impl WarriorType<&UnitData> {
     pub fn get_movement_data(&self) -> i8 {
         let a = self;
         match a.val {
-            Type::Warrior => 1,
-            Type::Rook => 1,
-            Type::Mage => 1,
-            Type::Archer => 1,
+            Type::Warrior => 2,
+            Type::Rook => 2,
+            Type::Mage => 2,
+            Type::Archer => 2,
         }
     }
 
@@ -76,7 +76,7 @@ impl WarriorType<&UnitData> {
         };
 
         let second = if let Type::Rook = a.val {
-            Some(a.position.to_cube().rays(1, 10, ff))
+            Some(a.position.to_cube().rays(2, 5, ff))
         } else {
             None
         };
