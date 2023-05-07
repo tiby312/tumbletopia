@@ -276,6 +276,13 @@ pub async fn main_logic<'a>(
         //this_team.replenish_health();
         //that_team.replenish_health();
 
+        for a in this_team.warriors.iter_mut() {
+            for b in a.elem.iter_mut(){
+                b.fresh=0.max(b.fresh-1);
+            }
+        }
+
+
         this_team.calculate_selectable_all(that_team, grid_matrix);
 
         //Keep allowing the user to select units
