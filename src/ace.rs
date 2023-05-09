@@ -3,7 +3,7 @@ use super::*;
 use crate::{
     animation::{self, Animation},
     grids::{self, GridMatrix},
-    movement::{self, Filter, GridCoord, MoveUnit},
+    movement::{self, Filter, FilterThese, GridCoord, MoveUnit},
     terrain::{self, MoveCost},
     CellSelection, Game, HasPos, SingleFilter, Tribe, UnitData, WarriorType,
 };
@@ -277,13 +277,14 @@ pub async fn main_logic<'a>(
         //that_team.replenish_health();
 
         for a in this_team.warriors.iter_mut() {
-            for b in a.elem.iter_mut(){
-                b.fresh=0.max(b.fresh-1);
+            for b in a.elem.iter_mut() {
+                b.fresh = 0.max(b.fresh - 1);
             }
         }
 
-
         this_team.calculate_selectable_all(that_team, grid_matrix);
+
+        let mut extra_attack = None;
 
         //Keep allowing the user to select units
         'outer: loop {
@@ -329,8 +330,13 @@ pub async fn main_logic<'a>(
                     TeamType::ThatTeam(curr_warrior_pos) => {
                         let unit = that_team.lookup(curr_warrior_pos);
 
-                        let cc =
-                            generate_unit_possible_moves2(&unit, that_team, this_team, grid_matrix);
+                        let cc = generate_unit_possible_moves2(
+                            &unit,
+                            that_team,
+                            this_team,
+                            grid_matrix,
+                            None,
+                        );
 
                         let (_, pototo) = doop.get_mouse_selection_enemy(cc, team_index).await;
                         let target_cell = match pototo {
@@ -373,7 +379,13 @@ pub async fn main_logic<'a>(
                     }
                 }
 
-                let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
+                let cc = generate_unit_possible_moves2(
+                    &unit,
+                    this_team,
+                    that_team,
+                    grid_matrix,
+                    extra_attack,
+                );
 
                 let (cell, pototo) = doop.get_mouse_selection_friendly(cc, team_index).await;
                 let mouse_world = match pototo {
@@ -483,9 +495,10 @@ pub async fn main_logic<'a>(
                         let mut t = this_team.lookup_take(a);
                         assert!(t.health == 0);
 
-                        //if t.as_ref().priority() < this_unit.as_ref().priority() {
                         this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
                         this_unit.attacked = false;
+
+                        extra_attack = Some(t.val);
 
                         //current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
                         //this_team.add(this_unit);
@@ -560,6 +573,8 @@ pub async fn main_logic<'a>(
             //log!(format!("User selected!={:?}", mouse_world));
         }
 
+        extra_attack = None;
+
         for a in this_team.warriors.iter_mut() {
             a.elem.retain(|a| a.health > 0);
         }
@@ -584,7 +599,7 @@ pub async fn main_logic<'a>(
         for unit in mages.iter() {
             let unit = this_team.lookup(*unit);
 
-            let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix);
+            let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix, None);
             let (_, friendly, attack) = match cc {
                 CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
                 _ => {
@@ -632,6 +647,7 @@ pub fn generate_unit_possible_moves2(
     this_team: &Tribe,
     that_team: &Tribe,
     grid_matrix: &GridMatrix,
+    extra_attack: Option<Type>,
 ) -> CellSelection {
     let j = if let Some(_) = unit
         .position
@@ -663,10 +679,25 @@ pub fn generate_unit_possible_moves2(
         .filter(|a| that_team.filter().chain(grid_matrix.filter()).filter(a))
         .collect();
 
+    let ttt = &this_team.filter().chain(grid_matrix.filter());
+    let ee = extra_attack.map(|e| {
+        let pret = WarriorType {
+            val: e,
+            inner: unit.inner,
+        };
+        pret.get_attack_data(ttt)
+    });
+
     //TODO don't collect.
-    let attack_coords = unit
+    let mut attack_coords: Vec<_> = unit
         .get_attack_data(&this_team.filter().chain(grid_matrix.filter()))
         .collect();
+
+    for a in ee.into_iter().flatten() {
+        if !attack_coords.contains(&a) {
+            attack_coords.push(a)
+        }
+    }
 
     CellSelection::MoveSelection(mm, friendly_coords, attack_coords)
 }

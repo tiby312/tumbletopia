@@ -135,6 +135,15 @@ impl Filter for NoFilter {
         true
     }
 }
+
+pub struct FilterThese<'a>(pub &'a [GridCoord]);
+
+impl Filter for FilterThese<'_> {
+    fn filter(&self, a: &GridCoord) -> bool {
+        self.0.contains(a)
+    }
+}
+
 pub trait Filter {
     fn filter(&self, a: &GridCoord) -> bool;
     fn chain<K: Filter>(self, other: K) -> Chain<Self, K>

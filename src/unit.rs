@@ -12,7 +12,7 @@ pub struct UnitData {
     pub stamina: MoveUnit,
     //TODO don't store for each unit. Just current selected unit!!!!
     pub attacked: bool,
-    pub fresh:i8,
+    pub fresh: i8,
     pub health: i8,
     pub selectable: bool,
 }
@@ -157,7 +157,7 @@ impl UnitData {
             position,
             stamina: MoveUnit(0),
             attacked: false,
-            fresh:0,
+            fresh: 0,
             health: 0,
             selectable: true,
         }
@@ -406,12 +406,12 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 
         //     return Pair(Some(this_unit),None)
         // }
-        
+
         let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
         let aa = AnimationOptions::attack([this_unit, target]);
         let [mut this_unit, target] = self.wait_animation(it, aa).await;
 
-        this_unit.fresh=2;
+        //this_unit.fresh=2;
 
         //    this_unit
         //};
@@ -654,7 +654,7 @@ impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
         self.a
             .iter()
             .filter(|a| a.health != 0)
-            .filter(|a|a.fresh==0)
+            .filter(|a| a.fresh == 0)
             .find(|a| a.get_pos() == b)
             .is_none()
     }
