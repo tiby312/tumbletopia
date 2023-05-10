@@ -70,7 +70,7 @@ impl Path {
         }
         MoveUnit(total)
     }
-    fn move_cost(&self, m: Moves) -> MoveUnit {
+    fn move_cost(&self, _: Moves) -> MoveUnit {
         MoveUnit(1)
     }
 }
@@ -88,7 +88,7 @@ impl GridCoord {
             .iter()
             .enumerate()
             .find(|(_, x)| **x == offset.0)
-            .map(|(i, x)| Moves { dir: i as u8 })
+            .map(|(i, _)| Moves { dir: i as u8 })
             .unwrap()
     }
     pub fn to_cube(self) -> hex::Cube {
@@ -131,7 +131,7 @@ impl<T: Filter> Filter for &T {
 pub struct NoFilter;
 
 impl Filter for NoFilter {
-    fn filter(&self, a: &GridCoord) -> bool {
+    fn filter(&self, _: &GridCoord) -> bool {
         true
     }
 }

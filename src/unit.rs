@@ -1,7 +1,6 @@
 use crate::{
-    ace::{generate_unit_possible_moves2, AnimationWrapper, Doop, UnwrapMe},
-    animation::Animation,
-    movement::{Filter, NoFilter},
+    ace::{AnimationWrapper, UnwrapMe},
+    movement::Filter,
 };
 
 use super::*;
@@ -110,9 +109,9 @@ impl WarriorType<&UnitData> {
     }
     pub fn calculate_selectable(
         &self,
-        this_team: &Tribe,
-        that_team: &Tribe,
-        grid_matrix: &GridMatrix,
+        _this_team: &Tribe,
+        _that_team: &Tribe,
+        _grid_matrix: &GridMatrix,
     ) -> bool {
         // let s = self; //this_team.lookup(*self);
         // let pos = ace::generate_unit_possible_moves2(&s, this_team, that_team, grid_matrix);
@@ -372,7 +371,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 
         // let counter_damage = if support_attack { None } else { counter_damage };
 
-        let move_on_kill = match (this_unit.val, target.val) {
+        let _move_on_kill = match (this_unit.val, target.val) {
             (Type::Rook, _) => false,
             (Type::Warrior, _) => true,
             (Type::Archer, _) => false,
@@ -409,7 +408,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 
         let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
         let aa = AnimationOptions::attack([this_unit, target]);
-        let [mut this_unit, target] = self.wait_animation(it, aa).await;
+        let [this_unit, target] = self.wait_animation(it, aa).await;
 
         //this_unit.fresh=2;
 

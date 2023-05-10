@@ -107,7 +107,7 @@ pub struct Animation<T> {
 }
 use std::fmt;
 impl<T> fmt::Debug for Animation<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         Ok(())
     }
 }

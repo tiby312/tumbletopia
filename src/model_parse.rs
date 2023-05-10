@@ -40,7 +40,7 @@ impl<A: Borrow<TextureGpu>, B: Borrow<ModelGpu>> Foo<A, B> {
         view: &mut simple2d::View,
         grayscale: bool,
         text: bool,
-        linear: bool,
+        _linear: bool,
         lighting: bool,
     ) {
         let model = self.model.borrow();

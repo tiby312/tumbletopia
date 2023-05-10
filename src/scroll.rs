@@ -42,7 +42,7 @@ enum Foo {
         second_touch_id: i32,
     },
     MouseActive {
-        canvas_pos: [f32; 2],
+        _canvas_pos: [f32; 2],
     },
     None,
 }
@@ -108,7 +108,9 @@ impl TouchController {
         match self.foo {
             Foo::None => {
                 self.inner.handle_mouse_down(canvas_pos);
-                self.foo = Foo::MouseActive { canvas_pos }
+                self.foo = Foo::MouseActive {
+                    _canvas_pos: canvas_pos,
+                }
             }
             _ => {}
         }

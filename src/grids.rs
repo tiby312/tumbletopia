@@ -1,6 +1,5 @@
 use super::*;
 
-use axgeom::*;
 ///A way to map a grid to world coordinates and vice versa
 #[derive(Debug, Clone)]
 pub struct GridMatrix {

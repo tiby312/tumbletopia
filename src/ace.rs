@@ -1,11 +1,11 @@
 use super::*;
 
 use crate::{
-    animation::{self, Animation},
-    grids::{self, GridMatrix},
-    movement::{self, Filter, FilterThese, GridCoord, MoveUnit},
-    terrain::{self, MoveCost},
-    CellSelection, Game, HasPos, SingleFilter, Tribe, UnitData, WarriorType,
+    animation::Animation,
+    grids::GridMatrix,
+    movement::{self, Filter, GridCoord, MoveUnit},
+    terrain::{self},
+    CellSelection, Game, Tribe, UnitData, WarriorType,
 };
 
 pub struct GameWrap<'a, T> {
@@ -177,7 +177,7 @@ impl<'a> Doop<'a> {
             .await
             .unwrap();
 
-        let GameWrapResponse { game: gg, data } = self.receiver.next().await.unwrap();
+        let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
         let Response::AnimationFinish(o)=data else{
             unreachable!();
         };
@@ -235,7 +235,7 @@ impl<'a> Doop<'a> {
             .await
             .unwrap();
 
-        let GameWrapResponse { game: gg, data } = self.receiver.next().await.unwrap();
+        let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
 
         let Response::Mouse(cell,o)=data else{
             unreachable!();
@@ -398,7 +398,7 @@ pub async fn main_logic<'a>(
 
                 //This is the cell the user selected from the pool of available moves for the unit
                 let target_cell = mouse_world;
-                let (ss, friendly, attack) = match cell {
+                let (ss, _friendly, attack) = match cell {
                     CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
                     _ => {
                         unreachable!()
@@ -460,14 +460,14 @@ pub async fn main_logic<'a>(
 
                                 this_team.add(a);
                             }
-                            unit::Pair(None, Some(a)) => {
+                            unit::Pair(None, Some(_)) => {
                                 unreachable!();
-                                that_team.add(a);
-                                //Deselect unit because it died.
-                                break 'outer;
+                                // that_team.add(a);
+                                // //Deselect unit because it died.
+                                // break 'outer;
                             }
                             unit::Pair(Some(a), Some(b)) => {
-                                current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
+                                //current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
                                 this_team.add(a);
                                 that_team.add(b);
@@ -492,31 +492,13 @@ pub async fn main_logic<'a>(
                         .await;
 
                     if let Some(a) = this_team.find_slow(&target_cell).map(|a| a.slim()) {
-                        let mut t = this_team.lookup_take(a);
+                        let t = this_team.lookup_take(a);
                         assert!(t.health == 0);
 
                         this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
                         this_unit.attacked = false;
 
                         extra_attack = Some(t.val);
-
-                        //current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
-                        //this_team.add(this_unit);
-                        // } else {
-                        //     t.stamina.0 = t.as_ref().get_movement_data();
-                        //     t.health = 2;
-                        //     t.attacked = false;
-
-                        //     current_warrior_pos = TeamType::ThisTeam(t.as_ref().slim());
-                        //     this_team.add(t);
-                        // }
-
-                        //We are moving to a wounded teamate.
-                        //this_unit.stamina
-
-                        //remove teammate.
-                        //grant unit one more turn.
-                        //move unit
                     }
 
                     current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
@@ -572,8 +554,6 @@ pub async fn main_logic<'a>(
 
             //log!(format!("User selected!={:?}", mouse_world));
         }
-
-        extra_attack = None;
 
         for a in this_team.warriors.iter_mut() {
             a.elem.retain(|a| a.health > 0);

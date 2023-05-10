@@ -1,5 +1,4 @@
 use ace::AnimationOptions;
-use axgeom::vec2same;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 
 use futures::{SinkExt, StreamExt};
@@ -96,11 +95,11 @@ impl<'a> WarriorDraw<'a> {
 
     fn draw_health_text(
         &self,
-        gg: &grids::GridMatrix,
-        health_numbers: &NumberTextManager,
-        view_proj: &Matrix4<f32>,
-        proj: &Matrix4<f32>,
-        draw_sys: &mut ShaderSystem,
+        _gg: &grids::GridMatrix,
+        _health_numbers: &NumberTextManager,
+        _view_proj: &Matrix4<f32>,
+        _proj: &Matrix4<f32>,
+        _draw_sys: &mut ShaderSystem,
     ) {
         //draw text
         // for ccat in self.col.elem.iter() {
@@ -194,9 +193,7 @@ pub async fn worker_entry() {
             UnitData::new(GridCoord([1, -1])),
             UnitData::new(GridCoord([2, -1])),
         ]),
-        UnitCollection::new(vec![
-        UnitData::new(GridCoord([2, -2]))
-        ]),
+        UnitCollection::new(vec![UnitData::new(GridCoord([2, -2]))]),
         UnitCollection::new(vec![
         // UnitData::new(GridCoord([3, -3]))
         ]),
@@ -230,7 +227,7 @@ pub async fn worker_entry() {
         cats: Tribe { warriors: cats },
     };
 
-    let roads = terrain::TerrainCollection {
+    let _roads = terrain::TerrainCollection {
         pos: vec![],
         func: |a: MoveUnit| MoveUnit(a.0 / 2),
     };
@@ -255,7 +252,7 @@ pub async fn worker_entry() {
 
     let cat = quick_load(CAT_GLB, RESIZE, None);
 
-    let road = quick_load(ROAD_GLB, 1, None);
+    let _road = quick_load(ROAD_GLB, 1, None);
 
     let grass = quick_load(GRASS_GLB, RESIZE, None);
 
@@ -440,7 +437,7 @@ pub async fn worker_entry() {
 
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-                let [vvx, vvy] = get_world_rect(&matrix, &grid_matrix);
+                //let [vvx, vvy] = get_world_rect(&matrix, &grid_matrix);
 
                 //
 
@@ -751,8 +748,8 @@ const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/hex-grass.glb");
 
 pub struct NumberTextManager<'a> {
-    numbers: Vec<model_parse::ModelGpu>,
-    texture: &'a model_parse::TextureGpu,
+    pub numbers: Vec<model_parse::ModelGpu>,
+    pub texture: &'a model_parse::TextureGpu,
 }
 impl<'a> NumberTextManager<'a> {
     fn new(ctx: &WebGl2RenderingContext, texture: &'a model_parse::TextureGpu) -> Self {
@@ -766,7 +763,7 @@ impl<'a> NumberTextManager<'a> {
         Self { numbers, texture }
     }
 
-    fn get_number(
+    pub fn get_number(
         &self,
         num: i8,
     ) -> model_parse::Foo<&model_parse::TextureGpu, &model_parse::ModelGpu> {
