@@ -451,10 +451,10 @@ pub async fn main_logic<'a>(
                         let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
                         let (path, _) = ss.get_path_data(&target_cell).unwrap();
-                    
+
                         match doop
                             .await_data(grid_matrix, team_index)
-                            .resolve_attack(c, d, false,path)
+                            .resolve_attack(c, d, false, path)
                             .await
                         {
                             unit::Pair(Some(a), None) => {
@@ -557,6 +557,32 @@ pub async fn main_logic<'a>(
             //log!(format!("User selected!={:?}", mouse_world));
         }
 
+        //loop until user picks a spot for paras.
+        {
+            //Loop until the user clicks on a selectable unit in their team.
+            let current_unit = loop {
+                let data = doop.get_mouse_no_selection(team_index).await;
+                let cell = match data {
+                    Pototo::Normal(a) => a,
+                    Pototo::EndTurn => {
+                        continue;
+                        // log!("End the turn!");
+                        // break 'outer;
+                    }
+                };
+
+                if this_team.find_slow(&cell).is_none() && that_team.find_slow(&cell).is_none() {
+                    break cell;
+                }
+            };
+
+            log!("Adding unit!");
+            this_team.add(WarriorType {
+                inner: UnitData::new(current_unit),
+                val: Type::Para,
+            });
+        }
+
         for a in this_team.warriors.iter_mut() {
             a.elem.retain(|a| a.health > 0);
         }
@@ -650,8 +676,8 @@ pub fn generate_unit_possible_moves2(
         &movement::WarriorMovement,
         &grid_matrix
             .filter()
-            .chain(this_team.filter()),
-            // .chain(that_team.filter()),
+            .chain(this_team.filter())
+            .chain(that_team.para_filter()),
         &terrain::Grass,
         unit.position,
         mm,

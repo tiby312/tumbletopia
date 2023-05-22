@@ -42,20 +42,25 @@ pub struct WarriorDraw<'a> {
     model: &'a MyModel,
     drop_shadow: &'a MyModel,
     col: &'a UnitCollection<UnitData>,
+    typ: Type,
 }
+
 impl<'a> WarriorDraw<'a> {
     fn new(
         col: &'a UnitCollection<UnitData>,
         model: &'a MyModel,
         drop_shadow: &'a MyModel,
+        typ: Type,
     ) -> Self {
         Self {
             model,
             drop_shadow,
             col,
+            typ,
         }
     }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
+        let grey = self.typ == Type::Para;
         for cc in self.col.elem.iter() {
             let pos = gg.hex_axial_to_world(&cc.position);
 
@@ -67,11 +72,8 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model.draw_ext(
-                &mut v,
-                cc.health == 0 || cc.fresh != 0, /*  !cc.selectable(game)  */
-                false,
-                false,
-                true,
+                &mut v, grey, //cc.health == 0 || cc.fresh != 0, /*  !cc.selectable(game)  */
+                false, false, true,
             );
         }
     }
@@ -532,8 +534,18 @@ pub async fn worker_entry() {
                 });
 
                 for i in 0..4 {
-                    let cat_draw = WarriorDraw::new(&ggame.cats.warriors[i], &cat, &drop_shadow);
-                    let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
+                    let cat_draw = WarriorDraw::new(
+                        &ggame.cats.warriors[i],
+                        &cat,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
+                    let dog_draw = WarriorDraw::new(
+                        &ggame.dogs.warriors[i],
+                        &dog,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
 
                     disable_depth(&ctx, || {
                         //draw dropshadow
@@ -554,15 +566,35 @@ pub async fn worker_entry() {
                 }
 
                 for i in 0..4 {
-                    let cat_draw = WarriorDraw::new(&ggame.cats.warriors[i], &cat, &drop_shadow);
-                    let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
+                    let cat_draw = WarriorDraw::new(
+                        &ggame.cats.warriors[i],
+                        &cat,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
+                    let dog_draw = WarriorDraw::new(
+                        &ggame.dogs.warriors[i],
+                        &dog,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
                     cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                 }
 
                 for i in 0..4 {
-                    let cat_draw = WarriorDraw::new(&ggame.cats.warriors[i], &cat, &drop_shadow);
-                    let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[i], &dog, &drop_shadow);
+                    let cat_draw = WarriorDraw::new(
+                        &ggame.cats.warriors[i],
+                        &cat,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
+                    let dog_draw = WarriorDraw::new(
+                        &ggame.dogs.warriors[i],
+                        &dog,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
                     disable_depth(&ctx, || {
                         cat_draw.draw_health_text(
                             &grid_matrix,

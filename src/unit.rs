@@ -36,7 +36,7 @@ impl WarriorType<&UnitData> {
     pub fn priority(&self) -> i8 {
         match self.val {
             Type::Warrior => 1,
-            Type::Archer => 2,
+            Type::Para => 2,
             Type::Rook => 3,
             _ => unreachable!(),
         }
@@ -48,7 +48,7 @@ impl WarriorType<&UnitData> {
             Type::Warrior => 2,
             Type::Rook => 2,
             Type::Mage => 2,
-            Type::Archer => 2,
+            Type::Para => 2,
         }
     }
 
@@ -159,7 +159,7 @@ impl UnitData {
             stamina: MoveUnit(0),
             attacked: false,
             fresh: 0,
-            health: 0,
+            health: 1,
             selectable: true,
         }
     }
@@ -169,6 +169,18 @@ impl UnitData {
 pub enum CellSelection {
     MoveSelection(movement::PossibleMoves, Vec<GridCoord>, Vec<GridCoord>),
     BuildSelection(GridCoord),
+}
+
+pub struct ParaFilter<'a> {
+    tribe: &'a Tribe,
+}
+impl<'a> movement::Filter for ParaFilter<'a> {
+    fn filter(&self, b: &GridCoord) -> bool {
+        self.tribe.warriors[Type::Para.type_index()]
+            .elem
+            .iter()
+            .fold(true, |a, bb| a && bb.position != *b)
+    }
 }
 
 pub struct TribeFilter<'a> {
@@ -204,7 +216,7 @@ pub struct WarriorType<T> {
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {
     Warrior,
-    Archer,
+    Para,
     Rook,
     Mage,
 }
@@ -220,18 +232,18 @@ impl Type {
         let a = self;
         match a {
             Type::Warrior => 0,
-            Type::Rook => 1,
-            Type::Mage => 2,
-            Type::Archer => 3,
+            Type::Para => 1,
+            Type::Rook => 2,
+            Type::Mage => 3,
         }
     }
 
     pub fn type_index_inverse(a: usize) -> Type {
         match a {
             0 => Type::Warrior,
-            1 => Type::Rook,
-            2 => Type::Mage,
-            3 => Type::Archer,
+            1 => Type::Para,
+            2 => Type::Rook,
+            3 => Type::Mage,
             _ => unreachable!(),
         }
     }
@@ -377,7 +389,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let _move_on_kill = match (this_unit.val, target.val) {
             (Type::Rook, _) => false,
             (Type::Warrior, _) => true,
-            (Type::Archer, _) => false,
+            (Type::Para, _) => false,
             _ => {
                 todo!()
             }
@@ -534,8 +546,12 @@ impl Tribe {
 
         None
     }
+
     pub fn filter(&self) -> TribeFilter {
         TribeFilter { tribe: self }
+    }
+    pub fn para_filter(&self) -> ParaFilter {
+        ParaFilter { tribe: self }
     }
 
     pub fn reset_attacked(&mut self) {
