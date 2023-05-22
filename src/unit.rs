@@ -64,40 +64,42 @@ impl WarriorType<&UnitData> {
 
     //TODO additionally return a animation??.
     pub fn get_attack_data(&self, ff: impl Filter + Copy) -> impl Iterator<Item = GridCoord> {
-        let a = self;
-        let first = if let Type::Warrior = a.val {
-            Some(
-                a.position
-                    .to_cube()
-                    .ring(1)
-                    .filter(move |o| ff.filter(&o.to_axial())),
-            )
-        } else {
-            None
-        };
+        [].into_iter()
 
-        let second = if let Type::Rook = a.val {
-            Some(a.position.to_cube().rays(2, 5, ff))
-        } else {
-            None
-        };
+        // let a = self;
+        // let first = if let Type::Warrior = a.val {
+        //     Some(
+        //         a.position
+        //             .to_cube()
+        //             .ring(1)
+        //             .filter(move |o| ff.filter(&o.to_axial())),
+        //     )
+        // } else {
+        //     None
+        // };
 
-        let third = if let Type::Archer = a.val {
-            Some(
-                a.position
-                    .to_cube()
-                    .ring(2)
-                    .filter(move |o| ff.filter(&o.to_axial())),
-            )
-        } else {
-            None
-        };
-        first
-            .into_iter()
-            .flatten()
-            .chain(second.into_iter().flatten())
-            .chain(third.into_iter().flatten())
-            .map(|x| x.to_axial())
+        // let second = if let Type::Rook = a.val {
+        //     Some(a.position.to_cube().rays(2, 5, ff))
+        // } else {
+        //     None
+        // };
+
+        // let third = if let Type::Archer = a.val {
+        //     Some(
+        //         a.position
+        //             .to_cube()
+        //             .ring(2)
+        //             .filter(move |o| ff.filter(&o.to_axial())),
+        //     )
+        // } else {
+        //     None
+        // };
+        // first
+        //     .into_iter()
+        //     .flatten()
+        //     .chain(second.into_iter().flatten())
+        //     .chain(third.into_iter().flatten())
+        //     .map(|x| x.to_axial())
     }
 
     //TODO use this instead of gridcoord when you know the type!!!!!
@@ -349,6 +351,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         mut this_unit: WarriorType<UnitData>,
         mut target: WarriorType<UnitData>,
         support_attack: bool,
+        path: &movement::Path,
     ) -> Pair {
         //TODO store somewhere
         // let damage = 1;
@@ -389,33 +392,28 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         assert!(!support_attack);
         // if move_on_kill {
         //     //TODO do this but after a delay maybe?
-        //     //this_unit.health = (this_unit.health + 1).min(this_unit.val.max_health());
+        //this_unit.health = (this_unit.health + 1).min(this_unit.val.max_health());
 
-        //     let path = movement::Path::new();
-        //     let m = this_unit.position.dir_to(&target.position);
-        //     let path = path.add(m).unwrap();
-        //     this_unit.stamina.0 -= path.total_cost().0;
+        // let path = movement::Path::new();
+        // let m = this_unit.position.dir_to(&target.position);
+        // let path = path.add(m).unwrap();
+        this_unit.stamina.0 -= path.total_cost().0;
 
-        //     let it = animation::movement(this_unit.position, path, self.grid_matrix);
-        //     let aa = AnimationOptions::attack([this_unit, target]);
-        //     let [mut this_unit, target] = self.wait_animation(it, aa).await;
+        let it = animation::movement(this_unit.position, *path, self.grid_matrix);
+        let aa = AnimationOptions::attack([this_unit, target]);
+        let [mut this_unit, target] = self.wait_animation(it, aa).await;
 
-        //     //todo kill target animate
-        //     this_unit.position = target.position;
-
-        //     return Pair(Some(this_unit),None)
+        //todo kill target animate
+        this_unit.position = target.position;
+        this_unit.stamina.0 = 0;
+        return Pair(Some(this_unit), None);
         // }
 
-        let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-        let aa = AnimationOptions::attack([this_unit, target]);
-        let [this_unit, target] = self.wait_animation(it, aa).await;
+        // let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
+        // let aa = AnimationOptions::attack([this_unit, target]);
+        // let [this_unit, target] = self.wait_animation(it, aa).await;
 
-        //this_unit.fresh=2;
-
-        //    this_unit
-        //};
-        return Pair(Some(this_unit), Some(target));
-        //}
+        // return Pair(Some(this_unit), Some(target));
 
         // let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
         // let aa = AnimationOptions::attack([this_unit, target]);

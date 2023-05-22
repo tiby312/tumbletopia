@@ -412,7 +412,7 @@ pub async fn main_logic<'a>(
                 if let Some(target) = that_team.find_slow(&target_cell) {
                     let target_coord = target.slim();
 
-                    if !current_attack && movement::contains_coord(attack.iter(), &target_cell) {
+                    if !current_attack && movement::contains_coord(ss.iter_coords(), &target_cell) {
                         let d = that_team.lookup_take(target_coord);
 
                         // //Attack using supports.
@@ -450,9 +450,11 @@ pub async fn main_logic<'a>(
 
                         let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
+                        let (path, _) = ss.get_path_data(&target_cell).unwrap();
+                    
                         match doop
                             .await_data(grid_matrix, team_index)
-                            .resolve_attack(c, d, false)
+                            .resolve_attack(c, d, false,path)
                             .await
                         {
                             unit::Pair(Some(a), None) => {
@@ -468,9 +470,9 @@ pub async fn main_logic<'a>(
                             }
                             unit::Pair(Some(a), Some(b)) => {
                                 //current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
-
-                                this_team.add(a);
-                                that_team.add(b);
+                                unreachable!();
+                                // this_team.add(a);
+                                // that_team.add(b);
 
                                 break 'outer;
                             }
@@ -629,17 +631,18 @@ pub fn generate_unit_possible_moves2(
     grid_matrix: &GridMatrix,
     extra_attack: Option<Type>,
 ) -> CellSelection {
-    let j = if let Some(_) = unit
-        .position
-        .to_cube()
-        .ring(1)
-        .map(|s| that_team.find_slow(&s.to_axial()).is_some())
-        .find(|a| *a)
-    {
-        1
-    } else {
-        unit.stamina.0
-    };
+    // let j = if let Some(_) = unit
+    //     .position
+    //     .to_cube()
+    //     .ring(1)
+    //     .map(|s| that_team.find_slow(&s.to_axial()).is_some())
+    //     .find(|a| *a)
+    // {
+    //     1
+    // } else {
+    //     unit.stamina.0
+    // };
+    let j = unit.stamina.0;
 
     let mm = MoveUnit(j);
 
@@ -647,8 +650,8 @@ pub fn generate_unit_possible_moves2(
         &movement::WarriorMovement,
         &grid_matrix
             .filter()
-            .chain(this_team.filter())
-            .chain(that_team.filter()),
+            .chain(this_team.filter()),
+            // .chain(that_team.filter()),
         &terrain::Grass,
         unit.position,
         mm,
