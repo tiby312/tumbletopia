@@ -497,8 +497,8 @@ pub async fn main_logic<'a>(
                         let _ = this_team.lookup_take(a);
                         //assert!(t.health == 0);
 
-                        this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
-                        this_unit.attacked = false;
+                        //this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
+                        //this_unit.attacked = false;
 
                         //extra_attack = Some(t.val);
                     }
@@ -576,7 +576,6 @@ pub async fn main_logic<'a>(
                 }
             };
 
-            log!("Adding unit!");
             this_team.add(WarriorType {
                 inner: UnitData::new(current_unit),
                 val: Type::Para,
