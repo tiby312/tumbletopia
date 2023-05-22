@@ -485,6 +485,9 @@ pub async fn main_logic<'a>(
                         continue;
                     }
                 } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
+
+                    
+
                     let (path, _) = ss.get_path_data(&target_cell).unwrap();
                     let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
@@ -494,13 +497,13 @@ pub async fn main_logic<'a>(
                         .await;
 
                     if let Some(a) = this_team.find_slow(&target_cell).map(|a| a.slim()) {
-                        let t = this_team.lookup_take(a);
-                        assert!(t.health == 0);
+                        let _ = this_team.lookup_take(a);
+                        //assert!(t.health == 0);
 
                         this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
                         this_unit.attacked = false;
 
-                        extra_attack = Some(t.val);
+                        //extra_attack = Some(t.val);
                     }
 
                     current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
@@ -676,7 +679,7 @@ pub fn generate_unit_possible_moves2(
         &movement::WarriorMovement,
         &grid_matrix
             .filter()
-            .chain(this_team.filter())
+            .chain(this_team.not_para_filter())
             .chain(that_team.para_filter()),
         &terrain::Grass,
         unit.position,
