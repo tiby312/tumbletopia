@@ -1,6 +1,6 @@
 use crate::{
     ace::{AnimationWrapper, UnwrapMe},
-    movement::Filter,
+    movement::{Filter, FilterRes, NoFilter},
 };
 
 use super::*;
@@ -171,38 +171,38 @@ pub enum CellSelection {
     BuildSelection(GridCoord),
 }
 
-pub struct NotParaFilter<'a>{
+pub struct NotParaFilter<'a> {
     tribe: &'a Tribe,
-
 }
 impl<'a> movement::Filter for NotParaFilter<'a> {
-    fn filter(&self, b: &GridCoord) -> bool {
+    fn filter(&self, b: &GridCoord) -> FilterRes {
         self.tribe
-        .warriors
-        .iter()
-        .enumerate()
-        .filter_map(|(i,a)|{
-            if Type::type_index_inverse(i)==Type::Para{
-                None
-            }else{
-                Some(a)
-            }
-        })
-        .map(|a| a.filter().filter(b))
-        .fold(true, |a, b| a && b)
+            .warriors
+            .iter()
+            .enumerate()
+            .filter_map(|(i, a)| {
+                if Type::type_index_inverse(i) == Type::Para {
+                    None
+                } else {
+                    Some(a)
+                }
+            })
+            .map(|a| a.filter().filter(b))
+            .fold(FilterRes::Accept, |a, b| a.and(b))
     }
 }
-
 
 pub struct ParaFilter<'a> {
     tribe: &'a Tribe,
 }
 impl<'a> movement::Filter for ParaFilter<'a> {
-    fn filter(&self, b: &GridCoord) -> bool {
+    fn filter(&self, b: &GridCoord) -> FilterRes {
         self.tribe.warriors[Type::Para.type_index()]
             .elem
             .iter()
-            .fold(true, |a, bb| a && bb.position != *b)
+            .fold(FilterRes::Accept, |a, bb| {
+                a.and(FilterRes::from_bool(bb.position != *b))
+            })
     }
 }
 
@@ -210,12 +210,12 @@ pub struct TribeFilter<'a> {
     tribe: &'a Tribe,
 }
 impl<'a> movement::Filter for TribeFilter<'a> {
-    fn filter(&self, b: &GridCoord) -> bool {
+    fn filter(&self, b: &GridCoord) -> FilterRes {
         self.tribe
             .warriors
             .iter()
             .map(|a| a.filter().filter(b))
-            .fold(true, |a, b| a && b)
+            .fold(FilterRes::Accept, |a, b| a.and(b))
     }
 }
 
@@ -578,7 +578,6 @@ impl Tribe {
         NotParaFilter { tribe: self }
     }
 
-
     pub fn para_filter(&self) -> ParaFilter {
         ParaFilter { tribe: self }
     }
@@ -683,8 +682,8 @@ pub struct SingleFilter<'a> {
     a: &'a GridCoord,
 }
 impl<'a> movement::Filter for SingleFilter<'a> {
-    fn filter(&self, a: &GridCoord) -> bool {
-        self.a != a
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        FilterRes::from_bool(self.a != a)
     }
 }
 
@@ -692,13 +691,15 @@ pub struct UnitCollectionFilter<'a, T> {
     a: &'a [T],
 }
 impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
-    fn filter(&self, b: &GridCoord) -> bool {
-        self.a
-            .iter()
-            .filter(|a| a.health != 0)
-            .filter(|a| a.fresh == 0)
-            .find(|a| a.get_pos() == b)
-            .is_none()
+    fn filter(&self, b: &GridCoord) -> FilterRes {
+        FilterRes::from_bool(
+            self.a
+                .iter()
+                .filter(|a| a.health != 0)
+                .filter(|a| a.fresh == 0)
+                .find(|a| a.get_pos() == b)
+                .is_none(),
+        )
     }
 }
 

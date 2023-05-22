@@ -1,4 +1,4 @@
-use crate::movement::{Filter, GridCoord};
+use crate::movement::{Filter, FilterRes, GridCoord};
 
 // pub const OFFSETS: [[i16; 3]; 6] = [
 //     [0, 1, -1],
@@ -79,7 +79,7 @@ impl Cube {
         OFFSETS.iter().flat_map(move |&i| {
             (1..end)
                 .map(move |a| (a, o.add(Cube(i).scale(a))))
-                .take_while(move |(_, o)| ff.filter(&o.to_axial()))
+                .take_while(move |(_, o)| ff.filter(&o.to_axial()) == FilterRes::Accept)
                 .filter(move |(a, _)| *a >= start)
                 .map(|(_, a)| a)
         })

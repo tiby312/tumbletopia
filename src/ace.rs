@@ -485,9 +485,6 @@ pub async fn main_logic<'a>(
                         continue;
                     }
                 } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
-
-                    
-
                     let (path, _) = ss.get_path_data(&target_cell).unwrap();
                     let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
@@ -680,16 +677,21 @@ pub fn generate_unit_possible_moves2(
         &grid_matrix
             .filter()
             .chain(this_team.not_para_filter())
-            .chain(that_team.para_filter()),
+            .chain(
+                that_team
+                    .para_filter()
+                    .chain(that_team.not_para_filter().extend()),
+            ),
         &terrain::Grass,
         unit.position,
         mm,
     );
 
-    let friendly_coords = unit
-        .get_friendly_data()
-        .filter(|a| that_team.filter().chain(grid_matrix.filter()).filter(a))
-        .collect();
+    // let friendly_coords = unit
+    //     .get_friendly_data()
+    //     .filter(|a| that_team.filter().chain(grid_matrix.filter()).filter(a))
+    //     .collect();
+    let friendly_coords = vec![];
 
     let ttt = &this_team.filter().chain(grid_matrix.filter());
     let ee = extra_attack.map(|e| {

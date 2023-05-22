@@ -1,3 +1,5 @@
+use crate::movement::FilterRes;
+
 use super::*;
 
 ///A way to map a grid to world coordinates and vice versa
@@ -8,8 +10,9 @@ pub struct GridMatrix {
 
 pub struct GridFilter {}
 impl movement::Filter for GridFilter {
-    fn filter(&self, a: &GridCoord) -> bool {
-        world().find(|b| b.to_axial() == *a).is_some()
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        FilterRes::from_bool(world().find(|b| b.to_axial() == *a).is_some())
+
         // let x = a.0[0];
         // let y = a.0[1];
 

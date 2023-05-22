@@ -122,7 +122,7 @@ impl MoveUnit {
 }
 
 impl<T: Filter> Filter for &T {
-    fn filter(&self, a: &GridCoord) -> bool {
+    fn filter(&self, a: &GridCoord) -> FilterRes {
         (**self).filter(a)
     }
 }
@@ -131,26 +131,61 @@ impl<T: Filter> Filter for &T {
 pub struct NoFilter;
 
 impl Filter for NoFilter {
-    fn filter(&self, _: &GridCoord) -> bool {
-        true
+    fn filter(&self, _: &GridCoord) -> FilterRes {
+        FilterRes::from_bool(true)
     }
 }
 
 pub struct FilterThese<'a>(pub &'a [GridCoord]);
 
 impl Filter for FilterThese<'_> {
-    fn filter(&self, a: &GridCoord) -> bool {
-        self.0.contains(a)
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        FilterRes::from_bool(self.0.contains(a))
+    }
+}
+
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+pub enum FilterRes {
+    Accept,
+    AcceptAndStop,
+    Stop,
+}
+impl FilterRes {
+    pub fn and(self, other: FilterRes) -> FilterRes {
+        match (self, other) {
+            (FilterRes::Accept, FilterRes::Accept) => FilterRes::Accept,
+            (FilterRes::Accept, FilterRes::AcceptAndStop) => FilterRes::AcceptAndStop,
+            (FilterRes::Accept, FilterRes::Stop) => FilterRes::Stop,
+            (FilterRes::AcceptAndStop, FilterRes::Accept) => FilterRes::AcceptAndStop,
+            (FilterRes::AcceptAndStop, FilterRes::AcceptAndStop) => FilterRes::AcceptAndStop,
+            (FilterRes::AcceptAndStop, FilterRes::Stop) => FilterRes::Stop,
+            (FilterRes::Stop, FilterRes::Accept) => FilterRes::Stop,
+            (FilterRes::Stop, FilterRes::AcceptAndStop) => FilterRes::Stop,
+            (FilterRes::Stop, FilterRes::Stop) => FilterRes::Stop,
+        }
+    }
+    pub fn from_bool(val: bool) -> Self {
+        if val {
+            FilterRes::Accept
+        } else {
+            FilterRes::Stop
+        }
     }
 }
 
 pub trait Filter {
-    fn filter(&self, a: &GridCoord) -> bool;
+    fn filter(&self, a: &GridCoord) -> FilterRes;
     fn chain<K: Filter>(self, other: K) -> Chain<Self, K>
     where
         Self: Sized,
     {
         Chain { a: self, b: other }
+    }
+    fn extend(self) -> ExtendFilter<Self>
+    where
+        Self: Sized,
+    {
+        ExtendFilter { filter: self }
     }
 }
 pub struct Chain<A, B> {
@@ -158,8 +193,21 @@ pub struct Chain<A, B> {
     b: B,
 }
 impl<A: Filter, B: Filter> Filter for Chain<A, B> {
-    fn filter(&self, a: &GridCoord) -> bool {
-        self.a.filter(a) && self.b.filter(a)
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        self.a.filter(a).and(self.b.filter(a))
+    }
+}
+
+pub struct ExtendFilter<F> {
+    filter: F,
+}
+impl<A: Filter> Filter for ExtendFilter<A> {
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        match self.filter.filter(a) {
+            FilterRes::Accept => FilterRes::Accept,
+            FilterRes::AcceptAndStop => FilterRes::AcceptAndStop,
+            FilterRes::Stop => FilterRes::AcceptAndStop,
+        }
     }
 }
 
@@ -243,9 +291,11 @@ impl PossibleMoves {
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
-            if !filter.filter(&target_pos) {
-                continue;
-            }
+            let stop = match filter.filter(&target_pos) {
+                FilterRes::Stop => continue,
+                FilterRes::AcceptAndStop => true,
+                FilterRes::Accept => false,
+            };
 
             //We must have remaining moves to satisfy ALL move cost.
             // if remaining_moves.0<current_path.move_cost(a).0{
@@ -283,7 +333,9 @@ impl PossibleMoves {
                 continue;
             }
 
-            self.explore_path(movement, filter, mo, current_path.add(a).unwrap(), rr)
+            if !stop {
+                self.explore_path(movement, filter, mo, current_path.add(a).unwrap(), rr)
+            }
         }
     }
 
