@@ -305,6 +305,13 @@ pub async fn main_logic<'a>(
                 if let Some(unit) = that_team.find_slow(&cell) {
                     break TeamType::ThatTeam(unit.slim());
                 }
+
+                //Else we just place a para and exit turn.
+                this_team.add(WarriorType {
+                    inner: UnitData::new(cell),
+                    val: Type::Para,
+                });
+                break 'outer;
             };
 
             #[derive(Copy, Clone, Debug)]
@@ -558,29 +565,29 @@ pub async fn main_logic<'a>(
         }
 
         //loop until user picks a spot for paras.
-        {
-            //Loop until the user clicks on a selectable unit in their team.
-            let current_unit = loop {
-                let data = doop.get_mouse_no_selection(team_index).await;
-                let cell = match data {
-                    Pototo::Normal(a) => a,
-                    Pototo::EndTurn => {
-                        continue;
-                        // log!("End the turn!");
-                        // break 'outer;
-                    }
-                };
+        // {
+        //     //Loop until the user clicks on a selectable unit in their team.
+        //     let current_unit = loop {
+        //         let data = doop.get_mouse_no_selection(team_index).await;
+        //         let cell = match data {
+        //             Pototo::Normal(a) => a,
+        //             Pototo::EndTurn => {
+        //                 continue;
+        //                 // log!("End the turn!");
+        //                 // break 'outer;
+        //             }
+        //         };
 
-                if this_team.find_slow(&cell).is_none() && that_team.find_slow(&cell).is_none() {
-                    break cell;
-                }
-            };
+        //         if this_team.find_slow(&cell).is_none() && that_team.find_slow(&cell).is_none() {
+        //             break cell;
+        //         }
+        //     };
 
-            this_team.add(WarriorType {
-                inner: UnitData::new(current_unit),
-                val: Type::Para,
-            });
-        }
+        //     this_team.add(WarriorType {
+        //         inner: UnitData::new(current_unit),
+        //         val: Type::Para,
+        //     });
+        // }
 
         for a in this_team.warriors.iter_mut() {
             a.elem.retain(|a| a.health > 0);
