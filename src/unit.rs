@@ -180,14 +180,17 @@ impl<'a> movement::Filter for NotParaFilter<'a> {
             .warriors
             .iter()
             .enumerate()
-            .filter_map(|(i, a)| {
+            .map(|(i, a)| {
                 if Type::type_index_inverse(i) == Type::Para {
-                    None
+                    if FilterRes::Stop == a.filter().filter(b) {
+                        FilterRes::AcceptAndStop
+                    } else {
+                        FilterRes::Accept
+                    }
                 } else {
-                    Some(a)
+                    a.filter().filter(b)
                 }
             })
-            .map(|a| a.filter().filter(b))
             .fold(FilterRes::Accept, |a, b| a.and(b))
     }
 }
