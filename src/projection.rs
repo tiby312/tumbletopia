@@ -14,10 +14,10 @@ pub fn get_world_rect(view_projection: &Matrix4<f32>, grid: &GridMatrix) -> [[i1
     r.grow_to_fit_point(c.into());
     r.grow_to_fit_point(d.into());
 
-    let a = grid.to_grid([r.x.start, r.y.start].into());
-    let b = grid.to_grid([r.x.end, r.y.end].into());
+    let a = grid.world_to_hex([r.x.start, r.y.start].into()).0;
+    let b = grid.world_to_hex([r.x.end, r.y.end].into()).0;
 
-    [[a.x, b.x + 1], [a.y, b.y + 1]]
+    [[a[0], b[0] + 1], [a[1], b[1] + 1]]
 }
 
 pub fn clip_to_world(clip: [f32; 2], view_projection: &Matrix4<f32>) -> [f32; 2] {
@@ -62,7 +62,9 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> cgmath::Matrix4<f32
     let start_zoom = 800.0;
 
     let cam = Point3::new(0.0, 0.0, 0.0);
+    //let dir = Point3::new(-1.5, -0.0, -2.0);
     let dir = Point3::new(-1.0, -1.0, -2.0);
+
     let up = Vector3::new(0.0, 0.0, 1.0);
     let g = cgmath::Matrix4::look_at(cam, dir, up).inverse();
 

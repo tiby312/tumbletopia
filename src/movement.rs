@@ -6,39 +6,25 @@ pub trait MoveStrategy {
 }
 pub struct WarriorMovement;
 impl MoveStrategy for WarriorMovement {
-    type It = std::array::IntoIter<Moves, 8>;
+    type It = std::array::IntoIter<Moves, 6>;
     fn adjacent() -> Self::It {
-        use Moves::*;
-        [Up, UpLeft, Left, DownLeft, Down, DownRight, Right, UpRight].into_iter()
+        [0, 1, 2, 3, 4, 5].map(|dir| Moves { dir }).into_iter()
     }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Moves {
-    Up,
-    UpLeft,
-    Left,
-    DownLeft,
-    Down,
-    DownRight,
-    Right,
-    UpRight,
+pub struct Moves {
+    dir: u8,
 }
+
 impl Moves {
     pub fn to_relative(&self) -> GridCoord {
-        use Moves::*;
-        GridCoord(match self {
-            Up => [0, 1],
-            UpLeft => [-1, 1],
-            Left => [-1, 0],
-            DownLeft => [-1, -1],
-            Down => [0, -1],
-            DownRight => [1, -1],
-            Right => [1, 0],
-            UpRight => [1, 1],
-        })
+        hex::Cube(hex::OFFSETS[self.dir as usize]).to_axial()
     }
 }
+
+//TODO a direction is only 6 values. Left over values when
+//put into 3 bits.
 #[derive(Copy, Clone, Debug)]
 pub struct Path {
     //TODO optimize this to be just one 64bit integer?
@@ -49,10 +35,14 @@ pub struct Path {
 impl Path {
     pub fn new() -> Self {
         Path {
-            moves: [Moves::Up; 20],
+            moves: [Moves { dir: 0 }; 20],
             num_moves: 0,
         }
     }
+    pub fn into_moves(self) -> impl Iterator<Item = Moves> {
+        self.moves.into_iter().take(self.num_moves as usize)
+    }
+
     pub fn get_moves(&self) -> &[Moves] {
         &self.moves[0..self.num_moves as usize]
     }
@@ -80,20 +70,38 @@ impl Path {
         }
         MoveUnit(total)
     }
-    fn move_cost(&self, m: Moves) -> MoveUnit {
-        use Moves::*;
-        match m {
-            UpLeft | DownLeft | UpRight | DownRight => MoveUnit(3),
-            _ => MoveUnit(2),
-        }
+    fn move_cost(&self, _: Moves) -> MoveUnit {
+        MoveUnit(1)
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
+    pub fn dir_to(&self, other: &GridCoord) -> Moves {
+        let offset = other.sub(self);
+        assert!(offset.0[0].abs() <= 1);
+        assert!(offset.0[1].abs() <= 1);
+        let offset = offset.to_cube();
+
+        hex::OFFSETS
+            .iter()
+            .enumerate()
+            .find(|(_, x)| **x == offset.0)
+            .map(|(i, _)| Moves { dir: i as u8 })
+            .unwrap()
+    }
+    pub fn to_cube(self) -> hex::Cube {
+        let a = self.0;
+        hex::Cube([a[0], a[1], -a[0] - a[1]])
+    }
     fn advance(self, m: Moves) -> GridCoord {
         self.add(m.to_relative())
+    }
+    fn sub(mut self, o: &GridCoord) -> Self {
+        self.0[0] -= o.0[0];
+        self.0[1] -= o.0[1];
+        self
     }
     fn add(mut self, o: GridCoord) -> Self {
         self.0[0] += o.0[0];
@@ -113,13 +121,71 @@ impl MoveUnit {
     }
 }
 
+impl<T: Filter> Filter for &T {
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        (**self).filter(a)
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct NoFilter;
+
+impl Filter for NoFilter {
+    fn filter(&self, _: &GridCoord) -> FilterRes {
+        FilterRes::from_bool(true)
+    }
+}
+
+pub struct FilterThese<'a>(pub &'a [GridCoord]);
+
+impl Filter for FilterThese<'_> {
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        FilterRes::from_bool(self.0.contains(a))
+    }
+}
+
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+pub enum FilterRes {
+    Accept,
+    AcceptAndStop,
+    Stop,
+}
+impl FilterRes {
+    pub fn and(self, other: FilterRes) -> FilterRes {
+        match (self, other) {
+            (FilterRes::Accept, FilterRes::Accept) => FilterRes::Accept,
+            (FilterRes::Accept, FilterRes::AcceptAndStop) => FilterRes::AcceptAndStop,
+            (FilterRes::Accept, FilterRes::Stop) => FilterRes::Stop,
+            (FilterRes::AcceptAndStop, FilterRes::Accept) => FilterRes::AcceptAndStop,
+            (FilterRes::AcceptAndStop, FilterRes::AcceptAndStop) => FilterRes::AcceptAndStop,
+            (FilterRes::AcceptAndStop, FilterRes::Stop) => FilterRes::Stop,
+            (FilterRes::Stop, FilterRes::Accept) => FilterRes::Stop,
+            (FilterRes::Stop, FilterRes::AcceptAndStop) => FilterRes::Stop,
+            (FilterRes::Stop, FilterRes::Stop) => FilterRes::Stop,
+        }
+    }
+    pub fn from_bool(val: bool) -> Self {
+        if val {
+            FilterRes::Accept
+        } else {
+            FilterRes::Stop
+        }
+    }
+}
+
 pub trait Filter {
-    fn filter(&self, a: &GridCoord) -> bool;
+    fn filter(&self, a: &GridCoord) -> FilterRes;
     fn chain<K: Filter>(self, other: K) -> Chain<Self, K>
     where
         Self: Sized,
     {
         Chain { a: self, b: other }
+    }
+    fn extend(self) -> ExtendFilter<Self>
+    where
+        Self: Sized,
+    {
+        ExtendFilter { filter: self }
     }
 }
 pub struct Chain<A, B> {
@@ -127,8 +193,21 @@ pub struct Chain<A, B> {
     b: B,
 }
 impl<A: Filter, B: Filter> Filter for Chain<A, B> {
-    fn filter(&self, a: &GridCoord) -> bool {
-        self.a.filter(a) && self.b.filter(a)
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        self.a.filter(a).and(self.b.filter(a))
+    }
+}
+
+pub struct ExtendFilter<F> {
+    filter: F,
+}
+impl<A: Filter> Filter for ExtendFilter<A> {
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        match self.filter.filter(a) {
+            FilterRes::Accept => FilterRes::Accept,
+            FilterRes::AcceptAndStop => FilterRes::AcceptAndStop,
+            FilterRes::Stop => FilterRes::AcceptAndStop,
+        }
     }
 }
 
@@ -154,7 +233,6 @@ impl PossibleMoves {
         coord: GridCoord,
         remaining_moves: MoveUnit,
     ) -> Self {
-        //A typical move costs 2, so scale everything as if it cost 1.
         let remaining_moves = MoveUnit(remaining_moves.0);
         let mut p = PossibleMoves {
             moves: vec![],
@@ -184,9 +262,9 @@ impl PossibleMoves {
         current_path: Path,
         remaining_moves: MoveUnit,
     ) {
-        if remaining_moves.0 == 0 {
-            return;
-        }
+        // if remaining_moves.0 == 0 {
+        //     return;
+        // }
 
         // 2-OG
         // warrior has 2 move points
@@ -213,9 +291,11 @@ impl PossibleMoves {
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
-            if !filter.filter(&target_pos) {
-                continue;
-            }
+            let stop = match filter.filter(&target_pos) {
+                FilterRes::Stop => continue,
+                FilterRes::AcceptAndStop => true,
+                FilterRes::Accept => false,
+            };
 
             //We must have remaining moves to satisfy ALL move cost.
             // if remaining_moves.0<current_path.move_cost(a).0{
@@ -229,18 +309,22 @@ impl PossibleMoves {
             //TODO road should HALF the cost?
             let cost = mo.foop(target_pos, move_cost);
 
+            //todo!("Need to allow cardinal movement at 1 point. Not working???");
+
             //as long as we have SOME remainv moves, we can go to this square even
             //if it is really expensive.
             // if !(remaining_moves.0 > 0) {
             //     continue;
             // }
-            if !(remaining_moves.0 > 1) {
-                continue;
-            }
-
-            // if !(remaining_moves.0 >= cost.0) {
+            //Allow 1 point remainder!!!!
+            // if remaining_moves.0 +2 <= 2 {
             //     continue;
             // }
+
+            if !(remaining_moves.0 >= cost.0) {
+                //-1
+                continue;
+            }
 
             //subtract move cost
             let rr = remaining_moves.sub(cost);
@@ -249,7 +333,9 @@ impl PossibleMoves {
                 continue;
             }
 
-            self.explore_path(movement, filter, mo, current_path.add(a).unwrap(), rr)
+            if !stop {
+                self.explore_path(movement, filter, mo, current_path.add(a).unwrap(), rr)
+            }
         }
     }
 

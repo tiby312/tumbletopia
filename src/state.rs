@@ -1,4 +1,4 @@
-use crate::gameplay::Zoo;
+use crate::{gameplay::Zoo, grids::GridMatrix};
 
 use super::*;
 
@@ -201,7 +201,6 @@ fn handle_one_execution(
 }
 
 fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()>> {
-
     select_unit()
         .map(move |c, stuff| {
             gameplay::looper(c, |c, stuff| {
@@ -221,20 +220,17 @@ fn handle_player_move_inner() -> impl GameStepper<GameHandle, Result = Option<()
 
                 //Now check and see if there are any additional moves possible, if so
                 //keep the unit selected and loop.
-                v.map(|a, game| {
-                    match a {
-                        Some(Some(a)) => {
-                            let unit = game.this_team.lookup(a);
+                v.map(|a, game| match a {
+                    Some(Some(a)) => {
+                        let unit = game.this_team.lookup(a);
 
-                            if Warrior::has_possible_moves(&unit,game)
-                            {
-                                gameplay::LooperRes::Loop(a)
-                            } else {
-                                gameplay::LooperRes::Finish(())
-                            }
+                        if Warrior::has_possible_moves(&unit, game) {
+                            gameplay::LooperRes::Loop(a)
+                        } else {
+                            gameplay::LooperRes::Finish(())
                         }
-                        _ => gameplay::LooperRes::Finish(()),
                     }
+                    _ => gameplay::LooperRes::Finish(()),
                 })
             })
         })
@@ -434,7 +430,10 @@ pub fn team_view(a: [&mut Tribe; 2], ind: usize) -> [&mut Tribe; 2] {
     }
 }
 
-pub fn generate_unit_possible_moves(unit: &WarriorPointer<&Warrior>, game: &Stuff) -> CellSelection {
+pub fn generate_unit_possible_moves(
+    unit: &WarriorPointer<&Warrior>,
+    game: &Stuff,
+) -> CellSelection {
     fn get_cat_move_attack_matrix(
         movement: (i8, i8),
         cat: &Warrior,

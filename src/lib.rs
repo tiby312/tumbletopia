@@ -1,7 +1,9 @@
-use axgeom::vec2same;
+use ace::AnimationOptions;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 
+use futures::{SinkExt, StreamExt};
 use gloo::console::log;
+use grids::GridMatrix;
 use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
 use serde::{Deserialize, Serialize};
@@ -10,7 +12,7 @@ use shogo::utils;
 use wasm_bindgen::prelude::*;
 pub mod animation;
 pub mod dom;
-pub mod gameplay;
+//pub mod gameplay;
 pub mod grids;
 pub mod model_parse;
 pub mod movement;
@@ -20,7 +22,13 @@ pub mod terrain;
 pub mod util;
 use dom::MEvent;
 use projection::*;
-pub mod state;
+pub mod ace;
+pub mod hex;
+pub mod unit;
+
+use unit::*;
+
+//pub mod state;
 //pub mod logic;
 pub const RESIZE: usize = 10;
 
@@ -33,27 +41,40 @@ enum UiButton {
 pub struct WarriorDraw<'a> {
     model: &'a MyModel,
     drop_shadow: &'a MyModel,
-    col: &'a UnitCollection<Warrior>,
+    col: &'a UnitCollection<UnitData>,
+    typ: Type,
 }
+
 impl<'a> WarriorDraw<'a> {
-    fn new(col: &'a UnitCollection<Warrior>, model: &'a MyModel, drop_shadow: &'a MyModel) -> Self {
+    fn new(
+        col: &'a UnitCollection<UnitData>,
+        model: &'a MyModel,
+        drop_shadow: &'a MyModel,
+        typ: Type,
+    ) -> Self {
         Self {
             model,
             drop_shadow,
             col,
+            typ,
         }
     }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
+        let grey = self.typ == Type::Para;
         for cc in self.col.elem.iter() {
-            let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
+            let pos = gg.hex_axial_to_world(&cc.position);
+
+            // let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
 
             let t = matrix::translation(pos[0], pos[1], 0.0);
             let s = matrix::scale(1.0, 1.0, 1.0);
             let m = matrix.chain(t).chain(s).generate();
             let mut v = draw_sys.view(m.as_ref());
 
-            self.model
-                .draw_ext(&mut v, !cc.selectable(), false, false, true);
+            self.model.draw_ext(
+                &mut v, grey, //cc.health == 0 || cc.fresh != 0, /*  !cc.selectable(game)  */
+                false, false, true,
+            );
         }
     }
 
@@ -63,8 +84,8 @@ impl<'a> WarriorDraw<'a> {
         draw_sys: &mut ShaderSystem,
         matrix: &Matrix4<f32>,
     ) {
-        for &GridCoord(a) in self.col.elem.iter().map(|a| &a.position) {
-            let pos: [f32; 2] = gg.to_world_topleft(a.into()).into();
+        for a in self.col.elem.iter().map(|a| &a.position) {
+            let pos: [f32; 2] = gg.hex_axial_to_world(a).into();
             let t = matrix::translation(pos[0], pos[1], 1.0);
 
             let m = matrix.chain(t).generate();
@@ -76,325 +97,67 @@ impl<'a> WarriorDraw<'a> {
 
     fn draw_health_text(
         &self,
-        gg: &grids::GridMatrix,
-        health_numbers: &NumberTextManager,
-        view_proj: &Matrix4<f32>,
-        proj: &Matrix4<f32>,
-        draw_sys: &mut ShaderSystem,
+        _gg: &grids::GridMatrix,
+        _health_numbers: &NumberTextManager,
+        _view_proj: &Matrix4<f32>,
+        _proj: &Matrix4<f32>,
+        _draw_sys: &mut ShaderSystem,
     ) {
         //draw text
-        for ccat in self.col.elem.iter() {
-            let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
+        // for ccat in self.col.elem.iter() {
+        //     let pos: [f32; 2] = gg.hex_axial_to_world(&ccat.position).into();
 
-            let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
+        //     let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
 
-            let jj = view_proj.chain(t).generate();
-            let jj: &[f32; 16] = jj.as_ref();
-            let tt = matrix::translation(jj[12], jj[13], jj[14]);
-            let new_proj = proj.clone().chain(tt);
+        //     let jj = view_proj.chain(t).generate();
+        //     let jj: &[f32; 16] = jj.as_ref();
+        //     let tt = matrix::translation(jj[12], jj[13], jj[14]);
+        //     let new_proj = proj.clone().chain(tt);
 
-            let s = matrix::scale(5.0, 5.0, 5.0);
-            let m = new_proj.chain(s).generate();
+        //     let s = matrix::scale(5.0, 5.0, 5.0);
+        //     let m = new_proj.chain(s).generate();
 
-            let nn = health_numbers.get_number(ccat.health);
-            let mut v = draw_sys.view(m.as_ref());
-            nn.draw_ext(&mut v, false, false, true, false);
+        //     let nn = health_numbers.get_number(ccat.health);
+        //     let mut v = draw_sys.view(m.as_ref());
+        //     nn.draw_ext(&mut v, false, false, true, false);
 
-            //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
-        }
-
-        for ccat in self.col.elem.iter() {
-            let pos: [f32; 2] = gg.to_world_topleft(ccat.position.0.into()).into();
-
-            let t = matrix::translation(pos[0] + 20.0, pos[1], 20.0);
-
-            let jj = view_proj.chain(t).generate();
-            let jj: &[f32; 16] = jj.as_ref();
-            let tt = matrix::translation(jj[12], jj[13], jj[14]);
-            let new_proj = proj.clone().chain(tt);
-
-            let s = matrix::scale(5.0, 5.0, 5.0);
-            let m = new_proj.chain(s).generate();
-
-            let nn = health_numbers.get_number(ccat.stamina.0);
-            let mut v = draw_sys.view(m.as_ref());
-            nn.draw_ext(&mut v, false, false, true, false);
-
-            //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
-        }
-    }
-}
-
-//TODO sort this by x and then y axis!!!!!!!
-#[derive(Debug)]
-pub struct UnitCollection<T: HasPos> {
-    elem: Vec<T>,
-}
-
-impl<T: HasPos> UnitCollection<T> {
-    fn new(elem: Vec<T>) -> Self {
-        UnitCollection { elem }
-    }
-    fn remove(&mut self, a: &GridCoord) -> T {
-        let (i, _) = self
-            .elem
-            .iter()
-            .enumerate()
-            .find(|(_, b)| b.get_pos() == a)
-            .unwrap();
-        self.elem.swap_remove(i)
-    }
-
-    pub fn find_mut(&mut self, a: &GridCoord) -> Option<&mut T> {
-        self.elem.iter_mut().find(|b| b.get_pos() == a)
-    }
-    fn find(&self, a: &GridCoord) -> Option<&T> {
-        self.elem.iter().find(|b| b.get_pos() == a)
-    }
-    fn filter(&self) -> UnitCollectionFilter<T> {
-        UnitCollectionFilter { a: &self.elem }
-    }
-}
-
-pub struct SingleFilter<'a> {
-    a: &'a GridCoord,
-}
-impl<'a> movement::Filter for SingleFilter<'a> {
-    fn filter(&self, a: &GridCoord) -> bool {
-        self.a != a
-    }
-}
-
-pub struct UnitCollectionFilter<'a, T> {
-    a: &'a [T],
-}
-impl<'a, T: HasPos> movement::Filter for UnitCollectionFilter<'a, T> {
-    fn filter(&self, b: &GridCoord) -> bool {
-        self.a.iter().find(|a| a.get_pos() == b).is_none()
-    }
-}
-
-pub trait HasPos {
-    fn get_pos(&self) -> &GridCoord;
-}
-impl HasPos for GridCoord {
-    fn get_pos(&self) -> &GridCoord {
-        self
-    }
-}
-
-impl HasPos for Warrior {
-    fn get_pos(&self) -> &GridCoord {
-        &self.position
+        //     //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
+        // }
     }
 }
 
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
-#[derive(Debug)]
-pub struct Warrior {
-    position: GridCoord,
-    stamina: MoveUnit,
-    attacked: bool,
-    health: i8,
-}
+// pub struct RestOfUnits<'a, T> {
+//     first: &'a mut [T],
+//     second: &'a mut [T],
+// }
 
-impl Warrior {
-    //TODO replace with has possible moves
-    fn selectable(&self) -> bool {
-        !self.attacked || self.stamina.0 > 0
-    }
+// fn get_unit<'a>(
+//     a: &'a mut UnitCollection<Warrior>,
+//     coord: &GridCoord,
+// ) -> (&'a mut Warrior, RestOfUnits<'a, Warrior>) {
+//     let (unit, _) = a
+//         .elem
+//         .iter()
+//         .enumerate()
+//         .find(|(_, b)| b.get_pos() == coord)
+//         .unwrap();
 
-    pub fn has_possible_moves(unit:&WarriorPointer<&Self>,game:&state::Stuff)->bool{
-        
-        let pos = state::generate_unit_possible_moves(unit, game);
+//     let (first, mid, second) = split_at_mid_mut(&mut a.elem, unit);
+//     (mid, RestOfUnits { first, second })
+// }
 
-        //check if there are enemies in range.
-        let enemy_in_range = {
-            let (_, att) = match &pos {
-                CellSelection::MoveSelection(ss, att) => (ss, att),
-                _ => unreachable!(),
-            };
-
-            let mut found = false;
-            for a in att.iter_coords() {
-                if let Some(_) = game.that_team.find_slow(a) {
-                    found = true;
-                    break;
-                }
-            }
-            found
-        };
-        
-        //TODO move this and the above into an high-level "Has possible moves function"
-        let has_stamina_to_move=unit.stamina.0>1;
-
-        enemy_in_range || has_stamina_to_move
-    }
-    // fn can_attack(&self) -> bool {
-    //     !self.attacked
-    // }
-
-    fn new(position: GridCoord) -> Self {
-        Warrior {
-            position,
-            stamina: MoveUnit(0),
-            attacked: false,
-            health: 10,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum CellSelection {
-    MoveSelection(movement::PossibleMoves, movement::PossibleMoves),
-    BuildSelection(GridCoord),
-}
-
-pub struct TribeFilter<'a> {
-    tribe: &'a Tribe,
-}
-impl<'a> movement::Filter for TribeFilter<'a> {
-    fn filter(&self, b: &GridCoord) -> bool {
-        self.tribe
-            .warriors
-            .iter()
-            .map(|a| a.filter().filter(b))
-            .fold(true, |a, b| a && b)
-    }
-}
-
-impl<T> std::borrow::Borrow<T> for WarriorPointer<T> {
-    fn borrow(&self) -> &T {
-        &self.inner
-    }
-}
-impl<T> std::borrow::BorrowMut<T> for WarriorPointer<T> {
-    fn borrow_mut(&mut self) -> &mut T {
-        &mut self.inner
-    }
-}
-
-#[derive(Eq, PartialEq, Copy, Clone)]
-pub struct WarriorPointer<T> {
-    inner: T,
-    val: usize,
-}
-
-impl WarriorPointer<&Warrior> {
-    //TODO use this instead of gridcoord when you know the type!!!!!
-    fn slim(&self) -> WarriorPointer<GridCoord> {
-        WarriorPointer {
-            inner: self.inner.position,
-            val: self.val,
-        }
-    }
-}
-impl WarriorPointer<Warrior> {
-    //TODO use this instead of gridcoord when you know the type!!!!!
-    fn slim(&self) -> WarriorPointer<GridCoord> {
-        WarriorPointer {
-            inner: self.inner.position,
-            val: self.val,
-        }
-    }
-}
-
-impl<T> std::ops::Deref for WarriorPointer<T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl<T> std::ops::DerefMut for WarriorPointer<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
-}
-
-pub struct Tribe {
-    warriors: Vec<UnitCollection<Warrior>>,
-}
-impl Tribe {
-    fn get_movement_data<X>(&self, a: &WarriorPointer<X>) -> (i8, i8) {
-        let (movement, attack) = {
-            match a.val {
-                0 => (0, 2),
-                1 => (0, 3),
-                2 => (0, 4),
-                _ => unreachable!(),
-            }
-        };
-        (movement, attack)
-    }
-    fn lookup(&self, a: WarriorPointer<GridCoord>) -> WarriorPointer<&Warrior> {
-        self.warriors[a.val]
-            .find(&a.inner)
-            .map(|b| WarriorPointer {
-                inner: b,
-                val: a.val,
-            })
-            .unwrap()
-    }
-    fn lookup_mut(&mut self, a: &WarriorPointer<GridCoord>) -> WarriorPointer<&mut Warrior> {
-        self.warriors[a.val]
-            .find_mut(&a.inner)
-            .map(|b| WarriorPointer {
-                inner: b,
-                val: a.val,
-            })
-            .unwrap()
-    }
-    fn lookup_take(&mut self, a: WarriorPointer<GridCoord>) -> WarriorPointer<Warrior> {
-        Some(self.warriors[a.val].remove(&a.inner))
-            .map(|b| WarriorPointer {
-                inner: b,
-                val: a.val,
-            })
-            .unwrap()
-    }
-
-    fn add(&mut self, a: WarriorPointer<Warrior>) {
-        self.warriors[a.val].elem.push(a.inner);
-    }
-
-    fn find_slow(&self, a: &GridCoord) -> Option<WarriorPointer<&Warrior>> {
-        for (c, o) in self.warriors.iter().enumerate() {
-            if let Some(k) = o.find(a) {
-                return Some(WarriorPointer { inner: k, val: c });
-            }
-        }
-
-        None
-    }
-    fn filter(&self) -> TribeFilter {
-        TribeFilter { tribe: self }
-    }
-
-    fn reset_attacked(&mut self) {
-        for a in self.warriors.iter_mut() {
-            for b in a.elem.iter_mut() {
-                b.attacked = false;
-            }
-        }
-    }
-    fn replenish_stamina(&mut self) {
-        for a in self.warriors.iter_mut() {
-            for b in a.elem.iter_mut() {
-                if b.stamina.0 <= 10 - 2 {
-                    b.stamina.0 += 2;
-                }
-            }
-        }
-    }
-}
+// fn split_at_mid_mut<T>(a: &mut [T], ind: usize) -> (&mut [T], &mut T, &mut [T]) {
+//     let (left, right) = a.split_at_mut(ind);
+//     let (mid, rest) = right.split_first_mut().unwrap();
+//     (left, mid, rest)
+// }
 
 //TODO store actual world pos? Less calculation each iteration.
 //Additionally removes need to special case animation.
+#[derive(Debug)]
 pub struct Game {
-    team: usize,
-    grid_matrix: grids::GridMatrix,
     dogs: Tribe,
     cats: Tribe,
 }
@@ -426,32 +189,49 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-    let dogs = UnitCollection::new(vec![
-        Warrior::new(GridCoord([3, 3])),
-        Warrior::new(GridCoord([4, 3])),
-        Warrior::new(GridCoord([5, 3])),
-        Warrior::new(GridCoord([6, 3])),
-    ]);
+    let dogs = vec![
+        UnitCollection::new(vec![
+            UnitData::new(GridCoord([1, -2])),
+            UnitData::new(GridCoord([1, -1])),
+            UnitData::new(GridCoord([2, -1])),
+        ]),
+        UnitCollection::new(vec![
+        // UnitData::new(GridCoord([2, -2]))
+        ]),
+        UnitCollection::new(vec![
+        // UnitData::new(GridCoord([3, -3]))
+        ]),
+        UnitCollection::new(vec![
+            // UnitData::new(GridCoord([3, 0])),
+            // UnitData::new(GridCoord([0, -3])),
+        ]),
+    ];
 
-    let cats = UnitCollection::new(vec![
-        Warrior::new(GridCoord([3, 6])),
-        Warrior::new(GridCoord([4, 6])),
-        Warrior::new(GridCoord([5, 6])),
-        Warrior::new(GridCoord([6, 6])),
-    ]);
+    let cats = vec![
+        UnitCollection::new(vec![
+            UnitData::new(GridCoord([-2, 1])),
+            UnitData::new(GridCoord([-1, 1])),
+            UnitData::new(GridCoord([-1, 2])),
+        ]),
+        UnitCollection::new(vec![
+            // UnitData::new(GridCoord([-2, 2])),
+            //  UnitData::new(GridCoord([-3, 3]))
+        ]),
+        UnitCollection::new(vec![
+        // UnitData::new(GridCoord([-3, 3]))
+        ]),
+        UnitCollection::new(vec![
+            // UnitData::new(GridCoord([0, 3])),
+            // UnitData::new(GridCoord([-3, 0])),
+        ]),
+    ];
 
     let mut ggame = Game {
-        team: 0,
-        dogs: Tribe {
-            warriors: vec![dogs],
-        },
-        cats: Tribe {
-            warriors: vec![cats],
-        },
-        grid_matrix: grids::GridMatrix::new(),
+        dogs: Tribe { warriors: dogs },
+        cats: Tribe { warriors: cats },
     };
 
-    let roads = terrain::TerrainCollection {
+    let _roads = terrain::TerrainCollection {
         pos: vec![],
         func: |a: MoveUnit| MoveUnit(a.0 / 2),
     };
@@ -459,11 +239,9 @@ pub async fn worker_entry() {
     use cgmath::SquareMatrix;
     let mut last_matrix = cgmath::Matrix4::identity();
 
-    let mut testo = state::create_state_machine();
-    //log!(format!("size={:?}",std::mem::size_of_val(&testo)));
-
+    let grid_matrix = grids::GridMatrix::new();
     let quick_load = |name, res, alpha| {
-        let (data, t) = model::load_glb(name).gen_ext(ggame.grid_matrix.spacing(), res, alpha);
+        let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
 
         log!(format!("texture:{:?}", (t.width, t.height)));
         model_parse::Foo {
@@ -478,13 +256,15 @@ pub async fn worker_entry() {
 
     let cat = quick_load(CAT_GLB, RESIZE, None);
 
-    let road = quick_load(ROAD_GLB, 1, None);
+    let _road = quick_load(ROAD_GLB, 1, None);
 
     let grass = quick_load(GRASS_GLB, RESIZE, None);
 
     let select_model = quick_load(SELECT_GLB, 1, None);
 
     let attack_model = quick_load(ATTACK_GLB, 1, None);
+
+    let friendly_model = quick_load(FRIENDLY_GLB, 1, None);
 
     let text_texture = {
         let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
@@ -494,228 +274,405 @@ pub async fn worker_entry() {
 
     let health_numbers = NumberTextManager::new(&ctx, &text_texture);
 
-    'outer: loop {
-        let mut on_select = false;
+    let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
+    let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
-        let res = frame_timer.next().await;
+    let main_logic = async {
+        ace::main_logic(command_sender, response_recv, &mut ggame, &grid_matrix).await;
+    };
 
-        let mut end_turn = false;
-        for e in res {
-            match e {
-                MEvent::Resize {
-                    canvasx: _canvasx,
-                    canvasy: _canvasy,
-                    x,
-                    y,
-                } => {
-                    let xx = *x as u32;
-                    let yy = *y as u32;
-                    canvas.set_width(xx);
-                    canvas.set_height(yy);
-                    ctx.viewport(0, 0, xx as i32, yy as i32);
+    let mut mouse_mouse = [0.0; 2];
+    let render_thread = async {
+        loop {
+            let ace::GameWrap {
+                game: ggame,
+                data: mut command,
+                team,
+            } = command_recv.next().await.unwrap();
 
-                    viewport = [xx as f32, yy as f32];
-                    log!(format!("updating viewport to be:{:?}", viewport));
-                }
-                MEvent::TouchMove { touches } => {
-                    scroll_manager.on_touch_move(touches, &last_matrix, viewport);
-                }
-                MEvent::TouchDown { touches } => {
-                    //log!(format!("touch down:{:?}",touches));
-                    scroll_manager.on_new_touch(touches);
-                }
-                MEvent::TouchEnd { touches } => {
-                    //log!(format!("touch end:{:?}",touches));
-                    if let scroll::MouseUp::Select = scroll_manager.on_touch_up(&touches) {
-                        on_select = true;
+            'outer: loop {
+                let mut on_select = false;
+
+                let res = frame_timer.next().await;
+
+                let mut end_turn = false;
+                for e in res {
+                    match e {
+                        MEvent::Resize {
+                            canvasx: _canvasx,
+                            canvasy: _canvasy,
+                            x,
+                            y,
+                        } => {
+                            let xx = *x as u32;
+                            let yy = *y as u32;
+                            canvas.set_width(xx);
+                            canvas.set_height(yy);
+                            ctx.viewport(0, 0, xx as i32, yy as i32);
+
+                            viewport = [xx as f32, yy as f32];
+                            log!(format!("updating viewport to be:{:?}", viewport));
+                        }
+                        MEvent::TouchMove { touches } => {
+                            scroll_manager.on_touch_move(touches, &last_matrix, viewport);
+                        }
+                        MEvent::TouchDown { touches } => {
+                            //log!(format!("touch down:{:?}",touches));
+                            scroll_manager.on_new_touch(touches);
+                        }
+                        MEvent::TouchEnd { touches } => {
+                            //log!(format!("touch end:{:?}",touches));
+                            if let scroll::MouseUp::Select = scroll_manager.on_touch_up(&touches) {
+                                on_select = true;
+                            }
+                        }
+                        MEvent::CanvasMouseLeave => {
+                            log!("mouse leaving!");
+                            let _ = scroll_manager.on_mouse_up();
+                        }
+                        MEvent::CanvasMouseUp => {
+                            if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
+                                on_select = true;
+                            }
+                        }
+                        MEvent::CanvasMouseMove { x, y } => {
+                            mouse_mouse = [*x, *y];
+                            scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
+                        }
+                        MEvent::EndTurn => {
+                            end_turn = true;
+                        }
+                        MEvent::CanvasMouseDown { x, y } => {
+                            scroll_manager.on_mouse_down([*x, *y]);
+                        }
+                        MEvent::ButtonClick => {}
+                        MEvent::ShutdownClick => break 'outer,
                     }
                 }
-                MEvent::CanvasMouseLeave => {
-                    log!("mouse leaving!");
-                    let _ = scroll_manager.on_mouse_up();
-                }
-                MEvent::CanvasMouseUp => {
-                    if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
-                        on_select = true;
+
+                let proj = projection::projection(viewport).generate();
+                let view_proj = projection::view_matrix(
+                    scroll_manager.camera(),
+                    scroll_manager.zoom(),
+                    scroll_manager.rot(),
+                );
+
+                let matrix = proj.chain(view_proj).generate();
+
+                last_matrix = matrix;
+
+                //TODO don't compute every frame?.
+                let mouse_world =
+                    scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
+
+                match &mut command {
+                    ace::Command::Animate(a) => {
+                        if let Some(_) = a.animate_step() {
+                        } else {
+                            let a = command.take_animation();
+                            response_sender
+                                .send(ace::GameWrapResponse {
+                                    game: ggame,
+                                    data: ace::Response::AnimationFinish(a),
+                                })
+                                .await
+                                .unwrap();
+                            break 'outer;
+                        }
                     }
+                    ace::Command::GetMouseInput(_) => {
+                        if end_turn {
+                            response_sender
+                                .send(ace::GameWrapResponse {
+                                    game: ggame,
+                                    data: ace::Response::Mouse(
+                                        command.take_cell(),
+                                        Pototo::EndTurn,
+                                    ),
+                                })
+                                .await
+                                .unwrap();
+                            break 'outer;
+                        } else if on_select {
+                            let mouse: GridCoord =
+                                grid_matrix.center_world_to_hex(mouse_world.into());
+                            log!(format!("pos:{:?}", mouse));
+
+                            response_sender
+                                .send(ace::GameWrapResponse {
+                                    game: ggame,
+                                    data: ace::Response::Mouse(
+                                        command.take_cell(),
+                                        Pototo::Normal(mouse),
+                                    ),
+                                })
+                                .await
+                                .unwrap();
+                            break 'outer;
+                        }
+                    }
+                    ace::Command::Nothing => {}
                 }
-                MEvent::CanvasMouseMove { x, y } => {
-                    scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
-                }
-                MEvent::EndTurn => {
-                    end_turn = true;
-                }
-                MEvent::CanvasMouseDown { x, y } => {
-                    scroll_manager.on_mouse_down([*x, *y]);
-                }
-                MEvent::ButtonClick => {}
-                MEvent::ShutdownClick => break 'outer,
-            }
-        }
 
-        let proj = projection::projection(viewport).generate();
-        let view_proj = projection::view_matrix(
-            scroll_manager.camera(),
-            scroll_manager.zoom(),
-            scroll_manager.rot(),
-        );
+                // {
+                //     //Advance state machine.
+                //     let mouse = on_select.then_some(mouse_world);
+                //     let [this_team, that_team] =
+                //         state::team_view([&mut ggame.cats, &mut ggame.dogs], ggame.team);
 
-        let matrix = proj.chain(view_proj).generate();
+                //     let mut jj = state::Stuff {
+                //         team: &mut ggame.team,
+                //         this_team,
+                //         that_team,
+                //         grid_matrix: &ggame.grid_matrix,
+                //         mouse,
+                //         end_turn,
+                //     };
+                //     testo.step(&mut jj);
+                // }
 
-        last_matrix = matrix;
+                scroll_manager.step();
 
-        //TODO don't compute every frame?.
-        let mouse_world = scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
-
-        {
-            //Advance state machine.
-            let mouse = on_select.then_some(mouse_world);
-            let [this_team, that_team] =
-                state::team_view([&mut ggame.cats, &mut ggame.dogs], ggame.team);
-
-            let mut jj = state::Stuff {
-                team: &mut ggame.team,
-                this_team,
-                that_team,
-                grid_matrix: &ggame.grid_matrix,
-                mouse,
-                end_turn,
-            };
-            testo.step(&mut jj);
-        }
-
-        scroll_manager.step();
-
-        use matrix::*;
-
-        //Drawing below doesnt need mutable reference.
-        //TODO move drawing to a function?
-        let ggame = &ggame;
-
-        ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
-
-        let [vvx, vvy] = get_world_rect(&matrix, &ggame.grid_matrix);
-
-        for a in (vvx[0]..vvx[1])
-            .skip_while(|&a| a < 0)
-            .take_while(|&a| a < ggame.grid_matrix.num_rows())
-        {
-            //both should be skip
-            for b in (vvy[0]..vvy[1])
-                .skip_while(|&a| a < 0)
-                .take_while(|&a| a < ggame.grid_matrix.num_rows())
-            {
                 use matrix::*;
-                let x1 = ggame.grid_matrix.spacing() * a as f32;
-                let y1 = ggame.grid_matrix.spacing() * b as f32;
-                let s = 0.99;
-                let mm = matrix
-                    .chain(translation(x1, y1, -1.0))
-                    .chain(scale(s, s, s))
-                    .generate();
 
-                let mut v = draw_sys.view(mm.as_ref());
-                grass.draw(&mut v);
-            }
-        }
+                //Drawing below doesnt need mutable reference.
+                //TODO move drawing to a function?
+                let ggame = &ggame;
 
-        let cat_draw = WarriorDraw::new(&ggame.cats.warriors[0], &cat, &drop_shadow);
-        let dog_draw = WarriorDraw::new(&ggame.dogs.warriors[0], &dog, &drop_shadow);
+                ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        let animation_draw = if ggame.team == 0 { &cat } else { &dog };
+                //let [vvx, vvy] = get_world_rect(&matrix, &grid_matrix);
 
-        disable_depth(&ctx, || {
-            if let Some(a) = testo.get_selection() {
-                match a {
-                    CellSelection::MoveSelection(a, attack) => {
-                        for GridCoord(a) in a.iter_coords() {
-                            let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
-                            let t = matrix::translation(pos[0], pos[1], 0.0);
+                //
 
-                            let m = matrix.chain(t).generate();
+                for c in grid_matrix.world() {
+                    let pos = grid_matrix.hex_axial_to_world(&c.to_axial());
 
-                            let mut v = draw_sys.view(m.as_ref());
+                    //let pos = a.calc_pos();
+                    let t = matrix::translation(pos[0], pos[1], -10.0);
+                    let s = matrix::scale(1.0, 1.0, 1.0);
+                    let m = matrix.chain(t).chain(s).generate();
+                    let mut v = draw_sys.view(m.as_ref());
 
-                            select_model.draw_ext(&mut v, false, false, false, false);
+                    grass.draw(&mut v);
+                }
 
-                            //select_model.draw(&mut v);
-                        }
+                disable_depth(&ctx, || {
+                    if let ace::Command::GetMouseInput(a) = &command {
+                        let (a, greyscale) = match a {
+                            MousePrompt::Friendly(c) => (c, false),
+                            MousePrompt::Enemy(c) => (c, true),
+                            MousePrompt::None => return,
+                        };
 
-                        for GridCoord(a) in attack.iter_coords() {
-                            let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
-                            let t = matrix::translation(pos[0], pos[1], 0.0);
+                        //if let Some(a) = testo.get_selection() {
+                        match a {
+                            CellSelection::MoveSelection(a, friendly, attack) => {
+                                for a in a.iter_coords() {
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
+                                    let t = matrix::translation(pos[0], pos[1], 0.0);
 
-                            let m = matrix.chain(t).generate();
+                                    let m = matrix.chain(t).generate();
 
-                            let mut v = draw_sys.view(m.as_ref());
-                            //attack_model.draw(&mut v);
-                            attack_model.draw_ext(&mut v, false, false, false, false);
+                                    let mut v = draw_sys.view(m.as_ref());
+
+                                    select_model.draw_ext(&mut v, greyscale, false, false, false);
+
+                                    //select_model.draw(&mut v);
+                                }
+
+                                for a in attack.iter() {
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
+                                    let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                                    let m = matrix.chain(t).generate();
+
+                                    let mut v = draw_sys.view(m.as_ref());
+                                    //attack_model.draw(&mut v);
+                                    attack_model.draw_ext(&mut v, greyscale, false, false, false);
+                                }
+
+                                for a in friendly.iter() {
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
+                                    let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                                    let m = matrix.chain(t).generate();
+
+                                    let mut v = draw_sys.view(m.as_ref());
+                                    //attack_model.draw(&mut v);
+                                    friendly_model.draw_ext(&mut v, greyscale, false, false, false);
+                                }
+                            }
+                            CellSelection::BuildSelection(_) => {}
                         }
                     }
-                    CellSelection::BuildSelection(_) => {}
+
+                    // { TEST MOUSE
+                    //     let mouse_mouse= scroll::mouse_to_world(mouse_mouse, &matrix, viewport);
+
+                    //     let a: GridCoord =grid_matrix.center_world_to_hex(mouse_mouse.into());
+
+                    //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                    //     let t = matrix::translation(pos[0], pos[1], 3.0);
+
+                    //     let m = matrix.chain(t).generate();
+
+                    //     let mut v = draw_sys.view(m.as_ref());
+                    //     road.draw(&mut v);
+                    // }
+                    //for a in roads.pos.iter() {
+                    // let a: GridCoord =grid_matrix.center_world_to_hex(mouse_world.into());
+
+                    // let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                    // let t = matrix::translation(pos[0], pos[1], 3.0);
+
+                    // let m = matrix.chain(t).generate();
+
+                    // let mut v = draw_sys.view(m.as_ref());
+                    // road.draw(&mut v);
+                    //}
+                });
+
+                for i in 0..4 {
+                    let cat_draw = WarriorDraw::new(
+                        &ggame.cats.warriors[i],
+                        &cat,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
+                    let dog_draw = WarriorDraw::new(
+                        &ggame.dogs.warriors[i],
+                        &dog,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
+
+                    disable_depth(&ctx, || {
+                        //draw dropshadow
+                        cat_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
+                        dog_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
+
+                        //TODO finish this!!!!
+                        // if let ace::Command::Animate(a) = &command {
+                        //     let (pos,ty) = a.calc_pos();
+                        //     let t = matrix::translation(pos[0], pos[1], 1.0);
+
+                        //     let m = matrix.chain(t).generate();
+
+                        //     let mut v = draw_sys.view(m.as_ref());
+                        //     drop_shadow.draw(&mut v);
+                        // }
+                    });
                 }
+
+                for i in 0..4 {
+                    let cat_draw = WarriorDraw::new(
+                        &ggame.cats.warriors[i],
+                        &cat,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
+                    let dog_draw = WarriorDraw::new(
+                        &ggame.dogs.warriors[i],
+                        &dog,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
+                    cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
+                    dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
+                }
+
+                for i in 0..4 {
+                    let cat_draw = WarriorDraw::new(
+                        &ggame.cats.warriors[i],
+                        &cat,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
+                    let dog_draw = WarriorDraw::new(
+                        &ggame.dogs.warriors[i],
+                        &dog,
+                        &drop_shadow,
+                        Type::type_index_inverse(i),
+                    );
+                    disable_depth(&ctx, || {
+                        cat_draw.draw_health_text(
+                            &grid_matrix,
+                            &health_numbers,
+                            &view_proj,
+                            &proj,
+                            &mut draw_sys,
+                        );
+                        dog_draw.draw_health_text(
+                            &grid_matrix,
+                            &health_numbers,
+                            &view_proj,
+                            &proj,
+                            &mut draw_sys,
+                        );
+                    });
+                }
+
+                if let ace::Command::Animate(a) = &command {
+                    let this_draw = if team == 0 { &cat } else { &dog };
+                    let that_draw = if team == 1 { &cat } else { &dog };
+
+                    let (pos, ty) = a.calc_pos();
+
+                    let (a, b) = match ty {
+                        AnimationOptions::Heal([a, b]) => ((this_draw, a), Some((this_draw, b))),
+                        AnimationOptions::Movement(m) => ((this_draw, m), None),
+                        AnimationOptions::Attack([a, b]) => ((this_draw, a), Some((that_draw, b))),
+                        AnimationOptions::CounterAttack([a, b]) => {
+                            ((that_draw, b), Some((this_draw, a)))
+                        }
+                    };
+
+                    disable_depth(&ctx, || {
+                        let t = matrix::translation(pos[0], pos[1], 1.0);
+
+                        let m = matrix.chain(t).generate();
+
+                        let mut v = draw_sys.view(m.as_ref());
+                        drop_shadow.draw(&mut v);
+
+                        if let Some((_, b)) = b {
+                            let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&b.position).into();
+                            let t = matrix::translation(pos[0], pos[1], 1.0);
+
+                            let m = matrix.chain(t).generate();
+
+                            let mut v = draw_sys.view(m.as_ref());
+                            drop_shadow.draw(&mut v);
+                        }
+                    });
+
+                    let t = matrix::translation(pos[0], pos[1], 0.0);
+                    let s = matrix::scale(1.0, 1.0, 1.0);
+                    let m = matrix.chain(t).chain(s).generate();
+                    let mut v = draw_sys.view(m.as_ref());
+                    a.0.draw(&mut v);
+
+                    if let Some((a, b)) = b {
+                        let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&b.position).into();
+
+                        let t = matrix::translation(pos[0], pos[1], 0.0);
+                        let s = matrix::scale(1.0, 1.0, 1.0);
+                        let m = matrix.chain(t).chain(s).generate();
+                        let mut v = draw_sys.view(m.as_ref());
+                        a.draw(&mut v);
+                    }
+                }
+
+                ctx.flush();
             }
-
-            for GridCoord(a) in roads.pos.iter() {
-                let pos: [f32; 2] = ggame.grid_matrix.to_world_topleft(a.into()).into();
-                let t = matrix::translation(pos[0], pos[1], 3.0);
-
-                let m = matrix.chain(t).generate();
-
-                let mut v = draw_sys.view(m.as_ref());
-                road.draw(&mut v);
-            }
-        });
-
-        disable_depth(&ctx, || {
-            //draw dropshadow
-
-            cat_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
-            dog_draw.draw_shadow(&ggame.grid_matrix, &mut draw_sys, &matrix);
-
-            if let Some(a) = &testo.get_animation() {
-                let pos = a.calc_pos();
-                let t = matrix::translation(pos[0], pos[1], 1.0);
-
-                let m = matrix.chain(t).generate();
-
-                let mut v = draw_sys.view(m.as_ref());
-                drop_shadow.draw(&mut v);
-            }
-        });
-
-        if let Some(a) = &testo.get_animation() {
-            let pos = a.calc_pos();
-            let t = matrix::translation(pos[0], pos[1], 0.0);
-            let s = matrix::scale(1.0, 1.0, 1.0);
-            let m = matrix.chain(t).chain(s).generate();
-            let mut v = draw_sys.view(m.as_ref());
-
-            animation_draw.draw(&mut v);
         }
+    };
 
-        cat_draw.draw(&ggame.grid_matrix, &mut draw_sys, &matrix);
-        dog_draw.draw(&ggame.grid_matrix, &mut draw_sys, &matrix);
+    //futures::pin_mut!(main_logic);
+    //futures::pin_mut!(render_thread);
 
-        disable_depth(&ctx, || {
-            cat_draw.draw_health_text(
-                &ggame.grid_matrix,
-                &health_numbers,
-                &view_proj,
-                &proj,
-                &mut draw_sys,
-            );
-            dog_draw.draw_health_text(
-                &ggame.grid_matrix,
-                &health_numbers,
-                &view_proj,
-                &proj,
-                &mut draw_sys,
-            );
-        });
-
-        ctx.flush();
-    }
+    futures::join!(main_logic, render_thread);
 
     w.post_message(UiButton::NoUi);
 
@@ -805,14 +762,16 @@ fn string_to_coords<'a>(st: &str) -> model::ModelData {
 
 use web_sys::WebGl2RenderingContext;
 
-use crate::gameplay::GameStepper;
-use crate::movement::{Filter, MoveUnit};
+use crate::ace::{MousePrompt, Pototo};
+//use crate::gameplay::GameStepper;
+use crate::movement::MoveUnit;
 use crate::terrain::MoveCost;
 
 const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
 const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
 const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
+const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
 
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
@@ -820,11 +779,11 @@ const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
 const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
 const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
 
-const GRASS_GLB: &'static [u8] = include_bytes!("../assets/grass.glb");
+const GRASS_GLB: &'static [u8] = include_bytes!("../assets/hex-grass.glb");
 
 pub struct NumberTextManager<'a> {
-    numbers: Vec<model_parse::ModelGpu>,
-    texture: &'a model_parse::TextureGpu,
+    pub numbers: Vec<model_parse::ModelGpu>,
+    pub texture: &'a model_parse::TextureGpu,
 }
 impl<'a> NumberTextManager<'a> {
     fn new(ctx: &WebGl2RenderingContext, texture: &'a model_parse::TextureGpu) -> Self {
@@ -838,7 +797,7 @@ impl<'a> NumberTextManager<'a> {
         Self { numbers, texture }
     }
 
-    fn get_number(
+    pub fn get_number(
         &self,
         num: i8,
     ) -> model_parse::Foo<&model_parse::TextureGpu, &model_parse::ModelGpu> {
