@@ -35,6 +35,14 @@ impl Cube {
     pub fn new(q: i16, r: i16) -> Self {
         Cube([q, r, -q - r])
     }
+    pub fn rotate_60_right(self) -> Cube {
+        let [q, r, s] = self.0;
+        Cube([s, q, r])
+    }
+    pub fn rotate_60_left(self) -> Cube {
+        let [q, r, s] = self.0;
+        Cube([r, s, q])
+    }
     pub fn round(frac: [f32; 3]) -> Cube {
         let mut q = frac[0].round() as i16;
         let mut r = frac[1].round() as i16;

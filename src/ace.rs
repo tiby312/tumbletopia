@@ -681,13 +681,13 @@ pub fn generate_unit_possible_moves2(
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,
         &grid_matrix
-            .filter()
-            .chain(this_team.not_para_filter())
-            .chain(
-                that_team
-                    .para_filter()
-                    .chain(that_team.not_para_filter().extend()),
-            ),
+            .filter().chain(this_team.filter().extend().chain(that_team.filter())),
+            // .chain(this_team.not_para_filter())
+            // .chain(
+            //     that_team
+            //         .para_filter()
+            //         .chain(that_team.not_para_filter().extend()),
+            // ),
         &terrain::Grass,
         unit.position,
         mm,

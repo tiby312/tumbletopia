@@ -183,7 +183,7 @@ impl<'a> movement::Filter for NotParaFilter<'a> {
             .map(|(i, a)| {
                 if Type::type_index_inverse(i) == Type::Para {
                     if FilterRes::Stop == a.filter().filter(b) {
-                        FilterRes::AcceptAndStop
+                        FilterRes::DontAccept
                     } else {
                         FilterRes::Accept
                     }

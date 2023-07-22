@@ -147,20 +147,20 @@ impl Filter for FilterThese<'_> {
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum FilterRes {
     Accept,
-    AcceptAndStop,
+    DontAccept,
     Stop,
 }
 impl FilterRes {
     pub fn and(self, other: FilterRes) -> FilterRes {
         match (self, other) {
             (FilterRes::Accept, FilterRes::Accept) => FilterRes::Accept,
-            (FilterRes::Accept, FilterRes::AcceptAndStop) => FilterRes::AcceptAndStop,
+            (FilterRes::Accept, FilterRes::DontAccept) => FilterRes::DontAccept,
             (FilterRes::Accept, FilterRes::Stop) => FilterRes::Stop,
-            (FilterRes::AcceptAndStop, FilterRes::Accept) => FilterRes::AcceptAndStop,
-            (FilterRes::AcceptAndStop, FilterRes::AcceptAndStop) => FilterRes::AcceptAndStop,
-            (FilterRes::AcceptAndStop, FilterRes::Stop) => FilterRes::Stop,
+            (FilterRes::DontAccept, FilterRes::Accept) => FilterRes::DontAccept,
+            (FilterRes::DontAccept, FilterRes::DontAccept) => FilterRes::DontAccept,
+            (FilterRes::DontAccept, FilterRes::Stop) => FilterRes::Stop,
             (FilterRes::Stop, FilterRes::Accept) => FilterRes::Stop,
-            (FilterRes::Stop, FilterRes::AcceptAndStop) => FilterRes::Stop,
+            (FilterRes::Stop, FilterRes::DontAccept) => FilterRes::Stop,
             (FilterRes::Stop, FilterRes::Stop) => FilterRes::Stop,
         }
     }
@@ -205,8 +205,8 @@ impl<A: Filter> Filter for ExtendFilter<A> {
     fn filter(&self, a: &GridCoord) -> FilterRes {
         match self.filter.filter(a) {
             FilterRes::Accept => FilterRes::Accept,
-            FilterRes::AcceptAndStop => FilterRes::AcceptAndStop,
-            FilterRes::Stop => FilterRes::AcceptAndStop,
+            FilterRes::DontAccept => FilterRes::DontAccept,
+            FilterRes::Stop => FilterRes::DontAccept,
         }
     }
 }
@@ -263,7 +263,7 @@ impl PossibleMoves {
         remaining_moves: MoveUnit,
     ) {
         // if remaining_moves.0 == 0 {
-        //     return;
+        //      return;
         // }
 
         // 2-OG
@@ -291,11 +291,35 @@ impl PossibleMoves {
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
-            let stop = match filter.filter(&target_pos) {
+            let aaa=a.to_relative().to_cube().rotate_60_left();
+            let bbb=a.to_relative().to_cube().rotate_60_right();
+
+            let mut skip=false;
+
+            let ttt1=match filter.filter(&target_pos.add(aaa.to_axial())) {
+                FilterRes::Stop => false,
+                FilterRes::DontAccept => true,
+                FilterRes::Accept => true,
+            };
+
+
+            let ttt2=match filter.filter(&target_pos.add(bbb.to_axial())) {
+                FilterRes::Stop => false,
+                FilterRes::DontAccept => true,
+                FilterRes::Accept => true,
+            };
+
+            if !ttt1 && !ttt2{
+                continue;
+            }
+
+            
+            skip=match filter.filter(&target_pos) {
                 FilterRes::Stop => continue,
-                FilterRes::AcceptAndStop => true,
+                FilterRes::DontAccept => true,
                 FilterRes::Accept => false,
             };
+
 
             //We must have remaining moves to satisfy ALL move cost.
             // if remaining_moves.0<current_path.move_cost(a).0{
@@ -329,13 +353,17 @@ impl PossibleMoves {
             //subtract move cost
             let rr = remaining_moves.sub(cost);
 
-            if !self.consider(&current_path, a, rr) {
-                continue;
+            if !skip{
+                if !self.consider(&current_path, a, rr) {
+                    continue;
+                }
             }
 
-            if !stop {
+
+
+            //if !stop {
                 self.explore_path(movement, filter, mo, current_path.add(a).unwrap(), rr)
-            }
+            //}
         }
     }
 
