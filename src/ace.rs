@@ -663,31 +663,33 @@ pub fn generate_unit_possible_moves2(
     grid_matrix: &GridMatrix,
     extra_attack: Option<Type>,
 ) -> CellSelection {
-    // let j = if let Some(_) = unit
-    //     .position
-    //     .to_cube()
-    //     .ring(1)
-    //     .map(|s| that_team.find_slow(&s.to_axial()).is_some())
-    //     .find(|a| *a)
-    // {
-    //     1
-    // } else {
-    //     unit.stamina.0
-    // };
-    let j = unit.stamina.0;
+    //If there is an enemy near by restrict movement.
+    let j = if let Some(_) = unit
+        .position
+        .to_cube()
+        .ring(1)
+        .map(|s| that_team.find_slow(&s.to_axial()).is_some())
+        .find(|a| *a)
+    {
+        1
+    } else {
+        unit.stamina.0
+    };
+    //let j = unit.stamina.0;
 
     let mm = MoveUnit(j);
 
     let mm = movement::PossibleMoves::new(
         &movement::WarriorMovement,
         &grid_matrix
-            .filter().chain(this_team.filter().extend().chain(that_team.filter())),
-            // .chain(this_team.not_para_filter())
-            // .chain(
-            //     that_team
-            //         .para_filter()
-            //         .chain(that_team.not_para_filter().extend()),
-            // ),
+            .filter()
+            .chain(this_team.filter().extend().chain(that_team.filter())),
+        // .chain(this_team.not_para_filter())
+        // .chain(
+        //     that_team
+        //         .para_filter()
+        //         .chain(that_team.not_para_filter().extend()),
+        // ),
         &terrain::Grass,
         unit.position,
         mm,

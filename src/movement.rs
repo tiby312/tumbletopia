@@ -291,35 +291,32 @@ impl PossibleMoves {
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
-            let aaa=a.to_relative().to_cube().rotate_60_left();
-            let bbb=a.to_relative().to_cube().rotate_60_right();
+            let aaa = a.to_relative().to_cube().rotate_60_left();
+            let bbb = a.to_relative().to_cube().rotate_60_right();
 
-            let mut skip=false;
+            let mut skip = false;
 
-            let ttt1=match filter.filter(&target_pos.add(aaa.to_axial())) {
+            let ttt1 = match filter.filter(&target_pos.add(aaa.to_axial())) {
                 FilterRes::Stop => false,
                 FilterRes::DontAccept => true,
                 FilterRes::Accept => true,
             };
 
-
-            let ttt2=match filter.filter(&target_pos.add(bbb.to_axial())) {
+            let ttt2 = match filter.filter(&target_pos.add(bbb.to_axial())) {
                 FilterRes::Stop => false,
                 FilterRes::DontAccept => true,
                 FilterRes::Accept => true,
             };
 
-            if !ttt1 && !ttt2{
+            if !ttt1 && !ttt2 {
                 continue;
             }
 
-            
-            skip=match filter.filter(&target_pos) {
+            skip = match filter.filter(&target_pos) {
                 FilterRes::Stop => continue,
                 FilterRes::DontAccept => true,
                 FilterRes::Accept => false,
             };
-
 
             //We must have remaining moves to satisfy ALL move cost.
             // if remaining_moves.0<current_path.move_cost(a).0{
@@ -353,16 +350,14 @@ impl PossibleMoves {
             //subtract move cost
             let rr = remaining_moves.sub(cost);
 
-            if !skip{
+            if !skip {
                 if !self.consider(&current_path, a, rr) {
                     continue;
                 }
             }
 
-
-
             //if !stop {
-                self.explore_path(movement, filter, mo, current_path.add(a).unwrap(), rr)
+            self.explore_path(movement, filter, mo, current_path.add(a).unwrap(), rr)
             //}
         }
     }
