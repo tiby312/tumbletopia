@@ -384,6 +384,48 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 
         Pair(Some(this_unit), Some(target))
     }
+
+    pub async fn resolve_group_attack(
+        &mut self,
+        n: hex::Cube,
+        this_team: &mut Tribe,
+        that_team: &mut Tribe,
+    ) -> Option<WarriorType<UnitData>> {
+        let Some(k)=that_team.find_slow(&n.to_axial()) else{
+            return None;
+        };
+
+        let nearby_friendlies: Vec<_> = n
+            .neighbours()
+            .filter(|a| this_team.find_slow(&a.to_axial()).is_some())
+            .collect();
+        if nearby_friendlies.len() >= 3 {
+            let mut enemy = Some(that_team.lookup_take(k.slim()));
+
+            //TODO add animation
+            //kill this unit!!!
+            for a in nearby_friendlies {
+                let f = this_team.find_slow(&a.to_axial()).unwrap();
+                let f = this_team.lookup_take(f.slim());
+
+                let path = movement::Path::new();
+                let m = f.position.dir_to(&enemy.as_ref().unwrap().position);
+                let path = path.add(m).unwrap();
+
+                let it = animation::movement(f.position, path, self.grid_matrix);
+                let aa = AnimationOptions::attack([f, enemy.take().unwrap()]);
+
+                let [this_unit, target] = self.wait_animation(it, aa).await;
+
+                this_team.add(this_unit);
+                enemy = Some(target);
+            }
+
+            enemy
+        } else {
+            None
+        }
+    }
     pub async fn resolve_attack(
         &mut self,
         mut this_unit: WarriorType<UnitData>,
@@ -477,7 +519,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         // Pair(Some(this_unit), Some(target))
     }
 
-    async fn wait_animation<'c, K: UnwrapMe, I: Iterator<Item = Vector2<f32>> + 'static>(
+    pub async fn wait_animation<'c, K: UnwrapMe, I: Iterator<Item = Vector2<f32>> + 'static>(
         &mut self,
         it: I,
         wrapper: AnimationWrapper<K>,

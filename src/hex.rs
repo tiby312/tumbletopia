@@ -118,14 +118,17 @@ impl Cube {
                 o.add(Cube([q, r, s]))
             })
     }
+
+    //TODO implement using ring??
     pub fn neighbours(&self) -> impl Iterator<Item = Cube> {
-        let k = self.0.clone();
+        let k = self.clone();
         OFFSETS.iter().map(move |a| {
-            let mut a = a.clone();
-            for (a, b) in a.iter_mut().zip(k.iter()) {
-                *a += b;
-            }
-            Cube(a)
+            k.add(Cube(*a))
+            // let mut a = a.clone();
+            // for (a, b) in a.iter_mut().zip(k.iter()) {
+            //     *a += b;
+            // }
+            // Cube(a)
         })
     }
 

@@ -146,7 +146,7 @@ use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
 };
-use gloo::console::log;
+use gloo::console::{console_dbg, log};
 
 pub struct Doop<'a> {
     game: *mut Game,
@@ -513,6 +513,21 @@ pub async fn main_logic<'a>(
                     current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
 
                     this_team.add(this_unit);
+
+                    //TODO use an enum to team index
+                    let k = doop
+                        .await_data(grid_matrix, 1 - team_index)
+                        .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
+                        .await;
+                    if k.is_some() {
+                        //The unit we just moved died. Need to deselect!!
+                        break 'outer;
+                    }
+                    for n in target_cell.to_cube().neighbours() {
+                        doop.await_data(grid_matrix, team_index)
+                            .resolve_group_attack(n, this_team, that_team)
+                            .await;
+                    }
                 } else if let Some(a) = this_team.find_slow(&target_cell) {
                     // if !current_attack && movement::contains_coord(friendly.iter(), &target_cell) {
                     //     let target_coord = a.slim();
