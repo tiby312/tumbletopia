@@ -664,18 +664,18 @@ pub fn generate_unit_possible_moves2(
     extra_attack: Option<Type>,
 ) -> CellSelection {
     //If there is an enemy near by restrict movement.
-    let j = if let Some(_) = unit
-        .position
-        .to_cube()
-        .ring(1)
-        .map(|s| that_team.find_slow(&s.to_axial()).is_some())
-        .find(|a| *a)
-    {
-        1
-    } else {
-        unit.stamina.0
-    };
-    //let j = unit.stamina.0;
+    // let j = if let Some(_) = unit
+    //     .position
+    //     .to_cube()
+    //     .ring(1)
+    //     .map(|s| that_team.find_slow(&s.to_axial()).is_some())
+    //     .find(|a| *a)
+    // {
+    //     1
+    // } else {
+    //     unit.stamina.0
+    // };
+    let j = unit.stamina.0;
 
     let mm = MoveUnit(j);
 

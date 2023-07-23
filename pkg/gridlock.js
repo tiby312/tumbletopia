@@ -900,12 +900,12 @@ function getImports() {
         const ret = makeMutClosure(arg0, arg1, 22, __wbg_adapter_22);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper3595 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 997, __wbg_adapter_25);
+    imports.wbg.__wbindgen_closure_wrapper3596 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 1000, __wbg_adapter_25);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper3624 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 1013, __wbg_adapter_28);
+    imports.wbg.__wbindgen_closure_wrapper3625 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 1016, __wbg_adapter_28);
         return addHeapObject(ret);
     };
 
