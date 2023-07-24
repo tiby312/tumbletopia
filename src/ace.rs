@@ -276,7 +276,7 @@ pub async fn main_logic<'a>(
         //this_team.replenish_health();
         //that_team.replenish_health();
 
-        this_team.calculate_selectable_all(that_team, grid_matrix);
+        //this_team.calculate_selectable_all(that_team, grid_matrix);
 
         let mut extra_attack = None;
 
@@ -370,14 +370,14 @@ pub async fn main_logic<'a>(
 
                 {
                     //TODO only need to calculate when we mutate?
-                    let k = unit.calculate_selectable(this_team, that_team, grid_matrix);
-                    if !k {
-                        this_team
-                            .lookup_mut(&current_warrior_pos.unwrap_this())
-                            .selectable = k;
-                        //Deselect not selecftable!!!
-                        break;
-                    }
+                    // let k = unit.calculate_selectable(this_team, that_team, grid_matrix);
+                    // if !k {
+                    //     this_team
+                    //         .lookup_mut(&current_warrior_pos.unwrap_this())
+                    //         .selectable = k;
+                    //     //Deselect not selecftable!!!
+                    //     break;
+                    // }
                 }
 
                 let cc = generate_unit_possible_moves2(
@@ -513,6 +513,13 @@ pub async fn main_logic<'a>(
                         .await_data(grid_matrix, 1 - team_index)
                         .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
                         .await;
+
+                    for n in target_cell.to_cube().neighbours() {
+                        doop.await_data(grid_matrix, team_index)
+                            .resolve_group_attack(n, this_team, that_team)
+                            .await;
+                    }
+
                     if let Some(mut k) = k {
                         k.stamina.0 = k.as_ref().get_movement_data();
                         extra_attack = Some(k.val);
@@ -521,11 +528,8 @@ pub async fn main_logic<'a>(
                         this_team.add(k);
                         //TODO allow the user to move this unit one more time jumping.
                         //So the user must move the unit, or it will die.
-                    }
-                    for n in target_cell.to_cube().neighbours() {
-                        doop.await_data(grid_matrix, team_index)
-                            .resolve_group_attack(n, this_team, that_team)
-                            .await;
+                    } else {
+                        break 'outer;
                     }
                 } else if let Some(a) = this_team.find_slow(&target_cell) {
                     // if !current_attack && movement::contains_coord(friendly.iter(), &target_cell) {
@@ -544,12 +548,12 @@ pub async fn main_logic<'a>(
                     // }
                     // else
                     {
-                        let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
+                        //let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
                         let k = a.slim();
 
-                        this_team.lookup_mut(&k).selectable = vv;
+                        //this_team.lookup_mut(&k).selectable = vv;
 
-                        if vv && k != current_warrior_pos.unwrap_this() {
+                        if k != current_warrior_pos.unwrap_this() {
                             //Quick switch to another unit
                             current_warrior_pos = TeamType::ThisTeam(k);
                         } else {
@@ -565,14 +569,14 @@ pub async fn main_logic<'a>(
                 //let view = game.get_view();
 
                 let wwa = this_team.lookup(current_warrior_pos.unwrap_this());
-                let vv = wwa.calculate_selectable(this_team, that_team, grid_matrix);
+                //let vv = wwa.calculate_selectable(this_team, that_team, grid_matrix);
                 let mut wwa = this_team.lookup_mut(&current_warrior_pos.unwrap_this());
-                wwa.selectable = vv;
+                //wwa.selectable = vv;
 
-                if !vv {
-                    //FInish turn
-                    break 'outer;
-                }
+                // if !vv {
+                //     //FInish turn
+                //     break 'outer;
+                // }
             }
 
             //log!(format!("User selected!={:?}", mouse_world));
@@ -652,7 +656,7 @@ pub async fn main_logic<'a>(
         //     }
         // }
         this_team.replenish_stamina();
-        this_team.reset_attacked();
+        //this_team.reset_attacked();
 
         if team_index == 1 {
             team_index = 0;

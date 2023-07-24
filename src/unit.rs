@@ -8,12 +8,12 @@ use super::*;
 #[derive(Debug)]
 pub struct UnitData {
     pub position: GridCoord,
-    pub stamina: MoveUnit,
     //TODO don't store for each unit. Just current selected unit!!!!
+    pub stamina: MoveUnit,
     pub attacked: bool,
     pub resting: i8,
     pub health: i8,
-    pub selectable: bool,
+    //pub selectable: bool,
 }
 
 impl WarriorType<&UnitData> {
@@ -109,38 +109,38 @@ impl WarriorType<&UnitData> {
             val: self.val,
         }
     }
-    pub fn calculate_selectable(
-        &self,
-        _this_team: &Tribe,
-        _that_team: &Tribe,
-        _grid_matrix: &GridMatrix,
-    ) -> bool {
-        // let s = self; //this_team.lookup(*self);
-        // let pos = ace::generate_unit_possible_moves2(&s, this_team, that_team, grid_matrix);
+    // pub fn calculate_selectable(
+    //     &self,
+    //     _this_team: &Tribe,
+    //     _that_team: &Tribe,
+    //     _grid_matrix: &GridMatrix,
+    // ) -> bool {
+    //     // let s = self; //this_team.lookup(*self);
+    //     // let pos = ace::generate_unit_possible_moves2(&s, this_team, that_team, grid_matrix);
 
-        // //check if there are enemies in range.
-        // let enemy_in_range = {
-        //     let (_, att) = match &pos {
-        //         CellSelection::MoveSelection(ss, _, att) => (ss, att),
-        //         _ => unreachable!(),
-        //     };
+    //     // //check if there are enemies in range.
+    //     // let enemy_in_range = {
+    //     //     let (_, att) = match &pos {
+    //     //         CellSelection::MoveSelection(ss, _, att) => (ss, att),
+    //     //         _ => unreachable!(),
+    //     //     };
 
-        //     let mut found = false;
-        //     for a in att.iter() {
-        //         if let Some(_) = that_team.find_slow(a) {
-        //             found = true;
-        //             break;
-        //         }
-        //     }
-        //     found
-        // };
+    //     //     let mut found = false;
+    //     //     for a in att.iter() {
+    //     //         if let Some(_) = that_team.find_slow(a) {
+    //     //             found = true;
+    //     //             break;
+    //     //         }
+    //     //     }
+    //     //     found
+    //     // };
 
-        // //TODO move this and the above into an high-level "Has possible moves function"
-        // let has_stamina_to_move = s.stamina.0 > 0; //0f??? TODO
-        // let ret = enemy_in_range && !s.attacked || has_stamina_to_move && !s.attacked;
-        // ret
-        self.stamina.0 > 0 && self.resting == 0 //self.health != 0
-    }
+    //     // //TODO move this and the above into an high-level "Has possible moves function"
+    //     // let has_stamina_to_move = s.stamina.0 > 0; //0f??? TODO
+    //     // let ret = enemy_in_range && !s.attacked || has_stamina_to_move && !s.attacked;
+    //     // ret
+    //     self.stamina.0 > 0 && self.resting == 0 //self.health != 0
+    // }
 }
 impl UnitData {
     //TODO replace with has possible moves
@@ -160,7 +160,7 @@ impl UnitData {
             attacked: false,
             resting: 0,
             health: 1,
-            selectable: true,
+            //selectable: true,
         }
     }
 }
@@ -627,36 +627,36 @@ impl Tribe {
         ParaFilter { tribe: self }
     }
 
-    pub fn reset_attacked(&mut self) {
-        for a in self.warriors.iter_mut() {
-            for b in a.elem.iter_mut() {
-                b.attacked = false;
-                //Just set it selectable during other peoples turns so its not gray,
-                //even though it is not selectable.
-                b.selectable = true;
-            }
-        }
-    }
-    pub fn calculate_selectable_all(&mut self, that_team: &mut Tribe, grid_matrix: &GridMatrix) {
-        let this_team = self;
-        for i in 0..this_team.warriors.len() {
-            let a = &this_team.warriors[i];
-            for ii in 0..a.elem.len() {
-                let a = &this_team.warriors[i];
+    // pub fn reset_attacked(&mut self) {
+    //     for a in self.warriors.iter_mut() {
+    //         for b in a.elem.iter_mut() {
+    //             b.attacked = false;
+    //             //Just set it selectable during other peoples turns so its not gray,
+    //             //even though it is not selectable.
+    //             b.selectable = true;
+    //         }
+    //     }
+    // }
+    // pub fn calculate_selectable_all(&mut self, that_team: &mut Tribe, grid_matrix: &GridMatrix) {
+    //     let this_team = self;
+    //     for i in 0..this_team.warriors.len() {
+    //         let a = &this_team.warriors[i];
+    //         for ii in 0..a.elem.len() {
+    //             let a = &this_team.warriors[i];
 
-                let b = &a.elem[ii];
-                let b = WarriorType {
-                    inner: b,
-                    val: Type::type_index_inverse(i),
-                };
+    //             let b = &a.elem[ii];
+    //             let b = WarriorType {
+    //                 inner: b,
+    //                 val: Type::type_index_inverse(i),
+    //             };
 
-                let vv = b.calculate_selectable(this_team, that_team, grid_matrix);
+    //             let vv = b.calculate_selectable(this_team, that_team, grid_matrix);
 
-                this_team.warriors[i].elem[ii].selectable = vv;
-                //b.selectable=vv;
-            }
-        }
-    }
+    //             this_team.warriors[i].elem[ii].selectable = vv;
+    //             //b.selectable=vv;
+    //         }
+    //     }
+    // }
     pub fn set_health(&mut self) {
         for (i, val) in self.warriors.iter_mut().enumerate() {
             for unit in val.elem.iter_mut() {
