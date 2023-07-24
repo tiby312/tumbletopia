@@ -513,9 +513,12 @@ pub async fn main_logic<'a>(
                         .await_data(grid_matrix, 1 - team_index)
                         .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
                         .await;
-                    if let Some(k)=k {
+                    if let Some(mut k) = k {
+                        k.stamina.0 = k.as_ref().get_movement_data();
+
+                        current_warrior_pos = TeamType::ThisTeam(k.as_ref().slim());
                         this_team.add(k);
-                        
+
                         //TODO allow the user to move this unit one more time jumping.
                         //So the user must move the unit, or it will die.
                     }
