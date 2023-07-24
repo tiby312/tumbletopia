@@ -60,7 +60,7 @@ impl<'a> WarriorDraw<'a> {
         }
     }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
-        let grey = self.typ == Type::Para;
+        //let grey = self.typ == Type::Para;
         for cc in self.col.elem.iter() {
             let pos = gg.hex_axial_to_world(&cc.position);
 
@@ -72,8 +72,11 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model.draw_ext(
-                &mut v, grey, //cc.health == 0 || cc.fresh != 0, /*  !cc.selectable(game)  */
-                false, false, true,
+                &mut v,
+                cc.resting != 0, /*  !cc.selectable(game)  */
+                false,
+                false,
+                true,
             );
         }
     }

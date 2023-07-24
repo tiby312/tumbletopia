@@ -276,12 +276,6 @@ pub async fn main_logic<'a>(
         //this_team.replenish_health();
         //that_team.replenish_health();
 
-        for a in this_team.warriors.iter_mut() {
-            for b in a.elem.iter_mut() {
-                b.fresh = 0.max(b.fresh - 1);
-            }
-        }
-
         this_team.calculate_selectable_all(that_team, grid_matrix);
 
         let mut extra_attack = None;
@@ -579,6 +573,12 @@ pub async fn main_logic<'a>(
             //log!(format!("User selected!={:?}", mouse_world));
         }
 
+        console_dbg!("REPLISHING");
+        for a in this_team.warriors.iter_mut() {
+            for b in a.elem.iter_mut() {
+                b.resting = 0.max(b.resting - 1);
+            }
+        }
         //loop until user picks a spot for paras.
         // {
         //     //Loop until the user clicks on a selectable unit in their team.
@@ -604,48 +604,48 @@ pub async fn main_logic<'a>(
         //     });
         // }
 
-        for a in this_team.warriors.iter_mut() {
-            a.elem.retain(|a| a.health > 0);
-        }
+        // for a in this_team.warriors.iter_mut() {
+        //     a.elem.retain(|a| a.health > 0);
+        // }
 
-        //Loop through healers and apply healing.
-        let mages: Vec<_> = this_team.warriors[Type::Mage.type_index()]
-            .elem
-            .iter()
-            .map(|x| WarriorType {
-                inner: x.position,
-                val: Type::Mage,
-            })
-            .collect();
+        // //Loop through healers and apply healing.
+        // let mages: Vec<_> = this_team.warriors[Type::Mage.type_index()]
+        //     .elem
+        //     .iter()
+        //     .map(|x| WarriorType {
+        //         inner: x.position,
+        //         val: Type::Mage,
+        //     })
+        //     .collect();
 
-        for unit in mages.iter() {
-            let mut a = this_team.lookup_mut(unit);
+        // for unit in mages.iter() {
+        //     let mut a = this_team.lookup_mut(unit);
 
-            if a.health < 2 {
-                a.health = 2.min(a.health + 1)
-            }
-        }
-        for unit in mages.iter() {
-            let unit = this_team.lookup(*unit);
+        //     if a.health < 2 {
+        //         a.health = 2.min(a.health + 1)
+        //     }
+        // }
+        // for unit in mages.iter() {
+        //     let unit = this_team.lookup(*unit);
 
-            let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix, None);
-            let (_, friendly, attack) = match cc {
-                CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
-                _ => {
-                    unreachable!()
-                }
-            };
+        //     let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix, None);
+        //     let (_, friendly, attack) = match cc {
+        //         CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
+        //         _ => {
+        //             unreachable!()
+        //         }
+        //     };
 
-            assert!(attack.is_empty());
+        //     assert!(attack.is_empty());
 
-            for a in friendly {
-                if let Some(mut a) = this_team.find_slow_mut(&a) {
-                    if a.health < 2 {
-                        a.health = 2.min(a.health + 1)
-                    }
-                }
-            }
-        }
+        //     for a in friendly {
+        //         if let Some(mut a) = this_team.find_slow_mut(&a) {
+        //             if a.health < 2 {
+        //                 a.health = 2.min(a.health + 1)
+        //             }
+        //         }
+        //     }
+        // }
         this_team.replenish_stamina();
         this_team.reset_attacked();
 

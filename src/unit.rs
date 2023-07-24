@@ -11,7 +11,7 @@ pub struct UnitData {
     pub stamina: MoveUnit,
     //TODO don't store for each unit. Just current selected unit!!!!
     pub attacked: bool,
-    pub fresh: i8,
+    pub resting: i8,
     pub health: i8,
     pub selectable: bool,
 }
@@ -139,7 +139,7 @@ impl WarriorType<&UnitData> {
         // let has_stamina_to_move = s.stamina.0 > 0; //0f??? TODO
         // let ret = enemy_in_range && !s.attacked || has_stamina_to_move && !s.attacked;
         // ret
-        self.stamina.0 > 0 && self.health != 0
+        self.stamina.0 > 0 && self.resting == 0 //self.health != 0
     }
 }
 impl UnitData {
@@ -158,7 +158,7 @@ impl UnitData {
             position,
             stamina: MoveUnit(0),
             attacked: false,
-            fresh: 0,
+            resting: 0,
             health: 1,
             selectable: true,
         }
@@ -415,8 +415,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 let it = animation::movement(f.position, path, self.grid_matrix);
                 let aa = AnimationOptions::attack([f, enemy.take().unwrap()]);
 
-                let [this_unit, target] = self.wait_animation(it, aa).await;
-
+                let [mut this_unit, target] = self.wait_animation(it, aa).await;
+                //TODO 3 is enemy
+                this_unit.resting = 2;
                 this_team.add(this_unit);
                 enemy = Some(target);
             }
@@ -741,7 +742,7 @@ impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
             self.a
                 .iter()
                 .filter(|a| a.health != 0)
-                .filter(|a| a.fresh == 0)
+                .filter(|a| a.resting == 0)
                 .find(|a| a.get_pos() == b)
                 .is_none(),
         )
