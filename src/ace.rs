@@ -515,10 +515,10 @@ pub async fn main_logic<'a>(
                         .await;
                     if let Some(mut k) = k {
                         k.stamina.0 = k.as_ref().get_movement_data();
+                        extra_attack = Some(k.val);
 
                         current_warrior_pos = TeamType::ThisTeam(k.as_ref().slim());
                         this_team.add(k);
-
                         //TODO allow the user to move this unit one more time jumping.
                         //So the user must move the unit, or it will die.
                     }
@@ -684,6 +684,7 @@ pub fn generate_unit_possible_moves2(
     extra_attack: Option<Type>,
 ) -> CellSelection {
     // If there is an enemy near by restrict movement.
+
     let j = if let Some(_) = unit
         .position
         .to_cube()
@@ -691,29 +692,40 @@ pub fn generate_unit_possible_moves2(
         .map(|s| that_team.find_slow(&s.to_axial()).is_some())
         .find(|a| *a)
     {
-        1
+        if extra_attack.is_none() {
+            1
+        } else {
+            unit.stamina.0
+        }
     } else {
         unit.stamina.0
     };
-    //let j = unit.stamina.0;
-
     let mm = MoveUnit(j);
 
-    let mm = movement::PossibleMoves::new(
-        &movement::WarriorMovement,
-        &grid_matrix
-            .filter()
-            .chain(this_team.filter().extend().chain(that_team.filter())),
-        // .chain(this_team.not_para_filter())
-        // .chain(
-        //     that_team
-        //         .para_filter()
-        //         .chain(that_team.not_para_filter().extend()),
-        // ),
-        &terrain::Grass,
-        unit.position,
-        mm,
-    );
+    let mm = if extra_attack.is_none() {
+        movement::PossibleMoves::new(
+            &movement::WarriorMovement,
+            &grid_matrix
+                .filter()
+                .chain(this_team.filter().extend().chain(that_team.filter())),
+            &terrain::Grass,
+            unit.position,
+            mm,
+        )
+    } else {
+        movement::PossibleMoves::new(
+            &movement::WarriorMovement,
+            &grid_matrix.filter().chain(
+                this_team
+                    .filter()
+                    .extend()
+                    .chain(that_team.filter().extend()),
+            ),
+            &terrain::Grass,
+            unit.position,
+            mm,
+        )
+    };
 
     // let friendly_coords = unit
     //     .get_friendly_data()
