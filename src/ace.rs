@@ -522,7 +522,7 @@ pub async fn main_logic<'a>(
 
                     if let Some(mut k) = k {
                         k.stamina.0 = k.as_ref().get_movement_data();
-                        extra_attack = Some(k.val);
+                        extra_attack = Some(target_cell);
 
                         current_warrior_pos = TeamType::ThisTeam(k.as_ref().slim());
                         this_team.add(k);
@@ -685,7 +685,7 @@ pub fn generate_unit_possible_moves2(
     this_team: &Tribe,
     that_team: &Tribe,
     grid_matrix: &GridMatrix,
-    extra_attack: Option<Type>,
+    extra_attack: Option<GridCoord>,
 ) -> CellSelection {
     // If there is an enemy near by restrict movement.
 
@@ -737,25 +737,25 @@ pub fn generate_unit_possible_moves2(
     //     .collect();
     let friendly_coords = vec![];
 
-    let ttt = &this_team.filter().chain(grid_matrix.filter());
-    let ee = extra_attack.map(|e| {
-        let pret = WarriorType {
-            val: e,
-            inner: unit.inner,
-        };
-        pret.get_attack_data(ttt)
-    });
+    //let ttt = &this_team.filter().chain(grid_matrix.filter());
+    // let ee = extra_attack.map(|e| {
+    //     let pret = WarriorType {
+    //         val: e,
+    //         inner: unit.inner,
+    //     };
+    //     pret.get_attack_data(ttt)
+    // });
 
     //TODO don't collect.
-    let mut attack_coords: Vec<_> = unit
-        .get_attack_data(&this_team.filter().chain(grid_matrix.filter()))
-        .collect();
+    // let mut attack_coords: Vec<_> = unit
+    //     .get_attack_data(&this_team.filter().chain(grid_matrix.filter()))
+    //     .collect();
 
-    for a in ee.into_iter().flatten() {
-        if !attack_coords.contains(&a) {
-            attack_coords.push(a)
-        }
-    }
+    // for a in ee.into_iter().flatten() {
+    //     if !attack_coords.contains(&a) {
+    //         attack_coords.push(a)
+    //     }
+    // }
 
-    CellSelection::MoveSelection(mm, friendly_coords, attack_coords)
+    CellSelection::MoveSelection(mm, friendly_coords, vec![])
 }
