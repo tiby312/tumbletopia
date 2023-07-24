@@ -513,9 +513,11 @@ pub async fn main_logic<'a>(
                         .await_data(grid_matrix, 1 - team_index)
                         .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
                         .await;
-                    if k.is_some() {
-                        //The unit we just moved died. Need to deselect!!
-                        break 'outer;
+                    if let Some(k)=k {
+                        this_team.add(k);
+                        
+                        //TODO allow the user to move this unit one more time jumping.
+                        //So the user must move the unit, or it will die.
                     }
                     for n in target_cell.to_cube().neighbours() {
                         doop.await_data(grid_matrix, team_index)
@@ -573,7 +575,7 @@ pub async fn main_logic<'a>(
             //log!(format!("User selected!={:?}", mouse_world));
         }
 
-        console_dbg!("REPLISHING");
+        //console_dbg!("REPLISHING");
         for a in this_team.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
                 b.resting = 0.max(b.resting - 1);

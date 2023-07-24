@@ -416,8 +416,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 let aa = AnimationOptions::attack([f, enemy.take().unwrap()]);
 
                 let [mut this_unit, target] = self.wait_animation(it, aa).await;
-                //TODO 3 is enemy
-                this_unit.resting = 2;
+                //this_unit.resting = 1;
                 this_team.add(this_unit);
                 enemy = Some(target);
             }
