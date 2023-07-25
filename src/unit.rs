@@ -408,11 +408,12 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 let f = this_team.find_slow(&a.to_axial()).unwrap();
                 let f = this_team.lookup_take(f.slim());
 
-                let path = movement::Path::new();
-                let m = f.position.dir_to(&enemy.as_ref().unwrap().position);
-                let path = path.add(m).unwrap();
+                let tt = enemy.as_ref().unwrap().position;
+                // let path = movement::Path::new();
+                // let m = f.position.dir_to(&enemy.as_ref().unwrap().position);
+                // let path = path.add(m).unwrap();
 
-                let it = animation::movement(f.position, path, self.grid_matrix);
+                let it = animation::attack(f.position, tt, self.grid_matrix);
                 let aa = AnimationOptions::attack([f, enemy.take().unwrap()]);
 
                 let [mut this_unit, target] = self.wait_animation(it, aa).await;

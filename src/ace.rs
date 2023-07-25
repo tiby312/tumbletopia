@@ -571,6 +571,11 @@ pub async fn main_logic<'a>(
 
                         Some(this_team.lookup_take(j))
                     } else {
+                        for n in target_cell.to_cube().neighbours() {
+                            doop.await_data(grid_matrix, team_index)
+                                .resolve_group_attack(n, this_team, that_team)
+                                .await;
+                        }
                         None
                     };
 
