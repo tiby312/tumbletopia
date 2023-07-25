@@ -396,9 +396,34 @@ pub async fn main_logic<'a>(
                         break 'outer;
                     }
                 };
+                let target_cell = mouse_world;
+
+                //RESELECT STAGE
+                if let Some(a) = this_team.find_slow(&target_cell) {
+                    let k = a.slim();
+                    if k != current_warrior_pos.unwrap_this() {
+                        //Quick switch to another unit
+                        current_warrior_pos = TeamType::ThisTeam(k);
+                        continue;
+                    } else {
+                        //Deselect
+                        break;
+                    }
+                } else if let Some(target) = that_team.find_slow(&target_cell) {
+                    current_warrior_pos = TeamType::ThatTeam(target.slim());
+                    continue;
+                }
+
+                if let Some(k) = extra_attack {
+                    if let TeamType::ThisTeam(a) = current_warrior_pos {
+                        if a.inner != k {
+                            console_dbg!("BREAKINGGGGG");
+                            break;
+                        }
+                    }
+                }
 
                 //This is the cell the user selected from the pool of available moves for the unit
-                let target_cell = mouse_world;
                 let (ss, _friendly, attack) = match cell {
                     CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
                     _ => {
@@ -481,9 +506,6 @@ pub async fn main_logic<'a>(
                                 unreachable!();
                             }
                         }
-                    } else {
-                        current_warrior_pos = TeamType::ThatTeam(target_coord);
-                        continue;
                     }
                 } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
                     let (path, _) = ss.get_path_data(&target_cell).unwrap();
@@ -532,35 +554,21 @@ pub async fn main_logic<'a>(
                         break 'outer;
                     }
                 } else if let Some(a) = this_team.find_slow(&target_cell) {
-                    // if !current_attack && movement::contains_coord(friendly.iter(), &target_cell) {
-                    //     let target_coord = a.slim();
 
-                    //     let c = this_team.lookup_take(current_warrior_pos);
+                    // {
+                    //     //let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
+                    //     let k = a.slim();
 
-                    //     let d = this_team.lookup_take(target_coord);
+                    //     //this_team.lookup_mut(&k).selectable = vv;
 
-                    //     let unit::Pair(Some(a),Some(b))= doop.await_data(grid_matrix,team_index).resolve_heal(c, d).await else{
-                    //             unreachable!()
-                    //         };
-
-                    //     this_team.add(a);
-                    //     this_team.add(b)
+                    //     if k != current_warrior_pos.unwrap_this() {
+                    //         //Quick switch to another unit
+                    //         current_warrior_pos = TeamType::ThisTeam(k);
+                    //     } else {
+                    //         //Deselect
+                    //         break;
+                    //     }
                     // }
-                    // else
-                    {
-                        //let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
-                        let k = a.slim();
-
-                        //this_team.lookup_mut(&k).selectable = vv;
-
-                        if k != current_warrior_pos.unwrap_this() {
-                            //Quick switch to another unit
-                            current_warrior_pos = TeamType::ThisTeam(k);
-                        } else {
-                            //Deselect
-                            break;
-                        }
-                    }
                 } else {
                     //Deselect
                     break;
