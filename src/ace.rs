@@ -301,11 +301,11 @@ pub async fn main_logic<'a>(
                 }
 
                 //Else we just place a para and exit turn.
-                this_team.add(WarriorType {
-                    inner: UnitData::new(cell),
-                    val: Type::Para,
-                });
-                break 'outer;
+                // this_team.add(WarriorType {
+                //     inner: UnitData::new(cell),
+                //     val: Type::Para,
+                // });
+                // break 'outer;
             };
 
             #[derive(Copy, Clone, Debug)]
