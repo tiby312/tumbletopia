@@ -95,8 +95,10 @@ impl AnimationOptions {
 
 #[derive(Debug)]
 pub enum MousePrompt {
-    Friendly(CellSelection),
-    Enemy(CellSelection),
+    Selection {
+        selection: CellSelection,
+        grey: bool,
+    },
     None,
 }
 
@@ -189,35 +191,43 @@ impl<'a> Doop<'a> {
         let (_, c) = self.get_mouse(MousePrompt::None, team_index).await;
         c
     }
-    async fn get_mouse_selection_friendly<'c>(
+    async fn get_mouse_selection<'c>(
         &mut self,
         cell: CellSelection,
         team_index: usize,
+        grey: bool,
     ) -> (CellSelection, Pototo<GridCoord>) {
         let (b, c) = self
-            .get_mouse(MousePrompt::Friendly(cell), team_index)
+            .get_mouse(
+                MousePrompt::Selection {
+                    selection: cell,
+                    grey,
+                },
+                team_index,
+            )
             .await;
 
-        let MousePrompt::Friendly(b)=b else{
+        let MousePrompt::Selection{selection,grey:grey2}=b else{
             unreachable!()
         };
+        assert_eq!(grey2, grey);
 
-        (b, c)
+        (selection, c)
     }
 
-    async fn get_mouse_selection_enemy<'c>(
-        &mut self,
-        cell: CellSelection,
-        team_index: usize,
-    ) -> (CellSelection, Pototo<GridCoord>) {
-        let (b, c) = self.get_mouse(MousePrompt::Enemy(cell), team_index).await;
+    // async fn get_mouse_selection_enemy<'c>(
+    //     &mut self,
+    //     cell: CellSelection,
+    //     team_index: usize,
+    // ) -> (CellSelection, Pototo<GridCoord>) {
+    //     let (b, c) = self.get_mouse(MousePrompt::Enemy(cell), team_index).await;
 
-        let MousePrompt::Enemy(b)=b else{
-            unreachable!()
-        };
+    //     let MousePrompt::Enemy(b)=b else{
+    //         unreachable!()
+    //     };
 
-        (b, c)
-    }
+    //     (b, c)
+    // }
 
     async fn get_mouse<'c>(
         &mut self,
@@ -339,7 +349,7 @@ pub async fn main_logic<'a>(
                             None,
                         );
 
-                        let (_, pototo) = doop.get_mouse_selection_enemy(cc, team_index).await;
+                        let (_, pototo) = doop.get_mouse_selection(cc, team_index, true).await;
                         let target_cell = match pototo {
                             Pototo::Normal(t) => t,
                             Pototo::EndTurn => {
@@ -388,7 +398,17 @@ pub async fn main_logic<'a>(
                     extra_attack,
                 );
 
-                let (cell, pototo) = doop.get_mouse_selection_friendly(cc, team_index).await;
+                let gg = if let Some(e) = extra_attack {
+                    if let TeamType::ThisTeam(e2) = current_warrior_pos {
+                        e != *e2 
+                    } else {
+                        //TODO unreachble?
+                        true
+                    }
+                } else {
+                    false
+                };
+                let (cell, pototo) = doop.get_mouse_selection(cc, team_index, gg).await;
                 let mouse_world = match pototo {
                     Pototo::Normal(t) => t,
                     Pototo::EndTurn => {

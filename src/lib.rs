@@ -462,9 +462,8 @@ pub async fn worker_entry() {
 
                 disable_depth(&ctx, || {
                     if let ace::Command::GetMouseInput(a) = &command {
-                        let (a, greyscale) = match a {
-                            MousePrompt::Friendly(c) => (c, false),
-                            MousePrompt::Enemy(c) => (c, true),
+                        let (a, &greyscale) = match a {
+                            MousePrompt::Selection { selection, grey } => (selection, grey),
                             MousePrompt::None => return,
                         };
 
