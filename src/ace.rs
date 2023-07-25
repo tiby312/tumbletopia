@@ -400,7 +400,7 @@ pub async fn main_logic<'a>(
 
                 let gg = if let Some(e) = extra_attack {
                     if let TeamType::ThisTeam(e2) = current_warrior_pos {
-                        e != *e2 
+                        e != *e2
                     } else {
                         //TODO unreachble?
                         true
@@ -556,11 +556,23 @@ pub async fn main_logic<'a>(
                         .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
                         .await;
 
-                    for n in target_cell.to_cube().neighbours() {
-                        doop.await_data(grid_matrix, team_index)
-                            .resolve_group_attack(n, this_team, that_team)
-                            .await;
-                    }
+                    //Need to add ourselves back so we can resolve and attacking groups
+                    //only to remove ourselves again later.
+                    let k = if let Some(k) = k {
+                        let j = k.as_ref().slim();
+
+                        this_team.add(k);
+
+                        for n in target_cell.to_cube().neighbours() {
+                            doop.await_data(grid_matrix, team_index)
+                                .resolve_group_attack(n, this_team, that_team)
+                                .await;
+                        }
+
+                        Some(this_team.lookup_take(j))
+                    } else {
+                        None
+                    };
 
                     if let Some(mut k) = k {
                         k.stamina.0 = k.as_ref().get_movement_data();
