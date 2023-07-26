@@ -725,7 +725,8 @@ pub fn generate_unit_possible_moves2(
             &grid_matrix.filter().chain(that_team.filter().not()),
             &terrain::Grass,
             unit.position,
-            mm,
+            MoveUnit(1),
+            false,
         )
     } else {
         movement::PossibleMoves::new(
@@ -736,6 +737,7 @@ pub fn generate_unit_possible_moves2(
             &terrain::Grass,
             unit.position,
             mm,
+            true,
         )
     };
 

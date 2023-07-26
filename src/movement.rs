@@ -252,13 +252,21 @@ impl PossibleMoves {
         mo: &M,
         coord: GridCoord,
         remaining_moves: MoveUnit,
+        slide_rule: bool,
     ) -> Self {
         let remaining_moves = MoveUnit(remaining_moves.0);
         let mut p = PossibleMoves {
             moves: vec![],
             start: coord,
         };
-        p.explore_path(movement, filter, mo, Path::new(), remaining_moves);
+        p.explore_path(
+            movement,
+            filter,
+            mo,
+            Path::new(),
+            remaining_moves,
+            slide_rule,
+        );
         p
     }
 
@@ -281,6 +289,7 @@ impl PossibleMoves {
         mo: &M,
         current_path: Path,
         remaining_moves: MoveUnit,
+        slide_rule: bool,
     ) {
         // if remaining_moves.0 == 0 {
         //      return;
@@ -311,25 +320,27 @@ impl PossibleMoves {
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
-            let aaa = a.to_relative().to_cube().rotate_60_left();
-            let bbb = a.to_relative().to_cube().rotate_60_right();
-
             let mut skip = false;
 
-            let ttt1 = match filter.filter(&target_pos.add(aaa.to_axial())) {
-                FilterRes::Stop => false,
-                FilterRes::DontAccept => true,
-                FilterRes::Accept => true,
-            };
+            if slide_rule {
+                let aaa = a.to_relative().to_cube().rotate_60_left();
+                let bbb = a.to_relative().to_cube().rotate_60_right();
 
-            let ttt2 = match filter.filter(&target_pos.add(bbb.to_axial())) {
-                FilterRes::Stop => false,
-                FilterRes::DontAccept => true,
-                FilterRes::Accept => true,
-            };
+                let ttt1 = match filter.filter(&target_pos.add(aaa.to_axial())) {
+                    FilterRes::Stop => false,
+                    FilterRes::DontAccept => true,
+                    FilterRes::Accept => true,
+                };
 
-            if !ttt1 && !ttt2 {
-                continue;
+                let ttt2 = match filter.filter(&target_pos.add(bbb.to_axial())) {
+                    FilterRes::Stop => false,
+                    FilterRes::DontAccept => true,
+                    FilterRes::Accept => true,
+                };
+
+                if !ttt1 && !ttt2 {
+                    continue;
+                }
             }
 
             skip = match filter.filter(&target_pos) {
@@ -377,7 +388,14 @@ impl PossibleMoves {
             }
 
             //if !stop {
-            self.explore_path(movement, filter, mo, current_path.add(a).unwrap(), rr)
+            self.explore_path(
+                movement,
+                filter,
+                mo,
+                current_path.add(a).unwrap(),
+                rr,
+                slide_rule,
+            )
             //}
         }
     }
