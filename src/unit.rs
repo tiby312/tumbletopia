@@ -46,9 +46,9 @@ impl WarriorType<&UnitData> {
         let a = self;
         match a.val {
             Type::Warrior => 2,
-            Type::Rook => 2,
+            Type::Para => 1,
+            Type::Rook => 1,
             Type::Mage => 2,
-            Type::Para => 2,
         }
     }
 

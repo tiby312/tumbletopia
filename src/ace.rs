@@ -681,19 +681,7 @@ pub async fn main_logic<'a>(
     }
 }
 
-// async fn attack_enimate<'a>(game:&'a mut Game,engine:&mut LogicFacingEngine)->&'a mut Game{
-//     let (a,b)=engine.animate(game,Animation).await;
-//     //Do something here with warrior!!!
-//     a
-// }
-// async fn doop(engine:&mut LogicFacingEngine){
-//     if warrior.health<5{
-//         e
-//         killanimator.await
-//     }else{
-//         moveanimator.await
-//     }
-// }
+
 
 pub fn generate_unit_possible_moves2(
     unit: &WarriorType<&UnitData>,
