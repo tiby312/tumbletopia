@@ -187,7 +187,27 @@ pub trait Filter {
     {
         ExtendFilter { filter: self }
     }
+
+    fn not(self) -> NotFilter<Self>
+    where
+        Self: Sized,
+    {
+        NotFilter { filter: self }
+    }
 }
+pub struct NotFilter<F> {
+    filter: F,
+}
+impl<F: Filter> Filter for NotFilter<F> {
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        match self.filter.filter(a) {
+            FilterRes::Accept => FilterRes::Stop,
+            FilterRes::DontAccept => FilterRes::DontAccept,
+            FilterRes::Stop => FilterRes::Accept,
+        }
+    }
+}
+
 pub struct Chain<A, B> {
     a: A,
     b: B,

@@ -418,6 +418,14 @@ pub async fn main_logic<'a>(
                 };
                 let target_cell = mouse_world;
 
+                //This is the cell the user selected from the pool of available moves for the unit
+                let (ss, _friendly, attack) = match cell {
+                    CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
+                    _ => {
+                        unreachable!()
+                    }
+                };
+
                 //RESELECT STAGE
                 if let Some(a) = this_team.find_slow(&target_cell) {
                     let k = a.slim();
@@ -430,8 +438,10 @@ pub async fn main_logic<'a>(
                         break;
                     }
                 } else if let Some(target) = that_team.find_slow(&target_cell) {
-                    current_warrior_pos = TeamType::ThatTeam(target.slim());
-                    continue;
+                    if !movement::contains_coord(ss.iter_coords(), &target_cell) {
+                        current_warrior_pos = TeamType::ThatTeam(target.slim());
+                        continue;
+                    }
                 }
 
                 if let Some(k) = extra_attack {
@@ -443,56 +453,15 @@ pub async fn main_logic<'a>(
                     }
                 }
 
-                //This is the cell the user selected from the pool of available moves for the unit
-                let (ss, _friendly, attack) = match cell {
-                    CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
-                    _ => {
-                        unreachable!()
-                    }
-                };
-
                 let xx = this_team.lookup(current_warrior_pos.unwrap_this()).slim();
 
-                let current_attack = this_team.lookup_mut(&xx).attacked;
+                //let current_attack = this_team.lookup_mut(&xx).attacked;
 
                 if let Some(target) = that_team.find_slow(&target_cell) {
                     let target_coord = target.slim();
 
-                    if !current_attack && movement::contains_coord(ss.iter_coords(), &target_cell) {
+                    if movement::contains_coord(ss.iter_coords(), &target_cell) {
                         let d = that_team.lookup_take(target_coord);
-
-                        // //Attack using supports.
-                        // let d = {
-                        //     let v: Vec<_> = this_team
-                        //         .other_units_in_range_of_target(target_cell, grid_matrix)
-                        //         .map(|x| x.slim())
-                        //         .filter(|&f| f != xx)
-                        //         .collect();
-
-                        //     let mut d = Some(d);
-                        //     for a in v {
-                        //         let damage = 1;
-                        //         if d.as_ref().unwrap().health <= damage {
-                        //             break;
-                        //         }
-                        //         let warrir = this_team.lookup_take(a);
-
-                        //         match doop
-                        //             .await_data(grid_matrix, team_index)
-                        //             .resolve_attack(warrir, d.take().unwrap(), true)
-                        //             .await
-                        //         {
-                        //             unit::Pair(Some(a), Some(b)) => {
-                        //                 this_team.add(a);
-                        //                 d = Some(b);
-                        //             }
-                        //             _ => {
-                        //                 unreachable!()
-                        //             }
-                        //         }
-                        //     }
-                        //     d.unwrap()
-                        // };
 
                         let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
@@ -507,6 +476,7 @@ pub async fn main_logic<'a>(
                                 current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
                                 this_team.add(a);
+                                break 'outer;
                             }
                             unit::Pair(None, Some(_)) => {
                                 unreachable!();
@@ -741,14 +711,11 @@ pub fn generate_unit_possible_moves2(
         .map(|s| that_team.find_slow(&s.to_axial()).is_some())
         .find(|a| *a)
     {
-        if extra_attack.is_none() {
-            1
-        } else {
-            unit.stamina.0
-        }
+        1
     } else {
         unit.stamina.0
     };
+
     let mm = MoveUnit(j);
 
     let mm = if extra_attack.is_none() {
@@ -764,12 +731,7 @@ pub fn generate_unit_possible_moves2(
     } else {
         movement::PossibleMoves::new(
             &movement::WarriorMovement,
-            &grid_matrix.filter().chain(
-                this_team
-                    .filter()
-                    .extend()
-                    .chain(that_team.filter().extend()),
-            ),
+            &grid_matrix.filter().chain(that_team.filter().not()),
             &terrain::Grass,
             unit.position,
             mm,
