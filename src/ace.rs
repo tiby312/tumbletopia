@@ -718,12 +718,11 @@ pub fn generate_unit_possible_moves2(
 
     let mm = MoveUnit(j);
 
-    let mm = if extra_attack.is_none() {
+    let mm = if let Some(_) = extra_attack.filter(|&aaa| aaa == unit.position) {
+        //
         movement::PossibleMoves::new(
             &movement::WarriorMovement,
-            &grid_matrix
-                .filter()
-                .chain(this_team.filter().extend().chain(that_team.filter())),
+            &grid_matrix.filter().chain(that_team.filter().not()),
             &terrain::Grass,
             unit.position,
             mm,
@@ -731,7 +730,9 @@ pub fn generate_unit_possible_moves2(
     } else {
         movement::PossibleMoves::new(
             &movement::WarriorMovement,
-            &grid_matrix.filter().chain(that_team.filter().not()),
+            &grid_matrix
+                .filter()
+                .chain(this_team.filter().extend().chain(that_team.filter())),
             &terrain::Grass,
             unit.position,
             mm,
