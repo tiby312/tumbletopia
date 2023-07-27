@@ -620,7 +620,6 @@ impl Tribe {
         TribeFilter { tribe: self }
     }
 
-
     // pub fn reset_attacked(&mut self) {
     //     for a in self.warriors.iter_mut() {
     //         for b in a.elem.iter_mut() {
