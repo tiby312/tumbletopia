@@ -419,11 +419,8 @@ pub async fn main_logic<'a>(
                 let target_cell = mouse_world;
 
                 //This is the cell the user selected from the pool of available moves for the unit
-                let (ss, _friendly, attack) = match cell {
-                    CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
-                    _ => {
-                        unreachable!()
-                    }
+                let CellSelection::MoveSelection(ss)=cell else{
+                    unreachable!()
                 };
 
                 //RESELECT STAGE
@@ -705,7 +702,6 @@ pub fn generate_unit_possible_moves2(
     let mm = MoveUnit(j);
 
     let mm = if let Some(_) = extra_attack.filter(|&aaa| aaa == unit.position) {
-        //
         movement::PossibleMoves::new(
             &movement::WarriorMovement,
             &grid_matrix.filter().and(that_team.filter()),
@@ -716,8 +712,6 @@ pub fn generate_unit_possible_moves2(
             false,
         )
     } else {
-        //let k = movement::AcceptCoords::new(that_team.warriors[1].elem.iter().map(|a| a.position));
-
         movement::PossibleMoves::new(
             &movement::WarriorMovement,
             &grid_matrix
@@ -731,31 +725,5 @@ pub fn generate_unit_possible_moves2(
         )
     };
 
-    // let friendly_coords = unit
-    //     .get_friendly_data()
-    //     .filter(|a| that_team.filter().chain(grid_matrix.filter()).filter(a))
-    //     .collect();
-    let friendly_coords = vec![];
-
-    //let ttt = &this_team.filter().chain(grid_matrix.filter());
-    // let ee = extra_attack.map(|e| {
-    //     let pret = WarriorType {
-    //         val: e,
-    //         inner: unit.inner,
-    //     };
-    //     pret.get_attack_data(ttt)
-    // });
-
-    //TODO don't collect.
-    // let mut attack_coords: Vec<_> = unit
-    //     .get_attack_data(&this_team.filter().chain(grid_matrix.filter()))
-    //     .collect();
-
-    // for a in ee.into_iter().flatten() {
-    //     if !attack_coords.contains(&a) {
-    //         attack_coords.push(a)
-    //     }
-    // }
-
-    CellSelection::MoveSelection(mm, friendly_coords, vec![])
+    CellSelection::MoveSelection(mm)
 }
