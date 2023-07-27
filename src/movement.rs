@@ -442,8 +442,11 @@ impl PossibleMoves {
             };
 
         if cost.0 > self.moves[index].2 .0 {
-            self.moves.push((coord, new_path, cost));
-            self.moves.swap_remove(index);
+            let og=&mut self.moves[index];
+            let new=&mut (coord, new_path, cost);
+            core::mem::swap(og,new);
+            // self.moves.push();
+            // self.moves.swap_remove(index);
             return true;
         }
 
