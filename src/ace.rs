@@ -708,7 +708,7 @@ pub fn generate_unit_possible_moves2(
         //
         movement::PossibleMoves::new(
             &movement::WarriorMovement,
-            &grid_matrix.filter().and(that_team.filter().not()),
+            &grid_matrix.filter().and(that_team.filter()),
             &movement::NoFilter,
             &terrain::Grass,
             unit.position,
