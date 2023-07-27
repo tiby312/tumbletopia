@@ -620,13 +620,6 @@ impl Tribe {
         TribeFilter { tribe: self }
     }
 
-    // pub fn not_para_filter(&self) -> NotParaFilter {
-    //     NotParaFilter { tribe: self }
-    // }
-
-    // pub fn para_filter(&self) -> ParaFilter {
-    //     ParaFilter { tribe: self }
-    // }
 
     // pub fn reset_attacked(&mut self) {
     //     for a in self.warriors.iter_mut() {

@@ -716,7 +716,7 @@ pub fn generate_unit_possible_moves2(
             false,
         )
     } else {
-        let k = movement::AcceptCoords::new(that_team.warriors[1].elem.iter().map(|a| a.position));
+        //let k = movement::AcceptCoords::new(that_team.warriors[1].elem.iter().map(|a| a.position));
 
         movement::PossibleMoves::new(
             &movement::WarriorMovement,
