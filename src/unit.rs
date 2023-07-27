@@ -218,7 +218,7 @@ impl<'a> movement::Filter for TribeFilter<'a> {
             .warriors
             .iter()
             .map(|a| a.filter().filter(b))
-            .fold(FilterRes::Accept, |a, b| a.and(b))
+            .fold(FilterRes::Stop, |a, b| a.or(b))
     }
 }
 
@@ -744,7 +744,7 @@ impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
                 .filter(|a| a.health != 0)
                 .filter(|a| a.resting == 0)
                 .find(|a| a.get_pos() == b)
-                .is_none(),
+                .is_some(),
         )
     }
 }

@@ -159,6 +159,15 @@ impl FilterRes {
         }
     }
 
+    pub fn or(self, other: FilterRes) -> FilterRes {
+        match (self, other) {
+            (FilterRes::Accept, FilterRes::Accept) => FilterRes::Accept,
+            (FilterRes::Accept, FilterRes::Stop) => FilterRes::Accept,
+            (FilterRes::Stop, FilterRes::Accept) => FilterRes::Accept,
+            (FilterRes::Stop, FilterRes::Stop) => FilterRes::Stop,
+        }
+    }
+
     pub fn from_bool(val: bool) -> Self {
         if val {
             FilterRes::Accept
