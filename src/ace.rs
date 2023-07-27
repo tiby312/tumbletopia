@@ -444,13 +444,12 @@ pub async fn main_logic<'a>(
                 if let Some(k) = extra_attack {
                     if let TeamType::ThisTeam(a) = current_warrior_pos {
                         if a.inner != k {
-                            console_dbg!("BREAKINGGGGG");
                             break;
                         }
                     }
                 }
 
-                let xx = this_team.lookup(current_warrior_pos.unwrap_this()).slim();
+                //let xx = this_team.lookup(current_warrior_pos.unwrap_this()).slim();
 
                 //let current_attack = this_team.lookup_mut(&xx).attacked;
 
@@ -475,23 +474,7 @@ pub async fn main_logic<'a>(
                                 this_team.add(a);
                                 break 'outer;
                             }
-                            unit::Pair(None, Some(_)) => {
-                                unreachable!();
-                                // that_team.add(a);
-                                // //Deselect unit because it died.
-                                // break 'outer;
-                            }
-                            unit::Pair(Some(a), Some(b)) => {
-                                //current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
-                                unreachable!();
-                                // this_team.add(a);
-                                // that_team.add(b);
-
-                                break 'outer;
-                            }
-                            unit::Pair(None, None) => {
-                                unreachable!();
-                            }
+                            _ => unreachable!(),
                         }
                     }
                 } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
@@ -503,15 +486,10 @@ pub async fn main_logic<'a>(
                         .resolve_movement(this_unit, path)
                         .await;
 
-                    if let Some(a) = this_team.find_slow(&target_cell).map(|a| a.slim()) {
-                        let _ = this_team.lookup_take(a);
-                        //assert!(t.health == 0);
+                    // if let Some(a) = this_team.find_slow(&target_cell).map(|a| a.slim()) {
+                    //     let _ = this_team.lookup_take(a);
 
-                        //this_unit.stamina.0 = this_unit.as_ref().get_movement_data();
-                        //this_unit.attacked = false;
-
-                        //extra_attack = Some(t.val);
-                    }
+                    // }
 
                     current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
 
@@ -557,118 +535,19 @@ pub async fn main_logic<'a>(
                     } else {
                         break 'outer;
                     }
-                } else if let Some(a) = this_team.find_slow(&target_cell) {
-
-                    // {
-                    //     //let vv = a.calculate_selectable(this_team, that_team, grid_matrix);
-                    //     let k = a.slim();
-
-                    //     //this_team.lookup_mut(&k).selectable = vv;
-
-                    //     if k != current_warrior_pos.unwrap_this() {
-                    //         //Quick switch to another unit
-                    //         current_warrior_pos = TeamType::ThisTeam(k);
-                    //     } else {
-                    //         //Deselect
-                    //         break;
-                    //     }
-                    // }
                 } else {
                     //Deselect
                     break;
                 }
-
-                //let view = game.get_view();
-
-                let wwa = this_team.lookup(current_warrior_pos.unwrap_this());
-                //let vv = wwa.calculate_selectable(this_team, that_team, grid_matrix);
-                let mut wwa = this_team.lookup_mut(&current_warrior_pos.unwrap_this());
-                //wwa.selectable = vv;
-
-                // if !vv {
-                //     //FInish turn
-                //     break 'outer;
-                // }
             }
-
-            //log!(format!("User selected!={:?}", mouse_world));
         }
 
-        //console_dbg!("REPLISHING");
         for a in this_team.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
                 b.resting = 0.max(b.resting - 1);
             }
         }
-        //loop until user picks a spot for paras.
-        // {
-        //     //Loop until the user clicks on a selectable unit in their team.
-        //     let current_unit = loop {
-        //         let data = doop.get_mouse_no_selection(team_index).await;
-        //         let cell = match data {
-        //             Pototo::Normal(a) => a,
-        //             Pototo::EndTurn => {
-        //                 continue;
-        //                 // log!("End the turn!");
-        //                 // break 'outer;
-        //             }
-        //         };
-
-        //         if this_team.find_slow(&cell).is_none() && that_team.find_slow(&cell).is_none() {
-        //             break cell;
-        //         }
-        //     };
-
-        //     this_team.add(WarriorType {
-        //         inner: UnitData::new(current_unit),
-        //         val: Type::Para,
-        //     });
-        // }
-
-        // for a in this_team.warriors.iter_mut() {
-        //     a.elem.retain(|a| a.health > 0);
-        // }
-
-        // //Loop through healers and apply healing.
-        // let mages: Vec<_> = this_team.warriors[Type::Mage.type_index()]
-        //     .elem
-        //     .iter()
-        //     .map(|x| WarriorType {
-        //         inner: x.position,
-        //         val: Type::Mage,
-        //     })
-        //     .collect();
-
-        // for unit in mages.iter() {
-        //     let mut a = this_team.lookup_mut(unit);
-
-        //     if a.health < 2 {
-        //         a.health = 2.min(a.health + 1)
-        //     }
-        // }
-        // for unit in mages.iter() {
-        //     let unit = this_team.lookup(*unit);
-
-        //     let cc = generate_unit_possible_moves2(&unit, this_team, that_team, grid_matrix, None);
-        //     let (_, friendly, attack) = match cc {
-        //         CellSelection::MoveSelection(ss, friendly, attack) => (ss, friendly, attack),
-        //         _ => {
-        //             unreachable!()
-        //         }
-        //     };
-
-        //     assert!(attack.is_empty());
-
-        //     for a in friendly {
-        //         if let Some(mut a) = this_team.find_slow_mut(&a) {
-        //             if a.health < 2 {
-        //                 a.health = 2.min(a.health + 1)
-        //             }
-        //         }
-        //     }
-        // }
         this_team.replenish_stamina();
-        //this_team.reset_attacked();
 
         if team_index == 1 {
             team_index = 0;
