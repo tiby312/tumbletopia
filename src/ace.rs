@@ -378,18 +378,6 @@ pub async fn main_logic<'a>(
                 //let view = game.get_view();
                 let unit = this_team.lookup(current_warrior_pos.unwrap_this());
 
-                {
-                    //TODO only need to calculate when we mutate?
-                    // let k = unit.calculate_selectable(this_team, that_team, grid_matrix);
-                    // if !k {
-                    //     this_team
-                    //         .lookup_mut(&current_warrior_pos.unwrap_this())
-                    //         .selectable = k;
-                    //     //Deselect not selecftable!!!
-                    //     break;
-                    // }
-                }
-
                 let cc = generate_unit_possible_moves2(
                     &unit,
                     this_team,
@@ -472,6 +460,23 @@ pub async fn main_logic<'a>(
                                 current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
                                 this_team.add(a);
+
+                                let _ = doop
+                                    .await_data(grid_matrix, 1 - team_index)
+                                    .resolve_group_attack(
+                                        target_cell.to_cube(),
+                                        that_team,
+                                        this_team,
+                                    )
+                                    .await;
+
+                                //TODO is this possible?
+                                for n in target_cell.to_cube().neighbours() {
+                                    doop.await_data(grid_matrix, team_index)
+                                        .resolve_group_attack(n, this_team, that_team)
+                                        .await;
+                                }
+
                                 break 'outer;
                             }
                             _ => unreachable!(),
@@ -481,15 +486,10 @@ pub async fn main_logic<'a>(
                     let (path, _) = ss.get_path_data(&target_cell).unwrap();
                     let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
-                    let mut this_unit = doop
+                    let this_unit = doop
                         .await_data(grid_matrix, team_index)
                         .resolve_movement(this_unit, path)
                         .await;
-
-                    // if let Some(a) = this_team.find_slow(&target_cell).map(|a| a.slim()) {
-                    //     let _ = this_team.lookup_take(a);
-
-                    // }
 
                     current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
 
@@ -555,6 +555,19 @@ pub async fn main_logic<'a>(
             team_index = 1;
         }
     }
+}
+
+//TODO use this!
+pub enum Move {
+    Warrior {
+        from: GridCoord,
+        to: GridCoord,
+        extra: Option<GridCoord>,
+    },
+    King {
+        from: GridCoord,
+        to: GridCoord,
+    },
 }
 
 pub fn generate_unit_possible_moves2(
