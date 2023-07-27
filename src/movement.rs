@@ -147,23 +147,18 @@ impl Filter for FilterThese<'_> {
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum FilterRes {
     Accept,
-    DontAccept,
     Stop,
 }
 impl FilterRes {
     pub fn and(self, other: FilterRes) -> FilterRes {
         match (self, other) {
             (FilterRes::Accept, FilterRes::Accept) => FilterRes::Accept,
-            (FilterRes::Accept, FilterRes::DontAccept) => FilterRes::DontAccept,
             (FilterRes::Accept, FilterRes::Stop) => FilterRes::Stop,
-            (FilterRes::DontAccept, FilterRes::Accept) => FilterRes::DontAccept,
-            (FilterRes::DontAccept, FilterRes::DontAccept) => FilterRes::DontAccept,
-            (FilterRes::DontAccept, FilterRes::Stop) => FilterRes::Stop,
             (FilterRes::Stop, FilterRes::Accept) => FilterRes::Stop,
-            (FilterRes::Stop, FilterRes::DontAccept) => FilterRes::Stop,
             (FilterRes::Stop, FilterRes::Stop) => FilterRes::Stop,
         }
     }
+
     pub fn from_bool(val: bool) -> Self {
         if val {
             FilterRes::Accept
@@ -173,20 +168,38 @@ impl FilterRes {
     }
 }
 
+pub struct AcceptCoords<I> {
+    coords: I,
+}
+impl<I: Iterator<Item = GridCoord> + Clone> AcceptCoords<I> {
+    pub fn new(coords: I) -> Self {
+        Self { coords }
+    }
+}
+impl<I: Iterator<Item = GridCoord> + Clone> Filter for AcceptCoords<I> {
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        if self.coords.clone().any(|b| b == *a) {
+            FilterRes::Accept
+        } else {
+            FilterRes::Stop
+        }
+    }
+}
+
 pub trait Filter {
     fn filter(&self, a: &GridCoord) -> FilterRes;
-    fn chain<K: Filter>(self, other: K) -> Chain<Self, K>
+    fn and<K: Filter>(self, other: K) -> And<Self, K>
     where
         Self: Sized,
     {
-        Chain { a: self, b: other }
+        And { a: self, b: other }
     }
-    fn extend(self) -> ExtendFilter<Self>
-    where
-        Self: Sized,
-    {
-        ExtendFilter { filter: self }
-    }
+    // fn extend(self) -> ExtendFilter<Self>
+    // where
+    //     Self: Sized,
+    // {
+    //     ExtendFilter { filter: self }
+    // }
 
     fn not(self) -> NotFilter<Self>
     where
@@ -202,34 +215,32 @@ impl<F: Filter> Filter for NotFilter<F> {
     fn filter(&self, a: &GridCoord) -> FilterRes {
         match self.filter.filter(a) {
             FilterRes::Accept => FilterRes::Stop,
-            FilterRes::DontAccept => FilterRes::DontAccept,
             FilterRes::Stop => FilterRes::Accept,
         }
     }
 }
 
-pub struct Chain<A, B> {
+pub struct And<A, B> {
     a: A,
     b: B,
 }
-impl<A: Filter, B: Filter> Filter for Chain<A, B> {
+impl<A: Filter, B: Filter> Filter for And<A, B> {
     fn filter(&self, a: &GridCoord) -> FilterRes {
         self.a.filter(a).and(self.b.filter(a))
     }
 }
 
-pub struct ExtendFilter<F> {
-    filter: F,
-}
-impl<A: Filter> Filter for ExtendFilter<A> {
-    fn filter(&self, a: &GridCoord) -> FilterRes {
-        match self.filter.filter(a) {
-            FilterRes::Accept => FilterRes::Accept,
-            FilterRes::DontAccept => FilterRes::DontAccept,
-            FilterRes::Stop => FilterRes::DontAccept,
-        }
-    }
-}
+// pub struct ExtendFilter<F> {
+//     filter: F,
+// }
+// impl<A: Filter> Filter for ExtendFilter<A> {
+//     fn filter(&self, a: &GridCoord) -> FilterRes {
+//         match self.filter.filter(a) {
+//             FilterRes::Accept => FilterRes::Accept,
+//             FilterRes::Stop => FilterRes::DontAccept,
+//         }
+//     }
+// }
 
 pub fn contains_coord<'a, I: Iterator<Item = &'a GridCoord>>(mut it: I, b: &GridCoord) -> bool {
     it.find(|a| *a == b).is_some()
@@ -246,9 +257,10 @@ pub struct PossibleMoves {
 }
 
 impl PossibleMoves {
-    pub fn new<K: MoveStrategy, F: Filter, M: MoveCost>(
+    pub fn new<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
         movement: &K,
         filter: &F,
+        skip_filter: &F2,
         mo: &M,
         coord: GridCoord,
         remaining_moves: MoveUnit,
@@ -262,6 +274,7 @@ impl PossibleMoves {
         p.explore_path(
             movement,
             filter,
+            skip_filter,
             mo,
             Path::new(),
             remaining_moves,
@@ -282,10 +295,11 @@ impl PossibleMoves {
         self.moves.iter().map(|a| &a.0)
     }
 
-    fn explore_path<K: MoveStrategy, F: Filter, M: MoveCost>(
+    fn explore_path<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
         &mut self,
         movement: &K,
-        filter: &F,
+        continue_filter: &F,
+        skip_filter: &F2,
         mo: &M,
         current_path: Path,
         remaining_moves: MoveUnit,
@@ -320,21 +334,17 @@ impl PossibleMoves {
         for a in K::adjacent() {
             let target_pos = curr_pos.advance(a);
 
-            let mut skip = false;
-
             if slide_rule {
                 let aaa = a.to_relative().to_cube().rotate_60_left();
                 let bbb = a.to_relative().to_cube().rotate_60_right();
 
-                let ttt1 = match filter.filter(&target_pos.add(aaa.to_axial())) {
+                let ttt1 = match continue_filter.filter(&target_pos.add(aaa.to_axial())) {
                     FilterRes::Stop => false,
-                    FilterRes::DontAccept => true,
                     FilterRes::Accept => true,
                 };
 
-                let ttt2 = match filter.filter(&target_pos.add(bbb.to_axial())) {
+                let ttt2 = match continue_filter.filter(&target_pos.add(bbb.to_axial())) {
                     FilterRes::Stop => false,
-                    FilterRes::DontAccept => true,
                     FilterRes::Accept => true,
                 };
 
@@ -343,9 +353,13 @@ impl PossibleMoves {
                 }
             }
 
-            skip = match filter.filter(&target_pos) {
+            match continue_filter.filter(&target_pos) {
                 FilterRes::Stop => continue,
-                FilterRes::DontAccept => true,
+                FilterRes::Accept => {}
+            }
+
+            let skip = match skip_filter.filter(&target_pos) {
+                FilterRes::Stop => true,
                 FilterRes::Accept => false,
             };
 
@@ -390,7 +404,8 @@ impl PossibleMoves {
             //if !stop {
             self.explore_path(
                 movement,
-                filter,
+                continue_filter,
+                skip_filter,
                 mo,
                 current_path.add(a).unwrap(),
                 rr,

@@ -171,43 +171,43 @@ pub enum CellSelection {
     BuildSelection(GridCoord),
 }
 
-pub struct NotParaFilter<'a> {
-    tribe: &'a Tribe,
-}
-impl<'a> movement::Filter for NotParaFilter<'a> {
-    fn filter(&self, b: &GridCoord) -> FilterRes {
-        self.tribe
-            .warriors
-            .iter()
-            .enumerate()
-            .map(|(i, a)| {
-                if Type::type_index_inverse(i) == Type::Para {
-                    if FilterRes::Stop == a.filter().filter(b) {
-                        FilterRes::DontAccept
-                    } else {
-                        FilterRes::Accept
-                    }
-                } else {
-                    a.filter().filter(b)
-                }
-            })
-            .fold(FilterRes::Accept, |a, b| a.and(b))
-    }
-}
+// pub struct NotParaFilter<'a> {
+//     tribe: &'a Tribe,
+// }
+// impl<'a> movement::Filter for NotParaFilter<'a> {
+//     fn filter(&self, b: &GridCoord) -> FilterRes {
+//         self.tribe
+//             .warriors
+//             .iter()
+//             .enumerate()
+//             .map(|(i, a)| {
+//                 if Type::type_index_inverse(i) == Type::Para {
+//                     if FilterRes::Stop == a.filter().filter(b) {
+//                         FilterRes::DontAccept
+//                     } else {
+//                         FilterRes::Accept
+//                     }
+//                 } else {
+//                     a.filter().filter(b)
+//                 }
+//             })
+//             .fold(FilterRes::Accept, |a, b| a.and(b))
+//     }
+// }
 
-pub struct ParaFilter<'a> {
-    tribe: &'a Tribe,
-}
-impl<'a> movement::Filter for ParaFilter<'a> {
-    fn filter(&self, b: &GridCoord) -> FilterRes {
-        self.tribe.warriors[Type::Para.type_index()]
-            .elem
-            .iter()
-            .fold(FilterRes::Accept, |a, bb| {
-                a.and(FilterRes::from_bool(bb.position != *b))
-            })
-    }
-}
+// pub struct ParaFilter<'a> {
+//     tribe: &'a Tribe,
+// }
+// impl<'a> movement::Filter for ParaFilter<'a> {
+//     fn filter(&self, b: &GridCoord) -> FilterRes {
+//         self.tribe.warriors[Type::Para.type_index()]
+//             .elem
+//             .iter()
+//             .fold(FilterRes::Accept, |a, bb| {
+//                 a.and(FilterRes::from_bool(bb.position != *b))
+//             })
+//     }
+// }
 
 pub struct TribeFilter<'a> {
     tribe: &'a Tribe,
@@ -553,7 +553,7 @@ impl Tribe {
                     val: Type::type_index_inverse(i),
                 };
 
-                unit.get_attack_data(&self.filter().chain(grid_matrix.filter()))
+                unit.get_attack_data(&self.filter().and(grid_matrix.filter()))
                     .find(|&f| f == target)
                     .map(move |_| unit)
             })
@@ -620,13 +620,13 @@ impl Tribe {
         TribeFilter { tribe: self }
     }
 
-    pub fn not_para_filter(&self) -> NotParaFilter {
-        NotParaFilter { tribe: self }
-    }
+    // pub fn not_para_filter(&self) -> NotParaFilter {
+    //     NotParaFilter { tribe: self }
+    // }
 
-    pub fn para_filter(&self) -> ParaFilter {
-        ParaFilter { tribe: self }
-    }
+    // pub fn para_filter(&self) -> ParaFilter {
+    //     ParaFilter { tribe: self }
+    // }
 
     // pub fn reset_attacked(&mut self) {
     //     for a in self.warriors.iter_mut() {

@@ -681,8 +681,6 @@ pub async fn main_logic<'a>(
     }
 }
 
-
-
 pub fn generate_unit_possible_moves2(
     unit: &WarriorType<&UnitData>,
     this_team: &Tribe,
@@ -710,18 +708,20 @@ pub fn generate_unit_possible_moves2(
         //
         movement::PossibleMoves::new(
             &movement::WarriorMovement,
-            &grid_matrix.filter().chain(that_team.filter().not()),
+            &grid_matrix.filter().and(that_team.filter().not()),
+            &movement::NoFilter,
             &terrain::Grass,
             unit.position,
             MoveUnit(1),
             false,
         )
     } else {
+        let k = movement::AcceptCoords::new(that_team.warriors[1].elem.iter().map(|a| a.position));
+
         movement::PossibleMoves::new(
             &movement::WarriorMovement,
-            &grid_matrix
-                .filter()
-                .chain(this_team.filter().extend().chain(that_team.filter())),
+            &grid_matrix.filter().and(that_team.filter()),
+            &this_team.filter(),
             &terrain::Grass,
             unit.position,
             mm,
