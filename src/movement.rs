@@ -266,18 +266,38 @@ struct PossibleMoves {
 }
 
 #[derive(Debug, Clone)]
-pub struct MoveCand {
+pub struct MoveCand<P> {
     pub target: GridCoord,
-    pub path: Path,
+    pub path: P,
 }
 
 #[derive(Debug, Clone)]
-pub struct PossibleMoves2 {
+pub struct PossibleMoves2<P> {
     pub orig: GridCoord,
-    pub moves: Vec<MoveCand>,
+    pub moves: Vec<MoveCand<P>>,
 }
 
-pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
+pub trait PathHave {
+    type Foo;
+    fn path(&self, a: Path) -> Self::Foo;
+}
+pub struct WithPath;
+pub struct NoPath;
+
+impl PathHave for NoPath {
+    type Foo = ();
+    fn path(&self, a: Path) -> () {
+        ()
+    }
+}
+impl PathHave for WithPath {
+    type Foo = Path;
+    fn path(&self, a: Path) -> Path {
+        a
+    }
+}
+
+pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost, PH: PathHave>(
     movement: &K,
     filter: &F,
     skip_filter: &F2,
@@ -285,7 +305,8 @@ pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
     coord: GridCoord,
     remaining_moves: MoveUnit,
     slide_rule: bool,
-) -> PossibleMoves2 {
+    ph: PH,
+) -> PossibleMoves2<PH::Foo> {
     let m = PossibleMoves::new(
         movement,
         filter,
@@ -299,7 +320,10 @@ pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
     let moves = m
         .moves
         .into_iter()
-        .map(|(target, path, _)| MoveCand { target, path })
+        .map(|(target, path, _)| MoveCand {
+            target,
+            path: ph.path(path),
+        })
         .collect();
     PossibleMoves2 { orig: coord, moves }
 }

@@ -346,6 +346,7 @@ pub async fn main_logic<'a>(
                             this_team,
                             grid_matrix,
                             None,
+                            movement::NoPath,
                         );
                         let cc = CellSelection::MoveSelection(cc);
 
@@ -384,6 +385,7 @@ pub async fn main_logic<'a>(
                     that_team,
                     grid_matrix,
                     extra_attack,
+                    movement::NoPath,
                 );
                 let cc = CellSelection::MoveSelection(cc);
 
@@ -448,6 +450,16 @@ pub async fn main_logic<'a>(
                     if movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell) {
                         let d = that_team.lookup_take(target_coord);
 
+                        //Reconstruct possible paths with path information this time.
+                        let ss = generate_unit_possible_moves2(
+                            &unit,
+                            this_team,
+                            that_team,
+                            grid_matrix,
+                            extra_attack,
+                            movement::WithPath,
+                        );
+
                         let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
                         let path = ss
@@ -492,6 +504,16 @@ pub async fn main_logic<'a>(
                     }
                 } else if movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell)
                 {
+                    //Reconstruct possible paths with path information this time.
+                    let ss = generate_unit_possible_moves2(
+                        &unit,
+                        this_team,
+                        that_team,
+                        grid_matrix,
+                        extra_attack,
+                        movement::WithPath,
+                    );
+
                     let path = ss
                         .moves
                         .iter()
@@ -618,13 +640,14 @@ pub enum Move {
     },
 }
 
-pub fn generate_unit_possible_moves2(
+pub fn generate_unit_possible_moves2<P: movement::PathHave>(
     unit: &WarriorType<&UnitData>,
     this_team: &Tribe,
     that_team: &Tribe,
     grid_matrix: &GridMatrix,
     extra_attack: Option<GridCoord>,
-) -> movement::PossibleMoves2 {
+    ph: P,
+) -> movement::PossibleMoves2<P::Foo> {
     // If there is an enemy near by restrict movement.
 
     let j = if let Some(_) = unit
@@ -650,6 +673,7 @@ pub fn generate_unit_possible_moves2(
             unit.position,
             MoveUnit(1),
             false,
+            ph,
         )
     } else {
         movement::compute_moves(
@@ -662,6 +686,7 @@ pub fn generate_unit_possible_moves2(
             unit.position,
             mm,
             true,
+            ph,
         )
     };
     mm
