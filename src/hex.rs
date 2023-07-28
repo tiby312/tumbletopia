@@ -18,6 +18,30 @@ pub const OFFSETS: [[i16; 3]; 6] = [
     [0, 1, -1],
 ];
 
+//TODO use this
+pub enum Dir {
+    BottomRight = 0,
+    TopRight = 1,
+    Top = 2,
+    TopLeft = 3,
+    BottomLeft = 4,
+    Bottom = 5,
+}
+impl From<u8> for Dir {
+    fn from(value: u8) -> Self {
+        use Dir::*;
+        match value {
+            0 => BottomRight,
+            1 => TopRight,
+            2 => Top,
+            3 => TopLeft,
+            4 => BottomLeft,
+            5 => Bottom,
+            _ => unreachable!(),
+        }
+    }
+}
+
 pub(crate) const SQRT_3: f32 = 1.73205080757;
 
 // https://www.redblobgames.com/grids/hexagons/#hex-to-pixel
@@ -66,10 +90,10 @@ impl Cube {
         GridCoord([self.0[0], self.0[1]])
     }
 
-    pub fn neighbour(&self, dir: i16) -> Cube {
+    pub fn neighbour(&self, dir: Dir) -> Cube {
         self.add(Cube::direction(dir))
     }
-    pub fn direction(dir: i16) -> Cube {
+    pub fn direction(dir: Dir) -> Cube {
         Cube(OFFSETS[dir as usize])
     }
     pub fn add(mut self, other: Cube) -> Cube {
@@ -93,13 +117,13 @@ impl Cube {
         })
     }
     pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> {
-        let mut hex = self.add(Cube::direction(4).scale(n));
+        let mut hex = self.add(Cube::direction(Dir::BottomLeft).scale(n));
 
         (0..6)
             .flat_map(move |i| std::iter::repeat(i).take(n as usize))
             .map(move |i| {
                 let h = hex;
-                hex = hex.neighbour(i);
+                hex = hex.neighbour(i.into());
                 h
             })
     }
