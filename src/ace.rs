@@ -260,6 +260,8 @@ pub async fn main_logic<'a>(
     game: &'a mut Game,
     grid_matrix: &GridMatrix,
 ) {
+    let world = board::World::new();
+
     let mut doop = Doop {
         game: game as *mut _,
         sender: command_sender,
@@ -344,7 +346,7 @@ pub async fn main_logic<'a>(
                             &unit,
                             that_team,
                             this_team,
-                            grid_matrix,
+                            &world,
                             None,
                             movement::NoPath,
                         );
@@ -382,7 +384,7 @@ pub async fn main_logic<'a>(
                     &unit,
                     this_team,
                     that_team,
-                    grid_matrix,
+                    &world,
                     extra_attack,
                     movement::NoPath,
                 );
@@ -457,7 +459,7 @@ pub async fn main_logic<'a>(
                     &unit,
                     this_team,
                     that_team,
-                    grid_matrix,
+                    &world,
                     extra_attack,
                 );
 
@@ -613,7 +615,7 @@ pub fn get_path_from_move(
     unit: &WarriorType<&UnitData>,
     this_team: &Tribe,
     that_team: &Tribe,
-    grid_matrix: &GridMatrix,
+    grid_matrix: &board::World,
     extra_attack: Option<GridCoord>,
 ) -> movement::Path {
     //Reconstruct possible paths with path information this time.
@@ -639,7 +641,7 @@ pub fn generate_unit_possible_moves2<P: movement::PathHave>(
     unit: &WarriorType<&UnitData>,
     this_team: &Tribe,
     that_team: &Tribe,
-    grid_matrix: &GridMatrix,
+    grid_matrix: &board::World,
     extra_attack: Option<GridCoord>,
     ph: P,
 ) -> movement::PossibleMoves2<P::Foo> {

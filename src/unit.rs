@@ -541,24 +541,7 @@ pub struct Tribe {
     pub warriors: Vec<UnitCollection<UnitData>>,
 }
 impl Tribe {
-    pub fn other_units_in_range_of_target<'b>(
-        &'b self,
-        target: GridCoord,
-        grid_matrix: &'b GridMatrix,
-    ) -> impl Iterator<Item = WarriorType<&UnitData>> + 'b {
-        self.warriors.iter().enumerate().flat_map(move |(i, o)| {
-            o.elem.iter().filter_map(move |u| {
-                let unit = WarriorType {
-                    inner: u,
-                    val: Type::type_index_inverse(i),
-                };
-
-                unit.get_attack_data(&self.filter().and(grid_matrix.filter()))
-                    .find(|&f| f == target)
-                    .map(move |_| unit)
-            })
-        })
-    }
+   
     pub fn lookup(&self, a: WarriorType<GridCoord>) -> WarriorType<&UnitData> {
         self.warriors[a.val.type_index()]
             .find(&a.inner)

@@ -14,6 +14,7 @@ use wasm_bindgen::prelude::*;
 pub mod animation;
 pub mod dom;
 //pub mod gameplay;
+pub mod board;
 pub mod grids;
 pub mod model_parse;
 pub mod movement;
@@ -449,7 +450,7 @@ pub async fn worker_entry() {
 
                 //
 
-                for c in grid_matrix.world() {
+                for c in board::World::new().iter_cells() {
                     let pos = grid_matrix.hex_axial_to_world(&c.to_axial());
 
                     //let pos = a.calc_pos();
