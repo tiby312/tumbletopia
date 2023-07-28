@@ -148,7 +148,6 @@ use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
 };
-use gloo::console::{console_dbg, log};
 
 pub struct Doop<'a> {
     game: *mut Game,

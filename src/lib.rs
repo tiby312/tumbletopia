@@ -1,5 +1,6 @@
 use ace::AnimationOptions;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
+use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
 use gloo::console::log;
@@ -168,6 +169,8 @@ pub struct Game {
 #[wasm_bindgen]
 pub async fn worker_entry() {
     console_error_panic_hook::set_once();
+
+    console_dbg!("num tiles={}", hex::Cube::new(0, 0).range(4).count());
 
     let (mut w, ss) = shogo::EngineWorker::new().await;
     let mut frame_timer = shogo::FrameTimer::new(60, ss);
