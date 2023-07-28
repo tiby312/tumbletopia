@@ -445,21 +445,14 @@ pub async fn main_logic<'a>(
                 }
 
                 //Reconstruct possible paths with path information this time.
-                let ss = generate_unit_possible_moves2(
+                let path = get_path_from_move(
+                    target_cell,
                     &unit,
                     this_team,
                     that_team,
                     grid_matrix,
                     extra_attack,
-                    movement::WithPath,
                 );
-
-                let path = ss
-                    .moves
-                    .iter()
-                    .find(|a| a.target == target_cell)
-                    .map(|a| &a.path)
-                    .unwrap();
 
                 if let Some(target_coord) = that_team.find_slow(&target_cell).map(|a| a.slim()) {
                     let d = that_team.lookup_take(target_coord);
@@ -467,7 +460,7 @@ pub async fn main_logic<'a>(
 
                     match doop
                         .await_data(grid_matrix, team_index)
-                        .resolve_attack(c, d, false, path)
+                        .resolve_attack(c, d, false, &path)
                         .await
                     {
                         unit::Pair(Some(a), None) => {
@@ -496,7 +489,7 @@ pub async fn main_logic<'a>(
 
                     let this_unit = doop
                         .await_data(grid_matrix, team_index)
-                        .resolve_movement(this_unit, path)
+                        .resolve_movement(this_unit, &path)
                         .await;
 
                     current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
@@ -608,6 +601,33 @@ pub enum Move {
     },
 }
 
+pub fn get_path_from_move(
+    target_cell: GridCoord,
+    unit: &WarriorType<&UnitData>,
+    this_team: &Tribe,
+    that_team: &Tribe,
+    grid_matrix: &GridMatrix,
+    extra_attack: Option<GridCoord>,
+) -> movement::Path {
+    //Reconstruct possible paths with path information this time.
+    let ss = generate_unit_possible_moves2(
+        &unit,
+        this_team,
+        that_team,
+        grid_matrix,
+        extra_attack,
+        movement::WithPath,
+    );
+
+    let path = ss
+        .moves
+        .iter()
+        .find(|a| a.target == target_cell)
+        .map(|a| &a.path)
+        .unwrap();
+
+    *path
+}
 pub fn generate_unit_possible_moves2<P: movement::PathHave>(
     unit: &WarriorType<&UnitData>,
     this_team: &Tribe,
