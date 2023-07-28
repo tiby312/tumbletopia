@@ -459,6 +459,19 @@ pub async fn worker_entry() {
                 }
 
                 disable_depth(&ctx, || {
+                    for a in [GridCoord([-4, 4]), GridCoord([4, -4])] {
+                        let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                        let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                        let m = matrix.chain(t).generate();
+
+                        let mut v = draw_sys.view(m.as_ref());
+
+                        attack_model.draw_ext(&mut v, false, false, false, false);
+                    }
+                });
+
+                disable_depth(&ctx, || {
                     if let ace::Command::GetMouseInput(a) = &command {
                         let (a, &greyscale) = match a {
                             MousePrompt::Selection { selection, grey } => (selection, grey),
@@ -485,29 +498,9 @@ pub async fn worker_entry() {
                         }
                     }
 
-                    // { TEST MOUSE
-                    //     let mouse_mouse= scroll::mouse_to_world(mouse_mouse, &matrix, viewport);
+                    //for a in a.iter_coords() {
 
-                    //     let a: GridCoord =grid_matrix.center_world_to_hex(mouse_mouse.into());
-
-                    //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                    //     let t = matrix::translation(pos[0], pos[1], 3.0);
-
-                    //     let m = matrix.chain(t).generate();
-
-                    //     let mut v = draw_sys.view(m.as_ref());
-                    //     road.draw(&mut v);
-                    // }
-                    //for a in roads.pos.iter() {
-                    // let a: GridCoord =grid_matrix.center_world_to_hex(mouse_world.into());
-
-                    // let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                    // let t = matrix::translation(pos[0], pos[1], 3.0);
-
-                    // let m = matrix.chain(t).generate();
-
-                    // let mut v = draw_sys.view(m.as_ref());
-                    // road.draw(&mut v);
+                    //select_model.draw(&mut v);
                     //}
                 });
 
