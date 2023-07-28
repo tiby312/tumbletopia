@@ -167,7 +167,7 @@ impl UnitData {
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(movement::PossibleMoves),
+    MoveSelection(movement::PossibleMoves2),
     BuildSelection(GridCoord),
 }
 

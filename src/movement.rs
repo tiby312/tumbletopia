@@ -257,7 +257,7 @@ pub fn contains_coord<'a, I: Iterator<Item = &'a GridCoord>>(mut it: I, b: &Grid
 
 //Represents all the legal moves for a specific piece.
 #[derive(Debug, Clone)]
-pub struct PossibleMoves {
+struct PossibleMoves {
     //Has the end coord,path from current, and the remainder cost to get there.
     //cells that are the furthest away will have a move unit of zero.
     //TODO start with the remainder when determining attack squares
@@ -265,8 +265,47 @@ pub struct PossibleMoves {
     start: GridCoord,
 }
 
+#[derive(Debug, Clone)]
+pub struct MoveCand {
+    pub target: GridCoord,
+    pub path: Path,
+}
+
+#[derive(Debug, Clone)]
+pub struct PossibleMoves2 {
+    pub orig: GridCoord,
+    pub moves: Vec<MoveCand>,
+}
+
+pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
+    movement: &K,
+    filter: &F,
+    skip_filter: &F2,
+    mo: &M,
+    coord: GridCoord,
+    remaining_moves: MoveUnit,
+    slide_rule: bool,
+) -> PossibleMoves2 {
+    let m = PossibleMoves::new(
+        movement,
+        filter,
+        skip_filter,
+        mo,
+        coord,
+        remaining_moves,
+        slide_rule,
+    );
+
+    let moves = m
+        .moves
+        .into_iter()
+        .map(|(target, path, _)| MoveCand { target, path })
+        .collect();
+    PossibleMoves2 { orig: coord, moves }
+}
+
 impl PossibleMoves {
-    pub fn new<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
+    fn new<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
         movement: &K,
         filter: &F,
         skip_filter: &F2,
@@ -292,17 +331,17 @@ impl PossibleMoves {
         p
     }
 
-    pub fn get_path_data(&self, g: &GridCoord) -> Option<(&Path, &MoveUnit)> {
-        self.moves.iter().find(|a| &a.0 == g).map(|a| (&a.1, &a.2))
-    }
+    // pub fn get_path_data(&self, g: &GridCoord) -> Option<(&Path, &MoveUnit)> {
+    //     self.moves.iter().find(|a| &a.0 == g).map(|a| (&a.1, &a.2))
+    // }
 
-    pub fn start(&self) -> &GridCoord {
-        &self.start
-    }
+    // pub fn start(&self) -> &GridCoord {
+    //     &self.start
+    // }
 
-    pub fn iter_coords(&self) -> impl Iterator<Item = &GridCoord> {
-        self.moves.iter().map(|a| &a.0)
-    }
+    // pub fn iter_coords(&self) -> impl Iterator<Item = &GridCoord> {
+    //     self.moves.iter().map(|a| &a.0)
+    // }
 
     fn explore_path<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
         &mut self,

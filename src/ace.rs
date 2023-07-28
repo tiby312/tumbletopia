@@ -347,6 +347,7 @@ pub async fn main_logic<'a>(
                             grid_matrix,
                             None,
                         );
+                        let cc = CellSelection::MoveSelection(cc);
 
                         let (_, pototo) = doop.get_mouse_selection(cc, team_index, true).await;
                         let target_cell = match pototo {
@@ -384,6 +385,7 @@ pub async fn main_logic<'a>(
                     grid_matrix,
                     extra_attack,
                 );
+                let cc = CellSelection::MoveSelection(cc);
 
                 let gg = if let Some(e) = extra_attack {
                     if let TeamType::ThisTeam(e2) = current_warrior_pos {
@@ -422,7 +424,7 @@ pub async fn main_logic<'a>(
                         break;
                     }
                 } else if let Some(target) = that_team.find_slow(&target_cell) {
-                    if !movement::contains_coord(ss.iter_coords(), &target_cell) {
+                    if !movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell) {
                         current_warrior_pos = TeamType::ThatTeam(target.slim());
                         continue;
                     }
@@ -443,12 +445,19 @@ pub async fn main_logic<'a>(
                 if let Some(target) = that_team.find_slow(&target_cell) {
                     let target_coord = target.slim();
 
-                    if movement::contains_coord(ss.iter_coords(), &target_cell) {
+                    if movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell) {
                         let d = that_team.lookup_take(target_coord);
 
                         let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
-                        let (path, _) = ss.get_path_data(&target_cell).unwrap();
+                        let path = ss
+                            .moves
+                            .iter()
+                            .find(|a| a.target == target_cell)
+                            .map(|a| &a.path)
+                            .unwrap();
+
+                        //let (path, _) = ss.get_path_data(&target_cell).unwrap();
 
                         match doop
                             .await_data(grid_matrix, team_index)
@@ -481,8 +490,15 @@ pub async fn main_logic<'a>(
                             _ => unreachable!(),
                         }
                     }
-                } else if movement::contains_coord(ss.iter_coords(), &target_cell) {
-                    let (path, _) = ss.get_path_data(&target_cell).unwrap();
+                } else if movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell)
+                {
+                    let path = ss
+                        .moves
+                        .iter()
+                        .find(|a| a.target == target_cell)
+                        .map(|a| &a.path)
+                        .unwrap();
+
                     let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
                     let this_unit = doop
@@ -556,6 +572,39 @@ pub async fn main_logic<'a>(
     }
 }
 
+pub struct GameState {}
+pub struct Engine {}
+impl Engine {
+    fn play_move(&mut self, a: Move) {}
+    fn get_state(&self) -> &GameState {
+        todo!()
+    }
+    fn get_valid_moves(&self, a: GridCoord) -> impl Iterator<Item = Move> {
+        std::iter::empty()
+    }
+}
+
+// pub enum HexDir{
+
+// }
+
+// pub struct WarriorMoveSet{
+//     position:GridCoord
+// }
+// impl Iterator for WarriorMoveSet{
+//     type Item=(movement::Path,Option<HexDir>);
+// }
+
+// pub enum MoveSet{
+//     Warrior{
+//         path:movement::Path,
+//         extra:Option<HexDir>,
+//     },
+//     King{
+//         path:HexDir
+//     }
+// }
+
 //TODO use this!
 pub enum Move {
     Warrior {
@@ -575,7 +624,7 @@ pub fn generate_unit_possible_moves2(
     that_team: &Tribe,
     grid_matrix: &GridMatrix,
     extra_attack: Option<GridCoord>,
-) -> CellSelection {
+) -> movement::PossibleMoves2 {
     // If there is an enemy near by restrict movement.
 
     let j = if let Some(_) = unit
@@ -593,7 +642,7 @@ pub fn generate_unit_possible_moves2(
     let mm = MoveUnit(j);
 
     let mm = if let Some(_) = extra_attack.filter(|&aaa| aaa == unit.position) {
-        movement::PossibleMoves::new(
+        movement::compute_moves(
             &movement::WarriorMovement,
             &grid_matrix.filter().and(that_team.filter()),
             &movement::NoFilter,
@@ -603,7 +652,7 @@ pub fn generate_unit_possible_moves2(
             false,
         )
     } else {
-        movement::PossibleMoves::new(
+        movement::compute_moves(
             &movement::WarriorMovement,
             &grid_matrix
                 .filter()
@@ -615,6 +664,5 @@ pub fn generate_unit_possible_moves2(
             true,
         )
     };
-
-    CellSelection::MoveSelection(mm)
+    mm
 }
