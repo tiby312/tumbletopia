@@ -440,120 +440,109 @@ pub async fn main_logic<'a>(
                     }
                 }
 
-                //let xx = this_team.lookup(current_warrior_pos.unwrap_this()).slim();
+                if !movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell) {
+                    break;
+                }
 
-                //let current_attack = this_team.lookup_mut(&xx).attacked;
+                //Reconstruct possible paths with path information this time.
+                let ss = generate_unit_possible_moves2(
+                    &unit,
+                    this_team,
+                    that_team,
+                    grid_matrix,
+                    extra_attack,
+                    movement::WithPath,
+                );
 
-                if movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell) {
-                    //Reconstruct possible paths with path information this time.
-                    let ss = generate_unit_possible_moves2(
-                        &unit,
-                        this_team,
-                        that_team,
-                        grid_matrix,
-                        extra_attack,
-                        movement::WithPath,
-                    );
+                let path = ss
+                    .moves
+                    .iter()
+                    .find(|a| a.target == target_cell)
+                    .map(|a| &a.path)
+                    .unwrap();
 
-                    let path = ss
-                        .moves
-                        .iter()
-                        .find(|a| a.target == target_cell)
-                        .map(|a| &a.path)
-                        .unwrap();
+                if let Some(target_coord) = that_team.find_slow(&target_cell).map(|a| a.slim()) {
+                    let d = that_team.lookup_take(target_coord);
+                    let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
-                    if let Some(target) = that_team.find_slow(&target_cell) {
-                        let target_coord = target.slim();
+                    match doop
+                        .await_data(grid_matrix, team_index)
+                        .resolve_attack(c, d, false, path)
+                        .await
+                    {
+                        unit::Pair(Some(a), None) => {
+                            current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
-                        let d = that_team.lookup_take(target_coord);
+                            this_team.add(a);
 
-                        let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
-                        match doop
-                            .await_data(grid_matrix, team_index)
-                            .resolve_attack(c, d, false, path)
-                            .await
-                        {
-                            unit::Pair(Some(a), None) => {
-                                current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
+                            let _ = doop
+                                .await_data(grid_matrix, 1 - team_index)
+                                .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
+                                .await;
 
-                                this_team.add(a);
-
-                                let _ = doop
-                                    .await_data(grid_matrix, 1 - team_index)
-                                    .resolve_group_attack(
-                                        target_cell.to_cube(),
-                                        that_team,
-                                        this_team,
-                                    )
-                                    .await;
-
-                                //TODO is this possible?
-                                for n in target_cell.to_cube().neighbours() {
-                                    doop.await_data(grid_matrix, team_index)
-                                        .resolve_group_attack(n, this_team, that_team)
-                                        .await;
-                                }
-
-                                break 'outer;
-                            }
-                            _ => unreachable!(),
-                        }
-                    } else {
-                        let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
-
-                        let this_unit = doop
-                            .await_data(grid_matrix, team_index)
-                            .resolve_movement(this_unit, path)
-                            .await;
-
-                        current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
-
-                        this_team.add(this_unit);
-
-                        //TODO use an enum to team index
-                        let k = doop
-                            .await_data(grid_matrix, 1 - team_index)
-                            .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
-                            .await;
-
-                        //Need to add ourselves back so we can resolve and attacking groups
-                        //only to remove ourselves again later.
-                        let k = if let Some(k) = k {
-                            let j = k.as_ref().slim();
-
-                            this_team.add(k);
-
+                            //TODO is this possible?
                             for n in target_cell.to_cube().neighbours() {
                                 doop.await_data(grid_matrix, team_index)
                                     .resolve_group_attack(n, this_team, that_team)
                                     .await;
                             }
 
-                            Some(this_team.lookup_take(j))
-                        } else {
-                            for n in target_cell.to_cube().neighbours() {
-                                doop.await_data(grid_matrix, team_index)
-                                    .resolve_group_attack(n, this_team, that_team)
-                                    .await;
-                            }
-                            None
-                        };
-
-                        if let Some(mut k) = k {
-                            k.stamina.0 = k.as_ref().get_movement_data();
-                            extra_attack = Some(target_cell);
-
-                            current_warrior_pos = TeamType::ThisTeam(k.as_ref().slim());
-                            this_team.add(k);
-                            //TODO allow the user to move this unit one more time jumping.
-                            //So the user must move the unit, or it will die.
-                        } else {
                             break 'outer;
                         }
+                        _ => unreachable!(),
                     }
                 } else {
-                    //Deselect
-                    break;
+                    let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
+
+                    let this_unit = doop
+                        .await_data(grid_matrix, team_index)
+                        .resolve_movement(this_unit, path)
+                        .await;
+
+                    current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
+
+                    this_team.add(this_unit);
+
+                    //TODO use an enum to team index
+                    let k = doop
+                        .await_data(grid_matrix, 1 - team_index)
+                        .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
+                        .await;
+
+                    //Need to add ourselves back so we can resolve and attacking groups
+                    //only to remove ourselves again later.
+                    let k = if let Some(k) = k {
+                        let j = k.as_ref().slim();
+
+                        this_team.add(k);
+
+                        for n in target_cell.to_cube().neighbours() {
+                            doop.await_data(grid_matrix, team_index)
+                                .resolve_group_attack(n, this_team, that_team)
+                                .await;
+                        }
+
+                        Some(this_team.lookup_take(j))
+                    } else {
+                        for n in target_cell.to_cube().neighbours() {
+                            doop.await_data(grid_matrix, team_index)
+                                .resolve_group_attack(n, this_team, that_team)
+                                .await;
+                        }
+                        None
+                    };
+
+                    if let Some(mut k) = k {
+                        k.stamina.0 = k.as_ref().get_movement_data();
+                        extra_attack = Some(target_cell);
+
+                        current_warrior_pos = TeamType::ThisTeam(k.as_ref().slim());
+                        this_team.add(k);
+                        //TODO allow the user to move this unit one more time jumping.
+                        //So the user must move the unit, or it will die.
+                    } else {
+                        break 'outer;
+                    }
                 }
             }
         }
