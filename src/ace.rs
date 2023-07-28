@@ -376,7 +376,6 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-                //let view = game.get_view();
                 let unit = this_team.lookup(current_warrior_pos.unwrap_this());
 
                 let cc = generate_unit_possible_moves2(
@@ -418,20 +417,32 @@ pub async fn main_logic<'a>(
                 if let Some(a) = this_team.find_slow(&target_cell) {
                     let k = a.slim();
                     if k != current_warrior_pos.unwrap_this() {
+                        //If we select a friendly unit thats not us.
                         //Quick switch to another unit
                         current_warrior_pos = TeamType::ThisTeam(k);
                         continue;
                     } else {
+                        //if we click on the unit thats already selected, deselect.
+                        //(might want to do somehting else? popup with info?)
                         //Deselect
                         break;
                     }
                 } else if let Some(target) = that_team.find_slow(&target_cell) {
                     if !movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell) {
+                        //If we select an enemy unit thats outside of our units range.
                         current_warrior_pos = TeamType::ThatTeam(target.slim());
                         continue;
                     }
+                } else if !movement::contains_coord(
+                    ss.moves.iter().map(|x| &x.target),
+                    &target_cell,
+                ) {
+                    //If we select an empty cell outside of our units range.
+                    break;
                 }
 
+                //If we are in extra attack mode, forbid the user from moving
+                //any unit other than the one that has already done a partial move.
                 if let Some(k) = extra_attack {
                     if let TeamType::ThisTeam(a) = current_warrior_pos {
                         if a.inner != k {
@@ -440,11 +451,7 @@ pub async fn main_logic<'a>(
                     }
                 }
 
-                if !movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell) {
-                    break;
-                }
-
-                //Reconstruct possible paths with path information this time.
+                //Reconstruct path by creating all possible paths with path information this time.
                 let path = get_path_from_move(
                     target_cell,
                     &unit,
