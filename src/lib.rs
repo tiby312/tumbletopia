@@ -165,6 +165,7 @@ type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 pub struct Game {
     dogs: Tribe,
     cats: Tribe,
+    world: board::World,
 }
 
 #[wasm_bindgen]
@@ -234,6 +235,7 @@ pub async fn worker_entry() {
     let mut ggame = Game {
         dogs: Tribe { warriors: dogs },
         cats: Tribe { warriors: cats },
+        world: board::World::new(),
     };
 
     let _roads = terrain::TerrainCollection {
@@ -451,7 +453,7 @@ pub async fn worker_entry() {
 
                 //
 
-                for c in board::World::new().iter_cells() {
+                for c in ggame.world.iter_cells() {
                     let pos = grid_matrix.hex_axial_to_world(&c.to_axial());
 
                     //let pos = a.calc_pos();

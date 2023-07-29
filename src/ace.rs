@@ -284,8 +284,6 @@ pub async fn main_logic<'a>(
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
     game: &'a mut Game,
 ) {
-    let world = board::World::new();
-
     let mut doop = Doop {
         game: game as *mut _,
         sender: command_sender,
@@ -370,7 +368,7 @@ pub async fn main_logic<'a>(
                             &unit,
                             that_team,
                             this_team,
-                            &world,
+                            &game.world,
                             None,
                             movement::NoPath,
                         );
@@ -408,7 +406,7 @@ pub async fn main_logic<'a>(
                     &unit,
                     this_team,
                     that_team,
-                    &world,
+                    &game.world,
                     extra_attack,
                     movement::NoPath,
                 );
@@ -483,7 +481,7 @@ pub async fn main_logic<'a>(
                     &unit,
                     this_team,
                     that_team,
-                    &world,
+                    &game.world,
                     extra_attack,
                 );
 
