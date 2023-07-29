@@ -339,11 +339,13 @@ impl<'a, 'b> AwaitData<'a, 'b> {
     pub async fn resolve_movement(
         &mut self,
         start: WarriorType<UnitData>,
-        path: &movement::Path,
+        path: movement::Path,
     ) -> WarriorType<UnitData> {
-        let it = animation::movement(start.position, path.clone(), self.grid_matrix);
-        let aa = AnimationOptions::movement(start);
-        let mut start = self.wait_animation(it, aa).await;
+        // let it = animation::movement(start.position, path.clone(), self.grid_matrix);
+        // let aa = AnimationOptions::movement(start);
+        // let mut start = self.wait_animation(it, aa).await;
+        let an = animation::AnimationCommand::Movement { unit: start, path };
+        let mut start = self.wait_animation(an, ace::Movement).await;
 
         //start.stamina.0 -= path.total_cost().0;
         start.stamina.0 = 0;
@@ -364,26 +366,26 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start
     }
 
-    pub async fn resolve_heal(
-        &mut self,
-        mut this_unit: WarriorType<UnitData>,
-        mut target: WarriorType<UnitData>,
-    ) -> Pair {
-        //TODO make the user not able to perform a no-op heal thus wasting a turn.
-        target.health = (target.health + 1).min(target.val.max_health());
+    // pub async fn resolve_heal(
+    //     &mut self,
+    //     mut this_unit: WarriorType<UnitData>,
+    //     mut target: WarriorType<UnitData>,
+    // ) -> Pair {
+    //     //TODO make the user not able to perform a no-op heal thus wasting a turn.
+    //     target.health = (target.health + 1).min(target.val.max_health());
 
-        this_unit.attacked = true;
+    //     this_unit.attacked = true;
 
-        let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-        let aa = animation::Animation::new(it, AnimationOptions::Heal([this_unit, target]));
-        let aa = self.doop.wait_animation(aa, self.team_index).await;
+    //     let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
+    //     let aa = animation::Animation::new(it, AnimationOptions::Heal([this_unit, target]));
+    //     let aa = self.doop.wait_animation(aa, self.team_index).await;
 
-        let AnimationOptions::Heal([this_unit,target])=aa.into_data() else{
-            unreachable!();
-        };
+    //     let AnimationOptions::Heal([this_unit,target])=aa.into_data() else{
+    //         unreachable!();
+    //     };
 
-        Pair(Some(this_unit), Some(target))
-    }
+    //     Pair(Some(this_unit), Some(target))
+    // }
 
     pub async fn resolve_group_attack(
         &mut self,
@@ -413,10 +415,16 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 // let m = f.position.dir_to(&enemy.as_ref().unwrap().position);
                 // let path = path.add(m).unwrap();
 
-                let it = animation::attack(f.position, tt, self.grid_matrix);
-                let aa = AnimationOptions::attack([f, enemy.take().unwrap()]);
+                // let it = animation::attack(f.position, tt, self.grid_matrix);
+                // let aa = AnimationOptions::attack([f, enemy.take().unwrap()]);
 
-                let [mut this_unit, target] = self.wait_animation(it, aa).await;
+                // let [mut this_unit, target] = self.wait_animation(it, aa).await;
+                let an = animation::AnimationCommand::Attack {
+                    attacker: f,
+                    defender: enemy.take().unwrap(),
+                };
+                let [this_unit, target] = self.wait_animation(an, ace::Attack).await;
+
                 //this_unit.resting = 1;
                 this_team.add(this_unit);
                 enemy = Some(target);
@@ -480,9 +488,14 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         // let path = path.add(m).unwrap();
         this_unit.stamina.0 -= path.total_cost().0;
 
-        let it = animation::movement(this_unit.position, *path, self.grid_matrix);
-        let aa = AnimationOptions::attack([this_unit, target]);
-        let [mut this_unit, target] = self.wait_animation(it, aa).await;
+        //let it = animation::movement(this_unit.position, *path, self.grid_matrix);
+        //let aa = AnimationOptions::attack([this_unit, target]);
+
+        let an = animation::AnimationCommand::Attack {
+            attacker: this_unit,
+            defender: target,
+        };
+        let [mut this_unit, target] = self.wait_animation(an, ace::Attack).await;
 
         //todo kill target animate
         this_unit.position = target.position;
@@ -520,14 +533,13 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         // Pair(Some(this_unit), Some(target))
     }
 
-    pub async fn wait_animation<'c, K: UnwrapMe, I: Iterator<Item = Vector2<f32>> + 'static>(
+    pub async fn wait_animation<K: UnwrapMe>(
         &mut self,
-        it: I,
-        wrapper: AnimationWrapper<K>,
+        an: animation::AnimationCommand,
+        wrapper: K,
     ) -> K::Item {
-        let aa = animation::Animation::new(it, wrapper.enu);
-        let aa = self.doop.wait_animation(aa, self.team_index).await;
-        wrapper.unwrapper.unwrapme(aa.into_data())
+        let aa = self.doop.wait_animation(an, self.team_index).await;
+        wrapper.unwrapme(aa.into_data())
     }
 }
 
@@ -541,7 +553,6 @@ pub struct Tribe {
     pub warriors: Vec<UnitCollection<UnitData>>,
 }
 impl Tribe {
-   
     pub fn lookup(&self, a: WarriorType<GridCoord>) -> WarriorType<&UnitData> {
         self.warriors[a.val.type_index()]
             .find(&a.inner)

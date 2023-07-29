@@ -102,18 +102,17 @@ pub enum MousePrompt {
     None,
 }
 
-#[derive(Debug)]
-pub enum Command {
+pub enum ProcessedCommand {
     Animate(Animation<AnimationOptions>),
     GetMouseInput(MousePrompt),
     Nothing,
 }
-impl Command {
+impl ProcessedCommand {
     pub fn take_animation(&mut self) -> Animation<AnimationOptions> {
-        let mut a = Command::Nothing;
+        let mut a = ProcessedCommand::Nothing;
         std::mem::swap(self, &mut a);
 
-        let Command::Animate(a)=a else{
+        let ProcessedCommand::Animate(a)=a else{
             panic!();
         };
 
@@ -121,14 +120,44 @@ impl Command {
     }
 
     pub fn take_cell(&mut self) -> MousePrompt {
-        let mut a = Command::Nothing;
+        let mut a = ProcessedCommand::Nothing;
         std::mem::swap(self, &mut a);
 
-        let Command::GetMouseInput(a)=a else{
+        let ProcessedCommand::GetMouseInput(a)=a else{
             panic!();
         };
 
         a
+    }
+}
+#[derive(Debug)]
+pub enum Command {
+    Animate(animation::AnimationCommand),
+    GetMouseInput(MousePrompt),
+    Nothing,
+}
+impl Command {
+    pub fn process(self, grid: &GridMatrix) -> ProcessedCommand {
+        use animation::AnimationCommand;
+        use Command::*;
+        match self {
+            Animate(a) => match a {
+                AnimationCommand::Movement { unit, path } => {
+                    let it = animation::movement(unit.position, path, grid);
+                    let aa = AnimationOptions::Movement(unit);
+                    let aa = animation::Animation::new(it, aa);
+                    ProcessedCommand::Animate(aa)
+                }
+                AnimationCommand::Attack { attacker, defender } => {
+                    let it = animation::attack(attacker.position, defender.position, grid);
+                    let aa = AnimationOptions::Attack([attacker, defender]);
+                    let aa = animation::Animation::new(it, aa);
+                    ProcessedCommand::Animate(aa)
+                }
+            },
+            GetMouseInput(a) => ProcessedCommand::GetMouseInput(a),
+            Nothing => ProcessedCommand::Nothing,
+        }
     }
 }
 
@@ -165,7 +194,7 @@ impl<'a> Doop<'a> {
 
     pub async fn wait_animation<'c>(
         &mut self,
-        animation: Animation<AnimationOptions>,
+        animation: animation::AnimationCommand,
         team_index: usize,
     ) -> Animation<AnimationOptions> {
         let game = unsafe { &*self.game };
@@ -498,7 +527,7 @@ pub async fn main_logic<'a>(
 
                     let this_unit = doop
                         .await_data(grid_matrix, team_index)
-                        .resolve_movement(this_unit, &path)
+                        .resolve_movement(this_unit, path)
                         .await;
 
                     current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());

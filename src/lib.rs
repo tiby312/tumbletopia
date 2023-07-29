@@ -294,6 +294,7 @@ pub async fn worker_entry() {
                 data: mut command,
                 team,
             } = command_recv.next().await.unwrap();
+            let mut command = command.process(&grid_matrix);
 
             'outer: loop {
                 let mut on_select = false;
@@ -371,7 +372,7 @@ pub async fn worker_entry() {
                     scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
                 match &mut command {
-                    ace::Command::Animate(a) => {
+                    ace::ProcessedCommand::Animate(a) => {
                         if let Some(_) = a.animate_step() {
                         } else {
                             let a = command.take_animation();
@@ -385,7 +386,7 @@ pub async fn worker_entry() {
                             break 'outer;
                         }
                     }
-                    ace::Command::GetMouseInput(_) => {
+                    ace::ProcessedCommand::GetMouseInput(_) => {
                         if end_turn {
                             response_sender
                                 .send(ace::GameWrapResponse {
@@ -416,7 +417,7 @@ pub async fn worker_entry() {
                             break 'outer;
                         }
                     }
-                    ace::Command::Nothing => {}
+                    ace::ProcessedCommand::Nothing => {}
                 }
 
                 // {
@@ -476,7 +477,7 @@ pub async fn worker_entry() {
                 });
 
                 disable_depth(&ctx, || {
-                    if let ace::Command::GetMouseInput(a) = &command {
+                    if let ace::ProcessedCommand::GetMouseInput(a) = &command {
                         let (a, &greyscale) = match a {
                             MousePrompt::Selection { selection, grey } => (selection, grey),
                             MousePrompt::None => return,
@@ -588,7 +589,7 @@ pub async fn worker_entry() {
                     });
                 }
 
-                if let ace::Command::Animate(a) = &command {
+                if let ace::ProcessedCommand::Animate(a) = &command {
                     let this_draw = if team == 0 { &cat } else { &dog };
                     let that_draw = if team == 1 { &cat } else { &dog };
 

@@ -71,6 +71,18 @@ pub fn attack(
     .map(move |val| start + dir * val)
 }
 
+#[derive(Debug)]
+pub enum AnimationCommand {
+    Movement {
+        unit: WarriorType<UnitData>,
+        path: movement::Path,
+    },
+    Attack {
+        attacker: WarriorType<UnitData>,
+        defender: WarriorType<UnitData>,
+    },
+}
+
 pub fn movement(
     start: GridCoord,
     path: movement::Path,
