@@ -1,4 +1,3 @@
-
 use super::*;
 
 ///A way to map a grid to world coordinates and vice versa

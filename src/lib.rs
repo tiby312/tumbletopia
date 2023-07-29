@@ -167,19 +167,18 @@ pub struct Game {
     world: board::World,
 }
 impl Game {
-    fn view(&mut self, team_index: usize) -> GameView {
-        if team_index == 0 {
-            GameView {
+    fn view(&mut self, team_index: ActiveTeam) -> GameView {
+        match team_index {
+            ActiveTeam::Cats => GameView {
                 this_team: &mut self.cats,
                 that_team: &mut self.dogs,
                 world: &mut self.world,
-            }
-        } else {
-            GameView {
+            },
+            ActiveTeam::Dogs => GameView {
                 this_team: &mut self.dogs,
                 that_team: &mut self.cats,
                 world: &mut self.world,
-            }
+            },
         }
     }
 }
@@ -614,8 +613,10 @@ pub async fn worker_entry() {
                 }
 
                 if let ace::ProcessedCommand::Animate(a) = &command {
-                    let this_draw = if team == 0 { &cat } else { &dog };
-                    let that_draw = if team == 1 { &cat } else { &dog };
+                    let (this_draw, that_draw) = match team {
+                        ActiveTeam::Cats => (&cat, &dog),
+                        ActiveTeam::Dogs => (&dog, &cat),
+                    };
 
                     let (pos, ty) = a.calc_pos();
 
@@ -762,7 +763,7 @@ fn string_to_coords<'a>(st: &str) -> model::ModelData {
 
 use web_sys::WebGl2RenderingContext;
 
-use crate::ace::{MousePrompt, Pototo};
+use crate::ace::{ActiveTeam, MousePrompt, Pototo};
 //use crate::gameplay::GameStepper;
 use crate::movement::MoveUnit;
 use crate::terrain::MoveCost;

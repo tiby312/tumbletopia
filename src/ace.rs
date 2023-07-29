@@ -10,7 +10,7 @@ use crate::{
 
 pub struct GameWrap<'a, T> {
     pub game: &'a Game,
-    pub team: usize,
+    pub team: ActiveTeam,
     pub data: T,
 }
 
@@ -184,14 +184,14 @@ pub struct Doop<'a> {
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
 impl<'a> Doop<'a> {
-    pub fn await_data<'b>(&'b mut self, team_index: usize) -> AwaitData<'a, 'b> {
+    pub fn await_data<'b>(&'b mut self, team_index: ActiveTeam) -> AwaitData<'a, 'b> {
         AwaitData::new(self, team_index)
     }
 
     pub async fn wait_animation<'c>(
         &mut self,
         animation: animation::AnimationCommand,
-        team_index: usize,
+        team_index: ActiveTeam,
     ) -> Animation<AnimationOptions> {
         let game = unsafe { &*self.game };
         self.sender
@@ -211,14 +211,14 @@ impl<'a> Doop<'a> {
         o
     }
 
-    async fn get_mouse_no_selection<'c>(&mut self, team_index: usize) -> Pototo<GridCoord> {
+    async fn get_mouse_no_selection<'c>(&mut self, team_index: ActiveTeam) -> Pototo<GridCoord> {
         let (_, c) = self.get_mouse(MousePrompt::None, team_index).await;
         c
     }
     async fn get_mouse_selection<'c>(
         &mut self,
         cell: CellSelection,
-        team_index: usize,
+        team_index: ActiveTeam,
         grey: bool,
     ) -> (CellSelection, Pototo<GridCoord>) {
         let (b, c) = self
@@ -256,7 +256,7 @@ impl<'a> Doop<'a> {
     async fn get_mouse<'c>(
         &mut self,
         cell: MousePrompt,
-        team_index: usize,
+        team_index: ActiveTeam,
     ) -> (MousePrompt, Pototo<GridCoord>) {
         let game = unsafe { &*self.game };
 
@@ -279,6 +279,23 @@ impl<'a> Doop<'a> {
     }
 }
 
+#[derive(Copy, Clone)]
+pub enum ActiveTeam {
+    Cats = 0,
+    Dogs = 1,
+}
+impl ActiveTeam {
+    // pub fn next(&mut self){
+    //     *self=self.not()
+    // }
+    pub fn not(&self) -> Self {
+        match self {
+            ActiveTeam::Cats => ActiveTeam::Dogs,
+            ActiveTeam::Dogs => ActiveTeam::Cats,
+        }
+    }
+}
+
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
@@ -297,7 +314,8 @@ pub async fn main_logic<'a>(
         game.dogs.replenish_stamina();
     }
 
-    let mut team_index = 0;
+    //let mut team_index = 0;
+    let mut team_index = ActiveTeam::Cats;
     //Loop over each team!
     loop {
         let game = game.view(team_index);
@@ -480,7 +498,7 @@ pub async fn main_logic<'a>(
                             game.this_team.add(a);
 
                             let _ = doop
-                                .await_data(1 - team_index)
+                                .await_data(team_index.not())
                                 .resolve_group_attack(
                                     target_cell.to_cube(),
                                     game.that_team,
@@ -515,7 +533,7 @@ pub async fn main_logic<'a>(
 
                     //TODO use an enum to team index
                     let k = doop
-                        .await_data(1 - team_index)
+                        .await_data(team_index.not())
                         .resolve_group_attack(target_cell.to_cube(), game.that_team, game.this_team)
                         .await;
 
@@ -564,11 +582,7 @@ pub async fn main_logic<'a>(
         }
         game.this_team.replenish_stamina();
 
-        if team_index == 1 {
-            team_index = 0;
-        } else {
-            team_index = 1;
-        }
+        team_index = team_index.not();
     }
 }
 
@@ -583,7 +597,6 @@ pub async fn main_logic<'a>(
 //         std::iter::empty()
 //     }
 // }
-
 
 //TODO use this!
 pub enum Move {

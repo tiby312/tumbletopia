@@ -1,6 +1,6 @@
 use crate::{
-    ace::UnwrapMe,
-    movement::{FilterRes},
+    ace::{ActiveTeam, UnwrapMe},
+    movement::FilterRes,
 };
 
 use super::*;
@@ -61,7 +61,6 @@ impl WarriorType<&UnitData> {
 
         first.into_iter().flatten().map(|x| x.to_axial())
     }
-
 
     //TODO use this instead of gridcoord when you know the type!!!!!
     pub fn slim(&self) -> WarriorType<GridCoord> {
@@ -281,10 +280,10 @@ pub struct Dash {
 
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
-    team_index: usize,
+    team_index: ActiveTeam,
 }
 impl<'a, 'b> AwaitData<'a, 'b> {
-    pub fn new(doop: &'b mut ace::Doop<'a>, team_index: usize) -> Self {
+    pub fn new(doop: &'b mut ace::Doop<'a>, team_index: ActiveTeam) -> Self {
         AwaitData { doop, team_index }
     }
 
@@ -394,7 +393,6 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         support_attack: bool,
         _path: &movement::Path,
     ) -> Pair {
-        
         let _move_on_kill = match (this_unit.val, target.val) {
             (Type::Rook, _) => false,
             (Type::Warrior, _) => true,
@@ -420,8 +418,10 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let path = path.add(m).unwrap();
         this_unit.stamina.0 -= path.total_cost().0;
 
-
-        let an = animation::AnimationCommand::Movement { unit: this_unit, path };
+        let an = animation::AnimationCommand::Movement {
+            unit: this_unit,
+            path,
+        };
         // let an = animation::AnimationCommand::Attack {
         //     attacker: this_unit,
         //     defender: target,
