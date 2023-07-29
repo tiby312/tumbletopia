@@ -73,11 +73,8 @@ impl<'a> WarriorDraw<'a> {
             let mut v = draw_sys.view(m.as_ref());
 
             self.model.draw_ext(
-                &mut v,
-                cc.resting != 0, /*  !cc.selectable(game)  */
-                false,
-                false,
-                true,
+                &mut v, false, /*  !cc.selectable(game)  */
+                false, false, true,
             );
         }
     }

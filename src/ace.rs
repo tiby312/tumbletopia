@@ -300,7 +300,6 @@ impl ActiveTeam {
     }
 }
 
-
 #[derive(Copy, Clone, Debug)]
 pub enum TeamType<A> {
     ThisTeam(A),
@@ -315,7 +314,6 @@ impl<A> TeamType<A> {
     }
 }
 
-
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
@@ -328,10 +326,10 @@ pub async fn main_logic<'a>(
     };
 
     {
-        game.cats.set_health();
-        game.dogs.set_health();
-        game.cats.replenish_stamina();
-        game.dogs.replenish_stamina();
+        // game.cats.set_health();
+        // game.dogs.set_health();
+        // game.cats.replenish_stamina();
+        // game.dogs.replenish_stamina();
     }
 
     //Loop over each team!
@@ -480,12 +478,10 @@ pub async fn main_logic<'a>(
                 //Reconstruct path by creating all possible paths with path information this time.
                 let path = get_path_from_move(target_cell, &unit, &game, extra_attack);
 
-                if let Some(target_coord) = game.that_team.find_slow_mut(&target_cell)
-                {
-                    
-                    let target_coord=target_coord.as_ref().slim();
+                if let Some(target_coord) = game.that_team.find_slow_mut(&target_cell) {
+                    let target_coord = target_coord.as_ref().slim();
                     //If we are moving ontop of an enemy.
-                
+
                     let d = game.that_team.lookup_take(target_coord);
                     let c = game
                         .this_team
@@ -497,7 +493,6 @@ pub async fn main_logic<'a>(
                         .await
                     {
                         unit::Pair(Some(a), None) => {
-                            
                             game.this_team.add(a);
 
                             let _ = doop
@@ -567,7 +562,7 @@ pub async fn main_logic<'a>(
                     };
 
                     if let Some(mut k) = k {
-                        k.stamina.0 = k.as_ref().get_movement_data();
+                        //k.stamina.0 = k.as_ref().get_movement_data();
                         extra_attack = Some(target_cell);
 
                         current_warrior_pos = TeamType::ThisTeam(k.as_ref().slim());
@@ -582,12 +577,12 @@ pub async fn main_logic<'a>(
             }
         }
 
-        for a in game.this_team.warriors.iter_mut() {
-            for b in a.elem.iter_mut() {
-                b.resting = 0.max(b.resting - 1);
-            }
-        }
-        game.this_team.replenish_stamina();
+        // for a in game.this_team.warriors.iter_mut() {
+        //     for b in a.elem.iter_mut() {
+        //         b.resting = 0.max(b.resting - 1);
+        //     }
+        // }
+        // game.this_team.replenish_stamina();
 
         //team_index = team_index.not();
     }
@@ -653,7 +648,11 @@ pub fn generate_unit_possible_moves2<P: movement::PathHave>(
     {
         1
     } else {
-        unit.stamina.0
+        match unit.val {
+            Type::Warrior => 2,
+            Type::Para => 1,
+            _ => todo!(),
+        }
     };
 
     let mm = MoveUnit(j);

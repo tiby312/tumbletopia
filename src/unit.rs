@@ -9,11 +9,11 @@ use super::*;
 pub struct UnitData {
     pub position: GridCoord,
     //TODO don't store for each unit. Just current selected unit!!!!
-    pub stamina: MoveUnit,
-    pub attacked: bool,
-    pub resting: i8,
-    pub health: i8,
-    //pub selectable: bool,
+    // pub stamina: MoveUnit,
+    // pub attacked: bool,
+    // pub resting: i8,
+    // pub health: i8,
+    // //pub selectable: bool,
 }
 
 impl WarriorType<&UnitData> {
@@ -116,11 +116,11 @@ impl UnitData {
     pub fn new(position: GridCoord) -> Self {
         UnitData {
             position,
-            stamina: MoveUnit(0),
-            attacked: false,
-            resting: 0,
-            health: 1,
-            //selectable: true,
+            // stamina: MoveUnit(0),
+            // attacked: false,
+            // resting: 0,
+            // health: 1,
+            // //selectable: true,
         }
     }
 }
@@ -299,7 +299,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let mut start = self.wait_animation(an, ace::Movement).await;
 
         //start.stamina.0 -= path.total_cost().0;
-        start.stamina.0 = 0;
+        //start.stamina.0 = 0;
 
         start.position = path.get_end_coord(start.position);
 
@@ -313,7 +313,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         // if !has_dash{
         //     start.attacked=true;
         // }
-        start.attacked = true;
+        //start.attacked = true;
         start
     }
 
@@ -403,9 +403,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         };
 
         //target.health -= damage;
-        target.health = 0;
+        //target.health = 0;
 
-        this_unit.attacked = true;
+        //this_unit.attacked = true;
 
         //if target.health <= 0 {
         assert!(!support_attack);
@@ -416,7 +416,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let path = movement::Path::new();
         let m = this_unit.position.dir_to(&target.position);
         let path = path.add(m).unwrap();
-        this_unit.stamina.0 -= path.total_cost().0;
+        //this_unit.stamina.0 -= path.total_cost().0;
 
         let an = animation::AnimationCommand::Movement {
             unit: this_unit,
@@ -431,7 +431,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 
         //todo kill target animate
         this_unit.position = target.position;
-        this_unit.stamina.0 = 0;
+        //this_unit.stamina.0 = 0;
         return Pair(Some(this_unit), None);
         // }
 
@@ -576,39 +576,39 @@ impl Tribe {
     //         }
     //     }
     // }
-    pub fn set_health(&mut self) {
-        for (i, val) in self.warriors.iter_mut().enumerate() {
-            for unit in val.elem.iter_mut() {
-                let mut k = WarriorType {
-                    val: Type::type_index_inverse(i),
-                    inner: unit,
-                };
-                k.health = k.val.max_health();
-            }
-        }
-    }
-    pub fn replenish_health(&mut self) {
-        for (i, val) in self.warriors.iter_mut().enumerate() {
-            for unit in val.elem.iter_mut() {
-                let mut k = WarriorType {
-                    val: Type::type_index_inverse(i),
-                    inner: unit,
-                };
-                k.health = (k.health + 1).min(k.val.max_health());
-            }
-        }
-    }
-    pub fn replenish_stamina(&mut self) {
-        for (i, val) in self.warriors.iter_mut().enumerate() {
-            for unit in val.elem.iter_mut() {
-                let mut k = WarriorType {
-                    val: Type::type_index_inverse(i),
-                    inner: unit,
-                };
-                k.stamina.0 = k.as_ref().get_movement_data();
-            }
-        }
-    }
+    // pub fn set_health(&mut self) {
+    //     for (i, val) in self.warriors.iter_mut().enumerate() {
+    //         for unit in val.elem.iter_mut() {
+    //             let mut k = WarriorType {
+    //                 val: Type::type_index_inverse(i),
+    //                 inner: unit,
+    //             };
+    //             k.health = k.val.max_health();
+    //         }
+    //     }
+    // }
+    // pub fn replenish_health(&mut self) {
+    //     for (i, val) in self.warriors.iter_mut().enumerate() {
+    //         for unit in val.elem.iter_mut() {
+    //             let mut k = WarriorType {
+    //                 val: Type::type_index_inverse(i),
+    //                 inner: unit,
+    //             };
+    //             k.health = (k.health + 1).min(k.val.max_health());
+    //         }
+    //     }
+    // }
+    // pub fn replenish_stamina(&mut self) {
+    //     for (i, val) in self.warriors.iter_mut().enumerate() {
+    //         for unit in val.elem.iter_mut() {
+    //             let mut k = WarriorType {
+    //                 val: Type::type_index_inverse(i),
+    //                 inner: unit,
+    //             };
+    //             k.stamina.0 = k.as_ref().get_movement_data();
+    //         }
+    //     }
+    // }
 }
 
 //TODO sort this by x and then y axis!!!!!!!
@@ -659,8 +659,8 @@ impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
         FilterRes::from_bool(
             self.a
                 .iter()
-                .filter(|a| a.health != 0)
-                .filter(|a| a.resting == 0)
+                // .filter(|a| a.health != 0)
+                // .filter(|a| a.resting == 0)
                 .find(|a| a.get_pos() == b)
                 .is_some(),
         )
