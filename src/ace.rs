@@ -360,14 +360,8 @@ pub async fn main_logic<'a>(
                     TeamType::ThatTeam(curr_warrior_pos) => {
                         let unit = game.that_team.lookup(curr_warrior_pos);
 
-                        let cc = generate_unit_possible_moves2(
-                            &unit,
-                            game.that_team,
-                            game.this_team,
-                            game.world,
-                            None,
-                            movement::NoPath,
-                        );
+                        let cc =
+                            generate_unit_possible_moves2(&unit, &game, None, movement::NoPath);
                         let cc = CellSelection::MoveSelection(cc);
 
                         let (_, pototo) = doop.get_mouse_selection(cc, team_index, true).await;
@@ -398,14 +392,8 @@ pub async fn main_logic<'a>(
 
                 let unit = game.this_team.lookup(current_warrior_pos.unwrap_this());
 
-                let cc = generate_unit_possible_moves2(
-                    &unit,
-                    game.this_team,
-                    game.that_team,
-                    &game.world,
-                    extra_attack,
-                    movement::NoPath,
-                );
+                let cc =
+                    generate_unit_possible_moves2(&unit, &game, extra_attack, movement::NoPath);
                 let cc = CellSelection::MoveSelection(cc);
 
                 let gg = if let Some(e) = extra_attack {
@@ -472,14 +460,7 @@ pub async fn main_logic<'a>(
                 }
 
                 //Reconstruct path by creating all possible paths with path information this time.
-                let path = get_path_from_move(
-                    target_cell,
-                    &unit,
-                    game.this_team,
-                    game.that_team,
-                    &game.world,
-                    extra_attack,
-                );
+                let path = get_path_from_move(target_cell, &unit, &game, extra_attack);
 
                 if let Some(target_coord) = game.that_team.find_slow(&target_cell).map(|a| a.slim())
                 {
@@ -640,20 +621,11 @@ pub enum Move {
 pub fn get_path_from_move(
     target_cell: GridCoord,
     unit: &WarriorType<&UnitData>,
-    this_team: &Tribe,
-    that_team: &Tribe,
-    grid_matrix: &board::World,
+    game: &GameView,
     extra_attack: Option<GridCoord>,
 ) -> movement::Path {
     //Reconstruct possible paths with path information this time.
-    let ss = generate_unit_possible_moves2(
-        &unit,
-        this_team,
-        that_team,
-        grid_matrix,
-        extra_attack,
-        movement::WithPath,
-    );
+    let ss = generate_unit_possible_moves2(&unit, game, extra_attack, movement::WithPath);
 
     let path = ss
         .moves
@@ -666,9 +638,7 @@ pub fn get_path_from_move(
 }
 pub fn generate_unit_possible_moves2<P: movement::PathHave>(
     unit: &WarriorType<&UnitData>,
-    this_team: &Tribe,
-    that_team: &Tribe,
-    grid_matrix: &board::World,
+    game: &GameView,
     extra_attack: Option<GridCoord>,
     ph: P,
 ) -> movement::PossibleMoves2<P::Foo> {
@@ -678,7 +648,7 @@ pub fn generate_unit_possible_moves2<P: movement::PathHave>(
         .position
         .to_cube()
         .ring(1)
-        .map(|s| that_team.find_slow(&s.to_axial()).is_some())
+        .map(|s| game.that_team.find_slow(&s.to_axial()).is_some())
         .find(|a| *a)
     {
         1
@@ -691,7 +661,7 @@ pub fn generate_unit_possible_moves2<P: movement::PathHave>(
     let mm = if let Some(_) = extra_attack.filter(|&aaa| aaa == unit.position) {
         movement::compute_moves(
             &movement::WarriorMovement,
-            &grid_matrix.filter().and(that_team.filter()),
+            &game.world.filter().and(game.that_team.filter()),
             &movement::NoFilter,
             &terrain::Grass,
             unit.position,
@@ -702,10 +672,11 @@ pub fn generate_unit_possible_moves2<P: movement::PathHave>(
     } else {
         movement::compute_moves(
             &movement::WarriorMovement,
-            &grid_matrix
+            &game
+                .world
                 .filter()
-                .and(that_team.warriors[0].filter().not()),
-            &this_team.filter().not(),
+                .and(game.that_team.warriors[0].filter().not()),
+            &game.this_team.filter().not(),
             &terrain::Grass,
             unit.position,
             mm,
