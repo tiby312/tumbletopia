@@ -286,7 +286,7 @@ pub struct NoPath;
 
 impl PathHave for NoPath {
     type Foo = ();
-    fn path(&self, a: Path) -> () {
+    fn path(&self, _: Path) -> () {
         ()
     }
 }

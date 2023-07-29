@@ -4,7 +4,6 @@ use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
 use gloo::console::log;
-use grids::GridMatrix;
 use model::matrix::{self, MyMatrix};
 use movement::GridCoord;
 use serde::{Deserialize, Serialize};
@@ -316,7 +315,7 @@ pub async fn worker_entry() {
         loop {
             let ace::GameWrap {
                 game: ggame,
-                data: mut command,
+                data: command,
                 team,
             } = command_recv.next().await.unwrap();
             let mut command = command.process(&grid_matrix);

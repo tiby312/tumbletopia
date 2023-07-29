@@ -5,7 +5,7 @@ use crate::{
     grids::GridMatrix,
     movement::{self, Filter, GridCoord, MoveUnit},
     terrain::{self},
-    CellSelection, Game, Tribe, UnitData, WarriorType,
+    CellSelection, Game, UnitData, WarriorType,
 };
 
 pub struct GameWrap<'a, T> {
@@ -475,7 +475,7 @@ pub async fn main_logic<'a>(
                         .await
                     {
                         unit::Pair(Some(a), None) => {
-                            current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
+                            //current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
                             game.this_team.add(a);
 
@@ -509,7 +509,7 @@ pub async fn main_logic<'a>(
                         .resolve_movement(this_unit, path)
                         .await;
 
-                    current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
+                    //current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
 
                     game.this_team.add(this_unit);
 
@@ -572,38 +572,18 @@ pub async fn main_logic<'a>(
     }
 }
 
-pub struct GameState {}
-pub struct Engine {}
-impl Engine {
-    fn play_move(&mut self, a: Move) {}
-    fn get_state(&self) -> &GameState {
-        todo!()
-    }
-    fn get_valid_moves(&self, a: GridCoord) -> impl Iterator<Item = Move> {
-        std::iter::empty()
-    }
-}
-
-// pub enum HexDir{
-
-// }
-
-// pub struct WarriorMoveSet{
-//     position:GridCoord
-// }
-// impl Iterator for WarriorMoveSet{
-//     type Item=(movement::Path,Option<HexDir>);
-// }
-
-// pub enum MoveSet{
-//     Warrior{
-//         path:movement::Path,
-//         extra:Option<HexDir>,
-//     },
-//     King{
-//         path:HexDir
+// pub struct GameState {}
+// pub struct Engine {}
+// impl Engine {
+//     fn play_move(&mut self, a: Move) {}
+//     fn get_state(&self) -> &GameState {
+//         todo!()
+//     }
+//     fn get_valid_moves(&self, a: GridCoord) -> impl Iterator<Item = Move> {
+//         std::iter::empty()
 //     }
 // }
+
 
 //TODO use this!
 pub enum Move {

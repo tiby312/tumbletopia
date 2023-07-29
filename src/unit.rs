@@ -1,6 +1,6 @@
 use crate::{
     ace::UnwrapMe,
-    movement::{Filter, FilterRes},
+    movement::{FilterRes},
 };
 
 use super::*;
@@ -62,45 +62,6 @@ impl WarriorType<&UnitData> {
         first.into_iter().flatten().map(|x| x.to_axial())
     }
 
-    //TODO additionally return a animation??.
-    pub fn get_attack_data(&self, ff: impl Filter + Copy) -> impl Iterator<Item = GridCoord> {
-        [].into_iter()
-
-        // let a = self;
-        // let first = if let Type::Warrior = a.val {
-        //     Some(
-        //         a.position
-        //             .to_cube()
-        //             .ring(1)
-        //             .filter(move |o| ff.filter(&o.to_axial())),
-        //     )
-        // } else {
-        //     None
-        // };
-
-        // let second = if let Type::Rook = a.val {
-        //     Some(a.position.to_cube().rays(2, 5, ff))
-        // } else {
-        //     None
-        // };
-
-        // let third = if let Type::Archer = a.val {
-        //     Some(
-        //         a.position
-        //             .to_cube()
-        //             .ring(2)
-        //             .filter(move |o| ff.filter(&o.to_axial())),
-        //     )
-        // } else {
-        //     None
-        // };
-        // first
-        //     .into_iter()
-        //     .flatten()
-        //     .chain(second.into_iter().flatten())
-        //     .chain(third.into_iter().flatten())
-        //     .map(|x| x.to_axial())
-    }
 
     //TODO use this instead of gridcoord when you know the type!!!!!
     pub fn slim(&self) -> WarriorType<GridCoord> {
@@ -401,7 +362,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 let f = this_team.find_slow(&a.to_axial()).unwrap();
                 let f = this_team.lookup_take(f.slim());
 
-                let tt = enemy.as_ref().unwrap().position;
+                let _tt = enemy.as_ref().unwrap().position;
                 // let path = movement::Path::new();
                 // let m = f.position.dir_to(&enemy.as_ref().unwrap().position);
                 // let path = path.add(m).unwrap();
@@ -431,29 +392,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         mut this_unit: WarriorType<UnitData>,
         mut target: WarriorType<UnitData>,
         support_attack: bool,
-        path: &movement::Path,
+        _path: &movement::Path,
     ) -> Pair {
-        //TODO store somewhere
-        // let damage = 1;
-
-        // let counter_damage = if let Some(_) = target
-        //     .as_ref()
-        //     .get_attack_data(NoFilter)
-        //     .find(|&a| a == *this_unit.as_ref().slim())
-        // {
-        //     Some(damage)
-        // } else {
-        //     None
-        // };
-
-        // let counter_damage = match (this_unit.val, target.val) {
-        //     (Type::Warrior, Type::Rook) => None,
-        //     (Type::Warrior, Type::Archer) => None,
-        //     _ => counter_damage,
-        // };
-
-        // let counter_damage = if support_attack { None } else { counter_damage };
-
+        
         let _move_on_kill = match (this_unit.val, target.val) {
             (Type::Rook, _) => false,
             (Type::Warrior, _) => true,
