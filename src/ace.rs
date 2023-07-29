@@ -184,12 +184,8 @@ pub struct Doop<'a> {
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
 impl<'a> Doop<'a> {
-    pub fn await_data<'b>(
-        &'b mut self,
-        grid_matrix: &'b GridMatrix,
-        team_index: usize,
-    ) -> AwaitData<'a, 'b> {
-        AwaitData::new(self, grid_matrix, team_index)
+    pub fn await_data<'b>(&'b mut self, team_index: usize) -> AwaitData<'a, 'b> {
+        AwaitData::new(self, team_index)
     }
 
     pub async fn wait_animation<'c>(
@@ -287,7 +283,6 @@ pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
     game: &'a mut Game,
-    grid_matrix: &GridMatrix,
 ) {
     let world = board::World::new();
 
@@ -497,7 +492,7 @@ pub async fn main_logic<'a>(
                     let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
                     match doop
-                        .await_data(grid_matrix, team_index)
+                        .await_data(team_index)
                         .resolve_attack(c, d, false, &path)
                         .await
                     {
@@ -507,13 +502,13 @@ pub async fn main_logic<'a>(
                             this_team.add(a);
 
                             let _ = doop
-                                .await_data(grid_matrix, 1 - team_index)
+                                .await_data(1 - team_index)
                                 .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
                                 .await;
 
                             //TODO is this possible?
                             for n in target_cell.to_cube().neighbours() {
-                                doop.await_data(grid_matrix, team_index)
+                                doop.await_data(team_index)
                                     .resolve_group_attack(n, this_team, that_team)
                                     .await;
                             }
@@ -526,7 +521,7 @@ pub async fn main_logic<'a>(
                     let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
 
                     let this_unit = doop
-                        .await_data(grid_matrix, team_index)
+                        .await_data(team_index)
                         .resolve_movement(this_unit, path)
                         .await;
 
@@ -536,7 +531,7 @@ pub async fn main_logic<'a>(
 
                     //TODO use an enum to team index
                     let k = doop
-                        .await_data(grid_matrix, 1 - team_index)
+                        .await_data(1 - team_index)
                         .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
                         .await;
 
@@ -548,7 +543,7 @@ pub async fn main_logic<'a>(
                         this_team.add(k);
 
                         for n in target_cell.to_cube().neighbours() {
-                            doop.await_data(grid_matrix, team_index)
+                            doop.await_data(team_index)
                                 .resolve_group_attack(n, this_team, that_team)
                                 .await;
                         }
@@ -556,7 +551,7 @@ pub async fn main_logic<'a>(
                         Some(this_team.lookup_take(j))
                     } else {
                         for n in target_cell.to_cube().neighbours() {
-                            doop.await_data(grid_matrix, team_index)
+                            doop.await_data(team_index)
                                 .resolve_group_attack(n, this_team, that_team)
                                 .await;
                         }

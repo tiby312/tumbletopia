@@ -283,7 +283,7 @@ pub async fn worker_entry() {
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
     let main_logic = async {
-        ace::main_logic(command_sender, response_recv, &mut ggame, &grid_matrix).await;
+        ace::main_logic(command_sender, response_recv, &mut ggame).await;
     };
 
     let mut mouse_mouse = [0.0; 2];

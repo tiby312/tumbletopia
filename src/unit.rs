@@ -1,6 +1,6 @@
 use crate::{
-    ace::{AnimationWrapper, UnwrapMe},
-    movement::{Filter, FilterRes, NoFilter},
+    ace::UnwrapMe,
+    movement::{Filter, FilterRes},
 };
 
 use super::*;
@@ -320,20 +320,11 @@ pub struct Dash {
 
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
-    grid_matrix: &'b GridMatrix,
     team_index: usize,
 }
 impl<'a, 'b> AwaitData<'a, 'b> {
-    pub fn new(
-        doop: &'b mut ace::Doop<'a>,
-        grid_matrix: &'b GridMatrix,
-        team_index: usize,
-    ) -> Self {
-        AwaitData {
-            doop,
-            grid_matrix,
-            team_index,
-        }
+    pub fn new(doop: &'b mut ace::Doop<'a>, team_index: usize) -> Self {
+        AwaitData { doop, team_index }
     }
 
     pub async fn resolve_movement(
