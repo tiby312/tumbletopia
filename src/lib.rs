@@ -167,6 +167,29 @@ pub struct Game {
     cats: Tribe,
     world: board::World,
 }
+impl Game {
+    fn view(&mut self, team_index: usize) -> GameView {
+        if team_index == 0 {
+            GameView {
+                this_team: &mut self.cats,
+                that_team: &mut self.dogs,
+                world: &mut self.world,
+            }
+        } else {
+            GameView {
+                this_team: &mut self.dogs,
+                that_team: &mut self.cats,
+                world: &mut self.world,
+            }
+        }
+    }
+}
+
+pub struct GameView<'a> {
+    this_team: &'a mut Tribe,
+    that_team: &'a mut Tribe,
+    world: &'a mut board::World,
+}
 
 #[wasm_bindgen]
 pub async fn worker_entry() {

@@ -300,11 +300,7 @@ pub async fn main_logic<'a>(
     let mut team_index = 0;
     //Loop over each team!
     loop {
-        let (this_team, that_team) = if team_index == 0 {
-            (&mut game.cats, &mut game.dogs)
-        } else {
-            (&mut game.dogs, &mut game.cats)
-        };
+        let game = game.view(team_index);
 
         //this_team.replenish_health();
         //that_team.replenish_health();
@@ -326,10 +322,10 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-                if let Some(unit) = this_team.find_slow(&cell) {
+                if let Some(unit) = game.this_team.find_slow(&cell) {
                     break TeamType::ThisTeam(unit.slim());
                 }
-                if let Some(unit) = that_team.find_slow(&cell) {
+                if let Some(unit) = game.that_team.find_slow(&cell) {
                     break TeamType::ThatTeam(unit.slim());
                 }
 
@@ -362,13 +358,13 @@ pub async fn main_logic<'a>(
                 match current_warrior_pos {
                     TeamType::ThisTeam(a) => a,
                     TeamType::ThatTeam(curr_warrior_pos) => {
-                        let unit = that_team.lookup(curr_warrior_pos);
+                        let unit = game.that_team.lookup(curr_warrior_pos);
 
                         let cc = generate_unit_possible_moves2(
                             &unit,
-                            that_team,
-                            this_team,
-                            &game.world,
+                            game.that_team,
+                            game.this_team,
+                            game.world,
                             None,
                             movement::NoPath,
                         );
@@ -387,11 +383,11 @@ pub async fn main_logic<'a>(
                             break;
                         }
 
-                        if let Some(target) = this_team.find_slow(&target_cell) {
+                        if let Some(target) = game.this_team.find_slow(&target_cell) {
                             current_warrior_pos = TeamType::ThisTeam(target.slim());
                             continue;
                         }
-                        if let Some(target) = that_team.find_slow(&target_cell) {
+                        if let Some(target) = game.that_team.find_slow(&target_cell) {
                             current_warrior_pos = TeamType::ThatTeam(target.slim());
                             continue;
                         }
@@ -400,12 +396,12 @@ pub async fn main_logic<'a>(
                     }
                 };
 
-                let unit = this_team.lookup(current_warrior_pos.unwrap_this());
+                let unit = game.this_team.lookup(current_warrior_pos.unwrap_this());
 
                 let cc = generate_unit_possible_moves2(
                     &unit,
-                    this_team,
-                    that_team,
+                    game.this_team,
+                    game.that_team,
                     &game.world,
                     extra_attack,
                     movement::NoPath,
@@ -438,7 +434,7 @@ pub async fn main_logic<'a>(
                 };
 
                 //RESELECT STAGE
-                if let Some(a) = this_team.find_slow(&target_cell) {
+                if let Some(a) = game.this_team.find_slow(&target_cell) {
                     let k = a.slim();
                     if k != current_warrior_pos.unwrap_this() {
                         //If we select a friendly unit thats not us.
@@ -451,7 +447,7 @@ pub async fn main_logic<'a>(
                         //Deselect
                         break;
                     }
-                } else if let Some(target) = that_team.find_slow(&target_cell) {
+                } else if let Some(target) = game.that_team.find_slow(&target_cell) {
                     if !movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell) {
                         //If we select an enemy unit thats outside of our units range.
                         current_warrior_pos = TeamType::ThatTeam(target.slim());
@@ -479,15 +475,18 @@ pub async fn main_logic<'a>(
                 let path = get_path_from_move(
                     target_cell,
                     &unit,
-                    this_team,
-                    that_team,
+                    game.this_team,
+                    game.that_team,
                     &game.world,
                     extra_attack,
                 );
 
-                if let Some(target_coord) = that_team.find_slow(&target_cell).map(|a| a.slim()) {
-                    let d = that_team.lookup_take(target_coord);
-                    let c = this_team.lookup_take(current_warrior_pos.unwrap_this());
+                if let Some(target_coord) = game.that_team.find_slow(&target_cell).map(|a| a.slim())
+                {
+                    let d = game.that_team.lookup_take(target_coord);
+                    let c = game
+                        .this_team
+                        .lookup_take(current_warrior_pos.unwrap_this());
 
                     match doop
                         .await_data(team_index)
@@ -497,17 +496,21 @@ pub async fn main_logic<'a>(
                         unit::Pair(Some(a), None) => {
                             current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
 
-                            this_team.add(a);
+                            game.this_team.add(a);
 
                             let _ = doop
                                 .await_data(1 - team_index)
-                                .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
+                                .resolve_group_attack(
+                                    target_cell.to_cube(),
+                                    game.that_team,
+                                    game.this_team,
+                                )
                                 .await;
 
                             //TODO is this possible?
                             for n in target_cell.to_cube().neighbours() {
                                 doop.await_data(team_index)
-                                    .resolve_group_attack(n, this_team, that_team)
+                                    .resolve_group_attack(n, game.this_team, game.that_team)
                                     .await;
                             }
 
@@ -516,7 +519,9 @@ pub async fn main_logic<'a>(
                         _ => unreachable!(),
                     }
                 } else {
-                    let this_unit = this_team.lookup_take(current_warrior_pos.unwrap_this());
+                    let this_unit = game
+                        .this_team
+                        .lookup_take(current_warrior_pos.unwrap_this());
 
                     let this_unit = doop
                         .await_data(team_index)
@@ -525,12 +530,12 @@ pub async fn main_logic<'a>(
 
                     current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
 
-                    this_team.add(this_unit);
+                    game.this_team.add(this_unit);
 
                     //TODO use an enum to team index
                     let k = doop
                         .await_data(1 - team_index)
-                        .resolve_group_attack(target_cell.to_cube(), that_team, this_team)
+                        .resolve_group_attack(target_cell.to_cube(), game.that_team, game.this_team)
                         .await;
 
                     //Need to add ourselves back so we can resolve and attacking groups
@@ -538,19 +543,19 @@ pub async fn main_logic<'a>(
                     let k = if let Some(k) = k {
                         let j = k.as_ref().slim();
 
-                        this_team.add(k);
+                        game.this_team.add(k);
 
                         for n in target_cell.to_cube().neighbours() {
                             doop.await_data(team_index)
-                                .resolve_group_attack(n, this_team, that_team)
+                                .resolve_group_attack(n, game.this_team, game.that_team)
                                 .await;
                         }
 
-                        Some(this_team.lookup_take(j))
+                        Some(game.this_team.lookup_take(j))
                     } else {
                         for n in target_cell.to_cube().neighbours() {
                             doop.await_data(team_index)
-                                .resolve_group_attack(n, this_team, that_team)
+                                .resolve_group_attack(n, game.this_team, game.that_team)
                                 .await;
                         }
                         None
@@ -561,7 +566,7 @@ pub async fn main_logic<'a>(
                         extra_attack = Some(target_cell);
 
                         current_warrior_pos = TeamType::ThisTeam(k.as_ref().slim());
-                        this_team.add(k);
+                        game.this_team.add(k);
                         //TODO allow the user to move this unit one more time jumping.
                         //So the user must move the unit, or it will die.
                     } else {
@@ -571,12 +576,12 @@ pub async fn main_logic<'a>(
             }
         }
 
-        for a in this_team.warriors.iter_mut() {
+        for a in game.this_team.warriors.iter_mut() {
             for b in a.elem.iter_mut() {
                 b.resting = 0.max(b.resting - 1);
             }
         }
-        this_team.replenish_stamina();
+        game.this_team.replenish_stamina();
 
         if team_index == 1 {
             team_index = 0;
