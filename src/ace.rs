@@ -463,11 +463,9 @@ pub async fn main_logic<'a>(
                 ) {
                     //If we select an empty cell outside of our units range.
                     break;
-                }
-
-                //If we are in extra attack mode, forbid the user from moving
-                //any unit other than the one that has already done a partial move.
-                if let Some(k) = extra_attack {
+                } else if let Some(k) = extra_attack {
+                    //If we are in extra attack mode, forbid the user from moving
+                    //any unit other than the one that has already done a partial move.
                     if let TeamType::ThisTeam(a) = current_warrior_pos {
                         if a.inner != k {
                             break;
