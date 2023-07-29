@@ -363,40 +363,44 @@ pub async fn main_logic<'a>(
             //Keep showing the selected unit's options and keep handling the users selections
             //Until the unit is deselected.
             loop {
-                match current_warrior_pos {
-                    TeamType::ThisTeam(a) => a,
-                    TeamType::ThatTeam(curr_warrior_pos) => {
-                        let unit = game.that_team.lookup(curr_warrior_pos);
+                if let TeamType::ThatTeam(curr_warrior_pos) = current_warrior_pos {
+                    let unit = game.that_team.lookup(curr_warrior_pos);
 
-                        let cc =
-                            generate_unit_possible_moves2(&unit, &game, None, movement::NoPath);
-                        let cc = CellSelection::MoveSelection(cc);
+                    let cc = generate_unit_possible_moves2(&unit, &game, None, movement::NoPath);
+                    let cc = CellSelection::MoveSelection(cc);
 
-                        let (_, pototo) = doop.get_mouse_selection(cc, team_index, true).await;
-                        let target_cell = match pototo {
-                            Pototo::Normal(t) => t,
-                            Pototo::EndTurn => {
-                                //End the turn. Ok because we are not int he middle of anything.
-                                break 'outer;
-                            }
-                        };
-
-                        if target_cell == *curr_warrior_pos {
-                            break;
+                    let (_, pototo) = doop.get_mouse_selection(cc, team_index, true).await;
+                    let target_cell = match pototo {
+                        Pototo::Normal(t) => t,
+                        Pototo::EndTurn => {
+                            //End the turn. Ok because we are not int he middle of anything.
+                            break 'outer;
                         }
+                    };
 
-                        if let Some(target) = game.this_team.find_slow(&target_cell) {
-                            current_warrior_pos = TeamType::ThisTeam(target.slim());
-                            continue;
-                        }
-                        if let Some(target) = game.that_team.find_slow(&target_cell) {
-                            current_warrior_pos = TeamType::ThatTeam(target.slim());
-                            continue;
-                        }
-
+                    //we clicked on the selected enemy unit.
+                    //deselect the unit
+                    if target_cell == *curr_warrior_pos {
                         break;
                     }
-                };
+
+                    //quick select a friendly unit.
+                    if let Some(target) = game.this_team.find_slow(&target_cell) {
+                        current_warrior_pos = TeamType::ThisTeam(target.slim());
+                        continue;
+                    }
+
+                    //quick select a different enemy unit
+                    if let Some(target) = game.that_team.find_slow(&target_cell) {
+                        current_warrior_pos = TeamType::ThatTeam(target.slim());
+                        continue;
+                    }
+
+                    //We clicked on an empty space, deselect.
+                    break;
+                }
+
+                //At this point we know a friendly unit is currently selected.
 
                 let unit = game.this_team.lookup(current_warrior_pos.unwrap_this());
 
@@ -404,6 +408,9 @@ pub async fn main_logic<'a>(
                     generate_unit_possible_moves2(&unit, &game, extra_attack, movement::NoPath);
                 let cc = CellSelection::MoveSelection(cc);
 
+                //If we are in the middle of a extra attack move, make sure
+                //no other friendly unit is selectable until we finish moving the
+                //the unit that has been partially moved.
                 let gg = if let Some(e) = extra_attack {
                     if let TeamType::ThisTeam(e2) = current_warrior_pos {
                         e != *e2
@@ -414,6 +421,7 @@ pub async fn main_logic<'a>(
                 } else {
                     false
                 };
+
                 let (cell, pototo) = doop.get_mouse_selection(cc, team_index, gg).await;
                 let mouse_world = match pototo {
                     Pototo::Normal(t) => t,
