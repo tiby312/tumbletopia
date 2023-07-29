@@ -480,8 +480,10 @@ pub async fn main_logic<'a>(
                 //Reconstruct path by creating all possible paths with path information this time.
                 let path = get_path_from_move(target_cell, &unit, &game, extra_attack);
 
-                if let Some(target_coord) = game.that_team.find_slow(&target_cell).map(|a| a.slim())
+                if let Some(target_coord) = game.that_team.find_slow_mut(&target_cell)
                 {
+                    
+                    let target_coord=target_coord.as_ref().slim();
                     //If we are moving ontop of an enemy.
                 
                     let d = game.that_team.lookup_take(target_coord);
