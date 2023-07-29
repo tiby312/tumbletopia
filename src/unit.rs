@@ -8,59 +8,9 @@ use super::*;
 #[derive(Debug)]
 pub struct UnitData {
     pub position: GridCoord,
-    //TODO don't store for each unit. Just current selected unit!!!!
-    // pub stamina: MoveUnit,
-    // pub attacked: bool,
-    // pub resting: i8,
-    // pub health: i8,
-    // //pub selectable: bool,
 }
 
 impl WarriorType<&UnitData> {
-    pub fn block_counter(&self) -> bool {
-        match self.val {
-            Type::Warrior => true,
-            _ => false,
-        }
-    }
-
-    // TODO use
-    // Attack again if first attack was dodged
-    pub fn pierce_attack(&self) -> bool {
-        match self.val {
-            Type::Warrior => true,
-            _ => false,
-        }
-    }
-
-    pub fn priority(&self) -> i8 {
-        match self.val {
-            Type::Warrior => 1,
-            Type::Para => 2,
-            Type::Rook => 3,
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn get_movement_data(&self) -> i8 {
-        let a = self;
-        match a.val {
-            Type::Warrior => 2,
-            Type::Para => 1,
-            Type::Rook => 1,
-            Type::Mage => 2,
-        }
-    }
-
-    pub fn get_friendly_data(&self) -> impl Iterator<Item = GridCoord> {
-        let first = if let Type::Mage = self.val {
-            Some(self.position.to_cube().ring(1))
-        } else {
-            None
-        };
-
-        first.into_iter().flatten().map(|x| x.to_axial())
-    }
 
     //TODO use this instead of gridcoord when you know the type!!!!!
     pub fn slim(&self) -> WarriorType<GridCoord> {
@@ -69,58 +19,12 @@ impl WarriorType<&UnitData> {
             val: self.val,
         }
     }
-    // pub fn calculate_selectable(
-    //     &self,
-    //     _this_team: &Tribe,
-    //     _that_team: &Tribe,
-    //     _grid_matrix: &GridMatrix,
-    // ) -> bool {
-    //     // let s = self; //this_team.lookup(*self);
-    //     // let pos = ace::generate_unit_possible_moves2(&s, this_team, that_team, grid_matrix);
-
-    //     // //check if there are enemies in range.
-    //     // let enemy_in_range = {
-    //     //     let (_, att) = match &pos {
-    //     //         CellSelection::MoveSelection(ss, _, att) => (ss, att),
-    //     //         _ => unreachable!(),
-    //     //     };
-
-    //     //     let mut found = false;
-    //     //     for a in att.iter() {
-    //     //         if let Some(_) = that_team.find_slow(a) {
-    //     //             found = true;
-    //     //             break;
-    //     //         }
-    //     //     }
-    //     //     found
-    //     // };
-
-    //     // //TODO move this and the above into an high-level "Has possible moves function"
-    //     // let has_stamina_to_move = s.stamina.0 > 0; //0f??? TODO
-    //     // let ret = enemy_in_range && !s.attacked || has_stamina_to_move && !s.attacked;
-    //     // ret
-    //     self.stamina.0 > 0 && self.resting == 0 //self.health != 0
-    // }
 }
 impl UnitData {
-    //TODO replace with has possible moves
-    // fn selectable(&self) -> bool {
-    //     self.has_possible_moves()
-    //     //!self.attacked || self.stamina.0 > 0
-    // }
-
-    // fn can_attack(&self) -> bool {
-    //     !self.attacked
-    // }
 
     pub fn new(position: GridCoord) -> Self {
         UnitData {
             position,
-            // stamina: MoveUnit(0),
-            // attacked: false,
-            // resting: 0,
-            // health: 1,
-            // //selectable: true,
         }
     }
 }
@@ -130,44 +34,6 @@ pub enum CellSelection {
     MoveSelection(movement::PossibleMoves2<()>),
     BuildSelection(GridCoord),
 }
-
-// pub struct NotParaFilter<'a> {
-//     tribe: &'a Tribe,
-// }
-// impl<'a> movement::Filter for NotParaFilter<'a> {
-//     fn filter(&self, b: &GridCoord) -> FilterRes {
-//         self.tribe
-//             .warriors
-//             .iter()
-//             .enumerate()
-//             .map(|(i, a)| {
-//                 if Type::type_index_inverse(i) == Type::Para {
-//                     if FilterRes::Stop == a.filter().filter(b) {
-//                         FilterRes::DontAccept
-//                     } else {
-//                         FilterRes::Accept
-//                     }
-//                 } else {
-//                     a.filter().filter(b)
-//                 }
-//             })
-//             .fold(FilterRes::Accept, |a, b| a.and(b))
-//     }
-// }
-
-// pub struct ParaFilter<'a> {
-//     tribe: &'a Tribe,
-// }
-// impl<'a> movement::Filter for ParaFilter<'a> {
-//     fn filter(&self, b: &GridCoord) -> FilterRes {
-//         self.tribe.warriors[Type::Para.type_index()]
-//             .elem
-//             .iter()
-//             .fold(FilterRes::Accept, |a, bb| {
-//                 a.and(FilterRes::from_bool(bb.position != *b))
-//             })
-//     }
-// }
 
 pub struct TribeFilter<'a> {
     tribe: &'a Tribe,
@@ -208,12 +74,7 @@ pub enum Type {
 }
 
 impl Type {
-    pub fn max_health(&self) -> i8 {
-        let a = self;
-        match a {
-            _ => 2,
-        }
-    }
+    
     pub fn type_index(&self) -> usize {
         let a = self;
         match a {
@@ -274,9 +135,6 @@ impl<T> std::ops::DerefMut for WarriorType<T> {
     }
 }
 
-pub struct Dash {
-    pub has_dash: bool,
-}
 
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
@@ -292,51 +150,14 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start: WarriorType<UnitData>,
         path: movement::Path,
     ) -> WarriorType<UnitData> {
-        // let it = animation::movement(start.position, path.clone(), self.grid_matrix);
-        // let aa = AnimationOptions::movement(start);
-        // let mut start = self.wait_animation(it, aa).await;
+        
         let an = animation::AnimationCommand::Movement { unit: start, path };
         let mut start = self.wait_animation(an, ace::Movement).await;
 
-        //start.stamina.0 -= path.total_cost().0;
-        //start.stamina.0 = 0;
-
         start.position = path.get_end_coord(start.position);
 
-        // let has_dash = match start.val {
-        //     Type::Archer => false,
-        //     _ => {
-        //         true
-        //     }
-        // };
-
-        // if !has_dash{
-        //     start.attacked=true;
-        // }
-        //start.attacked = true;
         start
     }
-
-    // pub async fn resolve_heal(
-    //     &mut self,
-    //     mut this_unit: WarriorType<UnitData>,
-    //     mut target: WarriorType<UnitData>,
-    // ) -> Pair {
-    //     //TODO make the user not able to perform a no-op heal thus wasting a turn.
-    //     target.health = (target.health + 1).min(target.val.max_health());
-
-    //     this_unit.attacked = true;
-
-    //     let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-    //     let aa = animation::Animation::new(it, AnimationOptions::Heal([this_unit, target]));
-    //     let aa = self.doop.wait_animation(aa, self.team_index).await;
-
-    //     let AnimationOptions::Heal([this_unit,target])=aa.into_data() else{
-    //         unreachable!();
-    //     };
-
-    //     Pair(Some(this_unit), Some(target))
-    // }
 
     pub async fn resolve_group_attack(
         &mut self,
@@ -362,14 +183,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 let f = this_team.lookup_take(f.slim());
 
                 let _tt = enemy.as_ref().unwrap().position;
-                // let path = movement::Path::new();
-                // let m = f.position.dir_to(&enemy.as_ref().unwrap().position);
-                // let path = path.add(m).unwrap();
-
-                // let it = animation::attack(f.position, tt, self.grid_matrix);
-                // let aa = AnimationOptions::attack([f, enemy.take().unwrap()]);
-
-                // let [mut this_unit, target] = self.wait_animation(it, aa).await;
+                
                 let an = animation::AnimationCommand::Attack {
                     attacker: f,
                     defender: enemy.take().unwrap(),
@@ -388,8 +202,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
     }
     pub async fn resolve_attack(
         &mut self,
-        mut this_unit: WarriorType<UnitData>,
-        mut target: WarriorType<UnitData>,
+        this_unit: WarriorType<UnitData>,
+        target: WarriorType<UnitData>,
         support_attack: bool,
         _path: &movement::Path,
     ) -> Pair {
@@ -402,67 +216,22 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             }
         };
 
-        //target.health -= damage;
-        //target.health = 0;
-
-        //this_unit.attacked = true;
-
-        //if target.health <= 0 {
         assert!(!support_attack);
-        // if move_on_kill {
-        //     //TODO do this but after a delay maybe?
-        //this_unit.health = (this_unit.health + 1).min(this_unit.val.max_health());
-
+        
         let path = movement::Path::new();
         let m = this_unit.position.dir_to(&target.position);
         let path = path.add(m).unwrap();
-        //this_unit.stamina.0 -= path.total_cost().0;
-
+        
         let an = animation::AnimationCommand::Movement {
             unit: this_unit,
             path,
         };
-        // let an = animation::AnimationCommand::Attack {
-        //     attacker: this_unit,
-        //     defender: target,
-        // };
-
+        
         let mut this_unit = self.wait_animation(an, ace::Movement).await;
 
         //todo kill target animate
         this_unit.position = target.position;
-        //this_unit.stamina.0 = 0;
         return Pair(Some(this_unit), None);
-        // }
-
-        // let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-        // let aa = AnimationOptions::attack([this_unit, target]);
-        // let [this_unit, target] = self.wait_animation(it, aa).await;
-
-        // return Pair(Some(this_unit), Some(target));
-
-        // let it = animation::attack(this_unit.position, target.position, self.grid_matrix);
-        // let aa = AnimationOptions::attack([this_unit, target]);
-        // let [this_unit, target] = self.wait_animation(it, aa).await;
-
-        // let Some(counter_damage)=counter_damage else{
-        //     return  Pair(Some(this_unit), Some(target))
-        // };
-
-        // let it = animation::attack(target.position, this_unit.position, self.grid_matrix);
-        // let aa = AnimationOptions::counter_attack([this_unit, target]);
-        // let [mut this_unit, target] = self.wait_animation(it, aa).await;
-
-        // if !this_unit.as_ref().block_counter()
-        //     || this_unit.as_ref().block_counter() && target.as_ref().pierce_attack()
-        // {
-        //     this_unit.health -= counter_damage;
-        //     if this_unit.health <= 0 {
-        //         //todo self die animation.
-        //         return Pair(None, Some(target));
-        //     }
-        // }
-        // Pair(Some(this_unit), Some(target))
     }
 
     pub async fn wait_animation<K: UnwrapMe>(
@@ -546,69 +315,6 @@ impl Tribe {
         TribeFilter { tribe: self }
     }
 
-    // pub fn reset_attacked(&mut self) {
-    //     for a in self.warriors.iter_mut() {
-    //         for b in a.elem.iter_mut() {
-    //             b.attacked = false;
-    //             //Just set it selectable during other peoples turns so its not gray,
-    //             //even though it is not selectable.
-    //             b.selectable = true;
-    //         }
-    //     }
-    // }
-    // pub fn calculate_selectable_all(&mut self, that_team: &mut Tribe, grid_matrix: &GridMatrix) {
-    //     let this_team = self;
-    //     for i in 0..this_team.warriors.len() {
-    //         let a = &this_team.warriors[i];
-    //         for ii in 0..a.elem.len() {
-    //             let a = &this_team.warriors[i];
-
-    //             let b = &a.elem[ii];
-    //             let b = WarriorType {
-    //                 inner: b,
-    //                 val: Type::type_index_inverse(i),
-    //             };
-
-    //             let vv = b.calculate_selectable(this_team, that_team, grid_matrix);
-
-    //             this_team.warriors[i].elem[ii].selectable = vv;
-    //             //b.selectable=vv;
-    //         }
-    //     }
-    // }
-    // pub fn set_health(&mut self) {
-    //     for (i, val) in self.warriors.iter_mut().enumerate() {
-    //         for unit in val.elem.iter_mut() {
-    //             let mut k = WarriorType {
-    //                 val: Type::type_index_inverse(i),
-    //                 inner: unit,
-    //             };
-    //             k.health = k.val.max_health();
-    //         }
-    //     }
-    // }
-    // pub fn replenish_health(&mut self) {
-    //     for (i, val) in self.warriors.iter_mut().enumerate() {
-    //         for unit in val.elem.iter_mut() {
-    //             let mut k = WarriorType {
-    //                 val: Type::type_index_inverse(i),
-    //                 inner: unit,
-    //             };
-    //             k.health = (k.health + 1).min(k.val.max_health());
-    //         }
-    //     }
-    // }
-    // pub fn replenish_stamina(&mut self) {
-    //     for (i, val) in self.warriors.iter_mut().enumerate() {
-    //         for unit in val.elem.iter_mut() {
-    //             let mut k = WarriorType {
-    //                 val: Type::type_index_inverse(i),
-    //                 inner: unit,
-    //             };
-    //             k.stamina.0 = k.as_ref().get_movement_data();
-    //         }
-    //     }
-    // }
 }
 
 //TODO sort this by x and then y axis!!!!!!!
@@ -659,8 +365,6 @@ impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
         FilterRes::from_bool(
             self.a
                 .iter()
-                // .filter(|a| a.health != 0)
-                // .filter(|a| a.resting == 0)
                 .find(|a| a.get_pos() == b)
                 .is_some(),
         )
