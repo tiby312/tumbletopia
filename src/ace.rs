@@ -288,6 +288,10 @@ impl ActiveTeam {
     // pub fn next(&mut self){
     //     *self=self.not()
     // }
+
+    pub fn iter(&self) -> impl Iterator<Item = Self> {
+        [*self, self.not()].into_iter().cycle()
+    }
     pub fn not(&self) -> Self {
         match self {
             ActiveTeam::Cats => ActiveTeam::Dogs,
@@ -314,16 +318,9 @@ pub async fn main_logic<'a>(
         game.dogs.replenish_stamina();
     }
 
-    //let mut team_index = 0;
-    let mut team_index = ActiveTeam::Cats;
     //Loop over each team!
-    loop {
+    for team_index in ActiveTeam::Cats.iter() {
         let game = game.view(team_index);
-
-        //this_team.replenish_health();
-        //that_team.replenish_health();
-
-        //this_team.calculate_selectable_all(that_team, grid_matrix);
 
         let mut extra_attack = None;
 
@@ -346,13 +343,6 @@ pub async fn main_logic<'a>(
                 if let Some(unit) = game.that_team.find_slow(&cell) {
                     break TeamType::ThatTeam(unit.slim());
                 }
-
-                //Else we just place a para and exit turn.
-                // this_team.add(WarriorType {
-                //     inner: UnitData::new(cell),
-                //     val: Type::Para,
-                // });
-                // break 'outer;
             };
 
             #[derive(Copy, Clone, Debug)]
@@ -582,7 +572,7 @@ pub async fn main_logic<'a>(
         }
         game.this_team.replenish_stamina();
 
-        team_index = team_index.not();
+        //team_index = team_index.not();
     }
 }
 
