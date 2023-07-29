@@ -300,6 +300,22 @@ impl ActiveTeam {
     }
 }
 
+
+#[derive(Copy, Clone, Debug)]
+pub enum TeamType<A> {
+    ThisTeam(A),
+    ThatTeam(A),
+}
+impl<A> TeamType<A> {
+    pub fn unwrap_this(self) -> A {
+        let TeamType::ThisTeam(a)=self else{
+            unreachable!()
+        };
+        a
+    }
+}
+
+
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
@@ -325,15 +341,15 @@ pub async fn main_logic<'a>(
         let mut extra_attack = None;
 
         //Keep allowing the user to select units
-        'outer: loop {
+        'select: loop {
             //Loop until the user clicks on a selectable unit in their team.
-            let current_unit = loop {
+            let mut current_warrior_pos = loop {
                 let data = doop.get_mouse_no_selection(team_index).await;
                 let cell = match data {
                     Pototo::Normal(a) => a,
                     Pototo::EndTurn => {
                         log!("End the turn!");
-                        break 'outer;
+                        break 'select;
                     }
                 };
 
@@ -345,21 +361,6 @@ pub async fn main_logic<'a>(
                 }
             };
 
-            #[derive(Copy, Clone, Debug)]
-            pub enum TeamType<A> {
-                ThisTeam(A),
-                ThatTeam(A),
-            }
-            impl<A> TeamType<A> {
-                pub fn unwrap_this(self) -> A {
-                    let TeamType::ThisTeam(a)=self else{
-                        unreachable!()
-                    };
-                    a
-                }
-            }
-
-            let mut current_warrior_pos = current_unit;
             //Keep showing the selected unit's options and keep handling the users selections
             //Until the unit is deselected.
             loop {
@@ -374,7 +375,7 @@ pub async fn main_logic<'a>(
                         Pototo::Normal(t) => t,
                         Pototo::EndTurn => {
                             //End the turn. Ok because we are not int he middle of anything.
-                            break 'outer;
+                            break 'select;
                         }
                     };
 
@@ -427,7 +428,7 @@ pub async fn main_logic<'a>(
                     Pototo::Normal(t) => t,
                     Pototo::EndTurn => {
                         //End the turn. Ok because we are not int he middle of anything.
-                        break 'outer;
+                        break 'select;
                     }
                 };
                 let target_cell = mouse_world;
@@ -473,11 +474,16 @@ pub async fn main_logic<'a>(
                     }
                 }
 
+                //At this point all re-selecting of units based off of the input has occured.
+                //We definately want to act on the action the user took on the selected unit.
+
                 //Reconstruct path by creating all possible paths with path information this time.
                 let path = get_path_from_move(target_cell, &unit, &game, extra_attack);
 
                 if let Some(target_coord) = game.that_team.find_slow(&target_cell).map(|a| a.slim())
                 {
+                    //If we are moving ontop of an enemy.
+                
                     let d = game.that_team.lookup_take(target_coord);
                     let c = game
                         .this_team
@@ -489,8 +495,7 @@ pub async fn main_logic<'a>(
                         .await
                     {
                         unit::Pair(Some(a), None) => {
-                            //current_warrior_pos = TeamType::ThisTeam(a.as_ref().slim());
-
+                            
                             game.this_team.add(a);
 
                             let _ = doop
@@ -509,11 +514,14 @@ pub async fn main_logic<'a>(
                                     .await;
                             }
 
-                            break 'outer;
+                            //Finish this players turn.
+                            break 'select;
                         }
                         _ => unreachable!(),
                     }
                 } else {
+                    //If we are moving to an empty square.
+
                     let this_unit = game
                         .this_team
                         .lookup_take(current_warrior_pos.unwrap_this());
@@ -565,7 +573,8 @@ pub async fn main_logic<'a>(
                         //TODO allow the user to move this unit one more time jumping.
                         //So the user must move the unit, or it will die.
                     } else {
-                        break 'outer;
+                        //Finish this players turn.
+                        break 'select;
                     }
                 }
             }
