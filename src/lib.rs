@@ -170,11 +170,13 @@ impl Game {
                 this_team: &mut self.cats,
                 that_team: &mut self.dogs,
                 world: &mut self.world,
+                team: ActiveTeam::Cats,
             },
             ActiveTeam::Dogs => GameView {
                 this_team: &mut self.dogs,
                 that_team: &mut self.cats,
                 world: &mut self.world,
+                team: ActiveTeam::Dogs,
             },
         }
     }
@@ -184,6 +186,7 @@ pub struct GameView<'a> {
     this_team: &'a mut Tribe,
     that_team: &'a mut Tribe,
     world: &'a mut board::World,
+    team: ActiveTeam,
 }
 impl<'a> GameView<'a> {
     pub fn not(&mut self) -> GameView {
@@ -191,6 +194,7 @@ impl<'a> GameView<'a> {
             this_team: self.that_team,
             that_team: self.this_team,
             world: self.world,
+            team: self.team.not(),
         }
     }
 }

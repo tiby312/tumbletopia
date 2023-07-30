@@ -320,14 +320,7 @@ impl<A> TeamType<A> {
             TeamType::Other(_) => TeamType::Other(a),
         }
     }
-    // pub fn is_same_as(&self,a:ActiveTeam)->bool{
-    //     match (self,current_turn){
-    //         (TeamType::ThisTeam(_),ActiveTeam::Cats)=>ActiveTeam::Cats,
-    //         (TeamType::ThisTeam(_),ActiveTeam::Dogs)=>ActiveTeam::Dogs,
-    //         (TeamType::ThatTeam(_),ActiveTeam::Cats)=>ActiveTeam::Dogs,
-    //         (TeamType::ThatTeam(_),ActiveTeam::Dogs)=>ActiveTeam::Cats,
-    //     }
-    // }
+
     pub fn not(self) -> Self {
         match self {
             TeamType::Curr(a) => TeamType::Other(a),
@@ -335,10 +328,10 @@ impl<A> TeamType<A> {
         }
     }
 
-    pub fn is_that_team(&self) -> bool {
+    pub fn is_other_team(&self) -> bool {
         matches!(self, TeamType::Other(_))
     }
-    pub fn is_this_team(&self) -> bool {
+    pub fn is_curr_team(&self) -> bool {
         matches!(self, TeamType::Curr(_))
     }
     pub fn unwrap_this(self) -> A {
@@ -349,6 +342,221 @@ impl<A> TeamType<A> {
     }
 }
 
+pub async fn select_loop(doop: &mut Doop<'_>, game: &mut Game, team_index: ActiveTeam) {
+    let mut extra_attack = None;
+
+    //Keep allowing the user to select units
+    'select_loop: loop {
+        //Loop until the user clicks on a selectable unit in their team.
+        let mut selected_unit = loop {
+            let data = doop.get_mouse_no_selection(team_index).await;
+            let cell = match data {
+                Pototo::Normal(a) => a,
+                Pototo::EndTurn => {
+                    log!("End the turn!");
+                    break 'select_loop;
+                }
+            };
+            let game = game.view(team_index);
+
+            if let Some(unit) = game.this_team.find_slow(&cell) {
+                break TeamType::Curr(unit.slim());
+            }
+            if let Some(unit) = game.that_team.find_slow(&cell) {
+                break TeamType::Other(unit.slim());
+            }
+        };
+
+        //Keep showing the selected unit's options and keep handling the users selections
+        //Until the unit is deselected.
+        loop {
+            //At this point we know a friendly unit is currently selected.
+
+            let mut relative_game_view = match selected_unit {
+                TeamType::Curr(_) => game.view(team_index),
+                TeamType::Other(_) => game.view(team_index.not()),
+            };
+
+            let unwrapped_selected_unit = match selected_unit {
+                TeamType::Curr(l) => l,
+                TeamType::Other(l) => l,
+            };
+
+            let unit = relative_game_view.this_team.lookup(unwrapped_selected_unit);
+
+            let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
+            let cc = CellSelection::MoveSelection(cc);
+
+            let grey = if let TeamType::Curr(e2) = selected_unit {
+                //If we are in the middle of a extra attack move, make sure
+                //no other friendly unit is selectable until we finish moving the
+                //the unit that has been partially moved.
+                if let Some(e) = extra_attack {
+                    e != *e2
+                } else {
+                    false
+                }
+            } else {
+                true
+            };
+
+            let (cell, pototo) = doop
+                .get_mouse_selection(cc, selected_unit.team(team_index), grey)
+                .await;
+
+            let mouse_world = match pototo {
+                Pototo::Normal(t) => t,
+                Pototo::EndTurn => {
+                    //End the turn. Ok because we are not int he middle of anything.
+                    break 'select_loop;
+                }
+            };
+            let target_cell = mouse_world;
+
+            //This is the cell the user selected from the pool of available moves for the unit
+            let CellSelection::MoveSelection(ss)=cell else{
+                    unreachable!()
+                };
+
+            //If we just clicked on ourselves, just deselect.
+            if target_cell == unwrapped_selected_unit.inner {
+                break;
+            }
+
+            let contains =
+                movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell);
+
+            //If we select a friendly unit quick swap
+            if let Some(target) = relative_game_view.this_team.find_slow(&target_cell) {
+                //it should be impossible for a unit to move onto a friendly
+                assert!(!contains);
+                selected_unit = selected_unit.with(target.slim());
+                continue;
+            }
+
+            //If we select an enemy unit quick swap
+            if let Some(target) = relative_game_view.that_team.find_slow(&target_cell) {
+                if selected_unit.is_other_team() || !contains {
+                    //If we select an enemy unit thats outside of our units range.
+                    selected_unit = selected_unit.with(target.slim()).not();
+                    continue;
+                }
+            }
+
+            //If we selected an empty space, deselect.
+            if !contains {
+                break;
+            }
+
+            //If we are trying to move an enemy piece, deselect.
+            if selected_unit.is_other_team() {
+                break;
+            }
+
+            // If we are trying to move a piece while in the middle of another
+            // piece move, deselect.
+            if let Some(e) = extra_attack {
+                if unwrapped_selected_unit.inner != e {
+                    break;
+                }
+            }
+
+            //At this point all re-selecting of units based off of the input has occured.
+            //We definately want to act on the action the user took on the selected unit.
+
+            //Reconstruct path by creating all possible paths with path information this time.
+            let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
+
+            if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
+                let target_coord = target_coord.as_ref().slim();
+
+                let d = relative_game_view.that_team.lookup_take(target_coord);
+                let c = relative_game_view
+                    .this_team
+                    .lookup_take(selected_unit.unwrap_this());
+
+                match doop
+                    .await_data(team_index)
+                    .resolve_attack(c, d, false, &path)
+                    .await
+                {
+                    unit::Pair(Some(a), None) => {
+                        relative_game_view.this_team.add(a);
+
+                        let _ = doop
+                            .await_data(team_index.not())
+                            .resolve_group_attack(
+                                target_cell.to_cube(),
+                                &mut relative_game_view.not(),
+                            )
+                            .await;
+
+                        //TODO is this possible?
+                        for n in target_cell.to_cube().neighbours() {
+                            doop.await_data(team_index)
+                                .resolve_group_attack(n, &mut relative_game_view)
+                                .await;
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+
+                //Finish this players turn.
+                break 'select_loop;
+            } else {
+                //If we are moving to an empty square.
+
+                let this_unit = relative_game_view
+                    .this_team
+                    .lookup_take(selected_unit.unwrap_this());
+
+                let this_unit = doop
+                    .await_data(team_index)
+                    .resolve_movement(this_unit, path)
+                    .await;
+
+                relative_game_view.this_team.add(this_unit);
+
+                let k = doop
+                    .await_data(team_index.not())
+                    .resolve_group_attack(target_cell.to_cube(), &mut relative_game_view.not())
+                    .await;
+
+                //Need to add ourselves back so we can resolve and attacking groups
+                //only to remove ourselves again later.
+                let k = if let Some(k) = k {
+                    let j = k.as_ref().slim();
+
+                    relative_game_view.this_team.add(k);
+
+                    for n in target_cell.to_cube().neighbours() {
+                        doop.await_data(team_index)
+                            .resolve_group_attack(n, &mut relative_game_view)
+                            .await;
+                    }
+
+                    Some(relative_game_view.this_team.lookup_take(j))
+                } else {
+                    for n in target_cell.to_cube().neighbours() {
+                        doop.await_data(team_index)
+                            .resolve_group_attack(n, &mut relative_game_view)
+                            .await;
+                    }
+                    None
+                };
+
+                if let Some(k) = k {
+                    extra_attack = Some(target_cell);
+                    selected_unit = TeamType::Curr(k.as_ref().slim());
+                    relative_game_view.this_team.add(k);
+                } else {
+                    //Finish this players turn.
+                    break 'select_loop;
+                }
+            }
+        }
+    }
+}
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
@@ -362,220 +570,7 @@ pub async fn main_logic<'a>(
 
     //Loop over each team!
     for team_index in ActiveTeam::Cats.iter() {
-        let mut extra_attack = None;
-
-        //Keep allowing the user to select units
-        'select_loop: loop {
-            //Loop until the user clicks on a selectable unit in their team.
-            let mut selected_unit = loop {
-                let data = doop.get_mouse_no_selection(team_index).await;
-                let cell = match data {
-                    Pototo::Normal(a) => a,
-                    Pototo::EndTurn => {
-                        log!("End the turn!");
-                        break 'select_loop;
-                    }
-                };
-                let game = game.view(team_index);
-
-                if let Some(unit) = game.this_team.find_slow(&cell) {
-                    break TeamType::Curr(unit.slim());
-                }
-                if let Some(unit) = game.that_team.find_slow(&cell) {
-                    break TeamType::Other(unit.slim());
-                }
-            };
-
-            //Keep showing the selected unit's options and keep handling the users selections
-            //Until the unit is deselected.
-            loop {
-                //At this point we know a friendly unit is currently selected.
-
-                let mut relative_game_view = match selected_unit {
-                    TeamType::Curr(_) => game.view(team_index),
-                    TeamType::Other(_) => game.view(team_index.not()),
-                };
-
-                let unwrapped_selected_unit = match selected_unit {
-                    TeamType::Curr(l) => l,
-                    TeamType::Other(l) => l,
-                };
-
-                let unit = relative_game_view.this_team.lookup(unwrapped_selected_unit);
-
-                let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
-                let cc = CellSelection::MoveSelection(cc);
-
-                let grey = if let TeamType::Curr(e2) = selected_unit {
-                    //If we are in the middle of a extra attack move, make sure
-                    //no other friendly unit is selectable until we finish moving the
-                    //the unit that has been partially moved.
-                    if let Some(e) = extra_attack {
-                        e != *e2
-                    } else {
-                        false
-                    }
-                } else {
-                    true
-                };
-
-                let (cell, pototo) = doop
-                    .get_mouse_selection(cc, selected_unit.team(team_index), grey)
-                    .await;
-
-                let mouse_world = match pototo {
-                    Pototo::Normal(t) => t,
-                    Pototo::EndTurn => {
-                        //End the turn. Ok because we are not int he middle of anything.
-                        break 'select_loop;
-                    }
-                };
-                let target_cell = mouse_world;
-
-                //This is the cell the user selected from the pool of available moves for the unit
-                let CellSelection::MoveSelection(ss)=cell else{
-                    unreachable!()
-                };
-
-                //If we just clicked on ourselves, just deselect.
-                if target_cell == unwrapped_selected_unit.inner {
-                    break;
-                }
-
-                let contains =
-                    movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell);
-
-                //If we select a friendly unit quick swap
-                if let Some(target) = relative_game_view.this_team.find_slow(&target_cell) {
-                    //it should be impossible for a unit to move onto a friendly
-                    assert!(!contains);
-                    selected_unit = selected_unit.with(target.slim());
-                    continue;
-                }
-
-                //If we select an enemy unit quick swap
-                if let Some(target) = relative_game_view.that_team.find_slow(&target_cell) {
-                    if selected_unit.is_that_team() || !contains {
-                        //If we select an enemy unit thats outside of our units range.
-                        selected_unit = selected_unit.with(target.slim()).not();
-                        continue;
-                    }
-                }
-
-                //If we selected an empty space, deselect.
-                if !contains {
-                    break;
-                }
-
-                //If we are trying to move an enemy piece, deselect.
-                if selected_unit.is_that_team() {
-                    break;
-                }
-
-                // If we are trying to move a piece while in the middle of another
-                // piece move, deselect.
-                if let Some(e) = extra_attack {
-                    if unwrapped_selected_unit.inner != e {
-                        break;
-                    }
-                }
-
-                //At this point all re-selecting of units based off of the input has occured.
-                //We definately want to act on the action the user took on the selected unit.
-
-                //Reconstruct path by creating all possible paths with path information this time.
-                let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
-
-                if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell)
-                {
-                    let target_coord = target_coord.as_ref().slim();
-
-                    let d = relative_game_view.that_team.lookup_take(target_coord);
-                    let c = relative_game_view
-                        .this_team
-                        .lookup_take(selected_unit.unwrap_this());
-
-                    match doop
-                        .await_data(team_index)
-                        .resolve_attack(c, d, false, &path)
-                        .await
-                    {
-                        unit::Pair(Some(a), None) => {
-                            relative_game_view.this_team.add(a);
-
-                            let _ = doop
-                                .await_data(team_index.not())
-                                .resolve_group_attack(
-                                    target_cell.to_cube(),
-                                    &mut relative_game_view.not(),
-                                )
-                                .await;
-
-                            //TODO is this possible?
-                            for n in target_cell.to_cube().neighbours() {
-                                doop.await_data(team_index)
-                                    .resolve_group_attack(n, &mut relative_game_view)
-                                    .await;
-                            }
-                        }
-                        _ => unreachable!(),
-                    }
-
-                    //Finish this players turn.
-                    break 'select_loop;
-                } else {
-                    //If we are moving to an empty square.
-
-                    let this_unit = relative_game_view
-                        .this_team
-                        .lookup_take(selected_unit.unwrap_this());
-
-                    let this_unit = doop
-                        .await_data(team_index)
-                        .resolve_movement(this_unit, path)
-                        .await;
-
-                    relative_game_view.this_team.add(this_unit);
-
-                    let k = doop
-                        .await_data(team_index.not())
-                        .resolve_group_attack(target_cell.to_cube(), &mut relative_game_view.not())
-                        .await;
-
-                    //Need to add ourselves back so we can resolve and attacking groups
-                    //only to remove ourselves again later.
-                    let k = if let Some(k) = k {
-                        let j = k.as_ref().slim();
-
-                        relative_game_view.this_team.add(k);
-
-                        for n in target_cell.to_cube().neighbours() {
-                            doop.await_data(team_index)
-                                .resolve_group_attack(n, &mut relative_game_view)
-                                .await;
-                        }
-
-                        Some(relative_game_view.this_team.lookup_take(j))
-                    } else {
-                        for n in target_cell.to_cube().neighbours() {
-                            doop.await_data(team_index)
-                                .resolve_group_attack(n, &mut relative_game_view)
-                                .await;
-                        }
-                        None
-                    };
-
-                    if let Some(k) = k {
-                        extra_attack = Some(target_cell);
-                        selected_unit = TeamType::Curr(k.as_ref().slim());
-                        relative_game_view.this_team.add(k);
-                    } else {
-                        //Finish this players turn.
-                        break 'select_loop;
-                    }
-                }
-            }
-        }
+        select_loop(&mut doop, game, team_index).await;
     }
 }
 
@@ -633,7 +628,7 @@ impl<'a> GameView<'a> {
     }
 }
 
-pub fn generate_unit_possible_moves_inner<P: movement::PathHave>(
+fn generate_unit_possible_moves_inner<P: movement::PathHave>(
     unit: &WarriorType<&UnitData>,
     game: &GameView,
     extra_attack: Option<GridCoord>,
