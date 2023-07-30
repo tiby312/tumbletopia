@@ -495,6 +495,7 @@ pub async fn main_logic<'a>(
                 //Reconstruct path by creating all possible paths with path information this time.
                 let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
 
+
                 if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell)
                 {
                     let target_coord = target_coord.as_ref().slim();
@@ -532,11 +533,13 @@ pub async fn main_logic<'a>(
                                     .await;
                             }
 
-                            //Finish this players turn.
-                            break 'select;
+                            
                         }
                         _ => unreachable!(),
                     }
+
+                    //Finish this players turn.
+                    break 'select;
                 } else {
                     //If we are moving to an empty square.
 
@@ -549,11 +552,8 @@ pub async fn main_logic<'a>(
                         .resolve_movement(this_unit, path)
                         .await;
 
-                    //current_warrior_pos = TeamType::ThisTeam(this_unit.as_ref().slim());
-
                     relative_game_view.this_team.add(this_unit);
 
-                    //TODO use an enum to team index
                     let k = doop
                         .await_data(team_index.not())
                         .resolve_group_attack(
@@ -595,13 +595,9 @@ pub async fn main_logic<'a>(
                     };
 
                     if let Some(k) = k {
-                        //k.stamina.0 = k.as_ref().get_movement_data();
                         extra_attack = Some(target_cell);
-
                         selected_unit = TeamType::Curr(k.as_ref().slim());
                         relative_game_view.this_team.add(k);
-                        //TODO allow the user to move this unit one more time jumping.
-                        //So the user must move the unit, or it will die.
                     } else {
                         //Finish this players turn.
                         break 'select;
