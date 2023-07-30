@@ -1,4 +1,3 @@
-use std::env::current_dir;
 
 use super::*;
 
@@ -362,13 +361,6 @@ pub async fn main_logic<'a>(
         receiver: response_recv,
     };
 
-    {
-        // game.cats.set_health();
-        // game.dogs.set_health();
-        // game.cats.replenish_stamina();
-        // game.dogs.replenish_stamina();
-    }
-
     //Loop over each team!
     for team_index in ActiveTeam::Cats.iter() {
         let mut extra_attack = None;
@@ -385,7 +377,7 @@ pub async fn main_logic<'a>(
                         break 'select;
                     }
                 };
-                let mut game = game.view(team_index);
+                let game = game.view(team_index);
 
                 if let Some(unit) = game.this_team.find_slow(&cell) {
                     break TeamType::Curr(unit.slim());
