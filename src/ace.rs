@@ -1,4 +1,3 @@
-
 use super::*;
 
 use crate::{
@@ -366,7 +365,7 @@ pub async fn main_logic<'a>(
         let mut extra_attack = None;
 
         //Keep allowing the user to select units
-        'select: loop {
+        'select_loop: loop {
             //Loop until the user clicks on a selectable unit in their team.
             let mut selected_unit = loop {
                 let data = doop.get_mouse_no_selection(team_index).await;
@@ -374,7 +373,7 @@ pub async fn main_logic<'a>(
                     Pototo::Normal(a) => a,
                     Pototo::EndTurn => {
                         log!("End the turn!");
-                        break 'select;
+                        break 'select_loop;
                     }
                 };
                 let game = game.view(team_index);
@@ -392,7 +391,7 @@ pub async fn main_logic<'a>(
             loop {
                 //At this point we know a friendly unit is currently selected.
 
-                let relative_game_view = match selected_unit {
+                let mut relative_game_view = match selected_unit {
                     TeamType::Curr(_) => game.view(team_index),
                     TeamType::Other(_) => game.view(team_index.not()),
                 };
@@ -428,7 +427,7 @@ pub async fn main_logic<'a>(
                     Pototo::Normal(t) => t,
                     Pototo::EndTurn => {
                         //End the turn. Ok because we are not int he middle of anything.
-                        break 'select;
+                        break 'select_loop;
                     }
                 };
                 let target_cell = mouse_world;
@@ -472,7 +471,7 @@ pub async fn main_logic<'a>(
                 if selected_unit.is_that_team() {
                     break;
                 }
-                
+
                 // If we are trying to move a piece while in the middle of another
                 // piece move, deselect.
                 if let Some(e) = extra_attack {
@@ -481,13 +480,11 @@ pub async fn main_logic<'a>(
                     }
                 }
 
-
                 //At this point all re-selecting of units based off of the input has occured.
                 //We definately want to act on the action the user took on the selected unit.
 
                 //Reconstruct path by creating all possible paths with path information this time.
                 let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
-
 
                 if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell)
                 {
@@ -510,29 +507,22 @@ pub async fn main_logic<'a>(
                                 .await_data(team_index.not())
                                 .resolve_group_attack(
                                     target_cell.to_cube(),
-                                    relative_game_view.that_team,
-                                    relative_game_view.this_team,
+                                    &mut relative_game_view.not(),
                                 )
                                 .await;
 
                             //TODO is this possible?
                             for n in target_cell.to_cube().neighbours() {
                                 doop.await_data(team_index)
-                                    .resolve_group_attack(
-                                        n,
-                                        relative_game_view.this_team,
-                                        relative_game_view.that_team,
-                                    )
+                                    .resolve_group_attack(n, &mut relative_game_view)
                                     .await;
                             }
-
-                            
                         }
                         _ => unreachable!(),
                     }
 
                     //Finish this players turn.
-                    break 'select;
+                    break 'select_loop;
                 } else {
                     //If we are moving to an empty square.
 
@@ -549,11 +539,7 @@ pub async fn main_logic<'a>(
 
                     let k = doop
                         .await_data(team_index.not())
-                        .resolve_group_attack(
-                            target_cell.to_cube(),
-                            relative_game_view.that_team,
-                            relative_game_view.this_team,
-                        )
+                        .resolve_group_attack(target_cell.to_cube(), &mut relative_game_view.not())
                         .await;
 
                     //Need to add ourselves back so we can resolve and attacking groups
@@ -565,11 +551,7 @@ pub async fn main_logic<'a>(
 
                         for n in target_cell.to_cube().neighbours() {
                             doop.await_data(team_index)
-                                .resolve_group_attack(
-                                    n,
-                                    relative_game_view.this_team,
-                                    relative_game_view.that_team,
-                                )
+                                .resolve_group_attack(n, &mut relative_game_view)
                                 .await;
                         }
 
@@ -577,11 +559,7 @@ pub async fn main_logic<'a>(
                     } else {
                         for n in target_cell.to_cube().neighbours() {
                             doop.await_data(team_index)
-                                .resolve_group_attack(
-                                    n,
-                                    relative_game_view.this_team,
-                                    relative_game_view.that_team,
-                                )
+                                .resolve_group_attack(n, &mut relative_game_view)
                                 .await;
                         }
                         None
@@ -593,7 +571,7 @@ pub async fn main_logic<'a>(
                         relative_game_view.this_team.add(k);
                     } else {
                         //Finish this players turn.
-                        break 'select;
+                        break 'select_loop;
                     }
                 }
             }

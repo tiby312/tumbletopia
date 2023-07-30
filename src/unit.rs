@@ -174,9 +174,10 @@ impl<'a, 'b> AwaitData<'a, 'b> {
     pub async fn resolve_group_attack(
         &mut self,
         n: hex::Cube,
-        this_team: &mut Tribe,
-        that_team: &mut Tribe,
+        game_view: &mut GameView<'_>,
     ) -> Option<WarriorType<UnitData>> {
+        let that_team = &mut game_view.that_team;
+        let this_team = &mut game_view.this_team;
         let Some(k)=that_team.find_slow(&n.to_axial()) else{
             return None;
         };
