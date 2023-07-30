@@ -348,13 +348,15 @@ pub enum LoopRes<T> {
     Select(T),
 }
 
+type SelectType = TeamType<WarriorType<GridCoord>>;
+
 pub async fn reselect_loop(
     doop: &mut Doop<'_>,
     game: &mut Game,
     team_index: ActiveTeam,
     extra_attack: &mut Option<GridCoord>,
-    selected_unit: TeamType<WarriorType<GridCoord>>,
-) -> LoopRes<TeamType<WarriorType<GridCoord>>> {
+    selected_unit: SelectType,
+) -> LoopRes<SelectType> {
     //At this point we know a friendly unit is currently selected.
 
     let mut relative_game_view = match selected_unit {
@@ -525,10 +527,10 @@ pub async fn reselect_loop(
         };
 
         if let Some(k) = k {
-            let b = LoopRes::Select(TeamType::Curr(k.as_ref().slim()));
+            let b = k.as_ref().slim();
             *extra_attack = Some(target_cell);
             relative_game_view.this_team.add(k);
-            return b;
+            return LoopRes::Select(TeamType::Curr(b));
         } else {
             //Finish this players turn.
             return LoopRes::EndTurn;
