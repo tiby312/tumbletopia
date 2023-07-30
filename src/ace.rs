@@ -591,10 +591,6 @@ pub async fn main_logic<'a>(
                 };
                 selected_unit = a;
             }
-            // match select_loop(&mut doop, game, team_index, &mut extra_attack).await {
-            //     LoopRes::EndTurn => break,
-            //     LoopRes::Deselect => continue,
-            // }
         }
     }
 }
