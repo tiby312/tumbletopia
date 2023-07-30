@@ -11,7 +11,6 @@ pub struct UnitData {
 }
 
 impl WarriorType<&UnitData> {
-
     //TODO use this instead of gridcoord when you know the type!!!!!
     pub fn slim(&self) -> WarriorType<GridCoord> {
         WarriorType {
@@ -21,11 +20,8 @@ impl WarriorType<&UnitData> {
     }
 }
 impl UnitData {
-
     pub fn new(position: GridCoord) -> Self {
-        UnitData {
-            position,
-        }
+        UnitData { position }
     }
 }
 
@@ -74,7 +70,6 @@ pub enum Type {
 }
 
 impl Type {
-    
     pub fn type_index(&self) -> usize {
         let a = self;
         match a {
@@ -95,6 +90,25 @@ impl Type {
         }
     }
 }
+
+// #[must_use]
+// pub struct MoveSelector<'a>{
+//     game:&'a mut GameRun
+// }
+// impl<'a> MoveSelector<'a>{
+//     pub fn select(self,a:GridCoord){
+//         todo!()
+//     }
+// }
+// pub struct GameRun{
+
+// }
+// impl GameRun{
+//     fn get_moves(&mut self,grid:GridCoord)->(MoveSelector,Vec<GridCoord>){
+//         todo!()
+//     }
+
+// }
 
 impl<'a> WarriorType<&'a mut UnitData> {
     pub fn as_ref(&self) -> WarriorType<&UnitData> {
@@ -135,7 +149,6 @@ impl<T> std::ops::DerefMut for WarriorType<T> {
     }
 }
 
-
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
     team_index: ActiveTeam,
@@ -150,7 +163,6 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start: WarriorType<UnitData>,
         path: movement::Path,
     ) -> WarriorType<UnitData> {
-        
         let an = animation::AnimationCommand::Movement { unit: start, path };
         let mut start = self.wait_animation(an, ace::Movement).await;
 
@@ -183,7 +195,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
                 let f = this_team.lookup_take(f.slim());
 
                 let _tt = enemy.as_ref().unwrap().position;
-                
+
                 let an = animation::AnimationCommand::Attack {
                     attacker: f,
                     defender: enemy.take().unwrap(),
@@ -217,16 +229,16 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         };
 
         assert!(!support_attack);
-        
+
         let path = movement::Path::new();
         let m = this_unit.position.dir_to(&target.position);
         let path = path.add(m).unwrap();
-        
+
         let an = animation::AnimationCommand::Movement {
             unit: this_unit,
             path,
         };
-        
+
         let mut this_unit = self.wait_animation(an, ace::Movement).await;
 
         //todo kill target animate
@@ -314,7 +326,6 @@ impl Tribe {
     pub fn filter(&self) -> TribeFilter {
         TribeFilter { tribe: self }
     }
-
 }
 
 //TODO sort this by x and then y axis!!!!!!!
@@ -362,12 +373,7 @@ pub struct UnitCollectionFilter<'a, T> {
 }
 impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
     fn filter(&self, b: &GridCoord) -> FilterRes {
-        FilterRes::from_bool(
-            self.a
-                .iter()
-                .find(|a| a.get_pos() == b)
-                .is_some(),
-        )
+        FilterRes::from_bool(self.a.iter().find(|a| a.get_pos() == b).is_some())
     }
 }
 
