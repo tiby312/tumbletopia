@@ -459,28 +459,25 @@ pub async fn reselect_loop(
             .this_team
             .lookup_take(selected_unit.unwrap_this());
 
-        match doop
+        let a=doop
             .await_data(team_index)
             .resolve_attack(c, d, false, &path)
-            .await
-        {
-            unit::Pair(Some(a), None) => {
-                relative_game_view.this_team.add(a);
+            .await;
+       
+        relative_game_view.this_team.add(a);
 
-                let _ = doop
-                    .await_data(team_index.not())
-                    .resolve_group_attack(target_cell.to_cube(), &mut relative_game_view.not())
-                    .await;
+        let _ = doop
+            .await_data(team_index.not())
+            .resolve_group_attack(target_cell.to_cube(), &mut relative_game_view.not())
+            .await;
 
-                //TODO is this possible?
-                for n in target_cell.to_cube().neighbours() {
-                    doop.await_data(team_index)
-                        .resolve_group_attack(n, &mut relative_game_view)
-                        .await;
-                }
-            }
-            _ => unreachable!(),
+        //TODO is this possible?
+        for n in target_cell.to_cube().neighbours() {
+            doop.await_data(team_index)
+                .resolve_group_attack(n, &mut relative_game_view)
+                .await;
         }
+    
 
         //Finish this players turn.
         return LoopRes::EndTurn;
