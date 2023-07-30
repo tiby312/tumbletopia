@@ -468,6 +468,11 @@ pub async fn main_logic<'a>(
                     break;
                 }
 
+                //If we are trying to move an enemy piece, deselect.
+                if selected_unit.is_that_team() {
+                    break;
+                }
+                
                 // If we are trying to move a piece while in the middle of another
                 // piece move, deselect.
                 if let Some(e) = extra_attack {
@@ -476,10 +481,6 @@ pub async fn main_logic<'a>(
                     }
                 }
 
-                //If we are trying to move an enemy piece, deselect.
-                if selected_unit.is_that_team() {
-                    break;
-                }
 
                 //At this point all re-selecting of units based off of the input has occured.
                 //We definately want to act on the action the user took on the selected unit.
