@@ -185,9 +185,13 @@ pub struct GameView<'a> {
     that_team: &'a mut Tribe,
     world: &'a mut board::World,
 }
-impl<'a> GameView<'a>{
-    pub fn not(&mut self)->GameView{
-        GameView { this_team: self.that_team, that_team: self.this_team, world:self.world }
+impl<'a> GameView<'a> {
+    pub fn not(&mut self) -> GameView {
+        GameView {
+            this_team: self.that_team,
+            that_team: self.this_team,
+            world: self.world,
+        }
     }
 }
 

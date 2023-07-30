@@ -308,13 +308,40 @@ pub enum TeamType<A> {
     ThatTeam(A),
 }
 impl<A> TeamType<A> {
-    pub fn team(&self,current_turn:ActiveTeam)->ActiveTeam{
-        match (self,current_turn){
-            (TeamType::ThisTeam(_),ActiveTeam::Cats)=>ActiveTeam::Cats,
-            (TeamType::ThisTeam(_),ActiveTeam::Dogs)=>ActiveTeam::Dogs,
-            (TeamType::ThatTeam(_),ActiveTeam::Cats)=>ActiveTeam::Dogs,
-            (TeamType::ThatTeam(_),ActiveTeam::Dogs)=>ActiveTeam::Cats,
+    pub fn team(&self, current_turn: ActiveTeam) -> ActiveTeam {
+        match (self, current_turn) {
+            (TeamType::ThisTeam(_), ActiveTeam::Cats) => ActiveTeam::Cats,
+            (TeamType::ThisTeam(_), ActiveTeam::Dogs) => ActiveTeam::Dogs,
+            (TeamType::ThatTeam(_), ActiveTeam::Cats) => ActiveTeam::Dogs,
+            (TeamType::ThatTeam(_), ActiveTeam::Dogs) => ActiveTeam::Cats,
         }
+    }
+    pub fn with(self, a: A) -> Self {
+        match self {
+            TeamType::ThisTeam(_) => TeamType::ThisTeam(a),
+            TeamType::ThatTeam(_) => TeamType::ThatTeam(a),
+        }
+    }
+    // pub fn is_same_as(&self,a:ActiveTeam)->bool{
+    //     match (self,current_turn){
+    //         (TeamType::ThisTeam(_),ActiveTeam::Cats)=>ActiveTeam::Cats,
+    //         (TeamType::ThisTeam(_),ActiveTeam::Dogs)=>ActiveTeam::Dogs,
+    //         (TeamType::ThatTeam(_),ActiveTeam::Cats)=>ActiveTeam::Dogs,
+    //         (TeamType::ThatTeam(_),ActiveTeam::Dogs)=>ActiveTeam::Cats,
+    //     }
+    // }
+    pub fn not(self) -> Self {
+        match self {
+            TeamType::ThisTeam(a) => TeamType::ThatTeam(a),
+            TeamType::ThatTeam(a) => TeamType::ThisTeam(a),
+        }
+    }
+
+    pub fn is_that_team(&self) -> bool {
+        matches!(self, TeamType::ThatTeam(_))
+    }
+    pub fn is_this_team(&self) -> bool {
+        matches!(self, TeamType::ThisTeam(_))
     }
     pub fn unwrap_this(self) -> A {
         let TeamType::ThisTeam(a)=self else{
@@ -344,7 +371,6 @@ pub async fn main_logic<'a>(
 
     //Loop over each team!
     for team_index in ActiveTeam::Cats.iter() {
-        
         let mut extra_attack = None;
 
         //Keep allowing the user to select units
@@ -361,7 +387,6 @@ pub async fn main_logic<'a>(
                 };
                 let mut game = game.view(team_index);
 
-
                 if let Some(unit) = game.this_team.find_slow(&cell) {
                     break TeamType::ThisTeam(unit.slim());
                 }
@@ -373,30 +398,29 @@ pub async fn main_logic<'a>(
             //Keep showing the selected unit's options and keep handling the users selections
             //Until the unit is deselected.
             loop {
-                
-
                 //At this point we know a friendly unit is currently selected.
 
-                let game=match current_warrior_pos{
-                    TeamType::ThisTeam(_)=>game.view(team_index),
-                    TeamType::ThatTeam(_)=>game.view(team_index.not())
+                let game = match current_warrior_pos {
+                    TeamType::ThisTeam(_) => game.view(team_index),
+                    TeamType::ThatTeam(_) => game.view(team_index.not()),
                 };
 
                 //let mut game = game.view(team_index);
 
                 //let gg=game.not();
-                let unit=match current_warrior_pos{
-                    TeamType::ThisTeam(l)=>game.this_team.lookup(l),
-                    TeamType::ThatTeam(_)=>unreachable!()
+                let unit = match current_warrior_pos {
+                    TeamType::ThisTeam(l) => l,
+                    TeamType::ThatTeam(l) => l,
                 };
+
+                let unit = game.this_team.lookup(unit);
 
                 //let unit = game.this_team.lookup(current_warrior_pos.unwrap_this());
 
                 let cc = game.get_unit_possible_moves(&unit, extra_attack);
-                let cc =CellSelection::MoveSelection(cc);
-            
+                let cc = CellSelection::MoveSelection(cc);
 
-                let grey=if let TeamType::ThisTeam(e2)=current_warrior_pos{
+                let grey = if let TeamType::ThisTeam(e2) = current_warrior_pos {
                     //If we are in the middle of a extra attack move, make sure
                     //no other friendly unit is selectable until we finish moving the
                     //the unit that has been partially moved.
@@ -405,12 +429,13 @@ pub async fn main_logic<'a>(
                     } else {
                         false
                     }
-                }else{
+                } else {
                     true
                 };
-                
 
-                let (cell, pototo) = doop.get_mouse_selection(cc, current_warrior_pos.team(team_index), grey).await;
+                let (cell, pototo) = doop
+                    .get_mouse_selection(cc, current_warrior_pos.team(team_index), grey)
+                    .await;
                 let mouse_world = match pototo {
                     Pototo::Normal(t) => t,
                     Pototo::EndTurn => {
@@ -425,149 +450,49 @@ pub async fn main_logic<'a>(
                     unreachable!()
                 };
 
-                //RESELECT STAGE
-                //friendly selected -> select self
-                //friendly selected -> select different friendly
-                //friendly selected -> select enemy
-                //friendly selected -> select valid cell
-                //friendly selected -> select empty cell
-                
-                //friendly selected and extra_attack
-                //friendly selected and no_extra attack.
+                let contains =
+                    movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell);
 
-
-                //self vs not self
-                //in vs out of selection
-                //friendly vs enemy
-                //extra vs not extra
-                
-
-                let contains=movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell);
-
-                let k=match current_warrior_pos{
-                    TeamType::ThisTeam(curr)=>curr,
-                    TeamType::ThatTeam(curr)=>curr
+                let k = match current_warrior_pos {
+                    TeamType::ThisTeam(curr) => curr,
+                    TeamType::ThatTeam(curr) => curr,
                 };
                 //If we just clicked on ourselves, just deselect.
-                if target_cell==k.inner{
+                if target_cell == k.inner {
                     break;
                 }
 
                 //If we select a friendly unit
-                if let Some(target)=game.this_team.find_slow(&target_cell){
+                if let Some(target) = game.this_team.find_slow(&target_cell) {
                     //it should be impossible for a unit to move onto a friendly
                     assert!(!contains);
-                    current_warrior_pos=TeamType::ThisTeam(target.slim());
+                    current_warrior_pos = current_warrior_pos.with(target.slim());
                     continue;
                 }
 
                 if let Some(target) = game.that_team.find_slow(&target_cell) {
-                    if !contains{
+                    if current_warrior_pos.is_that_team() || !contains {
                         //If we select an enemy unit thats outside of our units range.
-                        current_warrior_pos = TeamType::ThatTeam(target.slim());
+                        current_warrior_pos = current_warrior_pos.with(target.slim()).not();
                         continue;
                     }
                 }
 
-                if let Some(e)=extra_attack{
-                    if curr.inner!=e{
-                        break;
+                if !contains {
+                    break;
+                }
+
+                if current_warrior_pos.is_this_team() {
+                    if let Some(e) = extra_attack {
+                        if k.inner != e {
+                            break;
+                        }
                     }
                 }
 
-
-
-                match current_warrior_pos{
-                    TeamType::ThisTeam(curr)=>{
-                        if target_cell==curr.inner{
-                            break;
-                        }
-
-                        //If we select a friendly unit
-                        if let Some(target)=game.this_team.find_slow(&target_cell){
-                            //it should be impossible for a unit to move onto a friendly
-                            assert!(!contains);
-                            current_warrior_pos=TeamType::ThisTeam(target.slim());
-                            continue;
-                        }
-
-                        if let Some(target) = game.that_team.find_slow(&target_cell) {
-                            if !contains{
-                                //If we select an enemy unit thats outside of our units range.
-                                current_warrior_pos = TeamType::ThatTeam(target.slim());
-                                continue;
-                            }
-                        }
-
-                        if let Some(e)=extra_attack{
-                            if curr.inner!=e{
-                                break;
-                            }
-                        }
-                    },
-                    TeamType::ThatTeam(curr)=>{
-                        if target_cell==curr.inner{
-                            break;
-                        }
-
-                        if let Some(target)=game.this_team.find_slow(&target_cell){
-                            current_warrior_pos=TeamType::ThisTeam(target.slim());
-                            continue;
-                        }
-
-                        if let Some(target) = game.that_team.find_slow(&target_cell) {
-                            //it should be impossible for an enemy unit to move onto a enemy
-                            assert!(!contains);
-                            
-                            //If we select an enemy unit thats outside of our units range.
-                            current_warrior_pos = TeamType::ThatTeam(target.slim());
-                            continue;
-                        
-                        }
-
-
-                    }
+                if current_warrior_pos.is_that_team() {
+                    break;
                 }
-
-
-                
-
-                
-                // if let Some(a) = game.this_team.find_slow(&target_cell) {
-                //     let k = a.slim();
-                //     if k != current_warrior_pos.unwrap_this() {
-                //         //If we select a friendly unit thats not us.
-                //         //Quick switch to another unit
-                //         current_warrior_pos = TeamType::ThisTeam(k);
-                //         continue;
-                //     } else {
-                //         //if we click on the unit thats already selected, deselect.
-                //         //(might want to do somehting else? popup with info?)
-                //         //Deselect
-                //         break;
-                //     }
-                // } else if let Some(target) = game.that_team.find_slow(&target_cell) {
-                //     if !movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell) {
-                //         //If we select an enemy unit thats outside of our units range.
-                //         current_warrior_pos = TeamType::ThatTeam(target.slim());
-                //         continue;
-                //     }
-                // } else if !movement::contains_coord(
-                //     ss.moves.iter().map(|x| &x.target),
-                //     &target_cell,
-                // ) {
-                //     //If we select an empty cell outside of our units range.
-                //     break;
-                // } else if let Some(k) = extra_attack {
-                //     //If we are in extra attack mode, forbid the user from moving
-                //     //any unit other than the one that has already done a partial move.
-                //     if let TeamType::ThisTeam(a) = current_warrior_pos {
-                //         if a.inner != k {
-                //             break;
-                //         }
-                //     }
-                // }
-
 
                 //At this point all re-selecting of units based off of the input has occured.
                 //We definately want to act on the action the user took on the selected unit.
