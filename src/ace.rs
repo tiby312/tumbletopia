@@ -279,7 +279,7 @@ impl<'a> Doop<'a> {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum ActiveTeam {
     Cats = 0,
     Dogs = 1,
@@ -300,45 +300,61 @@ impl ActiveTeam {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum TeamType<A> {
-    Curr(A),
-    Other(A),
+// #[derive(Copy, Clone, Debug)]
+// pub enum TeamType<A> {
+//     Cats(A),
+//     Dogs(A),
+// }
+// impl<A> TeamType<A> {
+//     // pub fn team(&self, current_turn: ActiveTeam) -> ActiveTeam {
+//     //     match (self, current_turn) {
+//     //         (TeamType::Curr(_), ActiveTeam::Cats) => ActiveTeam::Cats,
+//     //         (TeamType::Curr(_), ActiveTeam::Dogs) => ActiveTeam::Dogs,
+//     //         (TeamType::Other(_), ActiveTeam::Cats) => ActiveTeam::Dogs,
+//     //         (TeamType::Other(_), ActiveTeam::Dogs) => ActiveTeam::Cats,
+//     //     }
+//     // }
+//     pub fn with(self, a: A) -> Self {
+//         match self {
+//             TeamType::Cats(_) => TeamType::Cats(a),
+//             TeamType::Dogs(_) => TeamType::Dogs(a),
+//         }
+//     }
+
+//     pub fn not(self) -> Self {
+//         match self {
+//             TeamType::Cats(a) => TeamType::Dogs(a),
+//             TeamType::Dogs(a) => TeamType::Cats(a),
+//         }
+//     }
+
+//     pub fn team(&self)->ActiveTeam{
+//         todo!();
+//     }
+//     // pub fn unwrap_this(self) -> A {
+//     //     let TeamType::Curr(a)=self else{
+//     //         unreachable!()
+//     //     };
+//     //     a
+//     // }
+// }
+
+pub struct SelectType {
+    warrior: WarriorType<GridCoord>,
+    team: ActiveTeam,
 }
-impl<A> TeamType<A> {
-    pub fn team(&self, current_turn: ActiveTeam) -> ActiveTeam {
-        match (self, current_turn) {
-            (TeamType::Curr(_), ActiveTeam::Cats) => ActiveTeam::Cats,
-            (TeamType::Curr(_), ActiveTeam::Dogs) => ActiveTeam::Dogs,
-            (TeamType::Other(_), ActiveTeam::Cats) => ActiveTeam::Dogs,
-            (TeamType::Other(_), ActiveTeam::Dogs) => ActiveTeam::Cats,
-        }
+impl SelectType {
+    pub fn with(mut self, a: WarriorType<GridCoord>) -> Self {
+        self.warrior = a;
+        self
     }
-    pub fn with(self, a: A) -> Self {
-        match self {
-            TeamType::Curr(_) => TeamType::Curr(a),
-            TeamType::Other(_) => TeamType::Other(a),
-        }
+    pub fn not(mut self) -> Self {
+        self.team = self.team.not();
+        self
     }
-
-    pub fn not(self) -> Self {
-        match self {
-            TeamType::Curr(a) => TeamType::Other(a),
-            TeamType::Other(a) => TeamType::Curr(a),
-        }
-    }
-
-    pub fn is_other_team(&self) -> bool {
-        matches!(self, TeamType::Other(_))
-    }
-    pub fn is_curr_team(&self) -> bool {
-        matches!(self, TeamType::Curr(_))
-    }
-    pub fn unwrap_this(self) -> A {
-        let TeamType::Curr(a)=self else{
-            unreachable!()
-        };
-        a
+    pub fn with_team(mut self, a: ActiveTeam) -> Self {
+        self.team = a;
+        self
     }
 }
 
@@ -347,8 +363,6 @@ pub enum LoopRes<T> {
     Deselect,
     Select(T),
 }
-
-type SelectType = TeamType<WarriorType<GridCoord>>;
 
 pub async fn reselect_loop(
     doop: &mut Doop<'_>,
@@ -359,27 +373,21 @@ pub async fn reselect_loop(
 ) -> LoopRes<SelectType> {
     //At this point we know a friendly unit is currently selected.
 
-    let mut relative_game_view = match selected_unit {
-        TeamType::Curr(_) => game.view(team_index),
-        TeamType::Other(_) => game.view(team_index.not()),
-    };
+    let mut relative_game_view = game.view(selected_unit.team);
 
-    let unwrapped_selected_unit = match selected_unit {
-        TeamType::Curr(l) => l,
-        TeamType::Other(l) => l,
-    };
+    let unwrapped_selected_unit = selected_unit.warrior;
 
     let unit = relative_game_view.this_team.lookup(unwrapped_selected_unit);
 
     let cc = relative_game_view.get_unit_possible_moves(&unit, *extra_attack);
     let cc = CellSelection::MoveSelection(cc);
 
-    let grey = if let TeamType::Curr(e2) = selected_unit {
+    let grey = if selected_unit.team == team_index {
         //If we are in the middle of a extra attack move, make sure
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
         if let Some(e) = *extra_attack {
-            e != *e2
+            e != *selected_unit.warrior
         } else {
             false
         }
@@ -387,9 +395,7 @@ pub async fn reselect_loop(
         true
     };
 
-    let (cell, pototo) = doop
-        .get_mouse_selection(cc, selected_unit.team(team_index), grey)
-        .await;
+    let (cell, pototo) = doop.get_mouse_selection(cc, selected_unit.team, grey).await;
 
     let mouse_world = match pototo {
         Pototo::Normal(t) => t,
@@ -421,7 +427,7 @@ pub async fn reselect_loop(
 
     //If we select an enemy unit quick swap
     if let Some(target) = relative_game_view.that_team.find_slow(&target_cell) {
-        if selected_unit.is_other_team() || !contains {
+        if selected_unit.team != team_index || !contains {
             //If we select an enemy unit thats outside of our units range.
             return LoopRes::Select(selected_unit.with(target.slim()).not());
         }
@@ -433,7 +439,7 @@ pub async fn reselect_loop(
     }
 
     //If we are trying to move an enemy piece, deselect.
-    if selected_unit.is_other_team() {
+    if selected_unit.team != team_index {
         return LoopRes::Deselect;
     }
 
@@ -457,13 +463,13 @@ pub async fn reselect_loop(
         let d = relative_game_view.that_team.lookup_take(target_coord);
         let c = relative_game_view
             .this_team
-            .lookup_take(selected_unit.unwrap_this());
+            .lookup_take(selected_unit.warrior);
 
-        let a=doop
+        let a = doop
             .await_data(team_index)
             .resolve_attack(c, d, false, &path)
             .await;
-       
+
         relative_game_view.this_team.add(a);
 
         let _ = doop
@@ -477,7 +483,6 @@ pub async fn reselect_loop(
                 .resolve_group_attack(n, &mut relative_game_view)
                 .await;
         }
-    
 
         //Finish this players turn.
         return LoopRes::EndTurn;
@@ -486,7 +491,7 @@ pub async fn reselect_loop(
 
         let this_unit = relative_game_view
             .this_team
-            .lookup_take(selected_unit.unwrap_this());
+            .lookup_take(selected_unit.warrior);
 
         let this_unit = doop
             .await_data(team_index)
@@ -527,7 +532,7 @@ pub async fn reselect_loop(
             let b = k.as_ref().slim();
             *extra_attack = Some(target_cell);
             relative_game_view.this_team.add(k);
-            return LoopRes::Select(TeamType::Curr(b));
+            return LoopRes::Select(selected_unit.with(b).with_team(team_index));
         } else {
             //Finish this players turn.
             return LoopRes::EndTurn;
@@ -565,10 +570,16 @@ pub async fn main_logic<'a>(
                 let game = game.view(team_index);
 
                 if let Some(unit) = game.this_team.find_slow(&cell) {
-                    break TeamType::Curr(unit.slim());
+                    break SelectType {
+                        warrior: unit.slim(),
+                        team: team_index,
+                    };
                 }
                 if let Some(unit) = game.that_team.find_slow(&cell) {
-                    break TeamType::Other(unit.slim());
+                    break SelectType {
+                        warrior: unit.slim(),
+                        team: team_index.not(),
+                    };
                 }
             };
 
