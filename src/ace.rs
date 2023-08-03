@@ -239,20 +239,6 @@ impl<'a> Doop<'a> {
         (selection, c)
     }
 
-    // async fn get_mouse_selection_enemy<'c>(
-    //     &mut self,
-    //     cell: CellSelection,
-    //     team_index: usize,
-    // ) -> (CellSelection, Pototo<GridCoord>) {
-    //     let (b, c) = self.get_mouse(MousePrompt::Enemy(cell), team_index).await;
-
-    //     let MousePrompt::Enemy(b)=b else{
-    //         unreachable!()
-    //     };
-
-    //     (b, c)
-    // }
-
     async fn get_mouse<'c>(
         &mut self,
         cell: MousePrompt,
@@ -285,10 +271,6 @@ pub enum ActiveTeam {
     Dogs = 1,
 }
 impl ActiveTeam {
-    // pub fn next(&mut self){
-    //     *self=self.not()
-    // }
-
     pub fn iter(&self) -> impl Iterator<Item = Self> {
         [*self, self.not()].into_iter().cycle()
     }
@@ -299,45 +281,6 @@ impl ActiveTeam {
         }
     }
 }
-
-// #[derive(Copy, Clone, Debug)]
-// pub enum TeamType<A> {
-//     Cats(A),
-//     Dogs(A),
-// }
-// impl<A> TeamType<A> {
-//     // pub fn team(&self, current_turn: ActiveTeam) -> ActiveTeam {
-//     //     match (self, current_turn) {
-//     //         (TeamType::Curr(_), ActiveTeam::Cats) => ActiveTeam::Cats,
-//     //         (TeamType::Curr(_), ActiveTeam::Dogs) => ActiveTeam::Dogs,
-//     //         (TeamType::Other(_), ActiveTeam::Cats) => ActiveTeam::Dogs,
-//     //         (TeamType::Other(_), ActiveTeam::Dogs) => ActiveTeam::Cats,
-//     //     }
-//     // }
-//     pub fn with(self, a: A) -> Self {
-//         match self {
-//             TeamType::Cats(_) => TeamType::Cats(a),
-//             TeamType::Dogs(_) => TeamType::Dogs(a),
-//         }
-//     }
-
-//     pub fn not(self) -> Self {
-//         match self {
-//             TeamType::Cats(a) => TeamType::Dogs(a),
-//             TeamType::Dogs(a) => TeamType::Cats(a),
-//         }
-//     }
-
-//     pub fn team(&self)->ActiveTeam{
-//         todo!();
-//     }
-//     // pub fn unwrap_this(self) -> A {
-//     //     let TeamType::Curr(a)=self else{
-//     //         unreachable!()
-//     //     };
-//     //     a
-//     // }
-// }
 
 pub struct SelectType {
     warrior: WarriorType<GridCoord>,
@@ -408,8 +351,8 @@ pub async fn reselect_loop(
 
     //This is the cell the user selected from the pool of available moves for the unit
     let CellSelection::MoveSelection(ss)=cell else{
-                    unreachable!()
-                };
+        unreachable!()
+    };
 
     //If we just clicked on ourselves, just deselect.
     if target_cell == unwrapped_selected_unit.inner {
@@ -460,17 +403,15 @@ pub async fn reselect_loop(
     if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
         let target_coord = target_coord.as_ref().slim();
 
-        let d = relative_game_view.that_team.lookup_take(target_coord);
-        let c = relative_game_view
-            .this_team
-            .lookup_take(selected_unit.warrior);
-
-        let a = doop
-            .await_data(team_index)
-            .resolve_attack(c, d, false, &path)
+        doop.await_data(team_index)
+            .resolve_attack(
+                selected_unit.warrior,
+                target_coord,
+                &mut relative_game_view,
+                false,
+                &path,
+            )
             .await;
-
-        relative_game_view.this_team.add(a);
 
         let _ = doop
             .await_data(team_index.not())

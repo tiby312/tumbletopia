@@ -215,11 +215,15 @@ impl<'a, 'b> AwaitData<'a, 'b> {
     }
     pub async fn resolve_attack(
         &mut self,
-        this_unit: WarriorType<UnitData>,
-        target: WarriorType<UnitData>,
+        selected_unit: WarriorType<GridCoord>,
+        target_coord: WarriorType<GridCoord>,
+        relative_game_view: &mut GameView<'_>,
         support_attack: bool,
         _path: &movement::Path,
-    ) -> WarriorType<UnitData> {
+    ) {
+        let target = relative_game_view.that_team.lookup_take(target_coord);
+        let this_unit = relative_game_view.this_team.lookup_take(selected_unit);
+
         let _move_on_kill = match (this_unit.val, target.val) {
             (Type::Rook, _) => false,
             (Type::Warrior, _) => true,
@@ -244,8 +248,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 
         //todo kill target animate
         this_unit.position = target.position;
-        //return Pair(Some(this_unit), None);
-        return this_unit;
+
+        relative_game_view.this_team.add(this_unit);
     }
 
     pub async fn wait_animation<K: UnwrapMe>(
