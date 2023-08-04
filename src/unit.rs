@@ -5,7 +5,7 @@ use crate::{
 
 use super::*;
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct UnitData {
     pub position: GridCoord,
     pub typ: Type,
@@ -86,7 +86,7 @@ pub struct AwaitData<'a, 'b> {
 }
 impl<'a, 'b> AwaitData<'a, 'b> {
     pub fn new(doop: &'b mut ace::Doop<'a>, team_index: ActiveTeam) -> Self {
-        AwaitData { doop, team_index }
+        AwaitData { doop, team_index}
     }
 
     pub async fn resolve_movement(&mut self, start: UnitData, path: movement::Path) -> UnitData {
@@ -100,24 +100,37 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start
     }
 
-    pub async fn resolve_surrounded2(&mut self, n: hex::Cube, game_view: &mut GameView<'_>) {
-        pub async fn attacky<T>(a: &mut T, b: &mut T) {}
-
-        let (unit, rest) = game_view.this_team.warriors.find_ext_mut(&n.to_axial());
+    pub async fn resolve_surrounded(&mut self, n: hex::Cube, game_view: &mut GameView<'_>)->Option<UnitData> {
+        
+        let (unit, _) = game_view.this_team.warriors.find_ext_mut(&n.to_axial())?;
 
         let n: Vec<_> = n.neighbours().map(|a| a.to_axial()).collect();
-        let neighbours: Vec<_> = rest
-            .into_iter()
+        let nearby_enemies: Vec<_> = game_view.that_team.warriors.elem.iter_mut()
             .filter(|a| n.contains(&a.position))
             .collect();
-        if neighbours.len() >= 3 {
-            for n in neighbours {
-                attacky(unit, n).await;
+        if nearby_enemies.len() >= 3 {
+            for n in nearby_enemies {
+                
+                let an = animation::AnimationCommand::Attack {
+                    attacker: n.clone(),
+                    defender: unit.clone(),
+                };
+                let _ = self
+                    .wait_animation(an, ace::Attack, self.team_index.not())
+                    .await;
+
             }
+
+            let pos=unit.position;
+            game_view.this_team.find_take(&pos)
+            
+        }else{
+            None
         }
+
     }
 
-    pub async fn resolve_surrounded(
+    pub async fn resolve_surrounded_old(
         &mut self,
         n: hex::Cube,
         game_view: &mut GameView<'_>,
@@ -375,16 +388,15 @@ impl<T: HasPos> UnitCollection<T> {
         self.elem.iter_mut().find(|b| b.get_pos() == a)
     }
 
-    pub fn find_ext_mut(&mut self, a: &GridCoord) -> (&mut T, Rest<T>) {
+    pub fn find_ext_mut(&mut self, a: &GridCoord) -> Option<(&mut T, Rest<T>)> {
         let (i, _) = self
             .elem
             .iter()
             .enumerate()
-            .find(|(_, b)| b.get_pos() == a)
-            .unwrap();
+            .find(|(_, b)| b.get_pos() == a)?;
         let (left, rest) = self.elem.split_at_mut(i);
         let (foo, right) = rest.split_first_mut().unwrap();
-        (foo, Rest { left, right })
+        Some((foo, Rest { left, right }))
     }
 
     pub fn find(&self, a: &GridCoord) -> Option<&T> {
