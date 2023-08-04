@@ -100,27 +100,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start
     }
 
-    pub async fn animate_attack(
-        &mut self,
-        unit_pos: GridCoord,
-        n: GridCoord,
-        game_view: &mut GameView<'_>,
-    ) {
-        let unit_pos = game_view.this_team.find_take(&unit_pos).unwrap();
-        let them = game_view.that_team.find_take(&n).unwrap();
+   
 
-        let an = animation::AnimationCommand::Attack {
-            attacker: them,
-            defender: unit_pos,
-        };
-        let [them, this_unit] = self
-            .wait_animation(an, ace::Attack, self.team_index.not())
-            .await;
-
-        game_view.that_team.add(them);
-        game_view.this_team.add(this_unit);
-    }
- 
     pub async fn resolve_surrounded_animated(
         &mut self,
         n: hex::Cube,
@@ -167,55 +148,37 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         }
     }
 
-    pub fn resolve_attack_logic(
+    pub fn resolve_invade_logic(
         &mut self,
         selected_unit: GridCoord,
         target_coord: GridCoord,
         relative_game_view: &mut GameView<'_>,
-    ) ->UnitData{
+    ) -> UnitData {
         let mut this_unit = relative_game_view
             .this_team
             .find_slow_mut(&selected_unit)
             .unwrap();
 
         let target = relative_game_view
-        .that_team
-        .find_take(&target_coord)
-        .unwrap();
+            .that_team
+            .find_take(&target_coord)
+            .unwrap();
 
         //todo kill target animate
         this_unit.position = target_coord;
 
         target
-
     }
-    pub async fn resolve_attack_animation(
+    
+    pub async fn resolve_invade(
         &mut self,
         selected_unit: GridCoord,
         target_coord: GridCoord,
         relative_game_view: &mut GameView<'_>,
     ) {
-        let target=self.resolve_attack_logic(selected_unit,target_coord,relative_game_view);
-
-        let this_unit = relative_game_view
-            .this_team
-            .find_take(&selected_unit)
-            .unwrap();
-
-        let path = movement::Path::new();
-        let m = this_unit.position.dir_to(&target.position);
-        let path = path.add(m).unwrap();
-
-        let an = animation::AnimationCommand::Movement {
-            unit: this_unit,
-            path,
-        };
-
-        let this_unit = self
-            .wait_animation(an, ace::Movement, self.team_index)
+        let target = self.resolve_invade_logic(selected_unit, target_coord, relative_game_view);
+        self.animate_invade(selected_unit, target.position, relative_game_view)
             .await;
-
-        relative_game_view.this_team.add(this_unit);
     }
 
     // pub fn resolve_attack(
@@ -237,6 +200,55 @@ impl<'a, 'b> AwaitData<'a, 'b> {
     ) -> K::Item {
         let aa = self.doop.wait_animation(an, team_index).await;
         wrapper.unwrapme(aa.into_data())
+    }
+
+
+    pub async fn animate_attack(
+        &mut self,
+        unit_pos: GridCoord,
+        n: GridCoord,
+        game_view: &mut GameView<'_>,
+    ) {
+        let unit_pos = game_view.this_team.find_take(&unit_pos).unwrap();
+        let them = game_view.that_team.find_take(&n).unwrap();
+
+        let an = animation::AnimationCommand::Attack {
+            attacker: them,
+            defender: unit_pos,
+        };
+        let [them, this_unit] = self
+            .wait_animation(an, ace::Attack, self.team_index.not())
+            .await;
+
+        game_view.that_team.add(them);
+        game_view.this_team.add(this_unit);
+    }
+
+    pub async fn animate_invade(
+        &mut self,
+        selected_unit: GridCoord,
+        target_coord: GridCoord,
+        relative_game_view: &mut GameView<'_>,
+    ) {
+        let this_unit = relative_game_view
+            .this_team
+            .find_take(&selected_unit)
+            .unwrap();
+
+        let path = movement::Path::new();
+        let m = this_unit.position.dir_to(&target_coord);
+        let path = path.add(m).unwrap();
+
+        let an = animation::AnimationCommand::Movement {
+            unit: this_unit,
+            path,
+        };
+
+        let this_unit = self
+            .wait_animation(an, ace::Movement, self.team_index)
+            .await;
+
+        relative_game_view.this_team.add(this_unit);
     }
 }
 
