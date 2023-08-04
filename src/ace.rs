@@ -383,12 +383,18 @@ pub async fn reselect_loop(
     let path = relative_game_view.get_path_from_move(target_cell, &unit, *extra_attack);
 
     if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
-        //let target_coord = target_coord.as_ref().slim();
+        doop.await_data(team_index)
+            .resolve_invade(
+                selected_unit.warrior,
+                target_coord.position,
+                &mut relative_game_view,
+            )
+            .await;
 
-        unit::AttackAnimator::new(selected_unit.warrior, target_coord.position)
-            .animate(&mut doop.await_data(team_index), &mut relative_game_view)
-            .await
-            .execute(&mut relative_game_view);
+        // unit::AttackAnimator::new(selected_unit.warrior, target_coord.position)
+        //     .animate(&mut doop.await_data(team_index), &mut relative_game_view)
+        //     .await
+        //     .execute(&mut relative_game_view);
 
         // doop.await_data(team_index)
         //     .resolve_attack(

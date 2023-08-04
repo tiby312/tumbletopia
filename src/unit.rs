@@ -123,11 +123,11 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         target_coord: GridCoord,
         relative_game_view: &mut GameView<'_>,
     ) {
-        let target = relative_game_view.resolve_invade_logic(selected_unit, target_coord);
-        self.animate_invade(selected_unit, target.position, relative_game_view)
+        self.animate_invade(selected_unit, target_coord, relative_game_view)
             .await;
+        let _ = relative_game_view.resolve_invade_logic(selected_unit, target_coord);
+        
     }
-
 
     pub async fn wait_animation<K: UnwrapMe>(
         &mut self,
@@ -188,73 +188,74 @@ impl<'a, 'b> AwaitData<'a, 'b> {
     }
 }
 
-pub struct AttackAnimator {
-    attack: Attack,
-}
-impl AttackAnimator {
-    pub fn new(a: GridCoord, b: GridCoord) -> Self {
-        AttackAnimator {
-            attack: Attack::new(a, b),
-        }
-    }
-    pub async fn animate(
-        self,
-        await_data: &mut AwaitData<'_, '_>,
-        relative_game_view: &mut GameView<'_>,
-    ) -> Attack {
-        let target = relative_game_view
-            .that_team
-            .find_take(&self.attack.target_coord)
-            .unwrap();
-        let this_unit = relative_game_view
-            .this_team
-            .find_take(&self.attack.selected_unit)
-            .unwrap();
+// pub struct AttackAnimator {
+//     attack: Attack,
+// }
+// impl AttackAnimator {
+//     pub fn new(a: GridCoord, b: GridCoord) -> Self {
+//         AttackAnimator {
+//             attack: Attack::new(a, b),
+//         }
+//     }
+//     pub async fn animate(
+//         self,
+//         await_data: &mut AwaitData<'_, '_>,
+//         relative_game_view: &mut GameView<'_>,
+//     ) -> Attack {
+//         let target = relative_game_view
+//             .that_team
+//             .find_take(&self.attack.target_coord)
+//             .unwrap();
+//         let this_unit = relative_game_view
+//             .this_team
+//             .find_take(&self.attack.selected_unit)
+//             .unwrap();
 
-        let path = movement::Path::new();
-        let m = this_unit.position.dir_to(&target.position);
-        let path = path.add(m).unwrap();
+//         let path = movement::Path::new();
+//         let m = this_unit.position.dir_to(&target.position);
+//         let path = path.add(m).unwrap();
 
-        let an = animation::AnimationCommand::Movement {
-            unit: this_unit,
-            path,
-        };
+//         let an = animation::AnimationCommand::Movement {
+//             unit: this_unit,
+//             path,
+//         };
 
-        let this_unit = await_data
-            .wait_animation(an, ace::Movement, await_data.team_index)
-            .await;
+//         let this_unit = await_data
+//             .wait_animation(an, ace::Movement, await_data.team_index)
+//             .await;
 
-        //todo kill target animate
-        //this_unit.position = target.position;
-        relative_game_view.that_team.add(target);
-        relative_game_view.this_team.add(this_unit);
-        self.attack
-    }
-}
-pub struct Attack {
-    selected_unit: GridCoord,
-    target_coord: GridCoord,
-}
-impl Attack {
-    pub fn new(a: GridCoord, b: GridCoord) -> Self {
-        Attack {
-            selected_unit: a,
-            target_coord: b,
-        }
-    }
+//         //todo kill target animate
+//         //this_unit.position = target.position;
+//         relative_game_view.that_team.add(target);
+//         relative_game_view.this_team.add(this_unit);
+//         self.attack
+//     }
+// }
 
-    pub fn execute(self, relative_game_view: &mut GameView<'_>) {
-        let target = relative_game_view
-            .that_team
-            .find_take(&self.target_coord)
-            .unwrap();
-        let mut this_unit = relative_game_view
-            .this_team
-            .find_slow_mut(&self.selected_unit)
-            .unwrap();
-        this_unit.position = target.position;
-    }
-}
+// pub struct Attack {
+//     selected_unit: GridCoord,
+//     target_coord: GridCoord,
+// }
+// impl Attack {
+//     pub fn new(a: GridCoord, b: GridCoord) -> Self {
+//         Attack {
+//             selected_unit: a,
+//             target_coord: b,
+//         }
+//     }
+
+//     pub fn execute(self, relative_game_view: &mut GameView<'_>) {
+//         let target = relative_game_view
+//             .that_team
+//             .find_take(&self.target_coord)
+//             .unwrap();
+//         let mut this_unit = relative_game_view
+//             .this_team
+//             .find_slow_mut(&self.selected_unit)
+//             .unwrap();
+//         this_unit.position = target.position;
+//     }
+// }
 
 // pub trait MoveTrait{
 //     fn execute(&self){
