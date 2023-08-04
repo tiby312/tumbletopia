@@ -187,13 +187,13 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             .filter(|a| this_team.find_slow(&a.to_axial()).is_some())
             .collect();
         if nearby_friendlies.len() >= 3 {
-            let mut enemy = Some(that_team.lookup_take(k.slim()));
+            let mut enemy = Some(that_team.lookup_take(&k.slim()));
 
             //TODO add animation
             //kill this unit!!!
             for a in nearby_friendlies {
                 let f = this_team.find_slow(&a.to_axial()).unwrap();
-                let f = this_team.lookup_take(f.slim());
+                let f = this_team.lookup_take(&f.slim());
 
                 let _tt = enemy.as_ref().unwrap().position;
 
@@ -218,22 +218,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         selected_unit: WarriorType<GridCoord>,
         target_coord: WarriorType<GridCoord>,
         relative_game_view: &mut GameView<'_>,
-        support_attack: bool,
-        _path: &movement::Path,
     ) {
-        let target = relative_game_view.that_team.lookup_take(target_coord);
-        let this_unit = relative_game_view.this_team.lookup_take(selected_unit);
-
-        let _move_on_kill = match (this_unit.val, target.val) {
-            (Type::Rook, _) => false,
-            (Type::Warrior, _) => true,
-            (Type::Para, _) => false,
-            _ => {
-                todo!()
-            }
-        };
-
-        assert!(!support_attack);
+        let target = relative_game_view.that_team.lookup_take(&target_coord);
+        let this_unit = relative_game_view.this_team.lookup_take(&selected_unit);
 
         let path = movement::Path::new();
         let m = this_unit.position.dir_to(&target.position);
@@ -252,6 +239,17 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         relative_game_view.this_team.add(this_unit);
     }
 
+    // pub fn resolve_attack(
+    //     &mut self,
+    //     selected_unit: WarriorType<GridCoord>,
+    //     target_coord: WarriorType<GridCoord>,
+    //     relative_game_view: &mut GameView<'_>
+    // ) {
+    //     let target = relative_game_view.that_team.lookup_take(target_coord);
+    //     let mut this_unit = relative_game_view.this_team.lookup_mut(&selected_unit);
+    //     this_unit.position = target.position;
+    // }
+
     pub async fn wait_animation<K: UnwrapMe>(
         &mut self,
         an: animation::AnimationCommand,
@@ -261,6 +259,82 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         wrapper.unwrapme(aa.into_data())
     }
 }
+
+pub struct AttackAnimator {
+    attack: Attack,
+}
+impl AttackAnimator {
+    pub fn new(a: WarriorType<GridCoord>, b: WarriorType<GridCoord>) -> Self {
+        AttackAnimator {
+            attack: Attack::new(a, b),
+        }
+    }
+    pub async fn animate(
+        self,
+        await_data: &mut AwaitData<'_, '_>,
+        relative_game_view: &mut GameView<'_>,
+    ) -> Attack {
+        let target = relative_game_view
+            .that_team
+            .lookup_take(&self.attack.target_coord);
+        let this_unit = relative_game_view
+            .this_team
+            .lookup_take(&self.attack.selected_unit);
+
+        let path = movement::Path::new();
+        let m = this_unit.position.dir_to(&target.position);
+        let path = path.add(m).unwrap();
+
+        let an = animation::AnimationCommand::Movement {
+            unit: this_unit,
+            path,
+        };
+
+        let this_unit = await_data.wait_animation(an, ace::Movement).await;
+
+        //todo kill target animate
+        //this_unit.position = target.position;
+        relative_game_view.that_team.add(target);
+        relative_game_view.this_team.add(this_unit);
+        self.attack
+    }
+}
+pub struct Attack {
+    selected_unit: WarriorType<GridCoord>,
+    target_coord: WarriorType<GridCoord>,
+}
+impl Attack {
+    pub fn new(a: WarriorType<GridCoord>, b: WarriorType<GridCoord>) -> Self {
+        Attack {
+            selected_unit: a,
+            target_coord: b,
+        }
+    }
+
+    pub fn execute(self, relative_game_view: &mut GameView<'_>) {
+        let target = relative_game_view.that_team.lookup_take(&self.target_coord);
+        let mut this_unit = relative_game_view.this_team.lookup_mut(&self.selected_unit);
+        this_unit.position = target.position;
+    }
+}
+
+// pub trait MoveTrait{
+//     fn execute(&self){
+
+//     }
+//     fn animate(&self,game_view:&mut GameView<'_>)->Box<dyn std::future::Future<Output=()>>;
+// }
+
+// pub enum Move{
+//     Attack{
+//         selected_unit:WarriorType<GridCoord>,
+//         target_coord:WarriorType<GridCoord>
+//     },
+//     Move{
+//         selected_unit:WarriorType<GridCoord>,
+//         target_coord:WarriorType<GridCoord>
+//     }
+// }
 
 pub struct Pair(
     pub Option<WarriorType<UnitData>>,
@@ -290,7 +364,7 @@ impl Tribe {
             })
             .unwrap()
     }
-    pub fn lookup_take(&mut self, a: WarriorType<GridCoord>) -> WarriorType<UnitData> {
+    pub fn lookup_take(&mut self, a: &WarriorType<GridCoord>) -> WarriorType<UnitData> {
         Some(self.warriors[a.val.type_index()].remove(&a.inner))
             .map(|b| WarriorType {
                 inner: b,

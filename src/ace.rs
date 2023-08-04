@@ -403,15 +403,18 @@ pub async fn reselect_loop(
     if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
         let target_coord = target_coord.as_ref().slim();
 
-        doop.await_data(team_index)
-            .resolve_attack(
-                selected_unit.warrior,
-                target_coord,
-                &mut relative_game_view,
-                false,
-                &path,
-            )
-            .await;
+        unit::AttackAnimator::new(selected_unit.warrior, target_coord)
+            .animate(&mut doop.await_data(team_index), &mut relative_game_view)
+            .await
+            .execute(&mut relative_game_view);
+
+        // doop.await_data(team_index)
+        //     .resolve_attack(
+        //         selected_unit.warrior,
+        //         target_coord,
+        //         &mut relative_game_view
+        //     )
+        //     .await;
 
         let _ = doop
             .await_data(team_index.not())
@@ -432,7 +435,7 @@ pub async fn reselect_loop(
 
         let this_unit = relative_game_view
             .this_team
-            .lookup_take(selected_unit.warrior);
+            .lookup_take(&selected_unit.warrior);
 
         let this_unit = doop
             .await_data(team_index)
@@ -459,7 +462,7 @@ pub async fn reselect_loop(
                     .await;
             }
 
-            Some(relative_game_view.this_team.lookup_take(j))
+            Some(relative_game_view.this_team.lookup_take(&j))
         } else {
             for n in target_cell.to_cube().neighbours() {
                 doop.await_data(team_index)
