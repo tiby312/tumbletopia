@@ -400,12 +400,12 @@ pub async fn reselect_loop(
 
         let _ = doop
             .await_data(team_index)
-            .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
+            .resolve_surrounded_animated(target_cell.to_cube(), &mut relative_game_view)
             .await;
 
         for n in target_cell.to_cube().neighbours() {
             doop.await_data(team_index.not())
-                .resolve_surrounded(n, &mut relative_game_view.not())
+                .resolve_surrounded_animated(n, &mut relative_game_view.not())
                 .await;
         }
 
@@ -428,7 +428,7 @@ pub async fn reselect_loop(
 
         let k = doop
             .await_data(team_index)
-            .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
+            .resolve_surrounded_animated(target_cell.to_cube(), &mut relative_game_view)
             .await;
 
         //Need to add ourselves back so we can resolve and attacking groups
@@ -440,7 +440,7 @@ pub async fn reselect_loop(
 
             for n in target_cell.to_cube().neighbours() {
                 doop.await_data(team_index.not())
-                    .resolve_surrounded(n, &mut relative_game_view.not())
+                    .resolve_surrounded_animated(n, &mut relative_game_view.not())
                     .await;
             }
 
@@ -448,7 +448,7 @@ pub async fn reselect_loop(
         } else {
             for n in target_cell.to_cube().neighbours() {
                 doop.await_data(team_index.not())
-                    .resolve_surrounded(n, &mut relative_game_view.not())
+                    .resolve_surrounded_animated(n, &mut relative_game_view.not())
                     .await;
             }
             None

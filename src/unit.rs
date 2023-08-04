@@ -100,18 +100,18 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start
     }
 
-    pub async fn attacky(
+    pub async fn animate_attack(
         &mut self,
         unit_pos: GridCoord,
         n: GridCoord,
         game_view: &mut GameView<'_>,
     ) {
-        let us = game_view.this_team.find_take(&unit_pos).unwrap();
+        let unit_pos = game_view.this_team.find_take(&unit_pos).unwrap();
         let them = game_view.that_team.find_take(&n).unwrap();
 
         let an = animation::AnimationCommand::Attack {
             attacker: them,
-            defender: us,
+            defender: unit_pos,
         };
         let [them, this_unit] = self
             .wait_animation(an, ace::Attack, self.team_index.not())
@@ -120,29 +120,48 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         game_view.that_team.add(them);
         game_view.this_team.add(this_unit);
     }
-    pub async fn resolve_surrounded(
+
+    pub async fn resolve_surrounded_animated(
         &mut self,
         n: hex::Cube,
         game_view: &mut GameView<'_>,
     ) -> Option<UnitData> {
-        let unit_pos = game_view
+        if let Some((unit_pos, b)) = self.resolve_surrounded_logic(n, game_view) {
+            let u = unit_pos.position;
+            game_view.this_team.add(unit_pos);
+            for n in b {
+                self.animate_attack(u, n, game_view).await;
+            }
+            Some(game_view.this_team.find_take(&u).unwrap())
+        } else {
+            None
+        }
+    }
+
+    pub fn resolve_surrounded_logic(
+        &mut self,
+        n: hex::Cube,
+        game_view: &mut GameView<'_>,
+    ) -> Option<(UnitData, impl Iterator<Item = GridCoord>)> {
+        let Some(unit_pos) = game_view
             .this_team
             .warriors
-            .find_ext_mut(&n.to_axial())?
-            .0
-            .position;
+            .find_ext_mut(&n.to_axial()) else{
+                return None;
+            };
+
+        let unit_pos = unit_pos.0.position;
 
         let nearby_enemies: Vec<_> = n
             .neighbours()
             .filter(|a| game_view.that_team.find_slow(&a.to_axial()).is_some())
-            .map(|a|a.to_axial())
+            .map(|a| a.to_axial())
             .collect();
         if nearby_enemies.len() >= 3 {
-            for n in nearby_enemies {
-                self.attacky(unit_pos, n, game_view).await;
-            }
-
-            game_view.this_team.find_take(&unit_pos)
+            game_view
+                .this_team
+                .find_take(&unit_pos)
+                .map(|a| (a, nearby_enemies.into_iter()))
         } else {
             None
         }
