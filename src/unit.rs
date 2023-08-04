@@ -76,6 +76,7 @@ mod fast {
     // }
 }
 
+//https://users.rust-lang.org/t/macro-to-dry-sync-and-async-code/67556
 macro_rules! resolve_movement {
     ($args:expr, $($_await:tt)*) => {
         {
