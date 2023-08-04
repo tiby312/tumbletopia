@@ -61,25 +61,36 @@ impl Type {
     }
 }
 
-// #[must_use]
-// pub struct MoveSelector<'a>{
-//     game:&'a mut GameRun
-// }
-// impl<'a> MoveSelector<'a>{
-//     pub fn select(self,a:GridCoord){
-//         todo!()
-//     }
-// }
-// pub struct GameRun{
+mod fast {
+    //https://users.rust-lang.org/t/macro-to-dry-sync-and-async-code/67556/2
 
-// }
-// impl GameRun{
-//     fn get_moves(&mut self,grid:GridCoord)->(MoveSelector,Vec<GridCoord>){
-//         todo!()
-//     }
+    // async fn foo(){}
+    // async fn test_async(){
+    //     let f=foo();
+    //     decode!(f .await);
+    // }
+    // //TODO
+    // fn test2(){
+    //     let f=foo();
+    //     decode!(f);
+    // }
+}
 
-// }
+macro_rules! resolve_movement {
+    ($args:expr, $($_await:tt)*) => {
+        {
+            let (start,path,data):(UnitData,movement::Path,&mut AwaitData<'_,'_>)=$args;
 
+            let an = animation::AnimationCommand::Movement { unit: start, path };
+            let mut start = data
+                .wait_animation(an, ace::Movement, data.team_index)
+                $($_await)*;
+
+            start.position = path.get_end_coord(start.position);
+            start
+        }
+    }
+}
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
     team_index: ActiveTeam,
@@ -89,15 +100,16 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         AwaitData { doop, team_index }
     }
 
+    pub fn resolve_movement_no_animate(
+        &mut self,
+        start: UnitData,
+        path: movement::Path,
+    ) -> UnitData {
+        //resolve_movement!(start,path,self,)
+        todo!()
+    }
     pub async fn resolve_movement(&mut self, start: UnitData, path: movement::Path) -> UnitData {
-        let an = animation::AnimationCommand::Movement { unit: start, path };
-        let mut start = self
-            .wait_animation(an, ace::Movement, self.team_index)
-            .await;
-
-        start.position = path.get_end_coord(start.position);
-
-        start
+        resolve_movement!((start,path,self),.await)
     }
 
     pub async fn resolve_surrounded(
@@ -126,7 +138,6 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         self.animate_invade(selected_unit, target_coord, relative_game_view)
             .await;
         let _ = relative_game_view.resolve_invade_logic(selected_unit, target_coord);
-        
     }
 
     pub async fn wait_animation<K: UnwrapMe>(
@@ -232,30 +243,44 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 //     }
 // }
 
-// pub struct Attack {
-//     selected_unit: GridCoord,
-//     target_coord: GridCoord,
-// }
-// impl Attack {
-//     pub fn new(a: GridCoord, b: GridCoord) -> Self {
-//         Attack {
-//             selected_unit: a,
-//             target_coord: b,
-//         }
-//     }
+pub struct Move {
+    selected_unit: GridCoord,
+    target_coord: GridCoord,
+    extra: GridCoord,
+}
 
-//     pub fn execute(self, relative_game_view: &mut GameView<'_>) {
-//         let target = relative_game_view
-//             .that_team
-//             .find_take(&self.target_coord)
-//             .unwrap();
-//         let mut this_unit = relative_game_view
-//             .this_team
-//             .find_slow_mut(&self.selected_unit)
-//             .unwrap();
-//         this_unit.position = target.position;
-//     }
-// }
+impl MoveT for Move {
+    fn execute(self, relative_game_view: &mut GameView<'_>) {}
+}
+
+pub struct Attack {
+    selected_unit: GridCoord,
+    target_coord: GridCoord,
+}
+pub trait MoveT {
+    fn execute(self, relative_game_view: &mut GameView<'_>);
+}
+impl Attack {
+    pub fn new(a: GridCoord, b: GridCoord) -> Self {
+        Attack {
+            selected_unit: a,
+            target_coord: b,
+        }
+    }
+}
+impl MoveT for Attack {
+    fn execute(self, relative_game_view: &mut GameView<'_>) {
+        let target = relative_game_view
+            .that_team
+            .find_take(&self.target_coord)
+            .unwrap();
+        let mut this_unit = relative_game_view
+            .this_team
+            .find_slow_mut(&self.selected_unit)
+            .unwrap();
+        this_unit.position = target.position;
+    }
+}
 
 // pub trait MoveTrait{
 //     fn execute(&self){

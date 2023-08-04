@@ -391,19 +391,6 @@ pub async fn reselect_loop(
             )
             .await;
 
-        // unit::AttackAnimator::new(selected_unit.warrior, target_coord.position)
-        //     .animate(&mut doop.await_data(team_index), &mut relative_game_view)
-        //     .await
-        //     .execute(&mut relative_game_view);
-
-        // doop.await_data(team_index)
-        //     .resolve_attack(
-        //         selected_unit.warrior,
-        //         target_coord,
-        //         &mut relative_game_view
-        //     )
-        //     .await;
-
         let _ = doop
             .await_data(team_index)
             .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
