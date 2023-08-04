@@ -5,7 +5,7 @@ use crate::{
     grids::GridMatrix,
     movement::{self, Filter, GridCoord, MoveUnit, NoPath},
     terrain::{self},
-    CellSelection, Game, UnitData, WarriorType,
+    CellSelection, Game, UnitData,
 };
 
 pub struct GameWrap<'a, T> {
@@ -629,7 +629,7 @@ fn generate_unit_possible_moves_inner<P: movement::PathHave>(
             &game
                 .world
                 .filter()
-                .and(game.that_team.warriors[0].filter().not()),
+                .and(game.that_team.warriors.filter().not()),
             &game.this_team.filter().not(),
             &terrain::Grass,
             unit.position,

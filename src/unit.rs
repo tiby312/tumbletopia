@@ -10,16 +10,6 @@ pub struct UnitData {
     pub position: GridCoord,
     pub typ: Type,
 }
-
-impl WarriorType<&UnitData> {
-    //TODO use this instead of gridcoord when you know the type!!!!!
-    pub fn slim(&self) -> WarriorType<GridCoord> {
-        WarriorType {
-            inner: self.inner.position,
-            val: self.val,
-        }
-    }
-}
 impl UnitData {
     pub fn new(position: GridCoord, typ: Type) -> Self {
         UnitData { position, typ }
@@ -37,29 +27,8 @@ pub struct TribeFilter<'a> {
 }
 impl<'a> movement::Filter for TribeFilter<'a> {
     fn filter(&self, b: &GridCoord) -> FilterRes {
-        self.tribe
-            .warriors
-            .iter()
-            .map(|a| a.filter().filter(b))
-            .fold(FilterRes::Stop, |a, b| a.or(b))
+        self.tribe.warriors.filter().filter(b)
     }
-}
-
-impl<T> std::borrow::Borrow<T> for WarriorType<T> {
-    fn borrow(&self) -> &T {
-        &self.inner
-    }
-}
-impl<T> std::borrow::BorrowMut<T> for WarriorType<T> {
-    fn borrow_mut(&mut self) -> &mut T {
-        &mut self.inner
-    }
-}
-
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub struct WarriorType<T> {
-    pub inner: T,
-    pub val: Type,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -111,45 +80,6 @@ impl Type {
 
 // }
 
-impl<'a> WarriorType<&'a mut UnitData> {
-    pub fn as_ref(&self) -> WarriorType<&UnitData> {
-        WarriorType {
-            inner: self.inner,
-            val: self.val,
-        }
-    }
-    pub fn to_ref(self) -> WarriorType<&'a UnitData> {
-        let val = self.val;
-        WarriorType {
-            inner: self.inner,
-            val,
-        }
-    }
-}
-
-impl WarriorType<UnitData> {
-    //TODO use this instead of gridcoord when you know the type!!!!!
-    pub fn as_ref(&self) -> WarriorType<&UnitData> {
-        WarriorType {
-            inner: &self.inner,
-            val: self.val,
-        }
-    }
-}
-
-impl<T> std::ops::Deref for WarriorType<T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl<T> std::ops::DerefMut for WarriorType<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
-}
-
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
     team_index: ActiveTeam,
@@ -173,7 +103,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
     pub async fn resolve_surrounded2(&mut self, n: hex::Cube, game_view: &mut GameView<'_>) {
         pub async fn attacky<T>(a: &mut T, b: &mut T) {}
 
-        let (unit, rest) = game_view.this_team.warriors[0].find_ext_mut(&n.to_axial());
+        let (unit, rest) = game_view.this_team.warriors.find_ext_mut(&n.to_axial());
 
         let n: Vec<_> = n.neighbours().map(|a| a.to_axial()).collect();
         let neighbours: Vec<_> = rest
@@ -375,69 +305,35 @@ impl Attack {
 //     }
 // }
 
-pub struct Pair(
-    pub Option<WarriorType<UnitData>>,
-    pub Option<WarriorType<UnitData>>,
-);
-
 #[derive(Debug)]
 pub struct Tribe {
-    pub warriors: Vec<UnitCollection<UnitData>>,
+    pub warriors: UnitCollection<UnitData>,
 }
 impl Tribe {
-    #[deprecated]
-    pub fn lookup(&self, a: WarriorType<GridCoord>) -> WarriorType<&UnitData> {
-        self.warriors[a.val.type_index()]
-            .find(&a.inner)
-            .map(|b| WarriorType {
-                inner: b,
-                val: a.val,
-            })
-            .unwrap()
-    }
-    #[deprecated]
-    pub fn lookup_mut(&mut self, a: &WarriorType<GridCoord>) -> WarriorType<&mut UnitData> {
-        self.warriors[a.val.type_index()]
-            .find_mut(&a.inner)
-            .map(|b| WarriorType {
-                inner: b,
-                val: a.val,
-            })
-            .unwrap()
-    }
-    #[deprecated]
-    pub fn lookup_take(&mut self, a: &WarriorType<GridCoord>) -> WarriorType<UnitData> {
-        Some(self.warriors[a.val.type_index()].remove(&a.inner))
-            .map(|b| WarriorType {
-                inner: b,
-                val: a.val,
-            })
-            .unwrap()
-    }
-
     pub fn add(&mut self, a: UnitData) {
-        self.warriors[0].elem.push(a);
+        self.warriors.elem.push(a);
     }
 
     pub fn find_take(&mut self, a: &GridCoord) -> Option<UnitData> {
-        if let Some((i, _)) = self.warriors[0]
+        if let Some((i, _)) = self
+            .warriors
             .elem
             .iter()
             .enumerate()
             .find(|(_, b)| &b.position == a)
         {
-            Some(self.warriors[0].elem.remove(i))
+            Some(self.warriors.elem.remove(i))
         } else {
             None
         }
     }
 
     pub fn find_slow(&self, a: &GridCoord) -> Option<&UnitData> {
-        self.warriors[0].elem.iter().find(|b| &b.position == a)
+        self.warriors.elem.iter().find(|b| &b.position == a)
     }
 
     pub fn find_slow_mut<'a, 'b>(&'a mut self, a: &'b GridCoord) -> Option<&'a mut UnitData> {
-        self.warriors[0].elem.iter_mut().find(|b| &b.position == a)
+        self.warriors.elem.iter_mut().find(|b| &b.position == a)
     }
 
     pub fn filter(&self) -> TribeFilter {

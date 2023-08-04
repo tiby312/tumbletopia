@@ -228,41 +228,19 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-    let dogs = vec![
-        UnitCollection::new(vec![
-            UnitData::new(GridCoord([1, -2]), Type::Warrior),
-            UnitData::new(GridCoord([1, -1]), Type::Warrior),
-            UnitData::new(GridCoord([2, -1]), Type::Warrior),
-            UnitData::new(GridCoord([2, -2]), Type::Para),
-        ]),
-        UnitCollection::new(vec![]),
-        UnitCollection::new(vec![
-        // UnitData::new(GridCoord([3, -3]))
-        ]),
-        UnitCollection::new(vec![
-            // UnitData::new(GridCoord([3, 0])),
-            // UnitData::new(GridCoord([0, -3])),
-        ]),
-    ];
+    let dogs = UnitCollection::new(vec![
+        UnitData::new(GridCoord([1, -2]), Type::Warrior),
+        UnitData::new(GridCoord([1, -1]), Type::Warrior),
+        UnitData::new(GridCoord([2, -1]), Type::Warrior),
+        UnitData::new(GridCoord([2, -2]), Type::Para),
+    ]);
 
-    let cats = vec![
-        UnitCollection::new(vec![
-            UnitData::new(GridCoord([-2, 1]), Type::Warrior),
-            UnitData::new(GridCoord([-1, 1]), Type::Warrior),
-            UnitData::new(GridCoord([-1, 2]), Type::Warrior),
-            UnitData::new(GridCoord([-2, 2]), Type::Para),
-        ]),
-        UnitCollection::new(vec![
-            //  UnitData::new(GridCoord([-3, 3]))
-        ]),
-        UnitCollection::new(vec![
-        // UnitData::new(GridCoord([-3, 3]))
-        ]),
-        UnitCollection::new(vec![
-            // UnitData::new(GridCoord([0, 3])),
-            // UnitData::new(GridCoord([-3, 0])),
-        ]),
-    ];
+    let cats = UnitCollection::new(vec![
+        UnitData::new(GridCoord([-2, 1]), Type::Warrior),
+        UnitData::new(GridCoord([-1, 1]), Type::Warrior),
+        UnitData::new(GridCoord([-1, 2]), Type::Warrior),
+        UnitData::new(GridCoord([-2, 2]), Type::Para),
+    ]);
 
     let mut ggame = Game {
         dogs: Tribe { warriors: dogs },
@@ -543,15 +521,15 @@ pub async fn worker_entry() {
                     //}
                 });
 
-                for i in 0..4 {
+                for i in 0..1 {
                     let cat_draw = WarriorDraw::new(
-                        &ggame.cats.warriors[i],
+                        &ggame.cats.warriors,
                         &cat,
                         &drop_shadow,
                         Type::type_index_inverse(i),
                     );
                     let dog_draw = WarriorDraw::new(
-                        &ggame.dogs.warriors[i],
+                        &ggame.dogs.warriors,
                         &dog,
                         &drop_shadow,
                         Type::type_index_inverse(i),
@@ -575,15 +553,15 @@ pub async fn worker_entry() {
                     });
                 }
 
-                for i in 0..4 {
+                for i in 0..1 {
                     let cat_draw = WarriorDraw::new(
-                        &ggame.cats.warriors[i],
+                        &ggame.cats.warriors,
                         &cat,
                         &drop_shadow,
                         Type::type_index_inverse(i),
                     );
                     let dog_draw = WarriorDraw::new(
-                        &ggame.dogs.warriors[i],
+                        &ggame.dogs.warriors,
                         &dog,
                         &drop_shadow,
                         Type::type_index_inverse(i),
@@ -592,15 +570,15 @@ pub async fn worker_entry() {
                     dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                 }
 
-                for i in 0..4 {
+                for i in 0..1 {
                     let cat_draw = WarriorDraw::new(
-                        &ggame.cats.warriors[i],
+                        &ggame.cats.warriors,
                         &cat,
                         &drop_shadow,
                         Type::type_index_inverse(i),
                     );
                     let dog_draw = WarriorDraw::new(
-                        &ggame.dogs.warriors[i],
+                        &ggame.dogs.warriors,
                         &dog,
                         &drop_shadow,
                         Type::type_index_inverse(i),
