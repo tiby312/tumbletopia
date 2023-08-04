@@ -25,7 +25,7 @@ pub trait UnwrapMe {
 }
 pub struct Movement;
 impl UnwrapMe for Movement {
-    type Item = WarriorType<UnitData>;
+    type Item = UnitData;
 
     fn unwrapme(self, a: AnimationOptions) -> Self::Item {
         let AnimationOptions::Movement(a)=a else{
@@ -37,22 +37,10 @@ impl UnwrapMe for Movement {
 
 pub struct Attack;
 impl UnwrapMe for Attack {
-    type Item = [WarriorType<UnitData>; 2];
+    type Item = [UnitData; 2];
 
     fn unwrapme(self, a: AnimationOptions) -> Self::Item {
         let AnimationOptions::Attack(a)=a else{
-            unreachable!()
-        };
-        a
-    }
-}
-
-pub struct CounterAttack;
-impl UnwrapMe for CounterAttack {
-    type Item = [WarriorType<UnitData>; 2];
-
-    fn unwrapme(self, a: AnimationOptions) -> Self::Item {
-        let AnimationOptions::CounterAttack(a)=a else{
             unreachable!()
         };
         a
@@ -65,30 +53,21 @@ pub struct AnimationWrapper<K> {
 }
 
 pub enum AnimationOptions {
-    Movement(WarriorType<UnitData>),
-    Attack([WarriorType<UnitData>; 2]),
-    Heal([WarriorType<UnitData>; 2]),
-    CounterAttack([WarriorType<UnitData>; 2]),
+    Movement(UnitData),
+    Attack([UnitData; 2]),
 }
 impl AnimationOptions {
-    pub fn movement(a: WarriorType<UnitData>) -> AnimationWrapper<Movement> {
+    pub fn movement(a: UnitData) -> AnimationWrapper<Movement> {
         AnimationWrapper {
             unwrapper: Movement,
             enu: AnimationOptions::Movement(a),
         }
     }
 
-    pub fn attack(a: [WarriorType<UnitData>; 2]) -> AnimationWrapper<Attack> {
+    pub fn attack(a: [UnitData; 2]) -> AnimationWrapper<Attack> {
         AnimationWrapper {
             unwrapper: Attack,
             enu: AnimationOptions::Attack(a),
-        }
-    }
-
-    pub fn counter_attack(a: [WarriorType<UnitData>; 2]) -> AnimationWrapper<CounterAttack> {
-        AnimationWrapper {
-            unwrapper: CounterAttack,
-            enu: AnimationOptions::CounterAttack(a),
         }
     }
 }
@@ -283,11 +262,11 @@ impl ActiveTeam {
 }
 
 pub struct SelectType {
-    warrior: WarriorType<GridCoord>,
+    warrior: GridCoord,
     team: ActiveTeam,
 }
 impl SelectType {
-    pub fn with(mut self, a: WarriorType<GridCoord>) -> Self {
+    pub fn with(mut self, a: GridCoord) -> Self {
         self.warrior = a;
         self
     }
@@ -320,7 +299,10 @@ pub async fn reselect_loop(
 
     let unwrapped_selected_unit = selected_unit.warrior;
 
-    let unit = relative_game_view.this_team.lookup(unwrapped_selected_unit);
+    let unit = relative_game_view
+        .this_team
+        .find_slow(&unwrapped_selected_unit)
+        .unwrap();
 
     let cc = relative_game_view.get_unit_possible_moves(&unit, *extra_attack);
     let cc = CellSelection::MoveSelection(cc);
@@ -330,7 +312,7 @@ pub async fn reselect_loop(
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
         if let Some(e) = *extra_attack {
-            e != *selected_unit.warrior
+            e != selected_unit.warrior
         } else {
             false
         }
@@ -355,7 +337,7 @@ pub async fn reselect_loop(
     };
 
     //If we just clicked on ourselves, just deselect.
-    if target_cell == unwrapped_selected_unit.inner {
+    if target_cell == unwrapped_selected_unit {
         return LoopRes::Deselect;
     }
 
@@ -365,14 +347,14 @@ pub async fn reselect_loop(
     if let Some(target) = relative_game_view.this_team.find_slow(&target_cell) {
         //it should be impossible for a unit to move onto a friendly
         assert!(!contains);
-        return LoopRes::Select(selected_unit.with(target.slim()));
+        return LoopRes::Select(selected_unit.with(target.position));
     }
 
     //If we select an enemy unit quick swap
     if let Some(target) = relative_game_view.that_team.find_slow(&target_cell) {
         if selected_unit.team != team_index || !contains {
             //If we select an enemy unit thats outside of our units range.
-            return LoopRes::Select(selected_unit.with(target.slim()).not());
+            return LoopRes::Select(selected_unit.with(target.position).not());
         }
     }
 
@@ -389,7 +371,7 @@ pub async fn reselect_loop(
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
     if let Some(e) = *extra_attack {
-        if unwrapped_selected_unit.inner != e {
+        if unwrapped_selected_unit != e {
             return LoopRes::Deselect;
         }
     }
@@ -401,9 +383,9 @@ pub async fn reselect_loop(
     let path = relative_game_view.get_path_from_move(target_cell, &unit, *extra_attack);
 
     if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
-        let target_coord = target_coord.as_ref().slim();
+        //let target_coord = target_coord.as_ref().slim();
 
-        unit::AttackAnimator::new(selected_unit.warrior, target_coord)
+        unit::AttackAnimator::new(selected_unit.warrior, target_coord.position)
             .animate(&mut doop.await_data(team_index), &mut relative_game_view)
             .await
             .execute(&mut relative_game_view);
@@ -434,7 +416,8 @@ pub async fn reselect_loop(
 
         let this_unit = relative_game_view
             .this_team
-            .lookup_take(&selected_unit.warrior);
+            .find_take(&selected_unit.warrior)
+            .unwrap();
 
         let this_unit = doop
             .await_data(team_index)
@@ -451,8 +434,8 @@ pub async fn reselect_loop(
         //Need to add ourselves back so we can resolve and attacking groups
         //only to remove ourselves again later.
         let k = if let Some(k) = k {
-            let j = k.as_ref().slim();
-
+            //let j = k.as_ref().slim();
+            let pp = k.position;
             relative_game_view.this_team.add(k);
 
             for n in target_cell.to_cube().neighbours() {
@@ -461,7 +444,7 @@ pub async fn reselect_loop(
                     .await;
             }
 
-            Some(relative_game_view.this_team.lookup_take(&j))
+            Some(relative_game_view.this_team.find_take(&pp).unwrap())
         } else {
             for n in target_cell.to_cube().neighbours() {
                 doop.await_data(team_index.not())
@@ -472,10 +455,11 @@ pub async fn reselect_loop(
         };
 
         if let Some(k) = k {
-            let b = k.as_ref().slim();
+            //let b = k.as_ref().slim();
+            let pp = k.position;
             *extra_attack = Some(target_cell);
             relative_game_view.this_team.add(k);
-            return LoopRes::Select(selected_unit.with(b).with_team(team_index));
+            return LoopRes::Select(selected_unit.with(pp).with_team(team_index));
         } else {
             //Finish this players turn.
             return LoopRes::EndTurn;
@@ -514,13 +498,13 @@ pub async fn main_logic<'a>(
 
                 if let Some(unit) = game.this_team.find_slow(&cell) {
                     break SelectType {
-                        warrior: unit.slim(),
+                        warrior: unit.position,
                         team: team_index,
                     };
                 }
                 if let Some(unit) = game.that_team.find_slow(&cell) {
                     break SelectType {
-                        warrior: unit.slim(),
+                        warrior: unit.position,
                         team: team_index.not(),
                     };
                 }
@@ -577,7 +561,7 @@ impl<'a> GameView<'a> {
     pub fn get_path_from_move(
         &self,
         target_cell: GridCoord,
-        unit: &WarriorType<&UnitData>,
+        unit: &UnitData,
         extra_attack: Option<GridCoord>,
     ) -> movement::Path {
         //Reconstruct possible paths with path information this time.
@@ -595,7 +579,7 @@ impl<'a> GameView<'a> {
 
     pub fn get_unit_possible_moves(
         &self,
-        unit: &WarriorType<&UnitData>,
+        unit: &UnitData,
         extra_attack: Option<GridCoord>,
     ) -> movement::PossibleMoves2<()> {
         generate_unit_possible_moves_inner(unit, self, extra_attack, NoPath)
@@ -603,7 +587,7 @@ impl<'a> GameView<'a> {
 }
 
 fn generate_unit_possible_moves_inner<P: movement::PathHave>(
-    unit: &WarriorType<&UnitData>,
+    unit: &UnitData,
     game: &GameView,
     extra_attack: Option<GridCoord>,
     ph: P,
@@ -619,7 +603,7 @@ fn generate_unit_possible_moves_inner<P: movement::PathHave>(
     {
         1
     } else {
-        match unit.val {
+        match unit.typ {
             Type::Warrior => 2,
             Type::Para => 1,
             _ => todo!(),

@@ -230,11 +230,12 @@ pub async fn worker_entry() {
 
     let dogs = vec![
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([1, -2])),
-            UnitData::new(GridCoord([1, -1])),
-            UnitData::new(GridCoord([2, -1])),
+            UnitData::new(GridCoord([1, -2]), Type::Warrior),
+            UnitData::new(GridCoord([1, -1]), Type::Warrior),
+            UnitData::new(GridCoord([2, -1]), Type::Warrior),
+            UnitData::new(GridCoord([2, -2]), Type::Para),
         ]),
-        UnitCollection::new(vec![UnitData::new(GridCoord([2, -2]))]),
+        UnitCollection::new(vec![]),
         UnitCollection::new(vec![
         // UnitData::new(GridCoord([3, -3]))
         ]),
@@ -246,12 +247,12 @@ pub async fn worker_entry() {
 
     let cats = vec![
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([-2, 1])),
-            UnitData::new(GridCoord([-1, 1])),
-            UnitData::new(GridCoord([-1, 2])),
+            UnitData::new(GridCoord([-2, 1]), Type::Warrior),
+            UnitData::new(GridCoord([-1, 1]), Type::Warrior),
+            UnitData::new(GridCoord([-1, 2]), Type::Warrior),
+            UnitData::new(GridCoord([-2, 2]), Type::Para),
         ]),
         UnitCollection::new(vec![
-            UnitData::new(GridCoord([-2, 2])),
             //  UnitData::new(GridCoord([-3, 3]))
         ]),
         UnitCollection::new(vec![
@@ -631,12 +632,8 @@ pub async fn worker_entry() {
                     let (pos, ty) = a.calc_pos();
 
                     let (a, b) = match ty {
-                        AnimationOptions::Heal([a, b]) => ((this_draw, a), Some((this_draw, b))),
                         AnimationOptions::Movement(m) => ((this_draw, m), None),
                         AnimationOptions::Attack([a, b]) => ((this_draw, a), Some((that_draw, b))),
-                        AnimationOptions::CounterAttack([a, b]) => {
-                            ((that_draw, b), Some((this_draw, a)))
-                        }
                     };
 
                     disable_depth(&ctx, || {

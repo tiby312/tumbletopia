@@ -74,12 +74,12 @@ pub fn attack(
 #[derive(Debug)]
 pub enum AnimationCommand {
     Movement {
-        unit: WarriorType<UnitData>,
+        unit: UnitData,
         path: movement::Path,
     },
     Attack {
-        attacker: WarriorType<UnitData>,
-        defender: WarriorType<UnitData>,
+        attacker: UnitData,
+        defender: UnitData,
     },
 }
 
