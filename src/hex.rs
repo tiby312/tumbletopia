@@ -144,7 +144,7 @@ impl Cube {
     }
 
     //TODO implement using ring??
-    pub fn neighbours(&self) -> impl Iterator<Item = Cube> {
+    pub fn neighbours(&self) -> impl Iterator<Item = Cube> + Clone {
         let k = self.clone();
         OFFSETS.iter().map(move |a| {
             k.add(Cube(*a))

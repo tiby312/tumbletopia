@@ -173,6 +173,30 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start
     }
 
+    pub async fn resolve_surrounded2(
+        &mut self,
+        n:hex::Cube,
+        game_view: &mut GameView<'_>,
+    ){
+
+        pub async fn attacky<T>(a:&mut T,b:&mut T){
+
+        }
+        
+        let (unit,rest)=game_view.this_team.warriors[0].find_ext_mut(&n.to_axial());
+
+        let n:Vec<_>=n.neighbours().map(|a|a.to_axial()).collect();
+        let neighbours:Vec<_>=rest.into_iter().filter(|a|n.contains(&a.position)).collect();
+        if neighbours.len()>=3{
+            for n in neighbours{
+                attacky(unit,n).await;
+            }
+            
+        }
+        
+    }
+
+
     pub async fn resolve_surrounded(
         &mut self,
         n: hex::Cube,
@@ -183,6 +207,25 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let Some(k)=this_team.find_slow(&n.to_axial()) else{
             return None;
         };
+
+        fn for_all_attacking_nearby_enemies<'b>(
+            n: WarriorType<&UnitData>,
+            this_team: &mut Tribe,
+            that_team: &'b mut Tribe,
+        ) -> impl Iterator<Item = WarriorType<&'b mut UnitData>> {
+            let k = n.position.to_cube().neighbours();
+            let i = n.val as usize;
+
+            that_team.warriors[i]
+                .elem
+                .iter_mut()
+                .filter(move |a| k.clone().find(|b| a.position == b.to_axial()).is_some())
+                .map(move |a| WarriorType {
+                    inner: a,
+                    val: n.val,
+                })
+                
+        }
 
         let nearby_enemies: Vec<_> = n
             .neighbours()
@@ -399,7 +442,10 @@ impl Tribe {
         None
     }
 
-    pub fn find_slow_mut(&mut self, a: &GridCoord) -> Option<WarriorType<&mut UnitData>> {
+    pub fn find_slow_mut<'a, 'b>(
+        &'a mut self,
+        a: &'b GridCoord,
+    ) -> Option<WarriorType<&'a mut UnitData>> {
         for (c, o) in self.warriors.iter_mut().enumerate() {
             if let Some(k) = o.find_mut(a) {
                 return Some(WarriorType {
@@ -414,6 +460,18 @@ impl Tribe {
 
     pub fn filter(&self) -> TribeFilter {
         TribeFilter { tribe: self }
+    }
+}
+
+
+
+pub struct Rest<'a,T>{
+    left:&'a mut [T],
+    right:&'a mut [T]
+}
+impl<'a,T> Rest<'a,T>{
+    pub fn into_iter(self)->impl Iterator<Item=&'a mut T>{
+        self.left.into_iter().chain(self.right.into_iter())
     }
 }
 
@@ -440,6 +498,14 @@ impl<T: HasPos> UnitCollection<T> {
     pub fn find_mut(&mut self, a: &GridCoord) -> Option<&mut T> {
         self.elem.iter_mut().find(|b| b.get_pos() == a)
     }
+
+    pub fn find_ext_mut(&mut self,a:&GridCoord)->(&mut T,Rest<T>){
+        let (i,_)=self.elem.iter().enumerate().find(|(_,b)| b.get_pos() == a).unwrap();
+        let (left,rest)=self.elem.split_at_mut(i);
+        let (foo,right)=rest.split_first_mut().unwrap();
+        (foo,Rest{left,right})
+    }
+
     pub fn find(&self, a: &GridCoord) -> Option<&T> {
         self.elem.iter().find(|b| b.get_pos() == a)
     }
