@@ -417,14 +417,13 @@ pub async fn reselect_loop(
         //     .await;
 
         let _ = doop
-            .await_data(team_index.not())
-            .resolve_group_attack(target_cell.to_cube(), &mut relative_game_view.not())
+            .await_data(team_index)
+            .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
             .await;
 
-        //TODO is this possible?
         for n in target_cell.to_cube().neighbours() {
-            doop.await_data(team_index)
-                .resolve_group_attack(n, &mut relative_game_view)
+            doop.await_data(team_index.not())
+                .resolve_surrounded(n, &mut relative_game_view.not())
                 .await;
         }
 
@@ -445,8 +444,8 @@ pub async fn reselect_loop(
         relative_game_view.this_team.add(this_unit);
 
         let k = doop
-            .await_data(team_index.not())
-            .resolve_group_attack(target_cell.to_cube(), &mut relative_game_view.not())
+            .await_data(team_index)
+            .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
             .await;
 
         //Need to add ourselves back so we can resolve and attacking groups
@@ -457,16 +456,16 @@ pub async fn reselect_loop(
             relative_game_view.this_team.add(k);
 
             for n in target_cell.to_cube().neighbours() {
-                doop.await_data(team_index)
-                    .resolve_group_attack(n, &mut relative_game_view)
+                doop.await_data(team_index.not())
+                    .resolve_surrounded(n, &mut relative_game_view.not())
                     .await;
             }
 
             Some(relative_game_view.this_team.lookup_take(&j))
         } else {
             for n in target_cell.to_cube().neighbours() {
-                doop.await_data(team_index)
-                    .resolve_group_attack(n, &mut relative_game_view)
+                doop.await_data(team_index.not())
+                    .resolve_surrounded(n, &mut relative_game_view.not())
                     .await;
             }
             None

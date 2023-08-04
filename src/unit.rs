@@ -164,51 +164,55 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         path: movement::Path,
     ) -> WarriorType<UnitData> {
         let an = animation::AnimationCommand::Movement { unit: start, path };
-        let mut start = self.wait_animation(an, ace::Movement).await;
+        let mut start = self
+            .wait_animation(an, ace::Movement, self.team_index)
+            .await;
 
         start.position = path.get_end_coord(start.position);
 
         start
     }
 
-    pub async fn resolve_group_attack(
+    pub async fn resolve_surrounded(
         &mut self,
         n: hex::Cube,
         game_view: &mut GameView<'_>,
     ) -> Option<WarriorType<UnitData>> {
         let that_team = &mut game_view.that_team;
         let this_team = &mut game_view.this_team;
-        let Some(k)=that_team.find_slow(&n.to_axial()) else{
+        let Some(k)=this_team.find_slow(&n.to_axial()) else{
             return None;
         };
 
-        let nearby_friendlies: Vec<_> = n
+        let nearby_enemies: Vec<_> = n
             .neighbours()
-            .filter(|a| this_team.find_slow(&a.to_axial()).is_some())
+            .filter(|a| that_team.find_slow(&a.to_axial()).is_some())
             .collect();
-        if nearby_friendlies.len() >= 3 {
-            let mut enemy = Some(that_team.lookup_take(&k.slim()));
+        if nearby_enemies.len() >= 3 {
+            let mut us = Some(this_team.lookup_take(&k.slim()));
 
             //TODO add animation
             //kill this unit!!!
-            for a in nearby_friendlies {
-                let f = this_team.find_slow(&a.to_axial()).unwrap();
-                let f = this_team.lookup_take(&f.slim());
+            for a in nearby_enemies {
+                let f = that_team.find_slow(&a.to_axial()).unwrap();
+                let f = that_team.lookup_take(&f.slim());
 
-                let _tt = enemy.as_ref().unwrap().position;
+                let _tt = us.as_ref().unwrap().position;
 
                 let an = animation::AnimationCommand::Attack {
                     attacker: f,
-                    defender: enemy.take().unwrap(),
+                    defender: us.take().unwrap(),
                 };
-                let [this_unit, target] = self.wait_animation(an, ace::Attack).await;
+                let [this_unit, target] = self
+                    .wait_animation(an, ace::Attack, self.team_index.not())
+                    .await;
 
                 //this_unit.resting = 1;
-                this_team.add(this_unit);
-                enemy = Some(target);
+                that_team.add(this_unit);
+                us = Some(target);
             }
 
-            enemy
+            us
         } else {
             None
         }
@@ -231,7 +235,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             path,
         };
 
-        let mut this_unit = self.wait_animation(an, ace::Movement).await;
+        let mut this_unit = self
+            .wait_animation(an, ace::Movement, self.team_index)
+            .await;
 
         //todo kill target animate
         this_unit.position = target.position;
@@ -254,8 +260,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         &mut self,
         an: animation::AnimationCommand,
         wrapper: K,
+        team_index: ActiveTeam,
     ) -> K::Item {
-        let aa = self.doop.wait_animation(an, self.team_index).await;
+        let aa = self.doop.wait_animation(an, team_index).await;
         wrapper.unwrapme(aa.into_data())
     }
 }
@@ -290,7 +297,9 @@ impl AttackAnimator {
             path,
         };
 
-        let this_unit = await_data.wait_animation(an, ace::Movement).await;
+        let this_unit = await_data
+            .wait_animation(an, ace::Movement, await_data.team_index)
+            .await;
 
         //todo kill target animate
         //this_unit.position = target.position;
