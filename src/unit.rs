@@ -120,7 +120,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         game_view.that_team.add(them);
         game_view.this_team.add(this_unit);
     }
-
+ 
     pub async fn resolve_surrounded_animated(
         &mut self,
         n: hex::Cube,
@@ -167,62 +167,36 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         }
     }
 
-    pub async fn resolve_surrounded_old(
+    pub fn resolve_attack_logic(
         &mut self,
-        n: hex::Cube,
-        game_view: &mut GameView<'_>,
-    ) -> Option<UnitData> {
-        let that_team = &mut game_view.that_team;
-        let this_team = &mut game_view.this_team;
-        let Some(k)=this_team.find_slow(&n.to_axial()) else{
-            return None;
-        };
+        selected_unit: GridCoord,
+        target_coord: GridCoord,
+        relative_game_view: &mut GameView<'_>,
+    ) ->UnitData{
+        let mut this_unit = relative_game_view
+            .this_team
+            .find_slow_mut(&selected_unit)
+            .unwrap();
 
-        let k = k.position;
+        let target = relative_game_view
+        .that_team
+        .find_take(&target_coord)
+        .unwrap();
 
-        let nearby_enemies: Vec<_> = n
-            .neighbours()
-            .filter(|a| that_team.find_slow(&a.to_axial()).is_some())
-            .collect();
-        if nearby_enemies.len() >= 3 {
-            let mut us = Some(this_team.find_take(&k).unwrap());
+        //todo kill target animate
+        this_unit.position = target_coord;
 
-            //TODO add animation
-            //kill this unit!!!
-            for a in nearby_enemies {
-                let f = that_team.find_slow(&a.to_axial()).unwrap().position;
-                let f = that_team.find_take(&f).unwrap();
+        target
 
-                let _tt = us.as_ref().unwrap().position;
-
-                let an = animation::AnimationCommand::Attack {
-                    attacker: f,
-                    defender: us.take().unwrap(),
-                };
-                let [this_unit, target] = self
-                    .wait_animation(an, ace::Attack, self.team_index.not())
-                    .await;
-
-                //this_unit.resting = 1;
-                that_team.add(this_unit);
-                us = Some(target);
-            }
-
-            us
-        } else {
-            None
-        }
     }
-    pub async fn resolve_attack(
+    pub async fn resolve_attack_animation(
         &mut self,
         selected_unit: GridCoord,
         target_coord: GridCoord,
         relative_game_view: &mut GameView<'_>,
     ) {
-        let target = relative_game_view
-            .that_team
-            .find_take(&target_coord)
-            .unwrap();
+        let target=self.resolve_attack_logic(selected_unit,target_coord,relative_game_view);
+
         let this_unit = relative_game_view
             .this_team
             .find_take(&selected_unit)
@@ -237,12 +211,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
             path,
         };
 
-        let mut this_unit = self
+        let this_unit = self
             .wait_animation(an, ace::Movement, self.team_index)
             .await;
-
-        //todo kill target animate
-        this_unit.position = target.position;
 
         relative_game_view.this_team.add(this_unit);
     }
