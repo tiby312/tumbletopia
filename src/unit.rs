@@ -5,7 +5,7 @@ use crate::{
 
 use super::*;
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct UnitData {
     pub position: GridCoord,
     pub typ: Type,
@@ -86,7 +86,7 @@ pub struct AwaitData<'a, 'b> {
 }
 impl<'a, 'b> AwaitData<'a, 'b> {
     pub fn new(doop: &'b mut ace::Doop<'a>, team_index: ActiveTeam) -> Self {
-        AwaitData { doop, team_index}
+        AwaitData { doop, team_index }
     }
 
     pub async fn resolve_movement(&mut self, start: UnitData, path: movement::Path) -> UnitData {
@@ -100,34 +100,52 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start
     }
 
-    pub async fn resolve_surrounded(&mut self, n: hex::Cube, game_view: &mut GameView<'_>)->Option<UnitData> {
-        
-        let (unit, _) = game_view.this_team.warriors.find_ext_mut(&n.to_axial())?;
+    pub async fn attacky(
+        &mut self,
+        unit_pos: GridCoord,
+        n: GridCoord,
+        game_view: &mut GameView<'_>,
+    ) {
+        let us = game_view.this_team.find_take(&unit_pos).unwrap();
+        let them = game_view.that_team.find_take(&n).unwrap();
 
-        let n: Vec<_> = n.neighbours().map(|a| a.to_axial()).collect();
-        let nearby_enemies: Vec<_> = game_view.that_team.warriors.elem.iter_mut()
-            .filter(|a| n.contains(&a.position))
+        let an = animation::AnimationCommand::Attack {
+            attacker: them,
+            defender: us,
+        };
+        let [them, this_unit] = self
+            .wait_animation(an, ace::Attack, self.team_index.not())
+            .await;
+
+        game_view.that_team.add(them);
+        game_view.this_team.add(this_unit);
+    }
+    pub async fn resolve_surrounded(
+        &mut self,
+        n: hex::Cube,
+        game_view: &mut GameView<'_>,
+    ) -> Option<UnitData> {
+        let unit_pos = game_view
+            .this_team
+            .warriors
+            .find_ext_mut(&n.to_axial())?
+            .0
+            .position;
+
+        let nearby_enemies: Vec<_> = n
+            .neighbours()
+            .filter(|a| game_view.that_team.find_slow(&a.to_axial()).is_some())
+            .map(|a|a.to_axial())
             .collect();
         if nearby_enemies.len() >= 3 {
             for n in nearby_enemies {
-                
-                let an = animation::AnimationCommand::Attack {
-                    attacker: n.clone(),
-                    defender: unit.clone(),
-                };
-                let _ = self
-                    .wait_animation(an, ace::Attack, self.team_index.not())
-                    .await;
-
+                self.attacky(unit_pos, n, game_view).await;
             }
 
-            let pos=unit.position;
-            game_view.this_team.find_take(&pos)
-            
-        }else{
+            game_view.this_team.find_take(&unit_pos)
+        } else {
             None
         }
-
     }
 
     pub async fn resolve_surrounded_old(
