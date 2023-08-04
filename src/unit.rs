@@ -100,14 +100,12 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start
     }
 
-   
-
-    pub async fn resolve_surrounded_animated(
+    pub async fn resolve_surrounded(
         &mut self,
         n: hex::Cube,
         game_view: &mut GameView<'_>,
     ) -> Option<UnitData> {
-        if let Some((unit_pos, b)) = self.resolve_surrounded_logic(n, game_view) {
+        if let Some((unit_pos, b)) = game_view.resolve_surrounded_logic(n.to_axial()) {
             let u = unit_pos.position;
             game_view.this_team.add(unit_pos);
             for n in b {
@@ -119,78 +117,17 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         }
     }
 
-    pub fn resolve_surrounded_logic(
-        &mut self,
-        n: hex::Cube,
-        game_view: &mut GameView<'_>,
-    ) -> Option<(UnitData, impl Iterator<Item = GridCoord>)> {
-        let Some(unit_pos) = game_view
-            .this_team
-            .warriors
-            .find_ext_mut(&n.to_axial()) else{
-                return None;
-            };
-
-        let unit_pos = unit_pos.0.position;
-
-        let nearby_enemies: Vec<_> = n
-            .neighbours()
-            .filter(|a| game_view.that_team.find_slow(&a.to_axial()).is_some())
-            .map(|a| a.to_axial())
-            .collect();
-        if nearby_enemies.len() >= 3 {
-            game_view
-                .this_team
-                .find_take(&unit_pos)
-                .map(|a| (a, nearby_enemies.into_iter()))
-        } else {
-            None
-        }
-    }
-
-    pub fn resolve_invade_logic(
-        &mut self,
-        selected_unit: GridCoord,
-        target_coord: GridCoord,
-        relative_game_view: &mut GameView<'_>,
-    ) -> UnitData {
-        let mut this_unit = relative_game_view
-            .this_team
-            .find_slow_mut(&selected_unit)
-            .unwrap();
-
-        let target = relative_game_view
-            .that_team
-            .find_take(&target_coord)
-            .unwrap();
-
-        //todo kill target animate
-        this_unit.position = target_coord;
-
-        target
-    }
-    
     pub async fn resolve_invade(
         &mut self,
         selected_unit: GridCoord,
         target_coord: GridCoord,
         relative_game_view: &mut GameView<'_>,
     ) {
-        let target = self.resolve_invade_logic(selected_unit, target_coord, relative_game_view);
+        let target = relative_game_view.resolve_invade_logic(selected_unit, target_coord);
         self.animate_invade(selected_unit, target.position, relative_game_view)
             .await;
     }
 
-    // pub fn resolve_attack(
-    //     &mut self,
-    //     selected_unit: WarriorType<GridCoord>,
-    //     target_coord: WarriorType<GridCoord>,
-    //     relative_game_view: &mut GameView<'_>
-    // ) {
-    //     let target = relative_game_view.that_team.lookup_take(target_coord);
-    //     let mut this_unit = relative_game_view.this_team.lookup_mut(&selected_unit);
-    //     this_unit.position = target.position;
-    // }
 
     pub async fn wait_animation<K: UnwrapMe>(
         &mut self,
@@ -201,7 +138,6 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let aa = self.doop.wait_animation(an, team_index).await;
         wrapper.unwrapme(aa.into_data())
     }
-
 
     pub async fn animate_attack(
         &mut self,
