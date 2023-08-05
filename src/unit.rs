@@ -61,20 +61,6 @@ impl Type {
     }
 }
 
-mod fast {
-    //https://users.rust-lang.org/t/macro-to-dry-sync-and-async-code/67556/2
-
-    // async fn foo(){}
-    // async fn test_async(){
-    //     let f=foo();
-    //     decode!(f .await);
-    // }
-    // //TODO
-    // fn test2(){
-    //     let f=foo();
-    //     decode!(f);
-    // }
-}
 
 //https://users.rust-lang.org/t/macro-to-dry-sync-and-async-code/67556
 macro_rules! resolve_movement {
@@ -101,13 +87,6 @@ macro_rules! resolve_invade {
 
             let _target = game_view.that_team.find_take(&target_coord).unwrap();
 
-            
-
-            // let this_unit = relative_game_view
-            // .this_team
-            // .find_take(&selected_unit)
-            // .unwrap();
-
             let path = movement::Path::new();
             let m = this_unit.position.dir_to(&target_coord);
             let path = path.add(m).unwrap();
@@ -115,10 +94,6 @@ macro_rules! resolve_invade {
             let mut this_unit=resolve_movement!((this_unit,path,doopa,team),$($_await)*);
 
             this_unit.position = target_coord;
-
-            // let this_unit = self
-            //     .wait_animation(ace::Movement::new(this_unit, path), self.team_index)
-            //     .await;
 
             game_view.this_team.add(this_unit);
         }
@@ -176,7 +151,7 @@ impl<'a, 'b, 'c> Doopa<'a, 'b, 'c> {
 }
 pub struct Doopa2;
 impl Doopa2 {
-    pub fn wait_animation<W: UnwrapMe>(&mut self, m: W, team: ActiveTeam) -> W::Item {
+    pub fn wait_animation<W: UnwrapMe>(&mut self, m: W, _: ActiveTeam) -> W::Item {
         m.direct_unwrap()
     }
 }
@@ -255,50 +230,6 @@ impl<'a, 'b> AwaitData<'a, 'b> {
     }
 }
 
-// pub struct AttackAnimator {
-//     attack: Attack,
-// }
-// impl AttackAnimator {
-//     pub fn new(a: GridCoord, b: GridCoord) -> Self {
-//         AttackAnimator {
-//             attack: Attack::new(a, b),
-//         }
-//     }
-//     pub async fn animate(
-//         self,
-//         await_data: &mut AwaitData<'_, '_>,
-//         relative_game_view: &mut GameView<'_>,
-//     ) -> Attack {
-//         let target = relative_game_view
-//             .that_team
-//             .find_take(&self.attack.target_coord)
-//             .unwrap();
-//         let this_unit = relative_game_view
-//             .this_team
-//             .find_take(&self.attack.selected_unit)
-//             .unwrap();
-
-//         let path = movement::Path::new();
-//         let m = this_unit.position.dir_to(&target.position);
-//         let path = path.add(m).unwrap();
-
-//         let an = animation::AnimationCommand::Movement {
-//             unit: this_unit,
-//             path,
-//         };
-
-//         let this_unit = await_data
-//             .wait_animation(an, ace::Movement, await_data.team_index)
-//             .await;
-
-//         //todo kill target animate
-//         //this_unit.position = target.position;
-//         relative_game_view.that_team.add(target);
-//         relative_game_view.this_team.add(this_unit);
-//         self.attack
-//     }
-// }
-
 pub struct Move {
     selected_unit: GridCoord,
     target_coord: GridCoord,
@@ -338,23 +269,6 @@ impl MoveT for Attack {
     }
 }
 
-// pub trait MoveTrait{
-//     fn execute(&self){
-
-//     }
-//     fn animate(&self,game_view:&mut GameView<'_>)->Box<dyn std::future::Future<Output=()>>;
-// }
-
-// pub enum Move{
-//     Attack{
-//         selected_unit:WarriorType<GridCoord>,
-//         target_coord:WarriorType<GridCoord>
-//     },
-//     Move{
-//         selected_unit:WarriorType<GridCoord>,
-//         target_coord:WarriorType<GridCoord>
-//     }
-// }
 
 #[derive(Debug)]
 pub struct Tribe {
