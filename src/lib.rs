@@ -43,22 +43,19 @@ enum UiButton {
 pub struct WarriorDraw<'a> {
     model: &'a MyModel,
     drop_shadow: &'a MyModel,
-    col: &'a UnitCollection<UnitData>,
-    typ: Type,
+    col: &'a UnitCollection<UnitData>
 }
 
 impl<'a> WarriorDraw<'a> {
     fn new(
         col: &'a UnitCollection<UnitData>,
         model: &'a MyModel,
-        drop_shadow: &'a MyModel,
-        typ: Type,
+        drop_shadow: &'a MyModel
     ) -> Self {
         Self {
             model,
             drop_shadow,
-            col,
-            typ,
+            col
         }
     }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
@@ -527,13 +524,11 @@ pub async fn worker_entry() {
                         &ggame.cats.warriors,
                         &cat,
                         &drop_shadow,
-                        Type::type_index_inverse(i),
                     );
                     let dog_draw = WarriorDraw::new(
                         &ggame.dogs.warriors,
                         &dog,
                         &drop_shadow,
-                        Type::type_index_inverse(i),
                     );
 
                     disable_depth(&ctx, || {
@@ -559,13 +554,11 @@ pub async fn worker_entry() {
                         &ggame.cats.warriors,
                         &cat,
                         &drop_shadow,
-                        Type::type_index_inverse(i),
                     );
                     let dog_draw = WarriorDraw::new(
                         &ggame.dogs.warriors,
                         &dog,
                         &drop_shadow,
-                        Type::type_index_inverse(i),
                     );
                     cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
@@ -576,13 +569,11 @@ pub async fn worker_entry() {
                         &ggame.cats.warriors,
                         &cat,
                         &drop_shadow,
-                        Type::type_index_inverse(i),
                     );
                     let dog_draw = WarriorDraw::new(
                         &ggame.dogs.warriors,
                         &dog,
                         &drop_shadow,
-                        Type::type_index_inverse(i),
                     );
                     disable_depth(&ctx, || {
                         cat_draw.draw_health_text(

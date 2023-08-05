@@ -187,10 +187,6 @@ mod invade {
 
                 let _target = game_view.that_team.find_take(&target_coord).unwrap();
 
-                // let path = movement::Path::new();
-                // let m = selected_unit.dir_to(&target_coord);
-                // let path = path.add(m).unwrap();
-
                 InnerPartialMove::new(selected_unit,path).$namey(game_view,doopa)$($_await)*;
 
                 HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*;
@@ -315,17 +311,6 @@ mod surround {
             resolve_3_players_nearby_impl!((self.cell,a,game_view),.await)
         }
 
-        pub fn execute(self, game_view: &mut GameView<'_>) -> Option<UnitData> {
-            self.inner_execute_no_animate(game_view, &mut Doopa2)
-        }
-
-        pub async fn execute_with_animation(
-            self,
-            game_view: &mut GameView<'_>,
-            data: &mut AwaitData<'_, '_>,
-        ) -> Option<UnitData> {
-            self.inner_execute_animate(game_view, &mut Doopa::new(data))
-                .await
-        }
+        
     }
 }
