@@ -197,49 +197,6 @@ impl<'a> GameView<'a> {
             team: self.team.not(),
         }
     }
-
-    pub fn resolve_surrounded_logic(
-        &mut self,
-        n: GridCoord,
-    ) -> Option<(UnitData, impl Iterator<Item = GridCoord>)> {
-        let n = n.to_cube();
-        let Some(unit_pos) = self
-            .this_team
-            .warriors
-            .find_ext_mut(&n.to_axial()) else{
-                return None;
-            };
-
-        let unit_pos = unit_pos.0.position;
-
-        let nearby_enemies: Vec<_> = n
-            .neighbours()
-            .filter(|a| self.that_team.find_slow(&a.to_axial()).is_some())
-            .map(|a| a.to_axial())
-            .collect();
-        if nearby_enemies.len() >= 3 {
-            self.this_team
-                .find_take(&unit_pos)
-                .map(|a| (a, nearby_enemies.into_iter()))
-        } else {
-            None
-        }
-    }
-
-    pub fn resolve_invade_logic(
-        &mut self,
-        selected_unit: GridCoord,
-        target_coord: GridCoord,
-    ) -> UnitData {
-        let mut this_unit = self.this_team.find_slow_mut(&selected_unit).unwrap();
-
-        let target = self.that_team.find_take(&target_coord).unwrap();
-
-        //todo kill target animate
-        this_unit.position = target_coord;
-
-        target
-    }
 }
 
 #[wasm_bindgen]

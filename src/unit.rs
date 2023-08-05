@@ -92,6 +92,39 @@ macro_rules! resolve_movement {
     }
 }
 
+macro_rules! resolve_invade {
+    ($args:expr, $($_await:tt)*) => {
+        {
+            let (selected_unit,target_coord,game_view,doopa,team):(GridCoord,GridCoord,&mut GameView<'_>,_,ActiveTeam)=$args;
+
+            let this_unit = game_view.this_team.find_take(&selected_unit).unwrap();
+
+            let _target = game_view.that_team.find_take(&target_coord).unwrap();
+
+            
+
+            // let this_unit = relative_game_view
+            // .this_team
+            // .find_take(&selected_unit)
+            // .unwrap();
+
+            let path = movement::Path::new();
+            let m = this_unit.position.dir_to(&target_coord);
+            let path = path.add(m).unwrap();
+
+            let mut this_unit=resolve_movement!((this_unit,path,doopa,team),$($_await)*);
+
+            this_unit.position = target_coord;
+
+            // let this_unit = self
+            //     .wait_animation(ace::Movement::new(this_unit, path), self.team_index)
+            //     .await;
+
+            game_view.this_team.add(this_unit);
+        }
+    }
+}
+
 macro_rules! resolve_3_players_nearby {
     ($args:expr, $($_await:tt)*) => {{
         let (n, mut doopa, game_view, team): (GridCoord, _, &mut GameView<'_>, ActiveTeam) = $args;
@@ -185,6 +218,21 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let team = self.team_index;
         resolve_3_players_nearby!((n.to_axial(),Doopa{data:self},game_view,team),.await)
     }
+    pub async fn resolve_invade_no_animate(
+        &mut self,
+        selected_unit: GridCoord,
+        target_coord: GridCoord,
+        relative_game_view: &mut GameView<'_>,
+    ) {
+        let team = self.team_index;
+        resolve_invade!((
+            selected_unit,
+            target_coord,
+            relative_game_view,
+            Doopa2,
+            team
+        ),);
+    }
 
     pub async fn resolve_invade(
         &mut self,
@@ -192,9 +240,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         target_coord: GridCoord,
         relative_game_view: &mut GameView<'_>,
     ) {
-        self.animate_invade(selected_unit, target_coord, relative_game_view)
-            .await;
-        let _ = relative_game_view.resolve_invade_logic(selected_unit, target_coord);
+        let team = self.team_index;
+        resolve_invade!((selected_unit,target_coord,relative_game_view,Doopa{data:self},team),.await);
     }
 
     pub async fn wait_animation<K: UnwrapMe>(
@@ -205,28 +252,6 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let an = wrapper.into_command();
         let aa = self.doop.wait_animation(an, team_index).await;
         K::unwrapme(aa.into_data())
-    }
-
-    pub async fn animate_invade(
-        &mut self,
-        selected_unit: GridCoord,
-        target_coord: GridCoord,
-        relative_game_view: &mut GameView<'_>,
-    ) {
-        let this_unit = relative_game_view
-            .this_team
-            .find_take(&selected_unit)
-            .unwrap();
-
-        let path = movement::Path::new();
-        let m = this_unit.position.dir_to(&target_coord);
-        let path = path.add(m).unwrap();
-
-        let this_unit = self
-            .wait_animation(ace::Movement::new(this_unit, path), self.team_index)
-            .await;
-
-        relative_game_view.this_team.add(this_unit);
     }
 }
 
