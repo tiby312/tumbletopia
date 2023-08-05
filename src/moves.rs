@@ -18,8 +18,6 @@ impl Doopa2 {
     }
 }
 
-
-
 macro_rules! resolve_movement_impl {
     ($args:expr,$namey:ident, $($_await:tt)*) => {
         {
@@ -32,17 +30,12 @@ macro_rules! resolve_movement_impl {
             .find_take(&selected_unit)
             .unwrap();
 
-            //let this_unit=resolve_inner_movement_impl!((this_unit,path,&mut doopa,&mut game_view),$($_await)*);
-            
             let this_unit=InnerPartialMove::new(this_unit,path).$namey(&mut game_view,&mut doopa)$($_await)*;
-
-            
-
-
 
             game_view.this_team.add(this_unit);
 
-            let k=resolve_3_players_nearby_impl!((target_cell,&mut doopa,&mut game_view),$($_await)*);
+            let k=HandleSurround::new(target_cell).$namey(&mut game_view,&mut doopa)$($_await)*;
+
 
             //Need to add ourselves back so we can resolve and attacking groups
             //only to remove ourselves again later.
@@ -51,13 +44,13 @@ macro_rules! resolve_movement_impl {
                 game_view.this_team.add(k);
 
                 for n in target_cell.to_cube().neighbours() {
-                    let _=resolve_3_players_nearby_impl!((n.to_axial(),&mut doopa,&mut game_view.not()),$($_await)*);
+                    let _=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),&mut doopa)$($_await)*;
                 }
 
                 Some(game_view.this_team.find_take(&pp).unwrap())
             } else {
                 for n in target_cell.to_cube().neighbours() {
-                    let _=resolve_3_players_nearby_impl!((n.to_axial(),&mut doopa,&mut game_view.not()),$($_await)*);
+                    let _=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),&mut doopa)$($_await)*;
                 }
 
                 None
@@ -74,8 +67,56 @@ macro_rules! resolve_movement_impl {
     }
 }
 
-//https://users.rust-lang.org/t/macro-to-dry-sync-and-async-code/67556
-macro_rules! resolve_inner_movement_impl {
+macro_rules! resolve_invade_impl {
+    ($args:expr,$namey:ident, $($_await:tt)*) => {
+        {
+            let (selected_unit,target_coord,game_view,mut doopa):(GridCoord,GridCoord,&mut GameView<'_>,_)=$args;
+            let this_unit = game_view.this_team.find_take(&selected_unit).unwrap();
+
+            let _target = game_view.that_team.find_take(&target_coord).unwrap();
+
+            let path = movement::Path::new();
+            let m = this_unit.position.dir_to(&target_coord);
+            let path = path.add(m).unwrap();
+
+            //let mut this_unit=resolve_inner_movement_impl!((this_unit,path,&mut doopa,game_view),$($_await)*);
+            let mut this_unit=InnerPartialMove::new(this_unit,path).$namey(game_view,&mut doopa)$($_await)*;
+
+
+            this_unit.position = target_coord;
+
+            game_view.this_team.add(this_unit);
+
+
+            HandleSurround::new(target_coord).$namey(game_view,&mut doopa)$($_await)*;
+
+            //resolve_3_players_nearby_impl!((target_coord,&mut doopa,game_view),$($_await)*);
+
+
+            for n in target_coord.to_cube().neighbours() {
+                HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),&mut doopa)$($_await)*;
+
+                //resolve_3_players_nearby_impl!((n.to_axial(),&mut doopa,&mut game_view.not()),$($_await)*);
+            }
+
+
+
+        }
+    }
+}
+
+use crate::{ace::UnwrapMe, movement::Path};
+
+pub enum ExtraMove {
+    ExtraMove { pos: GridCoord },
+    FinishMoving,
+}
+
+pub use inner_partial::InnerPartialMove;
+mod inner_partial {
+
+    //https://users.rust-lang.org/t/macro-to-dry-sync-and-async-code/67556
+    macro_rules! resolve_inner_movement_impl {
     ($args:expr, $($_await:tt)*) => {
         {
             let (start,path,doopa,game_view):(UnitData,movement::Path,_,&mut GameView<'_>)=$args;
@@ -92,64 +133,123 @@ macro_rules! resolve_inner_movement_impl {
     }
 }
 
-macro_rules! resolve_invade_impl {
-    ($args:expr, $($_await:tt)*) => {
-        {
-            let (selected_unit,target_coord,game_view,mut doopa):(GridCoord,GridCoord,&mut GameView<'_>,_)=$args;
-            let this_unit = game_view.this_team.find_take(&selected_unit).unwrap();
+    use super::*;
+    pub struct InnerPartialMove {
+        u: UnitData,
+        path: Path,
+    }
+    impl InnerPartialMove {
+        pub fn new(a: UnitData, path: Path) -> Self {
+            InnerPartialMove { u: a, path }
+        }
+        pub(super) fn inner_execute_no_animate(
+            self,
+            game_view: &mut GameView<'_>,
+            a: &mut Doopa2,
+        ) -> UnitData {
+            resolve_inner_movement_impl!((self.u, self.path, a, game_view),)
+        }
 
-            let _target = game_view.that_team.find_take(&target_coord).unwrap();
+        pub(super) async fn inner_execute_animate(
+            self,
+            game_view: &mut GameView<'_>,
+            a: &mut Doopa<'_, '_, '_>,
+        ) -> UnitData {
+            resolve_inner_movement_impl!((self.u,self.path,a,game_view),.await)
+        }
 
-            let path = movement::Path::new();
-            let m = this_unit.position.dir_to(&target_coord);
-            let path = path.add(m).unwrap();
-
-            let mut this_unit=resolve_inner_movement_impl!((this_unit,path,&mut doopa,game_view),$($_await)*);
-
-            this_unit.position = target_coord;
-
-            game_view.this_team.add(this_unit);
-
-
-            resolve_3_players_nearby_impl!((target_coord,&mut doopa,game_view),$($_await)*);
-
-
-            for n in target_coord.to_cube().neighbours() {
-                resolve_3_players_nearby_impl!((n.to_axial(),&mut doopa,&mut game_view.not()),$($_await)*);
-            }
-
-
-
+        pub fn execute(self, game_view: &mut GameView<'_>) -> UnitData {
+            self.inner_execute_no_animate(game_view, &mut Doopa2)
+        }
+        pub async fn execute_with_animation(
+            self,
+            game_view: &mut GameView<'_>,
+            data: &mut AwaitData<'_, '_>,
+        ) -> UnitData {
+            self.inner_execute_animate(game_view, &mut Doopa::new(data))
+                .await
         }
     }
 }
 
+pub struct PartialMove {
+    selected_unit: GridCoord,
+    path: Path,
+}
 
-mod testy{
-
-    macro_rules! hay {
-        ($chicken:expr,$args:ident) => {{
-            $chicken.$args();
-        }}
-    }
-
-    struct Chicken;
-    impl Chicken{
-        fn no_animate(&self){
-
-        }
-        fn animate(&self){
-
+impl PartialMove {
+    pub fn new(a: GridCoord, path: Path) -> Self {
+        PartialMove {
+            selected_unit: a,
+            path,
         }
     }
-    fn testy(){
-        let c=Chicken;
-        hay!(c,no_animate);
-        hay!(c,animate);
+
+    fn inner_execute_no_animate(self, game_view: &mut GameView<'_>, a: &mut Doopa2) -> ExtraMove {
+        resolve_movement_impl!(
+            (self.selected_unit, self.path, a, game_view),
+            inner_execute_no_animate,
+        )
+    }
+
+    async fn inner_execute_animate(
+        self,
+        game_view: &mut GameView<'_>,
+        a: &mut Doopa<'_, '_, '_>,
+    ) -> ExtraMove {
+        resolve_movement_impl!((self.selected_unit, self.path, a, game_view),inner_execute_animate,.await)
+    }
+
+    pub fn execute(self, game_view: &mut GameView<'_>) -> ExtraMove {
+        self.inner_execute_no_animate(game_view, &mut Doopa2)
+    }
+    pub async fn execute_with_animation(
+        self,
+        game_view: &mut GameView<'_>,
+        data: &mut AwaitData<'_, '_>,
+    ) -> ExtraMove {
+        self.inner_execute_animate(game_view, &mut Doopa::new(data))
+            .await
     }
 }
 
-macro_rules! resolve_3_players_nearby_impl {
+pub struct Invade {
+    selected_unit: GridCoord,
+    target_coord: GridCoord,
+}
+
+impl Invade {
+    pub fn new(a: GridCoord, b: GridCoord) -> Self {
+        Invade {
+            selected_unit: a,
+            target_coord: b,
+        }
+    }
+    pub fn execute(self, relative_game_view: &mut GameView<'_>) {
+        resolve_invade_impl!(
+            (
+                self.selected_unit,
+                self.target_coord,
+                relative_game_view,
+                &mut Doopa2
+            ),
+            inner_execute_no_animate,
+        )
+    }
+    pub async fn execute_with_animation(
+        self,
+        relative_game_view: &mut GameView<'_>,
+        data: &mut AwaitData<'_, '_>,
+    ) {
+        resolve_invade_impl!((self.selected_unit,self.target_coord,relative_game_view,&mut Doopa::new(data)),inner_execute_animate,.await)
+    }
+}
+
+pub use surround::HandleSurround;
+
+mod surround {
+    use super::*;
+    macro_rules! resolve_3_players_nearby_impl {
     ($args:expr, $($_await:tt)*) => {{
         let (n, mut doopa, game_view): (GridCoord, _, &mut GameView<'_>) = $args;
         let team=game_view.team;
@@ -190,129 +290,41 @@ macro_rules! resolve_3_players_nearby_impl {
     }};
 }
 
-use crate::{ace::UnwrapMe, movement::Path};
-
-pub enum ExtraMove {
-    ExtraMove { pos: GridCoord },
-    FinishMoving,
-}
-
-
-
-pub struct InnerPartialMove{
-    u:UnitData,
-    path:Path
-}
-impl InnerPartialMove {
-    pub fn new(a:UnitData, path: Path) -> Self {
-        InnerPartialMove {
-            u: a,
-            path,
+    pub struct HandleSurround {
+        cell: GridCoord,
+    }
+    impl HandleSurround {
+        pub fn new(cell: GridCoord) -> Self {
+            Self { cell }
         }
-    }
-    fn inner_execute_no_animate(self, game_view: &mut GameView<'_>,a:&mut Doopa2) -> UnitData {
-        resolve_inner_movement_impl!((self.u, self.path, a, game_view),)
-    }
 
-    async fn inner_execute_animate(self, game_view: &mut GameView<'_>,a:&mut Doopa<'_,'_,'_>) -> UnitData {
-        resolve_inner_movement_impl!((self.u,self.path,a,game_view),.await)
-    }
-
-    pub fn execute(self, game_view: &mut GameView<'_>) -> UnitData {
-        self.inner_execute_no_animate(game_view, &mut Doopa2)
-    }
-    pub async fn execute_with_animation(
-        self,
-        game_view: &mut GameView<'_>,
-        data: &mut AwaitData<'_, '_>,
-    ) -> UnitData {
-        self.inner_execute_animate(game_view, &mut Doopa::new(data)).await
-    }
-}
-
-
-
-
-pub struct PartialMove {
-    selected_unit: GridCoord,
-    path: Path,
-}
-
-impl PartialMove {
-    pub fn new(a: GridCoord, path: Path) -> Self {
-        PartialMove {
-            selected_unit: a,
-            path,
+        pub(super) fn inner_execute_no_animate(
+            self,
+            game_view: &mut GameView<'_>,
+            a: &mut Doopa2,
+        ) -> Option<UnitData> {
+            resolve_3_players_nearby_impl!((self.cell, a, game_view),)
         }
-    }
 
-    fn inner_execute_no_animate(self, game_view: &mut GameView<'_>,a:&mut Doopa2) -> ExtraMove {
-        resolve_movement_impl!((self.selected_unit, self.path, a, game_view),inner_execute_no_animate,)
-    }
-
-    async fn inner_execute_animate(self, game_view: &mut GameView<'_>,a:&mut Doopa<'_,'_,'_>) -> ExtraMove {
-        resolve_movement_impl!((self.selected_unit, self.path, a, game_view),inner_execute_animate,.await)
-    }
-    
-
-    pub fn execute(self, game_view: &mut GameView<'_>) -> ExtraMove {
-        self.inner_execute_no_animate(game_view,&mut Doopa2)
-    }
-    pub async fn execute_with_animation(
-        self,
-        game_view: &mut GameView<'_>,
-        data: &mut AwaitData<'_, '_>,
-    ) -> ExtraMove {
-        self.inner_execute_animate(game_view,&mut Doopa::new(data)).await
-    }
-}
-
-pub struct Invade {
-    selected_unit: GridCoord,
-    target_coord: GridCoord,
-}
-
-impl Invade {
-    pub fn new(a: GridCoord, b: GridCoord) -> Self {
-        Invade {
-            selected_unit: a,
-            target_coord: b,
+        pub(super) async fn inner_execute_animate(
+            self,
+            game_view: &mut GameView<'_>,
+            a: &mut Doopa<'_, '_, '_>,
+        ) -> Option<UnitData> {
+            resolve_3_players_nearby_impl!((self.cell,a,game_view),.await)
         }
-    }
-    pub fn execute(self, relative_game_view: &mut GameView<'_>) {
-        resolve_invade_impl!((
-            self.selected_unit,
-            self.target_coord,
-            relative_game_view,
-            &mut Doopa2
-        ),)
-    }
-    pub async fn execute_with_animation(
-        self,
-        relative_game_view: &mut GameView<'_>,
-        data: &mut AwaitData<'_, '_>,
-    ) {
-        resolve_invade_impl!((self.selected_unit,self.target_coord,relative_game_view,&mut Doopa::new(data)),.await)
-    }
-}
 
-pub struct HandleSurround {
-    cell: GridCoord,
-}
-impl HandleSurround {
-    pub fn new(cell: GridCoord) -> Self {
-        Self { cell }
-    }
+        pub fn execute(self, game_view: &mut GameView<'_>) -> Option<UnitData> {
+            self.inner_execute_no_animate(game_view, &mut Doopa2)
+        }
 
-    pub fn execute(self, game_view: &mut GameView<'_>) -> Option<UnitData> {
-        resolve_3_players_nearby_impl!((self.cell, &mut Doopa2, game_view),)
-    }
-
-    pub async fn execute_with_animation(
-        self,
-        game_view: &mut GameView<'_>,
-        data: &mut AwaitData<'_, '_>,
-    ) -> Option<UnitData> {
-        resolve_3_players_nearby_impl!((self.cell,&mut Doopa::new(data),game_view),.await)
+        pub async fn execute_with_animation(
+            self,
+            game_view: &mut GameView<'_>,
+            data: &mut AwaitData<'_, '_>,
+        ) -> Option<UnitData> {
+            self.inner_execute_animate(game_view, &mut Doopa::new(data))
+                .await
+        }
     }
 }
