@@ -39,34 +39,35 @@ mod inner_partial {
     macro_rules! resolve_inner_movement_impl {
         ($args:expr, $($_await:tt)*) => {
             {
-                let (start,path,doopa,game_view):(UnitData,movement::Path,_,&mut GameView<'_>)=$args;
+                let (start,path,doopa,game_view):(GridCoord,movement::Path,_,&mut GameView<'_>)=$args;
+
+                let this_unit = game_view
+                .this_team
+                .find_take(&start)
+                .unwrap();
+
                 let team=game_view.team;
                 let mut start = doopa
-                    .wait_animation(ace::Movement::new(start,path), team)
+                    .wait_animation(ace::Movement::new(this_unit,path), team)
                     $($_await)*;
 
                 start.position = path.get_end_coord(start.position);
 
-                let start:UnitData=start;
-                start
+                game_view.this_team.add(start);
             }
         }
     }
 
     use super::*;
     pub struct InnerPartialMove {
-        u: UnitData,
+        u: GridCoord,
         path: Path,
     }
     impl InnerPartialMove {
-        pub fn new(a: UnitData, path: Path) -> Self {
+        pub fn new(a: GridCoord, path: Path) -> Self {
             InnerPartialMove { u: a, path }
         }
-        pub(super) fn inner_execute_no_animate(
-            self,
-            game_view: &mut GameView<'_>,
-            a: &mut Doopa2,
-        ) -> UnitData {
+        pub(super) fn inner_execute_no_animate(self, game_view: &mut GameView<'_>, a: &mut Doopa2) {
             resolve_inner_movement_impl!((self.u, self.path, a, game_view),)
         }
 
@@ -74,7 +75,7 @@ mod inner_partial {
             self,
             game_view: &mut GameView<'_>,
             a: &mut Doopa<'_, '_, '_>,
-        ) -> UnitData {
+        ) {
             resolve_inner_movement_impl!((self.u,self.path,a,game_view),.await)
         }
     }
@@ -91,14 +92,8 @@ mod partial_move {
 
                 let target_cell=path.get_end_coord(selected_unit);
 
-                let this_unit = game_view
-                .this_team
-                .find_take(&selected_unit)
-                .unwrap();
 
-                let this_unit=InnerPartialMove::new(this_unit,path).$namey(&mut game_view,doopa)$($_await)*;
-
-                game_view.this_team.add(this_unit);
+                InnerPartialMove::new(selected_unit,path).$namey(&mut game_view,doopa)$($_await)*;
 
                 let k=HandleSurround::new(target_cell).$namey(&mut game_view, doopa)$($_await)*;
 
@@ -188,19 +183,17 @@ mod invade {
         ($args:expr,$namey:ident, $($_await:tt)*) => {
             {
                 let (selected_unit,target_coord,game_view,doopa):(GridCoord,GridCoord,&mut GameView<'_>,_)=$args;
-                let this_unit = game_view.this_team.find_take(&selected_unit).unwrap();
 
                 let _target = game_view.that_team.find_take(&target_coord).unwrap();
 
                 let path = movement::Path::new();
-                let m = this_unit.position.dir_to(&target_coord);
+                let m = selected_unit.dir_to(&target_coord);
                 let path = path.add(m).unwrap();
 
-                let mut this_unit=InnerPartialMove::new(this_unit,path).$namey(game_view,doopa)$($_await)*;
+                InnerPartialMove::new(selected_unit,path).$namey(game_view,doopa)$($_await)*;
 
-
+                let mut this_unit = game_view.this_team.find_take(&selected_unit).unwrap();
                 this_unit.position = target_coord;
-
                 game_view.this_team.add(this_unit);
 
                 HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*;
