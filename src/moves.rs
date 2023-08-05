@@ -18,8 +18,10 @@ impl Doopa2 {
     }
 }
 
+
+
 macro_rules! resolve_movement_impl {
-    ($args:expr, $($_await:tt)*) => {
+    ($args:expr,$namey:ident, $($_await:tt)*) => {
         {
             let (selected_unit,path,mut doopa,mut game_view):(GridCoord,movement::Path,_,&mut GameView<'_>)=$args;
 
@@ -30,7 +32,13 @@ macro_rules! resolve_movement_impl {
             .find_take(&selected_unit)
             .unwrap();
 
-            let this_unit=resolve_inner_movement_impl!((this_unit,path,&mut doopa,&mut game_view),$($_await)*);
+            //let this_unit=resolve_inner_movement_impl!((this_unit,path,&mut doopa,&mut game_view),$($_await)*);
+            
+            let this_unit=InnerPartialMove::new(this_unit,path).$namey(&mut game_view,&mut doopa)$($_await)*;
+
+            
+
+
 
             game_view.this_team.add(this_unit);
 
@@ -116,6 +124,31 @@ macro_rules! resolve_invade_impl {
     }
 }
 
+
+mod testy{
+
+    macro_rules! hay {
+        ($chicken:expr,$args:ident) => {{
+            $chicken.$args();
+        }}
+    }
+
+    struct Chicken;
+    impl Chicken{
+        fn no_animate(&self){
+
+        }
+        fn animate(&self){
+
+        }
+    }
+    fn testy(){
+        let c=Chicken;
+        hay!(c,no_animate);
+        hay!(c,animate);
+    }
+}
+
 macro_rules! resolve_3_players_nearby_impl {
     ($args:expr, $($_await:tt)*) => {{
         let (n, mut doopa, game_view): (GridCoord, _, &mut GameView<'_>) = $args;
@@ -164,6 +197,42 @@ pub enum ExtraMove {
     FinishMoving,
 }
 
+
+
+pub struct InnerPartialMove{
+    u:UnitData,
+    path:Path
+}
+impl InnerPartialMove {
+    pub fn new(a:UnitData, path: Path) -> Self {
+        InnerPartialMove {
+            u: a,
+            path,
+        }
+    }
+    fn inner_execute_no_animate(self, game_view: &mut GameView<'_>,a:&mut Doopa2) -> UnitData {
+        resolve_inner_movement_impl!((self.u, self.path, a, game_view),)
+    }
+
+    async fn inner_execute_animate(self, game_view: &mut GameView<'_>,a:&mut Doopa<'_,'_,'_>) -> UnitData {
+        resolve_inner_movement_impl!((self.u,self.path,a,game_view),.await)
+    }
+
+    pub fn execute(self, game_view: &mut GameView<'_>) -> UnitData {
+        self.inner_execute_no_animate(game_view, &mut Doopa2)
+    }
+    pub async fn execute_with_animation(
+        self,
+        game_view: &mut GameView<'_>,
+        data: &mut AwaitData<'_, '_>,
+    ) -> UnitData {
+        self.inner_execute_animate(game_view, &mut Doopa::new(data)).await
+    }
+}
+
+
+
+
 pub struct PartialMove {
     selected_unit: GridCoord,
     path: Path,
@@ -176,15 +245,25 @@ impl PartialMove {
             path,
         }
     }
+
+    fn inner_execute_no_animate(self, game_view: &mut GameView<'_>,a:&mut Doopa2) -> ExtraMove {
+        resolve_movement_impl!((self.selected_unit, self.path, a, game_view),inner_execute_no_animate,)
+    }
+
+    async fn inner_execute_animate(self, game_view: &mut GameView<'_>,a:&mut Doopa<'_,'_,'_>) -> ExtraMove {
+        resolve_movement_impl!((self.selected_unit, self.path, a, game_view),inner_execute_animate,.await)
+    }
+    
+
     pub fn execute(self, game_view: &mut GameView<'_>) -> ExtraMove {
-        resolve_movement_impl!((self.selected_unit, self.path, &mut Doopa2, game_view),)
+        self.inner_execute_no_animate(game_view,&mut Doopa2)
     }
     pub async fn execute_with_animation(
         self,
         game_view: &mut GameView<'_>,
         data: &mut AwaitData<'_, '_>,
     ) -> ExtraMove {
-        resolve_movement_impl!((self.selected_unit,self.path,&mut Doopa::new(data),game_view),.await)
+        self.inner_execute_animate(game_view,&mut Doopa::new(data)).await
     }
 }
 
