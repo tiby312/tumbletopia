@@ -43,17 +43,16 @@ mod inner_partial {
 
                 let this_unit = game_view
                 .this_team
-                .find_take(&start)
+                .find_slow_mut(&start)
                 .unwrap();
 
                 let team=game_view.team;
-                let mut start = doopa
-                    .wait_animation(ace::Movement::new(this_unit,path), team)
+                let _ = doopa
+                    .wait_animation(ace::Movement::new(this_unit.clone(),path), team)
                     $($_await)*;
 
-                start.position = path.get_end_coord(start.position);
+                this_unit.position= path.get_end_coord(this_unit.position);
 
-                game_view.this_team.add(start);
             }
         }
     }
@@ -192,10 +191,6 @@ mod invade {
 
                 InnerPartialMove::new(selected_unit,path).$namey(game_view,doopa)$($_await)*;
 
-                let mut this_unit = game_view.this_team.find_take(&selected_unit).unwrap();
-                this_unit.position = target_coord;
-                game_view.this_team.add(this_unit);
-
                 HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*;
                 for n in target_coord.to_cube().neighbours() {
                     HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),doopa)$($_await)*;
@@ -274,15 +269,15 @@ mod surround {
             if nearby_enemies.len() >= 3 {
 
                 for n in nearby_enemies {
-                    let unit_pos = game_view.this_team.find_take(&unit_pos).unwrap();
-                    let them = game_view.that_team.find_take(&n).unwrap();
+                    let unit_pos = game_view.this_team.find_slow_mut(&unit_pos).unwrap();
+                    let them = game_view.that_team.find_slow_mut(&n).unwrap();
 
-                    let [them, this_unit] = doopa
-                        .wait_animation(ace::Attack::new(them, unit_pos), team.not())
+                    let _ = doopa
+                        .wait_animation(ace::Attack::new(them.clone(), unit_pos.clone()), team.not())
                         $($_await)*;
 
-                    game_view.that_team.add(them);
-                    game_view.this_team.add(this_unit);
+                    // game_view.that_team.add(them);
+                    // game_view.this_team.add(this_unit);
                 }
                 Some(game_view.this_team.find_take(&unit_pos).unwrap())
             } else {
