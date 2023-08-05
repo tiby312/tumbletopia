@@ -25,7 +25,7 @@ pub enum ExtraMove {
     FinishMoving,
 }
 
-pub use inner_partial::InnerPartialMove;
+use inner_partial::InnerPartialMove;
 mod inner_partial {
 
     //https://users.rust-lang.org/t/macro-to-dry-sync-and-async-code/67556
@@ -138,6 +138,7 @@ mod partial_move {
         }
     }
 
+    #[derive(Clone)]
     pub struct PartialMove {
         selected_unit: GridCoord,
         path: Path,

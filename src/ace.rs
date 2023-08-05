@@ -326,7 +326,7 @@ pub async fn reselect_loop(
     doop: &mut Doop<'_>,
     game: &mut Game,
     team_index: ActiveTeam,
-    extra_attack: &mut Option<GridCoord>,
+    extra_attack: &mut Option<(moves::PartialMove, GridCoord)>,
     selected_unit: SelectType,
 ) -> LoopRes<SelectType> {
     //At this point we know a friendly unit is currently selected.
@@ -340,14 +340,14 @@ pub async fn reselect_loop(
         .find_slow(&unwrapped_selected_unit)
         .unwrap();
 
-    let cc = relative_game_view.get_unit_possible_moves(&unit, *extra_attack);
+    let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
     let cc = CellSelection::MoveSelection(cc);
 
     let grey = if selected_unit.team == team_index {
         //If we are in the middle of a extra attack move, make sure
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
-        if let Some(e) = *extra_attack {
+        if let Some((_, e)) = *extra_attack {
             e != selected_unit.warrior
         } else {
             false
@@ -406,7 +406,7 @@ pub async fn reselect_loop(
 
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
-    if let Some(e) = *extra_attack {
+    if let Some((_, e)) = *extra_attack {
         if unwrapped_selected_unit != e {
             return LoopRes::Deselect;
         }
@@ -416,9 +416,12 @@ pub async fn reselect_loop(
     //We definately want to act on the action the user took on the selected unit.
 
     //Reconstruct path by creating all possible paths with path information this time.
-    let path = relative_game_view.get_path_from_move(target_cell, &unit, *extra_attack);
+    let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
 
     if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
+        if extra_attack.is_some() {
+            console_dbg!("about to finish the move!!!");
+        }
         moves::Invade::new(selected_unit.warrior, target_coord.position)
             .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
             .await;
@@ -428,14 +431,15 @@ pub async fn reselect_loop(
     } else {
         //If we are moving to an empty square.
 
-        let jjj = moves::PartialMove::new(selected_unit.warrior, path)
+        let pm = moves::PartialMove::new(selected_unit.warrior, path);
+        let jjj = pm
+            .clone()
             .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
             .await;
 
         match jjj {
             moves::ExtraMove::ExtraMove { pos } => {
-                *extra_attack = Some(pos);
-                //relative_game_view.this_team.add(k);
+                *extra_attack = Some((pm, pos));
                 return LoopRes::Select(selected_unit.with(pos).with_team(team_index));
             }
             moves::ExtraMove::FinishMoving => {
@@ -443,54 +447,6 @@ pub async fn reselect_loop(
                 return LoopRes::EndTurn;
             }
         }
-        // let this_unit = relative_game_view
-        //     .this_team
-        //     .find_take(&selected_unit.warrior)
-        //     .unwrap();
-
-        // let this_unit = moves::PartialMove::new(this_unit, path)
-        //     .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
-        //     .await;
-
-        // relative_game_view.this_team.add(this_unit);
-
-        // let k = moves::HandleSurround::new(target_cell)
-        //     .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
-        //     .await;
-
-        // //Need to add ourselves back so we can resolve and attacking groups
-        // //only to remove ourselves again later.
-        // let k = if let Some(k) = k {
-        //     //let j = k.as_ref().slim();
-        //     let pp = k.position;
-        //     relative_game_view.this_team.add(k);
-
-        //     for n in target_cell.to_cube().neighbours() {
-        //         moves::HandleSurround::new(n.to_axial())
-        //             .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
-        //             .await;
-        //     }
-
-        //     Some(relative_game_view.this_team.find_take(&pp).unwrap())
-        // } else {
-        //     for n in target_cell.to_cube().neighbours() {
-        //         moves::HandleSurround::new(n.to_axial())
-        //             .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
-        //             .await;
-        //     }
-        //     None
-        // };
-
-        // if let Some(k) = k {
-        //     //let b = k.as_ref().slim();
-        //     let pp = k.position;
-        //     *extra_attack = Some(target_cell);
-        //     relative_game_view.this_team.add(k);
-        //     return LoopRes::Select(selected_unit.with(pp).with_team(team_index));
-        // } else {
-        //     //Finish this players turn.
-        //     return LoopRes::EndTurn;
-        // }
     }
 }
 
@@ -589,7 +545,7 @@ impl<'a> GameView<'a> {
         &self,
         target_cell: GridCoord,
         unit: &UnitData,
-        extra_attack: Option<GridCoord>,
+        extra_attack: &Option<(moves::PartialMove, GridCoord)>,
     ) -> movement::Path {
         //Reconstruct possible paths with path information this time.
         let ss = generate_unit_possible_moves_inner(&unit, self, extra_attack, movement::WithPath);
@@ -607,7 +563,7 @@ impl<'a> GameView<'a> {
     pub fn get_unit_possible_moves(
         &self,
         unit: &UnitData,
-        extra_attack: Option<GridCoord>,
+        extra_attack: &Option<(moves::PartialMove, GridCoord)>,
     ) -> movement::PossibleMoves2<()> {
         generate_unit_possible_moves_inner(unit, self, extra_attack, NoPath)
     }
@@ -616,7 +572,7 @@ impl<'a> GameView<'a> {
 fn generate_unit_possible_moves_inner<P: movement::PathHave>(
     unit: &UnitData,
     game: &GameView,
-    extra_attack: Option<GridCoord>,
+    extra_attack: &Option<(moves::PartialMove, GridCoord)>,
     ph: P,
 ) -> movement::PossibleMoves2<P::Foo> {
     // If there is an enemy near by restrict movement.
@@ -639,7 +595,10 @@ fn generate_unit_possible_moves_inner<P: movement::PathHave>(
 
     let mm = MoveUnit(j);
 
-    let mm = if let Some(_) = extra_attack.filter(|&aaa| aaa == unit.position) {
+    let mm = if let Some(_) = extra_attack
+        .as_ref()
+        .filter(|&(_, aaa)| *aaa == unit.position)
+    {
         movement::compute_moves(
             &movement::WarriorMovement,
             &game.world.filter().and(game.that_team.filter()),
