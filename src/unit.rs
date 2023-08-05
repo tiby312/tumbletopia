@@ -100,7 +100,7 @@ impl Doopa {
         m: W,
         team: ActiveTeam,
     ) -> W::Item {
-        a.wait_animation( m, team).await
+        a.wait_animation(m, team).await
     }
 }
 pub struct Doopa2;
@@ -111,16 +111,7 @@ impl Doopa2 {
         m: W,
         team: ActiveTeam,
     ) -> W::Item {
-        let an=m.get_command();
-        let an = match an {
-            animation::AnimationCommand::Movement { unit, path } => {
-                AnimationOptions::Movement(unit)
-            }
-            animation::AnimationCommand::Attack { attacker, defender } => {
-                AnimationOptions::Attack([attacker, defender])
-            }
-        };
-        m.unwrapme(an)
+        m.direct_unwrap()
     }
 }
 
@@ -177,9 +168,9 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         wrapper: K,
         team_index: ActiveTeam,
     ) -> K::Item {
-        let an=wrapper.get_command();
+        let an = wrapper.into_command();
         let aa = self.doop.wait_animation(an, team_index).await;
-        wrapper.unwrapme(aa.into_data())
+        K::unwrapme(aa.into_data())
     }
 
     pub async fn animate_attack(
@@ -191,9 +182,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let unit_pos = game_view.this_team.find_take(&unit_pos).unwrap();
         let them = game_view.that_team.find_take(&n).unwrap();
 
-
         let [them, this_unit] = self
-            .wait_animation(ace::Attack::new(them,unit_pos), self.team_index.not())
+            .wait_animation(ace::Attack::new(them, unit_pos), self.team_index.not())
             .await;
 
         game_view.that_team.add(them);
@@ -216,7 +206,7 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let path = path.add(m).unwrap();
 
         let this_unit = self
-            .wait_animation(ace::Movement::new(this_unit,path), self.team_index)
+            .wait_animation(ace::Movement::new(this_unit, path), self.team_index)
             .await;
 
         relative_game_view.this_team.add(this_unit);

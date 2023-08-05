@@ -21,26 +21,33 @@ pub struct GameWrapResponse<'a, T> {
 
 pub trait UnwrapMe {
     type Item;
-    fn get_command(&self)->animation::AnimationCommand;
-    fn unwrapme(self, a: AnimationOptions) -> Self::Item;
+
+    fn direct_unwrap(self) -> Self::Item;
+    fn into_command(self) -> animation::AnimationCommand;
+    fn unwrapme(a: AnimationOptions) -> Self::Item;
 }
-pub struct Movement{
-    start:UnitData,
-    path:movement::Path
+pub struct Movement {
+    start: UnitData,
+    path: movement::Path,
 }
-impl Movement{
-    pub fn new(start:UnitData,path:movement::Path)->Self{
+impl Movement {
+    pub fn new(start: UnitData, path: movement::Path) -> Self {
         Movement { start, path }
     }
 }
 impl UnwrapMe for Movement {
     type Item = UnitData;
 
-    fn get_command(&self)->animation::AnimationCommand{
-        //TODO remove clone
-        animation::AnimationCommand::Movement { unit: self.start.clone(), path: self.path }
+    fn direct_unwrap(self) -> Self::Item {
+        self.start
     }
-    fn unwrapme(self, a: AnimationOptions) -> Self::Item {
+    fn into_command(self) -> animation::AnimationCommand {
+        animation::AnimationCommand::Movement {
+            unit: self.start,
+            path: self.path,
+        }
+    }
+    fn unwrapme(a: AnimationOptions) -> Self::Item {
         let AnimationOptions::Movement(a)=a else{
             unreachable!()
         };
@@ -48,22 +55,27 @@ impl UnwrapMe for Movement {
     }
 }
 
-pub struct Attack{
-    attacker:UnitData,
-    defender:UnitData
+pub struct Attack {
+    attacker: UnitData,
+    defender: UnitData,
 }
-impl Attack{
-    pub fn new(attacker:UnitData,defender:UnitData)->Self{
-        Attack{attacker,defender}
+impl Attack {
+    pub fn new(attacker: UnitData, defender: UnitData) -> Self {
+        Attack { attacker, defender }
     }
 }
 impl UnwrapMe for Attack {
     type Item = [UnitData; 2];
-    fn get_command(&self)->animation::AnimationCommand{
-        //TODO remove clone
-        animation::AnimationCommand::Attack { attacker: self.attacker.clone(), defender: self.defender.clone() }
+    fn direct_unwrap(self) -> Self::Item {
+        [self.attacker, self.defender]
     }
-    fn unwrapme(self, a: AnimationOptions) -> Self::Item {
+    fn into_command(self) -> animation::AnimationCommand {
+        animation::AnimationCommand::Attack {
+            attacker: self.attacker,
+            defender: self.defender,
+        }
+    }
+    fn unwrapme(a: AnimationOptions) -> Self::Item {
         let AnimationOptions::Attack(a)=a else{
             unreachable!()
         };
