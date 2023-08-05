@@ -61,7 +61,6 @@ impl Type {
     }
 }
 
-
 //https://users.rust-lang.org/t/macro-to-dry-sync-and-async-code/67556
 macro_rules! resolve_movement {
     ($args:expr, $($_await:tt)*) => {
@@ -96,6 +95,10 @@ macro_rules! resolve_invade {
             this_unit.position = target_coord;
 
             game_view.this_team.add(this_unit);
+
+
+
+
         }
     }
 }
@@ -156,6 +159,38 @@ impl Doopa2 {
     }
 }
 
+impl GameView<'_> {
+    pub fn resolve_movement_no_animate(
+        &mut self,
+        start: UnitData,
+        path: movement::Path,
+    ) -> UnitData {
+        resolve_movement!((start, path, Doopa2, self.team),)
+    }
+    pub fn resolve_surrounded_no_animate(
+        &mut self,
+        n: hex::Cube,
+        game_view: &mut GameView<'_>,
+    ) -> Option<UnitData> {
+        let team = self.team;
+        resolve_3_players_nearby!((n.to_axial(), Doopa2, game_view, team),)
+    }
+    pub async fn resolve_invade_no_animate(
+        &mut self,
+        selected_unit: GridCoord,
+        target_coord: GridCoord,
+        relative_game_view: &mut GameView<'_>,
+    ) {
+        let team = self.team;
+        resolve_invade!((
+            selected_unit,
+            target_coord,
+            relative_game_view,
+            Doopa2,
+            team
+        ),);
+    }
+}
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
     team_index: ActiveTeam,
@@ -165,26 +200,11 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         AwaitData { doop, team_index }
     }
 
-    pub fn resolve_movement_no_animate(
-        &mut self,
-        start: UnitData,
-        path: movement::Path,
-    ) -> UnitData {
-        resolve_movement!((start, path, Doopa2, self.team_index),)
-    }
     pub async fn resolve_movement(&mut self, start: UnitData, path: movement::Path) -> UnitData {
         let team = self.team_index;
         resolve_movement!((start,path,Doopa{data:self},team),.await)
     }
 
-    pub fn resolve_surrounded_no_animate(
-        &mut self,
-        n: hex::Cube,
-        game_view: &mut GameView<'_>,
-    ) -> Option<UnitData> {
-        let team = self.team_index;
-        resolve_3_players_nearby!((n.to_axial(), Doopa2, game_view, team),)
-    }
     pub async fn resolve_surrounded(
         &mut self,
         n: hex::Cube,
@@ -192,21 +212,6 @@ impl<'a, 'b> AwaitData<'a, 'b> {
     ) -> Option<UnitData> {
         let team = self.team_index;
         resolve_3_players_nearby!((n.to_axial(),Doopa{data:self},game_view,team),.await)
-    }
-    pub async fn resolve_invade_no_animate(
-        &mut self,
-        selected_unit: GridCoord,
-        target_coord: GridCoord,
-        relative_game_view: &mut GameView<'_>,
-    ) {
-        let team = self.team_index;
-        resolve_invade!((
-            selected_unit,
-            target_coord,
-            relative_game_view,
-            Doopa2,
-            team
-        ),);
     }
 
     pub async fn resolve_invade(
@@ -268,7 +273,6 @@ impl MoveT for Attack {
         this_unit.position = target.position;
     }
 }
-
 
 #[derive(Debug)]
 pub struct Tribe {
