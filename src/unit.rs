@@ -186,6 +186,10 @@ impl<T: HasPos> UnitCollection<T> {
     pub fn filter(&self) -> UnitCollectionFilter<T> {
         UnitCollectionFilter { a: &self.elem }
     }
+
+    pub fn filter_type(&self, ty: Type) -> UnitCollectionFilterType<T> {
+        UnitCollectionFilterType { a: &self.elem, ty }
+    }
 }
 
 pub struct SingleFilter<'a> {
@@ -194,6 +198,21 @@ pub struct SingleFilter<'a> {
 impl<'a> movement::Filter for SingleFilter<'a> {
     fn filter(&self, a: &GridCoord) -> FilterRes {
         FilterRes::from_bool(self.a != a)
+    }
+}
+
+pub struct UnitCollectionFilterType<'a, T> {
+    a: &'a [T],
+    ty: Type,
+}
+impl<'a> movement::Filter for UnitCollectionFilterType<'a, UnitData> {
+    fn filter(&self, b: &GridCoord) -> FilterRes {
+        FilterRes::from_bool(
+            self.a
+                .iter()
+                .find(|a| a.position == *b && a.typ == self.ty)
+                .is_some(),
+        )
     }
 }
 

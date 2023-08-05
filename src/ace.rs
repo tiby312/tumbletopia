@@ -418,8 +418,8 @@ pub async fn reselect_loop(
     //Reconstruct path by creating all possible paths with path information this time.
     let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
 
-    if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
-        let iii = moves::Invade::new(selected_unit.warrior, target_coord.position);
+    if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
+        let iii = moves::Invade::new(selected_unit.warrior, path);
         if let Some((fff, _)) = extra_attack.take() {
             console_dbg!(moves::ActualMove::ExtraMove(fff, iii.clone()));
         } else {
@@ -615,10 +615,13 @@ fn generate_unit_possible_moves_inner<P: movement::PathHave>(
     } else {
         movement::compute_moves(
             &movement::WarriorMovement,
-            &game
-                .world
-                .filter()
-                .and(game.that_team.warriors.filter().not()),
+            &game.world.filter().and(
+                game.that_team
+                    .warriors
+                    .filter_type(Type::Warrior)
+                    .and(game.that_team.warriors.filter())
+                    .not(),
+            ),
             &game.this_team.filter().not(),
             &terrain::Grass,
             unit.position,

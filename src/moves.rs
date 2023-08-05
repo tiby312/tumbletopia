@@ -181,13 +181,15 @@ mod invade {
     macro_rules! resolve_invade_impl {
         ($args:expr,$namey:ident, $($_await:tt)*) => {
             {
-                let (selected_unit,target_coord,game_view,doopa):(GridCoord,GridCoord,&mut GameView<'_>,_)=$args;
+                let (selected_unit,path,game_view,doopa):(GridCoord,Path,&mut GameView<'_>,_)=$args;
+
+                let target_coord=path.get_end_coord(selected_unit);
 
                 let _target = game_view.that_team.find_take(&target_coord).unwrap();
 
-                let path = movement::Path::new();
-                let m = selected_unit.dir_to(&target_coord);
-                let path = path.add(m).unwrap();
+                // let path = movement::Path::new();
+                // let m = selected_unit.dir_to(&target_coord);
+                // let path = path.add(m).unwrap();
 
                 InnerPartialMove::new(selected_unit,path).$namey(game_view,doopa)$($_await)*;
 
@@ -205,19 +207,19 @@ mod invade {
     #[derive(Clone, Debug)]
     pub struct Invade {
         selected_unit: GridCoord,
-        target_coord: GridCoord,
+        path: Path,
     }
 
     impl Invade {
-        pub fn new(a: GridCoord, b: GridCoord) -> Self {
+        pub fn new(a: GridCoord, b: Path) -> Self {
             Invade {
                 selected_unit: a,
-                target_coord: b,
+                path: b,
             }
         }
         pub(super) fn inner_execute_no_animate(self, game_view: &mut GameView<'_>, a: &mut Doopa2) {
             resolve_invade_impl!(
-                (self.selected_unit, self.target_coord, game_view, a),
+                (self.selected_unit, self.path, game_view, a),
                 inner_execute_no_animate,
             )
         }
@@ -227,7 +229,7 @@ mod invade {
             game_view: &mut GameView<'_>,
             a: &mut Doopa<'_, '_, '_>,
         ) {
-            resolve_invade_impl!((self.selected_unit,self.target_coord,game_view,a),inner_execute_animate,.await)
+            resolve_invade_impl!((self.selected_unit,self.path,game_view,a),inner_execute_animate,.await)
         }
 
         pub fn execute(self, game_view: &mut GameView<'_>) {
