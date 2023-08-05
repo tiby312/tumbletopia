@@ -80,11 +80,11 @@ mod fast {
 macro_rules! resolve_movement {
     ($args:expr, $($_await:tt)*) => {
         {
-            let (start,path,data):(UnitData,movement::Path,&mut AwaitData<'_,'_>)=$args;
+            let (start,path,data,doopa):(UnitData,movement::Path,&mut AwaitData<'_,'_>,_)=$args;
 
             let an = animation::AnimationCommand::Movement { unit: start, path };
-            let mut start = data
-                .wait_animation(an, ace::Movement, data.team_index)
+            let mut start = doopa
+                .wait_animation(data,an, ace::Movement, data.team_index)
                 $($_await)*;
 
             start.position = path.get_end_coord(start.position);
@@ -92,6 +92,40 @@ macro_rules! resolve_movement {
         }
     }
 }
+
+pub struct Doopa;
+impl Doopa {
+    pub async fn wait_animation<W: UnwrapMe>(
+        &self,
+        a: &mut AwaitData<'_, '_>,
+        an: animation::AnimationCommand,
+        m: W,
+        team: ActiveTeam,
+    ) -> W::Item {
+        a.wait_animation(an, m, team).await
+    }
+}
+pub struct Doopa2;
+impl Doopa2 {
+    pub fn wait_animation<W: UnwrapMe>(
+        &self,
+        a: &mut AwaitData<'_, '_>,
+        an: animation::AnimationCommand,
+        m: W,
+        team: ActiveTeam,
+    ) -> W::Item {
+        let an = match an {
+            animation::AnimationCommand::Movement { unit, path } => {
+                AnimationOptions::Movement(unit)
+            }
+            animation::AnimationCommand::Attack { attacker, defender } => {
+                AnimationOptions::Attack([attacker, defender])
+            }
+        };
+        m.unwrapme(an)
+    }
+}
+
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
     team_index: ActiveTeam,
@@ -106,11 +140,10 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start: UnitData,
         path: movement::Path,
     ) -> UnitData {
-        //resolve_movement!(start,path,self,)
-        todo!()
+        resolve_movement!((start, path, self, Doopa2),)
     }
     pub async fn resolve_movement(&mut self, start: UnitData, path: movement::Path) -> UnitData {
-        resolve_movement!((start,path,self),.await)
+        resolve_movement!((start,path,self,Doopa),.await)
     }
 
     pub async fn resolve_surrounded(
