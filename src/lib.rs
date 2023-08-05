@@ -12,6 +12,7 @@ use shogo::utils;
 use wasm_bindgen::prelude::*;
 pub mod animation;
 pub mod dom;
+pub mod moves;
 //pub mod gameplay;
 pub mod board;
 pub mod grids;

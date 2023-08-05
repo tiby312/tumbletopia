@@ -419,22 +419,17 @@ pub async fn reselect_loop(
     let path = relative_game_view.get_path_from_move(target_cell, &unit, *extra_attack);
 
     if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
-        doop.await_data()
-            .resolve_invade(
-                selected_unit.warrior,
-                target_coord.position,
-                &mut relative_game_view,
-            )
+        moves::Attack::new(selected_unit.warrior, target_coord.position)
+            .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
             .await;
 
-        let _ = doop
-            .await_data()
-            .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
+        let _ = moves::HandleSurround::new(target_cell)
+            .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
             .await;
 
         for n in target_cell.to_cube().neighbours() {
-            doop.await_data()
-                .resolve_surrounded(n, &mut relative_game_view.not())
+            moves::HandleSurround::new(n.to_axial())
+                .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
                 .await;
         }
 
@@ -448,16 +443,14 @@ pub async fn reselect_loop(
             .find_take(&selected_unit.warrior)
             .unwrap();
 
-        let this_unit = doop
-            .await_data()
-            .resolve_movement(this_unit, path, &mut relative_game_view)
+        let this_unit = moves::PartialMove::new(this_unit, path)
+            .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
             .await;
 
         relative_game_view.this_team.add(this_unit);
 
-        let k = doop
-            .await_data()
-            .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
+        let k = moves::HandleSurround::new(target_cell)
+            .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
             .await;
 
         //Need to add ourselves back so we can resolve and attacking groups
@@ -468,16 +461,16 @@ pub async fn reselect_loop(
             relative_game_view.this_team.add(k);
 
             for n in target_cell.to_cube().neighbours() {
-                doop.await_data()
-                    .resolve_surrounded(n, &mut relative_game_view.not())
+                moves::HandleSurround::new(n.to_axial())
+                    .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
                     .await;
             }
 
             Some(relative_game_view.this_team.find_take(&pp).unwrap())
         } else {
             for n in target_cell.to_cube().neighbours() {
-                doop.await_data()
-                    .resolve_surrounded(n, &mut relative_game_view.not())
+                moves::HandleSurround::new(n.to_axial())
+                    .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
                     .await;
             }
             None
