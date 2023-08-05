@@ -22,13 +22,15 @@ impl Doopa2 {
 macro_rules! resolve_movement_impl {
     ($args:expr, $($_await:tt)*) => {
         {
-            let (start,path,mut doopa,game_view):(UnitData,movement::Path,_,&mut GameView<'_>)=$args;
+            let (start,path,doopa,game_view):(UnitData,movement::Path,_,&mut GameView<'_>)=$args;
             let team=game_view.team;
             let mut start = doopa
                 .wait_animation(ace::Movement::new(start,path), team)
                 $($_await)*;
 
             start.position = path.get_end_coord(start.position);
+
+            let start:UnitData=start;
             start
         }
     }
@@ -115,6 +117,18 @@ pub struct PartialMove {
     selected_unit: UnitData,
     path: Path,
 }
+
+
+pub enum ExtraMove{
+    ExtraMove{
+        unit:GridCoord
+    },
+    FinishMoving
+}
+
+
+
+
 
 impl PartialMove {
     pub fn new(a: UnitData, path: Path) -> Self {
