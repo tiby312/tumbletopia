@@ -80,10 +80,10 @@ mod fast {
 macro_rules! resolve_movement {
     ($args:expr, $($_await:tt)*) => {
         {
-            let (start,path,data,doopa):(UnitData,movement::Path,&mut AwaitData<'_,'_>,_)=$args;
+            let (start,path,mut doopa,team):(UnitData,movement::Path,_,ActiveTeam)=$args;
 
             let mut start = doopa
-                .wait_animation(data,ace::Movement::new(start,path), data.team_index)
+                .wait_animation(ace::Movement::new(start,path), team)
                 $($_await)*;
 
             start.position = path.get_end_coord(start.position);
@@ -92,25 +92,17 @@ macro_rules! resolve_movement {
     }
 }
 
-pub struct Doopa;
-impl Doopa {
-    pub async fn wait_animation<W: UnwrapMe>(
-        &self,
-        a: &mut AwaitData<'_, '_>,
-        m: W,
-        team: ActiveTeam,
-    ) -> W::Item {
-        a.wait_animation(m, team).await
+pub struct Doopa<'a, 'b, 'c> {
+    data: &'c mut AwaitData<'a, 'b>,
+}
+impl<'a, 'b, 'c> Doopa<'a, 'b, 'c> {
+    pub async fn wait_animation<W: UnwrapMe>(&mut self, m: W, team: ActiveTeam) -> W::Item {
+        self.data.wait_animation(m, team).await
     }
 }
 pub struct Doopa2;
 impl Doopa2 {
-    pub fn wait_animation<W: UnwrapMe>(
-        &self,
-        a: &mut AwaitData<'_, '_>,
-        m: W,
-        team: ActiveTeam,
-    ) -> W::Item {
+    pub fn wait_animation<W: UnwrapMe>(&mut self, m: W, team: ActiveTeam) -> W::Item {
         m.direct_unwrap()
     }
 }
@@ -129,10 +121,11 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         start: UnitData,
         path: movement::Path,
     ) -> UnitData {
-        resolve_movement!((start, path, self, Doopa2),)
+        resolve_movement!((start, path, Doopa2, self.team_index),)
     }
     pub async fn resolve_movement(&mut self, start: UnitData, path: movement::Path) -> UnitData {
-        resolve_movement!((start,path,self,Doopa),.await)
+        let team = self.team_index;
+        resolve_movement!((start,path,Doopa{data:self},team),.await)
     }
 
     pub async fn resolve_surrounded(
