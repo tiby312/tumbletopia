@@ -419,19 +419,9 @@ pub async fn reselect_loop(
     let path = relative_game_view.get_path_from_move(target_cell, &unit, *extra_attack);
 
     if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
-        moves::Attack::new(selected_unit.warrior, target_coord.position)
+        moves::Invade::new(selected_unit.warrior, target_coord.position)
             .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
             .await;
-
-        let _ = moves::HandleSurround::new(target_cell)
-            .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
-            .await;
-
-        for n in target_cell.to_cube().neighbours() {
-            moves::HandleSurround::new(n.to_axial())
-                .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
-                .await;
-        }
 
         //Finish this players turn.
         return LoopRes::EndTurn;

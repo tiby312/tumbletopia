@@ -37,8 +37,7 @@ macro_rules! resolve_movement_impl {
 macro_rules! resolve_invade_impl {
     ($args:expr, $($_await:tt)*) => {
         {
-            let (selected_unit,target_coord,game_view,doopa):(GridCoord,GridCoord,&mut GameView<'_>,_)=$args;
-            let team=game_view.team;
+            let (selected_unit,target_coord,game_view,mut doopa):(GridCoord,GridCoord,&mut GameView<'_>,_)=$args;
             let this_unit = game_view.this_team.find_take(&selected_unit).unwrap();
 
             let _target = game_view.that_team.find_take(&target_coord).unwrap();
@@ -47,12 +46,19 @@ macro_rules! resolve_invade_impl {
             let m = this_unit.position.dir_to(&target_coord);
             let path = path.add(m).unwrap();
 
-            let mut this_unit=resolve_movement_impl!((this_unit,path,doopa,game_view),$($_await)*);
+            let mut this_unit=resolve_movement_impl!((this_unit,path,&mut doopa,game_view),$($_await)*);
 
             this_unit.position = target_coord;
 
             game_view.this_team.add(this_unit);
 
+
+            resolve_3_players_nearby_impl!((target_coord,&mut doopa,game_view),$($_await)*);
+
+
+            for n in target_coord.to_cube().neighbours() {
+                resolve_3_players_nearby_impl!((n.to_axial(),&mut doopa,&mut game_view.not()),$($_await)*);
+            }
 
 
 
@@ -65,12 +71,11 @@ macro_rules! resolve_3_players_nearby_impl {
         let (n, mut doopa, game_view): (GridCoord, _, &mut GameView<'_>) = $args;
         let team=game_view.team;
         let n = n.to_cube();
-        let Some(unit_pos) = game_view
+        if let Some(unit_pos) = game_view
                     .this_team
                     .warriors
-                    .find_ext_mut(&n.to_axial()) else{
-                        return None;
-                    };
+                    .find_ext_mut(&n.to_axial())
+        {
 
         let unit_pos = unit_pos.0.position;
 
@@ -98,6 +103,9 @@ macro_rules! resolve_3_players_nearby_impl {
         } else {
             None
         }
+    } else{
+        None
+    }
     }};
 }
 
@@ -116,25 +124,25 @@ impl PartialMove {
         }
     }
     pub fn execute(self, game_view: &mut GameView<'_>) -> UnitData {
-        resolve_movement_impl!((self.selected_unit, self.path, Doopa2, game_view),)
+        resolve_movement_impl!((self.selected_unit, self.path, &mut Doopa2, game_view),)
     }
     pub async fn execute_with_animation(
         self,
         game_view: &mut GameView<'_>,
         data: &mut AwaitData<'_, '_>,
     ) -> UnitData {
-        resolve_movement_impl!((self.selected_unit,self.path,Doopa::new(data),game_view),.await)
+        resolve_movement_impl!((self.selected_unit,self.path,&mut Doopa::new(data),game_view),.await)
     }
 }
 
-pub struct Attack {
+pub struct Invade {
     selected_unit: GridCoord,
     target_coord: GridCoord,
 }
 
-impl Attack {
+impl Invade {
     pub fn new(a: GridCoord, b: GridCoord) -> Self {
-        Attack {
+        Invade {
             selected_unit: a,
             target_coord: b,
         }
@@ -144,7 +152,7 @@ impl Attack {
             self.selected_unit,
             self.target_coord,
             relative_game_view,
-            Doopa2
+            &mut Doopa2
         ),)
     }
     pub async fn execute_with_animation(
@@ -152,7 +160,7 @@ impl Attack {
         relative_game_view: &mut GameView<'_>,
         data: &mut AwaitData<'_, '_>,
     ) {
-        resolve_invade_impl!((self.selected_unit,self.target_coord,relative_game_view,Doopa::new(data)),.await)
+        resolve_invade_impl!((self.selected_unit,self.target_coord,relative_game_view,&mut Doopa::new(data)),.await)
     }
 }
 
@@ -165,7 +173,7 @@ impl HandleSurround {
     }
 
     pub fn execute(self, game_view: &mut GameView<'_>) -> Option<UnitData> {
-        resolve_3_players_nearby_impl!((self.cell, Doopa2, game_view),)
+        resolve_3_players_nearby_impl!((self.cell, &mut Doopa2, game_view),)
     }
 
     pub async fn execute_with_animation(
@@ -173,6 +181,6 @@ impl HandleSurround {
         game_view: &mut GameView<'_>,
         data: &mut AwaitData<'_, '_>,
     ) -> Option<UnitData> {
-        resolve_3_players_nearby_impl!((self.cell,Doopa::new(data),game_view),.await)
+        resolve_3_players_nearby_impl!((self.cell,&mut Doopa::new(data),game_view),.await)
     }
 }
