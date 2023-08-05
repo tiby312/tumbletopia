@@ -21,12 +21,25 @@ pub struct GameWrapResponse<'a, T> {
 
 pub trait UnwrapMe {
     type Item;
+    fn get_command(&self)->animation::AnimationCommand;
     fn unwrapme(self, a: AnimationOptions) -> Self::Item;
 }
-pub struct Movement;
+pub struct Movement{
+    start:UnitData,
+    path:movement::Path
+}
+impl Movement{
+    pub fn new(start:UnitData,path:movement::Path)->Self{
+        Movement { start, path }
+    }
+}
 impl UnwrapMe for Movement {
     type Item = UnitData;
 
+    fn get_command(&self)->animation::AnimationCommand{
+        //TODO remove clone
+        animation::AnimationCommand::Movement { unit: self.start.clone(), path: self.path }
+    }
     fn unwrapme(self, a: AnimationOptions) -> Self::Item {
         let AnimationOptions::Movement(a)=a else{
             unreachable!()
@@ -35,10 +48,21 @@ impl UnwrapMe for Movement {
     }
 }
 
-pub struct Attack;
+pub struct Attack{
+    attacker:UnitData,
+    defender:UnitData
+}
+impl Attack{
+    pub fn new(attacker:UnitData,defender:UnitData)->Self{
+        Attack{attacker,defender}
+    }
+}
 impl UnwrapMe for Attack {
     type Item = [UnitData; 2];
-
+    fn get_command(&self)->animation::AnimationCommand{
+        //TODO remove clone
+        animation::AnimationCommand::Attack { attacker: self.attacker.clone(), defender: self.defender.clone() }
+    }
     fn unwrapme(self, a: AnimationOptions) -> Self::Item {
         let AnimationOptions::Attack(a)=a else{
             unreachable!()
@@ -57,19 +81,19 @@ pub enum AnimationOptions {
     Attack([UnitData; 2]),
 }
 impl AnimationOptions {
-    pub fn movement(a: UnitData) -> AnimationWrapper<Movement> {
-        AnimationWrapper {
-            unwrapper: Movement,
-            enu: AnimationOptions::Movement(a),
-        }
-    }
+    // pub fn movement(a: UnitData) -> AnimationWrapper<Movement> {
+    //     AnimationWrapper {
+    //         unwrapper: Movement,
+    //         enu: AnimationOptions::Movement(a),
+    //     }
+    // }
 
-    pub fn attack(a: [UnitData; 2]) -> AnimationWrapper<Attack> {
-        AnimationWrapper {
-            unwrapper: Attack,
-            enu: AnimationOptions::Attack(a),
-        }
-    }
+    // pub fn attack(a: [UnitData; 2]) -> AnimationWrapper<Attack> {
+    //     AnimationWrapper {
+    //         unwrapper: Attack,
+    //         enu: AnimationOptions::Attack(a),
+    //     }
+    // }
 }
 
 #[derive(Debug)]
