@@ -121,7 +121,7 @@ macro_rules! resolve_3_players_nearby {
 
                 let [them, this_unit] = doopa
                     .wait_animation(ace::Attack::new(them, unit_pos), team.not())
-                    .await;
+                    $($_await)*;
 
                 game_view.that_team.add(them);
                 game_view.this_team.add(this_unit);
@@ -169,6 +169,14 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         resolve_movement!((start,path,Doopa{data:self},team),.await)
     }
 
+    pub fn resolve_surrounded_no_animate(
+        &mut self,
+        n: hex::Cube,
+        game_view: &mut GameView<'_>,
+    ) -> Option<UnitData> {
+        let team = self.team_index;
+        resolve_3_players_nearby!((n.to_axial(), Doopa2, game_view, team),)
+    }
     pub async fn resolve_surrounded(
         &mut self,
         n: hex::Cube,
