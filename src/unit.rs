@@ -61,7 +61,7 @@ impl Type {
     }
 }
 
-impl GameView<'_> {
+impl GameViewMut<'_> {
     // pub fn resolve_movement_no_animate(
     //     &mut self,
     //     start: UnitData,

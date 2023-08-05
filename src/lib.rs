@@ -43,12 +43,12 @@ enum UiButton {
 pub struct WarriorDraw<'a> {
     model: &'a MyModel,
     drop_shadow: &'a MyModel,
-    col: &'a UnitCollection<UnitData>
+    col: &'a [UnitData]
 }
 
 impl<'a> WarriorDraw<'a> {
     fn new(
-        col: &'a UnitCollection<UnitData>,
+        col: &'a [UnitData],
         model: &'a MyModel,
         drop_shadow: &'a MyModel
     ) -> Self {
@@ -60,7 +60,7 @@ impl<'a> WarriorDraw<'a> {
     }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
         //let grey = self.typ == Type::Para;
-        for cc in self.col.elem.iter() {
+        for cc in self.col.iter() {
             let pos = gg.hex_axial_to_world(&cc.position);
 
             // let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
@@ -83,7 +83,7 @@ impl<'a> WarriorDraw<'a> {
         draw_sys: &mut ShaderSystem,
         matrix: &Matrix4<f32>,
     ) {
-        for a in self.col.elem.iter().map(|a| &a.position) {
+        for a in self.col.iter().map(|a| &a.position) {
             let pos: [f32; 2] = gg.hex_axial_to_world(a).into();
             let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -103,7 +103,7 @@ impl<'a> WarriorDraw<'a> {
         draw_sys: &mut ShaderSystem,
     ) {
         //draw text
-        for ccat in self.col.elem.iter() {
+        for ccat in self.col.iter() {
             let pos: [f32; 2] = gg.hex_axial_to_world(&ccat.position).into();
 
             let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
@@ -162,15 +162,31 @@ pub struct Game {
     world: board::World,
 }
 impl Game {
-    fn view(&mut self, team_index: ActiveTeam) -> GameView {
+    fn view(&self, team_index: ActiveTeam) -> GameView {
         match team_index {
             ActiveTeam::Cats => GameView {
+                this_team: &self.cats,
+                that_team: &self.dogs,
+                world: &self.world,
+                team: ActiveTeam::Cats,
+            },
+            ActiveTeam::Dogs => GameView {
+                this_team: &self.dogs,
+                that_team: &self.cats,
+                world: &self.world,
+                team: ActiveTeam::Dogs,
+            },
+        }
+    }
+    fn view_mut(&mut self, team_index: ActiveTeam) -> GameViewMut {
+        match team_index {
+            ActiveTeam::Cats => GameViewMut {
                 this_team: &mut self.cats,
                 that_team: &mut self.dogs,
                 world: &mut self.world,
                 team: ActiveTeam::Cats,
             },
-            ActiveTeam::Dogs => GameView {
+            ActiveTeam::Dogs => GameViewMut {
                 this_team: &mut self.dogs,
                 that_team: &mut self.cats,
                 world: &mut self.world,
@@ -180,15 +196,32 @@ impl Game {
     }
 }
 
+
 pub struct GameView<'a> {
+    this_team: &'a  Tribe,
+    that_team: &'a  Tribe,
+    world: &'a  board::World,
+    team: ActiveTeam,
+}
+impl<'a> GameView<'a> {
+    pub fn not(& self) -> GameView {
+        GameView {
+            this_team: self.that_team,
+            that_team: self.this_team,
+            world: self.world,
+            team: self.team.not(),
+        }
+    }
+}
+pub struct GameViewMut<'a> {
     this_team: &'a mut Tribe,
     that_team: &'a mut Tribe,
     world: &'a mut board::World,
     team: ActiveTeam,
 }
-impl<'a> GameView<'a> {
-    pub fn not(&mut self) -> GameView {
-        GameView {
+impl<'a> GameViewMut<'a> {
+    pub fn not(&mut self) -> GameViewMut {
+        GameViewMut {
             this_team: self.that_team,
             that_team: self.this_team,
             world: self.world,
@@ -305,6 +338,41 @@ pub async fn worker_entry() {
                 team,
             } = command_recv.next().await.unwrap();
             let mut command = command.process(&grid_matrix);
+            let game_view=ggame.view(team);
+
+            let (cat_for_draw,dog_for_draw)={
+                let (this,that)=if let ace::ProcessedCommand::Animate(a) = &command {
+                    
+                    match a.data() {
+                        AnimationOptions::Movement(m) => {
+                            
+                            let a:Vec<_>=game_view.this_team.warriors.elem.iter().cloned().filter(|a|a.position!=m.position).collect();
+                            let b:Vec<_>=game_view.that_team.warriors.elem.iter().cloned().collect();
+                            (a,b)
+
+                        },
+                        AnimationOptions::Attack([a, b]) =>{
+                            let a=game_view.this_team.warriors.elem.iter().cloned().filter(|k|k.position!=a.position).collect();
+                            let b=game_view.that_team.warriors.elem.iter().cloned().filter(|k|k.position!=b.position).collect();
+                            (a,b)
+                        },
+                    }
+
+                }else{
+                    
+                    let a=game_view.this_team.warriors.elem.iter().cloned().collect();
+                    let b=game_view.that_team.warriors.elem.iter().cloned().collect();
+                    (a,b)
+
+                };
+
+                if team==ActiveTeam::Cats{
+                    (this,that)
+                }else{
+                    (that,this)
+                }
+            };
+
 
             'outer: loop {
                 let mut on_select = false;
@@ -521,12 +589,12 @@ pub async fn worker_entry() {
 
                 for i in 0..1 {
                     let cat_draw = WarriorDraw::new(
-                        &ggame.cats.warriors,
+                        &cat_for_draw,
                         &cat,
                         &drop_shadow,
                     );
                     let dog_draw = WarriorDraw::new(
-                        &ggame.dogs.warriors,
+                        &dog_for_draw,
                         &dog,
                         &drop_shadow,
                     );
@@ -551,12 +619,12 @@ pub async fn worker_entry() {
 
                 for i in 0..1 {
                     let cat_draw = WarriorDraw::new(
-                        &ggame.cats.warriors,
+                        &cat_for_draw,
                         &cat,
                         &drop_shadow,
                     );
                     let dog_draw = WarriorDraw::new(
-                        &ggame.dogs.warriors,
+                        &dog_for_draw,
                         &dog,
                         &drop_shadow,
                     );
@@ -566,12 +634,12 @@ pub async fn worker_entry() {
 
                 for i in 0..1 {
                     let cat_draw = WarriorDraw::new(
-                        &ggame.cats.warriors,
+                        &cat_for_draw,
                         &cat,
                         &drop_shadow,
                     );
                     let dog_draw = WarriorDraw::new(
-                        &ggame.dogs.warriors,
+                        &dog_for_draw,
                         &dog,
                         &drop_shadow,
                     );

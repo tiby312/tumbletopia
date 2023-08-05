@@ -331,7 +331,7 @@ pub async fn reselect_loop(
 ) -> LoopRes<SelectType> {
     //At this point we know a friendly unit is currently selected.
 
-    let mut relative_game_view = game.view(selected_unit.team);
+    let mut relative_game_view = game.view_mut(selected_unit.team);
 
     let unwrapped_selected_unit = selected_unit.warrior;
 
@@ -480,7 +480,7 @@ pub async fn main_logic<'a>(
                         break 'select_loop;
                     }
                 };
-                let game = game.view(team_index);
+                let game = game.view_mut(team_index);
 
                 if let Some(unit) = game.this_team.find_slow(&cell) {
                     break SelectType {
@@ -543,7 +543,7 @@ pub enum Move {
     },
 }
 
-impl<'a> GameView<'a> {
+impl<'a> GameViewMut<'a> {
     pub fn get_path_from_move(
         &self,
         target_cell: GridCoord,
@@ -574,7 +574,7 @@ impl<'a> GameView<'a> {
 
 fn generate_unit_possible_moves_inner<P: movement::PathHave>(
     unit: &UnitData,
-    game: &GameView,
+    game: &GameViewMut,
     extra_attack: &Option<(moves::PartialMove, GridCoord)>,
     ph: P,
 ) -> movement::PossibleMoves2<P::Foo> {

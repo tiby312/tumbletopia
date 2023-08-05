@@ -139,6 +139,10 @@ impl<T> Animation<T> {
             None
         }
     }
+    
+    pub fn data(&self)->&T{
+        &self.data
+    }
     pub fn into_data(self) -> T {
         self.data
     }
