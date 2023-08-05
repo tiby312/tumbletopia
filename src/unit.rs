@@ -92,6 +92,47 @@ macro_rules! resolve_movement {
     }
 }
 
+macro_rules! resolve_3_players_nearby {
+    ($args:expr, $($_await:tt)*) => {{
+        let (n, mut doopa, game_view, team): (GridCoord, _, &mut GameView<'_>, ActiveTeam) = $args;
+
+        let n = n.to_cube();
+        let Some(unit_pos) = game_view
+                    .this_team
+                    .warriors
+                    .find_ext_mut(&n.to_axial()) else{
+                        return None;
+                    };
+
+        let unit_pos = unit_pos.0.position;
+
+        let nearby_enemies: Vec<_> = n
+            .neighbours()
+            .filter(|a| game_view.that_team.find_slow(&a.to_axial()).is_some())
+            .map(|a| a.to_axial())
+            .collect();
+        if nearby_enemies.len() >= 3 {
+            // let mut this_unit=game.this_team
+            //     .find_take(&unit_pos).unwrap();
+
+            for n in nearby_enemies {
+                let unit_pos = game_view.this_team.find_take(&unit_pos).unwrap();
+                let them = game_view.that_team.find_take(&n).unwrap();
+
+                let [them, this_unit] = doopa
+                    .wait_animation(ace::Attack::new(them, unit_pos), team.not())
+                    .await;
+
+                game_view.that_team.add(them);
+                game_view.this_team.add(this_unit);
+            }
+            Some(game_view.this_team.find_take(&unit_pos).unwrap())
+        } else {
+            None
+        }
+    }};
+}
+
 pub struct Doopa<'a, 'b, 'c> {
     data: &'c mut AwaitData<'a, 'b>,
 }
@@ -133,16 +174,8 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         n: hex::Cube,
         game_view: &mut GameView<'_>,
     ) -> Option<UnitData> {
-        if let Some((unit_pos, b)) = game_view.resolve_surrounded_logic(n.to_axial()) {
-            let u = unit_pos.position;
-            game_view.this_team.add(unit_pos);
-            for n in b {
-                self.animate_attack(u, n, game_view).await;
-            }
-            Some(game_view.this_team.find_take(&u).unwrap())
-        } else {
-            None
-        }
+        let team = self.team_index;
+        resolve_3_players_nearby!((n.to_axial(),Doopa{data:self},game_view,team),.await)
     }
 
     pub async fn resolve_invade(
@@ -164,23 +197,6 @@ impl<'a, 'b> AwaitData<'a, 'b> {
         let an = wrapper.into_command();
         let aa = self.doop.wait_animation(an, team_index).await;
         K::unwrapme(aa.into_data())
-    }
-
-    pub async fn animate_attack(
-        &mut self,
-        unit_pos: GridCoord,
-        n: GridCoord,
-        game_view: &mut GameView<'_>,
-    ) {
-        let unit_pos = game_view.this_team.find_take(&unit_pos).unwrap();
-        let them = game_view.that_team.find_take(&n).unwrap();
-
-        let [them, this_unit] = self
-            .wait_animation(ace::Attack::new(them, unit_pos), self.team_index.not())
-            .await;
-
-        game_view.that_team.add(them);
-        game_view.this_team.add(this_unit);
     }
 
     pub async fn animate_invade(
