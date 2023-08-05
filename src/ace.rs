@@ -428,54 +428,69 @@ pub async fn reselect_loop(
     } else {
         //If we are moving to an empty square.
 
-        let this_unit = relative_game_view
-            .this_team
-            .find_take(&selected_unit.warrior)
-            .unwrap();
-
-        let this_unit = moves::PartialMove::new(this_unit, path)
+        let jjj = moves::PartialMove::new(selected_unit.warrior, path)
             .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
             .await;
 
-        relative_game_view.this_team.add(this_unit);
-
-        let k = moves::HandleSurround::new(target_cell)
-            .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
-            .await;
-
-        //Need to add ourselves back so we can resolve and attacking groups
-        //only to remove ourselves again later.
-        let k = if let Some(k) = k {
-            //let j = k.as_ref().slim();
-            let pp = k.position;
-            relative_game_view.this_team.add(k);
-
-            for n in target_cell.to_cube().neighbours() {
-                moves::HandleSurround::new(n.to_axial())
-                    .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
-                    .await;
+        match jjj {
+            moves::ExtraMove::ExtraMove { pos } => {
+                *extra_attack = Some(pos);
+                //relative_game_view.this_team.add(k);
+                return LoopRes::Select(selected_unit.with(pos).with_team(team_index));
             }
-
-            Some(relative_game_view.this_team.find_take(&pp).unwrap())
-        } else {
-            for n in target_cell.to_cube().neighbours() {
-                moves::HandleSurround::new(n.to_axial())
-                    .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
-                    .await;
+            moves::ExtraMove::FinishMoving => {
+                //Finish this players turn.
+                return LoopRes::EndTurn;
             }
-            None
-        };
-
-        if let Some(k) = k {
-            //let b = k.as_ref().slim();
-            let pp = k.position;
-            *extra_attack = Some(target_cell);
-            relative_game_view.this_team.add(k);
-            return LoopRes::Select(selected_unit.with(pp).with_team(team_index));
-        } else {
-            //Finish this players turn.
-            return LoopRes::EndTurn;
         }
+        // let this_unit = relative_game_view
+        //     .this_team
+        //     .find_take(&selected_unit.warrior)
+        //     .unwrap();
+
+        // let this_unit = moves::PartialMove::new(this_unit, path)
+        //     .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
+        //     .await;
+
+        // relative_game_view.this_team.add(this_unit);
+
+        // let k = moves::HandleSurround::new(target_cell)
+        //     .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
+        //     .await;
+
+        // //Need to add ourselves back so we can resolve and attacking groups
+        // //only to remove ourselves again later.
+        // let k = if let Some(k) = k {
+        //     //let j = k.as_ref().slim();
+        //     let pp = k.position;
+        //     relative_game_view.this_team.add(k);
+
+        //     for n in target_cell.to_cube().neighbours() {
+        //         moves::HandleSurround::new(n.to_axial())
+        //             .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
+        //             .await;
+        //     }
+
+        //     Some(relative_game_view.this_team.find_take(&pp).unwrap())
+        // } else {
+        //     for n in target_cell.to_cube().neighbours() {
+        //         moves::HandleSurround::new(n.to_axial())
+        //             .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
+        //             .await;
+        //     }
+        //     None
+        // };
+
+        // if let Some(k) = k {
+        //     //let b = k.as_ref().slim();
+        //     let pp = k.position;
+        //     *extra_attack = Some(target_cell);
+        //     relative_game_view.this_team.add(k);
+        //     return LoopRes::Select(selected_unit.with(pp).with_team(team_index));
+        // } else {
+        //     //Finish this players turn.
+        //     return LoopRes::EndTurn;
+        // }
     }
 }
 
