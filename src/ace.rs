@@ -419,11 +419,13 @@ pub async fn reselect_loop(
     let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
 
     if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
-        if extra_attack.is_some() {
-            console_dbg!("about to finish the move!!!");
+        let iii = moves::Invade::new(selected_unit.warrior, target_coord.position);
+        if let Some((fff, _)) = extra_attack.take() {
+            console_dbg!(moves::ActualMove::ExtraMove(fff, iii.clone()));
+        } else {
+            console_dbg!(moves::ActualMove::Invade(iii.clone()));
         }
-        moves::Invade::new(selected_unit.warrior, target_coord.position)
-            .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
+        iii.execute_with_animation(&mut relative_game_view, &mut doop.await_data())
             .await;
 
         //Finish this players turn.
@@ -443,6 +445,7 @@ pub async fn reselect_loop(
                 return LoopRes::Select(selected_unit.with(pos).with_team(team_index));
             }
             moves::ExtraMove::FinishMoving => {
+                console_dbg!(moves::ActualMove::NormalMove(pm));
                 //Finish this players turn.
                 return LoopRes::EndTurn;
             }

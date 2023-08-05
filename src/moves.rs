@@ -1,5 +1,12 @@
 use super::*;
 
+#[derive(Debug)]
+pub enum ActualMove {
+    Invade(Invade),
+    NormalMove(PartialMove),
+    ExtraMove(PartialMove, Invade),
+}
+
 struct Doopa<'a, 'b, 'c> {
     data: &'c mut AwaitData<'a, 'b>,
 }
@@ -70,7 +77,6 @@ mod inner_partial {
         ) -> UnitData {
             resolve_inner_movement_impl!((self.u,self.path,a,game_view),.await)
         }
-
     }
 }
 
@@ -127,7 +133,7 @@ mod partial_move {
         }
     }
 
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct PartialMove {
         selected_unit: GridCoord,
         path: Path,
@@ -208,6 +214,7 @@ mod invade {
         }
     }
 
+    #[derive(Clone, Debug)]
     pub struct Invade {
         selected_unit: GridCoord,
         target_coord: GridCoord,

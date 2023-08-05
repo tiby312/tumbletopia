@@ -25,12 +25,22 @@ impl Moves {
 
 //TODO a direction is only 6 values. Left over values when
 //put into 3 bits.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 pub struct Path {
     //TODO optimize this to be just one 64bit integer?
     //20 moves is just max possible moves
     moves: [Moves; 20],
     num_moves: u8,
+}
+
+impl std::fmt::Debug for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Path:")?;
+        for a in self.moves.iter().take(self.num_moves as usize) {
+            write!(f, "{:?},", a)?;
+        }
+        writeln!(f)
+    }
 }
 impl Path {
     pub fn new() -> Self {
