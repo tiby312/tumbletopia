@@ -32,56 +32,34 @@ macro_rules! resolve_movement_impl {
 
             let this_unit=resolve_inner_movement_impl!((this_unit,path,&mut doopa,&mut game_view),$($_await)*);
 
-            // let this_unit = moves::PartialMove::new(this_unit, path)
-            //     .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
-            //     .await;
-
             game_view.this_team.add(this_unit);
 
             let k=resolve_3_players_nearby_impl!((target_cell,&mut doopa,&mut game_view),$($_await)*);
 
-            // let k = moves::HandleSurround::new(target_cell)
-            //     .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
-            //     .await;
-
             //Need to add ourselves back so we can resolve and attacking groups
             //only to remove ourselves again later.
             let k = if let Some(k) = k {
-                //let j = k.as_ref().slim();
                 let pp = k.position;
                 game_view.this_team.add(k);
 
                 for n in target_cell.to_cube().neighbours() {
-                    let k=resolve_3_players_nearby_impl!((n.to_axial(),&mut doopa,&mut game_view.not()),$($_await)*);
-
-                    // moves::HandleSurround::new(n.to_axial())
-                    //     .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
-                    //     .await;
+                    let _=resolve_3_players_nearby_impl!((n.to_axial(),&mut doopa,&mut game_view.not()),$($_await)*);
                 }
 
                 Some(game_view.this_team.find_take(&pp).unwrap())
             } else {
                 for n in target_cell.to_cube().neighbours() {
-                    let k=resolve_3_players_nearby_impl!((n.to_axial(),&mut doopa,&mut game_view.not()),$($_await)*);
-
-                    // moves::HandleSurround::new(n.to_axial())
-                    //     .execute_with_animation(&mut relative_game_view.not(), &mut doop.await_data())
-                    //     .await;
+                    let _=resolve_3_players_nearby_impl!((n.to_axial(),&mut doopa,&mut game_view.not()),$($_await)*);
                 }
 
                 None
             };
 
             if let Some(k) = k {
-                //let b = k.as_ref().slim();
-                let pp = k.position;
-                //*extra_attack = Some(target_cell);
                 game_view.this_team.add(k);
-                //return LoopRes::Select(selected_unit.with(pp).with_team(team_index));
                 ExtraMove::ExtraMove{pos:target_cell}
             } else {
                 //Finish this players turn.
-                //return LoopRes::EndTurn;
                 ExtraMove::FinishMoving
             }
         }
@@ -157,8 +135,6 @@ macro_rules! resolve_3_players_nearby_impl {
             .map(|a| a.to_axial())
             .collect();
         if nearby_enemies.len() >= 3 {
-            // let mut this_unit=game.this_team
-            //     .find_take(&unit_pos).unwrap();
 
             for n in nearby_enemies {
                 let unit_pos = game_view.this_team.find_take(&unit_pos).unwrap();
