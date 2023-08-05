@@ -199,8 +199,8 @@ pub struct Doop<'a> {
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
 impl<'a> Doop<'a> {
-    pub fn await_data<'b>(&'b mut self, team_index: ActiveTeam) -> AwaitData<'a, 'b> {
-        AwaitData::new(self, team_index)
+    pub fn await_data<'b>(&'b mut self) -> AwaitData<'a, 'b> {
+        AwaitData::new(self)
     }
 
     pub async fn wait_animation<'c>(
@@ -419,7 +419,7 @@ pub async fn reselect_loop(
     let path = relative_game_view.get_path_from_move(target_cell, &unit, *extra_attack);
 
     if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
-        doop.await_data(team_index)
+        doop.await_data()
             .resolve_invade(
                 selected_unit.warrior,
                 target_coord.position,
@@ -428,12 +428,12 @@ pub async fn reselect_loop(
             .await;
 
         let _ = doop
-            .await_data(team_index)
+            .await_data()
             .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
             .await;
 
         for n in target_cell.to_cube().neighbours() {
-            doop.await_data(team_index.not())
+            doop.await_data()
                 .resolve_surrounded(n, &mut relative_game_view.not())
                 .await;
         }
@@ -449,14 +449,14 @@ pub async fn reselect_loop(
             .unwrap();
 
         let this_unit = doop
-            .await_data(team_index)
-            .resolve_movement(this_unit, path)
+            .await_data()
+            .resolve_movement(this_unit, path, &mut relative_game_view)
             .await;
 
         relative_game_view.this_team.add(this_unit);
 
         let k = doop
-            .await_data(team_index)
+            .await_data()
             .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
             .await;
 
@@ -468,7 +468,7 @@ pub async fn reselect_loop(
             relative_game_view.this_team.add(k);
 
             for n in target_cell.to_cube().neighbours() {
-                doop.await_data(team_index.not())
+                doop.await_data()
                     .resolve_surrounded(n, &mut relative_game_view.not())
                     .await;
             }
@@ -476,7 +476,7 @@ pub async fn reselect_loop(
             Some(relative_game_view.this_team.find_take(&pp).unwrap())
         } else {
             for n in target_cell.to_cube().neighbours() {
-                doop.await_data(team_index.not())
+                doop.await_data()
                     .resolve_surrounded(n, &mut relative_game_view.not())
                     .await;
             }
