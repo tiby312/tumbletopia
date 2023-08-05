@@ -71,17 +71,6 @@ mod inner_partial {
             resolve_inner_movement_impl!((self.u,self.path,a,game_view),.await)
         }
 
-        pub fn execute(self, game_view: &mut GameView<'_>) -> UnitData {
-            self.inner_execute_no_animate(game_view, &mut Doopa2)
-        }
-        pub async fn execute_with_animation(
-            self,
-            game_view: &mut GameView<'_>,
-            data: &mut AwaitData<'_, '_>,
-        ) -> UnitData {
-            self.inner_execute_animate(game_view, &mut Doopa::new(data))
-                .await
-        }
     }
 }
 
@@ -260,7 +249,7 @@ mod invade {
     }
 }
 
-pub use surround::HandleSurround;
+use surround::HandleSurround;
 
 mod surround {
     use super::*;
