@@ -24,26 +24,6 @@ pub struct AnimationWrapper<K> {
     pub enu: animation::AnimationCommand,
 }
 
-// pub enum AnimationOptions {
-//     Movement(UnitData),
-//     Attack([UnitData; 2]),
-// }
-// impl AnimationOptions {
-//     // pub fn movement(a: UnitData) -> AnimationWrapper<Movement> {
-//     //     AnimationWrapper {
-//     //         unwrapper: Movement,
-//     //         enu: AnimationOptions::Movement(a),
-//     //     }
-//     // }
-
-//     // pub fn attack(a: [UnitData; 2]) -> AnimationWrapper<Attack> {
-//     //     AnimationWrapper {
-//     //         unwrapper: Attack,
-//     //         enu: AnimationOptions::Attack(a),
-//     //     }
-//     // }
-// }
-
 #[derive(Debug)]
 pub enum MousePrompt {
     Selection {
@@ -129,12 +109,12 @@ use futures::{
     SinkExt, StreamExt,
 };
 
-pub struct Doop<'a> {
+pub struct WorkerManager<'a> {
     game: *mut Game,
     sender: Sender<GameWrap<'a, Command>>,
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
-impl<'a> Doop<'a> {
+impl<'a> WorkerManager<'a> {
     pub async fn wait_animation<'c>(
         &mut self,
         animation: animation::AnimationCommand,
@@ -255,7 +235,7 @@ pub enum LoopRes<T> {
 }
 
 pub async fn reselect_loop(
-    doop: &mut Doop<'_>,
+    doop: &mut WorkerManager<'_>,
     game: &mut Game,
     team_index: ActiveTeam,
     extra_attack: &mut Option<(moves::PartialMove, GridCoord)>,
@@ -390,7 +370,7 @@ pub async fn main_logic<'a>(
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
     game: &'a mut Game,
 ) {
-    let mut doop = Doop {
+    let mut doop = WorkerManager {
         game: game as *mut _,
         sender: command_sender,
         receiver: response_recv,

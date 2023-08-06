@@ -8,10 +8,10 @@ pub enum ActualMove {
 }
 
 struct Doopa<'a, 'b> {
-    data: &'a mut ace::Doop<'b>,
+    data: &'a mut ace::WorkerManager<'b>,
 }
 impl<'a, 'b> Doopa<'a, 'b> {
-    pub fn new(data: &'a mut ace::Doop<'b>) -> Self {
+    pub fn new(data: &'a mut ace::WorkerManager<'b>) -> Self {
         Doopa { data }
     }
     pub async fn wait_animation<W: UnwrapMe>(&mut self, m: W, team: ActiveTeam) -> W::Item {
@@ -159,7 +159,7 @@ mod partial_move {
         pub async fn execute_with_animation(
             self,
             game_view: &mut GameViewMut<'_>,
-            data: &mut ace::Doop<'_>,
+            data: &mut ace::WorkerManager<'_>,
         ) -> ExtraMove {
             self.inner_execute_animate(game_view, &mut Doopa::new(data))
                 .await
@@ -235,7 +235,7 @@ mod invade {
         pub async fn execute_with_animation(
             self,
             game_view: &mut GameViewMut<'_>,
-            data: &mut ace::Doop<'_>,
+            data: &mut ace::WorkerManager<'_>,
         ) {
             self.inner_execute_animate(game_view, &mut Doopa::new(data))
                 .await
