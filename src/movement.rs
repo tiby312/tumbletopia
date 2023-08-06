@@ -86,6 +86,7 @@ impl Path {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[must_use]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
     pub fn dir_to(&self, other: &GridCoord) -> HexDir {

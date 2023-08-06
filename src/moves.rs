@@ -32,9 +32,6 @@ pub enum ExtraMove {
     FinishMoving,
 }
 
-
-
-
 use inner_partial::InnerPartialMove;
 mod inner_partial {
 
@@ -69,7 +66,11 @@ mod inner_partial {
         pub fn new(a: GridCoord, path: Path) -> Self {
             InnerPartialMove { u: a, path }
         }
-        pub(super) fn inner_execute_no_animate(self, game_view: &mut GameViewMut<'_>, a: &mut Doopa2) {
+        pub(super) fn inner_execute_no_animate(
+            self,
+            game_view: &mut GameViewMut<'_>,
+            a: &mut Doopa2,
+        ) {
             resolve_inner_movement_impl!((self.u, self.path, a, game_view),)
         }
 
@@ -103,24 +104,28 @@ mod partial_move {
                 //Need to add ourselves back so we can resolve and attacking groups
                 //only to remove ourselves again later.
                 let k = if let Some(k) = k {
-                    let pp = k.position;
-                    game_view.this_team.add(k);
+                    //let pp = k.position;
+                    //game_view.this_team.add(k);
 
                     for n in target_cell.to_cube().neighbours() {
-                        let _=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*;
+                        if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
+                            game_view.that_team.find_take(&f).unwrap();
+                        }
                     }
 
-                    Some(game_view.this_team.find_take(&pp).unwrap())
+                    Some(k)
                 } else {
                     for n in target_cell.to_cube().neighbours() {
-                        let _=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*;
+                        if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
+                            game_view.that_team.find_take(&f).unwrap();
+                        }
                     }
 
                     None
                 };
 
                 if let Some(k) = k {
-                    game_view.this_team.add(k);
+                    //game_view.this_team.add(k);
                     ExtraMove::ExtraMove{pos:target_cell}
                 } else {
                     //Finish this players turn.
@@ -192,9 +197,13 @@ mod invade {
 
                 InnerPartialMove::new(selected_unit,path).$namey(game_view,doopa)$($_await)*;
 
-                HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*;
+                if let Some(f)=HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*{
+                    game_view.this_team.find_take(&f).unwrap();
+                }
                 for n in target_coord.to_cube().neighbours() {
-                    HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),doopa)$($_await)*;
+                    if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),doopa)$($_await)*{
+                        game_view.that_team.find_take(&f).unwrap();
+                    }
                 }
 
 
@@ -216,7 +225,11 @@ mod invade {
                 path: b,
             }
         }
-        pub(super) fn inner_execute_no_animate(self, game_view: &mut GameViewMut<'_>, a: &mut Doopa2) {
+        pub(super) fn inner_execute_no_animate(
+            self,
+            game_view: &mut GameViewMut<'_>,
+            a: &mut Doopa2,
+        ) {
             resolve_invade_impl!(
                 (self.selected_unit, self.path, game_view, a),
                 inner_execute_no_animate,
@@ -280,7 +293,7 @@ mod surround {
                     // game_view.that_team.add(them);
                     // game_view.this_team.add(this_unit);
                 }
-                Some(game_view.this_team.find_take(&unit_pos).unwrap())
+                Some(unit_pos)
             } else {
                 None
             }
@@ -302,7 +315,7 @@ mod surround {
             self,
             game_view: &mut GameViewMut<'_>,
             a: &mut Doopa2,
-        ) -> Option<UnitData> {
+        ) -> Option<GridCoord> {
             resolve_3_players_nearby_impl!((self.cell, a, game_view),)
         }
 
@@ -310,10 +323,8 @@ mod surround {
             self,
             game_view: &mut GameViewMut<'_>,
             a: &mut Doopa<'_, '_, '_>,
-        ) -> Option<UnitData> {
+        ) -> Option<GridCoord> {
             resolve_3_players_nearby_impl!((self.cell,a,game_view),.await)
         }
-
-        
     }
 }

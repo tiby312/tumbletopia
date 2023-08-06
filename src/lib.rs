@@ -43,19 +43,15 @@ enum UiButton {
 pub struct WarriorDraw<'a> {
     model: &'a MyModel,
     drop_shadow: &'a MyModel,
-    col: &'a [UnitData]
+    col: &'a [UnitData],
 }
 
 impl<'a> WarriorDraw<'a> {
-    fn new(
-        col: &'a [UnitData],
-        model: &'a MyModel,
-        drop_shadow: &'a MyModel
-    ) -> Self {
+    fn new(col: &'a [UnitData], model: &'a MyModel, drop_shadow: &'a MyModel) -> Self {
         Self {
             model,
             drop_shadow,
-            col
+            col,
         }
     }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
@@ -196,15 +192,14 @@ impl Game {
     }
 }
 
-
 pub struct GameView<'a> {
-    this_team: &'a  Tribe,
-    that_team: &'a  Tribe,
-    world: &'a  board::World,
+    this_team: &'a Tribe,
+    that_team: &'a Tribe,
+    world: &'a board::World,
     team: ActiveTeam,
 }
 impl<'a> GameView<'a> {
-    pub fn not(& self) -> GameView {
+    pub fn not(&self) -> GameView {
         GameView {
             this_team: self.that_team,
             that_team: self.this_team,
@@ -338,41 +333,56 @@ pub async fn worker_entry() {
                 team,
             } = command_recv.next().await.unwrap();
             let mut command = command.process(&grid_matrix);
-            let game_view=ggame.view(team);
+            let game_view = ggame.view(team);
 
-            let (cat_for_draw,dog_for_draw)={
-                let (this,that)=if let ace::ProcessedCommand::Animate(a) = &command {
-                    
+            let (cat_for_draw, dog_for_draw) = {
+                let (this, that) = if let ace::ProcessedCommand::Animate(a) = &command {
                     match a.data() {
                         AnimationOptions::Movement(m) => {
-                            
-                            let a:Vec<_>=game_view.this_team.warriors.elem.iter().cloned().filter(|a|a.position!=m.position).collect();
-                            let b:Vec<_>=game_view.that_team.warriors.elem.iter().cloned().collect();
-                            (a,b)
-
-                        },
-                        AnimationOptions::Attack([a, b]) =>{
-                            let a=game_view.this_team.warriors.elem.iter().cloned().filter(|k|k.position!=a.position).collect();
-                            let b=game_view.that_team.warriors.elem.iter().cloned().filter(|k|k.position!=b.position).collect();
-                            (a,b)
-                        },
+                            let a: Vec<_> = game_view
+                                .this_team
+                                .warriors
+                                .elem
+                                .iter()
+                                .cloned()
+                                .filter(|a| a.position != m.position)
+                                .collect();
+                            let b: Vec<_> =
+                                game_view.that_team.warriors.elem.iter().cloned().collect();
+                            (a, b)
+                        }
+                        AnimationOptions::Attack([a, b]) => {
+                            let a = game_view
+                                .this_team
+                                .warriors
+                                .elem
+                                .iter()
+                                .cloned()
+                                .filter(|k| k.position != a.position)
+                                .collect();
+                            let b = game_view
+                                .that_team
+                                .warriors
+                                .elem
+                                .iter()
+                                .cloned()
+                                .filter(|k| k.position != b.position)
+                                .collect();
+                            (a, b)
+                        }
                     }
-
-                }else{
-                    
-                    let a=game_view.this_team.warriors.elem.iter().cloned().collect();
-                    let b=game_view.that_team.warriors.elem.iter().cloned().collect();
-                    (a,b)
-
+                } else {
+                    let a = game_view.this_team.warriors.elem.iter().cloned().collect();
+                    let b = game_view.that_team.warriors.elem.iter().cloned().collect();
+                    (a, b)
                 };
 
-                if team==ActiveTeam::Cats{
-                    (this,that)
-                }else{
-                    (that,this)
+                if team == ActiveTeam::Cats {
+                    (this, that)
+                } else {
+                    (that, this)
                 }
             };
-
 
             'outer: loop {
                 let mut on_select = false;
@@ -588,16 +598,8 @@ pub async fn worker_entry() {
                 });
 
                 for i in 0..1 {
-                    let cat_draw = WarriorDraw::new(
-                        &cat_for_draw,
-                        &cat,
-                        &drop_shadow,
-                    );
-                    let dog_draw = WarriorDraw::new(
-                        &dog_for_draw,
-                        &dog,
-                        &drop_shadow,
-                    );
+                    let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
+                    let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
 
                     disable_depth(&ctx, || {
                         //draw dropshadow
@@ -618,31 +620,15 @@ pub async fn worker_entry() {
                 }
 
                 for i in 0..1 {
-                    let cat_draw = WarriorDraw::new(
-                        &cat_for_draw,
-                        &cat,
-                        &drop_shadow,
-                    );
-                    let dog_draw = WarriorDraw::new(
-                        &dog_for_draw,
-                        &dog,
-                        &drop_shadow,
-                    );
+                    let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
+                    let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
                     cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                 }
 
                 for i in 0..1 {
-                    let cat_draw = WarriorDraw::new(
-                        &cat_for_draw,
-                        &cat,
-                        &drop_shadow,
-                    );
-                    let dog_draw = WarriorDraw::new(
-                        &dog_for_draw,
-                        &dog,
-                        &drop_shadow,
-                    );
+                    let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
+                    let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
                     disable_depth(&ctx, || {
                         cat_draw.draw_health_text(
                             &grid_matrix,

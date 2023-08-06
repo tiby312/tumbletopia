@@ -108,6 +108,7 @@ impl Tribe {
         self.warriors.elem.push(a);
     }
 
+    #[must_use]
     pub fn find_take(&mut self, a: &GridCoord) -> Option<UnitData> {
         if let Some((i, _)) = self
             .warriors
