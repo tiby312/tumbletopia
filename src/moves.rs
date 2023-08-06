@@ -98,13 +98,15 @@ mod partial_move {
 
                 InnerPartialMove::new(selected_unit,path).$namey(&mut game_view,doopa)$($_await)*;
 
-                let k=HandleSurround::new(target_cell).$namey(&mut game_view, doopa)$($_await)*;
 
                 for n in target_cell.to_cube().neighbours() {
                     if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
                         game_view.that_team.find_take(&f).unwrap();
                     }
                 }
+
+                let k=HandleSurround::new(target_cell).$namey(&mut game_view, doopa)$($_await)*;
+
 
                 if let Some(_) = k {
                     ExtraMove::ExtraMove{pos:target_cell}
