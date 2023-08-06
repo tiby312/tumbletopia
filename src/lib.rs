@@ -1,4 +1,4 @@
-use ace::AnimationOptions;
+//use ace::AnimationOptions;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use gloo::console::console_dbg;
 
@@ -312,31 +312,31 @@ pub async fn worker_entry() {
             let (cat_for_draw, dog_for_draw) = {
                 let (this, that) = if let ace::ProcessedCommand::Animate(a) = &command {
                     match a.data() {
-                        AnimationOptions::Movement(m) => {
+                        animation::AnimationCommand::Movement { unit, .. } => {
                             let a: Vec<_> = game_view
                                 .this_team
                                 .units
                                 .iter()
                                 .cloned()
-                                .filter(|a| a.position != m.position)
+                                .filter(|a| a.position != unit.position)
                                 .collect();
                             let b: Vec<_> = game_view.that_team.units.iter().cloned().collect();
                             (a, b)
                         }
-                        AnimationOptions::Attack([a, b]) => {
+                        animation::AnimationCommand::Attack { attacker, defender } => {
                             let a = game_view
                                 .this_team
                                 .units
                                 .iter()
                                 .cloned()
-                                .filter(|k| k.position != a.position)
+                                .filter(|k| k.position != attacker.position)
                                 .collect();
                             let b = game_view
                                 .that_team
                                 .units
                                 .iter()
                                 .cloned()
-                                .filter(|k| k.position != b.position)
+                                .filter(|k| k.position != defender.position)
                                 .collect();
                             (a, b)
                         }
@@ -626,8 +626,12 @@ pub async fn worker_entry() {
                     let (pos, ty) = a.calc_pos();
 
                     let (a, b) = match ty {
-                        AnimationOptions::Movement(m) => ((this_draw, m), None),
-                        AnimationOptions::Attack([a, b]) => ((this_draw, a), Some((that_draw, b))),
+                        animation::AnimationCommand::Movement { unit, .. } => {
+                            ((this_draw, unit), None)
+                        }
+                        animation::AnimationCommand::Attack { attacker, defender } => {
+                            ((this_draw, attacker), Some((that_draw, defender)))
+                        }
                     };
 
                     disable_depth(&ctx, || {

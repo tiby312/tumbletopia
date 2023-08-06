@@ -44,7 +44,7 @@ pub fn attack(
     .map(move |val| start + dir * val)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AnimationCommand {
     Movement {
         unit: UnitData,

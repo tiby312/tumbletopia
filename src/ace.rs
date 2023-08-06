@@ -21,28 +21,28 @@ pub struct GameWrapResponse<'a, T> {
 
 pub struct AnimationWrapper<K> {
     pub unwrapper: K,
-    pub enu: AnimationOptions,
+    pub enu: animation::AnimationCommand,
 }
 
-pub enum AnimationOptions {
-    Movement(UnitData),
-    Attack([UnitData; 2]),
-}
-impl AnimationOptions {
-    // pub fn movement(a: UnitData) -> AnimationWrapper<Movement> {
-    //     AnimationWrapper {
-    //         unwrapper: Movement,
-    //         enu: AnimationOptions::Movement(a),
-    //     }
-    // }
+// pub enum AnimationOptions {
+//     Movement(UnitData),
+//     Attack([UnitData; 2]),
+// }
+// impl AnimationOptions {
+//     // pub fn movement(a: UnitData) -> AnimationWrapper<Movement> {
+//     //     AnimationWrapper {
+//     //         unwrapper: Movement,
+//     //         enu: AnimationOptions::Movement(a),
+//     //     }
+//     // }
 
-    // pub fn attack(a: [UnitData; 2]) -> AnimationWrapper<Attack> {
-    //     AnimationWrapper {
-    //         unwrapper: Attack,
-    //         enu: AnimationOptions::Attack(a),
-    //     }
-    // }
-}
+//     // pub fn attack(a: [UnitData; 2]) -> AnimationWrapper<Attack> {
+//     //     AnimationWrapper {
+//     //         unwrapper: Attack,
+//     //         enu: AnimationOptions::Attack(a),
+//     //     }
+//     // }
+// }
 
 #[derive(Debug)]
 pub enum MousePrompt {
@@ -54,12 +54,12 @@ pub enum MousePrompt {
 }
 
 pub enum ProcessedCommand {
-    Animate(Animation<AnimationOptions>),
+    Animate(Animation<animation::AnimationCommand>),
     GetMouseInput(MousePrompt),
     Nothing,
 }
 impl ProcessedCommand {
-    pub fn take_animation(&mut self) -> Animation<AnimationOptions> {
+    pub fn take_animation(&mut self) -> Animation<animation::AnimationCommand> {
         let mut a = ProcessedCommand::Nothing;
         std::mem::swap(self, &mut a);
 
@@ -92,17 +92,17 @@ impl Command {
         use animation::AnimationCommand;
         use Command::*;
         match self {
-            Animate(a) => match a {
+            Animate(a) => match a.clone() {
                 AnimationCommand::Movement { unit, path } => {
                     let it = animation::movement(unit.position, path, grid);
-                    let aa = AnimationOptions::Movement(unit);
-                    let aa = animation::Animation::new(it, aa);
+                    //let aa = AnimationOptions::Movement(unit);
+                    let aa = animation::Animation::new(it, a);
                     ProcessedCommand::Animate(aa)
                 }
                 AnimationCommand::Attack { attacker, defender } => {
                     let it = animation::attack(attacker.position, defender.position, grid);
-                    let aa = AnimationOptions::Attack([attacker, defender]);
-                    let aa = animation::Animation::new(it, aa);
+                    //let aa = AnimationOptions::Attack([attacker, defender]);
+                    let aa = animation::Animation::new(it, a);
                     ProcessedCommand::Animate(aa)
                 }
             },
@@ -121,7 +121,7 @@ pub enum Pototo<T> {
 #[derive(Debug)]
 pub enum Response {
     Mouse(MousePrompt, Pototo<GridCoord>), //TODO make grid coord
-    AnimationFinish(Animation<AnimationOptions>),
+    AnimationFinish(Animation<animation::AnimationCommand>),
 }
 
 use futures::{
@@ -139,7 +139,7 @@ impl<'a> Doop<'a> {
         &mut self,
         animation: animation::AnimationCommand,
         team_index: ActiveTeam,
-    ) -> Animation<AnimationOptions> {
+    ) -> Animation<animation::AnimationCommand> {
         let game = unsafe { &*self.game };
         self.sender
             .send(GameWrap {

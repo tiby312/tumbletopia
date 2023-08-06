@@ -318,7 +318,7 @@ trait UnwrapMe {
 
     fn direct_unwrap(self) -> Self::Item;
     fn into_command(self) -> animation::AnimationCommand;
-    fn unwrapme(a: AnimationOptions) -> Self::Item;
+    fn unwrapme(a: animation::AnimationCommand) -> Self::Item;
 }
 struct Movement {
     start: UnitData,
@@ -341,11 +341,11 @@ impl UnwrapMe for Movement {
             path: self.path,
         }
     }
-    fn unwrapme(a: AnimationOptions) -> Self::Item {
-        let AnimationOptions::Movement(a)=a else{
+    fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
+        let animation::AnimationCommand::Movement{unit,..}=a else{
             unreachable!()
         };
-        a
+        unit
     }
 }
 
@@ -369,10 +369,10 @@ impl UnwrapMe for Attack {
             defender: self.defender,
         }
     }
-    fn unwrapme(a: AnimationOptions) -> Self::Item {
-        let AnimationOptions::Attack(a)=a else{
+    fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
+        let animation::AnimationCommand::Attack{attacker,defender}=a else{
             unreachable!()
         };
-        a
+        [attacker, defender]
     }
 }
