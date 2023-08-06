@@ -1,32 +1,5 @@
 use super::*;
 
-// #[derive(Debug, Clone)]
-// struct Doop {
-//     current: Vector2<f32>,
-//     next: Vector2<f32>,
-//     dir: Vector2<f32>,
-//     distance_to_next: f32,
-// }
-
-// impl Doop {
-//     fn new(current: Vector2<f32>, next: Vector2<f32>) -> Self {
-//         let distance_to_next = (next - current).magnitude();
-//         let dir = (next - current).normalize();
-//         Doop {
-//             current,
-//             next,
-//             dir,
-//             distance_to_next,
-//         }
-//     }
-//     fn distance_to_next(&self) -> f32 {
-//         self.distance_to_next
-//     }
-//     fn lerp(&self, val: f32) -> Vector2<f32> {
-//         self.current + self.dir * val
-//     }
-// }
-
 pub struct Interpolate {
     curr: f32,
     target: f32,

@@ -123,32 +123,6 @@ impl<'a> WarriorDraw<'a> {
 
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
-// pub struct RestOfUnits<'a, T> {
-//     first: &'a mut [T],
-//     second: &'a mut [T],
-// }
-
-// fn get_unit<'a>(
-//     a: &'a mut UnitCollection<Warrior>,
-//     coord: &GridCoord,
-// ) -> (&'a mut Warrior, RestOfUnits<'a, Warrior>) {
-//     let (unit, _) = a
-//         .elem
-//         .iter()
-//         .enumerate()
-//         .find(|(_, b)| b.get_pos() == coord)
-//         .unwrap();
-
-//     let (first, mid, second) = split_at_mid_mut(&mut a.elem, unit);
-//     (mid, RestOfUnits { first, second })
-// }
-
-// fn split_at_mid_mut<T>(a: &mut [T], ind: usize) -> (&mut [T], &mut T, &mut [T]) {
-//     let (left, right) = a.split_at_mut(ind);
-//     let (mid, rest) = right.split_first_mut().unwrap();
-//     (left, mid, rest)
-// }
-
 //TODO store actual world pos? Less calculation each iteration.
 //Additionally removes need to special case animation.
 #[derive(Debug)]

@@ -19,70 +19,6 @@ pub struct GameWrapResponse<'a, T> {
     pub data: T,
 }
 
-pub trait UnwrapMe {
-    type Item;
-
-    fn direct_unwrap(self) -> Self::Item;
-    fn into_command(self) -> animation::AnimationCommand;
-    fn unwrapme(a: AnimationOptions) -> Self::Item;
-}
-pub struct Movement {
-    start: UnitData,
-    path: movement::Path,
-}
-impl Movement {
-    pub fn new(start: UnitData, path: movement::Path) -> Self {
-        Movement { start, path }
-    }
-}
-impl UnwrapMe for Movement {
-    type Item = UnitData;
-
-    fn direct_unwrap(self) -> Self::Item {
-        self.start
-    }
-    fn into_command(self) -> animation::AnimationCommand {
-        animation::AnimationCommand::Movement {
-            unit: self.start,
-            path: self.path,
-        }
-    }
-    fn unwrapme(a: AnimationOptions) -> Self::Item {
-        let AnimationOptions::Movement(a)=a else{
-            unreachable!()
-        };
-        a
-    }
-}
-
-pub struct Attack {
-    attacker: UnitData,
-    defender: UnitData,
-}
-impl Attack {
-    pub fn new(attacker: UnitData, defender: UnitData) -> Self {
-        Attack { attacker, defender }
-    }
-}
-impl UnwrapMe for Attack {
-    type Item = [UnitData; 2];
-    fn direct_unwrap(self) -> Self::Item {
-        [self.attacker, self.defender]
-    }
-    fn into_command(self) -> animation::AnimationCommand {
-        animation::AnimationCommand::Attack {
-            attacker: self.attacker,
-            defender: self.defender,
-        }
-    }
-    fn unwrapme(a: AnimationOptions) -> Self::Item {
-        let AnimationOptions::Attack(a)=a else{
-            unreachable!()
-        };
-        a
-    }
-}
-
 pub struct AnimationWrapper<K> {
     pub unwrapper: K,
     pub enu: AnimationOptions,
@@ -199,10 +135,6 @@ pub struct Doop<'a> {
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
 impl<'a> Doop<'a> {
-    pub fn await_data<'b>(&'b mut self) -> AwaitData<'a, 'b> {
-        AwaitData::new(self)
-    }
-
     pub async fn wait_animation<'c>(
         &mut self,
         animation: animation::AnimationCommand,
@@ -425,7 +357,7 @@ pub async fn reselect_loop(
         } else {
             console_dbg!(moves::ActualMove::Invade(iii.clone()));
         }
-        iii.execute_with_animation(&mut relative_game_view, &mut doop.await_data())
+        iii.execute_with_animation(&mut relative_game_view, doop)
             .await;
 
         //Finish this players turn.
@@ -436,7 +368,7 @@ pub async fn reselect_loop(
         let pm = moves::PartialMove::new(selected_unit.warrior, path);
         let jjj = pm
             .clone()
-            .execute_with_animation(&mut relative_game_view, &mut doop.await_data())
+            .execute_with_animation(&mut relative_game_view, doop)
             .await;
 
         match jjj {

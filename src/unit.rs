@@ -1,7 +1,4 @@
-use crate::{
-    ace::{ActiveTeam, UnwrapMe},
-    movement::FilterRes,
-};
+use crate::movement::FilterRes;
 
 use super::*;
 
@@ -49,25 +46,6 @@ impl Type {
             3 => Type::Mage,
             _ => unreachable!(),
         }
-    }
-}
-
-pub struct AwaitData<'a, 'b> {
-    doop: &'b mut ace::Doop<'a>,
-}
-impl<'a, 'b> AwaitData<'a, 'b> {
-    pub fn new(doop: &'b mut ace::Doop<'a>) -> Self {
-        AwaitData { doop }
-    }
-
-    pub async fn wait_animation<K: UnwrapMe>(
-        &mut self,
-        wrapper: K,
-        team_index: ActiveTeam,
-    ) -> K::Item {
-        let an = wrapper.into_command();
-        let aa = self.doop.wait_animation(an, team_index).await;
-        K::unwrapme(aa.into_data())
     }
 }
 

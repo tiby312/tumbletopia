@@ -7,15 +7,17 @@ pub enum ActualMove {
     ExtraMove(PartialMove, Invade),
 }
 
-struct Doopa<'a, 'b, 'c> {
-    data: &'c mut AwaitData<'a, 'b>,
+struct Doopa<'a, 'b> {
+    data: &'a mut ace::Doop<'b>,
 }
-impl<'a, 'b, 'c> Doopa<'a, 'b, 'c> {
-    pub fn new(data: &'c mut AwaitData<'a, 'b>) -> Self {
+impl<'a, 'b> Doopa<'a, 'b> {
+    pub fn new(data: &'a mut ace::Doop<'b>) -> Self {
         Doopa { data }
     }
     pub async fn wait_animation<W: UnwrapMe>(&mut self, m: W, team: ActiveTeam) -> W::Item {
-        self.data.wait_animation(m, team).await
+        let an = m.into_command();
+        let aa = self.data.wait_animation(an, team).await;
+        W::unwrapme(aa.into_data())
     }
 }
 struct Doopa2;
@@ -25,7 +27,7 @@ impl Doopa2 {
     }
 }
 
-use crate::{ace::UnwrapMe, movement::Path};
+use crate::movement::Path;
 
 pub enum ExtraMove {
     ExtraMove { pos: GridCoord },
@@ -48,7 +50,7 @@ mod inner_partial {
 
                 let team=game_view.team;
                 let _ = doopa
-                    .wait_animation(ace::Movement::new(this_unit.clone(),path), team)
+                    .wait_animation(Movement::new(this_unit.clone(),path), team)
                     $($_await)*;
 
                 this_unit.position= path.get_end_coord(this_unit.position);
@@ -77,7 +79,7 @@ mod inner_partial {
         pub(super) async fn inner_execute_animate(
             self,
             game_view: &mut GameViewMut<'_>,
-            a: &mut Doopa<'_, '_, '_>,
+            a: &mut Doopa<'_, '_>,
         ) {
             resolve_inner_movement_impl!((self.u,self.path,a,game_view),.await)
         }
@@ -146,7 +148,7 @@ mod partial_move {
         pub(super) async fn inner_execute_animate(
             self,
             game_view: &mut GameViewMut<'_>,
-            a: &mut Doopa<'_, '_, '_>,
+            a: &mut Doopa<'_, '_>,
         ) -> ExtraMove {
             resolve_movement_impl!((self.selected_unit, self.path, a, game_view),inner_execute_animate,.await)
         }
@@ -157,7 +159,7 @@ mod partial_move {
         pub async fn execute_with_animation(
             self,
             game_view: &mut GameViewMut<'_>,
-            data: &mut AwaitData<'_, '_>,
+            data: &mut ace::Doop<'_>,
         ) -> ExtraMove {
             self.inner_execute_animate(game_view, &mut Doopa::new(data))
                 .await
@@ -222,7 +224,7 @@ mod invade {
         pub(super) async fn inner_execute_animate(
             self,
             game_view: &mut GameViewMut<'_>,
-            a: &mut Doopa<'_, '_, '_>,
+            a: &mut Doopa<'_, '_>,
         ) {
             resolve_invade_impl!((self.selected_unit,self.path,game_view,a),inner_execute_animate,.await)
         }
@@ -233,7 +235,7 @@ mod invade {
         pub async fn execute_with_animation(
             self,
             game_view: &mut GameViewMut<'_>,
-            data: &mut AwaitData<'_, '_>,
+            data: &mut ace::Doop<'_>,
         ) {
             self.inner_execute_animate(game_view, &mut Doopa::new(data))
                 .await
@@ -269,7 +271,7 @@ mod surround {
                     let them = game_view.that_team.find_slow_mut(&n).unwrap();
 
                     let _ = doopa
-                        .wait_animation(ace::Attack::new(them.clone(), unit_pos.clone()), team.not())
+                        .wait_animation(Attack::new(them.clone(), unit_pos.clone()), team.not())
                         $($_await)*;
 
                     // game_view.that_team.add(them);
@@ -304,9 +306,73 @@ mod surround {
         pub(super) async fn inner_execute_animate(
             self,
             game_view: &mut GameViewMut<'_>,
-            a: &mut Doopa<'_, '_, '_>,
+            a: &mut Doopa<'_, '_>,
         ) -> Option<GridCoord> {
             resolve_3_players_nearby_impl!((self.cell,a,game_view),.await)
         }
+    }
+}
+
+trait UnwrapMe {
+    type Item;
+
+    fn direct_unwrap(self) -> Self::Item;
+    fn into_command(self) -> animation::AnimationCommand;
+    fn unwrapme(a: AnimationOptions) -> Self::Item;
+}
+struct Movement {
+    start: UnitData,
+    path: movement::Path,
+}
+impl Movement {
+    pub fn new(start: UnitData, path: movement::Path) -> Self {
+        Movement { start, path }
+    }
+}
+impl UnwrapMe for Movement {
+    type Item = UnitData;
+
+    fn direct_unwrap(self) -> Self::Item {
+        self.start
+    }
+    fn into_command(self) -> animation::AnimationCommand {
+        animation::AnimationCommand::Movement {
+            unit: self.start,
+            path: self.path,
+        }
+    }
+    fn unwrapme(a: AnimationOptions) -> Self::Item {
+        let AnimationOptions::Movement(a)=a else{
+            unreachable!()
+        };
+        a
+    }
+}
+
+struct Attack {
+    attacker: UnitData,
+    defender: UnitData,
+}
+impl Attack {
+    pub fn new(attacker: UnitData, defender: UnitData) -> Self {
+        Attack { attacker, defender }
+    }
+}
+impl UnwrapMe for Attack {
+    type Item = [UnitData; 2];
+    fn direct_unwrap(self) -> Self::Item {
+        [self.attacker, self.defender]
+    }
+    fn into_command(self) -> animation::AnimationCommand {
+        animation::AnimationCommand::Attack {
+            attacker: self.attacker,
+            defender: self.defender,
+        }
+    }
+    fn unwrapme(a: AnimationOptions) -> Self::Item {
+        let AnimationOptions::Attack(a)=a else{
+            unreachable!()
+        };
+        a
     }
 }
