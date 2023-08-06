@@ -22,15 +22,6 @@ pub enum CellSelection {
     BuildSelection(GridCoord),
 }
 
-pub struct TribeFilter<'a> {
-    tribe: &'a Tribe,
-}
-impl<'a> movement::Filter for TribeFilter<'a> {
-    fn filter(&self, b: &GridCoord) -> FilterRes {
-        self.tribe.warriors.filter().filter(b)
-    }
-}
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {
     Warrior,
@@ -61,25 +52,6 @@ impl Type {
     }
 }
 
-impl GameViewMut<'_> {
-    // pub fn resolve_movement_no_animate(
-    //     &mut self,
-    //     start: UnitData,
-    //     path: movement::Path,
-    // ) -> UnitData {
-    //     resolve_movement_impl!((start, path, Doopa2, self),)
-    // }
-    // pub fn resolve_surrounded_no_animate(&mut self, n: hex::Cube) -> Option<UnitData> {
-    //     resolve_3_players_nearby_impl!((n.to_axial(), Doopa2, self),)
-    // }
-    // pub async fn resolve_invade_no_animate(
-    //     &mut self,
-    //     selected_unit: GridCoord,
-    //     target_coord: GridCoord,
-    // ) {
-    //     resolve_invade_impl!((selected_unit, target_coord, self, Doopa2),);
-    // }
-}
 pub struct AwaitData<'a, 'b> {
     doop: &'b mut ace::Doop<'a>,
 }
@@ -101,38 +73,41 @@ impl<'a, 'b> AwaitData<'a, 'b> {
 
 #[derive(Debug)]
 pub struct Tribe {
-    pub warriors: UnitCollection<UnitData>,
+    pub units: Vec<UnitData>,
 }
 impl Tribe {
     pub fn add(&mut self, a: UnitData) {
-        self.warriors.elem.push(a);
+        self.units.push(a);
     }
 
     #[must_use]
     pub fn find_take(&mut self, a: &GridCoord) -> Option<UnitData> {
         if let Some((i, _)) = self
-            .warriors
-            .elem
+            .units
             .iter()
             .enumerate()
             .find(|(_, b)| &b.position == a)
         {
-            Some(self.warriors.elem.remove(i))
+            Some(self.units.remove(i))
         } else {
             None
         }
     }
 
     pub fn find_slow(&self, a: &GridCoord) -> Option<&UnitData> {
-        self.warriors.elem.iter().find(|b| &b.position == a)
+        self.units.iter().find(|b| &b.position == a)
     }
 
     pub fn find_slow_mut<'a, 'b>(&'a mut self, a: &'b GridCoord) -> Option<&'a mut UnitData> {
-        self.warriors.elem.iter_mut().find(|b| &b.position == a)
+        self.units.iter_mut().find(|b| &b.position == a)
     }
 
-    pub fn filter(&self) -> TribeFilter {
-        TribeFilter { tribe: self }
+    pub fn filter(&self) -> UnitCollectionFilter<UnitData> {
+        UnitCollectionFilter { a: &self.units }
+    }
+
+    pub fn filter_type(&self, ty: Type) -> UnitCollectionFilterType<UnitData> {
+        UnitCollectionFilterType { a: &self.units, ty }
     }
 }
 
@@ -183,13 +158,6 @@ impl<T: HasPos> UnitCollection<T> {
 
     pub fn find(&self, a: &GridCoord) -> Option<&T> {
         self.elem.iter().find(|b| b.get_pos() == a)
-    }
-    pub fn filter(&self) -> UnitCollectionFilter<T> {
-        UnitCollectionFilter { a: &self.elem }
-    }
-
-    pub fn filter_type(&self, ty: Type) -> UnitCollectionFilterType<T> {
-        UnitCollectionFilterType { a: &self.elem, ty }
     }
 }
 

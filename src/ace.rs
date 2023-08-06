@@ -617,9 +617,8 @@ fn generate_unit_possible_moves_inner<P: movement::PathHave>(
             &movement::WarriorMovement,
             &game.world.filter().and(
                 game.that_team
-                    .warriors
                     .filter_type(Type::Warrior)
-                    .and(game.that_team.warriors.filter())
+                    .and(game.that_team.filter())
                     .not(),
             ),
             &game.this_team.filter().not(),

@@ -254,23 +254,23 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-    let dogs = UnitCollection::new(vec![
+    let dogs = vec![
         UnitData::new(GridCoord([1, -2]), Type::Warrior),
         UnitData::new(GridCoord([1, -1]), Type::Warrior),
         UnitData::new(GridCoord([2, -1]), Type::Warrior),
         UnitData::new(GridCoord([2, -2]), Type::Para),
-    ]);
+    ];
 
-    let cats = UnitCollection::new(vec![
+    let cats = vec![
         UnitData::new(GridCoord([-2, 1]), Type::Warrior),
         UnitData::new(GridCoord([-1, 1]), Type::Warrior),
         UnitData::new(GridCoord([-1, 2]), Type::Warrior),
         UnitData::new(GridCoord([-2, 2]), Type::Para),
-    ]);
+    ];
 
     let mut ggame = Game {
-        dogs: Tribe { warriors: dogs },
-        cats: Tribe { warriors: cats },
+        dogs: Tribe { units: dogs },
+        cats: Tribe { units: cats },
         world: board::World::new(),
     };
 
@@ -307,7 +307,7 @@ pub async fn worker_entry() {
 
     let attack_model = quick_load(ATTACK_GLB, 1, None);
 
-    let friendly_model = quick_load(FRIENDLY_GLB, 1, None);
+    //let friendly_model = quick_load(FRIENDLY_GLB, 1, None);
 
     let text_texture = {
         let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
@@ -341,29 +341,25 @@ pub async fn worker_entry() {
                         AnimationOptions::Movement(m) => {
                             let a: Vec<_> = game_view
                                 .this_team
-                                .warriors
-                                .elem
+                                .units
                                 .iter()
                                 .cloned()
                                 .filter(|a| a.position != m.position)
                                 .collect();
-                            let b: Vec<_> =
-                                game_view.that_team.warriors.elem.iter().cloned().collect();
+                            let b: Vec<_> = game_view.that_team.units.iter().cloned().collect();
                             (a, b)
                         }
                         AnimationOptions::Attack([a, b]) => {
                             let a = game_view
                                 .this_team
-                                .warriors
-                                .elem
+                                .units
                                 .iter()
                                 .cloned()
                                 .filter(|k| k.position != a.position)
                                 .collect();
                             let b = game_view
                                 .that_team
-                                .warriors
-                                .elem
+                                .units
                                 .iter()
                                 .cloned()
                                 .filter(|k| k.position != b.position)
@@ -372,8 +368,8 @@ pub async fn worker_entry() {
                         }
                     }
                 } else {
-                    let a = game_view.this_team.warriors.elem.iter().cloned().collect();
-                    let b = game_view.that_team.warriors.elem.iter().cloned().collect();
+                    let a = game_view.this_team.units.iter().cloned().collect();
+                    let b = game_view.that_team.units.iter().cloned().collect();
                     (a, b)
                 };
 
@@ -597,7 +593,7 @@ pub async fn worker_entry() {
                     //}
                 });
 
-                for i in 0..1 {
+                {
                     let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
                     let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
 
@@ -619,14 +615,14 @@ pub async fn worker_entry() {
                     });
                 }
 
-                for i in 0..1 {
+                {
                     let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
                     let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
                     cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                 }
 
-                for i in 0..1 {
+                {
                     let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
                     let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
                     disable_depth(&ctx, || {
@@ -803,7 +799,7 @@ const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
 const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
 const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
-const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
+//const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
 
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");

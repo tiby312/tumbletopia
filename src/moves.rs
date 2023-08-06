@@ -100,32 +100,13 @@ mod partial_move {
 
                 let k=HandleSurround::new(target_cell).$namey(&mut game_view, doopa)$($_await)*;
 
-
-                //Need to add ourselves back so we can resolve and attacking groups
-                //only to remove ourselves again later.
-                let k = if let Some(k) = k {
-                    //let pp = k.position;
-                    //game_view.this_team.add(k);
-
-                    for n in target_cell.to_cube().neighbours() {
-                        if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
-                            game_view.that_team.find_take(&f).unwrap();
-                        }
+                for n in target_cell.to_cube().neighbours() {
+                    if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
+                        game_view.that_team.find_take(&f).unwrap();
                     }
+                }
 
-                    Some(k)
-                } else {
-                    for n in target_cell.to_cube().neighbours() {
-                        if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
-                            game_view.that_team.find_take(&f).unwrap();
-                        }
-                    }
-
-                    None
-                };
-
-                if let Some(k) = k {
-                    //game_view.this_team.add(k);
+                if let Some(_) = k {
                     ExtraMove::ExtraMove{pos:target_cell}
                 } else {
                     //Finish this players turn.
@@ -269,11 +250,10 @@ mod surround {
             let n = n.to_cube();
             if let Some(unit_pos) = game_view
                         .this_team
-                        .warriors
-                        .find_ext_mut(&n.to_axial())
+                        .find_slow_mut(&n.to_axial())
             {
 
-            let unit_pos = unit_pos.0.position;
+            let unit_pos = unit_pos.position;
 
             let nearby_enemies: Vec<_> = n
                 .neighbours()
