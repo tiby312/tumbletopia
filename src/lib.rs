@@ -182,6 +182,8 @@ impl<'a> GameView<'a> {
         }
     }
 }
+
+//TODO make this deref to GameVIew const version
 pub struct GameViewMut<'a> {
     this_team: &'a mut Tribe,
     that_team: &'a mut Tribe,

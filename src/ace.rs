@@ -238,7 +238,7 @@ pub async fn reselect_loop(
     doop: &mut WorkerManager<'_>,
     game: &mut Game,
     team_index: ActiveTeam,
-    extra_attack: &mut Option<(moves::PartialMove, GridCoord)>,
+    extra_attack: &mut Option<PossibleExtra>,
     selected_unit: SelectType,
 ) -> LoopRes<SelectType> {
     //At this point we know a friendly unit is currently selected.
@@ -252,21 +252,36 @@ pub async fn reselect_loop(
         .find_slow(&unwrapped_selected_unit)
         .unwrap();
 
-    let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
-    let cc = CellSelection::MoveSelection(cc);
+    pub enum SelectionType {
+        Normal(PossibleMovesNormal),
+        Extra(PossibleExtraMove),
+    }
+
+    let selection = if let Some(e) = extra_attack {
+        SelectionType::Extra(e.select(unit))
+    } else {
+        SelectionType::Normal(PossibleMovesNormal::new(unit))
+    };
 
     let grey = if selected_unit.team == team_index {
         //If we are in the middle of a extra attack move, make sure
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
-        if let Some((_, e)) = *extra_attack {
-            e != selected_unit.warrior
+        if let Some(e) = extra_attack {
+            e.prev_coord != selected_unit.warrior
         } else {
             false
         }
     } else {
         true
     };
+
+    let cc = match &selection {
+        SelectionType::Normal(e) => e.generate(&relative_game_view),
+        SelectionType::Extra(e) => e.generate(&relative_game_view),
+    };
+    //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
+    let cc = CellSelection::MoveSelection(cc);
 
     let (cell, pototo) = doop.get_mouse_selection(cc, selected_unit.team, grey).await;
 
@@ -318,8 +333,8 @@ pub async fn reselect_loop(
 
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
-    if let Some((_, e)) = *extra_attack {
-        if unwrapped_selected_unit != e {
+    if let Some(e) = extra_attack {
+        if unwrapped_selected_unit != e.prev_coord {
             return LoopRes::Deselect;
         }
     }
@@ -328,15 +343,20 @@ pub async fn reselect_loop(
     //We definately want to act on the action the user took on the selected unit.
 
     //Reconstruct path by creating all possible paths with path information this time.
-    let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
+    //let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
+
+    let path = match selection {
+        SelectionType::Normal(e) => e.get_path_from_move(target_cell, &relative_game_view),
+        SelectionType::Extra(e) => e.get_path_from_move(target_cell, &relative_game_view),
+    };
 
     if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
         let iii = moves::Invade::new(selected_unit.warrior, path);
-        if let Some((fff, _)) = extra_attack.take() {
-            console_dbg!(moves::ActualMove::ExtraMove(fff, iii.clone()));
-        } else {
-            console_dbg!(moves::ActualMove::Invade(iii.clone()));
-        }
+        // if let Some((fff, _)) = extra_attack.take() {
+        //     console_dbg!(moves::ActualMove::ExtraMove(fff, iii.clone()));
+        // } else {
+        //     console_dbg!(moves::ActualMove::Invade(iii.clone()));
+        // }
         iii.execute_with_animation(&mut relative_game_view, doop)
             .await;
 
@@ -353,7 +373,10 @@ pub async fn reselect_loop(
 
         match jjj {
             moves::ExtraMove::ExtraMove { pos } => {
-                *extra_attack = Some((pm, pos));
+                *extra_attack = Some(PossibleExtra {
+                    prev_move: pm,
+                    prev_coord: pos,
+                });
                 return LoopRes::Select(selected_unit.with(pos).with_team(team_index));
             }
             moves::ExtraMove::FinishMoving => {
@@ -481,6 +504,81 @@ impl<'a> GameViewMut<'a> {
         extra_attack: &Option<(moves::PartialMove, GridCoord)>,
     ) -> movement::PossibleMoves2<()> {
         generate_unit_possible_moves_inner(unit, self, extra_attack, NoPath)
+    }
+}
+
+#[derive(Clone)]
+pub struct PossibleExtra {
+    prev_move: moves::PartialMove,
+    prev_coord: GridCoord,
+}
+impl PossibleExtra {
+    pub fn select(&self, a: &UnitData) -> PossibleExtraMove {
+        PossibleExtraMove {
+            extra: self.clone(),
+            unit: a.clone(),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct PossibleExtraMove {
+    extra: PossibleExtra,
+    unit: UnitData,
+}
+
+impl PossibleExtraMove {
+    pub fn get_path_from_move(&self, target_cell: GridCoord, game: &GameViewMut) -> movement::Path {
+        //Reconstruct possible paths with path information this time.
+        let ss = generate_unit_possible_moves_inner(
+            &self.unit,
+            game,
+            &Some((self.extra.prev_move.clone(), self.extra.prev_coord)),
+            movement::WithPath,
+        );
+
+        let path = ss
+            .moves
+            .iter()
+            .find(|a| a.target == target_cell)
+            .map(|a| &a.path)
+            .unwrap();
+
+        *path
+    }
+    pub fn generate(&self, game: &GameViewMut) -> movement::PossibleMoves2<()> {
+        generate_unit_possible_moves_inner(
+            &self.unit,
+            game,
+            &Some((self.extra.prev_move.clone(), self.extra.prev_coord)),
+            NoPath,
+        )
+    }
+}
+
+pub struct PossibleMovesNormal {
+    unit: UnitData,
+}
+
+impl PossibleMovesNormal {
+    pub fn new(a: &UnitData) -> Self {
+        PossibleMovesNormal { unit: a.clone() }
+    }
+    pub fn get_path_from_move(&self, target_cell: GridCoord, game: &GameViewMut) -> movement::Path {
+        //Reconstruct possible paths with path information this time.
+        let ss = generate_unit_possible_moves_inner(&self.unit, game, &None, movement::WithPath);
+
+        let path = ss
+            .moves
+            .iter()
+            .find(|a| a.target == target_cell)
+            .map(|a| &a.path)
+            .unwrap();
+
+        *path
+    }
+    pub fn generate(&self, game: &GameViewMut) -> movement::PossibleMoves2<()> {
+        generate_unit_possible_moves_inner(&self.unit, game, &None, NoPath)
     }
 }
 
