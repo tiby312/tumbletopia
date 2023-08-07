@@ -1,12 +1,9 @@
 use super::*;
 
-
 pub enum SelectionType {
     Normal(selection::PossibleMovesNormal),
     Extra(selection::PossibleExtraMove),
 }
-
-
 
 #[derive(Clone)]
 pub struct PossibleExtra {
@@ -25,6 +22,9 @@ impl PossibleExtra {
             extra: self.clone(),
             unit: a.clone(),
         }
+    }
+    pub fn prev_move(&self) -> &moves::PartialMove {
+        &self.prev_move
     }
     pub fn coord(&self) -> GridCoord {
         self.prev_coord

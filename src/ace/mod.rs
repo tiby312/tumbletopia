@@ -254,8 +254,6 @@ pub async fn reselect_loop(
         .find_slow(&unwrapped_selected_unit)
         .unwrap();
 
-    
-
     let selection = if let Some(e) = extra_attack {
         selection::SelectionType::Extra(e.select(unit))
     } else {
@@ -345,19 +343,26 @@ pub async fn reselect_loop(
     //let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
 
     let path = match selection {
-        selection::SelectionType::Normal(e) => e.get_path_from_move(target_cell, &relative_game_view),
-        selection::SelectionType::Extra(e) => e.get_path_from_move(target_cell, &relative_game_view),
+        selection::SelectionType::Normal(e) => {
+            e.get_path_from_move(target_cell, &relative_game_view)
+        }
+        selection::SelectionType::Extra(e) => {
+            e.get_path_from_move(target_cell, &relative_game_view)
+        }
     };
 
     if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
         let iii = moves::Invade::new(selected_unit.warrior, path);
-        // if let Some((fff, _)) = extra_attack.take() {
-        //     console_dbg!(moves::ActualMove::ExtraMove(fff, iii.clone()));
-        // } else {
-        //     console_dbg!(moves::ActualMove::Invade(iii.clone()));
-        // }
-        iii.execute_with_animation(&mut relative_game_view, doop)
+
+        iii.clone()
+            .execute_with_animation(&mut relative_game_view, doop)
             .await;
+
+        if let Some(e) = extra_attack.take() {
+            console_dbg!(moves::ActualMove::ExtraMove(e.prev_move().clone(), iii));
+        } else {
+            console_dbg!(moves::ActualMove::Invade(iii));
+        }
 
         //Finish this players turn.
         return LoopRes::EndTurn;
