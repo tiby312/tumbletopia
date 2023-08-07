@@ -7,28 +7,29 @@ pub enum ActualMove {
     SkipTurn,
 }
 
-impl std::fmt::Debug for ActualMove {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
+
+pub fn to_foo(a:&[ActualMove],mut f:impl std::fmt::Write)->std::fmt::Result{
+    for a in a.iter(){
+        match a {
             ActualMove::Invade(i) => {
-                write!(f, "I {:?}:{:?}", i.unit.0, i.moveto.0)?;
+                write!(f, "I{:?}:{:?},", i.unit.0, i.moveto.0)?;
             }
             ActualMove::NormalMove(i) => {
-                write!(f, "N {:?}:{:?}", i.unit.0, i.moveto.0)?;
+                write!(f, "N{:?}:{:?},", i.unit.0, i.moveto.0)?;
             }
             ActualMove::ExtraMove(i, j) => {
                 write!(
                     f,
-                    "E {:?}:{:?}:{:?}:{:?}",
+                    "E{:?}:{:?}:{:?}:{:?},",
                     i.unit.0, i.moveto.0, j.unit.0, j.moveto.0
                 )?;
             }
             ActualMove::SkipTurn => {
-                write!(f, "S")?;
+                write!(f, "S,")?;
             }
         }
-        Ok(())
     }
+    Ok(())
 }
 
 struct Doopa<'a, 'b> {
