@@ -1,5 +1,13 @@
 use super::*;
 
+
+pub enum SelectionType {
+    Normal(selection::PossibleMovesNormal),
+    Extra(selection::PossibleExtraMove),
+}
+
+
+
 #[derive(Clone)]
 pub struct PossibleExtra {
     prev_move: moves::PartialMove,

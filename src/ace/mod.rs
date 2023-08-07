@@ -254,15 +254,12 @@ pub async fn reselect_loop(
         .find_slow(&unwrapped_selected_unit)
         .unwrap();
 
-    pub enum SelectionType {
-        Normal(selection::PossibleMovesNormal),
-        Extra(selection::PossibleExtraMove),
-    }
+    
 
     let selection = if let Some(e) = extra_attack {
-        SelectionType::Extra(e.select(unit))
+        selection::SelectionType::Extra(e.select(unit))
     } else {
-        SelectionType::Normal(selection::PossibleMovesNormal::new(unit))
+        selection::SelectionType::Normal(selection::PossibleMovesNormal::new(unit))
     };
 
     let grey = if selected_unit.team == team_index {
@@ -279,8 +276,8 @@ pub async fn reselect_loop(
     };
 
     let cc = match &selection {
-        SelectionType::Normal(e) => e.generate(&relative_game_view),
-        SelectionType::Extra(e) => e.generate(&relative_game_view),
+        selection::SelectionType::Normal(e) => e.generate(&relative_game_view),
+        selection::SelectionType::Extra(e) => e.generate(&relative_game_view),
     };
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
     let cc = CellSelection::MoveSelection(cc);
@@ -348,8 +345,8 @@ pub async fn reselect_loop(
     //let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
 
     let path = match selection {
-        SelectionType::Normal(e) => e.get_path_from_move(target_cell, &relative_game_view),
-        SelectionType::Extra(e) => e.get_path_from_move(target_cell, &relative_game_view),
+        selection::SelectionType::Normal(e) => e.get_path_from_move(target_cell, &relative_game_view),
+        selection::SelectionType::Extra(e) => e.get_path_from_move(target_cell, &relative_game_view),
     };
 
     if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
