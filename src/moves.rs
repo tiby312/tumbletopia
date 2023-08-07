@@ -5,7 +5,10 @@ pub enum ActualMove {
     Invade(Invade),
     NormalMove(PartialMove),
     ExtraMove(PartialMove, Invade),
+    SkipTurn
 }
+
+
 
 struct Doopa<'a, 'b> {
     data: &'a mut ace::WorkerManager<'b>,

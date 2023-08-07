@@ -242,6 +242,7 @@ pub async fn reselect_loop(
     team_index: ActiveTeam,
     extra_attack: &mut Option<selection::PossibleExtra>,
     selected_unit: SelectType,
+    game_history:&mut Vec<moves::ActualMove>
 ) -> LoopRes<SelectType> {
     //At this point we know a friendly unit is currently selected.
 
@@ -359,9 +360,9 @@ pub async fn reselect_loop(
             .await;
 
         if let Some(e) = extra_attack.take() {
-            console_dbg!(moves::ActualMove::ExtraMove(e.prev_move().clone(), iii));
+            game_history.push(moves::ActualMove::ExtraMove(e.prev_move().clone(), iii));
         } else {
-            console_dbg!(moves::ActualMove::Invade(iii));
+            game_history.push(moves::ActualMove::Invade(iii));
         }
 
         //Finish this players turn.
@@ -381,7 +382,8 @@ pub async fn reselect_loop(
                 return LoopRes::Select(selected_unit.with(pos).with_team(team_index));
             }
             moves::ExtraMove::FinishMoving => {
-                console_dbg!(moves::ActualMove::NormalMove(pm));
+                game_history.push(moves::ActualMove::NormalMove(pm));
+                //console_dbg!();
                 //Finish this players turn.
                 return LoopRes::EndTurn;
             }
@@ -394,6 +396,9 @@ pub async fn main_logic<'a>(
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
     game: &'a mut Game,
 ) {
+
+    let mut game_history=vec!();
+
     let mut doop = WorkerManager {
         game: game as *mut _,
         sender: command_sender,
@@ -413,6 +418,9 @@ pub async fn main_logic<'a>(
                     Pototo::Normal(a) => a,
                     Pototo::EndTurn => {
                         log!("End the turn!");
+                        game_history.push(moves::ActualMove::SkipTurn);
+
+                        console_dbg!(game_history);
                         break 'select_loop;
                     }
                 };
@@ -441,6 +449,7 @@ pub async fn main_logic<'a>(
                     team_index,
                     &mut extra_attack,
                     selected_unit,
+                    &mut game_history
                 )
                 .await
                 {
