@@ -1,11 +1,34 @@
 use super::*;
 
-#[derive(Debug)]
 pub enum ActualMove {
-    Invade(Invade),
+    Invade(InvadeSigl),
     NormalMove(PartialMoveSigl),
-    ExtraMove(PartialMoveSigl, Invade),
+    ExtraMove(PartialMoveSigl, InvadeSigl),
     SkipTurn,
+}
+
+impl std::fmt::Debug for ActualMove {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ActualMove::Invade(i) => {
+                write!(f, "I {:?}:{:?}", i.unit.0, i.moveto.0)?;
+            }
+            ActualMove::NormalMove(i) => {
+                write!(f, "N {:?}:{:?}", i.unit.0, i.moveto.0)?;
+            }
+            ActualMove::ExtraMove(i, j) => {
+                write!(
+                    f,
+                    "E {:?}:{:?}:{:?}:{:?}",
+                    i.unit.0, i.moveto.0, j.unit.0, j.moveto.0
+                )?;
+            }
+            ActualMove::SkipTurn => {
+                write!(f, "S")?;
+            }
+        }
+        Ok(())
+    }
 }
 
 struct Doopa<'a, 'b> {
@@ -85,6 +108,12 @@ mod inner_partial {
             resolve_inner_movement_impl!((self.u,self.path,a,game_view),.await)
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct InvadeSigl {
+    pub unit: GridCoord,
+    pub moveto: GridCoord,
 }
 
 #[derive(Debug, Clone)]
@@ -199,6 +228,11 @@ mod invade {
                     }
                 }
 
+                InvadeSigl{
+                    unit:selected_unit,
+                    moveto:target_coord
+                }
+
 
 
             }
@@ -222,7 +256,7 @@ mod invade {
             self,
             game_view: &mut GameViewMut<'_>,
             a: &mut Doopa2,
-        ) {
+        ) -> InvadeSigl {
             resolve_invade_impl!(
                 (self.selected_unit, self.path, game_view, a),
                 inner_execute_no_animate,
@@ -233,18 +267,18 @@ mod invade {
             self,
             game_view: &mut GameViewMut<'_>,
             a: &mut Doopa<'_, '_>,
-        ) {
+        ) -> InvadeSigl {
             resolve_invade_impl!((self.selected_unit,self.path,game_view,a),inner_execute_animate,.await)
         }
 
-        pub fn execute(self, game_view: &mut GameViewMut<'_>) {
+        pub fn execute(self, game_view: &mut GameViewMut<'_>) -> InvadeSigl {
             self.inner_execute_no_animate(game_view, &mut Doopa2)
         }
         pub async fn execute_with_animation(
             self,
             game_view: &mut GameViewMut<'_>,
             data: &mut ace::WorkerManager<'_>,
-        ) {
+        ) -> InvadeSigl {
             self.inner_execute_animate(game_view, &mut Doopa::new(data))
                 .await
         }

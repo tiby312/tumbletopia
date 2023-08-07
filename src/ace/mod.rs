@@ -355,7 +355,7 @@ pub async fn reselect_loop(
     if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
         let iii = moves::Invade::new(selected_unit.warrior, path);
 
-        iii.clone()
+        let iii = iii
             .execute_with_animation(&mut relative_game_view, doop)
             .await;
 
