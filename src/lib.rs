@@ -1,4 +1,4 @@
-use ace::AnimationOptions;
+//use ace::AnimationOptions;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use gloo::console::console_dbg;
 
@@ -12,6 +12,7 @@ use shogo::utils;
 use wasm_bindgen::prelude::*;
 pub mod animation;
 pub mod dom;
+pub mod moves;
 //pub mod gameplay;
 pub mod board;
 pub mod grids;
@@ -42,27 +43,20 @@ enum UiButton {
 pub struct WarriorDraw<'a> {
     model: &'a MyModel,
     drop_shadow: &'a MyModel,
-    col: &'a UnitCollection<UnitData>,
-    typ: Type,
+    col: &'a [UnitData],
 }
 
 impl<'a> WarriorDraw<'a> {
-    fn new(
-        col: &'a UnitCollection<UnitData>,
-        model: &'a MyModel,
-        drop_shadow: &'a MyModel,
-        typ: Type,
-    ) -> Self {
+    fn new(col: &'a [UnitData], model: &'a MyModel, drop_shadow: &'a MyModel) -> Self {
         Self {
             model,
             drop_shadow,
             col,
-            typ,
         }
     }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
         //let grey = self.typ == Type::Para;
-        for cc in self.col.elem.iter() {
+        for cc in self.col.iter() {
             let pos = gg.hex_axial_to_world(&cc.position);
 
             // let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
@@ -85,7 +79,7 @@ impl<'a> WarriorDraw<'a> {
         draw_sys: &mut ShaderSystem,
         matrix: &Matrix4<f32>,
     ) {
-        for a in self.col.elem.iter().map(|a| &a.position) {
+        for a in self.col.iter().map(|a| &a.position) {
             let pos: [f32; 2] = gg.hex_axial_to_world(a).into();
             let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -105,7 +99,7 @@ impl<'a> WarriorDraw<'a> {
         draw_sys: &mut ShaderSystem,
     ) {
         //draw text
-        for ccat in self.col.elem.iter() {
+        for ccat in self.col.iter() {
             let pos: [f32; 2] = gg.hex_axial_to_world(&ccat.position).into();
 
             let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
@@ -118,7 +112,7 @@ impl<'a> WarriorDraw<'a> {
             let s = matrix::scale(5.0, 5.0, 5.0);
             let m = new_proj.chain(s).generate();
 
-            let nn = health_numbers.get_number(self.typ.type_index() as i8);
+            let nn = health_numbers.get_number(ccat.typ as i8);
             let mut v = draw_sys.view(m.as_ref());
             nn.draw_ext(&mut v, false, false, true, false);
 
@@ -129,33 +123,6 @@ impl<'a> WarriorDraw<'a> {
 
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
-// pub struct RestOfUnits<'a, T> {
-//     first: &'a mut [T],
-//     second: &'a mut [T],
-// }
-
-// fn get_unit<'a>(
-//     a: &'a mut UnitCollection<Warrior>,
-//     coord: &GridCoord,
-// ) -> (&'a mut Warrior, RestOfUnits<'a, Warrior>) {
-//     let (unit, _) = a
-//         .elem
-//         .iter()
-//         .enumerate()
-//         .find(|(_, b)| b.get_pos() == coord)
-//         .unwrap();
-
-//     let (first, mid, second) = split_at_mid_mut(&mut a.elem, unit);
-//     (mid, RestOfUnits { first, second })
-// }
-
-// fn split_at_mid_mut<T>(a: &mut [T], ind: usize) -> (&mut [T], &mut T, &mut [T]) {
-//     let (left, right) = a.split_at_mut(ind);
-//     let (mid, rest) = right.split_first_mut().unwrap();
-//     (left, mid, rest)
-// }
-
-//TODO store actual world pos? Less calculation each iteration.
 //Additionally removes need to special case animation.
 #[derive(Debug)]
 pub struct Game {
@@ -164,15 +131,31 @@ pub struct Game {
     world: board::World,
 }
 impl Game {
-    fn view(&mut self, team_index: ActiveTeam) -> GameView {
+    fn view(&self, team_index: ActiveTeam) -> GameView {
         match team_index {
             ActiveTeam::Cats => GameView {
+                this_team: &self.cats,
+                that_team: &self.dogs,
+                world: &self.world,
+                team: ActiveTeam::Cats,
+            },
+            ActiveTeam::Dogs => GameView {
+                this_team: &self.dogs,
+                that_team: &self.cats,
+                world: &self.world,
+                team: ActiveTeam::Dogs,
+            },
+        }
+    }
+    fn view_mut(&mut self, team_index: ActiveTeam) -> GameViewMut {
+        match team_index {
+            ActiveTeam::Cats => GameViewMut {
                 this_team: &mut self.cats,
                 that_team: &mut self.dogs,
                 world: &mut self.world,
                 team: ActiveTeam::Cats,
             },
-            ActiveTeam::Dogs => GameView {
+            ActiveTeam::Dogs => GameViewMut {
                 this_team: &mut self.dogs,
                 that_team: &mut self.cats,
                 world: &mut self.world,
@@ -183,14 +166,32 @@ impl Game {
 }
 
 pub struct GameView<'a> {
+    this_team: &'a Tribe,
+    that_team: &'a Tribe,
+    world: &'a board::World,
+    team: ActiveTeam,
+}
+impl<'a> GameView<'a> {
+    pub fn not(&self) -> GameView {
+        GameView {
+            this_team: self.that_team,
+            that_team: self.this_team,
+            world: self.world,
+            team: self.team.not(),
+        }
+    }
+}
+
+//TODO make this deref to GameVIew const version
+pub struct GameViewMut<'a> {
     this_team: &'a mut Tribe,
     that_team: &'a mut Tribe,
     world: &'a mut board::World,
     team: ActiveTeam,
 }
-impl<'a> GameView<'a> {
-    pub fn not(&mut self) -> GameView {
-        GameView {
+impl<'a> GameViewMut<'a> {
+    pub fn not(&mut self) -> GameViewMut {
+        GameViewMut {
             this_team: self.that_team,
             that_team: self.this_team,
             world: self.world,
@@ -229,43 +230,22 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let dogs = vec![
-        UnitCollection::new(vec![
-            UnitData::new(GridCoord([1, -2])),
-            UnitData::new(GridCoord([1, -1])),
-            UnitData::new(GridCoord([2, -1])),
-        ]),
-        UnitCollection::new(vec![UnitData::new(GridCoord([2, -2]))]),
-        UnitCollection::new(vec![
-        // UnitData::new(GridCoord([3, -3]))
-        ]),
-        UnitCollection::new(vec![
-            // UnitData::new(GridCoord([3, 0])),
-            // UnitData::new(GridCoord([0, -3])),
-        ]),
+        UnitData::new(GridCoord([1, -2]), Type::Warrior),
+        UnitData::new(GridCoord([1, -1]), Type::Warrior),
+        UnitData::new(GridCoord([2, -1]), Type::Warrior),
+        UnitData::new(GridCoord([2, -2]), Type::Para),
     ];
 
     let cats = vec![
-        UnitCollection::new(vec![
-            UnitData::new(GridCoord([-2, 1])),
-            UnitData::new(GridCoord([-1, 1])),
-            UnitData::new(GridCoord([-1, 2])),
-        ]),
-        UnitCollection::new(vec![
-            UnitData::new(GridCoord([-2, 2])),
-            //  UnitData::new(GridCoord([-3, 3]))
-        ]),
-        UnitCollection::new(vec![
-        // UnitData::new(GridCoord([-3, 3]))
-        ]),
-        UnitCollection::new(vec![
-            // UnitData::new(GridCoord([0, 3])),
-            // UnitData::new(GridCoord([-3, 0])),
-        ]),
+        UnitData::new(GridCoord([-2, 1]), Type::Warrior),
+        UnitData::new(GridCoord([-1, 1]), Type::Warrior),
+        UnitData::new(GridCoord([-1, 2]), Type::Warrior),
+        UnitData::new(GridCoord([-2, 2]), Type::Para),
     ];
 
     let mut ggame = Game {
-        dogs: Tribe { warriors: dogs },
-        cats: Tribe { warriors: cats },
+        dogs: Tribe { units: dogs },
+        cats: Tribe { units: cats },
         world: board::World::new(),
     };
 
@@ -302,7 +282,7 @@ pub async fn worker_entry() {
 
     let attack_model = quick_load(ATTACK_GLB, 1, None);
 
-    let friendly_model = quick_load(FRIENDLY_GLB, 1, None);
+    //let friendly_model = quick_load(FRIENDLY_GLB, 1, None);
 
     let text_texture = {
         let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
@@ -328,6 +308,52 @@ pub async fn worker_entry() {
                 team,
             } = command_recv.next().await.unwrap();
             let mut command = command.process(&grid_matrix);
+            let game_view = ggame.view(team);
+
+            let (cat_for_draw, dog_for_draw) = {
+                let (this, that) = if let ace::ProcessedCommand::Animate(a) = &command {
+                    match a.data() {
+                        animation::AnimationCommand::Movement { unit, .. } => {
+                            let a: Vec<_> = game_view
+                                .this_team
+                                .units
+                                .iter()
+                                .cloned()
+                                .filter(|a| a.position != unit.position)
+                                .collect();
+                            let b: Vec<_> = game_view.that_team.units.iter().cloned().collect();
+                            (a, b)
+                        }
+                        animation::AnimationCommand::Attack { attacker, defender } => {
+                            let a = game_view
+                                .this_team
+                                .units
+                                .iter()
+                                .cloned()
+                                .filter(|k| k.position != attacker.position)
+                                .collect();
+                            let b = game_view
+                                .that_team
+                                .units
+                                .iter()
+                                .cloned()
+                                .filter(|k| k.position != defender.position)
+                                .collect();
+                            (a, b)
+                        }
+                    }
+                } else {
+                    let a = game_view.this_team.units.iter().cloned().collect();
+                    let b = game_view.that_team.units.iter().cloned().collect();
+                    (a, b)
+                };
+
+                if team == ActiveTeam::Cats {
+                    (this, that)
+                } else {
+                    (that, this)
+                }
+            };
 
             'outer: loop {
                 let mut on_select = false;
@@ -542,19 +568,9 @@ pub async fn worker_entry() {
                     //}
                 });
 
-                for i in 0..4 {
-                    let cat_draw = WarriorDraw::new(
-                        &ggame.cats.warriors[i],
-                        &cat,
-                        &drop_shadow,
-                        Type::type_index_inverse(i),
-                    );
-                    let dog_draw = WarriorDraw::new(
-                        &ggame.dogs.warriors[i],
-                        &dog,
-                        &drop_shadow,
-                        Type::type_index_inverse(i),
-                    );
+                {
+                    let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
+                    let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
 
                     disable_depth(&ctx, || {
                         //draw dropshadow
@@ -574,36 +590,16 @@ pub async fn worker_entry() {
                     });
                 }
 
-                for i in 0..4 {
-                    let cat_draw = WarriorDraw::new(
-                        &ggame.cats.warriors[i],
-                        &cat,
-                        &drop_shadow,
-                        Type::type_index_inverse(i),
-                    );
-                    let dog_draw = WarriorDraw::new(
-                        &ggame.dogs.warriors[i],
-                        &dog,
-                        &drop_shadow,
-                        Type::type_index_inverse(i),
-                    );
+                {
+                    let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
+                    let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
                     cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                 }
 
-                for i in 0..4 {
-                    let cat_draw = WarriorDraw::new(
-                        &ggame.cats.warriors[i],
-                        &cat,
-                        &drop_shadow,
-                        Type::type_index_inverse(i),
-                    );
-                    let dog_draw = WarriorDraw::new(
-                        &ggame.dogs.warriors[i],
-                        &dog,
-                        &drop_shadow,
-                        Type::type_index_inverse(i),
-                    );
+                {
+                    let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
+                    let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
                     disable_depth(&ctx, || {
                         cat_draw.draw_health_text(
                             &grid_matrix,
@@ -631,11 +627,11 @@ pub async fn worker_entry() {
                     let (pos, ty) = a.calc_pos();
 
                     let (a, b) = match ty {
-                        AnimationOptions::Heal([a, b]) => ((this_draw, a), Some((this_draw, b))),
-                        AnimationOptions::Movement(m) => ((this_draw, m), None),
-                        AnimationOptions::Attack([a, b]) => ((this_draw, a), Some((that_draw, b))),
-                        AnimationOptions::CounterAttack([a, b]) => {
-                            ((that_draw, b), Some((this_draw, a)))
+                        animation::AnimationCommand::Movement { unit, .. } => {
+                            ((this_draw, unit), None)
+                        }
+                        animation::AnimationCommand::Attack { attacker, defender } => {
+                            ((this_draw, attacker), Some((that_draw, defender)))
                         }
                     };
 
@@ -782,7 +778,7 @@ const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
 const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
 const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
-const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
+//const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
 
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
 // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");

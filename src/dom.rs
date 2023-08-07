@@ -211,7 +211,7 @@ pub async fn main_entry() {
         }
         log!(format!("main thread received={:?}", hay));
     }
-    log!("main thread is closing");
+    //log!("main thread is closing");
 }
 fn resize() -> MEvent {
     let canvas = utils::get_by_id_canvas("mycanvas");

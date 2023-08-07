@@ -1,23 +1,23 @@
 use super::*;
 
 pub trait MoveStrategy {
-    type It: IntoIterator<Item = Moves>;
+    type It: IntoIterator<Item = HexDir>;
     fn adjacent() -> Self::It;
 }
 pub struct WarriorMovement;
 impl MoveStrategy for WarriorMovement {
-    type It = std::array::IntoIter<Moves, 6>;
+    type It = std::array::IntoIter<HexDir, 6>;
     fn adjacent() -> Self::It {
-        [0, 1, 2, 3, 4, 5].map(|dir| Moves { dir }).into_iter()
+        [0, 1, 2, 3, 4, 5].map(|dir| HexDir { dir }).into_iter()
     }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct Moves {
+pub struct HexDir {
     dir: u8,
 }
 
-impl Moves {
+impl HexDir {
     pub fn to_relative(&self) -> GridCoord {
         hex::Cube(hex::OFFSETS[self.dir as usize]).to_axial()
     }
@@ -25,28 +25,38 @@ impl Moves {
 
 //TODO a direction is only 6 values. Left over values when
 //put into 3 bits.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 pub struct Path {
     //TODO optimize this to be just one 64bit integer?
     //20 moves is just max possible moves
-    moves: [Moves; 20],
+    moves: [HexDir; 20],
     num_moves: u8,
+}
+
+impl std::fmt::Debug for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Path:")?;
+        for a in self.moves.iter().take(self.num_moves as usize) {
+            write!(f, "{:?},", a)?;
+        }
+        writeln!(f)
+    }
 }
 impl Path {
     pub fn new() -> Self {
         Path {
-            moves: [Moves { dir: 0 }; 20],
+            moves: [HexDir { dir: 0 }; 20],
             num_moves: 0,
         }
     }
-    pub fn into_moves(self) -> impl Iterator<Item = Moves> {
+    pub fn into_moves(self) -> impl Iterator<Item = HexDir> {
         self.moves.into_iter().take(self.num_moves as usize)
     }
 
-    pub fn get_moves(&self) -> &[Moves] {
+    pub fn get_moves(&self) -> &[HexDir] {
         &self.moves[0..self.num_moves as usize]
     }
-    pub fn add(mut self, a: Moves) -> Option<Self> {
+    pub fn add(mut self, a: HexDir) -> Option<Self> {
         if self.num_moves >= 20 {
             return None;
         }
@@ -70,15 +80,16 @@ impl Path {
         }
         MoveUnit(total)
     }
-    fn move_cost(&self, _: Moves) -> MoveUnit {
+    fn move_cost(&self, _: HexDir) -> MoveUnit {
         MoveUnit(1)
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[must_use]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
-    pub fn dir_to(&self, other: &GridCoord) -> Moves {
+    pub fn dir_to(&self, other: &GridCoord) -> HexDir {
         let offset = other.sub(self);
         assert!(offset.0[0].abs() <= 1);
         assert!(offset.0[1].abs() <= 1);
@@ -88,14 +99,14 @@ impl GridCoord {
             .iter()
             .enumerate()
             .find(|(_, x)| **x == offset.0)
-            .map(|(i, _)| Moves { dir: i as u8 })
+            .map(|(i, _)| HexDir { dir: i as u8 })
             .unwrap()
     }
     pub fn to_cube(self) -> hex::Cube {
         let a = self.0;
         hex::Cube([a[0], a[1], -a[0] - a[1]])
     }
-    fn advance(self, m: Moves) -> GridCoord {
+    fn advance(self, m: HexDir) -> GridCoord {
         self.add(m.to_relative())
     }
     fn sub(mut self, o: &GridCoord) -> Self {
@@ -487,7 +498,7 @@ impl PossibleMoves {
         }
     }
 
-    fn consider(&mut self, path: &Path, m: Moves, cost: MoveUnit) -> bool {
+    fn consider(&mut self, path: &Path, m: HexDir, cost: MoveUnit) -> bool {
         //if this move unit is greater than what we already have, replace it.
         //we found a quicker way to get to the same square.
 

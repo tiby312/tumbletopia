@@ -1,11 +1,13 @@
 use super::*;
 
+mod selection;
+
 use crate::{
     animation::Animation,
     grids::GridMatrix,
     movement::{self, Filter, GridCoord, MoveUnit, NoPath},
     terrain::{self},
-    CellSelection, Game, UnitData, WarriorType,
+    CellSelection, Game, UnitData,
 };
 
 pub struct GameWrap<'a, T> {
@@ -19,78 +21,9 @@ pub struct GameWrapResponse<'a, T> {
     pub data: T,
 }
 
-pub trait UnwrapMe {
-    type Item;
-    fn unwrapme(self, a: AnimationOptions) -> Self::Item;
-}
-pub struct Movement;
-impl UnwrapMe for Movement {
-    type Item = WarriorType<UnitData>;
-
-    fn unwrapme(self, a: AnimationOptions) -> Self::Item {
-        let AnimationOptions::Movement(a)=a else{
-            unreachable!()
-        };
-        a
-    }
-}
-
-pub struct Attack;
-impl UnwrapMe for Attack {
-    type Item = [WarriorType<UnitData>; 2];
-
-    fn unwrapme(self, a: AnimationOptions) -> Self::Item {
-        let AnimationOptions::Attack(a)=a else{
-            unreachable!()
-        };
-        a
-    }
-}
-
-pub struct CounterAttack;
-impl UnwrapMe for CounterAttack {
-    type Item = [WarriorType<UnitData>; 2];
-
-    fn unwrapme(self, a: AnimationOptions) -> Self::Item {
-        let AnimationOptions::CounterAttack(a)=a else{
-            unreachable!()
-        };
-        a
-    }
-}
-
 pub struct AnimationWrapper<K> {
     pub unwrapper: K,
-    pub enu: AnimationOptions,
-}
-
-pub enum AnimationOptions {
-    Movement(WarriorType<UnitData>),
-    Attack([WarriorType<UnitData>; 2]),
-    Heal([WarriorType<UnitData>; 2]),
-    CounterAttack([WarriorType<UnitData>; 2]),
-}
-impl AnimationOptions {
-    pub fn movement(a: WarriorType<UnitData>) -> AnimationWrapper<Movement> {
-        AnimationWrapper {
-            unwrapper: Movement,
-            enu: AnimationOptions::Movement(a),
-        }
-    }
-
-    pub fn attack(a: [WarriorType<UnitData>; 2]) -> AnimationWrapper<Attack> {
-        AnimationWrapper {
-            unwrapper: Attack,
-            enu: AnimationOptions::Attack(a),
-        }
-    }
-
-    pub fn counter_attack(a: [WarriorType<UnitData>; 2]) -> AnimationWrapper<CounterAttack> {
-        AnimationWrapper {
-            unwrapper: CounterAttack,
-            enu: AnimationOptions::CounterAttack(a),
-        }
-    }
+    pub enu: animation::AnimationCommand,
 }
 
 #[derive(Debug)]
@@ -103,12 +36,12 @@ pub enum MousePrompt {
 }
 
 pub enum ProcessedCommand {
-    Animate(Animation<AnimationOptions>),
+    Animate(Animation<animation::AnimationCommand>),
     GetMouseInput(MousePrompt),
     Nothing,
 }
 impl ProcessedCommand {
-    pub fn take_animation(&mut self) -> Animation<AnimationOptions> {
+    pub fn take_animation(&mut self) -> Animation<animation::AnimationCommand> {
         let mut a = ProcessedCommand::Nothing;
         std::mem::swap(self, &mut a);
 
@@ -141,17 +74,17 @@ impl Command {
         use animation::AnimationCommand;
         use Command::*;
         match self {
-            Animate(a) => match a {
+            Animate(a) => match a.clone() {
                 AnimationCommand::Movement { unit, path } => {
                     let it = animation::movement(unit.position, path, grid);
-                    let aa = AnimationOptions::Movement(unit);
-                    let aa = animation::Animation::new(it, aa);
+                    //let aa = AnimationOptions::Movement(unit);
+                    let aa = animation::Animation::new(it, a);
                     ProcessedCommand::Animate(aa)
                 }
                 AnimationCommand::Attack { attacker, defender } => {
                     let it = animation::attack(attacker.position, defender.position, grid);
-                    let aa = AnimationOptions::Attack([attacker, defender]);
-                    let aa = animation::Animation::new(it, aa);
+                    //let aa = AnimationOptions::Attack([attacker, defender]);
+                    let aa = animation::Animation::new(it, a);
                     ProcessedCommand::Animate(aa)
                 }
             },
@@ -170,7 +103,7 @@ pub enum Pototo<T> {
 #[derive(Debug)]
 pub enum Response {
     Mouse(MousePrompt, Pototo<GridCoord>), //TODO make grid coord
-    AnimationFinish(Animation<AnimationOptions>),
+    AnimationFinish(Animation<animation::AnimationCommand>),
 }
 
 use futures::{
@@ -178,21 +111,17 @@ use futures::{
     SinkExt, StreamExt,
 };
 
-pub struct Doop<'a> {
+pub struct WorkerManager<'a> {
     game: *mut Game,
     sender: Sender<GameWrap<'a, Command>>,
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
-impl<'a> Doop<'a> {
-    pub fn await_data<'b>(&'b mut self, team_index: ActiveTeam) -> AwaitData<'a, 'b> {
-        AwaitData::new(self, team_index)
-    }
-
+impl<'a> WorkerManager<'a> {
     pub async fn wait_animation<'c>(
         &mut self,
         animation: animation::AnimationCommand,
         team_index: ActiveTeam,
-    ) -> Animation<AnimationOptions> {
+    ) -> Animation<animation::AnimationCommand> {
         let game = unsafe { &*self.game };
         self.sender
             .send(GameWrap {
@@ -283,11 +212,11 @@ impl ActiveTeam {
 }
 
 pub struct SelectType {
-    warrior: WarriorType<GridCoord>,
+    warrior: GridCoord,
     team: ActiveTeam,
 }
 impl SelectType {
-    pub fn with(mut self, a: WarriorType<GridCoord>) -> Self {
+    pub fn with(mut self, a: GridCoord) -> Self {
         self.warrior = a;
         self
     }
@@ -308,35 +237,49 @@ pub enum LoopRes<T> {
 }
 
 pub async fn reselect_loop(
-    doop: &mut Doop<'_>,
+    doop: &mut WorkerManager<'_>,
     game: &mut Game,
     team_index: ActiveTeam,
-    extra_attack: &mut Option<GridCoord>,
+    extra_attack: &mut Option<selection::PossibleExtra>,
     selected_unit: SelectType,
+    game_history: &mut Vec<moves::ActualMove>,
 ) -> LoopRes<SelectType> {
     //At this point we know a friendly unit is currently selected.
 
-    let mut relative_game_view = game.view(selected_unit.team);
+    let mut relative_game_view = game.view_mut(selected_unit.team);
 
     let unwrapped_selected_unit = selected_unit.warrior;
 
-    let unit = relative_game_view.this_team.lookup(unwrapped_selected_unit);
+    let unit = relative_game_view
+        .this_team
+        .find_slow(&unwrapped_selected_unit)
+        .unwrap();
 
-    let cc = relative_game_view.get_unit_possible_moves(&unit, *extra_attack);
-    let cc = CellSelection::MoveSelection(cc);
+    let selection = if let Some(e) = extra_attack {
+        selection::SelectionType::Extra(e.select(unit))
+    } else {
+        selection::SelectionType::Normal(selection::PossibleMovesNormal::new(unit))
+    };
 
     let grey = if selected_unit.team == team_index {
         //If we are in the middle of a extra attack move, make sure
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
-        if let Some(e) = *extra_attack {
-            e != *selected_unit.warrior
+        if let Some(e) = extra_attack {
+            e.coord() != selected_unit.warrior
         } else {
             false
         }
     } else {
         true
     };
+
+    let cc = match &selection {
+        selection::SelectionType::Normal(e) => e.generate(&relative_game_view),
+        selection::SelectionType::Extra(e) => e.generate(&relative_game_view),
+    };
+    //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
+    let cc = CellSelection::MoveSelection(cc);
 
     let (cell, pototo) = doop.get_mouse_selection(cc, selected_unit.team, grey).await;
 
@@ -355,7 +298,7 @@ pub async fn reselect_loop(
     };
 
     //If we just clicked on ourselves, just deselect.
-    if target_cell == unwrapped_selected_unit.inner {
+    if target_cell == unwrapped_selected_unit {
         return LoopRes::Deselect;
     }
 
@@ -365,14 +308,14 @@ pub async fn reselect_loop(
     if let Some(target) = relative_game_view.this_team.find_slow(&target_cell) {
         //it should be impossible for a unit to move onto a friendly
         assert!(!contains);
-        return LoopRes::Select(selected_unit.with(target.slim()));
+        return LoopRes::Select(selected_unit.with(target.position));
     }
 
     //If we select an enemy unit quick swap
     if let Some(target) = relative_game_view.that_team.find_slow(&target_cell) {
         if selected_unit.team != team_index || !contains {
             //If we select an enemy unit thats outside of our units range.
-            return LoopRes::Select(selected_unit.with(target.slim()).not());
+            return LoopRes::Select(selected_unit.with(target.position).not());
         }
     }
 
@@ -388,8 +331,8 @@ pub async fn reselect_loop(
 
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
-    if let Some(e) = *extra_attack {
-        if unwrapped_selected_unit.inner != e {
+    if let Some(e) = extra_attack {
+        if unwrapped_selected_unit != e.coord() {
             return LoopRes::Deselect;
         }
     }
@@ -398,33 +341,28 @@ pub async fn reselect_loop(
     //We definately want to act on the action the user took on the selected unit.
 
     //Reconstruct path by creating all possible paths with path information this time.
-    let path = relative_game_view.get_path_from_move(target_cell, &unit, *extra_attack);
+    //let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
 
-    if let Some(target_coord) = relative_game_view.that_team.find_slow_mut(&target_cell) {
-        let target_coord = target_coord.as_ref().slim();
+    let path = match selection {
+        selection::SelectionType::Normal(e) => {
+            e.get_path_from_move(target_cell, &relative_game_view)
+        }
+        selection::SelectionType::Extra(e) => {
+            e.get_path_from_move(target_cell, &relative_game_view)
+        }
+    };
 
-        unit::AttackAnimator::new(selected_unit.warrior, target_coord)
-            .animate(&mut doop.await_data(team_index), &mut relative_game_view)
-            .await
-            .execute(&mut relative_game_view);
+    if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
+        let iii = moves::Invade::new(selected_unit.warrior, path);
 
-        // doop.await_data(team_index)
-        //     .resolve_attack(
-        //         selected_unit.warrior,
-        //         target_coord,
-        //         &mut relative_game_view
-        //     )
-        //     .await;
-
-        let _ = doop
-            .await_data(team_index)
-            .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
+        let iii = iii
+            .execute_with_animation(&mut relative_game_view, doop)
             .await;
 
-        for n in target_cell.to_cube().neighbours() {
-            doop.await_data(team_index.not())
-                .resolve_surrounded(n, &mut relative_game_view.not())
-                .await;
+        if let Some(e) = extra_attack.take() {
+            game_history.push(moves::ActualMove::ExtraMove(e.prev_move().clone(), iii));
+        } else {
+            game_history.push(moves::ActualMove::Invade(iii));
         }
 
         //Finish this players turn.
@@ -432,53 +370,23 @@ pub async fn reselect_loop(
     } else {
         //If we are moving to an empty square.
 
-        let this_unit = relative_game_view
-            .this_team
-            .lookup_take(&selected_unit.warrior);
-
-        let this_unit = doop
-            .await_data(team_index)
-            .resolve_movement(this_unit, path)
+        let pm = moves::PartialMove::new(selected_unit.warrior, path);
+        let jjj = pm
+            .clone()
+            .execute_with_animation(&mut relative_game_view, doop)
             .await;
 
-        relative_game_view.this_team.add(this_unit);
-
-        let k = doop
-            .await_data(team_index)
-            .resolve_surrounded(target_cell.to_cube(), &mut relative_game_view)
-            .await;
-
-        //Need to add ourselves back so we can resolve and attacking groups
-        //only to remove ourselves again later.
-        let k = if let Some(k) = k {
-            let j = k.as_ref().slim();
-
-            relative_game_view.this_team.add(k);
-
-            for n in target_cell.to_cube().neighbours() {
-                doop.await_data(team_index.not())
-                    .resolve_surrounded(n, &mut relative_game_view.not())
-                    .await;
+        match jjj {
+            (sigl, moves::ExtraMove::ExtraMove { pos }) => {
+                *extra_attack = Some(selection::PossibleExtra::new(sigl, pos));
+                return LoopRes::Select(selected_unit.with(pos).with_team(team_index));
             }
-
-            Some(relative_game_view.this_team.lookup_take(&j))
-        } else {
-            for n in target_cell.to_cube().neighbours() {
-                doop.await_data(team_index.not())
-                    .resolve_surrounded(n, &mut relative_game_view.not())
-                    .await;
+            (sigl, moves::ExtraMove::FinishMoving) => {
+                game_history.push(moves::ActualMove::NormalMove(sigl));
+                //console_dbg!();
+                //Finish this players turn.
+                return LoopRes::EndTurn;
             }
-            None
-        };
-
-        if let Some(k) = k {
-            let b = k.as_ref().slim();
-            *extra_attack = Some(target_cell);
-            relative_game_view.this_team.add(k);
-            return LoopRes::Select(selected_unit.with(b).with_team(team_index));
-        } else {
-            //Finish this players turn.
-            return LoopRes::EndTurn;
         }
     }
 }
@@ -488,7 +396,9 @@ pub async fn main_logic<'a>(
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
     game: &'a mut Game,
 ) {
-    let mut doop = Doop {
+    let mut game_history = vec![];
+
+    let mut doop = WorkerManager {
         game: game as *mut _,
         sender: command_sender,
         receiver: response_recv,
@@ -507,20 +417,23 @@ pub async fn main_logic<'a>(
                     Pototo::Normal(a) => a,
                     Pototo::EndTurn => {
                         log!("End the turn!");
+                        game_history.push(moves::ActualMove::SkipTurn);
+
+                        console_dbg!(game_history);
                         break 'select_loop;
                     }
                 };
-                let game = game.view(team_index);
+                let game = game.view_mut(team_index);
 
                 if let Some(unit) = game.this_team.find_slow(&cell) {
                     break SelectType {
-                        warrior: unit.slim(),
+                        warrior: unit.position,
                         team: team_index,
                     };
                 }
                 if let Some(unit) = game.that_team.find_slow(&cell) {
                     break SelectType {
-                        warrior: unit.slim(),
+                        warrior: unit.position,
                         team: team_index.not(),
                     };
                 }
@@ -535,6 +448,7 @@ pub async fn main_logic<'a>(
                     team_index,
                     &mut extra_attack,
                     selected_unit,
+                    &mut game_history,
                 )
                 .await
                 {
@@ -573,86 +487,31 @@ pub enum Move {
     },
 }
 
-impl<'a> GameView<'a> {
-    pub fn get_path_from_move(
-        &self,
-        target_cell: GridCoord,
-        unit: &WarriorType<&UnitData>,
-        extra_attack: Option<GridCoord>,
-    ) -> movement::Path {
-        //Reconstruct possible paths with path information this time.
-        let ss = generate_unit_possible_moves_inner(&unit, self, extra_attack, movement::WithPath);
+// impl<'a> GameViewMut<'a> {
+//     pub fn get_path_from_move(
+//         &self,
+//         target_cell: GridCoord,
+//         unit: &UnitData,
+//         extra_attack: &Option<(moves::PartialMove, GridCoord)>,
+//     ) -> movement::Path {
+//         //Reconstruct possible paths with path information this time.
+//         let ss = generate_unit_possible_moves_inner(&unit, self, extra_attack, movement::WithPath);
 
-        let path = ss
-            .moves
-            .iter()
-            .find(|a| a.target == target_cell)
-            .map(|a| &a.path)
-            .unwrap();
+//         let path = ss
+//             .moves
+//             .iter()
+//             .find(|a| a.target == target_cell)
+//             .map(|a| &a.path)
+//             .unwrap();
 
-        *path
-    }
+//         *path
+//     }
 
-    pub fn get_unit_possible_moves(
-        &self,
-        unit: &WarriorType<&UnitData>,
-        extra_attack: Option<GridCoord>,
-    ) -> movement::PossibleMoves2<()> {
-        generate_unit_possible_moves_inner(unit, self, extra_attack, NoPath)
-    }
-}
-
-fn generate_unit_possible_moves_inner<P: movement::PathHave>(
-    unit: &WarriorType<&UnitData>,
-    game: &GameView,
-    extra_attack: Option<GridCoord>,
-    ph: P,
-) -> movement::PossibleMoves2<P::Foo> {
-    // If there is an enemy near by restrict movement.
-
-    let j = if let Some(_) = unit
-        .position
-        .to_cube()
-        .ring(1)
-        .map(|s| game.that_team.find_slow(&s.to_axial()).is_some())
-        .find(|a| *a)
-    {
-        1
-    } else {
-        match unit.val {
-            Type::Warrior => 2,
-            Type::Para => 1,
-            _ => todo!(),
-        }
-    };
-
-    let mm = MoveUnit(j);
-
-    let mm = if let Some(_) = extra_attack.filter(|&aaa| aaa == unit.position) {
-        movement::compute_moves(
-            &movement::WarriorMovement,
-            &game.world.filter().and(game.that_team.filter()),
-            &movement::NoFilter,
-            &terrain::Grass,
-            unit.position,
-            MoveUnit(1),
-            false,
-            ph,
-        )
-    } else {
-        movement::compute_moves(
-            &movement::WarriorMovement,
-            &game
-                .world
-                .filter()
-                .and(game.that_team.warriors[0].filter().not()),
-            &game.this_team.filter().not(),
-            &terrain::Grass,
-            unit.position,
-            mm,
-            true,
-            ph,
-        )
-    };
-    mm
-}
+//     pub fn get_unit_possible_moves(
+//         &self,
+//         unit: &UnitData,
+//         extra_attack: &Option<(moves::PartialMove, GridCoord)>,
+//     ) -> movement::PossibleMoves2<()> {
+//         generate_unit_possible_moves_inner(unit, self, extra_attack, NoPath)
+//     }
+// }
