@@ -7,11 +7,11 @@ pub enum SelectionType {
 
 #[derive(Clone)]
 pub struct PossibleExtra {
-    prev_move: moves::PartialMove,
+    prev_move: moves::PartialMoveSigl,
     prev_coord: GridCoord,
 }
 impl PossibleExtra {
-    pub fn new(prev_move: moves::PartialMove, prev_coord: GridCoord) -> Self {
+    pub fn new(prev_move: moves::PartialMoveSigl, prev_coord: GridCoord) -> Self {
         PossibleExtra {
             prev_move,
             prev_coord,
@@ -23,7 +23,7 @@ impl PossibleExtra {
             unit: a.clone(),
         }
     }
-    pub fn prev_move(&self) -> &moves::PartialMove {
+    pub fn prev_move(&self) -> &moves::PartialMoveSigl {
         &self.prev_move
     }
     pub fn coord(&self) -> GridCoord {
@@ -95,7 +95,7 @@ impl PossibleMovesNormal {
 fn generate_unit_possible_moves_inner<P: movement::PathHave>(
     unit: &UnitData,
     game: &GameViewMut,
-    extra_attack: &Option<(moves::PartialMove, GridCoord)>,
+    extra_attack: &Option<(moves::PartialMoveSigl, GridCoord)>,
     ph: P,
 ) -> movement::PossibleMoves2<P::Foo> {
     // If there is an enemy near by restrict movement.

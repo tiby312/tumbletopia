@@ -123,8 +123,6 @@ impl<'a> WarriorDraw<'a> {
 
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
-
-
 //Additionally removes need to special case animation.
 #[derive(Debug)]
 pub struct Game {
@@ -183,7 +181,6 @@ impl<'a> GameView<'a> {
         }
     }
 }
-
 
 //TODO make this deref to GameVIew const version
 pub struct GameViewMut<'a> {

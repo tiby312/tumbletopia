@@ -3,12 +3,10 @@ use super::*;
 #[derive(Debug)]
 pub enum ActualMove {
     Invade(Invade),
-    NormalMove(PartialMove),
-    ExtraMove(PartialMove, Invade),
-    SkipTurn
+    NormalMove(PartialMoveSigl),
+    ExtraMove(PartialMoveSigl, Invade),
+    SkipTurn,
 }
-
-
 
 struct Doopa<'a, 'b> {
     data: &'a mut ace::WorkerManager<'b>,
@@ -89,6 +87,12 @@ mod inner_partial {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct PartialMoveSigl {
+    pub unit: GridCoord,
+    pub moveto: GridCoord,
+}
+
 pub use partial_move::PartialMove;
 mod partial_move {
     use super::*;
@@ -113,11 +117,12 @@ mod partial_move {
                 let k=HandleSurround::new(target_cell).$namey(&mut game_view, doopa)$($_await)*;
 
 
+                let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
                 if let Some(_) = k {
-                    ExtraMove::ExtraMove{pos:target_cell}
+                    (sigl,ExtraMove::ExtraMove{pos:target_cell})
                 } else {
                     //Finish this players turn.
-                    ExtraMove::FinishMoving
+                    (sigl,ExtraMove::FinishMoving)
                 }
             }
         }
@@ -141,7 +146,7 @@ mod partial_move {
             self,
             game_view: &mut GameViewMut<'_>,
             a: &mut Doopa2,
-        ) -> ExtraMove {
+        ) -> (PartialMoveSigl, ExtraMove) {
             resolve_movement_impl!(
                 (self.selected_unit, self.path, a, game_view),
                 inner_execute_no_animate,
@@ -152,18 +157,18 @@ mod partial_move {
             self,
             game_view: &mut GameViewMut<'_>,
             a: &mut Doopa<'_, '_>,
-        ) -> ExtraMove {
+        ) -> (PartialMoveSigl, ExtraMove) {
             resolve_movement_impl!((self.selected_unit, self.path, a, game_view),inner_execute_animate,.await)
         }
 
-        pub fn execute(self, game_view: &mut GameViewMut<'_>) -> ExtraMove {
+        pub fn execute(self, game_view: &mut GameViewMut<'_>) -> (PartialMoveSigl, ExtraMove) {
             self.inner_execute_no_animate(game_view, &mut Doopa2)
         }
         pub async fn execute_with_animation(
             self,
             game_view: &mut GameViewMut<'_>,
             data: &mut ace::WorkerManager<'_>,
-        ) -> ExtraMove {
+        ) -> (PartialMoveSigl, ExtraMove) {
             self.inner_execute_animate(game_view, &mut Doopa::new(data))
                 .await
         }

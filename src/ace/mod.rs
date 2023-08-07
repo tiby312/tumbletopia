@@ -242,7 +242,7 @@ pub async fn reselect_loop(
     team_index: ActiveTeam,
     extra_attack: &mut Option<selection::PossibleExtra>,
     selected_unit: SelectType,
-    game_history:&mut Vec<moves::ActualMove>
+    game_history: &mut Vec<moves::ActualMove>,
 ) -> LoopRes<SelectType> {
     //At this point we know a friendly unit is currently selected.
 
@@ -377,12 +377,12 @@ pub async fn reselect_loop(
             .await;
 
         match jjj {
-            moves::ExtraMove::ExtraMove { pos } => {
-                *extra_attack = Some(selection::PossibleExtra::new(pm, pos));
+            (sigl, moves::ExtraMove::ExtraMove { pos }) => {
+                *extra_attack = Some(selection::PossibleExtra::new(sigl, pos));
                 return LoopRes::Select(selected_unit.with(pos).with_team(team_index));
             }
-            moves::ExtraMove::FinishMoving => {
-                game_history.push(moves::ActualMove::NormalMove(pm));
+            (sigl, moves::ExtraMove::FinishMoving) => {
+                game_history.push(moves::ActualMove::NormalMove(sigl));
                 //console_dbg!();
                 //Finish this players turn.
                 return LoopRes::EndTurn;
@@ -396,8 +396,7 @@ pub async fn main_logic<'a>(
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
     game: &'a mut Game,
 ) {
-
-    let mut game_history=vec!();
+    let mut game_history = vec![];
 
     let mut doop = WorkerManager {
         game: game as *mut _,
@@ -449,7 +448,7 @@ pub async fn main_logic<'a>(
                     team_index,
                     &mut extra_attack,
                     selected_unit,
-                    &mut game_history
+                    &mut game_history,
                 )
                 .await
                 {
