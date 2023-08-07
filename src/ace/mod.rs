@@ -419,8 +419,8 @@ pub async fn main_logic<'a>(
                         log!("End the turn!");
                         game_history.push(moves::ActualMove::SkipTurn);
 
-                        let mut s=String::new();
-                        moves::to_foo(&game_history,&mut s).unwrap();
+                        let mut s = String::new();
+                        moves::to_foo(&game_history, &mut s).unwrap();
                         console_dbg!(s);
                         break 'select_loop;
                     }
