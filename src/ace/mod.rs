@@ -356,7 +356,7 @@ pub async fn reselect_loop(
         let iii = moves::Invade::new(selected_unit.warrior, path);
 
         let iii = iii
-            .execute_with_animation(&mut relative_game_view, doop)
+            .execute_with_animation(&mut relative_game_view, doop, |_| {})
             .await;
 
         if let Some(e) = extra_attack.take() {
@@ -373,7 +373,7 @@ pub async fn reselect_loop(
         let pm = moves::PartialMove::new(selected_unit.warrior, path);
         let jjj = pm
             .clone()
-            .execute_with_animation(&mut relative_game_view, doop)
+            .execute_with_animation(&mut relative_game_view, doop, |_| {})
             .await;
 
         match jjj {
@@ -423,7 +423,7 @@ pub async fn replay<'a>(
                     .map_err(|_| ParseErr)?;
 
                 moves::Invade::new(i.unit, path)
-                    .execute_with_animation(&mut game_view, &mut doop)
+                    .execute_with_animation(&mut game_view, &mut doop, |_| {})
                     .await;
             }
             moves::ActualMove::NormalMove(i) => {
@@ -434,7 +434,7 @@ pub async fn replay<'a>(
                     .map_err(|_| ParseErr)?;
 
                 moves::PartialMove::new(i.unit, path)
-                    .execute_with_animation(&mut game_view, &mut doop)
+                    .execute_with_animation(&mut game_view, &mut doop, |_| {})
                     .await;
             }
             moves::ActualMove::ExtraMove(i, j) => {
@@ -443,7 +443,7 @@ pub async fn replay<'a>(
                     .get_path_from_move(i.moveto, &game_view)
                     .map_err(|_| ParseErr)?;
                 let k = moves::PartialMove::new(i.unit, path)
-                    .execute_with_animation(&mut game_view, &mut doop)
+                    .execute_with_animation(&mut game_view, &mut doop, |_| {})
                     .await;
 
                 let moves::ExtraMove::ExtraMove{pos}=k.1 else{
@@ -457,8 +457,9 @@ pub async fn replay<'a>(
                     .select(un)
                     .get_path_from_move(j.moveto, &game_view)
                     .map_err(|_| ParseErr)?;
+                
                 moves::Invade::new(j.unit, path)
-                    .execute_with_animation(&mut game_view, &mut doop)
+                    .execute_with_animation(&mut game_view, &mut doop, |_| {})
                     .await;
             }
             moves::ActualMove::SkipTurn => {}

@@ -227,7 +227,7 @@ mod partial_move {
     macro_rules! resolve_movement_impl {
         ($args:expr,$namey:ident, $($_await:tt)*) => {
             {
-                let (selected_unit,path, doopa,mut game_view):(GridCoord,movement::Path,_,&mut GameViewMut<'_>)=$args;
+                let (selected_unit,path, doopa,mut game_view,mut func):(GridCoord,movement::Path,_,&mut GameViewMut<'_>,_)=$args;
 
                 let target_cell=path.get_end_coord(selected_unit);
 
@@ -237,7 +237,7 @@ mod partial_move {
 
                 for n in target_cell.to_cube().neighbours() {
                     if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
-                        game_view.that_team.find_take(&f).unwrap();
+                        func(game_view.that_team.find_take(&f).unwrap());
                     }
                 }
 
@@ -273,9 +273,10 @@ mod partial_move {
             self,
             game_view: &mut GameViewMut<'_>,
             a: &mut Doopa2,
+            func: impl FnMut(UnitData),
         ) -> (PartialMoveSigl, ExtraMove) {
             resolve_movement_impl!(
-                (self.selected_unit, self.path, a, game_view),
+                (self.selected_unit, self.path, a, game_view, func),
                 inner_execute_no_animate,
             )
         }
@@ -284,19 +285,25 @@ mod partial_move {
             self,
             game_view: &mut GameViewMut<'_>,
             a: &mut Doopa<'_, '_>,
+            func: impl FnMut(UnitData),
         ) -> (PartialMoveSigl, ExtraMove) {
-            resolve_movement_impl!((self.selected_unit, self.path, a, game_view),inner_execute_animate,.await)
+            resolve_movement_impl!((self.selected_unit, self.path, a, game_view,func),inner_execute_animate,.await)
         }
 
-        pub fn execute(self, game_view: &mut GameViewMut<'_>) -> (PartialMoveSigl, ExtraMove) {
-            self.inner_execute_no_animate(game_view, &mut Doopa2)
+        pub fn execute(
+            self,
+            game_view: &mut GameViewMut<'_>,
+            func: impl FnMut(UnitData),
+        ) -> (PartialMoveSigl, ExtraMove) {
+            self.inner_execute_no_animate(game_view, &mut Doopa2, func)
         }
         pub async fn execute_with_animation(
             self,
             game_view: &mut GameViewMut<'_>,
             data: &mut ace::WorkerManager<'_>,
+            func: impl FnMut(UnitData),
         ) -> (PartialMoveSigl, ExtraMove) {
-            self.inner_execute_animate(game_view, &mut Doopa::new(data))
+            self.inner_execute_animate(game_view, &mut Doopa::new(data), func)
                 .await
         }
     }
@@ -309,7 +316,7 @@ mod invade {
     macro_rules! resolve_invade_impl {
         ($args:expr,$namey:ident, $($_await:tt)*) => {
             {
-                let (selected_unit,path,game_view,doopa):(GridCoord,Path,&mut GameViewMut<'_>,_)=$args;
+                let (selected_unit,path,game_view,doopa,mut func):(GridCoord,Path,&mut GameViewMut<'_>,_,_)=$args;
 
                 let target_coord=path.get_end_coord(selected_unit);
 
@@ -317,16 +324,16 @@ mod invade {
 
                 InnerPartialMove::new(selected_unit,path).$namey(game_view,doopa)$($_await)*;
 
-                let _target = game_view.that_team.find_take(&target_coord).unwrap();
+                func(game_view.that_team.find_take(&target_coord).unwrap());
 
 
 
                 if let Some(f)=HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*{
-                    game_view.this_team.find_take(&f).unwrap();
+                    func(game_view.this_team.find_take(&f).unwrap());
                 }
                 for n in target_coord.to_cube().neighbours() {
                     if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),doopa)$($_await)*{
-                        game_view.that_team.find_take(&f).unwrap();
+                        func(game_view.that_team.find_take(&f).unwrap());
                     }
                 }
 
@@ -358,9 +365,10 @@ mod invade {
             self,
             game_view: &mut GameViewMut<'_>,
             a: &mut Doopa2,
+            func: impl FnMut(UnitData),
         ) -> InvadeSigl {
             resolve_invade_impl!(
-                (self.selected_unit, self.path, game_view, a),
+                (self.selected_unit, self.path, game_view, a, func),
                 inner_execute_no_animate,
             )
         }
@@ -369,19 +377,25 @@ mod invade {
             self,
             game_view: &mut GameViewMut<'_>,
             a: &mut Doopa<'_, '_>,
+            func: impl FnMut(UnitData),
         ) -> InvadeSigl {
-            resolve_invade_impl!((self.selected_unit,self.path,game_view,a),inner_execute_animate,.await)
+            resolve_invade_impl!((self.selected_unit,self.path,game_view,a,func),inner_execute_animate,.await)
         }
 
-        pub fn execute(self, game_view: &mut GameViewMut<'_>) -> InvadeSigl {
-            self.inner_execute_no_animate(game_view, &mut Doopa2)
+        pub fn execute(
+            self,
+            game_view: &mut GameViewMut<'_>,
+            func: impl FnMut(UnitData),
+        ) -> InvadeSigl {
+            self.inner_execute_no_animate(game_view, &mut Doopa2, func)
         }
         pub async fn execute_with_animation(
             self,
             game_view: &mut GameViewMut<'_>,
             data: &mut ace::WorkerManager<'_>,
+            func: impl FnMut(UnitData),
         ) -> InvadeSigl {
-            self.inner_execute_animate(game_view, &mut Doopa::new(data))
+            self.inner_execute_animate(game_view, &mut Doopa::new(data), func)
                 .await
         }
     }
