@@ -391,11 +391,82 @@ pub async fn reselect_loop(
     }
 }
 
+#[derive(Debug)]
+pub struct ParseErr;
+pub async fn replay<'a>(
+    command_sender: Sender<GameWrap<'a, Command>>,
+    response_recv: Receiver<GameWrapResponse<'a, Response>>,
+    game: &'a mut Game,
+) -> Result<(), ParseErr> {
+    let mut doop = WorkerManager {
+        game: game as *mut _,
+        sender: command_sender,
+        receiver: response_recv,
+    };
+
+    let s="N-1:1:0:-1,N2:-1:0:0,N-1:2:-1:0,N2:-2:2:-1,E-1:0:0:-1:0:-1:1:-1,I0:0:-2:2,S,N-2:2:-3:3,S,S,S,";
+    let mut k = moves::from_foo(s).map_err(|_| ParseErr)?.into_iter();
+
+    for team in ActiveTeam::Cats.iter() {
+        let Some(n)=k.next() else{
+            break;
+        };
+        console_dbg!(&n);
+        let mut game_view = game.view_mut(team);
+        match n {
+            moves::ActualMove::Invade(i) => {
+                let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
+
+                let path = selection::PossibleMovesNormal::new(un)
+                    .get_path_from_move(i.moveto, &game_view);
+
+                moves::Invade::new(i.unit, path)
+                    .execute_with_animation(&mut game_view, &mut doop)
+                    .await;
+            }
+            moves::ActualMove::NormalMove(i) => {
+                let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
+
+                let path = selection::PossibleMovesNormal::new(un)
+                    .get_path_from_move(i.moveto, &game_view);
+
+                moves::PartialMove::new(i.unit, path)
+                    .execute_with_animation(&mut game_view, &mut doop)
+                    .await;
+            }
+            moves::ActualMove::ExtraMove(i, j) => {
+                let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
+                let path = selection::PossibleMovesNormal::new(un)
+                    .get_path_from_move(i.moveto, &game_view);
+                let k = moves::PartialMove::new(i.unit, path)
+                    .execute_with_animation(&mut game_view, &mut doop)
+                    .await;
+
+                let moves::ExtraMove::ExtraMove{pos}=k.1 else{
+                    return Err(ParseErr);
+                };
+
+                let sel = selection::PossibleExtra::new(k.0, pos);
+
+                let un = game_view.this_team.find_slow(&j.unit).ok_or(ParseErr)?;
+                let path = sel.select(un).get_path_from_move(j.moveto, &game_view);
+                moves::Invade::new(j.unit, path)
+                    .execute_with_animation(&mut game_view, &mut doop)
+                    .await;
+            }
+            moves::ActualMove::SkipTurn => {}
+        }
+    }
+    Ok(())
+}
+
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
     game: &'a mut Game,
 ) {
+    //replay(command_sender, response_recv, game).await.unwrap();
+    //todo!();
     let mut game_history = vec![];
 
     let mut doop = WorkerManager {

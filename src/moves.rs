@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Debug)]
 pub enum ActualMove {
     Invade(InvadeSigl),
     NormalMove(PartialMoveSigl),
@@ -7,19 +8,10 @@ pub enum ActualMove {
     SkipTurn,
 }
 
-#[test]
-fn testy() {
-    let s="N-1:1:0:-1,N1:-1:0:0,N-2:1:-1:-1,N1:-2:0:-2,N-1:2:-1:1,N2:-1:1:-1,E-1:-1:0:-1:0:-1:0:-1,N0:-2:-1:-1,I1:-1:2:-2,S,N-1:1:0:1,S,S,S,";
-
-    let k=from_foo(s).unwrap();
-
-}
-
-
 pub fn from_foo(input: &str) -> Result<Vec<ActualMove>, std::fmt::Error> {
     input
         .split(",")
-        .filter(|a|*a!="")
+        .filter(|a| *a != "")
         .map(|a| {
             dbg!(&a);
             let mut s = a.chars();
@@ -97,7 +89,7 @@ pub fn to_foo(a: &[ActualMove], mut f: impl std::fmt::Write) -> std::fmt::Result
                 let a = i.unit.0;
                 let b = i.moveto.0;
                 let c = j.unit.0;
-                let d = j.unit.0;
+                let d = j.moveto.0;
                 write!(
                     f,
                     "E{}:{}:{}:{}:{}:{}:{}:{},",
