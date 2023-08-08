@@ -301,12 +301,12 @@ pub async fn worker_entry() {
 
     let mut mouse_mouse = [0.0; 2];
     let render_thread = async {
-        loop {
-            let ace::GameWrap {
-                game: ggame,
-                data: command,
-                team,
-            } = command_recv.next().await.unwrap();
+        while let Some(ace::GameWrap {
+            game: ggame,
+            data: command,
+            team,
+        }) = command_recv.next().await
+        {
             let mut command = command.process(&grid_matrix);
             let game_view = ggame.view(team);
 

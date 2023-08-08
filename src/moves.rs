@@ -6,6 +6,13 @@ pub enum ActualMove {
     NormalMove(PartialMoveSigl),
     ExtraMove(PartialMoveSigl, InvadeSigl),
     SkipTurn,
+    GameEnd(GameEnding),
+}
+
+#[derive(Debug)]
+pub enum GameEnding {
+    Win(ActiveTeam),
+    Draw,
 }
 
 pub fn from_foo(input: &str) -> Result<Vec<ActualMove>, std::fmt::Error> {
@@ -66,6 +73,15 @@ pub fn from_foo(input: &str) -> Result<Vec<ActualMove>, std::fmt::Error> {
                     Ok(ActualMove::Invade(InvadeSigl { unit, moveto }))
                 }
                 'S' => Ok(ActualMove::SkipTurn),
+                'F' => {
+                    let c = s.next().ok_or(std::fmt::Error)?;
+                    Ok(ActualMove::GameEnd(match c {
+                        'W' => GameEnding::Win(ActiveTeam::Cats),
+                        'B' => GameEnding::Win(ActiveTeam::Dogs),
+                        'D' => GameEnding::Draw,
+                        _ => return Err(std::fmt::Error),
+                    }))
+                }
                 _ => Err(std::fmt::Error),
             }
         })
@@ -98,6 +114,15 @@ pub fn to_foo(a: &[ActualMove], mut f: impl std::fmt::Write) -> std::fmt::Result
             }
             ActualMove::SkipTurn => {
                 write!(f, "S,")?;
+            }
+            ActualMove::GameEnd(g) => {
+                let w = match g {
+                    GameEnding::Win(ActiveTeam::Cats) => "W",
+                    GameEnding::Win(ActiveTeam::Dogs) => "B",
+                    GameEnding::Draw => "D",
+                };
+
+                write!(f, "F{}", w)?;
             }
         }
     }

@@ -194,7 +194,7 @@ impl<'a> WorkerManager<'a> {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ActiveTeam {
     Cats = 0,
     Dogs = 1,
@@ -404,7 +404,8 @@ pub async fn replay<'a>(
         receiver: response_recv,
     };
 
-    let s="N-1:1:0:-1,N2:-1:0:0,N-1:2:-1:0,N2:-2:2:-1,E-1:0:0:-1:0:-1:1:-1,I0:0:-2:2,S,N-2:2:-3:3,S,S,S,";
+    //let s="N-1:1:0:-1,N2:-1:0:0,N-1:2:-1:0,N2:-2:2:-1,E-1:0:0:-1:0:-1:1:-1,I0:0:-2:2,S,N-2:2:-3:3,S,S,S,";
+    let s = "N-1:1:-1:-1,N2:-1:0:0,N-1:2:0:2,I0:0:-2:2,FB";
     let mut k = moves::from_foo(s).map_err(|_| ParseErr)?.into_iter();
 
     for team in ActiveTeam::Cats.iter() {
@@ -461,6 +462,18 @@ pub async fn replay<'a>(
                     .await;
             }
             moves::ActualMove::SkipTurn => {}
+            moves::ActualMove::GameEnd(g) => match g {
+                moves::GameEnding::Win(win_team) => {
+                    if win_team == team.not() {
+                        console_dbg!("This team won=", win_team);
+                    } else {
+                        return Err(ParseErr);
+                    }
+                }
+                moves::GameEnding::Draw => {
+                    console_dbg!("It was a draw!");
+                }
+            },
         }
     }
     Ok(())
@@ -472,6 +485,7 @@ pub async fn main_logic<'a>(
     game: &'a mut Game,
 ) {
     //replay(command_sender, response_recv, game).await.unwrap();
+    //return;
     //todo!();
     let mut game_history = vec![];
 
@@ -482,7 +496,35 @@ pub async fn main_logic<'a>(
     };
 
     //Loop over each team!
-    for team_index in ActiveTeam::Cats.iter() {
+    'game_loop: for team_index in ActiveTeam::Cats.iter() {
+        //check if we lost.
+        'check_end: {
+            let game = game.view_mut(team_index);
+            let our_king_dead = game
+                .this_team
+                .units
+                .iter()
+                .find(|a| a.typ == Type::Para)
+                .is_none();
+            let their_king_dead = game
+                .that_team
+                .units
+                .iter()
+                .find(|a| a.typ == Type::Para)
+                .is_none();
+
+            let g = match (our_king_dead, their_king_dead) {
+                (true, true) => moves::GameEnding::Draw,
+                (true, false) => moves::GameEnding::Win(team_index.not()),
+                (false, true) => moves::GameEnding::Win(team_index),
+                (false, false) => {
+                    break 'check_end;
+                }
+            };
+            game_history.push(moves::ActualMove::GameEnd(g));
+            break 'game_loop;
+        }
+
         let mut extra_attack = None;
         //Keep allowing the user to select units
 
@@ -496,9 +538,6 @@ pub async fn main_logic<'a>(
                         log!("End the turn!");
                         game_history.push(moves::ActualMove::SkipTurn);
 
-                        let mut s = String::new();
-                        moves::to_foo(&game_history, &mut s).unwrap();
-                        console_dbg!(s);
                         break 'select_loop;
                     }
                 };
@@ -539,6 +578,10 @@ pub async fn main_logic<'a>(
             }
         }
     }
+
+    let mut s = String::new();
+    moves::to_foo(&game_history, &mut s).unwrap();
+    console_dbg!(s);
 }
 
 // pub struct GameState {}
