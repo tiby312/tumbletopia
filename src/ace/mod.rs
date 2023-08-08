@@ -344,12 +344,12 @@ pub async fn reselect_loop(
     //let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
 
     let path = match selection {
-        selection::SelectionType::Normal(e) => {
-            e.get_path_from_move(target_cell, &relative_game_view)
-        }
-        selection::SelectionType::Extra(e) => {
-            e.get_path_from_move(target_cell, &relative_game_view)
-        }
+        selection::SelectionType::Normal(e) => e
+            .get_path_from_move(target_cell, &relative_game_view)
+            .unwrap(),
+        selection::SelectionType::Extra(e) => e
+            .get_path_from_move(target_cell, &relative_game_view)
+            .unwrap(),
     };
 
     if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
@@ -418,7 +418,8 @@ pub async fn replay<'a>(
                 let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
 
                 let path = selection::PossibleMovesNormal::new(un)
-                    .get_path_from_move(i.moveto, &game_view);
+                    .get_path_from_move(i.moveto, &game_view)
+                    .map_err(|_| ParseErr)?;
 
                 moves::Invade::new(i.unit, path)
                     .execute_with_animation(&mut game_view, &mut doop)
@@ -428,7 +429,8 @@ pub async fn replay<'a>(
                 let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
 
                 let path = selection::PossibleMovesNormal::new(un)
-                    .get_path_from_move(i.moveto, &game_view);
+                    .get_path_from_move(i.moveto, &game_view)
+                    .map_err(|_| ParseErr)?;
 
                 moves::PartialMove::new(i.unit, path)
                     .execute_with_animation(&mut game_view, &mut doop)
@@ -437,7 +439,8 @@ pub async fn replay<'a>(
             moves::ActualMove::ExtraMove(i, j) => {
                 let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
                 let path = selection::PossibleMovesNormal::new(un)
-                    .get_path_from_move(i.moveto, &game_view);
+                    .get_path_from_move(i.moveto, &game_view)
+                    .map_err(|_| ParseErr)?;
                 let k = moves::PartialMove::new(i.unit, path)
                     .execute_with_animation(&mut game_view, &mut doop)
                     .await;
@@ -449,7 +452,10 @@ pub async fn replay<'a>(
                 let sel = selection::PossibleExtra::new(k.0, pos);
 
                 let un = game_view.this_team.find_slow(&j.unit).ok_or(ParseErr)?;
-                let path = sel.select(un).get_path_from_move(j.moveto, &game_view);
+                let path = sel
+                    .select(un)
+                    .get_path_from_move(j.moveto, &game_view)
+                    .map_err(|_| ParseErr)?;
                 moves::Invade::new(j.unit, path)
                     .execute_with_animation(&mut game_view, &mut doop)
                     .await;

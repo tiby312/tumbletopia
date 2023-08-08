@@ -36,9 +36,14 @@ pub struct PossibleExtraMove {
     extra: PossibleExtra,
     unit: UnitData,
 }
-
+#[derive(Debug)]
+pub struct NoPathErr;
 impl PossibleExtraMove {
-    pub fn get_path_from_move(&self, target_cell: GridCoord, game: &GameViewMut) -> movement::Path {
+    pub fn get_path_from_move(
+        &self,
+        target_cell: GridCoord,
+        game: &GameViewMut,
+    ) -> Result<movement::Path, NoPathErr> {
         //Reconstruct possible paths with path information this time.
         let ss = generate_unit_possible_moves_inner(
             &self.unit,
@@ -52,9 +57,9 @@ impl PossibleExtraMove {
             .iter()
             .find(|a| a.target == target_cell)
             .map(|a| &a.path)
-            .unwrap();
+            .ok_or(NoPathErr)?;
 
-        *path
+        Ok(*path)
     }
     pub fn generate(&self, game: &GameViewMut) -> movement::PossibleMoves2<()> {
         generate_unit_possible_moves_inner(
@@ -74,7 +79,11 @@ impl PossibleMovesNormal {
     pub fn new(a: &UnitData) -> Self {
         PossibleMovesNormal { unit: a.clone() }
     }
-    pub fn get_path_from_move(&self, target_cell: GridCoord, game: &GameViewMut) -> movement::Path {
+    pub fn get_path_from_move(
+        &self,
+        target_cell: GridCoord,
+        game: &GameViewMut,
+    ) -> Result<movement::Path, NoPathErr> {
         //Reconstruct possible paths with path information this time.
         let ss = generate_unit_possible_moves_inner(&self.unit, game, &None, movement::WithPath);
 
@@ -83,9 +92,9 @@ impl PossibleMovesNormal {
             .iter()
             .find(|a| a.target == target_cell)
             .map(|a| &a.path)
-            .unwrap();
+            .ok_or(NoPathErr)?;
 
-        *path
+        Ok(*path)
     }
     pub fn generate(&self, game: &GameViewMut) -> movement::PossibleMoves2<()> {
         generate_unit_possible_moves_inner(&self.unit, game, &None, NoPath)
