@@ -313,9 +313,13 @@ mod invade {
 
                 let target_coord=path.get_end_coord(selected_unit);
 
-                let _target = game_view.that_team.find_take(&target_coord).unwrap();
+
 
                 InnerPartialMove::new(selected_unit,path).$namey(game_view,doopa)$($_await)*;
+
+                let _target = game_view.that_team.find_take(&target_coord).unwrap();
+
+
 
                 if let Some(f)=HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*{
                     game_view.this_team.find_take(&f).unwrap();
