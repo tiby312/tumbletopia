@@ -464,7 +464,7 @@ pub async fn replay<'a>(
             moves::ActualMove::SkipTurn => {}
             moves::ActualMove::GameEnd(g) => match g {
                 moves::GameEnding::Win(win_team) => {
-                    if win_team == team.not() {
+                    if win_team == team {
                         console_dbg!("This team won=", win_team);
                     } else {
                         return Err(ParseErr);
