@@ -506,10 +506,6 @@ pub async fn worker_entry() {
 
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-                //let [vvx, vvy] = get_world_rect(&matrix, &grid_matrix);
-
-                //
-
                 for c in ggame.world.iter_cells() {
                     let pos = grid_matrix.hex_axial_to_world(&c.to_axial());
 
@@ -521,19 +517,6 @@ pub async fn worker_entry() {
 
                     grass.draw(&mut v);
                 }
-
-                // disable_depth(&ctx, || {
-                //     for a in [GridCoord([-4, 4]), GridCoord([4, -4])] {
-                //         let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                //         let t = matrix::translation(pos[0], pos[1], 0.0);
-
-                //         let m = matrix.chain(t).generate();
-
-                //         let mut v = draw_sys.view(m.as_ref());
-
-                //         attack_model.draw_ext(&mut v, false, false, false, false);
-                //     }
-                // });
 
                 disable_depth(&ctx, || {
                     if let ace::ProcessedCommand::GetMouseInput(a) = &command {
