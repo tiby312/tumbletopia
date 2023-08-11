@@ -242,7 +242,7 @@ pub async fn reselect_loop(
     team_index: ActiveTeam,
     extra_attack: &mut Option<selection::PossibleExtra>,
     selected_unit: SelectType,
-    game_history: &mut Vec<moves::ActualMove>,
+    game_history: &mut selection::MoveLog,
 ) -> LoopRes<SelectType> {
     //At this point we know a friendly unit is currently selected.
 
@@ -343,142 +343,178 @@ pub async fn reselect_loop(
     //Reconstruct path by creating all possible paths with path information this time.
     //let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
 
-    let path = match selection {
-        selection::SelectionType::Normal(e) => e
-            .get_path_from_move(target_cell, &relative_game_view)
-            .unwrap(),
-        selection::SelectionType::Extra(e) => e
-            .get_path_from_move(target_cell, &relative_game_view)
-            .unwrap(),
-    };
+    // let path = match selection {
+    //     selection::SelectionType::Normal(e) => e
+    //         .get_path_from_move(target_cell, &relative_game_view)
+    //         .unwrap(),
+    //     selection::SelectionType::Extra(e) => e
+    //         .get_path_from_move(target_cell, &relative_game_view)
+    //         .unwrap(),
+    // };
 
-    if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
-        let iii = moves::Invade::new(selected_unit.warrior, path);
-
-        let iii = iii
-            .execute_with_animation(&mut relative_game_view, doop, |_| {})
-            .await;
-
-        if let Some(e) = extra_attack.take() {
-            game_history.push(moves::ActualMove::ExtraMove(e.prev_move().clone(), iii));
-        } else {
-            game_history.push(moves::ActualMove::Invade(iii));
+    match selection {
+        selection::SelectionType::Normal(n) => {
+            match n
+                .execute(target_cell, &mut relative_game_view, doop, game_history)
+                .await
+                .unwrap()
+            {
+                Some(n) => {
+                    let c = n.coord();
+                    *extra_attack = Some(n);
+                    return LoopRes::Select(selected_unit.with(c).with_team(team_index));
+                }
+                None => {
+                    //Finish this players turn.
+                    return LoopRes::EndTurn;
+                }
+            }
         }
-
-        //Finish this players turn.
-        return LoopRes::EndTurn;
-    } else {
-        //If we are moving to an empty square.
-
-        let pm = moves::PartialMove::new(selected_unit.warrior, path);
-        let jjj = pm
-            .clone()
-            .execute_with_animation(&mut relative_game_view, doop, |_| {})
-            .await;
-
-        match jjj {
-            (sigl, moves::ExtraMove::ExtraMove { pos }) => {
-                *extra_attack = Some(selection::PossibleExtra::new(sigl, pos));
-                return LoopRes::Select(selected_unit.with(pos).with_team(team_index));
-            }
-            (sigl, moves::ExtraMove::FinishMoving) => {
-                game_history.push(moves::ActualMove::NormalMove(sigl));
-                //console_dbg!();
-                //Finish this players turn.
-                return LoopRes::EndTurn;
-            }
+        selection::SelectionType::Extra(e) => {
+            e.execute(target_cell, &mut relative_game_view, doop, game_history)
+                .await
+                .unwrap();
+            return LoopRes::EndTurn;
         }
     }
+
+    // if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
+    //     let iii = moves::Invade::new(selected_unit.warrior, path);
+
+    //     let iii = iii
+    //         .execute_with_animation(&mut relative_game_view, doop, |_| {})
+    //         .await;
+
+    //     if let Some(e) = extra_attack.take() {
+    //         game_history.push(moves::ActualMove::ExtraMove(e.prev_move().clone(), iii));
+    //     } else {
+    //         game_history.push(moves::ActualMove::Invade(iii));
+    //     }
+
+    //     //Finish this players turn.
+    //     return LoopRes::EndTurn;
+    // } else {
+    //     //If we are moving to an empty square.
+
+    //     let pm = moves::PartialMove::new(selected_unit.warrior, path);
+    //     let jjj = pm
+    //         .clone()
+    //         .execute_with_animation(&mut relative_game_view, doop, |_| {})
+    //         .await;
+
+    //     match jjj {
+    //         (sigl, moves::ExtraMove::ExtraMove { pos }) => {
+    //             *extra_attack = Some(selection::PossibleExtra::new(sigl, pos));
+    //             return LoopRes::Select(selected_unit.with(pos).with_team(team_index));
+    //         }
+    //         (sigl, moves::ExtraMove::FinishMoving) => {
+    //             game_history.push(moves::ActualMove::NormalMove(sigl));
+    //             //console_dbg!();
+    //             //Finish this players turn.
+    //             return LoopRes::EndTurn;
+    //         }
+    //     }
+    // }
 }
 
-#[derive(Debug)]
-pub struct ParseErr;
-pub async fn replay<'a>(
-    command_sender: Sender<GameWrap<'a, Command>>,
-    response_recv: Receiver<GameWrapResponse<'a, Response>>,
-    game: &'a mut Game,
-) -> Result<(), ParseErr> {
-    let mut doop = WorkerManager {
-        game: game as *mut _,
-        sender: command_sender,
-        receiver: response_recv,
-    };
+// pub struct Selector<'a,'b>{
+//     game:&'a mut GameView<'b>
+// }
 
-    //let s="N-1:1:0:-1,N2:-1:0:0,N-1:2:-1:0,N2:-2:2:-1,E-1:0:0:-1:0:-1:1:-1,I0:0:-2:2,S,N-2:2:-3:3,S,S,S,";
-    let s = "N-1:1:-1:-1,N2:-1:0:0,N-1:2:0:2,I0:0:-2:2,FB";
-    let mut k = moves::from_foo(s).map_err(|_| ParseErr)?.into_iter();
+// impl<'a,'b> Selector<'a,'b>{
+//     pub fn iter_selections(&mut self)->impl Iterator<Item=selection::PossibleMovesNormal>{
 
-    for team in ActiveTeam::Cats.iter() {
-        let Some(n)=k.next() else{
-            break;
-        };
-        console_dbg!(&n);
-        let mut game_view = game.view_mut(team);
-        match n {
-            moves::ActualMove::Invade(i) => {
-                let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
+//     }
+// }
 
-                let path = selection::PossibleMovesNormal::new(un)
-                    .get_path_from_move(i.moveto, &game_view)
-                    .map_err(|_| ParseErr)?;
+// #[derive(Debug)]
+// pub struct ParseErr;
+// pub async fn replay<'a>(
+//     command_sender: Sender<GameWrap<'a, Command>>,
+//     response_recv: Receiver<GameWrapResponse<'a, Response>>,
+//     game: &'a mut Game,
+// ) -> Result<(), ParseErr> {
+//     let mut doop = WorkerManager {
+//         game: game as *mut _,
+//         sender: command_sender,
+//         receiver: response_recv,
+//     };
 
-                moves::Invade::new(i.unit, path)
-                    .execute_with_animation(&mut game_view, &mut doop, |_| {})
-                    .await;
-            }
-            moves::ActualMove::NormalMove(i) => {
-                let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
+//     //let s="N-1:1:0:-1,N2:-1:0:0,N-1:2:-1:0,N2:-2:2:-1,E-1:0:0:-1:0:-1:1:-1,I0:0:-2:2,S,N-2:2:-3:3,S,S,S,";
+//     let s = "N-1:1:-1:-1,N2:-1:0:0,N-1:2:0:2,I0:0:-2:2,FB";
+//     let mut k = moves::from_foo(s).map_err(|_| ParseErr)?.into_iter();
 
-                let path = selection::PossibleMovesNormal::new(un)
-                    .get_path_from_move(i.moveto, &game_view)
-                    .map_err(|_| ParseErr)?;
+//     for team in ActiveTeam::Cats.iter() {
+//         let Some(n)=k.next() else{
+//             break;
+//         };
+//         console_dbg!(&n);
+//         let mut game_view = game.view_mut(team);
+//         match n {
+//             moves::ActualMove::Invade(i) => {
+//                 let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
 
-                moves::PartialMove::new(i.unit, path)
-                    .execute_with_animation(&mut game_view, &mut doop, |_| {})
-                    .await;
-            }
-            moves::ActualMove::ExtraMove(i, j) => {
-                let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
-                let path = selection::PossibleMovesNormal::new(un)
-                    .get_path_from_move(i.moveto, &game_view)
-                    .map_err(|_| ParseErr)?;
-                let k = moves::PartialMove::new(i.unit, path)
-                    .execute_with_animation(&mut game_view, &mut doop, |_| {})
-                    .await;
+//                 let path = selection::PossibleMovesNormal::new(un)
+//                     .get_path_from_move(i.moveto, &game_view)
+//                     .map_err(|_| ParseErr)?;
 
-                let moves::ExtraMove::ExtraMove{pos}=k.1 else{
-                    return Err(ParseErr);
-                };
+//                 moves::Invade::new(i.unit, path)
+//                     .execute_with_animation(&mut game_view, &mut doop, |_| {})
+//                     .await;
+//             }
+//             moves::ActualMove::NormalMove(i) => {
+//                 let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
 
-                let sel = selection::PossibleExtra::new(k.0, pos);
+//                 let path = selection::PossibleMovesNormal::new(un)
+//                     .get_path_from_move(i.moveto, &game_view)
+//                     .map_err(|_| ParseErr)?;
 
-                let un = game_view.this_team.find_slow(&j.unit).ok_or(ParseErr)?;
-                let path = sel
-                    .select(un)
-                    .get_path_from_move(j.moveto, &game_view)
-                    .map_err(|_| ParseErr)?;
-                
-                moves::Invade::new(j.unit, path)
-                    .execute_with_animation(&mut game_view, &mut doop, |_| {})
-                    .await;
-            }
-            moves::ActualMove::SkipTurn => {}
-            moves::ActualMove::GameEnd(g) => match g {
-                moves::GameEnding::Win(win_team) => {
-                    if win_team == team {
-                        console_dbg!("This team won=", win_team);
-                    } else {
-                        return Err(ParseErr);
-                    }
-                }
-                moves::GameEnding::Draw => {
-                    console_dbg!("It was a draw!");
-                }
-            },
-        }
-    }
-    Ok(())
-}
+//                 moves::PartialMove::new(i.unit, path)
+//                     .execute_with_animation(&mut game_view, &mut doop, |_| {})
+//                     .await;
+//             }
+//             moves::ActualMove::ExtraMove(i, j) => {
+//                 let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
+//                 let path = selection::PossibleMovesNormal::new(un)
+//                     .get_path_from_move(i.moveto, &game_view)
+//                     .map_err(|_| ParseErr)?;
+//                 let k = moves::PartialMove::new(i.unit, path)
+//                     .execute_with_animation(&mut game_view, &mut doop, |_| {})
+//                     .await;
+
+//                 let moves::ExtraMove::ExtraMove{pos}=k.1 else{
+//                     return Err(ParseErr);
+//                 };
+
+//                 let sel = selection::PossibleExtra::new(k.0, pos);
+
+//                 let un = game_view.this_team.find_slow(&j.unit).ok_or(ParseErr)?;
+//                 let path = sel
+//                     .select(un)
+//                     .get_path_from_move(j.moveto, &game_view)
+//                     .map_err(|_| ParseErr)?;
+
+//                 moves::Invade::new(j.unit, path)
+//                     .execute_with_animation(&mut game_view, &mut doop, |_| {})
+//                     .await;
+//             }
+//             moves::ActualMove::SkipTurn => {}
+//             moves::ActualMove::GameEnd(g) => match g {
+//                 moves::GameEnding::Win(win_team) => {
+//                     if win_team == team {
+//                         console_dbg!("This team won=", win_team);
+//                     } else {
+//                         return Err(ParseErr);
+//                     }
+//                 }
+//                 moves::GameEnding::Draw => {
+//                     console_dbg!("It was a draw!");
+//                 }
+//             },
+//         }
+//     }
+//     Ok(())
+// }
 
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
@@ -488,7 +524,7 @@ pub async fn main_logic<'a>(
     //replay(command_sender, response_recv, game).await.unwrap();
     //return;
     //todo!();
-    let mut game_history = vec![];
+    let mut game_history = selection::MoveLog::new();
 
     let mut doop = WorkerManager {
         game: game as *mut _,
@@ -579,10 +615,10 @@ pub async fn main_logic<'a>(
             }
         }
     }
-
-    let mut s = String::new();
-    moves::to_foo(&game_history, &mut s).unwrap();
-    console_dbg!(s);
+    //TODO
+    // let mut s = String::new();
+    // moves::to_foo(&game_history, &mut s).unwrap();
+    // console_dbg!(s);
 }
 
 // pub struct GameState {}

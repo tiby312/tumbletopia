@@ -2,7 +2,7 @@ use super::*;
 
 pub enum SelectionType {
     Normal(selection::PossibleMovesNormal),
-    Extra(selection::PossibleExtraMove),
+    Extra(selection::ComboContinueSelection),
 }
 
 #[derive(Clone)]
@@ -17,8 +17,8 @@ impl PossibleExtra {
             prev_coord,
         }
     }
-    pub fn select(&self, a: &UnitData) -> PossibleExtraMove {
-        PossibleExtraMove {
+    pub fn select(&self, a: &UnitData) -> ComboContinueSelection {
+        ComboContinueSelection {
             extra: self.clone(),
             unit: a.clone(),
         }
@@ -32,14 +32,14 @@ impl PossibleExtra {
 }
 
 #[derive(Clone)]
-pub struct PossibleExtraMove {
+pub struct ComboContinueSelection {
     extra: PossibleExtra,
     unit: UnitData,
 }
 #[derive(Debug)]
 pub struct NoPathErr;
-impl PossibleExtraMove {
-    pub fn get_path_from_move(
+impl ComboContinueSelection {
+    fn get_path_from_move(
         &self,
         target_cell: GridCoord,
         game: &GameViewMut,
@@ -69,6 +69,31 @@ impl PossibleExtraMove {
             NoPath,
         )
     }
+    pub async fn execute(
+        &self,
+        target_cell: GridCoord,
+        game_view: &mut GameViewMut<'_>,
+        doop: &mut ace::WorkerManager<'_>,
+        move_log: &mut MoveLog,
+    ) -> Result<(), NoPathErr> {
+        let path = self.get_path_from_move(target_cell, game_view)?;
+        let unit = self.unit.position;
+
+        if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
+            let iii = moves::Invade::new(unit, path);
+
+            let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
+
+            move_log.push(moves::ActualMove::ExtraMove(
+                self.extra.prev_move.clone(),
+                iii,
+            ));
+        } else {
+            unreachable!("Not possible!");
+        };
+
+        Ok(())
+    }
 }
 
 pub struct PossibleMovesNormal {
@@ -79,7 +104,7 @@ impl PossibleMovesNormal {
     pub fn new(a: &UnitData) -> Self {
         PossibleMovesNormal { unit: a.clone() }
     }
-    pub fn get_path_from_move(
+    fn get_path_from_move(
         &self,
         target_cell: GridCoord,
         game: &GameViewMut,
@@ -99,6 +124,58 @@ impl PossibleMovesNormal {
     pub fn generate(&self, game: &GameViewMut) -> movement::PossibleMoves2<()> {
         generate_unit_possible_moves_inner(&self.unit, game, &None, NoPath)
     }
+
+    pub async fn execute(
+        &self,
+        target_cell: GridCoord,
+        game_view: &mut GameViewMut<'_>,
+        doop: &mut ace::WorkerManager<'_>,
+        move_log: &mut MoveLog,
+    ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
+        let path = self.get_path_from_move(target_cell, game_view)?;
+        let unit = self.unit.position;
+
+        let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
+            let iii = moves::Invade::new(unit, path);
+
+            let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
+
+            move_log.add_invade(iii);
+            None
+        } else {
+            let pm = moves::PartialMove::new(unit, path);
+            let jjj = pm
+                .clone()
+                .execute_with_animation(game_view, doop, |_| {})
+                .await;
+
+            match jjj {
+                (sigl, moves::ExtraMove::ExtraMove { pos }) => {
+                    Some(selection::PossibleExtra::new(sigl, pos))
+                }
+                (sigl, moves::ExtraMove::FinishMoving) => {
+                    move_log.add_movement(sigl.to_movement());
+                    None
+                }
+            }
+        };
+
+        Ok(e)
+    }
+}
+
+pub struct MoveLog {
+    inner: Vec<moves::ActualMove>,
+}
+impl MoveLog {
+    pub fn new() -> Self {
+        MoveLog { inner: vec![] }
+    }
+    pub fn push(&mut self, o: moves::ActualMove) {
+        self.inner.push(o);
+    }
+    pub fn add_invade(&mut self, i: moves::InvadeSigl) {}
+    pub fn add_movement(&mut self, a: moves::MovementSigl) {}
 }
 
 fn generate_unit_possible_moves_inner<P: movement::PathHave>(

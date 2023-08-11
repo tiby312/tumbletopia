@@ -215,9 +215,22 @@ pub struct InvadeSigl {
 }
 
 #[derive(Debug, Clone)]
+pub struct MovementSigl {
+    pub unit: GridCoord,
+    pub moveto: GridCoord,
+}
+#[derive(Debug, Clone)]
 pub struct PartialMoveSigl {
     pub unit: GridCoord,
     pub moveto: GridCoord,
+}
+impl PartialMoveSigl {
+    pub fn to_movement(&self) -> MovementSigl {
+        MovementSigl {
+            unit: self.unit,
+            moveto: self.moveto,
+        }
+    }
 }
 
 pub use partial_move::PartialMove;
