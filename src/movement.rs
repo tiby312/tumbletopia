@@ -282,11 +282,11 @@ pub struct MoveCand<P> {
     pub path: P,
 }
 
-#[derive(Debug, Clone)]
-pub struct PossibleMoves2<P> {
-    pub orig: GridCoord,
-    pub moves: Vec<MoveCand<P>>,
-}
+// #[derive(Debug, Clone)]
+// pub struct PossibleMoves2<P> {
+//     //pub orig: GridCoord,
+//     pub moves: Vec<MoveCand<P>>,
+// }
 
 pub trait PathHave {
     type Foo;
@@ -317,7 +317,7 @@ pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost, PH: Pa
     remaining_moves: MoveUnit,
     slide_rule: bool,
     ph: PH,
-) -> PossibleMoves2<PH::Foo> {
+) -> Vec<MoveCand<PH::Foo>> {
     let m = PossibleMoves::new(
         movement,
         filter,
@@ -336,7 +336,7 @@ pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost, PH: Pa
             path: ph.path(path),
         })
         .collect();
-    PossibleMoves2 { orig: coord, moves }
+    moves
 }
 
 impl PossibleMoves {

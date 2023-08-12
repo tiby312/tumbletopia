@@ -15,7 +15,7 @@ impl UnitData {
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(movement::PossibleMoves2<()>),
+    MoveSelection(Vec<movement::MoveCand<()>>),
     BuildSelection(GridCoord),
 }
 
@@ -49,7 +49,7 @@ impl Type {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Tribe {
     pub units: Vec<UnitData>,
 }

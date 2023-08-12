@@ -151,8 +151,8 @@ impl Doopa2 {
 
 use crate::movement::Path;
 
-pub enum ExtraMove {
-    ExtraMove { pos: GridCoord },
+pub enum ExtraMove<T> {
+    ExtraMove { unit: T },
     FinishMoving,
 }
 
@@ -258,8 +258,10 @@ mod partial_move {
 
 
                 let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
+
+                let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
                 if let Some(_) = k {
-                    (sigl,ExtraMove::ExtraMove{pos:target_cell})
+                    (sigl,ExtraMove::ExtraMove{unit})
                 } else {
                     //Finish this players turn.
                     (sigl,ExtraMove::FinishMoving)
@@ -282,40 +284,40 @@ mod partial_move {
             }
         }
 
-        pub(super) fn inner_execute_no_animate(
+        pub(super) fn inner_execute_no_animate<'b>(
             self,
-            game_view: &mut GameViewMut<'_>,
+            game_view: &'b mut GameViewMut<'_>,
             a: &mut Doopa2,
             func: impl FnMut(UnitData),
-        ) -> (PartialMoveSigl, ExtraMove) {
+        ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
             resolve_movement_impl!(
                 (self.selected_unit, self.path, a, game_view, func),
                 inner_execute_no_animate,
             )
         }
 
-        pub(super) async fn inner_execute_animate(
+        pub(super) async fn inner_execute_animate<'b>(
             self,
-            game_view: &mut GameViewMut<'_>,
+            game_view: &'b mut GameViewMut<'_>,
             a: &mut Doopa<'_, '_>,
             func: impl FnMut(UnitData),
-        ) -> (PartialMoveSigl, ExtraMove) {
+        ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
             resolve_movement_impl!((self.selected_unit, self.path, a, game_view,func),inner_execute_animate,.await)
         }
 
-        pub fn execute(
+        pub fn execute<'b>(
             self,
-            game_view: &mut GameViewMut<'_>,
+            game_view: &'b mut GameViewMut<'_>,
             func: impl FnMut(UnitData),
-        ) -> (PartialMoveSigl, ExtraMove) {
+        ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
             self.inner_execute_no_animate(game_view, &mut Doopa2, func)
         }
-        pub async fn execute_with_animation(
+        pub async fn execute_with_animation<'b>(
             self,
-            game_view: &mut GameViewMut<'_>,
+            game_view: &'b mut GameViewMut<'_>,
             data: &mut ace::WorkerManager<'_>,
             func: impl FnMut(UnitData),
-        ) -> (PartialMoveSigl, ExtraMove) {
+        ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
             self.inner_execute_animate(game_view, &mut Doopa::new(data), func)
                 .await
         }

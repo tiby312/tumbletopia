@@ -256,9 +256,9 @@ pub async fn reselect_loop(
         .unwrap();
 
     let selection = if let Some(e) = extra_attack {
-        selection::SelectionType::Extra(e.select(unit))
+        selection::SelectionType::Extra(e.select())
     } else {
-        selection::SelectionType::Normal(selection::PossibleMovesNormal::new(unit))
+        selection::SelectionType::Normal(selection::RegularSelection::new(unit))
     };
 
     let grey = if selected_unit.team == team_index {
@@ -302,7 +302,7 @@ pub async fn reselect_loop(
         return LoopRes::Deselect;
     }
 
-    let contains = movement::contains_coord(ss.moves.iter().map(|x| &x.target), &target_cell);
+    let contains = movement::contains_coord(ss.iter().map(|x| &x.target), &target_cell);
 
     //If we select a friendly unit quick swap
     if let Some(target) = relative_game_view.this_team.find_slow(&target_cell) {

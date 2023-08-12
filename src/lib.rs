@@ -165,6 +165,22 @@ impl Game {
     }
 }
 
+pub struct GameThing<'a> {
+    this_team: Tribe,
+    that_team: Tribe,
+    world: &'a board::World,
+    team: ActiveTeam,
+}
+impl<'a> GameThing<'a> {
+    pub fn view(&mut self) -> GameViewMut<'_> {
+        GameViewMut {
+            this_team: &mut self.this_team,
+            that_team: &mut self.that_team,
+            world: self.world,
+            team: self.team,
+        }
+    }
+}
 pub struct GameView<'a> {
     this_team: &'a Tribe,
     that_team: &'a Tribe,
@@ -186,10 +202,19 @@ impl<'a> GameView<'a> {
 pub struct GameViewMut<'a> {
     this_team: &'a mut Tribe,
     that_team: &'a mut Tribe,
-    world: &'a mut board::World,
+    world: &'a board::World,
     team: ActiveTeam,
 }
 impl<'a> GameViewMut<'a> {
+    pub fn duplicate(&self) -> GameThing<'a> {
+        GameThing {
+            this_team: self.this_team.clone(),
+            that_team: self.that_team.clone(),
+            world: self.world,
+            team: self.team,
+        }
+    }
+
     pub fn not(&mut self) -> GameViewMut {
         GameViewMut {
             this_team: self.that_team,
@@ -528,7 +553,7 @@ pub async fn worker_entry() {
                         //if let Some(a) = testo.get_selection() {
                         match a {
                             CellSelection::MoveSelection(a) => {
-                                for a in a.moves.iter().map(|a| &a.target) {
+                                for a in a.iter().map(|a| &a.target) {
                                     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
 

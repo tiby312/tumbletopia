@@ -1,33 +1,96 @@
 use super::*;
 
+pub struct Eval(i64);
+
+fn evaluate(view: &GameView<'_>) -> Eval {
+    let num_this = view.this_team.units.len();
+    let num_that = view.this_team.units.len();
+    let diff = num_that - num_this;
+
+    let this_king_dead = view
+        .this_team
+        .units
+        .iter()
+        .find(|a| a.typ == Type::Para)
+        .is_none();
+    let that_king_dead = view
+        .this_team
+        .units
+        .iter()
+        .find(|a| a.typ == Type::Para)
+        .is_none();
+
+    if this_king_dead {
+        return Eval(-10000);
+    }
+    if that_king_dead {
+        return Eval(10000);
+    }
+
+    Eval(diff as i64)
+}
+
+// fn select_move_engine(b:&mut Booba,view:&mut GameViewMut<'_>){
+//     //use std::ops::Deref;
+//     for s in b.selections(view){
+//         for m in s.generate(view){
+//             let mut v=view.duplicate();
+
+//             if let Some(s)=s.execute_no_animation(m.target,&mut v.view(),&mut MoveLog::new()).unwrap(){
+
+//                 for m in s.select(s.prev_coord).generate(&mut v.view()){
+
+//                 }
+
+//             }
+
+//            // m.execute(&mut v);
+
+//             evaluate(v);
+//         }
+//     }
+
+// }
+
+pub struct Booba {}
+impl Booba {
+    fn selections(&self, game: &mut GameViewMut<'_>) -> Vec<selection::RegularSelection> {
+        game.this_team
+            .units
+            .iter()
+            .map(|a| RegularSelection { unit: a.clone() })
+            .collect()
+    }
+}
 pub enum SelectionType {
-    Normal(selection::PossibleMovesNormal),
+    Normal(selection::RegularSelection),
     Extra(selection::ComboContinueSelection),
 }
 
 #[derive(Clone)]
 pub struct PossibleExtra {
     prev_move: moves::PartialMoveSigl,
-    prev_coord: GridCoord,
+    //prev_coord: GridCoord,
+    prev_coord: UnitData,
 }
 impl PossibleExtra {
-    pub fn new(prev_move: moves::PartialMoveSigl, prev_coord: GridCoord) -> Self {
+    pub fn new(prev_move: moves::PartialMoveSigl, prev_coord: UnitData) -> Self {
         PossibleExtra {
             prev_move,
             prev_coord,
         }
     }
-    pub fn select(&self, a: &UnitData) -> ComboContinueSelection {
+    pub fn select(&self) -> ComboContinueSelection {
         ComboContinueSelection {
             extra: self.clone(),
-            unit: a.clone(),
+            unit: self.prev_coord.clone(),
         }
     }
     pub fn prev_move(&self) -> &moves::PartialMoveSigl {
         &self.prev_move
     }
     pub fn coord(&self) -> GridCoord {
-        self.prev_coord
+        self.prev_coord.position
     }
 }
 
@@ -48,12 +111,11 @@ impl ComboContinueSelection {
         let ss = generate_unit_possible_moves_inner(
             &self.unit,
             game,
-            &Some((self.extra.prev_move.clone(), self.extra.prev_coord)),
+            &Some((self.extra.prev_move.clone(), self.extra.prev_coord.position)),
             movement::WithPath,
         );
 
         let path = ss
-            .moves
             .iter()
             .find(|a| a.target == target_cell)
             .map(|a| &a.path)
@@ -61,11 +123,11 @@ impl ComboContinueSelection {
 
         Ok(*path)
     }
-    pub fn generate(&self, game: &GameViewMut) -> movement::PossibleMoves2<()> {
+    pub fn generate(&self, game: &GameViewMut) -> Vec<movement::MoveCand<()>> {
         generate_unit_possible_moves_inner(
             &self.unit,
             game,
-            &Some((self.extra.prev_move.clone(), self.extra.prev_coord)),
+            &Some((self.extra.prev_move.clone(), self.extra.prev_coord.position)),
             NoPath,
         )
     }
@@ -96,13 +158,13 @@ impl ComboContinueSelection {
     }
 }
 
-pub struct PossibleMovesNormal {
+pub struct RegularSelection {
     unit: UnitData,
 }
 
-impl PossibleMovesNormal {
+impl RegularSelection {
     pub fn new(a: &UnitData) -> Self {
-        PossibleMovesNormal { unit: a.clone() }
+        RegularSelection { unit: a.clone() }
     }
     fn get_path_from_move(
         &self,
@@ -113,7 +175,6 @@ impl PossibleMovesNormal {
         let ss = generate_unit_possible_moves_inner(&self.unit, game, &None, movement::WithPath);
 
         let path = ss
-            .moves
             .iter()
             .find(|a| a.target == target_cell)
             .map(|a| &a.path)
@@ -121,7 +182,7 @@ impl PossibleMovesNormal {
 
         Ok(*path)
     }
-    pub fn generate(&self, game: &GameViewMut) -> movement::PossibleMoves2<()> {
+    pub fn generate(&self, game: &GameViewMut) -> Vec<movement::MoveCand<()>> {
         generate_unit_possible_moves_inner(&self.unit, game, &None, NoPath)
     }
 
@@ -150,8 +211,41 @@ impl PossibleMovesNormal {
                 .await;
 
             match jjj {
-                (sigl, moves::ExtraMove::ExtraMove { pos }) => {
-                    Some(selection::PossibleExtra::new(sigl, pos))
+                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+                    Some(selection::PossibleExtra::new(sigl, unit.clone()))
+                }
+                (sigl, moves::ExtraMove::FinishMoving) => {
+                    move_log.add_movement(sigl.to_movement());
+                    None
+                }
+            }
+        };
+
+        Ok(e)
+    }
+    pub fn execute_no_animation(
+        &self,
+        target_cell: GridCoord,
+        game_view: &mut GameViewMut<'_>,
+        move_log: &mut MoveLog,
+    ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
+        let path = self.get_path_from_move(target_cell, game_view)?;
+        let unit = self.unit.position;
+
+        let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
+            let iii = moves::Invade::new(unit, path);
+
+            let iii = iii.execute(game_view, |_| {});
+
+            move_log.add_invade(iii);
+            None
+        } else {
+            let pm = moves::PartialMove::new(unit, path);
+            let jjj = pm.clone().execute(game_view, |_| {});
+
+            match jjj {
+                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+                    Some(selection::PossibleExtra::new(sigl, unit.clone()))
                 }
                 (sigl, moves::ExtraMove::FinishMoving) => {
                     move_log.add_movement(sigl.to_movement());
@@ -183,7 +277,7 @@ fn generate_unit_possible_moves_inner<P: movement::PathHave>(
     game: &GameViewMut,
     extra_attack: &Option<(moves::PartialMoveSigl, GridCoord)>,
     ph: P,
-) -> movement::PossibleMoves2<P::Foo> {
+) -> Vec<movement::MoveCand<P::Foo>> {
     // If there is an enemy near by restrict movement.
 
     let j = if let Some(_) = unit
