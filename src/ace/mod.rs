@@ -562,6 +562,42 @@ pub async fn main_logic<'a>(
             break 'game_loop;
         }
 
+        //Add AIIIIII.
+        if team_index == ActiveTeam::Dogs {
+            let mut game = game.view_mut(team_index);
+            let m = ai::min_max(game.duplicate(), 3).0.unwrap();
+            console_dbg!("FOUND MOVE=", m);
+            match m {
+                moves::ActualMove::NormalMove(o) => {
+                    let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
+                    let r = selection::RegularSelection::new(unit);
+                    let r = r
+                        .execute(o.moveto, &mut game, &mut doop, &mut game_history)
+                        .await
+                        .unwrap();
+                    assert!(r.is_none());
+                }
+                moves::ActualMove::ExtraMove(o, e) => {
+                    let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
+                    let r = selection::RegularSelection::new(unit);
+                    let r = r
+                        .execute(o.moveto, &mut game, &mut doop, &mut game_history)
+                        .await
+                        .unwrap();
+
+                    r.unwrap()
+                        .select()
+                        .execute(e.moveto, &mut game, &mut doop, &mut game_history)
+                        .await
+                        .unwrap();
+                }
+                moves::ActualMove::SkipTurn => todo!(),
+                moves::ActualMove::GameEnd(_) => todo!(),
+            }
+
+            continue;
+        }
+
         let mut extra_attack = None;
         //Keep allowing the user to select units
 

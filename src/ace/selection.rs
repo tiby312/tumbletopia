@@ -164,7 +164,8 @@ impl RegularSelection {
 
             let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
 
-            move_log.add_invade(iii);
+            move_log.push(moves::ActualMove::NormalMove(iii));
+
             None
         } else {
             let pm = moves::PartialMove::new(unit, path);
@@ -178,7 +179,7 @@ impl RegularSelection {
                     Some(selection::PossibleExtra::new(sigl, unit.clone()))
                 }
                 (sigl, moves::ExtraMove::FinishMoving) => {
-                    move_log.add_movement(sigl.to_movement());
+                    move_log.push(moves::ActualMove::NormalMove(sigl));
                     None
                 }
             }
@@ -200,7 +201,7 @@ impl RegularSelection {
 
             let iii = iii.execute(game_view, |_| {});
 
-            move_log.add_invade(iii);
+            move_log.push(moves::ActualMove::NormalMove(iii));
             None
         } else {
             let pm = moves::PartialMove::new(unit, path);
@@ -211,7 +212,7 @@ impl RegularSelection {
                     Some(selection::PossibleExtra::new(sigl, unit.clone()))
                 }
                 (sigl, moves::ExtraMove::FinishMoving) => {
-                    move_log.add_movement(sigl.to_movement());
+                    move_log.push(moves::ActualMove::NormalMove(sigl));
                     None
                 }
             }
@@ -231,8 +232,8 @@ impl MoveLog {
     pub fn push(&mut self, o: moves::ActualMove) {
         self.inner.push(o);
     }
-    pub fn add_invade(&mut self, i: moves::InvadeSigl) {}
-    pub fn add_movement(&mut self, a: moves::MovementSigl) {}
+    // pub fn add_invade(&mut self, i: moves::InvadeSigl) {}
+    // pub fn add_movement(&mut self, a: moves::MovementSigl) {}
 }
 
 fn generate_unit_possible_moves_inner<P: movement::PathHave>(

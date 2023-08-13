@@ -2,9 +2,8 @@ use super::*;
 
 #[derive(Debug, Clone)]
 pub enum ActualMove {
-    Invade(InvadeSigl),
     NormalMove(PartialMoveSigl),
-    ExtraMove(PartialMoveSigl, InvadeSigl),
+    ExtraMove(PartialMoveSigl, PartialMoveSigl),
     SkipTurn,
     GameEnd(GameEnding),
 }
@@ -53,25 +52,25 @@ pub fn from_foo(input: &str) -> Result<Vec<ActualMove>, std::fmt::Error> {
                     let moveto2 = GridCoord([foo()?, foo()?]);
                     Ok(ActualMove::ExtraMove(
                         PartialMoveSigl { unit, moveto },
-                        InvadeSigl {
+                        PartialMoveSigl {
                             unit: unit2,
                             moveto: moveto2,
                         },
                     ))
                 }
-                'I' => {
-                    let s = s.as_str();
-                    let mut k = s.split(":").map(|a| a.parse::<i16>());
-                    let mut foo = || {
-                        k.next()
-                            .ok_or(std::fmt::Error)?
-                            .map_err(|_| std::fmt::Error)
-                    };
+                // 'I' => {
+                //     let s = s.as_str();
+                //     let mut k = s.split(":").map(|a| a.parse::<i16>());
+                //     let mut foo = || {
+                //         k.next()
+                //             .ok_or(std::fmt::Error)?
+                //             .map_err(|_| std::fmt::Error)
+                //     };
 
-                    let unit = GridCoord([foo()?, foo()?]);
-                    let moveto = GridCoord([foo()?, foo()?]);
-                    Ok(ActualMove::Invade(InvadeSigl { unit, moveto }))
-                }
+                //     let unit = GridCoord([foo()?, foo()?]);
+                //     let moveto = GridCoord([foo()?, foo()?]);
+                //     Ok(ActualMove::Invade(InvadeSigl { unit, moveto }))
+                // }
                 'S' => Ok(ActualMove::SkipTurn),
                 'F' => {
                     let c = s.next().ok_or(std::fmt::Error)?;
@@ -91,11 +90,11 @@ pub fn from_foo(input: &str) -> Result<Vec<ActualMove>, std::fmt::Error> {
 pub fn to_foo(a: &[ActualMove], mut f: impl std::fmt::Write) -> std::fmt::Result {
     for a in a.iter() {
         match a {
-            ActualMove::Invade(i) => {
-                let a = i.unit.0;
-                let b = i.moveto.0;
-                write!(f, "I{}:{}:{}:{},", a[0], a[1], b[0], b[1])?;
-            }
+            // ActualMove::Invade(i) => {
+            //     let a = i.unit.0;
+            //     let b = i.moveto.0;
+            //     write!(f, "I{}:{}:{}:{},", a[0], a[1], b[0], b[1])?;
+            // }
             ActualMove::NormalMove(i) => {
                 let a = i.unit.0;
                 let b = i.moveto.0;
@@ -352,7 +351,7 @@ mod invade {
                     }
                 }
 
-                InvadeSigl{
+                PartialMoveSigl{
                     unit:selected_unit,
                     moveto:target_coord
                 }
@@ -381,7 +380,7 @@ mod invade {
             game_view: &mut GameViewMut<'_, '_>,
             a: &mut Doopa2,
             func: impl FnMut(UnitData),
-        ) -> InvadeSigl {
+        ) -> PartialMoveSigl {
             resolve_invade_impl!(
                 (self.selected_unit, self.path, game_view, a, func),
                 inner_execute_no_animate,
@@ -393,7 +392,7 @@ mod invade {
             game_view: &mut GameViewMut<'_, '_>,
             a: &mut Doopa<'_, '_>,
             func: impl FnMut(UnitData),
-        ) -> InvadeSigl {
+        ) -> PartialMoveSigl {
             resolve_invade_impl!((self.selected_unit,self.path,game_view,a,func),inner_execute_animate,.await)
         }
 
@@ -401,7 +400,7 @@ mod invade {
             self,
             game_view: &mut GameViewMut<'_, '_>,
             func: impl FnMut(UnitData),
-        ) -> InvadeSigl {
+        ) -> PartialMoveSigl {
             self.inner_execute_no_animate(game_view, &mut Doopa2, func)
         }
         pub async fn execute_with_animation(
@@ -409,7 +408,7 @@ mod invade {
             game_view: &mut GameViewMut<'_, '_>,
             data: &mut ace::WorkerManager<'_>,
             func: impl FnMut(UnitData),
-        ) -> InvadeSigl {
+        ) -> PartialMoveSigl {
             self.inner_execute_animate(game_view, &mut Doopa::new(data), func)
                 .await
         }
