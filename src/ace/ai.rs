@@ -33,7 +33,7 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .find(|a| a.typ == Type::Para)
         .is_none()
     {
-        -100000
+        -100_000
     } else {
         0
     };
@@ -45,7 +45,7 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .find(|a| a.typ == Type::Para)
         .is_none()
     {
-        10000
+        100_000
     } else {
         0
     };
@@ -72,19 +72,19 @@ pub fn min_max<'a>(
 
         let foo = for_all_moves(&v).map(|(mut x, m)| {
             let (_, p) = min_max(x.not(), depth - 1, debug);
-            if depth == 2 {
+            if depth == 3 {
                 console_dbg!(m, p);
             }
             (m, p)
         });
 
         let (m, ev) = if v.team == ActiveTeam::Dogs {
-            if depth == 2 {
+            if depth == 3 {
                 console_dbg!("mining!");
             }
             foo.min_by_key(|a| a.1).unwrap()
         } else {
-            if depth == 2 {
+            if depth == 3 {
                 console_dbg!("maxing!");
             }
             foo.max_by_key(|a| a.1).unwrap()
