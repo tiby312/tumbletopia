@@ -262,14 +262,12 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-
     let cats = vec![
         UnitData::new(GridCoord([-2, 1]), Type::Warrior),
-         UnitData::new(GridCoord([-1, 1]), Type::Warrior),
+        UnitData::new(GridCoord([-1, 1]), Type::Warrior),
         UnitData::new(GridCoord([-1, 2]), Type::Warrior),
         UnitData::new(GridCoord([-2, 2]), Type::Para),
     ];
-
 
     let dogs = vec![
         UnitData::new(GridCoord([1, -2]), Type::Warrior),
@@ -277,7 +275,7 @@ pub async fn worker_entry() {
         UnitData::new(GridCoord([2, -1]), Type::Warrior),
         UnitData::new(GridCoord([2, -2]), Type::Para),
     ];
-    
+
     let mut ggame = Game {
         dogs: Tribe { units: dogs },
         cats: Tribe { units: cats },
