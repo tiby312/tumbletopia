@@ -591,7 +591,7 @@ pub async fn main_logic<'a>(
                         .await
                         .unwrap();
                 }
-                moves::ActualMove::SkipTurn => todo!(),
+                moves::ActualMove::SkipTurn => {},
                 moves::ActualMove::GameEnd(_) => todo!(),
             }
 

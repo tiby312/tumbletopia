@@ -3,19 +3,28 @@ use super::{
     *,
 };
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug,Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Eval(i64);
 impl Eval {
-    pub fn neg(mut self) -> Eval {
-        self.0 = -self.0;
-        self
-    }
+    // pub fn neg(mut self) -> Eval {
+    //     self.0 = -self.0;
+    //     self
+    // }
+
+    // // pub fn horrible()->Eval{
+    // //     let mut g=Eval(-666);
+    // //     g
+    // // }
+    // pub fn mul(mut self,color:i8)->Eval{
+    //     self.0=self.0*color as i64;
+    //     self
+    // }
 }
 
-fn evaluate(view: &GameViewMut<'_, '_>) -> Eval {
+fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
     let num_this = view.this_team.units.len();
-    let num_that = view.this_team.units.len();
-    let diff = num_that - num_this;
+    let num_that = view.that_team.units.len();
+    let diff = num_this as i64 -num_that as i64;
 
     let this_king_dead = view
         .this_team
@@ -37,21 +46,45 @@ fn evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         return Eval(10000);
     }
 
-    Eval(diff as i64)
+    let mut g=Eval(diff as i64 );
+
+    if view.team==ActiveTeam::Dogs{
+        g.0=-g.0;
+    }
+
+
+    g
 }
 
 pub fn min_max<'a>(mut node: GameThing<'a>, depth: usize) -> (Option<moves::ActualMove>, Eval) {
+    //console_dbg!(depth);
     if depth == 0 {
-        (None, evaluate(&node.view()))
+        (None, absolute_evaluate(&node.view()))
     } else {
+        
+        
         let v = node.view();
-        let (m, ev) = for_all_moves(&v)
-            .map(|(x, m)| {
-                let (_, p) = min_max(x.not(), depth - 1);
-                (m, p.neg())
-            })
-            .max_by_key(|a| a.1)
-            .unwrap();
+        
+        let foo=for_all_moves(&v)
+        .map(|(x, m)| {
+            let (_, p) = min_max(x.not(), depth - 1);
+            if depth==2{
+                console_dbg!(m,p);
+            }
+            (m, p)
+        });
+
+        let (m, ev)=if v.team==ActiveTeam::Cats{
+            if depth==2{
+            console_dbg!("mamximizing!");
+            }
+            foo.max_by_key(|a| a.1).unwrap()
+        }else{
+            if depth==2{
+            console_dbg!("minimizing!");
+            }
+            foo.min_by_key(|a| a.1).unwrap()
+        };
 
         (Some(m), ev)
     }
@@ -60,6 +93,8 @@ pub fn min_max<'a>(mut node: GameThing<'a>, depth: usize) -> (Option<moves::Actu
 fn for_all_moves<'b, 'c>(
     view: &'b GameViewMut<'_, 'c>,
 ) -> impl Iterator<Item = (GameThing<'c>, moves::ActualMove)> + 'b {
+    let foo=(view.duplicate(),moves::ActualMove::SkipTurn);
+
     view.this_team
         .units
         .iter()
@@ -95,8 +130,9 @@ fn for_all_moves<'b, 'c>(
                 None
             };
 
+
             let f1 = first.into_iter().flatten();
             let f2 = second.into_iter().flatten();
             f1.chain(f2)
-        })
+        }).chain([foo].into_iter())
 }
