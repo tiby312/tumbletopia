@@ -1,7 +1,7 @@
 use super::*;
 
+mod ai;
 mod selection;
-
 use crate::{
     animation::Animation,
     grids::GridMatrix,

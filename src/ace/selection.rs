@@ -1,67 +1,5 @@
 use super::*;
 
-pub struct Eval(i64);
-
-fn evaluate(view: &GameView<'_>) -> Eval {
-    let num_this = view.this_team.units.len();
-    let num_that = view.this_team.units.len();
-    let diff = num_that - num_this;
-
-    let this_king_dead = view
-        .this_team
-        .units
-        .iter()
-        .find(|a| a.typ == Type::Para)
-        .is_none();
-    let that_king_dead = view
-        .this_team
-        .units
-        .iter()
-        .find(|a| a.typ == Type::Para)
-        .is_none();
-
-    if this_king_dead {
-        return Eval(-10000);
-    }
-    if that_king_dead {
-        return Eval(10000);
-    }
-
-    Eval(diff as i64)
-}
-
-// fn select_move_engine(b:&mut Booba,view:&mut GameViewMut<'_>){
-//     //use std::ops::Deref;
-//     for s in b.selections(view){
-//         for m in s.generate(view){
-//             let mut v=view.duplicate();
-
-//             if let Some(s)=s.execute_no_animation(m.target,&mut v.view(),&mut MoveLog::new()).unwrap(){
-
-//                 for m in s.select(s.prev_coord).generate(&mut v.view()){
-
-//                 }
-
-//             }
-
-//            // m.execute(&mut v);
-
-//             evaluate(v);
-//         }
-//     }
-
-// }
-
-pub struct Booba {}
-impl Booba {
-    fn selections(&self, game: &mut GameViewMut<'_>) -> Vec<selection::RegularSelection> {
-        game.this_team
-            .units
-            .iter()
-            .map(|a| RegularSelection { unit: a.clone() })
-            .collect()
-    }
-}
 pub enum SelectionType {
     Normal(selection::RegularSelection),
     Extra(selection::ComboContinueSelection),
@@ -134,7 +72,7 @@ impl ComboContinueSelection {
     pub async fn execute(
         &self,
         target_cell: GridCoord,
-        game_view: &mut GameViewMut<'_>,
+        game_view: &mut GameViewMut<'_, '_>,
         doop: &mut ace::WorkerManager<'_>,
         move_log: &mut MoveLog,
     ) -> Result<(), NoPathErr> {
@@ -156,10 +94,35 @@ impl ComboContinueSelection {
 
         Ok(())
     }
+    pub fn execute_no_animation(
+        &self,
+        target_cell: GridCoord,
+        game_view: &mut GameViewMut<'_, '_>,
+        move_log: &mut MoveLog,
+    ) -> Result<(), NoPathErr> {
+        let path = self.get_path_from_move(target_cell, game_view)?;
+        let unit = self.unit.position;
+
+        if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
+            let iii = moves::Invade::new(unit, path);
+
+            let iii = iii.execute(game_view, |_| {});
+
+            move_log.push(moves::ActualMove::ExtraMove(
+                self.extra.prev_move.clone(),
+                iii,
+            ));
+        } else {
+            unreachable!("Not possible!");
+        };
+
+        Ok(())
+    }
 }
 
+#[derive(Clone)]
 pub struct RegularSelection {
-    unit: UnitData,
+    pub unit: UnitData,
 }
 
 impl RegularSelection {
@@ -189,7 +152,7 @@ impl RegularSelection {
     pub async fn execute(
         &self,
         target_cell: GridCoord,
-        game_view: &mut GameViewMut<'_>,
+        game_view: &mut GameViewMut<'_, '_>,
         doop: &mut ace::WorkerManager<'_>,
         move_log: &mut MoveLog,
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
@@ -226,7 +189,7 @@ impl RegularSelection {
     pub fn execute_no_animation(
         &self,
         target_cell: GridCoord,
-        game_view: &mut GameViewMut<'_>,
+        game_view: &mut GameViewMut<'_, '_>,
         move_log: &mut MoveLog,
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
         let path = self.get_path_from_move(target_cell, game_view)?;
@@ -259,7 +222,7 @@ impl RegularSelection {
 }
 
 pub struct MoveLog {
-    inner: Vec<moves::ActualMove>,
+    pub inner: Vec<moves::ActualMove>,
 }
 impl MoveLog {
     pub fn new() -> Self {

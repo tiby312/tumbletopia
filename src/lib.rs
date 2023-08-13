@@ -172,7 +172,15 @@ pub struct GameThing<'a> {
     team: ActiveTeam,
 }
 impl<'a> GameThing<'a> {
-    pub fn view(&mut self) -> GameViewMut<'_> {
+    pub fn not(self) -> GameThing<'a> {
+        GameThing {
+            this_team: self.that_team,
+            that_team: self.this_team,
+            world: self.world,
+            team: self.team,
+        }
+    }
+    pub fn view(&mut self) -> GameViewMut<'_, 'a> {
         GameViewMut {
             this_team: &mut self.this_team,
             that_team: &mut self.that_team,
@@ -199,14 +207,14 @@ impl<'a> GameView<'a> {
 }
 
 //TODO make this deref to GameVIew const version
-pub struct GameViewMut<'a> {
+pub struct GameViewMut<'a, 'b> {
     this_team: &'a mut Tribe,
     that_team: &'a mut Tribe,
-    world: &'a board::World,
+    world: &'b board::World,
     team: ActiveTeam,
 }
-impl<'a> GameViewMut<'a> {
-    pub fn duplicate(&self) -> GameThing<'a> {
+impl<'a, 'b> GameViewMut<'a, 'b> {
+    pub fn duplicate(&self) -> GameThing<'b> {
         GameThing {
             this_team: self.this_team.clone(),
             that_team: self.that_team.clone(),
