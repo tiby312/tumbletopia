@@ -896,8 +896,8 @@ function getImports() {
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
-    imports.wbg.__wbindgen_closure_wrapper288 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 81, __wbg_adapter_22);
+    imports.wbg.__wbindgen_closure_wrapper284 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 79, __wbg_adapter_22);
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_closure_wrapper3653 = function(arg0, arg1, arg2) {

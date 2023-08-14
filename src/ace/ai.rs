@@ -3,8 +3,8 @@ use super::{
     *,
 };
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Eval(i64);
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Eval(f64);
 impl Eval {
     // pub fn neg(mut self) -> Eval {
     //     self.0 = -self.0;
@@ -35,7 +35,7 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .iter()
         .find(|a| a.typ == Type::Para)
     else {
-        return Eval(-1_000_000);
+        return Eval(-1_000_000.0);
     };
 
     let Some(dog_king)=view
@@ -45,7 +45,7 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .find(|a| a.typ == Type::Para)
     else
     {
-        return Eval(1_000_000);
+        return Eval(1_000_000.0);
     };
 
     //how close cats are to dog king.
@@ -64,7 +64,10 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .map(|x| x.position.to_cube().dist(&cat_king.position.to_cube()))
         .fold(0, |acc, f| acc + f);
 
-    Eval(diff as i64 * 100 - cat_distance_to_dog_king as i64 + dog_distance_to_cat_king as i64)
+    let val =
+        diff as f64 * 100.0 - cat_distance_to_dog_king as f64 + dog_distance_to_cat_king as f64;
+    assert!(!val.is_nan());
+    Eval(val)
 }
 
 pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
@@ -129,9 +132,11 @@ pub fn min_max<'a>(
         });
 
         let (m, ev) = if v.team == ActiveTeam::Dogs {
-            foo.min_by_key(|a| a.1).unwrap()
+            foo.min_by(|a, b| a.1.partial_cmp(&b.1).expect("float cmp fail"))
+                .unwrap()
         } else {
-            foo.max_by_key(|a| a.1).unwrap()
+            foo.max_by(|a, b| a.1.partial_cmp(&b.1).expect("float cmp fail"))
+                .unwrap()
         };
 
         writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();

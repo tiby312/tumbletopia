@@ -166,7 +166,6 @@ impl Game {
     }
 }
 
-
 #[derive(Clone)]
 pub struct GameThing<'a> {
     this_team: Tribe,
