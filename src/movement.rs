@@ -276,6 +276,129 @@ struct PossibleMoves {
     start: GridCoord,
 }
 
+///
+///
+///
+///
+
+pub mod movement_mesh {
+
+    #[test]
+    fn test_mesh() {
+        //dbg!(generate_range(1).count());
+
+        // let k = generate_range(2).collect::<Vec<_>>();
+        // for a in k {
+        //     println!("[{},{}],", a.0[0], a.0[1]);
+        // }
+
+        let k1 = GridCoord([2, 0]);
+        let k2 = GridCoord([2, -2]);
+        let k3 = GridCoord([-2, 1]);
+
+        let mut mesh = MovementMesh::new();
+        mesh.add(k1);
+        mesh.add(k2);
+        mesh.add(k3);
+
+        assert!(mesh.is_set(k1));
+        assert!(mesh.is_set(k2));
+        assert!(mesh.is_set(k3));
+        assert!(!mesh.is_set(GridCoord([-2, 2])));
+
+        let res: Vec<_> = mesh.iter_mesh().collect();
+
+        assert_eq!(
+            res,
+            vec!(GridCoord([-2, 1]), GridCoord([2, -2]), GridCoord([2, 0]))
+        )
+    }
+
+    fn generate_range(n: i16) -> impl Iterator<Item = GridCoord> {
+        (-n..n + 1).flat_map(move |q| {
+            ((-n).max(-q - n)..n.min(-q + n) + 1).map(move |r| GridCoord([q, r]))
+        })
+    }
+
+    const TABLE: [[i16; 2]; 19] = [
+        [-2, 0],
+        [-2, 1],
+        [-2, 2],
+        [-1, -1],
+        [-1, 0],
+        [-1, 1],
+        [-1, 2],
+        [0, -2],
+        [0, -1],
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [1, -2],
+        [1, -1],
+        [1, 0],
+        [1, 1],
+        [2, -2],
+        [2, -1],
+        [2, 0],
+    ];
+
+    use std::ops::Index;
+
+    use super::GridCoord;
+
+    #[derive(Debug, Copy, Clone)]
+    pub struct MovementMesh {
+        //A ring of size two not including the center cell has 1+6+12=19 cells.
+
+        //We need an additional bit to describe the path that needs to be taken to each that spot.
+        //Either left or right. (only applies for diagonal outer cells)
+        inner: i32,
+    }
+
+    impl MovementMesh {
+        pub fn new() -> Self {
+            MovementMesh { inner: 0 }
+        }
+
+        pub fn add(&mut self, a: GridCoord) {
+            let ind = conv(a);
+            dbg!(ind);
+            self.inner = self.inner | (1 << ind);
+        }
+
+        pub fn is_set(&self, a: GridCoord) -> bool {
+            let ind = conv(a);
+            self.inner & (1 << ind) != 0
+        }
+
+        pub fn iter_mesh(&self) -> impl Iterator<Item = GridCoord> {
+            let inner = self.inner;
+            TABLE
+                .iter()
+                .enumerate()
+                .filter(move |(x, _)| inner & (1 << x) != 0)
+                .map(|(_, x)| GridCoord(*x))
+        }
+    }
+    fn conv(a: GridCoord) -> usize {
+        let x = a.0[0];
+        let y = a.0[1];
+        assert!(x <= 2 && x >= -2);
+        assert!(y <= 2 && y >= -2);
+        assert!(x != 0 || y != 0);
+
+        dbg!(a);
+        TABLE
+            .iter()
+            .enumerate()
+            .find(|(_, x)| **x == a.0)
+            .expect("Could not find the coord in table")
+            .0
+    }
+    fn conv_inv(ind: usize) -> GridCoord {
+        GridCoord(TABLE[ind])
+    }
+}
 #[derive(Debug, Clone)]
 pub struct MoveCand<P> {
     pub target: GridCoord,

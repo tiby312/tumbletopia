@@ -565,9 +565,23 @@ pub async fn main_logic<'a>(
         //Add AIIIIII.
         if team_index == ActiveTeam::Dogs {
             let mut game = game.view_mut(team_index);
-            //let j = ai::min_max(game.duplicate(), 3, false);
-            let j = ai::alpha_beta(game.duplicate(), 3, false, f64::NEG_INFINITY, f64::INFINITY);
-            console_dbg!("FOUND MOVE=", j);
+
+
+            //TODO add transpotion table!!!!
+            let mut res:Vec<_>=(0..3).map(|x|{
+                ai::alpha_beta(game.duplicate(), x, false, f64::NEG_INFINITY, f64::INFINITY)
+            }).collect();
+
+            console_dbg!(res);
+            
+            res.dedup_by_key(|x|x.1);
+            console_dbg!(res);
+            
+            let j=res.pop().unwrap();
+            
+
+
+            //console_dbg!("FOUND MOVE=", j);
 
             let m = j.0.unwrap();
             match m {
