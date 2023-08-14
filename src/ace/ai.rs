@@ -64,10 +64,6 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .map(|x| x.position.to_cube().dist(&cat_king.position.to_cube()))
         .fold(0, |acc, f| acc + f);
 
-    //how far away cats are from cat king.
-
-    //how far away dogs are from dog king.
-
     Eval(diff as i64 - cat_distance_to_dog_king as i64 + dog_distance_to_cat_king as i64)
 }
 
