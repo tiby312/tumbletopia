@@ -3,23 +3,7 @@ use super::{
     *,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-pub struct Eval(f64);
-impl Eval {
-    // pub fn neg(mut self) -> Eval {
-    //     self.0 = -self.0;
-    //     self
-    // }
-
-    // // pub fn horrible()->Eval{
-    // //     let mut g=Eval(-666);
-    // //     g
-    // // }
-    // pub fn mul(mut self,color:i8)->Eval{
-    //     self.0=self.0*color as i64;
-    //     self
-    // }
-}
+pub type Eval = f64; //(f64);
 
 //cats maximizing
 //dogs minimizing
@@ -35,7 +19,7 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .iter()
         .find(|a| a.typ == Type::Para)
     else {
-        return Eval(-1_000_000.0);
+        return -1_000_000.0;
     };
 
     let Some(dog_king)=view
@@ -45,7 +29,7 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .find(|a| a.typ == Type::Para)
     else
     {
-        return Eval(1_000_000.0);
+        return 1_000_000.0;
     };
 
     //how close cats are to dog king.
@@ -67,7 +51,7 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
     let val =
         diff as f64 * 100.0 - cat_distance_to_dog_king as f64 + dog_distance_to_cat_king as f64;
     assert!(!val.is_nan());
-    Eval(val)
+    val
 }
 
 pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
@@ -110,6 +94,59 @@ pub fn game_is_over(view: GameViewMut<'_, '_>) -> bool {
     };
 
     false
+}
+
+pub fn alpha_beta<'a>(
+    mut node: GameThing<'a>,
+    depth: usize,
+    debug: bool,
+    mut alpha: f64,
+    mut beta: f64,
+) -> (Option<moves::ActualMove>, Eval) {
+    //console_dbg!(depth);
+    if depth == 0 || game_is_over(node.view()) {
+        (None, absolute_evaluate(&node.view()))
+    } else {
+        let v = node.view();
+
+        //use std::fmt::Write;
+        //let mut s = String::new();
+
+        if v.team == ActiveTeam::Cats {
+            let mut mm: Option<moves::ActualMove> = None;
+            let mut value = f64::NEG_INFINITY;
+            for (i, (x, m)) in for_all_moves(&v).enumerate() {
+                let t = alpha_beta(x.not(), depth - 1, debug, alpha, beta);
+                value = value.max(t.1);
+                if value == t.1 {
+                    mm = Some(m);
+                }
+                if t.1 > beta {
+                    break;
+                }
+                alpha = alpha.max(value)
+            }
+            (mm, value)
+        } else {
+            let mut mm: Option<moves::ActualMove> = None;
+            let mut value = f64::INFINITY;
+            for (i, (x, m)) in for_all_moves(&v).enumerate() {
+                let t = alpha_beta(x.not(), depth - 1, debug, alpha, beta);
+                value = value.min(t.1);
+                if value == t.1 {
+                    mm = Some(m);
+                }
+                if t.1 < alpha {
+                    break;
+                }
+                beta = beta.min(value)
+            }
+            (mm, value)
+        }
+
+        //writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
+        //gloo::console::log!(s);
+    }
 }
 
 pub fn min_max<'a>(

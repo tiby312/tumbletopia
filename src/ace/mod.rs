@@ -565,9 +565,11 @@ pub async fn main_logic<'a>(
         //Add AIIIIII.
         if team_index == ActiveTeam::Dogs {
             let mut game = game.view_mut(team_index);
-            let j = ai::min_max(game.duplicate(), 3, false);
+            //let j = ai::min_max(game.duplicate(), 3, false);
+            let j = ai::alpha_beta(game.duplicate(), 3, false, f64::NEG_INFINITY, f64::INFINITY);
+            console_dbg!("FOUND MOVE=", j);
+
             let m = j.0.unwrap();
-            console_dbg!("FOUND MOVE=", m, j.1);
             match m {
                 moves::ActualMove::NormalMove(o) => {
                     let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
