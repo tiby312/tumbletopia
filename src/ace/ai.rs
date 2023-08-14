@@ -29,27 +29,46 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
     let num_dogs = view.dogs.units.len();
     let diff = num_cats as i64 - num_dogs as i64;
 
-    if view
+    let Some(cat_king)=view
         .cats
         .units
         .iter()
         .find(|a| a.typ == Type::Para)
-        .is_none()
-    {
+    else {
         return Eval(-100_000);
     };
 
-    if view
+    let Some(dog_king)=view
         .dogs
         .units
         .iter()
         .find(|a| a.typ == Type::Para)
-        .is_none()
+    else
     {
         return Eval(100_000);
     };
 
-    Eval(diff as i64)
+    //how close cats are to dog king.
+    let cat_distance_to_dog_king = view
+        .cats
+        .units
+        .iter()
+        .map(|x| x.position.to_cube().dist(&dog_king.position.to_cube()))
+        .fold(0, |acc, f| acc + f);
+
+    //how close dogs are to cat king.
+    let dog_distance_to_cat_king = view
+        .dogs
+        .units
+        .iter()
+        .map(|x| x.position.to_cube().dist(&cat_king.position.to_cube()))
+        .fold(0, |acc, f| acc + f);
+
+    //how far away cats are from cat king.
+
+    //how far away dogs are from dog king.
+
+    Eval(diff as i64 - cat_distance_to_dog_king as i64 + dog_distance_to_cat_king as i64)
 }
 
 pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
@@ -107,7 +126,7 @@ pub fn min_max<'a>(
 
         use std::fmt::Write;
         let mut s = String::new();
-        let foo = for_all_moves(&v).map(|( x, m)| {
+        let foo = for_all_moves(&v).map(|(x, m)| {
             let (_, p) = min_max(x.not(), depth - 1, debug);
             writeln!(&mut s, "\t\t{:?}", (&m, p)).unwrap();
             (m, p)
@@ -121,7 +140,7 @@ pub fn min_max<'a>(
 
         writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
         //gloo::console::log!(s);
-        
+
         (Some(m), ev)
     }
 }
