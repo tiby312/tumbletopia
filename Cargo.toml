@@ -22,6 +22,7 @@ console_error_panic_hook="*"
 model={path="model"}
 collision="*"
 cgmath="0.17"
+smallvec = "1.11.0"
 
 [workspace]
 members = [

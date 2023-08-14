@@ -21,42 +21,77 @@ impl Eval {
     // }
 }
 
+//cats maximizing
+//dogs minimizing
 fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
-    let num_this = view.this_team.units.len();
-    let num_that = view.that_team.units.len();
-    let diff = num_this as i64 - num_that as i64;
+    let view = view.absolute();
+    let num_cats = view.cats.units.len();
+    let num_dogs = view.dogs.units.len();
+    let diff = num_cats as i64 - num_dogs as i64;
 
-    let this_king_dead: i64 = if view
+    if view
+        .cats
+        .units
+        .iter()
+        .find(|a| a.typ == Type::Para)
+        .is_none()
+    {
+        return Eval(-100_000);
+    };
+
+    if view
+        .dogs
+        .units
+        .iter()
+        .find(|a| a.typ == Type::Para)
+        .is_none()
+    {
+        return Eval(100_000);
+    };
+
+    Eval(diff as i64)
+}
+
+pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
+    let num_enemy = node.that_team.units.len();
+    for a in for_all_moves(&node) {
+        if a.0.that_team.units.len() < num_enemy {
+            return true;
+        }
+    }
+
+    let num_friendly = node.this_team.units.len();
+    for a in for_all_moves(&node) {
+        if a.0.this_team.units.len() < num_friendly {
+            return true;
+        }
+    }
+
+    false
+}
+
+pub fn game_is_over(view: GameViewMut<'_, '_>) -> bool {
+    if view
         .this_team
         .units
         .iter()
         .find(|a| a.typ == Type::Para)
         .is_none()
     {
-        -100_000
-    } else {
-        0
+        return true;
     };
 
-    let that_king_dead: i64 = if view
+    if view
         .that_team
         .units
         .iter()
         .find(|a| a.typ == Type::Para)
         .is_none()
     {
-        100_000
-    } else {
-        0
+        return true;
     };
 
-    let mut g = Eval(diff as i64 + this_king_dead + that_king_dead);
-
-    if view.team == ActiveTeam::Dogs {
-        g.0 = -g.0;
-    }
-
-    g
+    false
 }
 
 pub fn min_max<'a>(
@@ -65,30 +100,37 @@ pub fn min_max<'a>(
     debug: bool,
 ) -> (Option<moves::ActualMove>, Eval) {
     //console_dbg!(depth);
-    if depth == 0 {
+    if depth == 0 || game_is_over(node.view()) {
         (None, absolute_evaluate(&node.view()))
     } else {
         let v = node.view();
 
+        use std::fmt::Write;
+        let mut s = String::new();
         let foo = for_all_moves(&v).map(|(mut x, m)| {
             let (_, p) = min_max(x.not(), depth - 1, debug);
-            if depth == 3 {
-                console_dbg!(m, p);
-            }
+            //if depth == 2 {
+            //   console_dbg!(depth,m, p);
+            //}
+            writeln!(&mut s, "\t\t{:?}", (&m, p)).unwrap();
             (m, p)
         });
 
         let (m, ev) = if v.team == ActiveTeam::Dogs {
-            if depth == 3 {
-                console_dbg!("mining!");
-            }
+            // if depth == 2 {
+            //      console_dbg!(depth,"mining!");
+            //  }
             foo.min_by_key(|a| a.1).unwrap()
         } else {
-            if depth == 3 {
-                console_dbg!("maxing!");
-            }
+            // if depth == 2 {
+            //      console_dbg!(depth,"maxing!");
+            //  }
             foo.max_by_key(|a| a.1).unwrap()
         };
+
+        writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
+        gloo::console::log!(s);
+        //console_dbg!(v.team,depth,m,ev);
 
         (Some(m), ev)
     }

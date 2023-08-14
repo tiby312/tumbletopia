@@ -1,5 +1,6 @@
 //use ace::AnimationOptions;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
+use gloo::console::console;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -206,6 +207,12 @@ impl<'a> GameView<'a> {
     }
 }
 
+pub struct AbsoluteGameView<'a, 'b> {
+    cats: &'a Tribe,
+    dogs: &'a Tribe,
+    world: &'b board::World,
+}
+
 //TODO make this deref to GameVIew const version
 pub struct GameViewMut<'a, 'b> {
     this_team: &'a mut Tribe,
@@ -214,6 +221,21 @@ pub struct GameViewMut<'a, 'b> {
     team: ActiveTeam,
 }
 impl<'a, 'b> GameViewMut<'a, 'b> {
+    pub fn absolute(&self) -> AbsoluteGameView<'_, 'b> {
+        if self.team == ActiveTeam::Cats {
+            AbsoluteGameView {
+                cats: self.this_team,
+                dogs: self.that_team,
+                world: self.world,
+            }
+        } else {
+            AbsoluteGameView {
+                cats: self.that_team,
+                dogs: self.this_team,
+                world: self.world,
+            }
+        }
+    }
     pub fn duplicate(&self) -> GameThing<'b> {
         GameThing {
             this_team: self.this_team.clone(),
@@ -262,17 +284,17 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-    let cats = vec![
+    let cats: smallvec::SmallVec<[UnitData; 5]> = smallvec::smallvec![
         UnitData::new(GridCoord([-2, 1]), Type::Warrior),
-        UnitData::new(GridCoord([-1, 1]), Type::Warrior),
-        UnitData::new(GridCoord([-1, 2]), Type::Warrior),
+        // UnitData::new(GridCoord([-1, 1]), Type::Warrior),
+        // UnitData::new(GridCoord([-1, 2]), Type::Warrior),
         UnitData::new(GridCoord([-2, 2]), Type::Para),
     ];
 
-    let dogs = vec![
-        UnitData::new(GridCoord([1, -2]), Type::Warrior),
-        UnitData::new(GridCoord([1, -1]), Type::Warrior),
-        UnitData::new(GridCoord([2, -1]), Type::Warrior),
+    let dogs = smallvec::smallvec![
+        // UnitData::new(GridCoord([1, -2]), Type::Warrior),
+        // UnitData::new(GridCoord([1, -1]), Type::Warrior),
+        // UnitData::new(GridCoord([2, -1]), Type::Warrior),
         UnitData::new(GridCoord([2, -2]), Type::Para),
     ];
 
