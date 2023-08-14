@@ -107,31 +107,21 @@ pub fn min_max<'a>(
 
         use std::fmt::Write;
         let mut s = String::new();
-        let foo = for_all_moves(&v).map(|(mut x, m)| {
+        let foo = for_all_moves(&v).map(|( x, m)| {
             let (_, p) = min_max(x.not(), depth - 1, debug);
-            //if depth == 2 {
-            //   console_dbg!(depth,m, p);
-            //}
             writeln!(&mut s, "\t\t{:?}", (&m, p)).unwrap();
             (m, p)
         });
 
         let (m, ev) = if v.team == ActiveTeam::Dogs {
-            // if depth == 2 {
-            //      console_dbg!(depth,"mining!");
-            //  }
             foo.min_by_key(|a| a.1).unwrap()
         } else {
-            // if depth == 2 {
-            //      console_dbg!(depth,"maxing!");
-            //  }
             foo.max_by_key(|a| a.1).unwrap()
         };
 
         writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
-        gloo::console::log!(s);
-        //console_dbg!(v.team,depth,m,ev);
-
+        //gloo::console::log!(s);
+        
         (Some(m), ev)
     }
 }

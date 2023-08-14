@@ -286,15 +286,15 @@ pub async fn worker_entry() {
 
     let cats: smallvec::SmallVec<[UnitData; 5]> = smallvec::smallvec![
         UnitData::new(GridCoord([-2, 1]), Type::Warrior),
-        // UnitData::new(GridCoord([-1, 1]), Type::Warrior),
-        // UnitData::new(GridCoord([-1, 2]), Type::Warrior),
+        UnitData::new(GridCoord([-1, 1]), Type::Warrior),
+        UnitData::new(GridCoord([-1, 2]), Type::Warrior),
         UnitData::new(GridCoord([-2, 2]), Type::Para),
     ];
 
     let dogs = smallvec::smallvec![
-        // UnitData::new(GridCoord([1, -2]), Type::Warrior),
-        // UnitData::new(GridCoord([1, -1]), Type::Warrior),
-        // UnitData::new(GridCoord([2, -1]), Type::Warrior),
+        UnitData::new(GridCoord([1, -2]), Type::Warrior),
+        UnitData::new(GridCoord([1, -1]), Type::Warrior),
+        UnitData::new(GridCoord([2, -1]), Type::Warrior),
         UnitData::new(GridCoord([2, -2]), Type::Para),
     ];
 
