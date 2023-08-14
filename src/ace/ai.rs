@@ -35,7 +35,7 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .iter()
         .find(|a| a.typ == Type::Para)
     else {
-        return Eval(-100_000);
+        return Eval(-1_000_000);
     };
 
     let Some(dog_king)=view
@@ -45,7 +45,7 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .find(|a| a.typ == Type::Para)
     else
     {
-        return Eval(100_000);
+        return Eval(1_000_000);
     };
 
     //how close cats are to dog king.
@@ -64,7 +64,7 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
         .map(|x| x.position.to_cube().dist(&cat_king.position.to_cube()))
         .fold(0, |acc, f| acc + f);
 
-    Eval(diff as i64 - cat_distance_to_dog_king as i64 + dog_distance_to_cat_king as i64)
+    Eval(diff as i64 * 100 - cat_distance_to_dog_king as i64 + dog_distance_to_cat_king as i64)
 }
 
 pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
