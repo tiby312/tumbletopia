@@ -90,9 +90,13 @@ impl Path {
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
     pub fn dir_to(&self, other: &GridCoord) -> HexDir {
-        let offset = other.sub(self);
-        assert!(offset.0[0].abs() <= 1);
-        assert!(offset.0[1].abs() <= 1);
+        let mut offset = other.sub(self);
+
+        offset.0[0] = offset.0[0].clamp(-1, 1);
+        offset.0[1] = offset.0[1].clamp(-1, 1);
+
+        // assert!(offset.0[0].abs() <= 1);
+        // assert!(offset.0[1].abs() <= 1);
         let offset = offset.to_cube();
 
         hex::OFFSETS
@@ -355,18 +359,52 @@ pub mod movement_mesh {
         inner: i32,
     }
 
+    fn validate_rel(a: GridCoord) {
+        let x = a.0[0];
+        let y = a.0[1];
+
+        assert!(x <= 2 && x >= -2);
+        assert!(y <= 2 && y >= -2);
+        assert!(x != 0 || y != 0);
+    }
     impl MovementMesh {
         pub fn new() -> Self {
             MovementMesh { inner: 0 }
         }
+        //TODO
+        // pub fn path(&self,a:GridCoord)->impl Iterator<Item=HexDir>{
+        //     validate_rel(a);
+        //     let x=a.0[0];
+        //     let y=a.0[1];
+        //     let first=if x>=-1 && x<=1  && y>-1 && y<=1{
+        //         Some(GridCoord([0,0]).dir_to(&a))
+        //     }else{
+        //         None
+        //     };
 
+        //     if first.is_none(){
+        //         //diagonal
+        //         if x.abs()==1 || y.abs()==1{
+
+        //         }
+
+        //         else{
+        //             let h=GridCoord([0,0]).dir_to(other);
+        //             [h,h]
+        //         }
+
+        //     }
+        // }
         pub fn add(&mut self, a: GridCoord) {
+            validate_rel(a);
             let ind = conv(a);
             dbg!(ind);
             self.inner = self.inner | (1 << ind);
         }
 
         pub fn is_set(&self, a: GridCoord) -> bool {
+            validate_rel(a);
+
             let ind = conv(a);
             self.inner & (1 << ind) != 0
         }
@@ -381,12 +419,6 @@ pub mod movement_mesh {
         }
     }
     fn conv(a: GridCoord) -> usize {
-        let x = a.0[0];
-        let y = a.0[1];
-        assert!(x <= 2 && x >= -2);
-        assert!(y <= 2 && y >= -2);
-        assert!(x != 0 || y != 0);
-
         dbg!(a);
         TABLE
             .iter()
