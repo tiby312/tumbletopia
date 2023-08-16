@@ -286,6 +286,20 @@ struct PossibleMoves {
 ///
 
 pub mod movement_mesh {
+    use crate::movement::HexDir;
+    #[test]
+    fn test_path(){
+        let k1=GridCoord([1,-1]);
+        let k2=GridCoord([1,-2]);
+
+        let mut mesh=MovementMesh::new();
+        mesh.add(k1);
+        mesh.add(k2);
+
+        let res:Vec<_>=mesh.path(GridCoord([1,-2])).collect();
+        dbg!(res);
+        panic!();
+    }
 
     #[test]
     fn test_mesh() {
@@ -372,29 +386,48 @@ pub mod movement_mesh {
             MovementMesh { inner: 0 }
         }
         //TODO
-        // pub fn path(&self,a:GridCoord)->impl Iterator<Item=HexDir>{
-        //     validate_rel(a);
-        //     let x=a.0[0];
-        //     let y=a.0[1];
-        //     let first=if x>=-1 && x<=1  && y>-1 && y<=1{
-        //         Some(GridCoord([0,0]).dir_to(&a))
-        //     }else{
-        //         None
-        //     };
+        pub fn path(&self,a:GridCoord)->impl Iterator<Item=HexDir>{
+            validate_rel(a);
+            let x=a.0[0];
+            let y=a.0[1];
+            let first=if x>=-1 && x<=1  && y>-1 && y<=1{
+                Some([GridCoord([0,0]).dir_to(&a)])
+            }else{
+                None
+            };
 
-        //     if first.is_none(){
-        //         //diagonal
-        //         if x.abs()==1 || y.abs()==1{
+            
 
-        //         }
+            //diagonal
+            let second=if first.is_none() && (x.abs()==1 || y.abs()==1){
+                //TODO inefficient
+                let mut k=GridCoord([0,0]).to_cube().neighbours().filter(|x|{
+                    x.dist(&a.to_cube())==1
+                });    
+                let first=k.next().unwrap().to_axial();
+                let second=k.next().unwrap().to_axial();
+                if self.is_set(first){
+                    Some([GridCoord([0,0]).dir_to(&first),first.dir_to(&a)])
+                }else{
+                    assert!(self.is_set(second));
+                    Some([GridCoord([0,0]).dir_to(&second),second.dir_to(&a)])
+                }
+            }else{
+                None
+            };
 
-        //         else{
-        //             let h=GridCoord([0,0]).dir_to(other);
-        //             [h,h]
-        //         }
+            let third=if first.is_none() && !(x.abs()==1 || y.abs()==1){
+                let h=GridCoord([0,0]).dir_to(&a);
+                Some([h,h])
+            }else{
+                None
+            };
 
-        //     }
-        // }
+            let a=first.into_iter().flatten();
+            let b=second.into_iter().flatten();
+            let c=third.into_iter().flatten();
+            a.chain(b).chain(c)
+        }
         pub fn add(&mut self, a: GridCoord) {
             validate_rel(a);
             let ind = conv(a);
