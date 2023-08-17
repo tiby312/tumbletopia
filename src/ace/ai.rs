@@ -98,10 +98,18 @@ pub fn game_is_over(view: GameViewMut<'_, '_>) -> bool {
     false
 }
 
+
+fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
+    use std::hash::Hasher;
+    let mut s = std::collections::hash_map::DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
+}
+
 pub struct TranspositionTable<'a> {
     a: std::collections::HashMap<
-        GameThing<'a>,
-        (usize, (Option<moves::ActualMove>, MovementMesh, Eval)),
+       u64,
+        (usize, (PossibleMove<'a>, Eval)),
     >,
 }
 impl<'a> TranspositionTable<'a> {
@@ -112,23 +120,35 @@ impl<'a> TranspositionTable<'a> {
     }
     pub fn lookup(
         &self,
-        a: &GameThing<'a>,
-    ) -> Option<&(usize, (Option<moves::ActualMove>, MovementMesh, Eval))> {
-        self.a.get(a)
-    }
-    pub fn set(
-        &mut self,
         a: GameThing<'a>,
+        depth:usize
+    ) -> Option<&(usize, (PossibleMove<'a>, Eval))> {
+        let k=calculate_hash(&a);
+    
+        if let Some(a)=self.a.get(&k){
+            if depth<=a.0{
+                Some(a)
+            }else{
+                None
+            }
+        }else{
+            None
+        }
+    }
+    pub fn consider(
+        &mut self,
+        val: (PossibleMove<'a>,Eval),
         depth: usize,
-        val: (Option<moves::ActualMove>, MovementMesh, Eval),
     ) {
-        if let Some((old_depth, v)) = self.a.get_mut(&a) {
-            if depth < *old_depth {
+        let k=calculate_hash(&val.0.game_after_move);
+
+        if let Some((old_depth, v)) = self.a.get_mut(&k) {
+            if depth > *old_depth {
                 *old_depth = depth;
                 *v = val;
             }
         } else {
-            let _ = self.a.insert(a, (depth, val));
+            let _ = self.a.insert(k, (depth, val));
         }
     }
 }
