@@ -567,7 +567,7 @@ pub async fn main_logic<'a>(
             let mut game = game.view_mut(team_index);
 
             //TODO add transpotion table!!!!
-            let mut res: Vec<_> = (0..3)
+            let mut res: Vec<_> = (0..4)
                 .map(|x| {
                     ai::alpha_beta(game.duplicate(), x, false, f64::NEG_INFINITY, f64::INFINITY)
                 })
