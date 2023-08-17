@@ -241,6 +241,7 @@ mod partial_move {
             {
                 let (selected_unit,path, doopa,mut game_view,mut func):(GridCoord,movement::Path,_,&mut GameViewMut<'_,'_>,_)=$args;
 
+
                 let target_cell=path.get_end_coord(selected_unit);
 
 

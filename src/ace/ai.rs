@@ -192,27 +192,33 @@ fn for_all_moves<'b, 'c>(
         .units
         .iter()
         .map(|a| RegularSelection { unit: a.clone() })
-        .flat_map(|a| a.generate(view).into_iter().map(move |b| (a.clone(), b)))
+        .flat_map(|a| {
+            a.generate(view)
+                .iter_mesh(a.unit.position)
+                .map(move |f| (a.clone(), f))
+        })
         .flat_map(|(s, m)| {
             let mut v = view.duplicate();
             let mut mm = MoveLog::new();
 
-            let first = if let Some(l) = s
-                .execute_no_animation(m.target, &mut v.view(), &mut mm)
-                .unwrap()
+            let first = if let Some(l) = s.execute_no_animation(m, &mut v.view(), &mut mm).unwrap()
             {
                 let cll = l.select();
+
                 let mut kk = v.view().duplicate();
-                Some(cll.generate(&mut kk.view()).into_iter().map(move |m| {
-                    let mut klkl = kk.view().duplicate();
-                    let mut mm2 = MoveLog::new();
+                Some(
+                    cll.generate(&mut kk.view())
+                        .iter_mesh(l.coord())
+                        .map(move |m| {
+                            let mut klkl = kk.view().duplicate();
+                            let mut mm2 = MoveLog::new();
 
-                    let mut vfv = klkl.view();
-                    cll.execute_no_animation(m.target, &mut vfv, &mut mm2)
-                        .unwrap();
+                            let mut vfv = klkl.view();
+                            cll.execute_no_animation(m, &mut vfv, &mut mm2).unwrap();
 
-                    (klkl, mm2.inner[0].clone())
-                }))
+                            (klkl, mm2.inner[0].clone())
+                        }),
+                )
             } else {
                 None
             };

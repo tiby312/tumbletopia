@@ -53,15 +53,14 @@ impl ComboContinueSelection {
             movement::WithPath,
         );
 
-        let path = ss
-            .iter()
-            .find(|a| a.target == target_cell)
-            .map(|a| &a.path)
-            .ok_or(NoPathErr)?;
-
-        Ok(*path)
+        //TODO return iterator instead?
+        let mut p = movement::Path::new();
+        for a in ss.path(target_cell.sub(&self.unit.position)) {
+            p.add(a);
+        }
+        Ok(p)
     }
-    pub fn generate(&self, game: &GameViewMut) -> Vec<movement::MoveCand<()>> {
+    pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
         generate_unit_possible_moves_inner(
             &self.unit,
             game,
@@ -137,15 +136,16 @@ impl RegularSelection {
         //Reconstruct possible paths with path information this time.
         let ss = generate_unit_possible_moves_inner(&self.unit, game, &None, movement::WithPath);
 
-        let path = ss
-            .iter()
-            .find(|a| a.target == target_cell)
-            .map(|a| &a.path)
-            .ok_or(NoPathErr)?;
+        let path_iter = ss.path(target_cell.sub(&self.unit.position));
 
-        Ok(*path)
+        //TODO return iterator instead?
+        let mut p = movement::Path::new();
+        for a in path_iter {
+            p.add(a);
+        }
+        Ok(p)
     }
-    pub fn generate(&self, game: &GameViewMut) -> Vec<movement::MoveCand<()>> {
+    pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
         generate_unit_possible_moves_inner(&self.unit, game, &None, NoPath)
     }
 
@@ -241,44 +241,49 @@ fn generate_unit_possible_moves_inner<P: movement::PathHave>(
     game: &GameViewMut,
     extra_attack: &Option<(moves::PartialMoveSigl, GridCoord)>,
     ph: P,
-) -> Vec<movement::MoveCand<P::Foo>> {
+) -> movement::MovementMesh {
     // If there is an enemy near by restrict movement.
 
-    let j = if let Some(_) = unit
+    let restricted_movement = if let Some(_) = unit
         .position
         .to_cube()
         .ring(1)
         .map(|s| game.that_team.find_slow(&s.to_axial()).is_some())
         .find(|a| *a)
     {
-        1
+        true
     } else {
         match unit.typ {
-            Type::Warrior => 2,
-            Type::Para => 1,
+            Type::Warrior => false,
+            Type::Para => true,
             _ => todo!(),
         }
     };
-
-    let mm = MoveUnit(j);
 
     let mm = if let Some(_) = extra_attack
         .as_ref()
         .filter(|&(_, aaa)| *aaa == unit.position)
     {
-        movement::compute_moves(
-            &movement::WarriorMovement,
+        movement::compute_moves2(
+            unit.position,
             &game.world.filter().and(game.that_team.filter()),
             &movement::NoFilter,
-            &terrain::Grass,
-            unit.position,
-            MoveUnit(1),
+            restricted_movement,
             false,
-            ph,
         )
+        // movement::compute_moves(
+        //     &movement::WarriorMovement,
+        //     ,
+        //     &movement::NoFilter,
+        //     &terrain::Grass,
+        //     unit.position,
+        //     MoveUnit(1),
+        //     false,
+        //     ph,
+        // )
     } else {
-        movement::compute_moves(
-            &movement::WarriorMovement,
+        movement::compute_moves2(
+            unit.position,
             &game.world.filter().and(
                 game.that_team
                     .filter_type(Type::Warrior)
@@ -286,11 +291,8 @@ fn generate_unit_possible_moves_inner<P: movement::PathHave>(
                     .not(),
             ),
             &game.this_team.filter().not(),
-            &terrain::Grass,
-            unit.position,
-            mm,
+            restricted_movement,
             true,
-            ph,
         )
     };
     mm

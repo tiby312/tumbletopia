@@ -583,9 +583,9 @@ pub async fn worker_entry() {
 
                         //if let Some(a) = testo.get_selection() {
                         match a {
-                            CellSelection::MoveSelection(a) => {
-                                for a in a.iter().map(|a| &a.target) {
-                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(a).into();
+                            CellSelection::MoveSelection(point, mesh) => {
+                                for a in mesh.iter_mesh(*point) {
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
 
                                     let m = matrix.chain(t).generate();

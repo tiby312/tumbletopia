@@ -1,3 +1,5 @@
+pub use self::movement_mesh::MovementMesh;
+
 use super::*;
 
 pub trait MoveStrategy {
@@ -18,6 +20,35 @@ pub struct HexDir {
 }
 
 impl HexDir {
+    pub fn all() -> impl Iterator<Item = HexDir> {
+        (0..6).map(|dir| HexDir { dir })
+    }
+    pub fn rotate60_right(&self) -> HexDir {
+        // 0->4
+        // 1->5
+        // 2->0
+        // 3->1
+        // 4->2
+        // 5->3
+
+        HexDir {
+            dir: (self.dir + 1) % 6,
+        }
+    }
+
+    pub fn rotate60_left(&self) -> HexDir {
+        // 0->2
+        // 1->3
+        // 2->4
+        // 3->5
+        // 4->0
+        // 5->1
+
+        HexDir {
+            dir: (self.dir + 5) % 6,
+        }
+    }
+
     pub fn to_relative(&self) -> GridCoord {
         hex::Cube(hex::OFFSETS[self.dir as usize]).to_axial()
     }
@@ -56,14 +87,14 @@ impl Path {
     pub fn get_moves(&self) -> &[HexDir] {
         &self.moves[0..self.num_moves as usize]
     }
-    pub fn add(mut self, a: HexDir) -> Option<Self> {
+    pub fn add(&mut self, a: HexDir) -> bool {
         if self.num_moves >= 20 {
-            return None;
+            return false;
         }
 
         self.moves[self.num_moves as usize] = a;
         self.num_moves += 1;
-        Some(self)
+        true
     }
 
     pub fn get_end_coord(&self, mut start: GridCoord) -> GridCoord {
@@ -110,15 +141,15 @@ impl GridCoord {
         let a = self.0;
         hex::Cube([a[0], a[1], -a[0] - a[1]])
     }
-    fn advance(self, m: HexDir) -> GridCoord {
+    pub fn advance(self, m: HexDir) -> GridCoord {
         self.add(m.to_relative())
     }
-    fn sub(mut self, o: &GridCoord) -> Self {
+    pub fn sub(mut self, o: &GridCoord) -> Self {
         self.0[0] -= o.0[0];
         self.0[1] -= o.0[1];
         self
     }
-    fn add(mut self, o: GridCoord) -> Self {
+    pub fn add(mut self, o: GridCoord) -> Self {
         self.0[0] += o.0[0];
         self.0[1] += o.0[1];
         self
@@ -266,18 +297,8 @@ impl<A: Filter, B: Filter> Filter for And<A, B> {
 //     }
 // }
 
-pub fn contains_coord<'a, I: Iterator<Item = &'a GridCoord>>(mut it: I, b: &GridCoord) -> bool {
+pub fn contains_coord<I: Iterator<Item = GridCoord>>(mut it: I, b: GridCoord) -> bool {
     it.find(|a| *a == b).is_some()
-}
-
-//Represents all the legal moves for a specific piece.
-#[derive(Debug, Clone)]
-struct PossibleMoves {
-    //Has the end coord,path from current, and the remainder cost to get there.
-    //cells that are the furthest away will have a move unit of zero.
-    //TODO start with the remainder when determining attack squares
-    moves: Vec<(GridCoord, Path, MoveUnit)>,
-    start: GridCoord,
 }
 
 ///
@@ -286,17 +307,27 @@ struct PossibleMoves {
 ///
 
 pub mod movement_mesh {
+
+    pub fn explore_outward_two() -> impl Iterator<Item = (HexDir, [HexDir; 3])> {
+        HexDir::all().map(move |dir| {
+            let straight = dir;
+            let left = dir.rotate60_left();
+            let right = dir.rotate60_right();
+            (dir, [straight, left, right])
+        })
+    }
+
     use crate::movement::HexDir;
     #[test]
-    fn test_path(){
-        let k1=GridCoord([1,-1]);
-        let k2=GridCoord([1,-2]);
+    fn test_path() {
+        let k1 = GridCoord([1, -1]);
+        let k2 = GridCoord([1, -2]);
 
-        let mut mesh=MovementMesh::new();
+        let mut mesh = MovementMesh::new();
         mesh.add(k1);
         mesh.add(k2);
 
-        let res:Vec<_>=mesh.path(GridCoord([1,-2])).collect();
+        let res: Vec<_> = mesh.path(GridCoord([1, -2])).collect();
         dbg!(res);
         panic!();
     }
@@ -324,7 +355,7 @@ pub mod movement_mesh {
         assert!(mesh.is_set(k3));
         assert!(!mesh.is_set(GridCoord([-2, 2])));
 
-        let res: Vec<_> = mesh.iter_mesh().collect();
+        let res: Vec<_> = mesh.iter_mesh(GridCoord([0; 2])).collect();
 
         assert_eq!(
             res,
@@ -332,11 +363,11 @@ pub mod movement_mesh {
         )
     }
 
-    fn generate_range(n: i16) -> impl Iterator<Item = GridCoord> {
-        (-n..n + 1).flat_map(move |q| {
-            ((-n).max(-q - n)..n.min(-q + n) + 1).map(move |r| GridCoord([q, r]))
-        })
-    }
+    // fn generate_range(n: i16) -> impl Iterator<Item = GridCoord> {
+    //     (-n..n + 1).flat_map(move |q| {
+    //         ((-n).max(-q - n)..n.min(-q + n) + 1).map(move |r| GridCoord([q, r]))
+    //     })
+    // }
 
     const TABLE: [[i16; 2]; 19] = [
         [-2, 0],
@@ -360,8 +391,6 @@ pub mod movement_mesh {
         [2, 0],
     ];
 
-    use std::ops::Index;
-
     use super::GridCoord;
 
     #[derive(Debug, Copy, Clone)]
@@ -379,6 +408,7 @@ pub mod movement_mesh {
 
         assert!(x <= 2 && x >= -2);
         assert!(y <= 2 && y >= -2);
+
         assert!(x != 0 || y != 0);
     }
     impl MovementMesh {
@@ -386,46 +416,46 @@ pub mod movement_mesh {
             MovementMesh { inner: 0 }
         }
         //TODO
-        pub fn path(&self,a:GridCoord)->impl Iterator<Item=HexDir>{
+        pub fn path(&self, a: GridCoord) -> impl Iterator<Item = HexDir> {
             validate_rel(a);
-            let x=a.0[0];
-            let y=a.0[1];
-            let first=if x>=-1 && x<=1  && y>-1 && y<=1{
-                Some([GridCoord([0,0]).dir_to(&a)])
-            }else{
+            let x = a.0[0];
+            let y = a.0[1];
+            let first = if GridCoord([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
+                Some([GridCoord([0, 0]).dir_to(&a)])
+            } else {
                 None
             };
-
-            
 
             //diagonal
-            let second=if first.is_none() && (x.abs()==1 || y.abs()==1){
+            let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
                 //TODO inefficient
-                let mut k=GridCoord([0,0]).to_cube().neighbours().filter(|x|{
-                    x.dist(&a.to_cube())==1
-                });    
-                let first=k.next().unwrap().to_axial();
-                let second=k.next().unwrap().to_axial();
-                if self.is_set(first){
-                    Some([GridCoord([0,0]).dir_to(&first),first.dir_to(&a)])
-                }else{
-                    assert!(self.is_set(second));
-                    Some([GridCoord([0,0]).dir_to(&second),second.dir_to(&a)])
+                let mut k = GridCoord([0, 0])
+                    .to_cube()
+                    .neighbours()
+                    .filter(|x| x.dist(&a.to_cube()) == 1);
+                let first = k.next().unwrap().to_axial();
+                let second = k.next().unwrap().to_axial();
+                if self.is_set(first) {
+                    Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
+                } else {
+                    //TODO this is not true teamates jumping over each other.
+                    //assert!(self.is_set(second));
+                    Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
                 }
-            }else{
+            } else {
                 None
             };
 
-            let third=if first.is_none() && !(x.abs()==1 || y.abs()==1){
-                let h=GridCoord([0,0]).dir_to(&a);
-                Some([h,h])
-            }else{
+            let third = if first.is_none() && !(x.abs() == 1 || y.abs() == 1) {
+                let h = GridCoord([0, 0]).dir_to(&a);
+                Some([h, h])
+            } else {
                 None
             };
 
-            let a=first.into_iter().flatten();
-            let b=second.into_iter().flatten();
-            let c=third.into_iter().flatten();
+            let a = first.into_iter().flatten();
+            let b = second.into_iter().flatten();
+            let c = third.into_iter().flatten();
             a.chain(b).chain(c)
         }
         pub fn add(&mut self, a: GridCoord) {
@@ -442,17 +472,16 @@ pub mod movement_mesh {
             self.inner & (1 << ind) != 0
         }
 
-        pub fn iter_mesh(&self) -> impl Iterator<Item = GridCoord> {
+        pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             let inner = self.inner;
             TABLE
                 .iter()
                 .enumerate()
                 .filter(move |(x, _)| inner & (1 << x) != 0)
-                .map(|(_, x)| GridCoord(*x))
+                .map(move |(_, x)| point.add(GridCoord(*x)))
         }
     }
     fn conv(a: GridCoord) -> usize {
-        dbg!(a);
         TABLE
             .iter()
             .enumerate()
@@ -460,9 +489,9 @@ pub mod movement_mesh {
             .expect("Could not find the coord in table")
             .0
     }
-    fn conv_inv(ind: usize) -> GridCoord {
-        GridCoord(TABLE[ind])
-    }
+    // fn conv_inv(ind: usize) -> GridCoord {
+    //     GridCoord(TABLE[ind])
+    // }
 }
 #[derive(Debug, Clone)]
 pub struct MoveCand<P> {
@@ -496,225 +525,291 @@ impl PathHave for WithPath {
     }
 }
 
-pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost, PH: PathHave>(
-    movement: &K,
+pub fn compute_moves2<F: Filter, F2: Filter>(
+    coord: GridCoord,
     filter: &F,
     skip_filter: &F2,
-    mo: &M,
-    coord: GridCoord,
-    remaining_moves: MoveUnit,
+    restricted_movement: bool,
     slide_rule: bool,
-    ph: PH,
-) -> Vec<MoveCand<PH::Foo>> {
-    let m = PossibleMoves::new(
-        movement,
-        filter,
-        skip_filter,
-        mo,
-        coord,
-        remaining_moves,
-        slide_rule,
-    );
+) -> MovementMesh {
+    let mut m = MovementMesh::new();
 
-    let moves = m
-        .moves
-        .into_iter()
-        .map(|(target, path, _)| MoveCand {
-            target,
-            path: ph.path(path),
-        })
-        .collect();
-    moves
-}
-
-impl PossibleMoves {
-    fn new<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
-        movement: &K,
+    fn handle<F: Filter, F2: Filter>(
+        m: &mut MovementMesh,
+        base: GridCoord,
+        coord: GridCoord,
+        dir: HexDir,
         filter: &F,
         skip_filter: &F2,
-        mo: &M,
-        coord: GridCoord,
-        remaining_moves: MoveUnit,
         slide_rule: bool,
-    ) -> Self {
-        let remaining_moves = MoveUnit(remaining_moves.0);
-        let mut p = PossibleMoves {
-            moves: vec![],
-            start: coord,
-        };
-        p.explore_path(
-            movement,
-            filter,
-            skip_filter,
-            mo,
-            Path::new(),
-            remaining_moves,
-            slide_rule,
-        );
-        p
-    }
+    ) -> bool {
+        let first = coord.advance(dir);
+        //TODO first check if this cell is already set
 
-    // pub fn get_path_data(&self, g: &GridCoord) -> Option<(&Path, &MoveUnit)> {
-    //     self.moves.iter().find(|a| &a.0 == g).map(|a| (&a.1, &a.2))
-    // }
+        if let FilterRes::Stop = filter.filter(&first) {
+            return false;
+        }
 
-    // pub fn start(&self) -> &GridCoord {
-    //     &self.start
-    // }
-
-    // pub fn iter_coords(&self) -> impl Iterator<Item = &GridCoord> {
-    //     self.moves.iter().map(|a| &a.0)
-    // }
-
-    fn explore_path<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
-        &mut self,
-        movement: &K,
-        continue_filter: &F,
-        skip_filter: &F2,
-        mo: &M,
-        current_path: Path,
-        remaining_moves: MoveUnit,
-        slide_rule: bool,
-    ) {
-        // if remaining_moves.0 == 0 {
-        //      return;
-        // }
-
-        // 2-OG
-        // warrior has 2 move points
-        // warrior moves to grass and expends its 2 move points
-        // warrior cant move anymore
-
-        // 2-ORG
-        // warrior has 2 move points
-        // warrior moves to road on grass and expends 1 move point (2-1)
-        // warrior has 1 move point.
-        // warrior moves to grass and expends 2 move points.
-        // warrior has -1 move points. can't move anymore.
-
-        // 2-ORRG
-        // warrior has 2 move points
-        // warrior moves to road on grass and expends 1 move point (2-1)
-        // warrior has 1 move point
-        // warrior moves to road on grass and expends 1 move point?????
-        // warrior has 0 move points. cant move anymore.
-
-        let curr_pos = current_path.get_end_coord(self.start);
-
-        //log!(format!("rem:{:?}",remaining_moves.0));
-        for a in K::adjacent() {
-            let target_pos = curr_pos.advance(a);
-
-            if slide_rule {
-                let aaa = a.to_relative().to_cube().rotate_60_left();
-                let bbb = a.to_relative().to_cube().rotate_60_right();
-
-                let ttt1 = match continue_filter.filter(&target_pos.add(aaa.to_axial())) {
-                    FilterRes::Stop => false,
-                    FilterRes::Accept => true,
-                };
-
-                let ttt2 = match continue_filter.filter(&target_pos.add(bbb.to_axial())) {
-                    FilterRes::Stop => false,
-                    FilterRes::Accept => true,
-                };
-
-                if !ttt1 && !ttt2 {
-                    continue;
-                }
-            }
-
-            match continue_filter.filter(&target_pos) {
-                FilterRes::Stop => continue,
-                FilterRes::Accept => {}
-            }
-
-            let skip = match skip_filter.filter(&target_pos) {
-                FilterRes::Stop => true,
-                FilterRes::Accept => false,
+        if slide_rule {
+            let ttt1 = match filter.filter(&coord.advance(dir.rotate60_right())) {
+                FilterRes::Stop => false,
+                FilterRes::Accept => true,
             };
 
-            //We must have remaining moves to satisfy ALL move cost.
-            // if remaining_moves.0<current_path.move_cost(a).0{
-            //     continue;
-            // }
+            let ttt2 = match filter.filter(&coord.advance(dir.rotate60_left())) {
+                FilterRes::Stop => false,
+                FilterRes::Accept => true,
+            };
 
-            let move_cost = current_path.move_cost(a);
-            // if move_cost.0>remaining_moves.0{
-            //     move_cost.0=remaining_moves.0;
-            // }
-            //TODO road should HALF the cost?
-            let cost = mo.foop(target_pos, move_cost);
-
-            //todo!("Need to allow cardinal movement at 1 point. Not working???");
-
-            //as long as we have SOME remainv moves, we can go to this square even
-            //if it is really expensive.
-            // if !(remaining_moves.0 > 0) {
-            //     continue;
-            // }
-            //Allow 1 point remainder!!!!
-            // if remaining_moves.0 +2 <= 2 {
-            //     continue;
-            // }
-
-            if !(remaining_moves.0 >= cost.0) {
-                //-1
-                continue;
+            if !ttt1 && !ttt2 {
+                return false;
             }
+        }
 
-            //subtract move cost
-            let rr = remaining_moves.sub(cost);
+        if let FilterRes::Stop = filter.filter(&first) {
+            return false;
+        }
 
-            if !skip {
-                if !self.consider(&current_path, a, rr) {
-                    continue;
+        if let FilterRes::Accept = skip_filter.filter(&first) {
+            m.add(first.sub(&base));
+        }
+
+        return true;
+    }
+
+    for (a, rest) in self::movement_mesh::explore_outward_two() {
+        if handle(&mut m, coord, coord, a, filter, skip_filter, slide_rule) {
+            if !restricted_movement {
+                let first = coord.advance(a);
+                for a in rest {
+                    let _ = handle(&mut m, coord, first, a, filter, skip_filter, slide_rule);
                 }
             }
-
-            //if !stop {
-            self.explore_path(
-                movement,
-                continue_filter,
-                skip_filter,
-                mo,
-                current_path.add(a).unwrap(),
-                rr,
-                slide_rule,
-            )
-            //}
         }
     }
 
-    fn consider(&mut self, path: &Path, m: HexDir, cost: MoveUnit) -> bool {
-        //if this move unit is greater than what we already have, replace it.
-        //we found a quicker way to get to the same square.
-
-        //if it is not quicker, imediately stop everything.
-        let new_path = path.add(m).unwrap();
-        let coord = new_path.get_end_coord(self.start);
-
-        //we found a match now lets compare
-        let index =
-            if let Some((index, _)) = self.moves.iter().enumerate().find(|(_, a)| a.0 == coord) {
-                index
-            } else {
-                self.moves.push((coord, new_path, cost));
-                return true;
-            };
-
-        if cost.0 > self.moves[index].2 .0 {
-            let og = &mut self.moves[index];
-            let new = &mut (coord, new_path, cost);
-            core::mem::swap(og, new);
-            // self.moves.push();
-            // self.moves.swap_remove(index);
-            return true;
-        }
-
-        return false;
-    }
+    m
 }
+
+// pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost, PH: PathHave>(
+//     movement: &K,
+//     filter: &F,
+//     skip_filter: &F2,
+//     mo: &M,
+//     coord: GridCoord,
+//     remaining_moves: MoveUnit,
+//     slide_rule: bool,
+//     ph: PH,
+// ) -> Vec<MoveCand<PH::Foo>> {
+//     let m = PossibleMoves::new(
+//         movement,
+//         filter,
+//         skip_filter,
+//         mo,
+//         coord,
+//         remaining_moves,
+//         slide_rule,
+//     );
+
+//     let moves = m
+//         .moves
+//         .into_iter()
+//         .map(|(target, path, _)| MoveCand {
+//             target,
+//             path: ph.path(path),
+//         })
+//         .collect();
+//     moves
+// }
+
+// impl PossibleMoves {
+//     fn new<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
+//         movement: &K,
+//         filter: &F,
+//         skip_filter: &F2,
+//         mo: &M,
+//         coord: GridCoord,
+//         remaining_moves: MoveUnit,
+//         slide_rule: bool,
+//     ) -> Self {
+//         let remaining_moves = MoveUnit(remaining_moves.0);
+//         let mut p = PossibleMoves {
+//             moves: vec![],
+//             start: coord,
+//         };
+//         p.explore_path(
+//             movement,
+//             filter,
+//             skip_filter,
+//             mo,
+//             Path::new(),
+//             remaining_moves,
+//             slide_rule,
+//         );
+//         p
+//     }
+
+//     // pub fn get_path_data(&self, g: &GridCoord) -> Option<(&Path, &MoveUnit)> {
+//     //     self.moves.iter().find(|a| &a.0 == g).map(|a| (&a.1, &a.2))
+//     // }
+
+//     // pub fn start(&self) -> &GridCoord {
+//     //     &self.start
+//     // }
+
+//     // pub fn iter_coords(&self) -> impl Iterator<Item = &GridCoord> {
+//     //     self.moves.iter().map(|a| &a.0)
+//     // }
+
+//     fn explore_path<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
+//         &mut self,
+//         movement: &K,
+//         continue_filter: &F,
+//         skip_filter: &F2,
+//         mo: &M,
+//         current_path: Path,
+//         remaining_moves: MoveUnit,
+//         slide_rule: bool,
+//     ) {
+//         // if remaining_moves.0 == 0 {
+//         //      return;
+//         // }
+
+//         // 2-OG
+//         // warrior has 2 move points
+//         // warrior moves to grass and expends its 2 move points
+//         // warrior cant move anymore
+
+//         // 2-ORG
+//         // warrior has 2 move points
+//         // warrior moves to road on grass and expends 1 move point (2-1)
+//         // warrior has 1 move point.
+//         // warrior moves to grass and expends 2 move points.
+//         // warrior has -1 move points. can't move anymore.
+
+//         // 2-ORRG
+//         // warrior has 2 move points
+//         // warrior moves to road on grass and expends 1 move point (2-1)
+//         // warrior has 1 move point
+//         // warrior moves to road on grass and expends 1 move point?????
+//         // warrior has 0 move points. cant move anymore.
+
+//         let curr_pos = current_path.get_end_coord(self.start);
+
+//         //log!(format!("rem:{:?}",remaining_moves.0));
+//         for a in K::adjacent() {
+//             let target_pos = curr_pos.advance(a);
+
+//             if slide_rule {
+//                 let aaa = a.to_relative().to_cube().rotate_60_left();
+//                 let bbb = a.to_relative().to_cube().rotate_60_right();
+
+//                 let ttt1 = match continue_filter.filter(&target_pos.add(aaa.to_axial())) {
+//                     FilterRes::Stop => false,
+//                     FilterRes::Accept => true,
+//                 };
+
+//                 let ttt2 = match continue_filter.filter(&target_pos.add(bbb.to_axial())) {
+//                     FilterRes::Stop => false,
+//                     FilterRes::Accept => true,
+//                 };
+
+//                 if !ttt1 && !ttt2 {
+//                     continue;
+//                 }
+//             }
+
+//             match continue_filter.filter(&target_pos) {
+//                 FilterRes::Stop => continue,
+//                 FilterRes::Accept => {}
+//             }
+
+//             let skip = match skip_filter.filter(&target_pos) {
+//                 FilterRes::Stop => true,
+//                 FilterRes::Accept => false,
+//             };
+
+//             //We must have remaining moves to satisfy ALL move cost.
+//             // if remaining_moves.0<current_path.move_cost(a).0{
+//             //     continue;
+//             // }
+
+//             let move_cost = current_path.move_cost(a);
+//             // if move_cost.0>remaining_moves.0{
+//             //     move_cost.0=remaining_moves.0;
+//             // }
+//             //TODO road should HALF the cost?
+//             let cost = mo.foop(target_pos, move_cost);
+
+//             //todo!("Need to allow cardinal movement at 1 point. Not working???");
+
+//             //as long as we have SOME remainv moves, we can go to this square even
+//             //if it is really expensive.
+//             // if !(remaining_moves.0 > 0) {
+//             //     continue;
+//             // }
+//             //Allow 1 point remainder!!!!
+//             // if remaining_moves.0 +2 <= 2 {
+//             //     continue;
+//             // }
+
+//             if !(remaining_moves.0 >= cost.0) {
+//                 //-1
+//                 continue;
+//             }
+
+//             //subtract move cost
+//             let rr = remaining_moves.sub(cost);
+
+//             if !skip {
+//                 if !self.consider(&current_path, a, rr) {
+//                     continue;
+//                 }
+//             }
+
+//             //if !stop {
+//             self.explore_path(
+//                 movement,
+//                 continue_filter,
+//                 skip_filter,
+//                 mo,
+//                 current_path.add(a).unwrap(),
+//                 rr,
+//                 slide_rule,
+//             )
+//             //}
+//         }
+//     }
+
+//     fn consider(&mut self, path: &Path, m: HexDir, cost: MoveUnit) -> bool {
+//         //if this move unit is greater than what we already have, replace it.
+//         //we found a quicker way to get to the same square.
+
+//         //if it is not quicker, imediately stop everything.
+//         let new_path = path.add(m).unwrap();
+//         let coord = new_path.get_end_coord(self.start);
+
+//         //we found a match now lets compare
+//         let index =
+//             if let Some((index, _)) = self.moves.iter().enumerate().find(|(_, a)| a.0 == coord) {
+//                 index
+//             } else {
+//                 self.moves.push((coord, new_path, cost));
+//                 return true;
+//             };
+
+//         if cost.0 > self.moves[index].2 .0 {
+//             let og = &mut self.moves[index];
+//             let new = &mut (coord, new_path, cost);
+//             core::mem::swap(og, new);
+//             // self.moves.push();
+//             // self.moves.swap_remove(index);
+//             return true;
+//         }
+
+//         return false;
+//     }
+// }
 
 // //normal terrain is 2.
 // //road is 1.

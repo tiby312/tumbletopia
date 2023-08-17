@@ -279,7 +279,7 @@ pub async fn reselect_loop(
         selection::SelectionType::Extra(e) => e.generate(&relative_game_view),
     };
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
-    let cc = CellSelection::MoveSelection(cc);
+    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cc);
 
     let (cell, pototo) = doop.get_mouse_selection(cc, selected_unit.team, grey).await;
 
@@ -293,7 +293,7 @@ pub async fn reselect_loop(
     let target_cell = mouse_world;
 
     //This is the cell the user selected from the pool of available moves for the unit
-    let CellSelection::MoveSelection(ss)=cell else{
+    let CellSelection::MoveSelection(_,ss)=cell else{
         unreachable!()
     };
 
@@ -302,7 +302,7 @@ pub async fn reselect_loop(
         return LoopRes::Deselect;
     }
 
-    let contains = movement::contains_coord(ss.iter().map(|x| &x.target), &target_cell);
+    let contains = movement::contains_coord(ss.iter_mesh(unwrapped_selected_unit), target_cell);
 
     //If we select a friendly unit quick swap
     if let Some(target) = relative_game_view.this_team.find_slow(&target_cell) {
