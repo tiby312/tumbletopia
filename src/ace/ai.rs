@@ -106,13 +106,16 @@ fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
     s.finish()
 }
 
-pub struct TranspositionTable<'a> {
+
+
+pub struct TranspositionTable {
     a: std::collections::HashMap<
        u64,
-        (usize, (PossibleMove<'a>, Eval)),
+        (usize, GameState, Eval),
     >,
 }
-impl<'a> TranspositionTable<'a> {
+
+impl TranspositionTable {
     pub fn new() -> Self {
         TranspositionTable {
             a: std::collections::HashMap::new(),
@@ -120,9 +123,9 @@ impl<'a> TranspositionTable<'a> {
     }
     pub fn lookup(
         &self,
-        a: GameThing<'a>,
+        a: &GameState,
         depth:usize
-    ) -> Option<&(usize, (PossibleMove<'a>, Eval))> {
+    ) -> Option<&(usize, GameState, Eval)> {
         let k=calculate_hash(&a);
     
         if let Some(a)=self.a.get(&k){
@@ -137,21 +140,26 @@ impl<'a> TranspositionTable<'a> {
     }
     pub fn consider(
         &mut self,
-        val: (PossibleMove<'a>,Eval),
         depth: usize,
+        game:GameState,
+        eval:Eval
     ) {
-        let k=calculate_hash(&val.0.game_after_move);
+        let k=calculate_hash(&game);
 
-        if let Some((old_depth, v)) = self.a.get_mut(&k) {
+        if let Some((old_depth,state, v)) = self.a.get_mut(&k) {
             if depth > *old_depth {
                 *old_depth = depth;
-                *v = val;
+                *state=game;
+                *v = eval;
             }
         } else {
-            let _ = self.a.insert(k, (depth, val));
+            let _ = self.a.insert(k, (depth, game,eval));
         }
     }
 }
+
+
+
 
 pub fn iterative_deepening<'a>(game: &GameViewMut<'_, 'a>) -> (Option<PossibleMove<'a>>, Eval) {
     //TODO add transpotion table!!!!

@@ -125,7 +125,7 @@ impl<'a> WarriorDraw<'a> {
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
 //Additionally removes need to special case animation.
-#[derive(Debug)]
+#[derive(Debug,Hash,Eq,PartialEq)]
 pub struct GameState {
     dogs: Tribe,
     cats: Tribe,
