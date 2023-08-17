@@ -393,7 +393,7 @@ pub mod movement_mesh {
 
     use super::GridCoord;
 
-    #[derive(Debug, Copy, Clone)]
+    #[derive(PartialEq, Eq, Debug, Copy, Clone)]
     pub struct MovementMesh {
         //A ring of size two not including the center cell has 1+6+12=19 cells.
 

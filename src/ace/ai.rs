@@ -138,7 +138,12 @@ pub fn iterative_deepening<'a>(game: &GameViewMut<'_, 'a>) -> (Option<PossibleMo
     // let mut res: Vec<_> = (0..5)
     //     .map(|x| ai::alpha_beta(game.duplicate(), x, false, f64::NEG_INFINITY, f64::INFINITY))
     //     .collect();
+    let mut count = Counter { count: 0 };
 
+    //WITH prinicap variation
+    //[src/ace/ai.rs:162]  count =  Counter { count: 326054 }
+    //WITHOUT
+    //[src/ace/ai.rs:162]  count =  Counter { count: 595817 }
     let mut results = Vec::new();
     let mut principal_variation = None;
     for depth in 0..5 {
@@ -149,18 +154,28 @@ pub fn iterative_deepening<'a>(game: &GameViewMut<'_, 'a>) -> (Option<PossibleMo
             f64::NEG_INFINITY,
             f64::INFINITY,
             principal_variation,
+            &mut count,
         );
         principal_variation = res.0.clone();
         results.push(res);
     }
     //console_dbg!(res);
-
+    console_dbg!(count);
     results.dedup_by_key(|x| x.1);
     //console_dbg!(res);
 
     results.pop().unwrap()
 }
 
+#[derive(Debug)]
+pub struct Counter {
+    count: u128,
+}
+impl Counter {
+    pub fn add_eval(&mut self) {
+        self.count += 1;
+    }
+}
 pub fn alpha_beta<'a>(
     mut node: GameThing<'a>,
     depth: usize,
@@ -168,6 +183,7 @@ pub fn alpha_beta<'a>(
     mut alpha: f64,
     mut beta: f64,
     principal_variation: Option<PossibleMove<'a>>,
+    calls: &mut Counter,
 ) -> (Option<PossibleMove<'a>>, Eval) {
     if let Some(k) = &principal_variation {
         assert_eq!(k.game_after_move.team, node.team);
@@ -175,6 +191,7 @@ pub fn alpha_beta<'a>(
 
     //console_dbg!(depth);
     if depth == 0 || game_is_over(node.view()) {
+        calls.add_eval();
         (None, absolute_evaluate(&node.view()))
     } else {
         let v = node.view();
@@ -186,8 +203,19 @@ pub fn alpha_beta<'a>(
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
             for (i, cand) in principal_variation
+                .clone()
                 .into_iter()
-                .chain(for_all_moves(&v))
+                .chain(for_all_moves(&v).filter(|cand| {
+                    if let Some(p) = &principal_variation {
+                        if p == cand {
+                            false
+                        } else {
+                            true
+                        }
+                    } else {
+                        true
+                    }
+                }))
                 .enumerate()
             {
                 let t = alpha_beta(
@@ -197,6 +225,7 @@ pub fn alpha_beta<'a>(
                     alpha,
                     beta,
                     None,
+                    calls,
                 );
                 value = value.max(t.1);
                 if value == t.1 {
@@ -212,12 +241,21 @@ pub fn alpha_beta<'a>(
         } else {
             let mut mm: Option<PossibleMove> = None;
 
-            let mut mesh_final = MovementMesh::new();
-
             let mut value = f64::INFINITY;
             for (i, cand) in principal_variation
+                .clone()
                 .into_iter()
-                .chain(for_all_moves(&v))
+                .chain(for_all_moves(&v).filter(|cand| {
+                    if let Some(p) = &principal_variation {
+                        if p == cand {
+                            false
+                        } else {
+                            true
+                        }
+                    } else {
+                        true
+                    }
+                }))
                 .enumerate()
             {
                 let t = alpha_beta(
@@ -227,6 +265,7 @@ pub fn alpha_beta<'a>(
                     alpha,
                     beta,
                     None,
+                    calls,
                 );
                 value = value.min(t.1);
                 if value == t.1 {
@@ -278,7 +317,7 @@ pub fn min_max<'a>(
     }
 }
 
-#[derive(Clone)]
+#[derive(PartialEq, Eq, Clone)]
 pub struct PossibleMove<'a> {
     pub the_move: moves::ActualMove,
     pub mesh: MovementMesh,

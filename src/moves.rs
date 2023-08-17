@@ -8,7 +8,7 @@ pub struct AMove {
     selection: movement::MovementMesh,
 }
 
-#[derive(Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum ActualMove {
     NormalMove(PartialMoveSigl),
     ExtraMove(PartialMoveSigl, PartialMoveSigl),
@@ -16,7 +16,7 @@ pub enum ActualMove {
     GameEnd(GameEnding),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub enum GameEnding {
     Win(ActiveTeam),
     Draw,
@@ -234,7 +234,7 @@ pub struct MovementSigl {
     pub unit: GridCoord,
     pub moveto: GridCoord,
 }
-#[derive(Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct PartialMoveSigl {
     pub unit: GridCoord,
     pub moveto: GridCoord,
