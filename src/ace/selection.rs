@@ -40,25 +40,6 @@ pub struct ComboContinueSelection {
 #[derive(Debug)]
 pub struct NoPathErr;
 impl ComboContinueSelection {
-    fn get_path_from_move(
-        &self,
-        target_cell: GridCoord,
-        game: &GameViewMut,
-    ) -> Result<movement::Path, NoPathErr> {
-        //Reconstruct possible paths with path information this time.
-        let ss = generate_unit_possible_moves_inner(
-            &self.unit,
-            game,
-            &Some((self.extra.prev_move.clone(), self.extra.prev_coord.position)),
-        );
-
-        //TODO return iterator instead?
-        let mut p = movement::Path::new();
-        for a in ss.path(target_cell.sub(&self.unit.position)) {
-            p.add(a);
-        }
-        Ok(p)
-    }
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
         generate_unit_possible_moves_inner(
             &self.unit,
@@ -74,7 +55,6 @@ impl ComboContinueSelection {
         doop: &mut ace::WorkerManager<'_>,
         move_log: &mut MoveLog,
     ) -> Result<(), NoPathErr> {
-        let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
 
         if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
@@ -99,7 +79,6 @@ impl ComboContinueSelection {
         game_view: &mut GameViewMut<'_, '_>,
         move_log: &mut MoveLog,
     ) -> Result<(), NoPathErr> {
-        let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
 
         if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {

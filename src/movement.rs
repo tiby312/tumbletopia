@@ -54,67 +54,67 @@ impl HexDir {
     }
 }
 
-//TODO a direction is only 6 values. Left over values when
-//put into 3 bits.
-#[derive(Copy, Clone)]
-pub struct Path {
-    //TODO optimize this to be just one 64bit integer?
-    //20 moves is just max possible moves
-    moves: [HexDir; 20],
-    num_moves: u8,
-}
+// //TODO a direction is only 6 values. Left over values when
+// //put into 3 bits.
+// #[derive(Copy, Clone)]
+// pub struct Path {
+//     //TODO optimize this to be just one 64bit integer?
+//     //20 moves is just max possible moves
+//     moves: [HexDir; 20],
+//     num_moves: u8,
+// }
 
-impl std::fmt::Debug for Path {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Path:")?;
-        for a in self.moves.iter().take(self.num_moves as usize) {
-            write!(f, "{:?},", a)?;
-        }
-        writeln!(f)
-    }
-}
-impl Path {
-    pub fn new() -> Self {
-        Path {
-            moves: [HexDir { dir: 0 }; 20],
-            num_moves: 0,
-        }
-    }
-    pub fn into_moves(self) -> impl Iterator<Item = HexDir> {
-        self.moves.into_iter().take(self.num_moves as usize)
-    }
+// impl std::fmt::Debug for Path {
+//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+//         write!(f, "Path:")?;
+//         for a in self.moves.iter().take(self.num_moves as usize) {
+//             write!(f, "{:?},", a)?;
+//         }
+//         writeln!(f)
+//     }
+// }
+// impl Path {
+//     pub fn new() -> Self {
+//         Path {
+//             moves: [HexDir { dir: 0 }; 20],
+//             num_moves: 0,
+//         }
+//     }
+//     pub fn into_moves(self) -> impl Iterator<Item = HexDir> {
+//         self.moves.into_iter().take(self.num_moves as usize)
+//     }
 
-    pub fn get_moves(&self) -> &[HexDir] {
-        &self.moves[0..self.num_moves as usize]
-    }
-    pub fn add(&mut self, a: HexDir) -> bool {
-        if self.num_moves >= 20 {
-            return false;
-        }
+//     pub fn get_moves(&self) -> &[HexDir] {
+//         &self.moves[0..self.num_moves as usize]
+//     }
+//     pub fn add(&mut self, a: HexDir) -> bool {
+//         if self.num_moves >= 20 {
+//             return false;
+//         }
 
-        self.moves[self.num_moves as usize] = a;
-        self.num_moves += 1;
-        true
-    }
+//         self.moves[self.num_moves as usize] = a;
+//         self.num_moves += 1;
+//         true
+//     }
 
-    pub fn get_end_coord(&self, mut start: GridCoord) -> GridCoord {
-        for m in self.moves.iter().take(self.num_moves as usize) {
-            start = start.add(m.to_relative());
-        }
-        start
-    }
+//     pub fn get_end_coord(&self, mut start: GridCoord) -> GridCoord {
+//         for m in self.moves.iter().take(self.num_moves as usize) {
+//             start = start.add(m.to_relative());
+//         }
+//         start
+//     }
 
-    pub fn total_cost(&self) -> MoveUnit {
-        let mut total = 0;
-        for a in self.get_moves() {
-            total += self.move_cost(*a).0;
-        }
-        MoveUnit(total)
-    }
-    fn move_cost(&self, _: HexDir) -> MoveUnit {
-        MoveUnit(1)
-    }
-}
+//     pub fn total_cost(&self) -> MoveUnit {
+//         let mut total = 0;
+//         for a in self.get_moves() {
+//             total += self.move_cost(*a).0;
+//         }
+//         MoveUnit(total)
+//     }
+//     fn move_cost(&self, _: HexDir) -> MoveUnit {
+//         MoveUnit(1)
+//     }
+// }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 #[must_use]
@@ -505,25 +505,25 @@ pub struct MoveCand<P> {
 //     pub moves: Vec<MoveCand<P>>,
 // }
 
-pub trait PathHave {
-    type Foo;
-    fn path(&self, a: Path) -> Self::Foo;
-}
-pub struct WithPath;
-pub struct NoPath;
+// pub trait PathHave {
+//     type Foo;
+//     fn path(&self, a: Path) -> Self::Foo;
+// }
+// pub struct WithPath;
+// pub struct NoPath;
 
-impl PathHave for NoPath {
-    type Foo = ();
-    fn path(&self, _: Path) -> () {
-        ()
-    }
-}
-impl PathHave for WithPath {
-    type Foo = Path;
-    fn path(&self, a: Path) -> Path {
-        a
-    }
-}
+// impl PathHave for NoPath {
+//     type Foo = ();
+//     fn path(&self, _: Path) -> () {
+//         ()
+//     }
+// }
+// impl PathHave for WithPath {
+//     type Foo = Path;
+//     fn path(&self, a: Path) -> Path {
+//         a
+//     }
+// }
 
 pub fn compute_moves2<F: Filter, F2: Filter>(
     coord: GridCoord,

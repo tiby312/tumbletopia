@@ -156,7 +156,7 @@ impl Doopa2 {
     }
 }
 
-use crate::movement::{MovementMesh, Path};
+use crate::movement::MovementMesh;
 
 pub enum ExtraMove<T> {
     ExtraMove { unit: T },

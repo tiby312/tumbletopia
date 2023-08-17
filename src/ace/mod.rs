@@ -5,7 +5,7 @@ mod selection;
 use crate::{
     animation::Animation,
     grids::GridMatrix,
-    movement::{self, Filter, GridCoord, MoveUnit, NoPath},
+    movement::{self, Filter, GridCoord, MoveUnit},
     terrain::{self},
     CellSelection, Game, UnitData,
 };
