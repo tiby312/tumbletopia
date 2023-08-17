@@ -98,6 +98,55 @@ pub fn game_is_over(view: GameViewMut<'_, '_>) -> bool {
     false
 }
 
+pub struct TranspositionTable<'a> {
+    a: std::collections::HashMap<
+        GameThing<'a>,
+        (usize, (Option<moves::ActualMove>, MovementMesh, Eval)),
+    >,
+}
+impl<'a> TranspositionTable<'a> {
+    pub fn new() -> Self {
+        TranspositionTable {
+            a: std::collections::HashMap::new(),
+        }
+    }
+    pub fn lookup(
+        &self,
+        a: &GameThing<'a>,
+    ) -> Option<&(usize, (Option<moves::ActualMove>, MovementMesh, Eval))> {
+        self.a.get(a)
+    }
+    pub fn set(
+        &mut self,
+        a: GameThing<'a>,
+        depth: usize,
+        val: (Option<moves::ActualMove>, MovementMesh, Eval),
+    ) {
+        if let Some((old_depth, v)) = self.a.get_mut(&a) {
+            if depth < *old_depth {
+                *old_depth = depth;
+                *v = val;
+            }
+        } else {
+            let _ = self.a.insert(a, (depth, val));
+        }
+    }
+}
+
+pub fn iterative_deepening(game: &GameViewMut) -> (Option<moves::ActualMove>, MovementMesh, Eval) {
+    //TODO add transpotion table!!!!
+    let mut res: Vec<_> = (0..5)
+        .map(|x| ai::alpha_beta(game.duplicate(), x, false, f64::NEG_INFINITY, f64::INFINITY))
+        .collect();
+
+    console_dbg!(res);
+
+    res.dedup_by_key(|x| x.2);
+    console_dbg!(res);
+
+    res.pop().unwrap()
+}
+
 pub fn alpha_beta<'a>(
     mut node: GameThing<'a>,
     depth: usize,

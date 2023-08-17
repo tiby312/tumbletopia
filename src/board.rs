@@ -29,7 +29,7 @@ fn world() -> impl Iterator<Item = hex::Cube> {
     hex::Cube::new(0, 0).range(4)
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Hash, Debug)]
 pub struct World {}
 impl World {
     pub fn new() -> Self {

@@ -194,7 +194,7 @@ impl<'a> WorkerManager<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Hash, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ActiveTeam {
     Cats = 0,
     Dogs = 1,
@@ -578,21 +578,7 @@ pub async fn main_logic<'a>(
         if team_index == ActiveTeam::Dogs {
             let mut game = game.view_mut(team_index);
 
-            //TODO add transpotion table!!!!
-            let mut res: Vec<_> = (0..5)
-                .map(|x| {
-                    ai::alpha_beta(game.duplicate(), x, false, f64::NEG_INFINITY, f64::INFINITY)
-                })
-                .collect();
-
-            console_dbg!(res);
-
-            res.dedup_by_key(|x| x.2);
-            console_dbg!(res);
-
-            let j = res.pop().unwrap();
-
-            //console_dbg!("FOUND MOVE=", j);
+            let j = ai::iterative_deepening(&game);
 
             let m = j.0.unwrap();
             let mesh = j.1;

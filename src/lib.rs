@@ -166,7 +166,7 @@ impl Game {
     }
 }
 
-#[derive(Clone)]
+#[derive(Eq, PartialEq, Clone, Hash)]
 pub struct GameThing<'a> {
     this_team: Tribe,
     that_team: Tribe,

@@ -2,7 +2,7 @@ use crate::movement::FilterRes;
 
 use super::*;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Default)]
 pub struct UnitData {
     pub position: GridCoord,
     pub typ: Type,
@@ -19,7 +19,7 @@ pub enum CellSelection {
     BuildSelection(GridCoord),
 }
 
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Hash, Default, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {
     #[default]
     Warrior,
@@ -50,7 +50,7 @@ impl Type {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Tribe {
     pub units: smallvec::SmallVec<[UnitData; 5]>,
 }
