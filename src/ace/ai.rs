@@ -9,8 +9,8 @@ pub type Eval = f64; //(f64);
 
 //cats maximizing
 //dogs minimizing
-fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
-    let view = view.absolute();
+fn absolute_evaluate(view: &AbsoluteGameView<'_, '_>) -> Eval {
+    //let view = view.absolute();
     let num_cats = view.cats.units.len();
     let num_dogs = view.dogs.units.len();
     let diff = num_cats as i64 - num_dogs as i64;
@@ -206,7 +206,7 @@ pub fn alpha_beta<'a>(
     //console_dbg!(depth);
     if depth == 0 || game_is_over(node.view()) {
         calls.add_eval();
-        (None, absolute_evaluate(&node.view()))
+        (None, absolute_evaluate(&node.view().absolute()))
     } else {
         let v = node.view();
 
@@ -305,7 +305,7 @@ pub fn min_max<'a>(
 ) -> (Option<moves::ActualMove>, MovementMesh, Eval) {
     //console_dbg!(depth);
     if depth == 0 || game_is_over(node.view()) {
-        (None, MovementMesh::new(), absolute_evaluate(&node.view()))
+        (None, MovementMesh::new(), absolute_evaluate(&node.view().absolute()))
     } else {
         let v = node.view();
 

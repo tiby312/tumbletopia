@@ -126,12 +126,12 @@ type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
 //Additionally removes need to special case animation.
 #[derive(Debug)]
-pub struct Game {
+pub struct GameState {
     dogs: Tribe,
     cats: Tribe,
     world: board::World,
 }
-impl Game {
+impl GameState {
     fn view(&self, team_index: ActiveTeam) -> GameView {
         match team_index {
             ActiveTeam::Cats => GameView {
@@ -208,11 +208,14 @@ impl<'a> GameView<'a> {
     }
 }
 
+#[derive(Hash,Eq,PartialEq)]
 pub struct AbsoluteGameView<'a, 'b> {
     cats: &'a Tribe,
     dogs: &'a Tribe,
     world: &'b board::World,
 }
+
+
 
 //TODO make this deref to GameVIew const version
 pub struct GameViewMut<'a, 'b> {
@@ -299,7 +302,7 @@ pub async fn worker_entry() {
         UnitData::new(GridCoord([2, -2]), Type::Para),
     ];
 
-    let mut ggame = Game {
+    let mut ggame = GameState {
         dogs: Tribe { units: dogs },
         cats: Tribe { units: cats },
         world: board::World::new(),

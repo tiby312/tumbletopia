@@ -4,7 +4,7 @@ use super::*;
 //signifies a move as well as the context in which the move can be played.
 pub struct AMove {
     a: ActualMove,
-    game_state: &'static Game,
+    game_state: &'static GameState,
     selection: movement::MovementMesh,
 }
 

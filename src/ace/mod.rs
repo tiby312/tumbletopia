@@ -7,17 +7,17 @@ use crate::{
     grids::GridMatrix,
     movement::{self, Filter, GridCoord, MoveUnit},
     terrain::{self},
-    CellSelection, Game, UnitData,
+    CellSelection, GameState, UnitData,
 };
 
 pub struct GameWrap<'a, T> {
-    pub game: &'a Game,
+    pub game: &'a GameState,
     pub team: ActiveTeam,
     pub data: T,
 }
 
 pub struct GameWrapResponse<'a, T> {
-    pub game: &'a Game,
+    pub game: &'a GameState,
     pub data: T,
 }
 
@@ -112,7 +112,7 @@ use futures::{
 };
 
 pub struct WorkerManager<'a> {
-    game: *mut Game,
+    game: *mut GameState,
     sender: Sender<GameWrap<'a, Command>>,
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
@@ -238,7 +238,7 @@ pub enum LoopRes<T> {
 
 pub async fn reselect_loop(
     doop: &mut WorkerManager<'_>,
-    game: &mut Game,
+    game: &mut GameState,
     team_index: ActiveTeam,
     extra_attack: &mut Option<selection::PossibleExtra>,
     selected_unit: SelectType,
@@ -531,7 +531,7 @@ pub async fn reselect_loop(
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
-    game: &'a mut Game,
+    game: &'a mut GameState,
 ) {
     //replay(command_sender, response_recv, game).await.unwrap();
     //return;
