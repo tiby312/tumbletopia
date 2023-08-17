@@ -581,13 +581,13 @@ pub async fn main_logic<'a>(
             let j = ai::iterative_deepening(&game);
 
             let m = j.0.unwrap();
-            let mesh = j.1;
-            match m {
+            //let mesh = j.1;
+            match m.the_move {
                 moves::ActualMove::NormalMove(o) => {
                     let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
                     let r = selection::RegularSelection::new(unit);
                     let r = r
-                        .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
+                        .execute(o.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
                     assert!(r.is_none());
@@ -596,13 +596,13 @@ pub async fn main_logic<'a>(
                     let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
                     let r = selection::RegularSelection::new(unit);
                     let r = r
-                        .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
+                        .execute(o.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
 
                     r.unwrap()
                         .select()
-                        .execute(e.moveto, mesh, &mut game, &mut doop, &mut game_history)
+                        .execute(e.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
                 }

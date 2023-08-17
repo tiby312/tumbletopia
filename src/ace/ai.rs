@@ -133,16 +133,16 @@ impl<'a> TranspositionTable<'a> {
     }
 }
 
-pub fn iterative_deepening(game: &GameViewMut) -> (Option<moves::ActualMove>, MovementMesh, Eval) {
+pub fn iterative_deepening<'a>(game: &GameViewMut<'_, 'a>) -> (Option<PossibleMove<'a>>, Eval) {
     //TODO add transpotion table!!!!
     let mut res: Vec<_> = (0..5)
         .map(|x| ai::alpha_beta(game.duplicate(), x, false, f64::NEG_INFINITY, f64::INFINITY))
         .collect();
 
-    console_dbg!(res);
+    //console_dbg!(res);
 
-    res.dedup_by_key(|x| x.2);
-    console_dbg!(res);
+    res.dedup_by_key(|x| x.1);
+    //console_dbg!(res);
 
     res.pop().unwrap()
 }
@@ -153,10 +153,10 @@ pub fn alpha_beta<'a>(
     debug: bool,
     mut alpha: f64,
     mut beta: f64,
-) -> (Option<moves::ActualMove>, MovementMesh, Eval) {
+) -> (Option<PossibleMove>, Eval) {
     //console_dbg!(depth);
     if depth == 0 || game_is_over(node.view()) {
-        (None, MovementMesh::new(), absolute_evaluate(&node.view()))
+        (None, absolute_evaluate(&node.view()))
     } else {
         let v = node.view();
 
@@ -164,40 +164,51 @@ pub fn alpha_beta<'a>(
         //let mut s = String::new();
 
         if v.team == ActiveTeam::Cats {
-            let mut mm: Option<moves::ActualMove> = None;
-            let mut mesh_final = MovementMesh::new();
+            let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
             for (i, cand) in for_all_moves(&v).enumerate() {
-                let t = alpha_beta(cand.game_after_move.not(), depth - 1, debug, alpha, beta);
-                value = value.max(t.2);
-                if value == t.2 {
-                    mm = Some(cand.the_move);
-                    mesh_final = cand.mesh;
+                let t = alpha_beta(
+                    cand.game_after_move.clone().not(),
+                    depth - 1,
+                    debug,
+                    alpha,
+                    beta,
+                );
+                value = value.max(t.1);
+                if value == t.1 {
+                    mm = Some(cand);
                 }
-                if t.2 > beta {
+                if t.1 > beta {
                     break;
                 }
                 alpha = alpha.max(value)
             }
-            (mm, mesh_final, value)
+            (mm, value)
+            //(mm, mesh_final, value)
         } else {
-            let mut mm: Option<moves::ActualMove> = None;
+            let mut mm: Option<PossibleMove> = None;
+
             let mut mesh_final = MovementMesh::new();
 
             let mut value = f64::INFINITY;
             for (i, cand) in for_all_moves(&v).enumerate() {
-                let t = alpha_beta(cand.game_after_move.not(), depth - 1, debug, alpha, beta);
-                value = value.min(t.2);
-                if value == t.2 {
-                    mm = Some(cand.the_move);
-                    mesh_final = cand.mesh;
+                let t = alpha_beta(
+                    cand.game_after_move.clone().not(),
+                    depth - 1,
+                    debug,
+                    alpha,
+                    beta,
+                );
+                value = value.min(t.1);
+                if value == t.1 {
+                    mm = Some(cand);
                 }
-                if t.2 < alpha {
+                if t.1 < alpha {
                     break;
                 }
                 beta = beta.min(value)
             }
-            (mm, mesh_final, value)
+            (mm, value)
         }
 
         //writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
@@ -239,9 +250,18 @@ pub fn min_max<'a>(
 }
 
 pub struct PossibleMove<'a> {
-    the_move: moves::ActualMove,
-    mesh: MovementMesh,
-    game_after_move: GameThing<'a>,
+    pub the_move: moves::ActualMove,
+    pub mesh: MovementMesh,
+    pub game_after_move: GameThing<'a>,
+}
+impl<'a> PossibleMove<'a> {
+    pub fn skip_turn(a: &GameThing<'a>) -> Self {
+        Self {
+            the_move: moves::ActualMove::SkipTurn,
+            mesh: MovementMesh::new(),
+            game_after_move: a.clone(),
+        }
+    }
 }
 
 fn for_all_moves<'b, 'c>(
