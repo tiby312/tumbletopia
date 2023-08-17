@@ -59,14 +59,14 @@ fn absolute_evaluate(view: &GameViewMut<'_, '_>) -> Eval {
 pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
     let num_enemy = node.that_team.units.len();
     for a in for_all_moves(&node) {
-        if a.0.that_team.units.len() < num_enemy {
+        if a.game_after_move.that_team.units.len() < num_enemy {
             return true;
         }
     }
 
     let num_friendly = node.this_team.units.len();
     for a in for_all_moves(&node) {
-        if a.0.this_team.units.len() < num_friendly {
+        if a.game_after_move.this_team.units.len() < num_friendly {
             return true;
         }
     }
@@ -167,12 +167,12 @@ pub fn alpha_beta<'a>(
             let mut mm: Option<moves::ActualMove> = None;
             let mut mesh_final = MovementMesh::new();
             let mut value = f64::NEG_INFINITY;
-            for (i, (x, mesh, m)) in for_all_moves(&v).enumerate() {
-                let t = alpha_beta(x.not(), depth - 1, debug, alpha, beta);
+            for (i, cand) in for_all_moves(&v).enumerate() {
+                let t = alpha_beta(cand.game_after_move.not(), depth - 1, debug, alpha, beta);
                 value = value.max(t.2);
                 if value == t.2 {
-                    mm = Some(m);
-                    mesh_final = mesh;
+                    mm = Some(cand.the_move);
+                    mesh_final = cand.mesh;
                 }
                 if t.2 > beta {
                     break;
@@ -185,12 +185,12 @@ pub fn alpha_beta<'a>(
             let mut mesh_final = MovementMesh::new();
 
             let mut value = f64::INFINITY;
-            for (i, (x, mesh, m)) in for_all_moves(&v).enumerate() {
-                let t = alpha_beta(x.not(), depth - 1, debug, alpha, beta);
+            for (i, cand) in for_all_moves(&v).enumerate() {
+                let t = alpha_beta(cand.game_after_move.not(), depth - 1, debug, alpha, beta);
                 value = value.min(t.2);
                 if value == t.2 {
-                    mm = Some(m);
-                    mesh_final = mesh;
+                    mm = Some(cand.the_move);
+                    mesh_final = cand.mesh;
                 }
                 if t.2 < alpha {
                     break;
@@ -218,10 +218,9 @@ pub fn min_max<'a>(
 
         use std::fmt::Write;
         let mut s = String::new();
-        let foo = for_all_moves(&v).map(|(x, mesh, m)| {
-            let (_, _, p) = min_max(x.not(), depth - 1, debug);
-            writeln!(&mut s, "\t\t{:?}", (&m, p)).unwrap();
-            (m, p, mesh)
+        let foo = for_all_moves(&v).map(|cand| {
+            let (_, _, p) = min_max(cand.game_after_move.not(), depth - 1, debug);
+            (cand.the_move, p, cand.mesh)
         });
 
         let (m, ev, mesh) = if v.team == ActiveTeam::Dogs {
@@ -239,14 +238,20 @@ pub fn min_max<'a>(
     }
 }
 
+pub struct PossibleMove<'a> {
+    the_move: moves::ActualMove,
+    mesh: MovementMesh,
+    game_after_move: GameThing<'a>,
+}
+
 fn for_all_moves<'b, 'c>(
     view: &'b GameViewMut<'_, 'c>,
-) -> impl Iterator<Item = (GameThing<'c>, MovementMesh, moves::ActualMove)> + 'b {
-    let foo = (
-        view.duplicate(),
-        MovementMesh::new(),
-        moves::ActualMove::SkipTurn,
-    );
+) -> impl Iterator<Item = PossibleMove<'c>> + 'b {
+    let foo = PossibleMove {
+        the_move: moves::ActualMove::SkipTurn,
+        game_after_move: view.duplicate(),
+        mesh: MovementMesh::new(),
+    };
 
     view.this_team
         .units
@@ -277,14 +282,22 @@ fn for_all_moves<'b, 'c>(
                     cll.execute_no_animation(m, mesh2, &mut vfv, &mut mm2)
                         .unwrap();
 
-                    (klkl, mesh2, mm2.inner[0].clone())
+                    PossibleMove {
+                        game_after_move: klkl,
+                        mesh: mesh2,
+                        the_move: mm2.inner[0].clone(),
+                    }
                 }))
             } else {
                 None
             };
 
             let second = if first.is_none() {
-                Some([(v, mesh, mm.inner[0].clone())])
+                Some([PossibleMove {
+                    game_after_move: v,
+                    mesh,
+                    the_move: mm.inner[0].clone(),
+                }])
             } else {
                 None
             };
