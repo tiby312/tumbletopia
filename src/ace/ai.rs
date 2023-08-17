@@ -135,16 +135,30 @@ impl<'a> TranspositionTable<'a> {
 
 pub fn iterative_deepening<'a>(game: &GameViewMut<'_, 'a>) -> (Option<PossibleMove<'a>>, Eval) {
     //TODO add transpotion table!!!!
-    let mut res: Vec<_> = (0..5)
-        .map(|x| ai::alpha_beta(game.duplicate(), x, false, f64::NEG_INFINITY, f64::INFINITY))
-        .collect();
+    // let mut res: Vec<_> = (0..5)
+    //     .map(|x| ai::alpha_beta(game.duplicate(), x, false, f64::NEG_INFINITY, f64::INFINITY))
+    //     .collect();
 
+    let mut results = Vec::new();
+    let mut principal_variation = None;
+    for depth in 0..5 {
+        let res = ai::alpha_beta(
+            game.duplicate(),
+            depth,
+            false,
+            f64::NEG_INFINITY,
+            f64::INFINITY,
+            principal_variation,
+        );
+        principal_variation = res.0.clone();
+        results.push(res);
+    }
     //console_dbg!(res);
 
-    res.dedup_by_key(|x| x.1);
+    results.dedup_by_key(|x| x.1);
     //console_dbg!(res);
 
-    res.pop().unwrap()
+    results.pop().unwrap()
 }
 
 pub fn alpha_beta<'a>(
@@ -153,7 +167,12 @@ pub fn alpha_beta<'a>(
     debug: bool,
     mut alpha: f64,
     mut beta: f64,
-) -> (Option<PossibleMove>, Eval) {
+    principal_variation: Option<PossibleMove<'a>>,
+) -> (Option<PossibleMove<'a>>, Eval) {
+    if let Some(k) = &principal_variation {
+        assert_eq!(k.game_after_move.team, node.team);
+    }
+
     //console_dbg!(depth);
     if depth == 0 || game_is_over(node.view()) {
         (None, absolute_evaluate(&node.view()))
@@ -166,13 +185,18 @@ pub fn alpha_beta<'a>(
         if v.team == ActiveTeam::Cats {
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
-            for (i, cand) in for_all_moves(&v).enumerate() {
+            for (i, cand) in principal_variation
+                .into_iter()
+                .chain(for_all_moves(&v))
+                .enumerate()
+            {
                 let t = alpha_beta(
                     cand.game_after_move.clone().not(),
                     depth - 1,
                     debug,
                     alpha,
                     beta,
+                    None,
                 );
                 value = value.max(t.1);
                 if value == t.1 {
@@ -191,13 +215,18 @@ pub fn alpha_beta<'a>(
             let mut mesh_final = MovementMesh::new();
 
             let mut value = f64::INFINITY;
-            for (i, cand) in for_all_moves(&v).enumerate() {
+            for (i, cand) in principal_variation
+                .into_iter()
+                .chain(for_all_moves(&v))
+                .enumerate()
+            {
                 let t = alpha_beta(
                     cand.game_after_move.clone().not(),
                     depth - 1,
                     debug,
                     alpha,
                     beta,
+                    None,
                 );
                 value = value.min(t.1);
                 if value == t.1 {
@@ -249,6 +278,7 @@ pub fn min_max<'a>(
     }
 }
 
+#[derive(Clone)]
 pub struct PossibleMove<'a> {
     pub the_move: moves::ActualMove,
     pub mesh: MovementMesh,
