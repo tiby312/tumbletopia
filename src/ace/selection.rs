@@ -50,7 +50,6 @@ impl ComboContinueSelection {
             &self.unit,
             game,
             &Some((self.extra.prev_move.clone(), self.extra.prev_coord.position)),
-            movement::WithPath,
         );
 
         //TODO return iterator instead?
@@ -65,7 +64,6 @@ impl ComboContinueSelection {
             &self.unit,
             game,
             &Some((self.extra.prev_move.clone(), self.extra.prev_coord.position)),
-            NoPath,
         )
     }
     pub async fn execute(
@@ -134,7 +132,7 @@ impl RegularSelection {
         game: &GameViewMut,
     ) -> Result<movement::Path, NoPathErr> {
         //Reconstruct possible paths with path information this time.
-        let ss = generate_unit_possible_moves_inner(&self.unit, game, &None, movement::WithPath);
+        let ss = generate_unit_possible_moves_inner(&self.unit, game, &None);
 
         let path_iter = ss.path(target_cell.sub(&self.unit.position));
 
@@ -146,7 +144,7 @@ impl RegularSelection {
         Ok(p)
     }
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        generate_unit_possible_moves_inner(&self.unit, game, &None, NoPath)
+        generate_unit_possible_moves_inner(&self.unit, game, &None)
     }
 
     pub async fn execute(
@@ -236,11 +234,10 @@ impl MoveLog {
     // pub fn add_movement(&mut self, a: moves::MovementSigl) {}
 }
 
-fn generate_unit_possible_moves_inner<P: movement::PathHave>(
+fn generate_unit_possible_moves_inner(
     unit: &UnitData,
     game: &GameViewMut,
     extra_attack: &Option<(moves::PartialMoveSigl, GridCoord)>,
-    ph: P,
 ) -> movement::MovementMesh {
     // If there is an enemy near by restrict movement.
 
