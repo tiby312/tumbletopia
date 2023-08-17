@@ -135,15 +135,9 @@ impl<'a> TranspositionTable<'a> {
 
 pub fn iterative_deepening<'a>(game: &GameViewMut<'_, 'a>) -> (Option<PossibleMove<'a>>, Eval) {
     //TODO add transpotion table!!!!
-    // let mut res: Vec<_> = (0..5)
-    //     .map(|x| ai::alpha_beta(game.duplicate(), x, false, f64::NEG_INFINITY, f64::INFINITY))
-    //     .collect();
+    
     let mut count = Counter { count: 0 };
 
-    //WITH prinicap variation
-    //[src/ace/ai.rs:162]  count =  Counter { count: 326054 }
-    //WITHOUT
-    //[src/ace/ai.rs:162]  count =  Counter { count: 595817 }
     let mut results = Vec::new();
     let mut principal_variation = None;
     for depth in 0..5 {
