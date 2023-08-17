@@ -75,8 +75,8 @@ impl Command {
         use Command::*;
         match self {
             Animate(a) => match a.clone() {
-                AnimationCommand::Movement { unit, path } => {
-                    let it = animation::movement(unit.position, path, grid);
+                AnimationCommand::Movement { unit, mesh, end } => {
+                    let it = animation::movement(unit.position, mesh, end, grid);
                     //let aa = AnimationOptions::Movement(unit);
                     let aa = animation::Animation::new(it, a);
                     ProcessedCommand::Animate(aa)
@@ -355,7 +355,13 @@ pub async fn reselect_loop(
     match selection {
         selection::SelectionType::Normal(n) => {
             match n
-                .execute(target_cell, &mut relative_game_view, doop, game_history)
+                .execute(
+                    target_cell,
+                    ccA,
+                    &mut relative_game_view,
+                    doop,
+                    game_history,
+                )
                 .await
                 .unwrap()
             {
@@ -371,9 +377,15 @@ pub async fn reselect_loop(
             }
         }
         selection::SelectionType::Extra(e) => {
-            e.execute(target_cell, &mut relative_game_view, doop, game_history)
-                .await
-                .unwrap();
+            e.execute(
+                target_cell,
+                ccA,
+                &mut relative_game_view,
+                doop,
+                game_history,
+            )
+            .await
+            .unwrap();
             return LoopRes::EndTurn;
         }
     }
@@ -567,7 +579,7 @@ pub async fn main_logic<'a>(
             let mut game = game.view_mut(team_index);
 
             //TODO add transpotion table!!!!
-            let mut res: Vec<_> = (0..4)
+            let mut res: Vec<_> = (0..5)
                 .map(|x| {
                     ai::alpha_beta(game.duplicate(), x, false, f64::NEG_INFINITY, f64::INFINITY)
                 })
@@ -575,7 +587,7 @@ pub async fn main_logic<'a>(
 
             console_dbg!(res);
 
-            res.dedup_by_key(|x| x.1);
+            res.dedup_by_key(|x| x.2);
             console_dbg!(res);
 
             let j = res.pop().unwrap();
@@ -583,12 +595,13 @@ pub async fn main_logic<'a>(
             //console_dbg!("FOUND MOVE=", j);
 
             let m = j.0.unwrap();
+            let mesh = j.1;
             match m {
                 moves::ActualMove::NormalMove(o) => {
                     let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
                     let r = selection::RegularSelection::new(unit);
                     let r = r
-                        .execute(o.moveto, &mut game, &mut doop, &mut game_history)
+                        .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
                     assert!(r.is_none());
@@ -597,13 +610,13 @@ pub async fn main_logic<'a>(
                     let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
                     let r = selection::RegularSelection::new(unit);
                     let r = r
-                        .execute(o.moveto, &mut game, &mut doop, &mut game_history)
+                        .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
 
                     r.unwrap()
                         .select()
-                        .execute(e.moveto, &mut game, &mut doop, &mut game_history)
+                        .execute(e.moveto, mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
                 }

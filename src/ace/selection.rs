@@ -69,6 +69,7 @@ impl ComboContinueSelection {
     pub async fn execute(
         &self,
         target_cell: GridCoord,
+        mesh: movement::MovementMesh,
         game_view: &mut GameViewMut<'_, '_>,
         doop: &mut ace::WorkerManager<'_>,
         move_log: &mut MoveLog,
@@ -77,7 +78,7 @@ impl ComboContinueSelection {
         let unit = self.unit.position;
 
         if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, path);
+            let iii = moves::Invade::new(unit, mesh, target_cell);
 
             let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
 
@@ -94,6 +95,7 @@ impl ComboContinueSelection {
     pub fn execute_no_animation(
         &self,
         target_cell: GridCoord,
+        mesh: movement::MovementMesh,
         game_view: &mut GameViewMut<'_, '_>,
         move_log: &mut MoveLog,
     ) -> Result<(), NoPathErr> {
@@ -101,7 +103,7 @@ impl ComboContinueSelection {
         let unit = self.unit.position;
 
         if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, path);
+            let iii = moves::Invade::new(unit, mesh, target_cell);
 
             let iii = iii.execute(game_view, |_| {});
 
@@ -126,23 +128,23 @@ impl RegularSelection {
     pub fn new(a: &UnitData) -> Self {
         RegularSelection { unit: a.clone() }
     }
-    fn get_path_from_move(
-        &self,
-        target_cell: GridCoord,
-        game: &GameViewMut,
-    ) -> Result<movement::Path, NoPathErr> {
-        //Reconstruct possible paths with path information this time.
-        let ss = generate_unit_possible_moves_inner(&self.unit, game, &None);
+    // fn get_path_from_move(
+    //     &self,
+    //     target_cell: GridCoord,
+    //     game: &GameViewMut,
+    // ) -> Result<movement::Path, NoPathErr> {
+    //     //Reconstruct possible paths with path information this time.
+    //     let ss = generate_unit_possible_moves_inner(&self.unit, game, &None);
 
-        let path_iter = ss.path(target_cell.sub(&self.unit.position));
+    //     let path_iter = ss.path(target_cell.sub(&self.unit.position));
 
-        //TODO return iterator instead?
-        let mut p = movement::Path::new();
-        for a in path_iter {
-            p.add(a);
-        }
-        Ok(p)
-    }
+    //     //TODO return iterator instead?
+    //     let mut p = movement::Path::new();
+    //     for a in path_iter {
+    //         p.add(a);
+    //     }
+    //     Ok(p)
+    // }
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
         generate_unit_possible_moves_inner(&self.unit, game, &None)
     }
@@ -150,15 +152,16 @@ impl RegularSelection {
     pub async fn execute(
         &self,
         target_cell: GridCoord,
+        mesh: movement::MovementMesh,
         game_view: &mut GameViewMut<'_, '_>,
         doop: &mut ace::WorkerManager<'_>,
         move_log: &mut MoveLog,
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
-        let path = self.get_path_from_move(target_cell, game_view)?;
+        //let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
 
         let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, path);
+            let iii = moves::Invade::new(unit, mesh, target_cell);
 
             let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
 
@@ -166,7 +169,7 @@ impl RegularSelection {
 
             None
         } else {
-            let pm = moves::PartialMove::new(unit, path);
+            let pm = moves::PartialMove::new(unit, mesh, target_cell);
             let jjj = pm
                 .clone()
                 .execute_with_animation(game_view, doop, |_| {})
@@ -188,21 +191,22 @@ impl RegularSelection {
     pub fn execute_no_animation(
         &self,
         target_cell: GridCoord,
+        mesh: movement::MovementMesh,
         game_view: &mut GameViewMut<'_, '_>,
         move_log: &mut MoveLog,
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
-        let path = self.get_path_from_move(target_cell, game_view)?;
+        //let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
 
         let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, path);
+            let iii = moves::Invade::new(unit, mesh, target_cell);
 
             let iii = iii.execute(game_view, |_| {});
 
             move_log.push(moves::ActualMove::NormalMove(iii));
             None
         } else {
-            let pm = moves::PartialMove::new(unit, path);
+            let pm = moves::PartialMove::new(unit, mesh, target_cell);
             let jjj = pm.clone().execute(game_view, |_| {});
 
             match jjj {

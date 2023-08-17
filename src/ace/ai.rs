@@ -1,3 +1,5 @@
+use crate::movement::MovementMesh;
+
 use super::{
     selection::{MoveLog, RegularSelection},
     *,
@@ -102,10 +104,10 @@ pub fn alpha_beta<'a>(
     debug: bool,
     mut alpha: f64,
     mut beta: f64,
-) -> (Option<moves::ActualMove>, Eval) {
+) -> (Option<moves::ActualMove>, MovementMesh, Eval) {
     //console_dbg!(depth);
     if depth == 0 || game_is_over(node.view()) {
-        (None, absolute_evaluate(&node.view()))
+        (None, MovementMesh::new(), absolute_evaluate(&node.view()))
     } else {
         let v = node.view();
 
@@ -114,34 +116,39 @@ pub fn alpha_beta<'a>(
 
         if v.team == ActiveTeam::Cats {
             let mut mm: Option<moves::ActualMove> = None;
+            let mut mesh_final = MovementMesh::new();
             let mut value = f64::NEG_INFINITY;
-            for (i, (x, m)) in for_all_moves(&v).enumerate() {
+            for (i, (x, mesh, m)) in for_all_moves(&v).enumerate() {
                 let t = alpha_beta(x.not(), depth - 1, debug, alpha, beta);
-                value = value.max(t.1);
-                if value == t.1 {
+                value = value.max(t.2);
+                if value == t.2 {
                     mm = Some(m);
+                    mesh_final = mesh;
                 }
-                if t.1 > beta {
+                if t.2 > beta {
                     break;
                 }
                 alpha = alpha.max(value)
             }
-            (mm, value)
+            (mm, mesh_final, value)
         } else {
             let mut mm: Option<moves::ActualMove> = None;
+            let mut mesh_final = MovementMesh::new();
+
             let mut value = f64::INFINITY;
-            for (i, (x, m)) in for_all_moves(&v).enumerate() {
+            for (i, (x, mesh, m)) in for_all_moves(&v).enumerate() {
                 let t = alpha_beta(x.not(), depth - 1, debug, alpha, beta);
-                value = value.min(t.1);
-                if value == t.1 {
+                value = value.min(t.2);
+                if value == t.2 {
                     mm = Some(m);
+                    mesh_final = mesh;
                 }
-                if t.1 < alpha {
+                if t.2 < alpha {
                     break;
                 }
                 beta = beta.min(value)
             }
-            (mm, value)
+            (mm, mesh_final, value)
         }
 
         //writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
@@ -153,22 +160,22 @@ pub fn min_max<'a>(
     mut node: GameThing<'a>,
     depth: usize,
     debug: bool,
-) -> (Option<moves::ActualMove>, Eval) {
+) -> (Option<moves::ActualMove>, MovementMesh, Eval) {
     //console_dbg!(depth);
     if depth == 0 || game_is_over(node.view()) {
-        (None, absolute_evaluate(&node.view()))
+        (None, MovementMesh::new(), absolute_evaluate(&node.view()))
     } else {
         let v = node.view();
 
         use std::fmt::Write;
         let mut s = String::new();
-        let foo = for_all_moves(&v).map(|(x, m)| {
-            let (_, p) = min_max(x.not(), depth - 1, debug);
+        let foo = for_all_moves(&v).map(|(x, mesh, m)| {
+            let (_, _, p) = min_max(x.not(), depth - 1, debug);
             writeln!(&mut s, "\t\t{:?}", (&m, p)).unwrap();
-            (m, p)
+            (m, p, mesh)
         });
 
-        let (m, ev) = if v.team == ActiveTeam::Dogs {
+        let (m, ev, mesh) = if v.team == ActiveTeam::Dogs {
             foo.min_by(|a, b| a.1.partial_cmp(&b.1).expect("float cmp fail"))
                 .unwrap()
         } else {
@@ -179,52 +186,56 @@ pub fn min_max<'a>(
         writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
         //gloo::console::log!(s);
 
-        (Some(m), ev)
+        (Some(m), mesh, ev)
     }
 }
 
 fn for_all_moves<'b, 'c>(
     view: &'b GameViewMut<'_, 'c>,
-) -> impl Iterator<Item = (GameThing<'c>, moves::ActualMove)> + 'b {
-    let foo = (view.duplicate(), moves::ActualMove::SkipTurn);
+) -> impl Iterator<Item = (GameThing<'c>, MovementMesh, moves::ActualMove)> + 'b {
+    let foo = (
+        view.duplicate(),
+        MovementMesh::new(),
+        moves::ActualMove::SkipTurn,
+    );
 
     view.this_team
         .units
         .iter()
         .map(|a| RegularSelection { unit: a.clone() })
         .flat_map(|a| {
-            a.generate(view)
-                .iter_mesh(a.unit.position)
-                .map(move |f| (a.clone(), f))
+            let mesh = a.generate(view);
+            mesh.iter_mesh(a.unit.position)
+                .map(move |f| (a.clone(), mesh, f))
         })
-        .flat_map(|(s, m)| {
+        .flat_map(|(s, mesh, m)| {
             let mut v = view.duplicate();
             let mut mm = MoveLog::new();
 
-            let first = if let Some(l) = s.execute_no_animation(m, &mut v.view(), &mut mm).unwrap()
+            let first = if let Some(l) = s
+                .execute_no_animation(m, mesh, &mut v.view(), &mut mm)
+                .unwrap()
             {
                 let cll = l.select();
 
                 let mut kk = v.view().duplicate();
-                Some(
-                    cll.generate(&mut kk.view())
-                        .iter_mesh(l.coord())
-                        .map(move |m| {
-                            let mut klkl = kk.view().duplicate();
-                            let mut mm2 = MoveLog::new();
+                let mesh2 = cll.generate(&mut kk.view());
+                Some(mesh2.iter_mesh(l.coord()).map(move |m| {
+                    let mut klkl = kk.view().duplicate();
+                    let mut mm2 = MoveLog::new();
 
-                            let mut vfv = klkl.view();
-                            cll.execute_no_animation(m, &mut vfv, &mut mm2).unwrap();
+                    let mut vfv = klkl.view();
+                    cll.execute_no_animation(m, mesh2, &mut vfv, &mut mm2)
+                        .unwrap();
 
-                            (klkl, mm2.inner[0].clone())
-                        }),
-                )
+                    (klkl, mesh2, mm2.inner[0].clone())
+                }))
             } else {
                 None
             };
 
             let second = if first.is_none() {
-                Some([(v, mm.inner[0].clone())])
+                Some([(v, mesh, mm.inner[0].clone())])
             } else {
                 None
             };

@@ -1,5 +1,13 @@
 use super::*;
 
+//TODO use this.
+//signifies a move as well as the context in which the move can be played.
+pub struct AMove {
+    a: ActualMove,
+    game_state: &'static Game,
+    selection: movement::MovementMesh,
+}
+
 #[derive(Debug, Clone)]
 pub enum ActualMove {
     NormalMove(PartialMoveSigl),
@@ -148,7 +156,7 @@ impl Doopa2 {
     }
 }
 
-use crate::movement::Path;
+use crate::movement::{MovementMesh, Path};
 
 pub enum ExtraMove<T> {
     ExtraMove { unit: T },
@@ -162,7 +170,7 @@ mod inner_partial {
     macro_rules! resolve_inner_movement_impl {
         ($args:expr, $($_await:tt)*) => {
             {
-                let (start,path,doopa,game_view):(GridCoord,movement::Path,_,&mut GameViewMut<'_,'_>)=$args;
+                let (start,mesh,end,doopa,game_view):(GridCoord,MovementMesh,_,_,&mut GameViewMut<'_,'_>)=$args;
 
                 let this_unit = game_view
                 .this_team
@@ -171,30 +179,38 @@ mod inner_partial {
 
                 let team=game_view.team;
                 let _ = doopa
-                    .wait_animation(Movement::new(this_unit.clone(),path), team)
+                    .wait_animation(Movement::new(this_unit.clone(),mesh,end), team)
                     $($_await)*;
 
-                this_unit.position= path.get_end_coord(this_unit.position);
+                //this_unit.position= path.get_end_coord(this_unit.position);
+                this_unit.position=end;
 
             }
         }
     }
 
+    use crate::movement::MovementMesh;
+
     use super::*;
     pub struct InnerPartialMove {
         u: GridCoord,
-        path: Path,
+        mesh: MovementMesh,
+        target_cell: GridCoord,
     }
     impl InnerPartialMove {
-        pub fn new(a: GridCoord, path: Path) -> Self {
-            InnerPartialMove { u: a, path }
+        pub fn new(a: GridCoord, mesh: MovementMesh, target_cell: GridCoord) -> Self {
+            InnerPartialMove {
+                u: a,
+                mesh,
+                target_cell,
+            }
         }
         pub(super) fn inner_execute_no_animate(
             self,
             game_view: &mut GameViewMut<'_, '_>,
             a: &mut Doopa2,
         ) {
-            resolve_inner_movement_impl!((self.u, self.path, a, game_view),)
+            resolve_inner_movement_impl!((self.u, self.mesh, self.target_cell, a, game_view),)
         }
 
         pub(super) async fn inner_execute_animate(
@@ -202,7 +218,7 @@ mod inner_partial {
             game_view: &mut GameViewMut<'_, '_>,
             a: &mut Doopa<'_, '_>,
         ) {
-            resolve_inner_movement_impl!((self.u,self.path,a,game_view),.await)
+            resolve_inner_movement_impl!((self.u,self.mesh,self.target_cell,a,game_view),.await)
         }
     }
 }
@@ -239,13 +255,13 @@ mod partial_move {
     macro_rules! resolve_movement_impl {
         ($args:expr,$namey:ident, $($_await:tt)*) => {
             {
-                let (selected_unit,path, doopa,mut game_view,mut func):(GridCoord,movement::Path,_,&mut GameViewMut<'_,'_>,_)=$args;
+                let (selected_unit,mesh,target_cell, doopa,mut game_view,mut func):(GridCoord,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_)=$args;
 
 
-                let target_cell=path.get_end_coord(selected_unit);
+                //let target_cell=path.get_end_coord(selected_unit);
 
 
-                InnerPartialMove::new(selected_unit,path).$namey(&mut game_view,doopa)$($_await)*;
+                InnerPartialMove::new(selected_unit,mesh,target_cell).$namey(&mut game_view,doopa)$($_await)*;
 
 
                 for n in target_cell.to_cube().neighbours() {
@@ -273,14 +289,16 @@ mod partial_move {
     #[derive(Clone, Debug)]
     pub struct PartialMove {
         selected_unit: GridCoord,
-        path: Path,
+        mesh: MovementMesh,
+        end: GridCoord,
     }
 
     impl PartialMove {
-        pub fn new(a: GridCoord, path: Path) -> Self {
+        pub fn new(a: GridCoord, mesh: MovementMesh, end: GridCoord) -> Self {
             PartialMove {
                 selected_unit: a,
-                path,
+                mesh,
+                end,
             }
         }
 
@@ -291,7 +309,7 @@ mod partial_move {
             func: impl FnMut(UnitData),
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
             resolve_movement_impl!(
-                (self.selected_unit, self.path, a, game_view, func),
+                (self.selected_unit, self.mesh, self.end, a, game_view, func),
                 inner_execute_no_animate,
             )
         }
@@ -302,7 +320,7 @@ mod partial_move {
             a: &mut Doopa<'_, '_>,
             func: impl FnMut(UnitData),
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
-            resolve_movement_impl!((self.selected_unit, self.path, a, game_view,func),inner_execute_animate,.await)
+            resolve_movement_impl!((self.selected_unit, self.mesh,self.end, a, game_view,func),inner_execute_animate,.await)
         }
 
         pub fn execute<'b>(
@@ -331,13 +349,14 @@ mod invade {
     macro_rules! resolve_invade_impl {
         ($args:expr,$namey:ident, $($_await:tt)*) => {
             {
-                let (selected_unit,path,game_view,doopa,mut func):(GridCoord,Path,&mut GameViewMut<'_,'_>,_,_)=$args;
-
-                let target_coord=path.get_end_coord(selected_unit);
+                let (selected_unit,mesh,target_coord,game_view,doopa,mut func):(GridCoord,movement::MovementMesh,GridCoord,&mut GameViewMut<'_,'_>,_,_)=$args;
 
 
+                //let target_coord=path.get_end_coord(selected_unit);
 
-                InnerPartialMove::new(selected_unit,path).$namey(game_view,doopa)$($_await)*;
+
+
+                InnerPartialMove::new(selected_unit,mesh,target_coord).$namey(game_view,doopa)$($_await)*;
 
                 func(game_view.that_team.find_take(&target_coord).unwrap());
 
@@ -366,14 +385,20 @@ mod invade {
     #[derive(Clone, Debug)]
     pub struct Invade {
         selected_unit: GridCoord,
-        path: Path,
+        mesh: movement::MovementMesh,
+        target_cell: GridCoord,
     }
 
     impl Invade {
-        pub fn new(a: GridCoord, b: Path) -> Self {
+        pub fn new(
+            selected_unit: GridCoord,
+            mesh: movement::MovementMesh,
+            target_cell: GridCoord,
+        ) -> Self {
             Invade {
-                selected_unit: a,
-                path: b,
+                selected_unit,
+                mesh,
+                target_cell,
             }
         }
         pub(super) fn inner_execute_no_animate(
@@ -383,7 +408,14 @@ mod invade {
             func: impl FnMut(UnitData),
         ) -> PartialMoveSigl {
             resolve_invade_impl!(
-                (self.selected_unit, self.path, game_view, a, func),
+                (
+                    self.selected_unit,
+                    self.mesh,
+                    self.target_cell,
+                    game_view,
+                    a,
+                    func
+                ),
                 inner_execute_no_animate,
             )
         }
@@ -394,7 +426,7 @@ mod invade {
             a: &mut Doopa<'_, '_>,
             func: impl FnMut(UnitData),
         ) -> PartialMoveSigl {
-            resolve_invade_impl!((self.selected_unit,self.path,game_view,a,func),inner_execute_animate,.await)
+            resolve_invade_impl!((self.selected_unit,self.mesh,self.target_cell,game_view,a,func),inner_execute_animate,.await)
         }
 
         pub fn execute(
@@ -495,11 +527,12 @@ trait UnwrapMe {
 }
 struct Movement {
     start: UnitData,
-    path: movement::Path,
+    mesh: MovementMesh,
+    end: GridCoord,
 }
 impl Movement {
-    pub fn new(start: UnitData, path: movement::Path) -> Self {
-        Movement { start, path }
+    pub fn new(start: UnitData, mesh: MovementMesh, end: GridCoord) -> Self {
+        Movement { start, mesh, end }
     }
 }
 impl UnwrapMe for Movement {
@@ -511,7 +544,8 @@ impl UnwrapMe for Movement {
     fn into_command(self) -> animation::AnimationCommand {
         animation::AnimationCommand::Movement {
             unit: self.start,
-            path: self.path,
+            mesh: self.mesh,
+            end: self.end,
         }
     }
     fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
