@@ -274,12 +274,12 @@ pub async fn reselect_loop(
         true
     };
 
-    let cc = match &selection {
+    let ccA = match &selection {
         selection::SelectionType::Normal(e) => e.generate(&relative_game_view),
         selection::SelectionType::Extra(e) => e.generate(&relative_game_view),
     };
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
-    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cc);
+    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, ccA);
 
     let (cell, pototo) = doop.get_mouse_selection(cc, selected_unit.team, grey).await;
 
