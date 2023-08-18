@@ -106,21 +106,24 @@ fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
 }
 
 pub struct TranspositionTable {
-    a: std::collections::HashMap<u64, (usize, GameState, Eval)>,
+    a: std::collections::HashMap<u64, (usize, Eval)>,
+    saves: usize,
 }
 
 impl TranspositionTable {
     pub fn new() -> Self {
         TranspositionTable {
             a: std::collections::HashMap::new(),
+            saves: 0,
         }
     }
-    pub fn lookup(&self, a: &GameState, depth: usize) -> Option<&(usize, GameState, Eval)> {
+    pub fn lookup(&mut self, a: &GameState, depth: usize) -> Option<Eval> {
         let k = calculate_hash(&a);
 
         if let Some(a) = self.a.get(&k) {
             if depth <= a.0 {
-                Some(a)
+                self.saves += 1;
+                Some(a.1)
             } else {
                 None
             }
@@ -131,14 +134,13 @@ impl TranspositionTable {
     pub fn consider(&mut self, depth: usize, game: GameState, eval: Eval) {
         let k = calculate_hash(&game);
 
-        if let Some((old_depth, state, v)) = self.a.get_mut(&k) {
+        if let Some((old_depth, v)) = self.a.get_mut(&k) {
             if depth > *old_depth {
                 *old_depth = depth;
-                *state = game;
                 *v = eval;
             }
         } else {
-            let _ = self.a.insert(k, (depth, game, eval));
+            let _ = self.a.insert(k, (depth, eval));
         }
     }
 }
@@ -147,7 +149,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     //TODO add transpotion table!!!!
 
     let mut count = Counter { count: 0 };
-
+    let mut table = TranspositionTable::new();
     let mut results = Vec::new();
     let mut principal_variation = None;
     for depth in 0..5 {
@@ -159,6 +161,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
             f64::NEG_INFINITY,
             f64::INFINITY,
             principal_variation,
+            &mut table,
             &mut count,
         );
         principal_variation = res.0.clone();
@@ -166,6 +169,8 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     }
     //console_dbg!(res);
     console_dbg!(count);
+    console_dbg!(table.saves);
+    console_dbg!(table.a.len());
     results.dedup_by_key(|x| x.1);
     //console_dbg!(res);
 
@@ -189,12 +194,19 @@ pub fn alpha_beta(
     mut alpha: f64,
     mut beta: f64,
     principal_variation: Option<PossibleMove>,
+    table: &mut TranspositionTable,
     calls: &mut Counter,
 ) -> (Option<PossibleMove>, Eval) {
     //console_dbg!(depth);
     if depth == 0 || game_is_over(node.view(team)) {
         calls.add_eval();
-        (None, absolute_evaluate(&node))
+        if let Some(n) = table.lookup(&node, depth) {
+            (None, n)
+        } else {
+            let val = absolute_evaluate(&node);
+            table.consider(depth, node.clone(), val);
+            (None, val)
+        }
     } else {
         //let v = node.view(team);
 
@@ -220,16 +232,27 @@ pub fn alpha_beta(
                 }))
                 .enumerate()
             {
-                let t = alpha_beta(
-                    &cand.game_after_move,
-                    team.not(),
-                    depth - 1,
-                    debug,
-                    alpha,
-                    beta,
-                    None,
-                    calls,
-                );
+                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth) {
+                    (Some(cand.clone()), foo)
+                } else {
+                    let foo = alpha_beta(
+                        &cand.game_after_move,
+                        team.not(),
+                        depth - 1,
+                        debug,
+                        alpha,
+                        beta,
+                        None,
+                        table,
+                        calls,
+                    );
+
+                    //TODO correct?
+                    table.consider(depth - 1, cand.game_after_move.clone(), foo.1);
+
+                    foo
+                };
+
                 value = value.max(t.1);
                 if value == t.1 {
                     mm = Some(cand);
@@ -261,16 +284,26 @@ pub fn alpha_beta(
                 }))
                 .enumerate()
             {
-                let t = alpha_beta(
-                    &cand.game_after_move,
-                    team.not(),
-                    depth - 1,
-                    debug,
-                    alpha,
-                    beta,
-                    None,
-                    calls,
-                );
+                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth) {
+                    (Some(cand.clone()), foo)
+                } else {
+                    let foo = alpha_beta(
+                        &cand.game_after_move,
+                        team.not(),
+                        depth - 1,
+                        debug,
+                        alpha,
+                        beta,
+                        None,
+                        table,
+                        calls,
+                    );
+
+                    //TODO correct?
+                    table.consider(depth - 1, cand.game_after_move.clone(), foo.1);
+                    foo
+                };
+
                 value = value.min(t.1);
                 if value == t.1 {
                     mm = Some(cand);
