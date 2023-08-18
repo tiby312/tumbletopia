@@ -112,7 +112,7 @@ pub struct CheckFirst {
 }
 
 pub struct TranspositionTable {
-    a: std::collections::HashMap<u64, (usize, Eval)>,
+    a: std::collections::HashMap<u64, Eval>,
     saves: usize,
 }
 
@@ -123,30 +123,30 @@ impl TranspositionTable {
             saves: 0,
         }
     }
-    pub fn lookup(&mut self, a: &GameState, depth: usize) -> Option<Eval> {
+    pub fn lookup_leaf(&mut self, a: &GameState) -> Option<&Eval> {
         let k = calculate_hash(a);
 
         if let Some(a) = self.a.get(&k) {
-            if depth == a.0 {
-                self.saves += 1;
-                Some(a.1)
-            } else {
-                None
-            }
+            //if depth == a.0 {
+            self.saves += 1;
+            Some(a)
+            // } else {
+            //     None
+            // }
         } else {
             None
         }
     }
-    pub fn consider(&mut self, depth: usize, game: GameState, eval: Eval) {
+    pub fn consider_leaf(&mut self, game: GameState, eval: Eval) {
         let k = calculate_hash(&game);
 
-        if let Some((old_depth, v)) = self.a.get_mut(&k) {
+        if let Some(v) = self.a.get_mut(&k) {
             //if depth == *old_depth {
-            *old_depth = depth;
+            //*old_depth = depth;
             *v = eval;
             //}
         } else {
-            let _ = self.a.insert(k, (depth, eval));
+            let _ = self.a.insert(k, eval);
         }
     }
 }
@@ -173,7 +173,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
             &mut count,
             MyPath::new(),
         );
-        
+
         results.push(res);
     }
 
@@ -181,7 +181,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     console_dbg!(table.a.len());
     console_dbg!(count);
     results.dedup_by_key(|x| x.1);
-    
+
     results.pop().unwrap()
 }
 
@@ -222,11 +222,11 @@ pub fn alpha_beta(
 ) -> (Option<PossibleMove>, Eval) {
     if depth == 0 || game_is_over(node.view(team)) {
         calls.add_eval();
-        if let Some(n) = table.lookup(&node, depth) {
-            (None, n)
+        if let Some(n) = table.lookup_leaf(&node) {
+            (None, *n)
         } else {
             let val = absolute_evaluate(&node);
-            table.consider(depth, node.clone(), val);
+            table.consider_leaf(node.clone(), val);
             (None, val)
         }
     } else {
