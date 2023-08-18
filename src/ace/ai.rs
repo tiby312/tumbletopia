@@ -234,7 +234,7 @@ pub fn alpha_beta(
                 }))
                 .enumerate()
             {
-                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth - 1) {
+                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth) {
                     (Some(cand.clone()), foo)
                 } else {
                     let foo = alpha_beta(
@@ -250,7 +250,7 @@ pub fn alpha_beta(
                     );
 
                     //TODO correct?
-                    //table.consider(depth - 1, cand.game_after_move.clone(), foo.1);
+                    //table.consider(depth , cand.game_after_move.clone(), foo.1);
 
                     foo
                 };
@@ -286,7 +286,7 @@ pub fn alpha_beta(
                 }))
                 .enumerate()
             {
-                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth - 1) {
+                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth) {
                     (Some(cand.clone()), foo)
                 } else {
                     let foo = alpha_beta(
@@ -302,7 +302,7 @@ pub fn alpha_beta(
                     );
 
                     //TODO correct?
-                    //table.consider(depth - 1, cand.game_after_move.clone(), foo.1);
+                    //table.consider(depth , cand.game_after_move.clone(), foo.1);
                     foo
                 };
 
