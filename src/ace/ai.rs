@@ -134,16 +134,16 @@ impl TranspositionTable {
         }
     }
     pub fn consider(&mut self, depth: usize, game: GameState, eval: Eval) {
-        let k = calculate_hash(&game);
+        // let k = calculate_hash(&game);
 
-        if let Some((old_depth, v)) = self.a.get_mut(&k) {
-            if depth > *old_depth {
-                *old_depth = depth;
-                *v = eval;
-            }
-        } else {
-            let _ = self.a.insert(k, (depth, eval));
-        }
+        // if let Some((old_depth, v)) = self.a.get_mut(&k) {
+        //     if depth > *old_depth {
+        //         *old_depth = depth;
+        //         *v = eval;
+        //     }
+        // } else {
+        //     let _ = self.a.insert(k, (depth, eval));
+        // }
     }
 }
 
