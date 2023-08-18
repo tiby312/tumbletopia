@@ -576,12 +576,12 @@ pub async fn main_logic<'a>(
 
         //Add AIIIIII.
         if team_index == ActiveTeam::Dogs {
-            let mut game = game.view_mut(team_index);
-
-            let j = ai::iterative_deepening(&game);
+            let j = ai::iterative_deepening(game, team_index);
 
             let m = j.0.unwrap();
             //let mesh = j.1;
+            let mut game = game.view_mut(team_index);
+
             match m.the_move {
                 moves::ActualMove::NormalMove(o) => {
                     let unit = game.this_team.find_slow_mut(&o.unit).unwrap();

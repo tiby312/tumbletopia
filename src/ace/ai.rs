@@ -9,7 +9,7 @@ pub type Eval = f64; //(f64);
 
 //cats maximizing
 //dogs minimizing
-fn absolute_evaluate(view: &AbsoluteGameView<'_, '_>) -> Eval {
+fn absolute_evaluate(view: &GameState) -> Eval {
     //let view = view.absolute();
     let num_cats = view.cats.units.len();
     let num_dogs = view.dogs.units.len();
@@ -56,25 +56,25 @@ fn absolute_evaluate(view: &AbsoluteGameView<'_, '_>) -> Eval {
     val
 }
 
-pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
-    let num_enemy = node.that_team.units.len();
-    for a in for_all_moves(&node) {
-        if a.game_after_move.that_team.units.len() < num_enemy {
-            return true;
-        }
-    }
+// pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
+//     let num_enemy = node.that_team.units.len();
+//     for a in for_all_moves(&node) {
+//         if a.game_after_move.that_team.units.len() < num_enemy {
+//             return true;
+//         }
+//     }
 
-    let num_friendly = node.this_team.units.len();
-    for a in for_all_moves(&node) {
-        if a.game_after_move.this_team.units.len() < num_friendly {
-            return true;
-        }
-    }
+//     let num_friendly = node.this_team.units.len();
+//     for a in for_all_moves(&node) {
+//         if a.game_after_move.this_team.units.len() < num_friendly {
+//             return true;
+//         }
+//     }
 
-    false
-}
+//     false
+// }
 
-pub fn game_is_over(view: GameViewMut<'_, '_>) -> bool {
+pub fn game_is_over(view: GameView<'_>) -> bool {
     if view
         .this_team
         .units
@@ -98,7 +98,6 @@ pub fn game_is_over(view: GameViewMut<'_, '_>) -> bool {
     false
 }
 
-
 fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
     use std::hash::Hasher;
     let mut s = std::collections::hash_map::DefaultHasher::new();
@@ -106,13 +105,8 @@ fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
     s.finish()
 }
 
-
-
 pub struct TranspositionTable {
-    a: std::collections::HashMap<
-       u64,
-        (usize, GameState, Eval),
-    >,
+    a: std::collections::HashMap<u64, (usize, GameState, Eval)>,
 }
 
 impl TranspositionTable {
@@ -121,56 +115,45 @@ impl TranspositionTable {
             a: std::collections::HashMap::new(),
         }
     }
-    pub fn lookup(
-        &self,
-        a: &GameState,
-        depth:usize
-    ) -> Option<&(usize, GameState, Eval)> {
-        let k=calculate_hash(&a);
-    
-        if let Some(a)=self.a.get(&k){
-            if depth<=a.0{
+    pub fn lookup(&self, a: &GameState, depth: usize) -> Option<&(usize, GameState, Eval)> {
+        let k = calculate_hash(&a);
+
+        if let Some(a) = self.a.get(&k) {
+            if depth <= a.0 {
                 Some(a)
-            }else{
+            } else {
                 None
             }
-        }else{
+        } else {
             None
         }
     }
-    pub fn consider(
-        &mut self,
-        depth: usize,
-        game:GameState,
-        eval:Eval
-    ) {
-        let k=calculate_hash(&game);
+    pub fn consider(&mut self, depth: usize, game: GameState, eval: Eval) {
+        let k = calculate_hash(&game);
 
-        if let Some((old_depth,state, v)) = self.a.get_mut(&k) {
+        if let Some((old_depth, state, v)) = self.a.get_mut(&k) {
             if depth > *old_depth {
                 *old_depth = depth;
-                *state=game;
+                *state = game;
                 *v = eval;
             }
         } else {
-            let _ = self.a.insert(k, (depth, game,eval));
+            let _ = self.a.insert(k, (depth, game, eval));
         }
     }
 }
 
-
-
-
-pub fn iterative_deepening<'a>(game: &GameViewMut<'_, 'a>) -> (Option<PossibleMove<'a>>, Eval) {
+pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<PossibleMove>, Eval) {
     //TODO add transpotion table!!!!
-    
+
     let mut count = Counter { count: 0 };
 
     let mut results = Vec::new();
     let mut principal_variation = None;
     for depth in 0..5 {
         let res = ai::alpha_beta(
-            game.duplicate(),
+            game,
+            team,
             depth,
             false,
             f64::NEG_INFINITY,
@@ -198,36 +181,33 @@ impl Counter {
         self.count += 1;
     }
 }
-pub fn alpha_beta<'a>(
-    mut node: GameThing<'a>,
+pub fn alpha_beta(
+    node: &GameState,
+    team: ActiveTeam,
     depth: usize,
     debug: bool,
     mut alpha: f64,
     mut beta: f64,
-    principal_variation: Option<PossibleMove<'a>>,
+    principal_variation: Option<PossibleMove>,
     calls: &mut Counter,
-) -> (Option<PossibleMove<'a>>, Eval) {
-    if let Some(k) = &principal_variation {
-        assert_eq!(k.game_after_move.team, node.team);
-    }
-
+) -> (Option<PossibleMove>, Eval) {
     //console_dbg!(depth);
-    if depth == 0 || game_is_over(node.view()) {
+    if depth == 0 || game_is_over(node.view(team)) {
         calls.add_eval();
-        (None, absolute_evaluate(&node.view().absolute()))
+        (None, absolute_evaluate(&node))
     } else {
-        let v = node.view();
+        //let v = node.view(team);
 
         //use std::fmt::Write;
         //let mut s = String::new();
 
-        if v.team == ActiveTeam::Cats {
+        if team == ActiveTeam::Cats {
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
             for (i, cand) in principal_variation
                 .clone()
                 .into_iter()
-                .chain(for_all_moves(&v).filter(|cand| {
+                .chain(for_all_moves(node.clone(), team).filter(|cand| {
                     if let Some(p) = &principal_variation {
                         if p == cand {
                             false
@@ -241,7 +221,8 @@ pub fn alpha_beta<'a>(
                 .enumerate()
             {
                 let t = alpha_beta(
-                    cand.game_after_move.clone().not(),
+                    &cand.game_after_move,
+                    team.not(),
                     depth - 1,
                     debug,
                     alpha,
@@ -267,7 +248,7 @@ pub fn alpha_beta<'a>(
             for (i, cand) in principal_variation
                 .clone()
                 .into_iter()
-                .chain(for_all_moves(&v).filter(|cand| {
+                .chain(for_all_moves(node.clone(), team).filter(|cand| {
                     if let Some(p) = &principal_variation {
                         if p == cand {
                             false
@@ -281,7 +262,8 @@ pub fn alpha_beta<'a>(
                 .enumerate()
             {
                 let t = alpha_beta(
-                    cand.game_after_move.clone().not(),
+                    &cand.game_after_move,
+                    team.not(),
                     depth - 1,
                     debug,
                     alpha,
@@ -306,90 +288,84 @@ pub fn alpha_beta<'a>(
     }
 }
 
-pub fn min_max<'a>(
-    mut node: GameThing<'a>,
-    depth: usize,
-    debug: bool,
-) -> (Option<moves::ActualMove>, MovementMesh, Eval) {
-    //console_dbg!(depth);
-    if depth == 0 || game_is_over(node.view()) {
-        (None, MovementMesh::new(), absolute_evaluate(&node.view().absolute()))
-    } else {
-        let v = node.view();
+// pub fn min_max<'a>(
+//     mut node: GameThing<'a>,
+//     depth: usize,
+//     debug: bool,
+// ) -> (Option<moves::ActualMove>, MovementMesh, Eval) {
+//     //console_dbg!(depth);
+//     if depth == 0 || game_is_over(node.view()) {
+//         (None, MovementMesh::new(), absolute_evaluate(&node.view().absolute()))
+//     } else {
+//         let v = node.view();
 
-        use std::fmt::Write;
-        let mut s = String::new();
-        let foo = for_all_moves(&v).map(|cand| {
-            let (_, _, p) = min_max(cand.game_after_move.not(), depth - 1, debug);
-            (cand.the_move, p, cand.mesh)
-        });
+//         use std::fmt::Write;
+//         let mut s = String::new();
+//         let foo = for_all_moves(&v).map(|cand| {
+//             let (_, _, p) = min_max(cand.game_after_move.not(), depth - 1, debug);
+//             (cand.the_move, p, cand.mesh)
+//         });
 
-        let (m, ev, mesh) = if v.team == ActiveTeam::Dogs {
-            foo.min_by(|a, b| a.1.partial_cmp(&b.1).expect("float cmp fail"))
-                .unwrap()
-        } else {
-            foo.max_by(|a, b| a.1.partial_cmp(&b.1).expect("float cmp fail"))
-                .unwrap()
-        };
+//         let (m, ev, mesh) = if v.team == ActiveTeam::Dogs {
+//             foo.min_by(|a, b| a.1.partial_cmp(&b.1).expect("float cmp fail"))
+//                 .unwrap()
+//         } else {
+//             foo.max_by(|a, b| a.1.partial_cmp(&b.1).expect("float cmp fail"))
+//                 .unwrap()
+//         };
 
-        writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
-        //gloo::console::log!(s);
+//         writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
+//         //gloo::console::log!(s);
 
-        (Some(m), mesh, ev)
-    }
-}
+//         (Some(m), mesh, ev)
+//     }
+// }
 
 #[derive(PartialEq, Eq, Clone)]
-pub struct PossibleMove<'a> {
+pub struct PossibleMove {
     pub the_move: moves::ActualMove,
     pub mesh: MovementMesh,
-    pub game_after_move: GameThing<'a>,
-}
-impl<'a> PossibleMove<'a> {
-    pub fn skip_turn(a: &GameThing<'a>) -> Self {
-        Self {
-            the_move: moves::ActualMove::SkipTurn,
-            mesh: MovementMesh::new(),
-            game_after_move: a.clone(),
-        }
-    }
+    pub game_after_move: GameState,
 }
 
-fn for_all_moves<'b, 'c>(
-    view: &'b GameViewMut<'_, 'c>,
-) -> impl Iterator<Item = PossibleMove<'c>> + 'b {
+fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
+    let next_team = team.not();
     let foo = PossibleMove {
         the_move: moves::ActualMove::SkipTurn,
-        game_after_move: view.duplicate(),
+        game_after_move: state.clone(),
         mesh: MovementMesh::new(),
     };
 
-    view.this_team
+    let mut sss = state.clone();
+    let ss = state.clone();
+    ss.into_view(team)
+        .this_team
         .units
-        .iter()
+        .into_iter()
         .map(|a| RegularSelection { unit: a.clone() })
-        .flat_map(|a| {
-            let mesh = a.generate(view);
+        .flat_map(move |a| {
+            let mesh = a.generate(&sss.view_mut(team));
             mesh.iter_mesh(a.unit.position)
                 .map(move |f| (a.clone(), mesh, f))
         })
-        .flat_map(|(s, mesh, m)| {
-            let mut v = view.duplicate();
+        .flat_map(move |(s, mesh, m)| {
+            let mut v = state.clone();
             let mut mm = MoveLog::new();
 
             let first = if let Some(l) = s
-                .execute_no_animation(m, mesh, &mut v.view(), &mut mm)
+                .execute_no_animation(m, mesh, &mut v.view_mut(team), &mut mm)
                 .unwrap()
             {
                 let cll = l.select();
 
-                let mut kk = v.view().duplicate();
-                let mesh2 = cll.generate(&mut kk.view());
+                //let mut kk = v.view().duplicate();
+                let mut kk = v.clone();
+                let mesh2 = cll.generate(&mut kk.view_mut(team));
                 Some(mesh2.iter_mesh(l.coord()).map(move |m| {
-                    let mut klkl = kk.view().duplicate();
+                    let mut klkl = kk.clone();
                     let mut mm2 = MoveLog::new();
 
-                    let mut vfv = klkl.view();
+                    let mut vfv = klkl.view_mut(team);
                     cll.execute_no_animation(m, mesh2, &mut vfv, &mut mm2)
                         .unwrap();
 

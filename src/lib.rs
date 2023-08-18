@@ -124,14 +124,37 @@ impl<'a> WarriorDraw<'a> {
 
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
+pub struct GameStateRelative {
+    this_team: Tribe,
+    that_team: Tribe,
+    world: board::World,
+    team: ActiveTeam,
+}
+
 //Additionally removes need to special case animation.
-#[derive(Debug,Hash,Eq,PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
     dogs: Tribe,
     cats: Tribe,
     world: board::World,
 }
 impl GameState {
+    fn into_view(self, team_index: ActiveTeam) -> GameStateRelative {
+        match team_index {
+            ActiveTeam::Cats => GameStateRelative {
+                this_team: self.cats,
+                that_team: self.dogs,
+                world: self.world,
+                team: ActiveTeam::Cats,
+            },
+            ActiveTeam::Dogs => GameStateRelative {
+                this_team: self.dogs,
+                that_team: self.cats,
+                world: self.world,
+                team: ActiveTeam::Dogs,
+            },
+        }
+    }
     fn view(&self, team_index: ActiveTeam) -> GameView {
         match team_index {
             ActiveTeam::Cats => GameView {
@@ -208,14 +231,12 @@ impl<'a> GameView<'a> {
     }
 }
 
-#[derive(Hash,Eq,PartialEq)]
+#[derive(Hash, Eq, PartialEq)]
 pub struct AbsoluteGameView<'a, 'b> {
     cats: &'a Tribe,
     dogs: &'a Tribe,
     world: &'b board::World,
 }
-
-
 
 //TODO make this deref to GameVIew const version
 pub struct GameViewMut<'a, 'b> {
