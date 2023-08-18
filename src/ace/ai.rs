@@ -108,7 +108,7 @@ fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
 }
 
 pub struct CheckFirst {
-    a: std::collections::HashMap<GameState, PossibleMove>,
+    a: std::collections::HashMap<MyPath, PossibleMove>,
 }
 
 pub struct TranspositionTable {
@@ -180,6 +180,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
             &foo1,
             &mut foo2,
             &mut count,
+            MyPath::new(),
         );
         foo1 = foo2;
         principal_variation = res.0.clone();
@@ -194,6 +195,20 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     //console_dbg!(res);
 
     results.pop().unwrap()
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct MyPath {
+    a: Vec<moves::ActualMove>,
+}
+impl MyPath {
+    pub fn new() -> Self {
+        Self { a: vec![] }
+    }
+    pub fn add(mut self, a: moves::ActualMove) -> Self {
+        self.a.push(a);
+        self
+    }
 }
 
 #[derive(Debug)]
@@ -217,6 +232,7 @@ pub fn alpha_beta(
     check_first: &CheckFirst,
     next_tree: &mut CheckFirst,
     calls: &mut Counter,
+    path: MyPath,
 ) -> (Option<PossibleMove>, Eval) {
     //console_dbg!(depth);
     if depth == 0 || game_is_over(node.view(team)) {
@@ -238,7 +254,7 @@ pub fn alpha_beta(
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
 
-            // principal_variation=check_first.a.get(node).cloned();
+            principal_variation = check_first.a.get(&path).cloned();
 
             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
                 let t = alpha_beta(
@@ -253,11 +269,8 @@ pub fn alpha_beta(
                     check_first,
                     next_tree,
                     calls,
+                    path.clone().add(cand.the_move.clone()),
                 );
-
-                if let Some(aaa) = t.0 {
-                    next_tree.a.insert(cand.game_after_move.clone(), aaa);
-                }
 
                 value = value.max(t.1);
                 if value == t.1 {
@@ -268,6 +281,11 @@ pub fn alpha_beta(
                 }
                 alpha = alpha.max(value)
             }
+
+            if let Some(aaa) = &mm {
+                next_tree.a.insert(path, aaa.clone());
+            }
+
             (mm, value)
             //(mm, mesh_final, value)
         } else {
@@ -275,7 +293,7 @@ pub fn alpha_beta(
 
             let mut value = f64::INFINITY;
 
-            //let principal_variation=check_first.a.get(node).cloned();
+            principal_variation = check_first.a.get(&path).cloned();
 
             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
                 let t = alpha_beta(
@@ -290,11 +308,8 @@ pub fn alpha_beta(
                     check_first,
                     next_tree,
                     calls,
+                    path.clone().add(cand.the_move.clone()),
                 );
-
-                if let Some(aaa) = t.0 {
-                    next_tree.a.insert(cand.game_after_move.clone(), aaa);
-                }
 
                 value = value.min(t.1);
                 if value == t.1 {
@@ -304,6 +319,10 @@ pub fn alpha_beta(
                     break;
                 }
                 beta = beta.min(value)
+            }
+
+            if let Some(aaa) = &mm {
+                next_tree.a.insert(path, aaa.clone());
             }
             (mm, value)
         }
