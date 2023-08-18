@@ -108,6 +108,10 @@ fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
 }
 
 
+pub struct CheckFirst{
+    a:std::collections::HashMap<GameState,PossibleMove>
+}
+
 pub struct TranspositionTable {
     a: std::collections::HashMap<u64, (usize, Eval)>,
     saves: usize,
@@ -156,7 +160,11 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     let mut principal_variation = None;
     let mut table = TranspositionTable::new();
 
-    for depth in 0..5 {
+    let mut foo1=CheckFirst{a:std::collections::HashMap::new()};
+    
+    for depth in 0..6 {
+        let mut foo2=CheckFirst{a:std::collections::HashMap::new()};
+    
         let res = ai::alpha_beta(
             game,
             team,
@@ -166,8 +174,11 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
             f64::INFINITY,
             principal_variation,
             &mut table,
+            &foo1,
+            &mut foo2,
             &mut count,
         );
+        foo1=foo2;
         principal_variation = res.0.clone();
         results.push(res);
     }
@@ -200,6 +211,8 @@ pub fn alpha_beta(
     mut beta: f64,
     mut principal_variation: Option<PossibleMove>,
     table: &mut TranspositionTable,
+    check_first:&CheckFirst,
+    next_tree:&mut CheckFirst,
     calls: &mut Counter,
 ) -> (Option<PossibleMove>, Eval) {
     //console_dbg!(depth);
@@ -222,6 +235,10 @@ pub fn alpha_beta(
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
 
+            
+            let principal_variation=check_first.a.get(node).cloned();
+
+
 
             for cand in principal_variation
                 .clone()
@@ -247,8 +264,15 @@ pub fn alpha_beta(
                     beta,
                     None,
                     table,
+                    check_first,
+                    next_tree,
                     calls,
                 );
+
+
+                if let Some(aaa)=t.0{
+                    next_tree.a.insert(cand.game_after_move.clone(),aaa);
+                }
 
                 value = value.max(t.1);
                 if value == t.1 {
@@ -265,6 +289,10 @@ pub fn alpha_beta(
             let mut mm: Option<PossibleMove> = None;
 
             let mut value = f64::INFINITY;
+
+            let principal_variation=check_first.a.get(node).cloned();
+
+
             for cand in principal_variation
                 .clone()
                 .into_iter()
@@ -289,8 +317,14 @@ pub fn alpha_beta(
                     beta,
                     None,
                     table,
+                    check_first,
+                    next_tree,
                     calls,
                 );
+
+                if let Some(aaa)=t.0{
+                    next_tree.a.insert(cand.game_after_move.clone(),aaa);
+                }
 
                 value = value.min(t.1);
                 if value == t.1 {
