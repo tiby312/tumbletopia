@@ -100,7 +100,9 @@ pub fn game_is_over(view: GameView<'_>) -> bool {
 
 fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
     use std::hash::Hasher;
-    let mut s = std::collections::hash_map::DefaultHasher::new();
+    //let mut s = std::collections::hash_map::DefaultHasher::new();
+    let mut s = seahash::SeaHasher::new();
+
     t.hash(&mut s);
     s.finish()
 }
