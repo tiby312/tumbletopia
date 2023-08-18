@@ -580,6 +580,7 @@ pub async fn main_logic<'a>(
 
             let m = j.0.unwrap();
             //let mesh = j.1;
+            console_dbg!("EVAL", j.1);
             let mut game = game.view_mut(team_index);
 
             match m.the_move {

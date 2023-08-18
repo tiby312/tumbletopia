@@ -137,10 +137,10 @@ impl TranspositionTable {
         let k = calculate_hash(&game);
 
         if let Some((old_depth, v)) = self.a.get_mut(&k) {
-            // if depth == *old_depth {
-            //     *old_depth = depth;
-            //     *v = eval;
-            // }
+            //if depth == *old_depth {
+            *old_depth = depth;
+            *v = eval;
+            //}
         } else {
             let _ = self.a.insert(k, (depth, eval));
         }
@@ -153,9 +153,9 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
     let mut principal_variation = None;
-    for depth in 0..5 {
-        let mut table = TranspositionTable::new();
+    let mut table = TranspositionTable::new();
 
+    for depth in 0..5 {
         let res = ai::alpha_beta(
             game,
             team,
@@ -169,9 +169,10 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
         );
         principal_variation = res.0.clone();
         results.push(res);
-        console_dbg!(table.saves);
-        console_dbg!(table.a.len());
     }
+
+    console_dbg!(table.saves);
+    console_dbg!(table.a.len());
     //console_dbg!(res);
     console_dbg!(count);
     results.dedup_by_key(|x| x.1);
@@ -196,7 +197,7 @@ pub fn alpha_beta(
     debug: bool,
     mut alpha: f64,
     mut beta: f64,
-    principal_variation: Option<PossibleMove>,
+    mut principal_variation: Option<PossibleMove>,
     table: &mut TranspositionTable,
     calls: &mut Counter,
 ) -> (Option<PossibleMove>, Eval) {
@@ -219,6 +220,7 @@ pub fn alpha_beta(
         if team == ActiveTeam::Cats {
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
+
             for (i, cand) in principal_variation
                 .clone()
                 .into_iter()
@@ -235,26 +237,17 @@ pub fn alpha_beta(
                 }))
                 .enumerate()
             {
-                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth - 1) {
-                    (Some(cand.clone()), foo)
-                } else {
-                    let foo = alpha_beta(
-                        &cand.game_after_move,
-                        team.not(),
-                        depth - 1,
-                        debug,
-                        alpha,
-                        beta,
-                        None,
-                        table,
-                        calls,
-                    );
-
-                    //TODO correct?
-                    table.consider(depth - 1, cand.game_after_move.clone(), foo.1);
-
-                    foo
-                };
+                let t = alpha_beta(
+                    &cand.game_after_move,
+                    team.not(),
+                    depth - 1,
+                    debug,
+                    alpha,
+                    beta,
+                    None,
+                    table,
+                    calls,
+                );
 
                 value = value.max(t.1);
                 if value == t.1 {
@@ -287,25 +280,17 @@ pub fn alpha_beta(
                 }))
                 .enumerate()
             {
-                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth - 1) {
-                    (Some(cand.clone()), foo)
-                } else {
-                    let foo = alpha_beta(
-                        &cand.game_after_move,
-                        team.not(),
-                        depth - 1,
-                        debug,
-                        alpha,
-                        beta,
-                        None,
-                        table,
-                        calls,
-                    );
-
-                    //TODO correct?
-                    table.consider(depth - 1, cand.game_after_move.clone(), foo.1);
-                    foo
-                };
+                let t = alpha_beta(
+                    &cand.game_after_move,
+                    team.not(),
+                    depth - 1,
+                    debug,
+                    alpha,
+                    beta,
+                    None,
+                    table,
+                    calls,
+                );
 
                 value = value.min(t.1);
                 if value == t.1 {
