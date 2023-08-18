@@ -107,9 +107,8 @@ fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
     s.finish()
 }
 
-
-pub struct CheckFirst{
-    a:std::collections::HashMap<GameState,PossibleMove>
+pub struct CheckFirst {
+    a: std::collections::HashMap<GameState, PossibleMove>,
 }
 
 pub struct TranspositionTable {
@@ -160,11 +159,15 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     let mut principal_variation = None;
     let mut table = TranspositionTable::new();
 
-    let mut foo1=CheckFirst{a:std::collections::HashMap::new()};
-    
-    for depth in 0..6 {
-        let mut foo2=CheckFirst{a:std::collections::HashMap::new()};
-    
+    let mut foo1 = CheckFirst {
+        a: std::collections::HashMap::new(),
+    };
+
+    for depth in 0..5 {
+        let mut foo2 = CheckFirst {
+            a: std::collections::HashMap::new(),
+        };
+
         let res = ai::alpha_beta(
             game,
             team,
@@ -178,7 +181,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
             &mut foo2,
             &mut count,
         );
-        foo1=foo2;
+        foo1 = foo2;
         principal_variation = res.0.clone();
         results.push(res);
     }
@@ -211,8 +214,8 @@ pub fn alpha_beta(
     mut beta: f64,
     mut principal_variation: Option<PossibleMove>,
     table: &mut TranspositionTable,
-    check_first:&CheckFirst,
-    next_tree:&mut CheckFirst,
+    check_first: &CheckFirst,
+    next_tree: &mut CheckFirst,
     calls: &mut Counter,
 ) -> (Option<PossibleMove>, Eval) {
     //console_dbg!(depth);
@@ -235,26 +238,9 @@ pub fn alpha_beta(
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
 
-            
-            let principal_variation=check_first.a.get(node).cloned();
+            // principal_variation=check_first.a.get(node).cloned();
 
-
-
-            for cand in principal_variation
-                .clone()
-                .into_iter()
-                .chain(for_all_moves(node.clone(), team).filter(|cand| {
-                    if let Some(p) = &principal_variation {
-                        if p == cand {
-                            false
-                        } else {
-                            true
-                        }
-                    } else {
-                        true
-                    }
-                }))
-            {
+            for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
                 let t = alpha_beta(
                     &cand.game_after_move,
                     team.not(),
@@ -269,9 +255,8 @@ pub fn alpha_beta(
                     calls,
                 );
 
-
-                if let Some(aaa)=t.0{
-                    next_tree.a.insert(cand.game_after_move.clone(),aaa);
+                if let Some(aaa) = t.0 {
+                    next_tree.a.insert(cand.game_after_move.clone(), aaa);
                 }
 
                 value = value.max(t.1);
@@ -290,24 +275,9 @@ pub fn alpha_beta(
 
             let mut value = f64::INFINITY;
 
-            let principal_variation=check_first.a.get(node).cloned();
+            //let principal_variation=check_first.a.get(node).cloned();
 
-
-            for cand in principal_variation
-                .clone()
-                .into_iter()
-                .chain(for_all_moves(node.clone(), team).filter(|cand| {
-                    if let Some(p) = &principal_variation {
-                        if p == cand {
-                            false
-                        } else {
-                            true
-                        }
-                    } else {
-                        true
-                    }
-                }))
-            {
+            for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
                 let t = alpha_beta(
                     &cand.game_after_move,
                     team.not(),
@@ -322,8 +292,8 @@ pub fn alpha_beta(
                     calls,
                 );
 
-                if let Some(aaa)=t.0{
-                    next_tree.a.insert(cand.game_after_move.clone(),aaa);
+                if let Some(aaa) = t.0 {
+                    next_tree.a.insert(cand.game_after_move.clone(), aaa);
                 }
 
                 value = value.min(t.1);
@@ -341,6 +311,31 @@ pub fn alpha_beta(
         //writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
         //gloo::console::log!(s);
     }
+}
+
+fn reorder_front(
+    a: Option<PossibleMove>,
+    b: impl Iterator<Item = PossibleMove>,
+) -> impl Iterator<Item = PossibleMove> {
+    let mut found_duplicate = false;
+    let it = a.clone().into_iter().chain(b.filter(|z| {
+        if let Some(p) = &a {
+            if p == z {
+                found_duplicate = true;
+                false
+            } else {
+                true
+            }
+        } else {
+            true
+        }
+    }));
+
+    let v: Vec<_> = it.collect();
+    if let Some(_) = a {
+        assert!(found_duplicate);
+    }
+    v.into_iter()
 }
 
 // pub fn min_max<'a>(
