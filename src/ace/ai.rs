@@ -152,8 +152,6 @@ impl TranspositionTable {
 }
 
 pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<PossibleMove>, Eval) {
-    //TODO add transpotion table!!!!
-
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
     let mut principal_variation = None;
@@ -234,7 +232,6 @@ pub fn alpha_beta(
     calls: &mut Counter,
     path: MyPath,
 ) -> (Option<PossibleMove>, Eval) {
-    //console_dbg!(depth);
     if depth == 0 || game_is_over(node.view(team)) {
         calls.add_eval();
         if let Some(n) = table.lookup(&node, depth) {
@@ -245,11 +242,6 @@ pub fn alpha_beta(
             (None, val)
         }
     } else {
-        //let v = node.view(team);
-
-        //use std::fmt::Write;
-        //let mut s = String::new();
-
         if team == ActiveTeam::Cats {
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
@@ -336,11 +328,11 @@ fn reorder_front(
     a: Option<PossibleMove>,
     b: impl Iterator<Item = PossibleMove>,
 ) -> impl Iterator<Item = PossibleMove> {
-    let mut found_duplicate = false;
-    let it = a.clone().into_iter().chain(b.filter(|z| {
+    //let mut found_duplicate = false;
+    let it = a.clone().into_iter().chain(b.filter(move |z| {
         if let Some(p) = &a {
             if p == z {
-                found_duplicate = true;
+                //found_duplicate = true;
                 false
             } else {
                 true
@@ -350,11 +342,12 @@ fn reorder_front(
         }
     }));
 
-    let v: Vec<_> = it.collect();
-    if let Some(_) = a {
-        assert!(found_duplicate);
-    }
-    v.into_iter()
+    // let v: Vec<_> = it.collect();
+    // if let Some(_) = a {
+    //     assert!(found_duplicate);
+    // }
+    // v.into_iter()
+    it
 }
 
 // pub fn min_max<'a>(
