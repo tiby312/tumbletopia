@@ -120,10 +120,10 @@ impl TranspositionTable {
         }
     }
     pub fn lookup(&mut self, a: &GameState, depth: usize) -> Option<Eval> {
-        let k = calculate_hash(&a);
+        let k = calculate_hash(a);
 
         if let Some(a) = self.a.get(&k) {
-            if depth <= a.0 {
+            if depth == a.0 {
                 self.saves += 1;
                 Some(a.1)
             } else {
@@ -137,10 +137,10 @@ impl TranspositionTable {
         let k = calculate_hash(&game);
 
         if let Some((old_depth, v)) = self.a.get_mut(&k) {
-            if depth > *old_depth {
-                *old_depth = depth;
-                *v = eval;
-            }
+            // if depth == *old_depth {
+            //     *old_depth = depth;
+            //     *v = eval;
+            // }
         } else {
             let _ = self.a.insert(k, (depth, eval));
         }
@@ -151,10 +151,11 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     //TODO add transpotion table!!!!
 
     let mut count = Counter { count: 0 };
-    let mut table = TranspositionTable::new();
     let mut results = Vec::new();
     let mut principal_variation = None;
     for depth in 0..5 {
+        let mut table = TranspositionTable::new();
+
         let res = ai::alpha_beta(
             game,
             team,
@@ -168,11 +169,11 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
         );
         principal_variation = res.0.clone();
         results.push(res);
+        console_dbg!(table.saves);
+        console_dbg!(table.a.len());
     }
     //console_dbg!(res);
     console_dbg!(count);
-    console_dbg!(table.saves);
-    console_dbg!(table.a.len());
     results.dedup_by_key(|x| x.1);
     //console_dbg!(res);
 
@@ -234,7 +235,7 @@ pub fn alpha_beta(
                 }))
                 .enumerate()
             {
-                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth) {
+                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth - 1) {
                     (Some(cand.clone()), foo)
                 } else {
                     let foo = alpha_beta(
@@ -250,7 +251,7 @@ pub fn alpha_beta(
                     );
 
                     //TODO correct?
-                    //table.consider(depth , cand.game_after_move.clone(), foo.1);
+                    table.consider(depth - 1, cand.game_after_move.clone(), foo.1);
 
                     foo
                 };
@@ -286,7 +287,7 @@ pub fn alpha_beta(
                 }))
                 .enumerate()
             {
-                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth) {
+                let t = if let Some(foo) = table.lookup(&cand.game_after_move, depth - 1) {
                     (Some(cand.clone()), foo)
                 } else {
                     let foo = alpha_beta(
@@ -302,7 +303,7 @@ pub fn alpha_beta(
                     );
 
                     //TODO correct?
-                    //table.consider(depth , cand.game_after_move.clone(), foo.1);
+                    table.consider(depth - 1, cand.game_after_move.clone(), foo.1);
                     foo
                 };
 
