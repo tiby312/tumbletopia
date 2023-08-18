@@ -107,6 +107,7 @@ fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
     s.finish()
 }
 
+
 pub struct TranspositionTable {
     a: std::collections::HashMap<u64, (usize, Eval)>,
     saves: usize,
@@ -221,7 +222,8 @@ pub fn alpha_beta(
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
 
-            for (i, cand) in principal_variation
+
+            for cand in principal_variation
                 .clone()
                 .into_iter()
                 .chain(for_all_moves(node.clone(), team).filter(|cand| {
@@ -235,7 +237,6 @@ pub fn alpha_beta(
                         true
                     }
                 }))
-                .enumerate()
             {
                 let t = alpha_beta(
                     &cand.game_after_move,
@@ -264,7 +265,7 @@ pub fn alpha_beta(
             let mut mm: Option<PossibleMove> = None;
 
             let mut value = f64::INFINITY;
-            for (i, cand) in principal_variation
+            for cand in principal_variation
                 .clone()
                 .into_iter()
                 .chain(for_all_moves(node.clone(), team).filter(|cand| {
@@ -278,7 +279,6 @@ pub fn alpha_beta(
                         true
                     }
                 }))
-                .enumerate()
             {
                 let t = alpha_beta(
                     &cand.game_after_move,
@@ -350,7 +350,6 @@ pub struct PossibleMove {
 }
 
 fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
-    let next_team = team.not();
     let foo = PossibleMove {
         the_move: moves::ActualMove::SkipTurn,
         game_after_move: state.clone(),
