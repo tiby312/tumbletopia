@@ -154,7 +154,6 @@ impl TranspositionTable {
 pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<PossibleMove>, Eval) {
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
-    let mut principal_variation = None;
     let mut table = TranspositionTable::new();
 
     let mut foo1 = CheckFirst {
@@ -162,10 +161,6 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     };
 
     for depth in 0..5 {
-        let mut foo2 = CheckFirst {
-            a: std::collections::HashMap::new(),
-        };
-
         let res = ai::alpha_beta(
             game,
             team,
@@ -173,25 +168,20 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
             false,
             f64::NEG_INFINITY,
             f64::INFINITY,
-            principal_variation,
             &mut table,
-            &foo1,
-            &mut foo2,
+            &mut foo1,
             &mut count,
             MyPath::new(),
         );
-        foo1 = foo2;
-        principal_variation = res.0.clone();
+        
         results.push(res);
     }
 
     console_dbg!(table.saves);
     console_dbg!(table.a.len());
-    //console_dbg!(res);
     console_dbg!(count);
     results.dedup_by_key(|x| x.1);
-    //console_dbg!(res);
-
+    
     results.pop().unwrap()
 }
 
@@ -225,10 +215,8 @@ pub fn alpha_beta(
     debug: bool,
     mut alpha: f64,
     mut beta: f64,
-    mut principal_variation: Option<PossibleMove>,
     table: &mut TranspositionTable,
-    check_first: &CheckFirst,
-    next_tree: &mut CheckFirst,
+    check_first: &mut CheckFirst,
     calls: &mut Counter,
     path: MyPath,
 ) -> (Option<PossibleMove>, Eval) {
@@ -246,7 +234,7 @@ pub fn alpha_beta(
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
 
-            principal_variation = check_first.a.get(&path).cloned();
+            let principal_variation = check_first.a.get(&path).cloned();
 
             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
                 let t = alpha_beta(
@@ -256,10 +244,8 @@ pub fn alpha_beta(
                     debug,
                     alpha,
                     beta,
-                    None,
                     table,
                     check_first,
-                    next_tree,
                     calls,
                     path.clone().add(cand.the_move.clone()),
                 );
@@ -275,7 +261,11 @@ pub fn alpha_beta(
             }
 
             if let Some(aaa) = &mm {
-                next_tree.a.insert(path, aaa.clone());
+                if let Some(foo) = check_first.a.get_mut(&path) {
+                    *foo = aaa.clone();
+                } else {
+                    check_first.a.insert(path, aaa.clone());
+                }
             }
 
             (mm, value)
@@ -285,7 +275,7 @@ pub fn alpha_beta(
 
             let mut value = f64::INFINITY;
 
-            principal_variation = check_first.a.get(&path).cloned();
+            let principal_variation = check_first.a.get(&path).cloned();
 
             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
                 let t = alpha_beta(
@@ -295,10 +285,8 @@ pub fn alpha_beta(
                     debug,
                     alpha,
                     beta,
-                    None,
                     table,
                     check_first,
-                    next_tree,
                     calls,
                     path.clone().add(cand.the_move.clone()),
                 );
@@ -314,7 +302,11 @@ pub fn alpha_beta(
             }
 
             if let Some(aaa) = &mm {
-                next_tree.a.insert(path, aaa.clone());
+                if let Some(foo) = check_first.a.get_mut(&path) {
+                    *foo = aaa.clone();
+                } else {
+                    check_first.a.insert(path, aaa.clone());
+                }
             }
             (mm, value)
         }
