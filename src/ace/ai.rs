@@ -179,19 +179,6 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     results.pop().unwrap()
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct MyPath {
-    a: Vec<moves::ActualMove>,
-}
-impl MyPath {
-    pub fn new() -> Self {
-        Self { a: vec![] }
-    }
-    pub fn add(mut self, a: moves::ActualMove) -> Self {
-        self.a.push(a);
-        self
-    }
-}
 
 #[derive(Debug)]
 pub struct Counter {
