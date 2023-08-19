@@ -203,6 +203,7 @@ pub fn alpha_beta(
     path: &mut Vec<moves::ActualMove>,
 ) -> (Option<PossibleMove>, Eval) {
     if depth == 0 || game_is_over(node.view(team)) {
+        //TODO do Quiescence Search
         calls.add_eval();
         if let Some(n) = table.lookup_leaf(&node) {
             (None, *n)
