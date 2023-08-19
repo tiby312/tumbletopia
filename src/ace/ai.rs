@@ -98,15 +98,6 @@ pub fn game_is_over(view: GameView<'_>) -> bool {
     false
 }
 
-fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
-    use std::hash::Hasher;
-    //let mut s = std::collections::hash_map::DefaultHasher::new();
-    let mut s = seahash::SeaHasher::new();
-
-    t.hash(&mut s);
-    s.finish()
-}
-
 //TODO use bump allocator!!!!!
 pub struct CheckFirst {
     a: std::collections::HashMap<Vec<moves::ActualMove>, PossibleMove>,
@@ -124,7 +115,7 @@ impl CheckFirst {
 }
 
 pub struct TranspositionTable {
-    a: std::collections::HashMap<u64, Eval>,
+    a: std::collections::HashMap<GameState, Eval>,
     saves: usize,
 }
 
@@ -136,29 +127,20 @@ impl TranspositionTable {
         }
     }
     pub fn lookup_leaf(&mut self, a: &GameState) -> Option<&Eval> {
-        let k = calculate_hash(a);
 
-        if let Some(a) = self.a.get(&k) {
-            //if depth == a.0 {
+        if let Some(a) = self.a.get(a) {
             self.saves += 1;
             Some(a)
-            // } else {
-            //     None
-            // }
         } else {
             None
         }
     }
     pub fn consider_leaf(&mut self, game: GameState, eval: Eval) {
-        let k = calculate_hash(&game);
 
-        if let Some(v) = self.a.get_mut(&k) {
-            //if depth == *old_depth {
-            //*old_depth = depth;
+        if let Some(v) = self.a.get_mut(&game) {
             *v = eval;
-            //}
         } else {
-            let _ = self.a.insert(k, eval);
+            let _ = self.a.insert(game, eval);
         }
     }
 }
