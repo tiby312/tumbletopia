@@ -107,8 +107,20 @@ fn calculate_hash<T: std::hash::Hash>(t: &T) -> u64 {
     s.finish()
 }
 
+//TODO use bump allocator!!!!!
 pub struct CheckFirst {
-    a: std::collections::HashMap<MyPath, PossibleMove>,
+    a: std::collections::HashMap<Vec<moves::ActualMove>, PossibleMove>,
+}
+impl CheckFirst {
+    pub fn get(&self, path: &[moves::ActualMove]) -> Option<&PossibleMove> {
+        self.a.get(path)
+    }
+    pub fn get_mut(&mut self, path: &[moves::ActualMove]) -> Option<&mut PossibleMove> {
+        self.a.get_mut(path)
+    }
+    pub fn insert(&mut self, path: &[moves::ActualMove], m: PossibleMove) {
+        self.a.insert(path.iter().cloned().collect(), m);
+    }
 }
 
 pub struct TranspositionTable {
@@ -171,7 +183,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
             &mut table,
             &mut foo1,
             &mut count,
-            MyPath::new(),
+            &mut vec![],
         );
 
         results.push(res);
@@ -218,7 +230,7 @@ pub fn alpha_beta(
     table: &mut TranspositionTable,
     check_first: &mut CheckFirst,
     calls: &mut Counter,
-    path: MyPath,
+    path: &mut Vec<moves::ActualMove>,
 ) -> (Option<PossibleMove>, Eval) {
     if depth == 0 || game_is_over(node.view(team)) {
         calls.add_eval();
@@ -234,9 +246,12 @@ pub fn alpha_beta(
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
 
-            let principal_variation = check_first.a.get(&path).cloned();
+            //let temp_path=
+
+            let principal_variation = check_first.get(path).cloned();
 
             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
+                path.push(cand.the_move.clone());
                 let t = alpha_beta(
                     &cand.game_after_move,
                     team.not(),
@@ -247,8 +262,10 @@ pub fn alpha_beta(
                     table,
                     check_first,
                     calls,
-                    path.clone().add(cand.the_move.clone()),
+                    path,
                 );
+                let k = path.pop().unwrap();
+                assert_eq!(k, cand.the_move.clone());
 
                 value = value.max(t.1);
                 if value == t.1 {
@@ -261,10 +278,10 @@ pub fn alpha_beta(
             }
 
             if let Some(aaa) = &mm {
-                if let Some(foo) = check_first.a.get_mut(&path) {
+                if let Some(foo) = check_first.get_mut(&path) {
                     *foo = aaa.clone();
                 } else {
-                    check_first.a.insert(path, aaa.clone());
+                    check_first.insert(path, aaa.clone());
                 }
             }
 
@@ -275,9 +292,11 @@ pub fn alpha_beta(
 
             let mut value = f64::INFINITY;
 
-            let principal_variation = check_first.a.get(&path).cloned();
+            let principal_variation = check_first.get(path).cloned();
 
             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
+                path.push(cand.the_move.clone());
+
                 let t = alpha_beta(
                     &cand.game_after_move,
                     team.not(),
@@ -288,8 +307,10 @@ pub fn alpha_beta(
                     table,
                     check_first,
                     calls,
-                    path.clone().add(cand.the_move.clone()),
+                    path,
                 );
+                let k = path.pop().unwrap();
+                assert_eq!(k, cand.the_move.clone());
 
                 value = value.min(t.1);
                 if value == t.1 {
@@ -302,10 +323,10 @@ pub fn alpha_beta(
             }
 
             if let Some(aaa) = &mm {
-                if let Some(foo) = check_first.a.get_mut(&path) {
+                if let Some(foo) = check_first.get_mut(&path) {
                     *foo = aaa.clone();
                 } else {
-                    check_first.a.insert(path, aaa.clone());
+                    check_first.insert(path, aaa.clone());
                 }
             }
             (mm, value)
@@ -320,11 +341,11 @@ fn reorder_front(
     a: Option<PossibleMove>,
     b: impl Iterator<Item = PossibleMove>,
 ) -> impl Iterator<Item = PossibleMove> {
-    //let mut found_duplicate = false;
-    let it = a.clone().into_iter().chain(b.filter(move |z| {
+    let mut found_duplicate = false;
+    let it = a.clone().into_iter().chain(b.filter(|z| {
         if let Some(p) = &a {
             if p == z {
-                //found_duplicate = true;
+                found_duplicate = true;
                 false
             } else {
                 true
@@ -334,12 +355,11 @@ fn reorder_front(
         }
     }));
 
-    // let v: Vec<_> = it.collect();
-    // if let Some(_) = a {
-    //     assert!(found_duplicate);
-    // }
-    // v.into_iter()
-    it
+    let v: Vec<_> = it.collect();
+    if let Some(_) = a {
+        assert!(found_duplicate);
+    }
+    v.into_iter()
 }
 
 // pub fn min_max<'a>(
