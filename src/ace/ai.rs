@@ -99,14 +99,15 @@ pub fn game_is_over(view: GameView<'_>) -> bool {
 }
 
 //TODO use bump allocator!!!!!
-pub struct CheckFirst {
+//TODO just store best move? not gamestate?
+pub struct MoveOrdering {
     a: std::collections::HashMap<Vec<moves::ActualMove>, PossibleMove>,
 }
-impl CheckFirst {
-    pub fn get(&self, path: &[moves::ActualMove]) -> Option<&PossibleMove> {
+impl MoveOrdering {
+    pub fn get_best_prev_move(&self, path: &[moves::ActualMove]) -> Option<&PossibleMove> {
         self.a.get(path)
     }
-    pub fn get_mut(&mut self, path: &[moves::ActualMove]) -> Option<&mut PossibleMove> {
+    pub fn get_best_prev_move_mut(&mut self, path: &[moves::ActualMove]) -> Option<&mut PossibleMove> {
         self.a.get_mut(path)
     }
     pub fn insert(&mut self, path: &[moves::ActualMove], m: PossibleMove) {
@@ -114,14 +115,14 @@ impl CheckFirst {
     }
 }
 
-pub struct TranspositionTable {
+pub struct LeafTranspositionTable {
     a: std::collections::HashMap<GameState, Eval>,
     saves: usize,
 }
 
-impl TranspositionTable {
+impl LeafTranspositionTable {
     pub fn new() -> Self {
-        TranspositionTable {
+        LeafTranspositionTable {
             a: std::collections::HashMap::new(),
             saves: 0,
         }
@@ -148,9 +149,9 @@ impl TranspositionTable {
 pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<PossibleMove>, Eval) {
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
-    let mut table = TranspositionTable::new();
+    let mut table = LeafTranspositionTable::new();
 
-    let mut foo1 = CheckFirst {
+    let mut foo1 = MoveOrdering {
         a: std::collections::HashMap::new(),
     };
 
@@ -196,8 +197,8 @@ pub fn alpha_beta(
     debug: bool,
     mut alpha: f64,
     mut beta: f64,
-    table: &mut TranspositionTable,
-    check_first: &mut CheckFirst,
+    table: &mut LeafTranspositionTable,
+    check_first: &mut MoveOrdering,
     calls: &mut Counter,
     path: &mut Vec<moves::ActualMove>,
 ) -> (Option<PossibleMove>, Eval) {
@@ -217,7 +218,7 @@ pub fn alpha_beta(
 
             //let temp_path=
 
-            let principal_variation = check_first.get(path).cloned();
+            let principal_variation = check_first.get_best_prev_move(path).cloned();
 
             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
                 path.push(cand.the_move.clone());
@@ -247,7 +248,7 @@ pub fn alpha_beta(
             }
 
             if let Some(aaa) = &mm {
-                if let Some(foo) = check_first.get_mut(&path) {
+                if let Some(foo) = check_first.get_best_prev_move_mut(&path) {
                     *foo = aaa.clone();
                 } else {
                     check_first.insert(path, aaa.clone());
@@ -261,7 +262,7 @@ pub fn alpha_beta(
 
             let mut value = f64::INFINITY;
 
-            let principal_variation = check_first.get(path).cloned();
+            let principal_variation = check_first.get_best_prev_move(path).cloned();
 
             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
                 path.push(cand.the_move.clone());
@@ -292,7 +293,7 @@ pub fn alpha_beta(
             }
 
             if let Some(aaa) = &mm {
-                if let Some(foo) = check_first.get_mut(&path) {
+                if let Some(foo) = check_first.get_best_prev_move_mut(&path) {
                     *foo = aaa.clone();
                 } else {
                     check_first.insert(path, aaa.clone());
