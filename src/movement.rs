@@ -551,6 +551,16 @@ pub fn compute_moves2<F: Filter, F2: Filter>(
         }
 
         if slide_rule {
+            let ttt1_skip = match skip_filter.filter(&coord.advance(dir.rotate60_right())) {
+                FilterRes::Stop => false,
+                FilterRes::Accept => true,
+            };
+
+            let ttt2_skip = match filter.filter(&coord.advance(dir.rotate60_left())) {
+                FilterRes::Stop => false,
+                FilterRes::Accept => true,
+            };
+
             let ttt1 = match filter.filter(&coord.advance(dir.rotate60_right())) {
                 FilterRes::Stop => false,
                 FilterRes::Accept => true,
@@ -561,7 +571,7 @@ pub fn compute_moves2<F: Filter, F2: Filter>(
                 FilterRes::Accept => true,
             };
 
-            if !ttt1 && !ttt2 {
+            if !ttt1 && !ttt1_skip && !ttt2 && !ttt2_skip {
                 return false;
             }
         }
@@ -570,9 +580,9 @@ pub fn compute_moves2<F: Filter, F2: Filter>(
             return false;
         }
 
-        if let FilterRes::Accept = skip_filter.filter(&first) {
-            m.add(first.sub(&base));
-        }
+        //if let FilterRes::Accept = skip_filter.filter(&first) {
+        m.add(first.sub(&base));
+        //}
 
         return true;
     }

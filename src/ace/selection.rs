@@ -343,13 +343,17 @@ fn generate_unit_possible_moves_inner(
     } else {
         movement::compute_moves2(
             unit.position,
-            &game.world.filter().and(
-                game.that_team
-                    .filter_type(Type::Warrior)
-                    .and(game.that_team.filter())
-                    .not(),
-            ),
-            &game.this_team.filter().not(),
+            &game
+                .world
+                .filter()
+                .and(
+                    game.that_team
+                        .filter_type(Type::Warrior)
+                        .and(game.that_team.filter())
+                        .not(),
+                )
+                .and(game.this_team.filter().not()),
+            &game.this_team.filter(),
             restricted_movement,
             true,
         )
