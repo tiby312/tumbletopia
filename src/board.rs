@@ -5,6 +5,7 @@ use super::*;
 pub struct GridFilter {}
 impl movement::Filter for GridFilter {
     fn filter(&self, a: &GridCoord) -> FilterRes {
+        //TODO inefficient. look at the hex coord website
         FilterRes::from_bool(world().find(|b| b.to_axial() == *a).is_some())
 
         // let x = a.0[0];

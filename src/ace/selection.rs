@@ -1,3 +1,5 @@
+use crate::movement::MovementMesh;
+
 use super::*;
 
 pub enum SelectionType {
@@ -41,11 +43,18 @@ pub struct ComboContinueSelection {
 pub struct NoPathErr;
 impl ComboContinueSelection {
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        generate_unit_possible_moves_inner(
-            &self.unit,
-            game,
-            &Some((self.extra.prev_move.clone(), self.extra.prev_coord.position)),
-        )
+        // self.extra
+        // .prev_move
+        // .unit
+        // .to_cube()
+        // .dist(&self.extra.prev_move.moveto.to_cube())
+        let foo = if self.extra.prev_coord == self.unit {
+            Some(2)
+        } else {
+            None
+        };
+
+        generate_unit_possible_moves_inner(&self.unit, game, foo)
     }
     pub async fn execute(
         &self,
@@ -61,13 +70,41 @@ impl ComboContinueSelection {
             let iii = moves::Invade::new(unit, mesh, target_cell);
 
             let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
-
             move_log.push(moves::ActualMove::ExtraMove(
                 self.extra.prev_move.clone(),
                 iii,
             ));
         } else {
-            unreachable!("Not possible!");
+            let pm = moves::PartialMove::new(unit, mesh, target_cell);
+            let jjj = pm
+                .clone()
+                .execute_with_animation(game_view, doop, |_| {})
+                .await;
+
+            let jjj = match jjj {
+                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+                    //move_log.push(moves::ActualMove::NormalMove(sigl));
+                    move_log.push(moves::ActualMove::ExtraMove(
+                        self.extra.prev_move.clone(),
+                        sigl,
+                    ));
+                    Some(unit.position)
+                    //Some(selection::PossibleExtra::new(sigl, unit.clone()))
+                }
+                (sigl, moves::ExtraMove::FinishMoving) => {
+                    //move_log.push(moves::ActualMove::NormalMove(sigl));
+                    move_log.push(moves::ActualMove::ExtraMove(
+                        self.extra.prev_move.clone(),
+                        sigl,
+                    ));
+
+                    None
+                }
+            };
+
+            if let Some(a) = jjj {
+                let _ = game_view.this_team.find_take(&a);
+            }
         };
 
         Ok(())
@@ -85,13 +122,38 @@ impl ComboContinueSelection {
             let iii = moves::Invade::new(unit, mesh, target_cell);
 
             let iii = iii.execute(game_view, |_| {});
-
             move_log.push(moves::ActualMove::ExtraMove(
                 self.extra.prev_move.clone(),
                 iii,
             ));
         } else {
-            unreachable!("Not possible!");
+            let pm = moves::PartialMove::new(unit, mesh, target_cell);
+            let jjj = pm.clone().execute(game_view, |_| {});
+            let jjj = match jjj {
+                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+                    //move_log.push(moves::ActualMove::NormalMove(sigl));
+                    move_log.push(moves::ActualMove::ExtraMove(
+                        self.extra.prev_move.clone(),
+                        sigl,
+                    ));
+                    Some(unit.position)
+                    //Some(selection::PossibleExtra::new(sigl, unit.clone()))
+                }
+                (sigl, moves::ExtraMove::FinishMoving) => {
+                    move_log.push(moves::ActualMove::ExtraMove(
+                        self.extra.prev_move.clone(),
+                        sigl,
+                    ));
+
+                    //move_log.push(moves::ActualMove::NormalMove(sigl));
+
+                    None
+                }
+            };
+
+            if let Some(a) = jjj {
+                let _ = game_view.this_team.find_take(&a);
+            }
         };
 
         Ok(())
@@ -125,7 +187,7 @@ impl RegularSelection {
     //     Ok(p)
     // }
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        generate_unit_possible_moves_inner(&self.unit, game, &None)
+        generate_unit_possible_moves_inner(&self.unit, game, None)
     }
 
     pub async fn execute(
@@ -220,7 +282,7 @@ impl MoveLog {
 fn generate_unit_possible_moves_inner(
     unit: &UnitData,
     game: &GameViewMut,
-    extra_attack: &Option<(moves::PartialMoveSigl, GridCoord)>,
+    extra_attack: Option<i16>,
 ) -> movement::MovementMesh {
     // If there is an enemy near by restrict movement.
 
@@ -240,17 +302,34 @@ fn generate_unit_possible_moves_inner(
         }
     };
 
-    let mm = if let Some(_) = extra_attack
-        .as_ref()
-        .filter(|&(_, aaa)| *aaa == unit.position)
-    {
-        movement::compute_moves2(
-            unit.position,
-            &game.world.filter().and(game.that_team.filter()),
-            &movement::NoFilter,
-            restricted_movement,
-            false,
-        )
+    let mm = if let Some(extra_attack_range) = extra_attack {
+        let mut m = MovementMesh::new();
+
+        let f = game
+            .world
+            .filter()
+            .and(
+                game.that_team
+                    .filter_type(Type::Warrior)
+                    .and(game.that_team.filter())
+                    .not(),
+            )
+            .and(game.this_team.filter().not());
+        for a in unit.position.to_cube().ring(extra_attack_range) {
+            let a = a.to_axial();
+            if let movement::FilterRes::Accept = f.filter(&a) {
+                m.add(a.sub(&unit.position));
+            }
+        }
+        m
+
+        // movement::compute_moves2(
+        //     unit.position,
+        //     &game.world.filter().and(game.that_team.filter()),
+        //     &movement::NoFilter,
+        //     restricted_movement,
+        //     false,
+        // )
         // movement::compute_moves(
         //     &movement::WarriorMovement,
         //     ,

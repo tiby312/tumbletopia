@@ -1,7 +1,7 @@
 use super::*;
 
 mod ai;
-mod selection;
+pub mod selection;
 use crate::{
     animation::Animation,
     grids::GridMatrix,
@@ -256,7 +256,11 @@ pub async fn reselect_loop(
         .unwrap();
 
     let selection = if let Some(e) = extra_attack {
-        selection::SelectionType::Extra(e.select())
+        if e.coord() == unwrapped_selected_unit {
+            selection::SelectionType::Extra(e.select())
+        } else {
+            selection::SelectionType::Normal(selection::RegularSelection::new(unit))
+        }
     } else {
         selection::SelectionType::Normal(selection::RegularSelection::new(unit))
     };
@@ -576,6 +580,7 @@ pub async fn main_logic<'a>(
 
         //Add AIIIIII.
         if team_index == ActiveTeam::Dogs {
+            //{
             let j = ai::iterative_deepening(game, team_index);
 
             let m = j.0.unwrap();
@@ -600,7 +605,7 @@ pub async fn main_logic<'a>(
                         .execute(o.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
-
+                    console_dbg!("WOOO");
                     r.unwrap()
                         .select()
                         .execute(e.moveto, m.mesh, &mut game, &mut doop, &mut game_history)

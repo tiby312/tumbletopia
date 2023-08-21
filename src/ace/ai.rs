@@ -107,7 +107,10 @@ impl MoveOrdering {
     pub fn get_best_prev_move(&self, path: &[moves::ActualMove]) -> Option<&PossibleMove> {
         self.a.get(path)
     }
-    pub fn get_best_prev_move_mut(&mut self, path: &[moves::ActualMove]) -> Option<&mut PossibleMove> {
+    pub fn get_best_prev_move_mut(
+        &mut self,
+        path: &[moves::ActualMove],
+    ) -> Option<&mut PossibleMove> {
         self.a.get_mut(path)
     }
     pub fn insert(&mut self, path: &[moves::ActualMove], m: PossibleMove) {
@@ -128,7 +131,6 @@ impl LeafTranspositionTable {
         }
     }
     pub fn lookup_leaf(&mut self, a: &GameState) -> Option<&Eval> {
-
         if let Some(a) = self.a.get(a) {
             self.saves += 1;
             Some(a)
@@ -137,7 +139,6 @@ impl LeafTranspositionTable {
         }
     }
     pub fn consider_leaf(&mut self, game: GameState, eval: Eval) {
-
         if let Some(v) = self.a.get_mut(&game) {
             *v = eval;
         } else {
@@ -179,7 +180,6 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
 
     results.pop().unwrap()
 }
-
 
 #[derive(Debug)]
 pub struct Counter {

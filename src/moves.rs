@@ -276,7 +276,24 @@ mod partial_move {
                 let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
 
                 let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
-                if let Some(_) = k {
+
+                if let Some(k) = k {
+                    //let p=ace::selection::PossibleExtra::new(sigl.clone(),unit.clone());
+
+                    //let mesh=p.select().generate(game_view);
+
+                    // if mesh.iter_mesh(target_cell).count()==0{
+                    //     let _ = game_view.this_team.find_take(&target_cell);
+                    //     (sigl,ExtraMove::FinishMoving)
+                    // }else{
+                    //     let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
+
+                    //     (sigl,ExtraMove::ExtraMove{unit})
+                    // }
+                    //let mesh=ace::selection::generate_unit_possible_moves_inner(&unit, game_view, Some(2));
+
+
+
                     (sigl,ExtraMove::ExtraMove{unit})
                 } else {
                     //Finish this players turn.
