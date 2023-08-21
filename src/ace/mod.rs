@@ -579,45 +579,45 @@ pub async fn main_logic<'a>(
         }
 
         //Add AIIIIII.
-        // if team_index == ActiveTeam::Dogs {
-        //     //{
-        //     let j = ai::iterative_deepening(game, team_index);
+        //if team_index == ActiveTeam::Dogs {
+        {
+            let j = ai::iterative_deepening(game, team_index);
 
-        //     let m = j.0.unwrap();
-        //     //let mesh = j.1;
-        //     console_dbg!("EVAL", j.1);
-        //     let mut game = game.view_mut(team_index);
+            let m = j.0.unwrap();
+            //let mesh = j.1;
+            console_dbg!("EVAL", j.1);
+            let mut game = game.view_mut(team_index);
 
-        //     match m.the_move {
-        //         moves::ActualMove::NormalMove(o) => {
-        //             let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
-        //             let r = selection::RegularSelection::new(unit);
-        //             let r = r
-        //                 .execute(o.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
-        //                 .await
-        //                 .unwrap();
-        //             assert!(r.is_none());
-        //         }
-        //         moves::ActualMove::ExtraMove(o, e) => {
-        //             let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
-        //             let r = selection::RegularSelection::new(unit);
-        //             let r = r
-        //                 .execute(o.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
-        //                 .await
-        //                 .unwrap();
-        //             console_dbg!("WOOO");
-        //             r.unwrap()
-        //                 .select()
-        //                 .execute(e.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
-        //                 .await
-        //                 .unwrap();
-        //         }
-        //         moves::ActualMove::SkipTurn => {}
-        //         moves::ActualMove::GameEnd(_) => todo!(),
-        //     }
+            match m.the_move {
+                moves::ActualMove::NormalMove(o) => {
+                    let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
+                    let r = selection::RegularSelection::new(unit);
+                    let r = r
+                        .execute(o.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
+                        .await
+                        .unwrap();
+                    assert!(r.is_none());
+                }
+                moves::ActualMove::ExtraMove(o, e) => {
+                    let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
+                    let r = selection::RegularSelection::new(unit);
+                    let r = r
+                        .execute(o.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
+                        .await
+                        .unwrap();
+                    console_dbg!("WOOO");
+                    r.unwrap()
+                        .select()
+                        .execute(e.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
+                        .await
+                        .unwrap();
+                }
+                moves::ActualMove::SkipTurn => {}
+                moves::ActualMove::GameEnd(_) => todo!(),
+            }
 
-        //     continue;
-        // }
+            continue;
+        }
 
         let mut extra_attack = None;
         //Keep allowing the user to select units
