@@ -69,17 +69,14 @@ impl ComboContinueSelection {
         if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
             let iii = moves::Invade::new(unit, mesh, target_cell);
 
-            let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
+            let iii = iii.execute(game_view, |_| {});
             move_log.push(moves::ActualMove::ExtraMove(
                 self.extra.prev_move.clone(),
                 iii,
             ));
         } else {
             let pm = moves::PartialMove::new(unit, mesh, target_cell);
-            let jjj = pm
-                .clone()
-                .execute_with_animation(game_view, doop, |_| {})
-                .await;
+            let jjj = pm.clone().execute(game_view, |_| {});
 
             let jjj = match jjj {
                 (sigl, moves::ExtraMove::ExtraMove { unit }) => {
