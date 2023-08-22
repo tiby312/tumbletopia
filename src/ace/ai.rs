@@ -156,6 +156,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
         a: std::collections::HashMap::new(),
     };
 
+    //TODO stop searching if we found a game ending move.
     for depth in 0..5 {
         let res = ai::alpha_beta(
             game,
