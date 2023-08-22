@@ -580,7 +580,8 @@ pub async fn main_logic<'a>(
 
         //Add AIIIIII.
         //if team_index == ActiveTeam::Dogs {
-        {
+        //{
+        if false {
             let j = ai::iterative_deepening(game, team_index);
 
             let m = j.0.unwrap();

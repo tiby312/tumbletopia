@@ -556,10 +556,12 @@ pub fn compute_moves2<F: Filter, F2: Filter>(
                 FilterRes::Accept => true,
             };
 
-            let ttt2_skip = match filter.filter(&coord.advance(dir.rotate60_left())) {
+            let ttt2_skip = match skip_filter.filter(&coord.advance(dir.rotate60_left())) {
                 FilterRes::Stop => false,
                 FilterRes::Accept => true,
             };
+
+            //let skip_foo=ttt1_skip | ttt2_skip;
 
             let ttt1 = match filter.filter(&coord.advance(dir.rotate60_right())) {
                 FilterRes::Stop => false,
@@ -571,7 +573,7 @@ pub fn compute_moves2<F: Filter, F2: Filter>(
                 FilterRes::Accept => true,
             };
 
-            if !ttt1 && !ttt1_skip && !ttt2 && !ttt2_skip {
+            if !ttt1 && !ttt2 && !ttt1_skip && !ttt2_skip {
                 return false;
             }
         }
