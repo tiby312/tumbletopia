@@ -350,7 +350,9 @@ fn generate_unit_possible_moves_inner(
                         .not(),
                 )
                 .and(game.this_team.filter().not()),
-            &game.this_team.filter(),
+            &game.this_team.filter().or(movement::AcceptCoords::new(
+                board::water_border().map(|x| x.to_axial()),
+            )),
             restricted_movement,
             true,
         )

@@ -116,7 +116,7 @@ impl Cube {
                 .map(|(_, a)| a)
         })
     }
-    pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> {
+    pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> + Clone {
         let mut hex = self.add(Cube::direction(Dir::BottomLeft).scale(n));
 
         (0..6)
@@ -133,7 +133,7 @@ impl Cube {
         Cube(a.map(|a| a * n))
     }
 
-    pub fn range(&self, n: i16) -> impl Iterator<Item = Cube> {
+    pub fn range(&self, n: i16) -> impl Iterator<Item = Cube> + Clone {
         let o = *self;
         (-n..n + 1)
             .flat_map(move |q| ((-n).max(-q - n)..n.min(-q + n) + 1).map(move |r| (q, r)))

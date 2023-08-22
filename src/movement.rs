@@ -249,6 +249,12 @@ pub trait Filter {
     {
         And { a: self, b: other }
     }
+    fn or<K: Filter>(self, other: K) -> Or<Self, K>
+    where
+        Self: Sized,
+    {
+        Or { a: self, b: other }
+    }
     // fn extend(self) -> ExtendFilter<Self>
     // where
     //     Self: Sized,
@@ -275,6 +281,16 @@ impl<F: Filter> Filter for NotFilter<F> {
     }
 }
 
+#[derive(Clone)]
+pub struct Or<A, B> {
+    a: A,
+    b: B,
+}
+impl<A: Filter, B: Filter> Filter for Or<A, B> {
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        self.a.filter(a).or(self.b.filter(a))
+    }
+}
 pub struct And<A, B> {
     a: A,
     b: B,
