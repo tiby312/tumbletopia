@@ -264,20 +264,17 @@ mod partial_move {
                 InnerPartialMove::new(selected_unit,mesh,target_cell).$namey(&mut game_view,doopa)$($_await)*;
 
 
-                for n in target_cell.to_cube().neighbours() {
-                    if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
-                        func(game_view.that_team.find_take(&f).unwrap());
-                    }
-                }
+
 
                 let k=HandleSurround::new(target_cell).$namey(&mut game_view, doopa)$($_await)*;
 
 
                 let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
 
-                let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
 
                 if let Some(k) = k {
+                    let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
+
                     //let p=ace::selection::PossibleExtra::new(sigl.clone(),unit.clone());
 
                     //let mesh=p.select().generate(game_view);
@@ -296,6 +293,13 @@ mod partial_move {
 
                     (sigl,ExtraMove::ExtraMove{unit})
                 } else {
+
+                    for n in target_cell.to_cube().neighbours() {
+                        if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
+                            func(game_view.that_team.find_take(&f).unwrap());
+                        }
+                    }
+
                     //Finish this players turn.
                     (sigl,ExtraMove::FinishMoving)
                 }
