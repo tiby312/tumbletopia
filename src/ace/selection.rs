@@ -48,13 +48,13 @@ impl ComboContinueSelection {
         // .unit
         // .to_cube()
         // .dist(&self.extra.prev_move.moveto.to_cube())
-        let foo = if self.extra.prev_coord == self.unit {
-            Some(2)
-        } else {
-            None
-        };
+        // let foo = if self.extra.prev_coord == self.unit {
+        //     Some(2)
+        // } else {
+        //     None
+        // };
 
-        generate_unit_possible_moves_inner(&self.unit, game, foo)
+        generate_unit_possible_moves_inner(&self.unit, game, Some(self.extra.prev_move.unit))
     }
     pub async fn execute(
         &self,
@@ -282,7 +282,7 @@ impl MoveLog {
 fn generate_unit_possible_moves_inner(
     unit: &UnitData,
     game: &GameViewMut,
-    extra_attack: Option<i16>,
+    extra_attack_prev_coord: Option<GridCoord>,
 ) -> movement::MovementMesh {
     // If there is an enemy near by restrict movement.
 
@@ -302,7 +302,7 @@ fn generate_unit_possible_moves_inner(
         }
     };
 
-    let mm = if let Some(extra_attack_range) = extra_attack {
+    let mm = if let Some(extra_attack_prev_coord) = extra_attack_prev_coord {
         let mut m = MovementMesh::new();
 
         let f = game
@@ -315,7 +315,14 @@ fn generate_unit_possible_moves_inner(
                     .not(),
             )
             .and(game.this_team.filter().not());
-        for a in unit.position.to_cube().ring(extra_attack_range) {
+
+        let dir = unit.position.sub(&extra_attack_prev_coord).to_cube();
+        let start = unit.position.to_cube();
+
+        let positions = (0..3).map(|a| (0..a).fold(start, |acc, _| acc.add(dir)));
+        console_dbg!(dir, start, positions);
+
+        for a in positions {
             let a = a.to_axial();
             if let movement::FilterRes::Accept = f.filter(&a) {
                 m.add(a.sub(&unit.position));
