@@ -273,7 +273,6 @@ mod partial_move {
 
 
                 if let Some(k) = k {
-                    let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
 
                     //let p=ace::selection::PossibleExtra::new(sigl.clone(),unit.clone());
 
@@ -288,10 +287,17 @@ mod partial_move {
                     //     (sigl,ExtraMove::ExtraMove{unit})
                     // }
                     //let mesh=ace::selection::generate_unit_possible_moves_inner(&unit, game_view, Some(2));
+                    if sigl.unit.to_cube().dist(&sigl.moveto.to_cube())==1{
+                        let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
+
+                        (sigl,ExtraMove::ExtraMove{unit})
+                    }else{
+                        let _ =game_view.this_team.find_take(&target_cell).unwrap();
+                        (sigl,ExtraMove::FinishMoving)
+                    }
 
 
-
-                    (sigl,ExtraMove::ExtraMove{unit})
+                    //(sigl,ExtraMove::ExtraMove{unit})
                 } else {
 
                     for n in target_cell.to_cube().neighbours() {
