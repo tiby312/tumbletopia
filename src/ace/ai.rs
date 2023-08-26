@@ -191,6 +191,33 @@ impl Counter {
         self.count += 1;
     }
 }
+
+pub fn quiescence_search(node:&GameState,team:ActiveTeam,table: &mut LeafTranspositionTable,
+    calls:&mut Counter,depth:usize,alpha:f64,beta:f64)->Eval{
+    if game_is_over(node.view(team)){
+        calls.add_eval();
+        if let Some(n) = table.lookup_leaf(&node) {
+            return *n
+        } else {
+            let val = absolute_evaluate(&node);
+            table.consider_leaf(node.clone(), val);
+            return val
+        }
+    }
+    let it=for_all_moves_ext(node.clone(), team, true).map(|x|{
+        quiescence_search(&x.game_after_move,team.not(),table,calls,depth,alpha,beta)
+    });
+
+    if team==ActiveTeam::Cats{
+        let max=it.max_by(|a,b|a.partial_cmp(b).unwrap());
+        //alpha=alpha
+    }else{
+
+    }
+
+    return 0.0;
+    
+}
 pub fn alpha_beta(
     node: &GameState,
     team: ActiveTeam,
@@ -203,7 +230,8 @@ pub fn alpha_beta(
     calls: &mut Counter,
     path: &mut Vec<moves::ActualMove>,
 ) -> (Option<PossibleMove>, Eval) {
-    if depth == 0 || game_is_over(node.view(team)) {
+    if depth == 0  {
+        //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
         //TODO do Quiescence Search
         calls.add_eval();
         if let Some(n) = table.lookup_leaf(&node) {
@@ -372,6 +400,15 @@ pub struct PossibleMove {
     pub the_move: moves::ActualMove,
     pub mesh: MovementMesh,
     pub game_after_move: GameState,
+}
+
+
+fn for_all_moves_ext(state: GameState, team: ActiveTeam,quiet:bool) -> impl Iterator<Item = PossibleMove> {
+    let n=state.clone();
+    for_all_moves(state,team).filter(move |a|{
+        let b=&a.game_after_move;
+        b.dogs.units.len()<n.dogs.units.len() || b.cats.units.len()<n.cats.units.len()
+    })
 }
 
 fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
