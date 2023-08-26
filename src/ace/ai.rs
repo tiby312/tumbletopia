@@ -158,18 +158,27 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
 
     //TODO stop searching if we found a game ending move.
     for depth in 0..5 {
-        let res = ai::alpha_beta(
-            game,
-            team,
-            depth,
-            false,
-            f64::NEG_INFINITY,
-            f64::INFINITY,
-            &mut table,
-            &mut foo1,
-            &mut count,
-            &mut vec![],
-        );
+        let res = ai::AlphaBeta {
+            table: &mut table,
+            check_first: &mut foo1,
+            calls: &mut count,
+            path: &mut vec![],
+            debug: false,
+        }
+        .alpha_beta(game, team, depth, f64::NEG_INFINITY, f64::INFINITY);
+
+        // let res = ai::alpha_beta(
+        //     game,
+        //     team,
+        //     depth,
+        //     false,
+        //     f64::NEG_INFINITY,
+        //     f64::INFINITY,
+        //     &mut table,
+        //     &mut foo1,
+        //     &mut count,
+        //     &mut vec![],
+        // );
 
         results.push(res);
     }
@@ -192,33 +201,148 @@ impl Counter {
     }
 }
 
-pub fn quiescence_search(node:&GameState,team:ActiveTeam,table: &mut LeafTranspositionTable,
-    calls:&mut Counter,depth:usize,alpha:f64,beta:f64)->Eval{
-    if game_is_over(node.view(team)){
+pub fn quiescence_search(
+    node: &GameState,
+    team: ActiveTeam,
+    table: &mut LeafTranspositionTable,
+    calls: &mut Counter,
+    depth: usize,
+    alpha: f64,
+    beta: f64,
+) -> Eval {
+    if game_is_over(node.view(team)) {
         calls.add_eval();
         if let Some(n) = table.lookup_leaf(&node) {
-            return *n
+            return *n;
         } else {
             let val = absolute_evaluate(&node);
             table.consider_leaf(node.clone(), val);
-            return val
+            return val;
         }
     }
-    let it=for_all_moves_ext(node.clone(), team, true).map(|x|{
-        quiescence_search(&x.game_after_move,team.not(),table,calls,depth,alpha,beta)
+    let it = for_all_moves_ext(node.clone(), team, true).map(|x| {
+        quiescence_search(
+            &x.game_after_move,
+            team.not(),
+            table,
+            calls,
+            depth,
+            alpha,
+            beta,
+        )
     });
 
-    if team==ActiveTeam::Cats{
-        let max=it.max_by(|a,b|a.partial_cmp(b).unwrap());
+    if team == ActiveTeam::Cats {
+        let max = it.max_by(|a, b| a.partial_cmp(b).unwrap());
         //alpha=alpha
-    }else{
-
+    } else {
     }
 
     return 0.0;
-    
 }
 
+pub struct AlphaBeta<'a> {
+    table: &'a mut LeafTranspositionTable,
+    check_first: &'a mut MoveOrdering,
+    calls: &'a mut Counter,
+    path: &'a mut Vec<moves::ActualMove>,
+    debug: bool,
+}
+
+impl<'a> AlphaBeta<'a> {
+    pub fn alpha_beta(
+        &mut self,
+        node: &GameState,
+        team: ActiveTeam,
+        depth: usize,
+        mut alpha: f64,
+        mut beta: f64,
+    ) -> (Option<PossibleMove>, Eval) {
+        if depth == 0 || game_is_over(node.view(team)) {
+            //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
+            //TODO do Quiescence Search
+            self.calls.add_eval();
+            if let Some(n) = self.table.lookup_leaf(&node) {
+                (None, *n)
+            } else {
+                let val = absolute_evaluate(&node);
+                self.table.consider_leaf(node.clone(), val);
+                (None, val)
+            }
+        } else {
+            if team == ActiveTeam::Cats {
+                let mut mm: Option<PossibleMove> = None;
+                let mut value = f64::NEG_INFINITY;
+
+                let principal_variation = self.check_first.get_best_prev_move(self.path).cloned();
+
+                for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
+                    self.path.push(cand.the_move.clone());
+                    let t =
+                        self.alpha_beta(&cand.game_after_move, team.not(), depth - 1, alpha, beta);
+                    let k = self.path.pop().unwrap();
+                    assert_eq!(k, cand.the_move.clone());
+
+                    value = value.max(t.1);
+                    if value == t.1 {
+                        mm = Some(cand);
+                    }
+                    if t.1 > beta {
+                        break;
+                    }
+                    alpha = alpha.max(value)
+                }
+
+                if let Some(aaa) = &mm {
+                    if let Some(foo) = self.check_first.get_best_prev_move_mut(&self.path) {
+                        *foo = aaa.clone();
+                    } else {
+                        self.check_first.insert(self.path, aaa.clone());
+                    }
+                }
+
+                (mm, value)
+                //(mm, mesh_final, value)
+            } else {
+                let mut mm: Option<PossibleMove> = None;
+
+                let mut value = f64::INFINITY;
+
+                let principal_variation = self.check_first.get_best_prev_move(self.path).cloned();
+
+                for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
+                    self.path.push(cand.the_move.clone());
+
+                    let t =
+                        self.alpha_beta(&cand.game_after_move, team.not(), depth - 1, alpha, beta);
+                    let k = self.path.pop().unwrap();
+                    assert_eq!(k, cand.the_move.clone());
+
+                    value = value.min(t.1);
+                    if value == t.1 {
+                        mm = Some(cand);
+                    }
+                    if t.1 < alpha {
+                        break;
+                    }
+                    beta = beta.min(value)
+                }
+
+                if let Some(aaa) = &mm {
+                    if let Some(foo) = self.check_first.get_best_prev_move_mut(&self.path) {
+                        *foo = aaa.clone();
+                    } else {
+                        self.check_first.insert(self.path, aaa.clone());
+                    }
+                }
+                (mm, value)
+            }
+
+            //writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
+            //gloo::console::log!(s);
+        }
+    }
+}
 
 pub fn alpha_beta(
     node: &GameState,
@@ -232,7 +356,7 @@ pub fn alpha_beta(
     calls: &mut Counter,
     path: &mut Vec<moves::ActualMove>,
 ) -> (Option<PossibleMove>, Eval) {
-    if depth == 0  || game_is_over(node.view(team)){
+    if depth == 0 || game_is_over(node.view(team)) {
         //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
         //TODO do Quiescence Search
         calls.add_eval();
@@ -402,12 +526,15 @@ pub struct PossibleMove {
     pub game_after_move: GameState,
 }
 
-
-fn for_all_moves_ext(state: GameState, team: ActiveTeam,quiet:bool) -> impl Iterator<Item = PossibleMove> {
-    let n=state.clone();
-    for_all_moves(state,team).filter(move |a|{
-        let b=&a.game_after_move;
-        b.dogs.units.len()<n.dogs.units.len() || b.cats.units.len()<n.cats.units.len()
+fn for_all_moves_ext(
+    state: GameState,
+    team: ActiveTeam,
+    quiet: bool,
+) -> impl Iterator<Item = PossibleMove> {
+    let n = state.clone();
+    for_all_moves(state, team).filter(move |a| {
+        let b = &a.game_after_move;
+        b.dogs.units.len() < n.dogs.units.len() || b.cats.units.len() < n.cats.units.len()
     })
 }
 
