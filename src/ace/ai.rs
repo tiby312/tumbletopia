@@ -291,9 +291,10 @@ impl<'a> AlphaBeta<'a> {
 
             let principal_variation = self.check_first.get_best_prev_move(self.path).cloned();
 
+            let it = reorder_front(principal_variation, for_all_moves(node.clone(), team));
             if team == ActiveTeam::Cats {
                 value = f64::NEG_INFINITY;
-                for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
+                for cand in it {
                     let t = self.ab(
                         &cand.the_move,
                         &cand.game_after_move,
@@ -316,7 +317,7 @@ impl<'a> AlphaBeta<'a> {
                 //(mm, mesh_final, value)
             } else {
                 value = f64::INFINITY;
-                for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
+                for cand in it {
                     let t = self.ab(
                         &cand.the_move,
                         &cand.game_after_move,
