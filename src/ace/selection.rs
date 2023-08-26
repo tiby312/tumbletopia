@@ -319,8 +319,8 @@ fn generate_unit_possible_moves_inner(
         let dir = unit.position.sub(&extra_attack_prev_coord).to_cube();
         let start = unit.position.to_cube();
 
-        let positions = (0..3).map(|a| (0..a).fold(start, |acc, _| acc.add(dir)));
-        console_dbg!(dir, start, positions);
+        let positions = (0..4).map(|a| (0..a).fold(start, |acc, _| acc.add(dir)));
+        //console_dbg!(dir, start, positions);
 
         for a in positions {
             let a = a.to_axial();

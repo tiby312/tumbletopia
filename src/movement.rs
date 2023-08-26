@@ -422,8 +422,8 @@ pub mod movement_mesh {
         let x = a.0[0];
         let y = a.0[1];
 
-        assert!(x <= 2 && x >= -2);
-        assert!(y <= 2 && y >= -2);
+        assert!(x <= 3 && x >= -3);
+        assert!(y <= 3 && y >= -3);
 
         assert!(x != 0 || y != 0);
     }
@@ -462,9 +462,17 @@ pub mod movement_mesh {
                 None
             };
 
-            let third = if first.is_none() && !(x.abs() == 1 || y.abs() == 1) {
+            let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2) {
                 let h = GridCoord([0, 0]).dir_to(&a);
                 Some([h, h])
+            } else {
+                None
+            };
+
+            // size 3 spokes
+            let fourth = if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
+                let h = GridCoord([0, 0]).dir_to(&a);
+                Some([h, h, h])
             } else {
                 None
             };
@@ -472,7 +480,8 @@ pub mod movement_mesh {
             let a = first.into_iter().flatten();
             let b = second.into_iter().flatten();
             let c = third.into_iter().flatten();
-            a.chain(b).chain(c)
+            let d = fourth.into_iter().flatten();
+            a.chain(b).chain(c).chain(d)
         }
         pub fn add(&mut self, a: GridCoord) {
             validate_rel(a);
