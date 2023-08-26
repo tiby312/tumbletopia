@@ -218,6 +218,8 @@ pub fn quiescence_search(node:&GameState,team:ActiveTeam,table: &mut LeafTranspo
     return 0.0;
     
 }
+
+
 pub fn alpha_beta(
     node: &GameState,
     team: ActiveTeam,
@@ -230,7 +232,7 @@ pub fn alpha_beta(
     calls: &mut Counter,
     path: &mut Vec<moves::ActualMove>,
 ) -> (Option<PossibleMove>, Eval) {
-    if depth == 0  {
+    if depth == 0  || game_is_over(node.view(team)){
         //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
         //TODO do Quiescence Search
         calls.add_eval();
@@ -245,8 +247,6 @@ pub fn alpha_beta(
         if team == ActiveTeam::Cats {
             let mut mm: Option<PossibleMove> = None;
             let mut value = f64::NEG_INFINITY;
-
-            //let temp_path=
 
             let principal_variation = check_first.get_best_prev_move(path).cloned();
 
