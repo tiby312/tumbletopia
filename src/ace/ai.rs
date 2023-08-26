@@ -250,6 +250,21 @@ pub struct AlphaBeta<'a> {
 }
 
 impl<'a> AlphaBeta<'a> {
+    pub fn ab(
+        &mut self,
+        the_move: &moves::ActualMove,
+        node: &GameState,
+        team: ActiveTeam,
+        depth: usize,
+        alpha: f64,
+        beta: f64,
+    ) -> (Option<PossibleMove>, Eval) {
+        self.path.push(the_move.clone());
+        let t = self.alpha_beta(node, team, depth, alpha, beta);
+        let k = self.path.pop().unwrap();
+        assert_eq!(&k, the_move);
+        t
+    }
     pub fn alpha_beta(
         &mut self,
         node: &GameState,
@@ -279,11 +294,14 @@ impl<'a> AlphaBeta<'a> {
             if team == ActiveTeam::Cats {
                 value = f64::NEG_INFINITY;
                 for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
-                    self.path.push(cand.the_move.clone());
-                    let t =
-                        self.alpha_beta(&cand.game_after_move, team.not(), depth - 1, alpha, beta);
-                    let k = self.path.pop().unwrap();
-                    assert_eq!(k, cand.the_move.clone());
+                    let t = self.ab(
+                        &cand.the_move,
+                        &cand.game_after_move,
+                        team.not(),
+                        depth - 1,
+                        alpha,
+                        beta,
+                    );
 
                     value = value.max(t.1);
                     if value == t.1 {
@@ -299,12 +317,14 @@ impl<'a> AlphaBeta<'a> {
             } else {
                 value = f64::INFINITY;
                 for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
-                    self.path.push(cand.the_move.clone());
-
-                    let t =
-                        self.alpha_beta(&cand.game_after_move, team.not(), depth - 1, alpha, beta);
-                    let k = self.path.pop().unwrap();
-                    assert_eq!(k, cand.the_move.clone());
+                    let t = self.ab(
+                        &cand.the_move,
+                        &cand.game_after_move,
+                        team.not(),
+                        depth - 1,
+                        alpha,
+                        beta,
+                    );
 
                     value = value.min(t.1);
                     if value == t.1 {
