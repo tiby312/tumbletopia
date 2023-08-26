@@ -385,27 +385,27 @@ pub mod movement_mesh {
     //     })
     // }
 
-    const TABLE: [[i16; 2]; 19] = [
-        [-2, 0],
-        [-2, 1],
-        [-2, 2],
-        [-1, -1],
-        [-1, 0],
-        [-1, 1],
-        [-1, 2],
-        [0, -2],
-        [0, -1],
-        [0, 0],
-        [0, 1],
-        [0, 2],
-        [1, -2],
-        [1, -1],
-        [1, 0],
-        [1, 1],
-        [2, -2],
-        [2, -1],
-        [2, 0],
-    ];
+    // const TABLE: [[i16; 2]; 19] = [
+    //     [-2, 0],
+    //     [-2, 1],
+    //     [-2, 2],
+    //     [-1, -1],
+    //     [-1, 0],
+    //     [-1, 1],
+    //     [-1, 2],
+    //     [0, -2],
+    //     [0, -1],
+    //     [0, 0],
+    //     [0, 1],
+    //     [0, 2],
+    //     [1, -2],
+    //     [1, -1],
+    //     [1, 0],
+    //     [1, 1],
+    //     [2, -2],
+    //     [2, -1],
+    //     [2, 0],
+    // ];
 
     use super::GridCoord;
 
@@ -415,7 +415,7 @@ pub mod movement_mesh {
 
         //We need an additional bit to describe the path that needs to be taken to each that spot.
         //Either left or right. (only applies for diagonal outer cells)
-        inner: i32,
+        inner: u64,
     }
 
     fn validate_rel(a: GridCoord) {
@@ -485,25 +485,39 @@ pub mod movement_mesh {
             validate_rel(a);
 
             let ind = conv(a);
+
             self.inner & (1 << ind) != 0
         }
 
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             let inner = self.inner;
-            TABLE
-                .iter()
-                .enumerate()
-                .filter(move |(x, _)| inner & (1 << x) != 0)
-                .map(move |(_, x)| point.add(GridCoord(*x)))
+            // TABLE
+            //     .iter()
+            //     .enumerate()
+            //     .filter(move |(x, _)| inner & (1 << x) != 0)
+            //     .map(move |(_, x)| point.add(GridCoord(*x)))
+            (0..64)
+                .filter(move |x| inner & (1 << x) != 0)
+                .map(move |a| {
+                    let x = a / 7;
+                    let y = a % 7;
+                    point.add(GridCoord([x - 3, y - 3]))
+                })
         }
     }
     fn conv(a: GridCoord) -> usize {
-        TABLE
-            .iter()
-            .enumerate()
-            .find(|(_, x)| **x == a.0)
-            .expect("Could not find the coord in table")
-            .0
+        let [x, y] = a.0;
+        //     let ind=x/7+y%7;
+        //     // -3 -2 -1 0 1 2 3
+        // ind as usize
+        ((x + 3) * 7 + (y + 3)) as usize
+
+        // TABLE
+        //     .iter()
+        //     .enumerate()
+        //     .find(|(_, x)| **x == a.0)
+        //     .expect("Could not find the coord in table")
+        //     .0
     }
     // fn conv_inv(ind: usize) -> GridCoord {
     //     GridCoord(TABLE[ind])
