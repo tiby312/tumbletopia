@@ -270,12 +270,14 @@ impl<'a> AlphaBeta<'a> {
                 (None, val)
             }
         } else {
+            let mut mm: Option<PossibleMove> = None;
+
+            let mut value;
+
+            let principal_variation = self.check_first.get_best_prev_move(self.path).cloned();
+
             if team == ActiveTeam::Cats {
-                let mut mm: Option<PossibleMove> = None;
-                let mut value = f64::NEG_INFINITY;
-
-                let principal_variation = self.check_first.get_best_prev_move(self.path).cloned();
-
+                value = f64::NEG_INFINITY;
                 for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
                     self.path.push(cand.the_move.clone());
                     let t =
@@ -293,23 +295,9 @@ impl<'a> AlphaBeta<'a> {
                     alpha = alpha.max(value)
                 }
 
-                if let Some(aaa) = &mm {
-                    if let Some(foo) = self.check_first.get_best_prev_move_mut(&self.path) {
-                        *foo = aaa.clone();
-                    } else {
-                        self.check_first.insert(self.path, aaa.clone());
-                    }
-                }
-
-                (mm, value)
                 //(mm, mesh_final, value)
             } else {
-                let mut mm: Option<PossibleMove> = None;
-
-                let mut value = f64::INFINITY;
-
-                let principal_variation = self.check_first.get_best_prev_move(self.path).cloned();
-
+                value = f64::INFINITY;
                 for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
                     self.path.push(cand.the_move.clone());
 
@@ -327,16 +315,17 @@ impl<'a> AlphaBeta<'a> {
                     }
                     beta = beta.min(value)
                 }
-
-                if let Some(aaa) = &mm {
-                    if let Some(foo) = self.check_first.get_best_prev_move_mut(&self.path) {
-                        *foo = aaa.clone();
-                    } else {
-                        self.check_first.insert(self.path, aaa.clone());
-                    }
-                }
-                (mm, value)
             }
+
+            if let Some(aaa) = &mm {
+                if let Some(foo) = self.check_first.get_best_prev_move_mut(&self.path) {
+                    *foo = aaa.clone();
+                } else {
+                    self.check_first.insert(self.path, aaa.clone());
+                }
+            }
+
+            (mm, value)
 
             //writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
             //gloo::console::log!(s);
