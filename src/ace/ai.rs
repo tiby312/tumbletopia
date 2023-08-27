@@ -73,6 +73,15 @@ fn absolute_evaluate(view: &GameState) -> Eval {
 //     false
 // }
 
+pub fn we_in_check(view: GameView<'_>) -> bool {
+    let Some(king_pos)=view.this_team.units.iter().find(|a|a.typ==Type::Para) else{
+        return false
+    };
+
+    for a in view.this_team.units.iter().filter(|a| a.typ == Type::Para) {}
+
+    true
+}
 pub fn game_is_over(view: GameView<'_>) -> bool {
     if view
         .this_team
@@ -175,7 +184,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
     };
 
     //TODO stop searching if we found a game ending move.
-    for depth in 0..4 {
+    for depth in 0..5 {
         let pp = PossibleMove {
             the_move: moves::ActualMove::SkipTurn,
             mesh: MovementMesh::new(),
@@ -285,12 +294,11 @@ impl<'a> AlphaBeta<'a> {
     ) -> EvalRet {
         let the_move = cand.the_move.clone();
         self.path.push(the_move.clone());
-        let ret = if depth == 0 {
-            //||game_is_over(cand.game_after_move.view(team))
-            //self.calls.add_eval();
-            //self.table.lookup_leaf_all(&node)
+        let ret = if depth == 0 || game_is_over(cand.game_after_move.view(team)) {
+            self.calls.add_eval();
+            self.table.lookup_leaf_all(&cand.game_after_move)
 
-            self.quiensense_search(cand, ab, team, 4)
+            //self.quiensense_search(cand, ab, team, 5)
         } else {
             let node = cand.game_after_move;
 
@@ -421,16 +429,37 @@ fn for_all_capture_and_jump_moves(
     team: ActiveTeam,
 ) -> impl Iterator<Item = PossibleMove> {
     let n = state.clone();
+    //let in_check = { in_check(n.clone(), team) || in_check(n.clone(), team.not()) };
+    let enemy_king_pos = if let Some(enemy_king_pos) = state
+        .view(team.not())
+        .this_team
+        .units
+        .iter()
+        .find(|a| a.typ == Type::Para)
+    {
+        Some(enemy_king_pos.position)
+    } else {
+        None
+    };
+
     for_all_moves(state, team).filter(move |a| {
-        let in_check = {
-            //TODO implement!
-        };
+        // let check = if let Some(enemy_king_pos) = enemy_king_pos {
+        //     match &a.the_move {
+        //         moves::ActualMove::NormalMove(o) => o.moveto == enemy_king_pos,
+        //         moves::ActualMove::ExtraMove(_, o) => o.moveto == enemy_king_pos,
+        //         _ => false,
+        //     }
+        // } else {
+        //     false
+        // };
+
         let jump_move = if let moves::ActualMove::ExtraMove(_, _) = a.the_move {
             true
         } else {
             false
         };
         let b = &a.game_after_move;
+
         jump_move
             || b.dogs.units.len() < n.dogs.units.len()
             || b.cats.units.len() < n.cats.units.len()
