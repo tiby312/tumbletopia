@@ -164,7 +164,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
             path: &mut vec![],
             debug: false,
         }
-        .alpha_beta(game, team, depth, i64::MIN, i64::MAX);
+        .alpha_beta(game, team, depth, ABAB::new());
 
         // let res = ai::alpha_beta(
         //     game,
@@ -260,11 +260,10 @@ impl<'a> AlphaBeta<'a> {
         node: &GameState,
         team: ActiveTeam,
         depth: usize,
-        alpha: Eval,
-        beta: Eval,
+        ab: ABAB,
     ) -> EvalRet {
         self.path.push(the_move.clone());
-        let t = self.alpha_beta(node, team, depth, alpha, beta);
+        let t = self.alpha_beta(node, team, depth, ab);
         let k = self.path.pop().unwrap();
         assert_eq!(&k, the_move);
         t
@@ -274,8 +273,7 @@ impl<'a> AlphaBeta<'a> {
         node: &GameState,
         team: ActiveTeam,
         depth: usize,
-        alpha: Eval,
-        beta: Eval,
+        ab: ABAB,
     ) -> EvalRet {
         if depth == 0 || game_is_over(node.view(team)) {
             //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
@@ -293,25 +291,23 @@ impl<'a> AlphaBeta<'a> {
 
             let it = reorder_front(principal_variation, for_all_moves(node.clone(), team));
             let ret = if team == ActiveTeam::Cats {
-                maxxer(alpha, beta, it, |cand, a, b| {
+                ab.maxxer(it, |cand, ab| {
                     self.ab(
                         &cand.the_move,
                         &cand.game_after_move,
                         team.not(),
                         depth - 1,
-                        a,
-                        b,
+                        ab,
                     )
                 })
             } else {
-                minner(alpha, beta, it, |cand, a, b| {
+                ab.minner(it, |cand, ab| {
                     self.ab(
                         &cand.the_move,
                         &cand.game_after_move,
                         team.not(),
                         depth - 1,
-                        a,
-                        b,
+                        ab,
                     )
                 })
             };
@@ -329,57 +325,68 @@ impl<'a> AlphaBeta<'a> {
     }
 }
 
-fn minner(
+#[derive(Clone)]
+pub struct ABAB {
     alpha: Eval,
-    mut beta: Eval,
-    it: impl Iterator<Item = PossibleMove>,
-    mut func: impl FnMut(&PossibleMove, Eval, Eval) -> EvalRet,
-) -> EvalRet {
-    let mut mm: Option<PossibleMove> = None;
-
-    let mut value = i64::MAX;
-    for cand in it {
-        let t = func(&cand, alpha, beta);
-
-        value = value.min(t.eval);
-        if value == t.eval {
-            mm = Some(cand);
-        }
-        if t.eval < alpha {
-            break;
-        }
-        beta = beta.min(value)
-    }
-
-    EvalRet {
-        mov: mm,
-        eval: value,
-    }
-}
-fn maxxer(
-    mut alpha: Eval,
     beta: Eval,
-    it: impl Iterator<Item = PossibleMove>,
-    mut func: impl FnMut(&PossibleMove, Eval, Eval) -> EvalRet,
-) -> EvalRet {
-    let mut mm: Option<PossibleMove> = None;
-
-    let mut value = i64::MIN;
-    for cand in it {
-        let t = func(&cand, alpha, beta);
-
-        value = value.max(t.eval);
-        if value == t.eval {
-            mm = Some(cand);
+}
+impl ABAB {
+    fn new() -> Self {
+        ABAB {
+            alpha: Eval::MIN,
+            beta: Eval::MAX,
         }
-        if t.eval > beta {
-            break;
-        }
-        alpha = alpha.max(value)
     }
-    EvalRet {
-        mov: mm,
-        eval: value,
+    fn minner(
+        mut self,
+        it: impl Iterator<Item = PossibleMove>,
+        mut func: impl FnMut(&PossibleMove, Self) -> EvalRet,
+    ) -> EvalRet {
+        let mut mm: Option<PossibleMove> = None;
+
+        let mut value = i64::MAX;
+        for cand in it {
+            let t = func(&cand, self.clone());
+
+            value = value.min(t.eval);
+            if value == t.eval {
+                mm = Some(cand);
+            }
+            if t.eval < self.alpha {
+                break;
+            }
+            self.beta = self.beta.min(value)
+        }
+
+        EvalRet {
+            mov: mm,
+            eval: value,
+        }
+    }
+    fn maxxer(
+        mut self,
+        it: impl Iterator<Item = PossibleMove>,
+        mut func: impl FnMut(&PossibleMove, Self) -> EvalRet,
+    ) -> EvalRet {
+        let mut mm: Option<PossibleMove> = None;
+
+        let mut value = i64::MIN;
+        for cand in it {
+            let t = func(&cand, self.clone());
+
+            value = value.max(t.eval);
+            if value == t.eval {
+                mm = Some(cand);
+            }
+            if t.eval > self.beta {
+                break;
+            }
+            self.alpha = self.alpha.max(value)
+        }
+        EvalRet {
+            mov: mm,
+            eval: value,
+        }
     }
 }
 
