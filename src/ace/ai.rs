@@ -254,18 +254,11 @@ pub struct EvalRet {
 }
 
 impl<'a> AlphaBeta<'a> {
-    pub fn ab(
-        &mut self,
-        the_move: &moves::ActualMove,
-        node: &GameState,
-        team: ActiveTeam,
-        depth: usize,
-        ab: ABAB,
-    ) -> EvalRet {
-        self.path.push(the_move.clone());
-        let t = self.alpha_beta(node, team, depth, ab);
+    pub fn ab(&mut self, aaa: &PossibleMove, team: ActiveTeam, depth: usize, ab: ABAB) -> EvalRet {
+        self.path.push(aaa.the_move.clone());
+        let t = self.alpha_beta(&aaa.game_after_move, team, depth, ab);
         let k = self.path.pop().unwrap();
-        assert_eq!(&k, the_move);
+        assert_eq!(k, aaa.the_move);
         t
     }
     pub fn alpha_beta(
@@ -291,25 +284,9 @@ impl<'a> AlphaBeta<'a> {
 
             let it = reorder_front(principal_variation, for_all_moves(node.clone(), team));
             let ret = if team == ActiveTeam::Cats {
-                ab.maxxer(it, |cand, ab| {
-                    self.ab(
-                        &cand.the_move,
-                        &cand.game_after_move,
-                        team.not(),
-                        depth - 1,
-                        ab,
-                    )
-                })
+                ab.maxxer(it, |cand, ab| self.ab(cand, team.not(), depth - 1, ab))
             } else {
-                ab.minner(it, |cand, ab| {
-                    self.ab(
-                        &cand.the_move,
-                        &cand.game_after_move,
-                        team.not(),
-                        depth - 1,
-                        ab,
-                    )
-                })
+                ab.minner(it, |cand, ab| self.ab(cand, team.not(), depth - 1, ab))
             };
 
             if let Some(aaa) = &ret.mov {
