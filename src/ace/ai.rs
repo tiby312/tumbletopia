@@ -311,188 +311,75 @@ impl<'a> AlphaBeta<'a> {
     }
 }
 
-#[derive(Clone)]
-pub struct ABAB {
-    alpha: Eval,
-    beta: Eval,
+use abab::ABAB;
+mod abab {
+    use super::*;
+    #[derive(Clone)]
+    pub struct ABAB {
+        alpha: Eval,
+        beta: Eval,
+    }
+    impl ABAB {
+        pub fn new() -> Self {
+            ABAB {
+                alpha: Eval::MIN,
+                beta: Eval::MAX,
+            }
+        }
+
+        pub fn minner<T: Clone>(
+            mut self,
+            it: impl Iterator<Item = T>,
+            mut func: impl FnMut(T, Self) -> EvalRet,
+        ) -> EvalRetGeneric<T> {
+            let mut mm: Option<T> = None;
+
+            let mut value = i64::MAX;
+            for cand in it {
+                let t = func(cand.clone(), self.clone());
+
+                value = value.min(t.eval);
+                if value == t.eval {
+                    mm = Some(cand);
+                }
+                if t.eval < self.alpha {
+                    break;
+                }
+                self.beta = self.beta.min(value)
+            }
+
+            EvalRetGeneric {
+                mov: mm,
+                eval: value,
+            }
+        }
+        pub fn maxxer<T: Clone>(
+            mut self,
+            it: impl Iterator<Item = T>,
+            mut func: impl FnMut(T, Self) -> EvalRet,
+        ) -> EvalRetGeneric<T> {
+            let mut mm: Option<T> = None;
+
+            let mut value = i64::MIN;
+            for cand in it {
+                let t = func(cand.clone(), self.clone());
+
+                value = value.max(t.eval);
+                if value == t.eval {
+                    mm = Some(cand);
+                }
+                if t.eval > self.beta {
+                    break;
+                }
+                self.alpha = self.alpha.max(value)
+            }
+            EvalRetGeneric {
+                mov: mm,
+                eval: value,
+            }
+        }
+    }
 }
-impl ABAB {
-    fn new() -> Self {
-        ABAB {
-            alpha: Eval::MIN,
-            beta: Eval::MAX,
-        }
-    }
-
-    fn minner<T: Clone>(
-        mut self,
-        it: impl Iterator<Item = T>,
-        mut func: impl FnMut(T, Self) -> EvalRet,
-    ) -> EvalRetGeneric<T> {
-        let mut mm: Option<T> = None;
-
-        let mut value = i64::MAX;
-        for cand in it {
-            let t = func(cand.clone(), self.clone());
-
-            value = value.min(t.eval);
-            if value == t.eval {
-                mm = Some(cand);
-            }
-            if t.eval < self.alpha {
-                break;
-            }
-            self.beta = self.beta.min(value)
-        }
-
-        EvalRetGeneric {
-            mov: mm,
-            eval: value,
-        }
-    }
-    fn maxxer<T: Clone>(
-        mut self,
-        it: impl Iterator<Item = T>,
-        mut func: impl FnMut(T, Self) -> EvalRet,
-    ) -> EvalRetGeneric<T> {
-        let mut mm: Option<T> = None;
-
-        let mut value = i64::MIN;
-        for cand in it {
-            let t = func(cand.clone(), self.clone());
-
-            value = value.max(t.eval);
-            if value == t.eval {
-                mm = Some(cand);
-            }
-            if t.eval > self.beta {
-                break;
-            }
-            self.alpha = self.alpha.max(value)
-        }
-        EvalRetGeneric {
-            mov: mm,
-            eval: value,
-        }
-    }
-}
-
-// pub fn alpha_beta(
-//     node: &GameState,
-//     team: ActiveTeam,
-//     depth: usize,
-//     debug: bool,
-//     mut alpha: f64,
-//     mut beta: f64,
-//     table: &mut LeafTranspositionTable,
-//     check_first: &mut MoveOrdering,
-//     calls: &mut Counter,
-//     path: &mut Vec<moves::ActualMove>,
-// ) -> (Option<PossibleMove>, Eval) {
-//     if depth == 0 || game_is_over(node.view(team)) {
-//         //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
-//         //TODO do Quiescence Search
-//         calls.add_eval();
-//         if let Some(n) = table.lookup_leaf(&node) {
-//             (None, *n)
-//         } else {
-//             let val = absolute_evaluate(&node);
-//             table.consider_leaf(node.clone(), val);
-//             (None, val)
-//         }
-//     } else {
-//         if team == ActiveTeam::Cats {
-//             let mut mm: Option<PossibleMove> = None;
-//             let mut value = f64::NEG_INFINITY;
-
-//             let principal_variation = check_first.get_best_prev_move(path).cloned();
-
-//             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
-//                 path.push(cand.the_move.clone());
-//                 let t = alpha_beta(
-//                     &cand.game_after_move,
-//                     team.not(),
-//                     depth - 1,
-//                     debug,
-//                     alpha,
-//                     beta,
-//                     table,
-//                     check_first,
-//                     calls,
-//                     path,
-//                 );
-//                 let k = path.pop().unwrap();
-//                 assert_eq!(k, cand.the_move.clone());
-
-//                 value = value.max(t.1);
-//                 if value == t.1 {
-//                     mm = Some(cand);
-//                 }
-//                 if t.1 > beta {
-//                     break;
-//                 }
-//                 alpha = alpha.max(value)
-//             }
-
-//             if let Some(aaa) = &mm {
-//                 if let Some(foo) = check_first.get_best_prev_move_mut(&path) {
-//                     *foo = aaa.clone();
-//                 } else {
-//                     check_first.insert(path, aaa.clone());
-//                 }
-//             }
-
-//             (mm, value)
-//             //(mm, mesh_final, value)
-//         } else {
-//             let mut mm: Option<PossibleMove> = None;
-
-//             let mut value = f64::INFINITY;
-
-//             let principal_variation = check_first.get_best_prev_move(path).cloned();
-
-//             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
-//                 path.push(cand.the_move.clone());
-
-//                 let t = alpha_beta(
-//                     &cand.game_after_move,
-//                     team.not(),
-//                     depth - 1,
-//                     debug,
-//                     alpha,
-//                     beta,
-//                     table,
-//                     check_first,
-//                     calls,
-//                     path,
-//                 );
-//                 let k = path.pop().unwrap();
-//                 assert_eq!(k, cand.the_move.clone());
-
-//                 value = value.min(t.1);
-//                 if value == t.1 {
-//                     mm = Some(cand);
-//                 }
-//                 if t.1 < alpha {
-//                     break;
-//                 }
-//                 beta = beta.min(value)
-//             }
-
-//             if let Some(aaa) = &mm {
-//                 if let Some(foo) = check_first.get_best_prev_move_mut(&path) {
-//                     *foo = aaa.clone();
-//                 } else {
-//                     check_first.insert(path, aaa.clone());
-//                 }
-//             }
-//             (mm, value)
-//         }
-
-//         //writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
-//         //gloo::console::log!(s);
-//     }
-// }
 
 fn reorder_front(
     a: Option<PossibleMove>,
@@ -518,39 +405,6 @@ fn reorder_front(
     }
     v.into_iter()
 }
-
-// pub fn min_max<'a>(
-//     mut node: GameThing<'a>,
-//     depth: usize,
-//     debug: bool,
-// ) -> (Option<moves::ActualMove>, MovementMesh, Eval) {
-//     //console_dbg!(depth);
-//     if depth == 0 || game_is_over(node.view()) {
-//         (None, MovementMesh::new(), absolute_evaluate(&node.view().absolute()))
-//     } else {
-//         let v = node.view();
-
-//         use std::fmt::Write;
-//         let mut s = String::new();
-//         let foo = for_all_moves(&v).map(|cand| {
-//             let (_, _, p) = min_max(cand.game_after_move.not(), depth - 1, debug);
-//             (cand.the_move, p, cand.mesh)
-//         });
-
-//         let (m, ev, mesh) = if v.team == ActiveTeam::Dogs {
-//             foo.min_by(|a, b| a.1.partial_cmp(&b.1).expect("float cmp fail"))
-//                 .unwrap()
-//         } else {
-//             foo.max_by(|a, b| a.1.partial_cmp(&b.1).expect("float cmp fail"))
-//                 .unwrap()
-//         };
-
-//         writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
-//         //gloo::console::log!(s);
-
-//         (Some(m), mesh, ev)
-//     }
-// }
 
 #[derive(PartialEq, Eq, Clone)]
 pub struct PossibleMove {
