@@ -176,6 +176,11 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
 
     //TODO stop searching if we found a game ending move.
     for depth in 0..5 {
+        let pp = PossibleMove {
+            the_move: moves::ActualMove::SkipTurn,
+            mesh: MovementMesh::new(),
+            game_after_move: game.clone(),
+        };
         let res = ai::AlphaBeta {
             table: &mut table,
             prev_cache: &mut foo1,
@@ -183,7 +188,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
             path: &mut vec![],
             debug: false,
         }
-        .alpha_beta(moves::ActualMove::SkipTurn, game, team, depth, ABAB::new());
+        .alpha_beta(pp, team, depth, ABAB::new());
 
         // let res = ai::alpha_beta(
         //     game,
@@ -276,12 +281,13 @@ type EvalRet = EvalRetGeneric<PossibleMove>;
 impl<'a> AlphaBeta<'a> {
     pub fn alpha_beta(
         &mut self,
-        the_move: moves::ActualMove,
-        node: &GameState,
+        cand: PossibleMove,
         team: ActiveTeam,
         depth: usize,
         ab: ABAB,
     ) -> EvalRet {
+        let the_move = cand.the_move;
+        let node = cand.game_after_move;
         self.path.push(the_move.clone());
         let ret = if depth == 0 || game_is_over(node.view(team)) {
             //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
@@ -292,15 +298,7 @@ impl<'a> AlphaBeta<'a> {
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
             let it = reorder_front(pvariation, for_all_moves(node.clone(), team));
-            let foo = |cand: PossibleMove, ab| {
-                self.alpha_beta(
-                    cand.the_move,
-                    &cand.game_after_move,
-                    team.not(),
-                    depth - 1,
-                    ab,
-                )
-            };
+            let foo = |cand: PossibleMove, ab| self.alpha_beta(cand, team.not(), depth - 1, ab);
             let ret = if team == ActiveTeam::Cats {
                 ab.maxxer(it, foo)
             } else {
