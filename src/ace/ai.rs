@@ -188,7 +188,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
             path: &mut vec![],
             debug: false,
         }
-        .alpha_beta(pp, team, depth, ABAB::new());
+        .alpha_beta(pp, ABAB::new(), team, depth);
 
         // let res = ai::alpha_beta(
         //     game,
@@ -282,9 +282,9 @@ impl<'a> AlphaBeta<'a> {
     pub fn alpha_beta(
         &mut self,
         cand: PossibleMove,
+        ab: ABAB,
         team: ActiveTeam,
         depth: usize,
-        ab: ABAB,
     ) -> EvalRet {
         let the_move = cand.the_move;
         let node = cand.game_after_move;
@@ -298,7 +298,7 @@ impl<'a> AlphaBeta<'a> {
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
             let it = reorder_front(pvariation, for_all_moves(node.clone(), team));
-            let foo = |cand: PossibleMove, ab| self.alpha_beta(cand, team.not(), depth - 1, ab);
+            let foo = |cand, ab| self.alpha_beta(cand, ab, team.not(), depth - 1);
             let ret = if team == ActiveTeam::Cats {
                 ab.maxxer(it, foo)
             } else {
