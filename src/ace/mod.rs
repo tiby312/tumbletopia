@@ -584,7 +584,7 @@ pub async fn main_logic<'a>(
             //if false {
             let j = ai::iterative_deepening(game, team_index);
 
-            let m = j.0.unwrap();
+            let m = j.mov.unwrap();
             //let mesh = j.1;
             //console_dbg!("EVAL", j.1);
             let mut game = game.view_mut(team_index);

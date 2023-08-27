@@ -147,7 +147,7 @@ impl LeafTranspositionTable {
     }
 }
 
-pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<PossibleMove>, Eval) {
+pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
     let mut table = LeafTranspositionTable::new();
@@ -186,7 +186,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> (Option<Po
     console_dbg!(table.saves);
     console_dbg!(table.a.len());
     console_dbg!(count);
-    results.dedup_by_key(|x| x.1);
+    results.dedup_by_key(|x| x.eval);
 
     results.pop().unwrap()
 }
@@ -249,6 +249,11 @@ pub struct AlphaBeta<'a> {
     debug: bool,
 }
 
+pub struct EvalRet {
+    pub mov: Option<PossibleMove>,
+    pub eval: Eval,
+}
+
 impl<'a> AlphaBeta<'a> {
     pub fn ab(
         &mut self,
@@ -258,7 +263,7 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
         alpha: f64,
         beta: f64,
-    ) -> (Option<PossibleMove>, Eval) {
+    ) -> EvalRet {
         self.path.push(the_move.clone());
         let t = self.alpha_beta(node, team, depth, alpha, beta);
         let k = self.path.pop().unwrap();
@@ -270,25 +275,25 @@ impl<'a> AlphaBeta<'a> {
         node: &GameState,
         team: ActiveTeam,
         depth: usize,
-        mut alpha: f64,
-        mut beta: f64,
-    ) -> (Option<PossibleMove>, Eval) {
+        alpha: f64,
+        beta: f64,
+    ) -> EvalRet {
         if depth == 0 || game_is_over(node.view(team)) {
             //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
             //TODO do Quiescence Search
             self.calls.add_eval();
-            if let Some(n) = self.table.lookup_leaf(&node) {
-                (None, *n)
+            if let Some(&eval) = self.table.lookup_leaf(&node) {
+                EvalRet { mov: None, eval }
             } else {
-                let val = absolute_evaluate(&node);
-                self.table.consider_leaf(node.clone(), val);
-                (None, val)
+                let eval = absolute_evaluate(&node);
+                self.table.consider_leaf(node.clone(), eval);
+                EvalRet { mov: None, eval }
             }
         } else {
             let principal_variation = self.check_first.get_best_prev_move(self.path).cloned();
 
             let it = reorder_front(principal_variation, for_all_moves(node.clone(), team));
-            let (mm, value) = if team == ActiveTeam::Cats {
+            let ret = if team == ActiveTeam::Cats {
                 maxxer(alpha, beta, it, |cand, a, b| {
                     self.ab(
                         &cand.the_move,
@@ -312,7 +317,7 @@ impl<'a> AlphaBeta<'a> {
                 })
             };
 
-            if let Some(aaa) = &mm {
+            if let Some(aaa) = &ret.mov {
                 if let Some(foo) = self.check_first.get_best_prev_move_mut(&self.path) {
                     *foo = aaa.clone();
                 } else {
@@ -320,10 +325,7 @@ impl<'a> AlphaBeta<'a> {
                 }
             }
 
-            (mm, value)
-
-            //writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
-            //gloo::console::log!(s);
+            ret
         }
     }
 }
@@ -332,47 +334,54 @@ fn minner(
     alpha: f64,
     mut beta: f64,
     it: impl Iterator<Item = PossibleMove>,
-    mut func: impl FnMut(&PossibleMove, f64, f64) -> (Option<PossibleMove>, f64),
-) -> (Option<PossibleMove>, f64) {
+    mut func: impl FnMut(&PossibleMove, f64, f64) -> EvalRet,
+) -> EvalRet {
     let mut mm: Option<PossibleMove> = None;
 
     let mut value = f64::INFINITY;
     for cand in it {
         let t = func(&cand, alpha, beta);
 
-        value = value.min(t.1);
-        if value == t.1 {
+        value = value.min(t.eval);
+        if value == t.eval {
             mm = Some(cand);
         }
-        if t.1 < alpha {
+        if t.eval < alpha {
             break;
         }
         beta = beta.min(value)
     }
-    (mm, value)
+
+    EvalRet {
+        mov: mm,
+        eval: value,
+    }
 }
 fn maxxer(
     mut alpha: f64,
     beta: f64,
     it: impl Iterator<Item = PossibleMove>,
-    mut func: impl FnMut(&PossibleMove, f64, f64) -> (Option<PossibleMove>, f64),
-) -> (Option<PossibleMove>, f64) {
+    mut func: impl FnMut(&PossibleMove, f64, f64) -> EvalRet,
+) -> EvalRet {
     let mut mm: Option<PossibleMove> = None;
 
     let mut value = f64::NEG_INFINITY;
     for cand in it {
         let t = func(&cand, alpha, beta);
 
-        value = value.max(t.1);
-        if value == t.1 {
+        value = value.max(t.eval);
+        if value == t.eval {
             mm = Some(cand);
         }
-        if t.1 > beta {
+        if t.eval > beta {
             break;
         }
         alpha = alpha.max(value)
     }
-    (mm, value)
+    EvalRet {
+        mov: mm,
+        eval: value,
+    }
 }
 
 pub fn alpha_beta(
