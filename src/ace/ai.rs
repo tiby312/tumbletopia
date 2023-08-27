@@ -273,7 +273,7 @@ pub struct EvalRet {
 }
 
 impl<'a> AlphaBeta<'a> {
-    pub fn ab(&mut self, aaa: &PossibleMove, team: ActiveTeam, depth: usize, ab: ABAB) -> EvalRet {
+    pub fn ab(&mut self, aaa: &PossibleMove, ab: ABAB, team: ActiveTeam, depth: usize) -> EvalRet {
         self.path.push(aaa.the_move.clone());
         let t = self.alpha_beta(&aaa.game_after_move, team, depth, ab);
         let k = self.path.pop().unwrap();
@@ -296,10 +296,11 @@ impl<'a> AlphaBeta<'a> {
             let principal_variation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
             let it = reorder_front(principal_variation, for_all_moves(node.clone(), team));
+            let foo = |cand, ab| self.ab(&cand, ab, team.not(), depth - 1);
             let ret = if team == ActiveTeam::Cats {
-                ab.maxxer(it, |cand, ab| self.ab(cand, team.not(), depth - 1, ab))
+                ab.maxxer(it, foo)
             } else {
-                ab.minner(it, |cand, ab| self.ab(cand, team.not(), depth - 1, ab))
+                ab.minner(it, foo)
             };
 
             self.prev_cache.update(&self.path, &ret);
@@ -324,13 +325,13 @@ impl ABAB {
     fn minner(
         mut self,
         it: impl Iterator<Item = PossibleMove>,
-        mut func: impl FnMut(&PossibleMove, Self) -> EvalRet,
+        mut func: impl FnMut(PossibleMove, Self) -> EvalRet,
     ) -> EvalRet {
         let mut mm: Option<PossibleMove> = None;
 
         let mut value = i64::MAX;
         for cand in it {
-            let t = func(&cand, self.clone());
+            let t = func(cand.clone(), self.clone());
 
             value = value.min(t.eval);
             if value == t.eval {
@@ -350,13 +351,13 @@ impl ABAB {
     fn maxxer(
         mut self,
         it: impl Iterator<Item = PossibleMove>,
-        mut func: impl FnMut(&PossibleMove, Self) -> EvalRet,
+        mut func: impl FnMut(PossibleMove, Self) -> EvalRet,
     ) -> EvalRet {
         let mut mm: Option<PossibleMove> = None;
 
         let mut value = i64::MIN;
         for cand in it {
-            let t = func(&cand, self.clone());
+            let t = func(cand.clone(), self.clone());
 
             value = value.max(t.eval);
             if value == t.eval {
