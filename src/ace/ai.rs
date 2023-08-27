@@ -113,7 +113,7 @@ impl MoveOrdering {
         self.a.get_mut(path)
     }
 
-    pub fn consider(&mut self, path: &[moves::ActualMove], ret: &EvalRet) {
+    pub fn update(&mut self, path: &[moves::ActualMove], ret: &EvalRet) {
         if let Some(aaa) = &ret.mov {
             if let Some(foo) = self.get_best_prev_move_mut(path) {
                 *foo = aaa.clone();
@@ -139,7 +139,7 @@ impl LeafTranspositionTable {
             saves: 0,
         }
     }
-    pub fn lookup_leaf(&mut self, a: &GameState) -> Option<&Eval> {
+    fn lookup_leaf(&mut self, a: &GameState) -> Option<&Eval> {
         if let Some(a) = self.a.get(a) {
             self.saves += 1;
             Some(a)
@@ -147,11 +147,20 @@ impl LeafTranspositionTable {
             None
         }
     }
-    pub fn consider_leaf(&mut self, game: GameState, eval: Eval) {
+    fn consider_leaf(&mut self, game: GameState, eval: Eval) {
         if let Some(v) = self.a.get_mut(&game) {
             *v = eval;
         } else {
             let _ = self.a.insert(game, eval);
+        }
+    }
+    pub fn lookup_leaf_all(&mut self, node: &GameState) -> EvalRet {
+        if let Some(&eval) = self.lookup_leaf(&node) {
+            EvalRet { mov: None, eval }
+        } else {
+            let eval = absolute_evaluate(&node);
+            self.consider_leaf(node.clone(), eval);
+            EvalRet { mov: None, eval }
         }
     }
 }
@@ -169,7 +178,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
     for depth in 0..5 {
         let res = ai::AlphaBeta {
             table: &mut table,
-            check_first: &mut foo1,
+            prev_cache: &mut foo1,
             calls: &mut count,
             path: &mut vec![],
             debug: false,
@@ -252,7 +261,7 @@ pub fn quiescence_search(
 
 pub struct AlphaBeta<'a> {
     table: &'a mut LeafTranspositionTable,
-    check_first: &'a mut MoveOrdering,
+    prev_cache: &'a mut MoveOrdering,
     calls: &'a mut Counter,
     path: &'a mut Vec<moves::ActualMove>,
     debug: bool,
@@ -282,15 +291,9 @@ impl<'a> AlphaBeta<'a> {
             //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
             //TODO do Quiescence Search
             self.calls.add_eval();
-            if let Some(&eval) = self.table.lookup_leaf(&node) {
-                EvalRet { mov: None, eval }
-            } else {
-                let eval = absolute_evaluate(&node);
-                self.table.consider_leaf(node.clone(), eval);
-                EvalRet { mov: None, eval }
-            }
+            self.table.lookup_leaf_all(&node)
         } else {
-            let principal_variation = self.check_first.get_best_prev_move(self.path).cloned();
+            let principal_variation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
             let it = reorder_front(principal_variation, for_all_moves(node.clone(), team));
             let ret = if team == ActiveTeam::Cats {
@@ -299,15 +302,7 @@ impl<'a> AlphaBeta<'a> {
                 ab.minner(it, |cand, ab| self.ab(cand, team.not(), depth - 1, ab))
             };
 
-            self.check_first.consider(&self.path, &ret);
-
-            // if let Some(aaa) = &ret.mov {
-            //     if let Some(foo) = self.check_first.get_best_prev_move_mut(&self.path) {
-            //         *foo = aaa.clone();
-            //     } else {
-            //         self.check_first.insert(self.path, aaa.clone());
-            //     }
-            // }
+            self.prev_cache.update(&self.path, &ret);
 
             ret
         }
