@@ -112,6 +112,16 @@ impl MoveOrdering {
     ) -> Option<&mut PossibleMove> {
         self.a.get_mut(path)
     }
+
+    pub fn consider(&mut self, path: &[moves::ActualMove], ret: &EvalRet) {
+        if let Some(aaa) = &ret.mov {
+            if let Some(foo) = self.get_best_prev_move_mut(path) {
+                *foo = aaa.clone();
+            } else {
+                self.insert(path, aaa.clone());
+            }
+        }
+    }
     pub fn insert(&mut self, path: &[moves::ActualMove], m: PossibleMove) {
         self.a.insert(path.iter().cloned().collect(), m);
     }
@@ -289,13 +299,15 @@ impl<'a> AlphaBeta<'a> {
                 ab.minner(it, |cand, ab| self.ab(cand, team.not(), depth - 1, ab))
             };
 
-            if let Some(aaa) = &ret.mov {
-                if let Some(foo) = self.check_first.get_best_prev_move_mut(&self.path) {
-                    *foo = aaa.clone();
-                } else {
-                    self.check_first.insert(self.path, aaa.clone());
-                }
-            }
+            self.check_first.consider(&self.path, &ret);
+
+            // if let Some(aaa) = &ret.mov {
+            //     if let Some(foo) = self.check_first.get_best_prev_move_mut(&self.path) {
+            //         *foo = aaa.clone();
+            //     } else {
+            //         self.check_first.insert(self.path, aaa.clone());
+            //     }
+            // }
 
             ret
         }
