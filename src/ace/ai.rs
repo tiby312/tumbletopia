@@ -267,10 +267,11 @@ pub struct AlphaBeta<'a> {
     debug: bool,
 }
 
-pub struct EvalRet {
-    pub mov: Option<PossibleMove>,
+pub struct EvalRetGeneric<T> {
+    pub mov: Option<T>,
     pub eval: Eval,
 }
+type EvalRet = EvalRetGeneric<PossibleMove>;
 
 impl<'a> AlphaBeta<'a> {
     pub fn ab(&mut self, aaa: PossibleMove, ab: ABAB, team: ActiveTeam, depth: usize) -> EvalRet {
@@ -322,12 +323,13 @@ impl ABAB {
             beta: Eval::MAX,
         }
     }
-    fn minner(
+
+    fn minner<T: Clone>(
         mut self,
-        it: impl Iterator<Item = PossibleMove>,
-        mut func: impl FnMut(PossibleMove, Self) -> EvalRet,
-    ) -> EvalRet {
-        let mut mm: Option<PossibleMove> = None;
+        it: impl Iterator<Item = T>,
+        mut func: impl FnMut(T, Self) -> EvalRet,
+    ) -> EvalRetGeneric<T> {
+        let mut mm: Option<T> = None;
 
         let mut value = i64::MAX;
         for cand in it {
@@ -343,17 +345,17 @@ impl ABAB {
             self.beta = self.beta.min(value)
         }
 
-        EvalRet {
+        EvalRetGeneric {
             mov: mm,
             eval: value,
         }
     }
-    fn maxxer(
+    fn maxxer<T: Clone>(
         mut self,
-        it: impl Iterator<Item = PossibleMove>,
-        mut func: impl FnMut(PossibleMove, Self) -> EvalRet,
-    ) -> EvalRet {
-        let mut mm: Option<PossibleMove> = None;
+        it: impl Iterator<Item = T>,
+        mut func: impl FnMut(T, Self) -> EvalRet,
+    ) -> EvalRetGeneric<T> {
+        let mut mm: Option<T> = None;
 
         let mut value = i64::MIN;
         for cand in it {
@@ -368,7 +370,7 @@ impl ABAB {
             }
             self.alpha = self.alpha.max(value)
         }
-        EvalRet {
+        EvalRetGeneric {
             mov: mm,
             eval: value,
         }
