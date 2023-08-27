@@ -183,7 +183,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
             path: &mut vec![],
             debug: false,
         }
-        .alpha_beta(game, team, depth, ABAB::new());
+        .alpha_beta(moves::ActualMove::SkipTurn, game, team, depth, ABAB::new());
 
         // let res = ai::alpha_beta(
         //     game,
@@ -274,21 +274,16 @@ pub struct EvalRetGeneric<T> {
 type EvalRet = EvalRetGeneric<PossibleMove>;
 
 impl<'a> AlphaBeta<'a> {
-    pub fn ab(&mut self, aaa: PossibleMove, ab: ABAB, team: ActiveTeam, depth: usize) -> EvalRet {
-        self.path.push(aaa.the_move.clone());
-        let t = self.alpha_beta(&aaa.game_after_move, team, depth, ab);
-        let k = self.path.pop().unwrap();
-        assert_eq!(k, aaa.the_move);
-        t
-    }
     pub fn alpha_beta(
         &mut self,
+        the_move: moves::ActualMove,
         node: &GameState,
         team: ActiveTeam,
         depth: usize,
         ab: ABAB,
     ) -> EvalRet {
-        if depth == 0 || game_is_over(node.view(team)) {
+        self.path.push(the_move.clone());
+        let ret = if depth == 0 || game_is_over(node.view(team)) {
             //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
             //TODO do Quiescence Search
             self.calls.add_eval();
@@ -297,7 +292,15 @@ impl<'a> AlphaBeta<'a> {
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
             let it = reorder_front(pvariation, for_all_moves(node.clone(), team));
-            let foo = |cand, ab| self.ab(cand, ab, team.not(), depth - 1);
+            let foo = |cand: PossibleMove, ab| {
+                self.alpha_beta(
+                    cand.the_move,
+                    &cand.game_after_move,
+                    team.not(),
+                    depth - 1,
+                    ab,
+                )
+            };
             let ret = if team == ActiveTeam::Cats {
                 ab.maxxer(it, foo)
             } else {
@@ -307,7 +310,10 @@ impl<'a> AlphaBeta<'a> {
             self.prev_cache.update(&self.path, &ret);
 
             ret
-        }
+        };
+        let k = self.path.pop().unwrap();
+        assert_eq!(k, the_move);
+        ret
     }
 }
 
