@@ -175,7 +175,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
     };
 
     //TODO stop searching if we found a game ending move.
-    for depth in 0..5 {
+    for depth in 0..4 {
         let pp = PossibleMove {
             the_move: moves::ActualMove::SkipTurn,
             mesh: MovementMesh::new(),
@@ -224,46 +224,6 @@ impl Counter {
     }
 }
 
-pub fn quiescence_search(
-    node: &GameState,
-    team: ActiveTeam,
-    table: &mut LeafTranspositionTable,
-    calls: &mut Counter,
-    depth: usize,
-    alpha: f64,
-    beta: f64,
-) -> Eval {
-    if game_is_over(node.view(team)) {
-        calls.add_eval();
-        if let Some(n) = table.lookup_leaf(&node) {
-            return *n;
-        } else {
-            let val = absolute_evaluate(&node);
-            table.consider_leaf(node.clone(), val);
-            return val;
-        }
-    }
-    let it = for_all_moves_ext(node.clone(), team, true).map(|x| {
-        quiescence_search(
-            &x.game_after_move,
-            team.not(),
-            table,
-            calls,
-            depth,
-            alpha,
-            beta,
-        )
-    });
-
-    if team == ActiveTeam::Cats {
-        let max = it.max_by(|a, b| a.partial_cmp(b).unwrap());
-        //alpha=alpha
-    } else {
-    }
-
-    return 0;
-}
-
 pub struct AlphaBeta<'a> {
     table: &'a mut LeafTranspositionTable,
     prev_cache: &'a mut MoveOrdering,
@@ -279,7 +239,7 @@ pub struct EvalRetGeneric<T> {
 type EvalRet = EvalRetGeneric<PossibleMove>;
 
 impl<'a> AlphaBeta<'a> {
-    pub fn alpha_beta(
+    pub fn quiensense_search(
         &mut self,
         cand: PossibleMove,
         ab: ABAB,
@@ -289,12 +249,51 @@ impl<'a> AlphaBeta<'a> {
         let the_move = cand.the_move;
         let node = cand.game_after_move;
         self.path.push(the_move.clone());
-        let ret = if depth == 0 || game_is_over(node.view(team)) {
+        let all_moves: Vec<_> = for_all_capture_and_jump_moves(node.clone(), team).collect();
+        //console_dbg!(all_moves.len());
+        let ret = if depth == 0 || game_is_over(node.view(team)) || all_moves.is_empty() {
             //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
             //TODO do Quiescence Search
             self.calls.add_eval();
             self.table.lookup_leaf_all(&node)
         } else {
+            //let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
+
+            let it = all_moves.into_iter();
+            let foo = |cand, ab| self.quiensense_search(cand, ab, team.not(), depth - 1);
+            let ret = if team == ActiveTeam::Cats {
+                ab.maxxer(it, foo)
+            } else {
+                ab.minner(it, foo)
+            };
+
+            //self.prev_cache.update(&self.path, &ret);
+
+            ret
+        };
+        let k = self.path.pop().unwrap();
+        assert_eq!(k, the_move);
+        ret
+    }
+
+    pub fn alpha_beta(
+        &mut self,
+        cand: PossibleMove,
+        ab: ABAB,
+        team: ActiveTeam,
+        depth: usize,
+    ) -> EvalRet {
+        let the_move = cand.the_move.clone();
+        self.path.push(the_move.clone());
+        let ret = if depth == 0 {
+            //||game_is_over(cand.game_after_move.view(team))
+            //self.calls.add_eval();
+            //self.table.lookup_leaf_all(&node)
+
+            self.quiensense_search(cand, ab, team, 4)
+        } else {
+            let node = cand.game_after_move;
+
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
             let it = reorder_front(pvariation, for_all_moves(node.clone(), team));
@@ -417,15 +416,24 @@ pub struct PossibleMove {
     pub game_after_move: GameState,
 }
 
-fn for_all_moves_ext(
+fn for_all_capture_and_jump_moves(
     state: GameState,
     team: ActiveTeam,
-    quiet: bool,
 ) -> impl Iterator<Item = PossibleMove> {
     let n = state.clone();
     for_all_moves(state, team).filter(move |a| {
+        let in_check = {
+            //TODO implement!
+        };
+        let jump_move = if let moves::ActualMove::ExtraMove(_, _) = a.the_move {
+            true
+        } else {
+            false
+        };
         let b = &a.game_after_move;
-        b.dogs.units.len() < n.dogs.units.len() || b.cats.units.len() < n.cats.units.len()
+        jump_move
+            || b.dogs.units.len() < n.dogs.units.len()
+            || b.cats.units.len() < n.cats.units.len()
     })
 }
 
