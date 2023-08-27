@@ -5,7 +5,7 @@ use super::{
     *,
 };
 
-pub type Eval = f64; //(f64);
+pub type Eval = i64; //(f64);
 
 //cats maximizing
 //dogs minimizing
@@ -21,7 +21,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .iter()
         .find(|a| a.typ == Type::Para)
     else {
-        return -1_000_000.0;
+        return -1_000_000;
     };
 
     let Some(dog_king)=view
@@ -31,7 +31,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .find(|a| a.typ == Type::Para)
     else
     {
-        return 1_000_000.0;
+        return 1_000_000;
     };
 
     //how close cats are to dog king.
@@ -40,7 +40,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .units
         .iter()
         .map(|x| x.position.to_cube().dist(&dog_king.position.to_cube()))
-        .fold(0, |acc, f| acc + f);
+        .fold(0, |acc, f| acc + f) as i64;
 
     //how close dogs are to cat king.
     let dog_distance_to_cat_king = view
@@ -48,11 +48,10 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .units
         .iter()
         .map(|x| x.position.to_cube().dist(&cat_king.position.to_cube()))
-        .fold(0, |acc, f| acc + f);
+        .fold(0, |acc, f| acc + f) as i64;
 
-    let val =
-        diff as f64 * 100.0 - cat_distance_to_dog_king as f64 + dog_distance_to_cat_king as f64;
-    assert!(!val.is_nan());
+    let val = diff * 100 - cat_distance_to_dog_king + dog_distance_to_cat_king;
+    //assert!(!val.is_nan());
     val
 }
 
@@ -165,7 +164,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
             path: &mut vec![],
             debug: false,
         }
-        .alpha_beta(game, team, depth, f64::NEG_INFINITY, f64::INFINITY);
+        .alpha_beta(game, team, depth, i64::MIN, i64::MAX);
 
         // let res = ai::alpha_beta(
         //     game,
@@ -238,7 +237,7 @@ pub fn quiescence_search(
     } else {
     }
 
-    return 0.0;
+    return 0;
 }
 
 pub struct AlphaBeta<'a> {
@@ -261,8 +260,8 @@ impl<'a> AlphaBeta<'a> {
         node: &GameState,
         team: ActiveTeam,
         depth: usize,
-        alpha: f64,
-        beta: f64,
+        alpha: Eval,
+        beta: Eval,
     ) -> EvalRet {
         self.path.push(the_move.clone());
         let t = self.alpha_beta(node, team, depth, alpha, beta);
@@ -275,8 +274,8 @@ impl<'a> AlphaBeta<'a> {
         node: &GameState,
         team: ActiveTeam,
         depth: usize,
-        alpha: f64,
-        beta: f64,
+        alpha: Eval,
+        beta: Eval,
     ) -> EvalRet {
         if depth == 0 || game_is_over(node.view(team)) {
             //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
@@ -331,14 +330,14 @@ impl<'a> AlphaBeta<'a> {
 }
 
 fn minner(
-    alpha: f64,
-    mut beta: f64,
+    alpha: Eval,
+    mut beta: Eval,
     it: impl Iterator<Item = PossibleMove>,
-    mut func: impl FnMut(&PossibleMove, f64, f64) -> EvalRet,
+    mut func: impl FnMut(&PossibleMove, Eval, Eval) -> EvalRet,
 ) -> EvalRet {
     let mut mm: Option<PossibleMove> = None;
 
-    let mut value = f64::INFINITY;
+    let mut value = i64::MAX;
     for cand in it {
         let t = func(&cand, alpha, beta);
 
@@ -358,14 +357,14 @@ fn minner(
     }
 }
 fn maxxer(
-    mut alpha: f64,
-    beta: f64,
+    mut alpha: Eval,
+    beta: Eval,
     it: impl Iterator<Item = PossibleMove>,
-    mut func: impl FnMut(&PossibleMove, f64, f64) -> EvalRet,
+    mut func: impl FnMut(&PossibleMove, Eval, Eval) -> EvalRet,
 ) -> EvalRet {
     let mut mm: Option<PossibleMove> = None;
 
-    let mut value = f64::NEG_INFINITY;
+    let mut value = i64::MIN;
     for cand in it {
         let t = func(&cand, alpha, beta);
 
@@ -384,122 +383,122 @@ fn maxxer(
     }
 }
 
-pub fn alpha_beta(
-    node: &GameState,
-    team: ActiveTeam,
-    depth: usize,
-    debug: bool,
-    mut alpha: f64,
-    mut beta: f64,
-    table: &mut LeafTranspositionTable,
-    check_first: &mut MoveOrdering,
-    calls: &mut Counter,
-    path: &mut Vec<moves::ActualMove>,
-) -> (Option<PossibleMove>, Eval) {
-    if depth == 0 || game_is_over(node.view(team)) {
-        //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
-        //TODO do Quiescence Search
-        calls.add_eval();
-        if let Some(n) = table.lookup_leaf(&node) {
-            (None, *n)
-        } else {
-            let val = absolute_evaluate(&node);
-            table.consider_leaf(node.clone(), val);
-            (None, val)
-        }
-    } else {
-        if team == ActiveTeam::Cats {
-            let mut mm: Option<PossibleMove> = None;
-            let mut value = f64::NEG_INFINITY;
+// pub fn alpha_beta(
+//     node: &GameState,
+//     team: ActiveTeam,
+//     depth: usize,
+//     debug: bool,
+//     mut alpha: f64,
+//     mut beta: f64,
+//     table: &mut LeafTranspositionTable,
+//     check_first: &mut MoveOrdering,
+//     calls: &mut Counter,
+//     path: &mut Vec<moves::ActualMove>,
+// ) -> (Option<PossibleMove>, Eval) {
+//     if depth == 0 || game_is_over(node.view(team)) {
+//         //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
+//         //TODO do Quiescence Search
+//         calls.add_eval();
+//         if let Some(n) = table.lookup_leaf(&node) {
+//             (None, *n)
+//         } else {
+//             let val = absolute_evaluate(&node);
+//             table.consider_leaf(node.clone(), val);
+//             (None, val)
+//         }
+//     } else {
+//         if team == ActiveTeam::Cats {
+//             let mut mm: Option<PossibleMove> = None;
+//             let mut value = f64::NEG_INFINITY;
 
-            let principal_variation = check_first.get_best_prev_move(path).cloned();
+//             let principal_variation = check_first.get_best_prev_move(path).cloned();
 
-            for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
-                path.push(cand.the_move.clone());
-                let t = alpha_beta(
-                    &cand.game_after_move,
-                    team.not(),
-                    depth - 1,
-                    debug,
-                    alpha,
-                    beta,
-                    table,
-                    check_first,
-                    calls,
-                    path,
-                );
-                let k = path.pop().unwrap();
-                assert_eq!(k, cand.the_move.clone());
+//             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
+//                 path.push(cand.the_move.clone());
+//                 let t = alpha_beta(
+//                     &cand.game_after_move,
+//                     team.not(),
+//                     depth - 1,
+//                     debug,
+//                     alpha,
+//                     beta,
+//                     table,
+//                     check_first,
+//                     calls,
+//                     path,
+//                 );
+//                 let k = path.pop().unwrap();
+//                 assert_eq!(k, cand.the_move.clone());
 
-                value = value.max(t.1);
-                if value == t.1 {
-                    mm = Some(cand);
-                }
-                if t.1 > beta {
-                    break;
-                }
-                alpha = alpha.max(value)
-            }
+//                 value = value.max(t.1);
+//                 if value == t.1 {
+//                     mm = Some(cand);
+//                 }
+//                 if t.1 > beta {
+//                     break;
+//                 }
+//                 alpha = alpha.max(value)
+//             }
 
-            if let Some(aaa) = &mm {
-                if let Some(foo) = check_first.get_best_prev_move_mut(&path) {
-                    *foo = aaa.clone();
-                } else {
-                    check_first.insert(path, aaa.clone());
-                }
-            }
+//             if let Some(aaa) = &mm {
+//                 if let Some(foo) = check_first.get_best_prev_move_mut(&path) {
+//                     *foo = aaa.clone();
+//                 } else {
+//                     check_first.insert(path, aaa.clone());
+//                 }
+//             }
 
-            (mm, value)
-            //(mm, mesh_final, value)
-        } else {
-            let mut mm: Option<PossibleMove> = None;
+//             (mm, value)
+//             //(mm, mesh_final, value)
+//         } else {
+//             let mut mm: Option<PossibleMove> = None;
 
-            let mut value = f64::INFINITY;
+//             let mut value = f64::INFINITY;
 
-            let principal_variation = check_first.get_best_prev_move(path).cloned();
+//             let principal_variation = check_first.get_best_prev_move(path).cloned();
 
-            for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
-                path.push(cand.the_move.clone());
+//             for cand in reorder_front(principal_variation, for_all_moves(node.clone(), team)) {
+//                 path.push(cand.the_move.clone());
 
-                let t = alpha_beta(
-                    &cand.game_after_move,
-                    team.not(),
-                    depth - 1,
-                    debug,
-                    alpha,
-                    beta,
-                    table,
-                    check_first,
-                    calls,
-                    path,
-                );
-                let k = path.pop().unwrap();
-                assert_eq!(k, cand.the_move.clone());
+//                 let t = alpha_beta(
+//                     &cand.game_after_move,
+//                     team.not(),
+//                     depth - 1,
+//                     debug,
+//                     alpha,
+//                     beta,
+//                     table,
+//                     check_first,
+//                     calls,
+//                     path,
+//                 );
+//                 let k = path.pop().unwrap();
+//                 assert_eq!(k, cand.the_move.clone());
 
-                value = value.min(t.1);
-                if value == t.1 {
-                    mm = Some(cand);
-                }
-                if t.1 < alpha {
-                    break;
-                }
-                beta = beta.min(value)
-            }
+//                 value = value.min(t.1);
+//                 if value == t.1 {
+//                     mm = Some(cand);
+//                 }
+//                 if t.1 < alpha {
+//                     break;
+//                 }
+//                 beta = beta.min(value)
+//             }
 
-            if let Some(aaa) = &mm {
-                if let Some(foo) = check_first.get_best_prev_move_mut(&path) {
-                    *foo = aaa.clone();
-                } else {
-                    check_first.insert(path, aaa.clone());
-                }
-            }
-            (mm, value)
-        }
+//             if let Some(aaa) = &mm {
+//                 if let Some(foo) = check_first.get_best_prev_move_mut(&path) {
+//                     *foo = aaa.clone();
+//                 } else {
+//                     check_first.insert(path, aaa.clone());
+//                 }
+//             }
+//             (mm, value)
+//         }
 
-        //writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
-        //gloo::console::log!(s);
-    }
-}
+//         //writeln!(&mut s, "{:?}", (v.team, depth, &m, ev)).unwrap();
+//         //gloo::console::log!(s);
+//     }
+// }
 
 fn reorder_front(
     a: Option<PossibleMove>,
