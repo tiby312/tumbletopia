@@ -273,7 +273,7 @@ pub struct EvalRet {
 }
 
 impl<'a> AlphaBeta<'a> {
-    pub fn ab(&mut self, aaa: &PossibleMove, ab: ABAB, team: ActiveTeam, depth: usize) -> EvalRet {
+    pub fn ab(&mut self, aaa: PossibleMove, ab: ABAB, team: ActiveTeam, depth: usize) -> EvalRet {
         self.path.push(aaa.the_move.clone());
         let t = self.alpha_beta(&aaa.game_after_move, team, depth, ab);
         let k = self.path.pop().unwrap();
@@ -293,10 +293,10 @@ impl<'a> AlphaBeta<'a> {
             self.calls.add_eval();
             self.table.lookup_leaf_all(&node)
         } else {
-            let principal_variation = self.prev_cache.get_best_prev_move(self.path).cloned();
+            let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
-            let it = reorder_front(principal_variation, for_all_moves(node.clone(), team));
-            let foo = |cand, ab| self.ab(&cand, ab, team.not(), depth - 1);
+            let it = reorder_front(pvariation, for_all_moves(node.clone(), team));
+            let foo = |cand, ab| self.ab(cand, ab, team.not(), depth - 1);
             let ret = if team == ActiveTeam::Cats {
                 ab.maxxer(it, foo)
             } else {
