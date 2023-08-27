@@ -285,58 +285,32 @@ impl<'a> AlphaBeta<'a> {
                 (None, val)
             }
         } else {
-            let mut mm: Option<PossibleMove> = None;
-
-            let mut value;
-
             let principal_variation = self.check_first.get_best_prev_move(self.path).cloned();
 
             let it = reorder_front(principal_variation, for_all_moves(node.clone(), team));
-            if team == ActiveTeam::Cats {
-                value = f64::NEG_INFINITY;
-                for cand in it {
-                    let t = self.ab(
+            let (mm, value) = if team == ActiveTeam::Cats {
+                maxxer(alpha, beta, it, |cand, a, b| {
+                    self.ab(
                         &cand.the_move,
                         &cand.game_after_move,
                         team.not(),
                         depth - 1,
-                        alpha,
-                        beta,
-                    );
-
-                    value = value.max(t.1);
-                    if value == t.1 {
-                        mm = Some(cand);
-                    }
-                    if t.1 > beta {
-                        break;
-                    }
-                    alpha = alpha.max(value)
-                }
-
-                //(mm, mesh_final, value)
+                        a,
+                        b,
+                    )
+                })
             } else {
-                value = f64::INFINITY;
-                for cand in it {
-                    let t = self.ab(
+                minner(alpha, beta, it, |cand, a, b| {
+                    self.ab(
                         &cand.the_move,
                         &cand.game_after_move,
                         team.not(),
                         depth - 1,
-                        alpha,
-                        beta,
-                    );
-
-                    value = value.min(t.1);
-                    if value == t.1 {
-                        mm = Some(cand);
-                    }
-                    if t.1 < alpha {
-                        break;
-                    }
-                    beta = beta.min(value)
-                }
-            }
+                        a,
+                        b,
+                    )
+                })
+            };
 
             if let Some(aaa) = &mm {
                 if let Some(foo) = self.check_first.get_best_prev_move_mut(&self.path) {
@@ -352,6 +326,53 @@ impl<'a> AlphaBeta<'a> {
             //gloo::console::log!(s);
         }
     }
+}
+
+fn minner(
+    alpha: f64,
+    mut beta: f64,
+    it: impl Iterator<Item = PossibleMove>,
+    mut func: impl FnMut(&PossibleMove, f64, f64) -> (Option<PossibleMove>, f64),
+) -> (Option<PossibleMove>, f64) {
+    let mut mm: Option<PossibleMove> = None;
+
+    let mut value = f64::INFINITY;
+    for cand in it {
+        let t = func(&cand, alpha, beta);
+
+        value = value.min(t.1);
+        if value == t.1 {
+            mm = Some(cand);
+        }
+        if t.1 < alpha {
+            break;
+        }
+        beta = beta.min(value)
+    }
+    (mm, value)
+}
+fn maxxer(
+    mut alpha: f64,
+    beta: f64,
+    it: impl Iterator<Item = PossibleMove>,
+    mut func: impl FnMut(&PossibleMove, f64, f64) -> (Option<PossibleMove>, f64),
+) -> (Option<PossibleMove>, f64) {
+    let mut mm: Option<PossibleMove> = None;
+
+    let mut value = f64::NEG_INFINITY;
+    for cand in it {
+        let t = func(&cand, alpha, beta);
+
+        value = value.max(t.1);
+        if value == t.1 {
+            mm = Some(cand);
+        }
+        if t.1 > beta {
+            break;
+        }
+        alpha = alpha.max(value)
+    }
+    (mm, value)
 }
 
 pub fn alpha_beta(
