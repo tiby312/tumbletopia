@@ -184,7 +184,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
     };
 
     //TODO stop searching if we found a game ending move.
-    for depth in 0..5 {
+    for depth in 0..4 {
         let pp = PossibleMove {
             the_move: moves::ActualMove::SkipTurn,
             mesh: MovementMesh::new(),
@@ -197,7 +197,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
             path: &mut vec![],
             debug: false,
         }
-        .alpha_beta(pp, ABAB::new(), team, depth);
+        .alpha_beta(pp, ABAB::new(), team, depth, 0);
 
         // let res = ai::alpha_beta(
         //     game,
@@ -291,6 +291,7 @@ impl<'a> AlphaBeta<'a> {
         ab: ABAB,
         team: ActiveTeam,
         depth: usize,
+        ext: usize,
     ) -> EvalRet {
         let the_move = cand.the_move.clone();
         self.path.push(the_move.clone());
@@ -305,7 +306,15 @@ impl<'a> AlphaBeta<'a> {
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
             let it = reorder_front(pvariation, for_all_moves(node.clone(), team));
-            let foo = |cand, ab| self.alpha_beta(cand, ab, team.not(), depth - 1);
+            let foo = |cand: PossibleMove, ab| {
+                let new_ext = if depth <= 2 && ext < 3 && is_check(&cand.game_after_move) {
+                    1
+                } else {
+                    0
+                };
+                //console_dbg!(ext,depth);
+                self.alpha_beta(cand, ab, team.not(), new_ext + depth - 1, ext + new_ext)
+            };
             let ret = if team == ActiveTeam::Cats {
                 ab.maxxer(it, foo)
             } else {
@@ -422,6 +431,32 @@ pub struct PossibleMove {
     pub the_move: moves::ActualMove,
     pub mesh: MovementMesh,
     pub game_after_move: GameState,
+}
+
+fn is_check(state: &GameState) -> bool {
+    let a = for_all_moves(state.clone(), ActiveTeam::Cats)
+        .find(move |a| {
+            a.game_after_move
+                .dogs
+                .units
+                .iter()
+                .find(|x| x.typ == Type::Para)
+                .is_none()
+        })
+        .is_some();
+
+    let b = for_all_moves(state.clone(), ActiveTeam::Dogs)
+        .find(move |a| {
+            a.game_after_move
+                .cats
+                .units
+                .iter()
+                .find(|x| x.typ == Type::Para)
+                .is_none()
+        })
+        .is_some();
+
+    a || b
 }
 
 fn for_all_capture_and_jump_moves(
