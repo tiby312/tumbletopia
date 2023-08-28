@@ -346,12 +346,14 @@ impl<'a> AlphaBeta<'a> {
 
             let mut moves: Vec<_> = for_all_moves(node.clone(), team)
                 .map(|x| {
-                    let c = is_check(&x.game_after_move);
+                    //let c = is_check(&x.game_after_move);
+                    let c=false;
                     (c, x)
                 })
                 .collect();
 
             if let Some(p) = pvariation {
+                
                 let f = moves
                     .iter()
                     .enumerate()
@@ -359,6 +361,7 @@ impl<'a> AlphaBeta<'a> {
                     .unwrap();
                 let swap_ind = f.0;
                 moves.swap(0, swap_ind);
+                
             }
 
             //TODO do more move ordering!!!
