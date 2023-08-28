@@ -164,13 +164,13 @@ impl LeafTranspositionTable {
         }
     }
     pub fn lookup_leaf_all(&mut self, node: &GameState) -> Eval {
-        // if let Some(&eval) = self.lookup_leaf(&node) {
-        //     eval
-        // } else {
-        let eval = absolute_evaluate(&node);
-        self.consider_leaf(node.clone(), eval);
-        eval
-        //}
+        if let Some(&eval) = self.lookup_leaf(&node) {
+            eval
+        } else {
+            let eval = absolute_evaluate(&node);
+            self.consider_leaf(node.clone(), eval);
+            eval
+        }
     }
 }
 
