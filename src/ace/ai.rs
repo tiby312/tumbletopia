@@ -167,9 +167,9 @@ impl LeafTranspositionTable {
         // if let Some(&eval) = self.lookup_leaf(&node) {
         //     eval
         // } else {
-            let eval = absolute_evaluate(&node);
-            self.consider_leaf(node.clone(), eval);
-            eval
+        let eval = absolute_evaluate(&node);
+        self.consider_leaf(node.clone(), eval);
+        eval
         //}
     }
 }
@@ -196,7 +196,6 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
             prev_cache: &mut foo1,
             calls: &mut count,
             path: &mut vec![],
-            debug: false,
         }
         .alpha_beta(pp, ABAB::new(), team, depth, 0);
 
@@ -210,7 +209,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
             .get(&[moves::ActualMove::SkipTurn] as &[_])
             .cloned()
             .unwrap();
-        let res = EvalRetGeneric { mov, eval: res };
+        let res = EvalRet { mov, eval: res };
         // let res = ai::alpha_beta(
         //     game,
         //     team,
@@ -256,22 +255,12 @@ pub struct AlphaBeta<'a> {
     prev_cache: &'a mut MoveOrdering,
     calls: &'a mut Counter,
     path: &'a mut Vec<moves::ActualMove>,
-    debug: bool,
 }
 
-pub struct EvalRetGeneric<T> {
+pub struct EvalRet<T> {
     pub mov: T,
     pub eval: Eval,
 }
-impl<T> EvalRetGeneric<T> {
-    pub fn map<K>(self, func: impl FnOnce(T) -> K) -> EvalRetGeneric<K> {
-        EvalRetGeneric {
-            mov: func(self.mov),
-            eval: self.eval,
-        }
-    }
-}
-type EvalRet = EvalRetGeneric<PossibleMove>;
 
 impl<'a> AlphaBeta<'a> {
     // pub fn quiensense_search(
@@ -384,7 +373,7 @@ impl<'a> AlphaBeta<'a> {
                                                      //console_dbg!(ext,depth);
                 let eval = self.alpha_beta(cand, ab, team.not(), new_depth, ext + new_ext);
 
-                EvalRetGeneric {
+                EvalRet {
                     eval,
                     mov: (is_checky, cc),
                 }
@@ -430,8 +419,8 @@ mod abab {
         pub fn minner<T: Clone>(
             mut self,
             it: impl IntoIterator<Item = T>,
-            mut func: impl FnMut(T, Self) -> EvalRetGeneric<T>,
-        ) -> Option<EvalRetGeneric<T>> {
+            mut func: impl FnMut(T, Self) -> EvalRet<T>,
+        ) -> Option<EvalRet<T>> {
             let mut mm: Option<T> = None;
 
             let mut value = i64::MAX;
@@ -449,7 +438,7 @@ mod abab {
             }
 
             if let Some(mm) = mm {
-                Some(EvalRetGeneric {
+                Some(EvalRet {
                     mov: mm,
                     eval: value,
                 })
@@ -460,8 +449,8 @@ mod abab {
         pub fn maxxer<T: Clone>(
             mut self,
             it: impl IntoIterator<Item = T>,
-            mut func: impl FnMut(T, Self) -> EvalRetGeneric<T>,
-        ) -> Option<EvalRetGeneric<T>> {
+            mut func: impl FnMut(T, Self) -> EvalRet<T>,
+        ) -> Option<EvalRet<T>> {
             let mut mm: Option<T> = None;
 
             let mut value = i64::MIN;
@@ -479,7 +468,7 @@ mod abab {
             }
 
             if let Some(mm) = mm {
-                Some(EvalRetGeneric {
+                Some(EvalRet {
                     mov: mm,
                     eval: value,
                 })
