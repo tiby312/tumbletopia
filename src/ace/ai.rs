@@ -174,7 +174,7 @@ impl LeafTranspositionTable {
     }
 }
 
-pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
+pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::ActualMove {
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
     let mut table = LeafTranspositionTable::new();
@@ -234,7 +234,11 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
 
     let mov = results.pop().unwrap();
 
-    mov
+    let m = mov;
+
+    console_dbg!("AI MOVE::", m.mov.the_move, m.eval);
+
+    m.mov.the_move
 }
 
 #[derive(Debug)]
