@@ -11,6 +11,7 @@ const MATE: i64 = 1_000_000;
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
+    //TODO check for checks!!!
     //let view = view.absolute();
     let num_cats = view.cats.units.len();
     let num_dogs = view.dogs.units.len();
@@ -359,6 +360,8 @@ impl<'a> AlphaBeta<'a> {
                 let swap_ind = f.0;
                 moves.swap(0, swap_ind);
             }
+
+            //TODO do more move ordering!!!
 
             //let num_check_moves=moves.iter().filter(|x|x.0).count();
             //if num_check_moves>1{
