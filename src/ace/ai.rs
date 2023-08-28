@@ -122,8 +122,8 @@ impl MoveOrdering {
         self.a.get_mut(path)
     }
 
-    pub fn update(&mut self, path: &[moves::ActualMove], ret: &EvalRet) {
-        if let Some(aaa) = &ret.mov {
+    pub fn update(&mut self, path: &[moves::ActualMove], ret: &Option<PossibleMove>) {
+        if let Some(aaa) = &ret {
             if let Some(foo) = self.get_best_prev_move_mut(path) {
                 *foo = aaa.clone();
             } else {
@@ -200,11 +200,13 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
         }
         .alpha_beta(pp, ABAB::new(), team, depth, 0);
 
-        assert_eq!(
-            res.mov.as_ref(),
-            foo1.a.get(&[moves::ActualMove::SkipTurn] as &[_])
-        );
+        // assert_eq!(
+        //     res.mov.as_ref(),
 
+        // );
+
+        let mov = foo1.a.get(&[moves::ActualMove::SkipTurn] as &[_]).cloned();
+        let res = EvalRetGeneric { mov, eval: res };
         // let res = ai::alpha_beta(
         //     game,
         //     team,
@@ -308,7 +310,7 @@ impl<'a> AlphaBeta<'a> {
         team: ActiveTeam,
         depth: usize,
         ext: usize,
-    ) -> EvalRet {
+    ) -> Eval {
         let the_move = cand.the_move.clone();
         self.path.push(the_move.clone());
         let ret = if depth == 0 || game_is_over(cand.game_after_move.view(team)) {
@@ -354,10 +356,17 @@ impl<'a> AlphaBeta<'a> {
                 // }else{
                 //     0
                 // };
+
+                let cc = cand.clone();
                 let new_depth = new_ext + depth - 1; //.saturating_sub(inhibit);
                                                      //assert!(new_depth<6);
                                                      //console_dbg!(ext,depth);
-                self.alpha_beta(cand, ab, team.not(), new_depth, ext + new_ext)
+                let eval = self.alpha_beta(cand, ab, team.not(), new_depth, ext + new_ext);
+
+                EvalRetGeneric {
+                    eval,
+                    mov: Some((is_checky, cc)),
+                }
             };
             let ret = if team == ActiveTeam::Cats {
                 ab.maxxer(moves, foo)
@@ -367,13 +376,13 @@ impl<'a> AlphaBeta<'a> {
 
             let ret = ret.map(|x| x.1);
 
-            self.prev_cache.update(&self.path, &ret);
+            self.prev_cache.update(&self.path, &ret.mov);
 
             ret
         };
         let k = self.path.pop().unwrap();
         assert_eq!(k, the_move);
-        ret
+        ret.eval
     }
 }
 
@@ -396,7 +405,7 @@ mod abab {
         pub fn minner<T: Clone>(
             mut self,
             it: impl IntoIterator<Item = T>,
-            mut func: impl FnMut(T, Self) -> EvalRet,
+            mut func: impl FnMut(T, Self) -> EvalRetGeneric<T>,
         ) -> EvalRetGeneric<T> {
             let mut mm: Option<T> = None;
 
@@ -422,7 +431,7 @@ mod abab {
         pub fn maxxer<T: Clone>(
             mut self,
             it: impl IntoIterator<Item = T>,
-            mut func: impl FnMut(T, Self) -> EvalRet,
+            mut func: impl FnMut(T, Self) -> EvalRetGeneric<T>,
         ) -> EvalRetGeneric<T> {
             let mut mm: Option<T> = None;
 
