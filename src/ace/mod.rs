@@ -596,25 +596,40 @@ pub async fn main_logic<'a>(
 
             match m.the_move {
                 moves::ActualMove::NormalMove(o) => {
-                    let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
+                    let unit = game.this_team.find_slow(&o.unit).unwrap();
+
+                    let mesh = selection::generate_unit_possible_moves_inner(unit, &game, None);
+
                     let r = selection::RegularSelection::new(unit);
                     let r = r
-                        .execute(o.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
+                        .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
                     assert!(r.is_none());
                 }
                 moves::ActualMove::ExtraMove(o, e) => {
-                    let unit = game.this_team.find_slow_mut(&o.unit).unwrap();
-                    let r = selection::RegularSelection::new(unit);
+                    let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
+
+                    let mesh = selection::generate_unit_possible_moves_inner(&unit, &game, None);
+
+                    let r = selection::RegularSelection::new(&unit);
                     let r = r
-                        .execute(o.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
+                        .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
                     console_dbg!("WOOO");
-                    r.unwrap()
-                        .select()
-                        .execute(e.moveto, m.mesh, &mut game, &mut doop, &mut game_history)
+
+                    //let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
+
+                    // let mesh =
+                    //     selection::generate_unit_possible_moves_inner(&unit, &game, Some(e.unit));
+
+                    let rr = r.unwrap();
+
+                    let rr = rr.select();
+                    let mesh = rr.generate(&game);
+
+                    rr.execute(e.moveto, mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
                 }

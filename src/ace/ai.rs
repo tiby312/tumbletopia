@@ -537,7 +537,7 @@ fn is_check(state: &GameState) -> bool {
 fn for_all_capture_and_jump_moves(
     state: GameState,
     team: ActiveTeam,
-) -> impl Iterator<Item = PossibleMoveWithMesh> {
+) -> impl Iterator<Item = PossibleMove> {
     let n = state.clone();
     //let in_check = { in_check(n.clone(), team) || in_check(n.clone(), team.not()) };
     let enemy_king_pos = if let Some(enemy_king_pos) = state
@@ -576,29 +576,26 @@ fn for_all_capture_and_jump_moves(
     })
 }
 
-pub struct PossibleMoveWithMesh {
-    pub the_move: moves::ActualMove,
-    //pub mesh: MovementMesh,
-    pub game_after_move: GameState,
-    pub mesh: MovementMesh,
-}
-impl PossibleMoveWithMesh {
-    pub fn into(self) -> PossibleMove {
-        PossibleMove {
-            the_move: self.the_move,
-            game_after_move: self.game_after_move,
-        }
-    }
-}
+// pub struct PossibleMoveWithMesh {
+//     pub the_move: moves::ActualMove,
+//     //pub mesh: MovementMesh,
+//     pub game_after_move: GameState,
+//     pub mesh: MovementMesh,
+// }
+// impl PossibleMoveWithMesh {
+//     pub fn into(self) -> PossibleMove {
+//         PossibleMove {
+//             the_move: self.the_move,
+//             game_after_move: self.game_after_move,
+//         }
+//     }
+// }
 
-pub fn for_all_moves(
-    state: GameState,
-    team: ActiveTeam,
-) -> impl Iterator<Item = PossibleMoveWithMesh> {
-    let foo = PossibleMoveWithMesh {
+pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
+    let foo = PossibleMove {
         the_move: moves::ActualMove::SkipTurn,
         game_after_move: state.clone(),
-        mesh: MovementMesh::new(),
+        //mesh: MovementMesh::new(),
     };
 
     let mut sss = state.clone();
@@ -634,9 +631,9 @@ pub fn for_all_moves(
                     cll.execute_no_animation(m, mesh2, &mut vfv, &mut mm2)
                         .unwrap();
 
-                    PossibleMoveWithMesh {
+                    PossibleMove {
                         game_after_move: klkl,
-                        mesh: mesh2,
+                        //mesh: mesh2,
                         the_move: mm2.inner[0].clone(),
                     }
                 }))
@@ -645,9 +642,9 @@ pub fn for_all_moves(
             };
 
             let second = if first.is_none() {
-                Some([PossibleMoveWithMesh {
+                Some([PossibleMove {
                     game_after_move: v,
-                    mesh,
+                    //mesh,
                     the_move: mm.inner[0].clone(),
                 }])
             } else {

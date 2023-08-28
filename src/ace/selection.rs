@@ -279,7 +279,7 @@ impl MoveLog {
     // pub fn add_movement(&mut self, a: moves::MovementSigl) {}
 }
 
-fn generate_unit_possible_moves_inner(
+pub fn generate_unit_possible_moves_inner(
     unit: &UnitData,
     game: &GameViewMut,
     extra_attack_prev_coord: Option<GridCoord>,
