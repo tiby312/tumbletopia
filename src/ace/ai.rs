@@ -236,7 +236,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
 
     // console_dbg!(table.saves);
     // console_dbg!(table.a.len());
-    // console_dbg!(count);
+    console_dbg!(count);
     results.dedup_by_key(|x| x.eval);
 
     let mov = results.pop().unwrap();
@@ -330,25 +330,35 @@ impl<'a> AlphaBeta<'a> {
 
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
-            let pvariation = pvariation.map(|x| {
-                execute_move_no_ani(&mut gg, team, x.clone());
-                PossibleMove {
-                    the_move: x,
-                    game_after_move: gg,
-                }
-            });
+            // let pvariation = pvariation.map(|x| {
+            //     execute_move_no_ani(&mut gg, team, x.clone());
+            //     PossibleMove {
+            //         the_move: x,
+            //         game_after_move: gg,
+            //     }
+            // });
 
-            let it = reorder_front(
-                pvariation,
-                for_all_moves(node.clone(), team),
-            );
+            // let it = reorder_front(
+            //     pvariation,
+            //     ,
+            // );
 
-            let moves: Vec<_> = it
+            let mut moves: Vec<_> = for_all_moves(node.clone(), team)
                 .map(|x| {
                     let c = is_check(&x.game_after_move);
                     (c, x)
                 })
                 .collect();
+
+            if let Some(p) = pvariation {
+                let f = moves
+                    .iter()
+                    .enumerate()
+                    .find(|(_, (_, x))| x.the_move == p)
+                    .unwrap();
+                let swap_ind = f.0;
+                moves.swap(0, swap_ind);
+            }
 
             //let num_check_moves=moves.iter().filter(|x|x.0).count();
             //if num_check_moves>1{
