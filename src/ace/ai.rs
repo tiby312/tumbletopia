@@ -7,6 +7,7 @@ use super::{
 
 pub type Eval = i64; //(f64);
 
+const MATE: i64 = 1_000_000;
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
@@ -21,7 +22,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .iter()
         .find(|a| a.typ == Type::Para)
     else {
-        return -1_000_000;
+        return -MATE;
     };
 
     let Some(dog_king)=view
@@ -31,7 +32,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .find(|a| a.typ == Type::Para)
     else
     {
-        return 1_000_000;
+        return MATE;
     };
 
     //how close cats are to dog king.
@@ -210,6 +211,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
             .cloned()
             .unwrap();
         let res = EvalRet { mov, eval: res };
+
         // let res = ai::alpha_beta(
         //     game,
         //     team,
@@ -223,7 +225,13 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         //     &mut vec![],
         // );
 
+        let eval = res.eval;
         results.push(res);
+
+        if eval.abs() == MATE {
+            console_dbg!("found a mate");
+            break;
+        }
     }
 
     // console_dbg!(table.saves);
