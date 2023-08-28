@@ -340,7 +340,7 @@ impl<'a> AlphaBeta<'a> {
 
             let it = reorder_front(
                 pvariation,
-                for_all_moves(node.clone(), team).map(|x| x.into()),
+                for_all_moves(node.clone(), team),
             );
 
             let moves: Vec<_> = it
