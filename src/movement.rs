@@ -630,12 +630,12 @@ pub fn compute_moves2<F: Filter, F2: Filter>(
 
     for (a, rest) in self::movement_mesh::explore_outward_two() {
         if handle(&mut m, coord, coord, a, filter, skip_filter, slide_rule) {
-            if !restricted_movement {
-                let first = coord.advance(a);
-                for a in rest {
-                    let _ = handle(&mut m, coord, first, a, filter, skip_filter, slide_rule);
-                }
-            }
+            // if !restricted_movement {
+            //     let first = coord.advance(a);
+            //     for a in rest {
+            //         let _ = handle(&mut m, coord, first, a, filter, skip_filter, slide_rule);
+            //     }
+            // }
         }
     }
 

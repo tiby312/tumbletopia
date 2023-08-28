@@ -186,7 +186,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
     };
 
     //TODO stop searching if we found a game ending move.
-    for depth in 1..4 {
+    for depth in 1..6 {
         console_dbg!("searching", depth);
         let pp = PossibleMove {
             the_move: moves::ActualMove::SkipTurn,
@@ -347,13 +347,13 @@ impl<'a> AlphaBeta<'a> {
             let mut moves: Vec<_> = for_all_moves(node.clone(), team)
                 .map(|x| {
                     //let c = is_check(&x.game_after_move);
-                    let c=false;
+                    let c = false;
                     (c, x)
                 })
                 .collect();
 
+            console_dbg!(moves.len());
             if let Some(p) = pvariation {
-                
                 let f = moves
                     .iter()
                     .enumerate()
@@ -361,7 +361,6 @@ impl<'a> AlphaBeta<'a> {
                     .unwrap();
                 let swap_ind = f.0;
                 moves.swap(0, swap_ind);
-                
             }
 
             //TODO do more move ordering!!!
