@@ -200,6 +200,11 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
         }
         .alpha_beta(pp, ABAB::new(), team, depth, 0);
 
+        assert_eq!(
+            res.mov.as_ref(),
+            foo1.a.get(&[moves::ActualMove::SkipTurn] as &[_])
+        );
+
         // let res = ai::alpha_beta(
         //     game,
         //     team,
