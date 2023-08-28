@@ -585,8 +585,13 @@ pub async fn main_logic<'a>(
             let j = ai::iterative_deepening(game, team_index);
 
             let m = j.mov;
+
             //let mesh = j.1;
             console_dbg!("AI MOVE::", m.the_move, j.eval);
+            let m = ai::for_all_moves(game.clone(), team_index)
+                .find(|x| x.the_move == m.the_move)
+                .unwrap();
+
             let mut game = game.view_mut(team_index);
 
             match m.the_move {

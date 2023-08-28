@@ -188,7 +188,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
         console_dbg!("searching", depth);
         let pp = PossibleMove {
             the_move: moves::ActualMove::SkipTurn,
-            mesh: MovementMesh::new(),
+            //mesh: MovementMesh::new(),
             game_after_move: game.clone(),
         };
         let res = ai::AlphaBeta {
@@ -327,7 +327,10 @@ impl<'a> AlphaBeta<'a> {
 
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
-            let it = reorder_front(pvariation, for_all_moves(node.clone(), team));
+            let it = reorder_front(
+                pvariation,
+                for_all_moves(node.clone(), team).map(|x| x.into()),
+            );
 
             let moves: Vec<_> = it
                 .map(|x| {
@@ -501,7 +504,7 @@ fn reorder_front(
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PossibleMove {
     pub the_move: moves::ActualMove,
-    pub mesh: MovementMesh,
+    //pub mesh: MovementMesh,
     pub game_after_move: GameState,
 }
 
@@ -534,7 +537,7 @@ fn is_check(state: &GameState) -> bool {
 fn for_all_capture_and_jump_moves(
     state: GameState,
     team: ActiveTeam,
-) -> impl Iterator<Item = PossibleMove> {
+) -> impl Iterator<Item = PossibleMoveWithMesh> {
     let n = state.clone();
     //let in_check = { in_check(n.clone(), team) || in_check(n.clone(), team.not()) };
     let enemy_king_pos = if let Some(enemy_king_pos) = state
@@ -573,8 +576,26 @@ fn for_all_capture_and_jump_moves(
     })
 }
 
-fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
-    let foo = PossibleMove {
+pub struct PossibleMoveWithMesh {
+    pub the_move: moves::ActualMove,
+    //pub mesh: MovementMesh,
+    pub game_after_move: GameState,
+    pub mesh: MovementMesh,
+}
+impl PossibleMoveWithMesh {
+    pub fn into(self) -> PossibleMove {
+        PossibleMove {
+            the_move: self.the_move,
+            game_after_move: self.game_after_move,
+        }
+    }
+}
+
+pub fn for_all_moves(
+    state: GameState,
+    team: ActiveTeam,
+) -> impl Iterator<Item = PossibleMoveWithMesh> {
+    let foo = PossibleMoveWithMesh {
         the_move: moves::ActualMove::SkipTurn,
         game_after_move: state.clone(),
         mesh: MovementMesh::new(),
@@ -613,7 +634,7 @@ fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = Pos
                     cll.execute_no_animation(m, mesh2, &mut vfv, &mut mm2)
                         .unwrap();
 
-                    PossibleMove {
+                    PossibleMoveWithMesh {
                         game_after_move: klkl,
                         mesh: mesh2,
                         the_move: mm2.inner[0].clone(),
@@ -624,7 +645,7 @@ fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = Pos
             };
 
             let second = if first.is_none() {
-                Some([PossibleMove {
+                Some([PossibleMoveWithMesh {
                     game_after_move: v,
                     mesh,
                     the_move: mm.inner[0].clone(),
