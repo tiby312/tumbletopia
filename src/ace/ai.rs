@@ -109,20 +109,20 @@ pub fn game_is_over(view: GameView<'_>) -> bool {
 //TODO use bump allocator!!!!!
 //TODO just store best move? not gamestate?
 pub struct MoveOrdering {
-    a: std::collections::HashMap<Vec<moves::ActualMove>, PossibleMove>,
+    a: std::collections::HashMap<Vec<moves::ActualMove>, moves::ActualMove>,
 }
 impl MoveOrdering {
-    pub fn get_best_prev_move(&self, path: &[moves::ActualMove]) -> Option<&PossibleMove> {
+    pub fn get_best_prev_move(&self, path: &[moves::ActualMove]) -> Option<&moves::ActualMove> {
         self.a.get(path)
     }
     pub fn get_best_prev_move_mut(
         &mut self,
         path: &[moves::ActualMove],
-    ) -> Option<&mut PossibleMove> {
+    ) -> Option<&mut moves::ActualMove> {
         self.a.get_mut(path)
     }
 
-    pub fn update(&mut self, path: &[moves::ActualMove], aaa: &PossibleMove) {
+    pub fn update(&mut self, path: &[moves::ActualMove], aaa: &moves::ActualMove) {
         //if let Some(aaa) = &ret {
         if let Some(foo) = self.get_best_prev_move_mut(path) {
             *foo = aaa.clone();
@@ -131,7 +131,7 @@ impl MoveOrdering {
         }
         //}
     }
-    pub fn insert(&mut self, path: &[moves::ActualMove], m: PossibleMove) {
+    pub fn insert(&mut self, path: &[moves::ActualMove], m: moves::ActualMove) {
         self.a.insert(path.iter().cloned().collect(), m);
     }
 }
@@ -236,9 +236,9 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
 
     let m = mov;
 
-    console_dbg!("AI MOVE::", m.mov.the_move, m.eval);
+    console_dbg!("AI MOVE::", m.mov, m.eval);
 
-    m.mov.the_move
+    m.mov
 }
 
 #[derive(Debug)]
@@ -320,6 +320,8 @@ impl<'a> AlphaBeta<'a> {
         ext: usize,
     ) -> Eval {
         let the_move = cand.the_move.clone();
+        let mut gg = cand.game_after_move.clone();
+
         self.path.push(the_move.clone());
         let ret = if depth == 0 || game_is_over(cand.game_after_move.view(team)) {
             self.calls.add_eval();
@@ -330,6 +332,14 @@ impl<'a> AlphaBeta<'a> {
             let node = cand.game_after_move;
 
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
+
+            let pvariation = pvariation.map(|x| {
+                execute_move_no_ani(&mut gg, team, x.clone());
+                PossibleMove {
+                    the_move: x,
+                    game_after_move: gg,
+                }
+            });
 
             let it = reorder_front(
                 pvariation,
@@ -381,14 +391,14 @@ impl<'a> AlphaBeta<'a> {
             };
             if team == ActiveTeam::Cats {
                 if let Some(ret) = ab.maxxer(moves, foo) {
-                    self.prev_cache.update(&self.path, &ret.mov.1);
+                    self.prev_cache.update(&self.path, &ret.mov.1.the_move);
                     ret.eval
                 } else {
                     Eval::MIN
                 }
             } else {
                 if let Some(ret) = ab.minner(moves, foo) {
-                    self.prev_cache.update(&self.path, &ret.mov.1);
+                    self.prev_cache.update(&self.path, &ret.mov.1.the_move);
                     ret.eval
                 } else {
                     Eval::MAX
@@ -594,6 +604,55 @@ fn for_all_capture_and_jump_moves(
 //         }
 //     }
 // }
+
+pub fn execute_move_no_ani(
+    state: &mut GameState,
+    team_index: ActiveTeam,
+    the_move: moves::ActualMove,
+) {
+    let mut game = state.view_mut(team_index);
+    let mut game_history = MoveLog::new();
+
+    match the_move {
+        moves::ActualMove::NormalMove(o) => {
+            let unit = game.this_team.find_slow(&o.unit).unwrap();
+
+            let mesh = selection::generate_unit_possible_moves_inner(unit, &game, None);
+
+            let r = selection::RegularSelection::new(unit);
+            let r = r
+                .execute_no_animation(o.moveto, mesh, &mut game, &mut game_history)
+                .unwrap();
+            assert!(r.is_none());
+        }
+        moves::ActualMove::ExtraMove(o, e) => {
+            let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
+
+            let mesh = selection::generate_unit_possible_moves_inner(&unit, &game, None);
+
+            let r = selection::RegularSelection::new(&unit);
+            let r = r
+                .execute_no_animation(o.moveto, mesh, &mut game, &mut game_history)
+                .unwrap();
+            console_dbg!("WOOO");
+
+            //let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
+
+            // let mesh =
+            //     selection::generate_unit_possible_moves_inner(&unit, &game, Some(e.unit));
+
+            let rr = r.unwrap();
+
+            let rr = rr.select();
+            let mesh = rr.generate(&game);
+
+            rr.execute_no_animation(e.moveto, mesh, &mut game, &mut game_history)
+                .unwrap();
+        }
+        moves::ActualMove::SkipTurn => {}
+        moves::ActualMove::GameEnd(_) => todo!(),
+    }
+}
 
 pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
     let foo = PossibleMove {
