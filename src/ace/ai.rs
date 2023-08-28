@@ -352,7 +352,9 @@ impl<'a> AlphaBeta<'a> {
                 })
                 .collect();
 
-            console_dbg!(moves.len());
+            //console_dbg!(moves.len());
+
+            let mut num_sorted = 0;
             if let Some(p) = pvariation {
                 let f = moves
                     .iter()
@@ -361,6 +363,31 @@ impl<'a> AlphaBeta<'a> {
                     .unwrap();
                 let swap_ind = f.0;
                 moves.swap(0, swap_ind);
+                num_sorted += 1;
+            }
+
+            for a in num_sorted..moves.len() {
+                //moves[a].1.game_after_move
+
+                let interesting_move = {
+                    let a = &moves[a].1;
+
+                    let jump_move = if let moves::ActualMove::ExtraMove(_, _) = a.the_move {
+                        true
+                    } else {
+                        false
+                    };
+                    let b = &a.game_after_move;
+
+                    jump_move
+                        || b.dogs.units.len() < gg.dogs.units.len()
+                        || b.cats.units.len() < gg.cats.units.len()
+                };
+
+                if interesting_move {
+                    moves.swap(a, num_sorted);
+                    num_sorted += 1;
+                }
             }
 
             //TODO do more move ordering!!!
