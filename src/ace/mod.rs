@@ -579,12 +579,12 @@ pub async fn main_logic<'a>(
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Dogs {
-            //{
+        //if team_index == ActiveTeam::Dogs {
+        {
             //if false {
             let j = ai::iterative_deepening(game, team_index);
 
-            let m = j.mov.unwrap();
+            let m = j.mov;
             //let mesh = j.1;
             console_dbg!("AI MOVE::", m.the_move, j.eval);
             let mut game = game.view_mut(team_index);
