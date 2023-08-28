@@ -185,6 +185,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
 
     //TODO stop searching if we found a game ending move.
     for depth in 0..4 {
+        console_dbg!("searching", depth);
         let pp = PossibleMove {
             the_move: moves::ActualMove::SkipTurn,
             mesh: MovementMesh::new(),
@@ -215,12 +216,14 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> EvalRet {
         results.push(res);
     }
 
-    console_dbg!(table.saves);
-    console_dbg!(table.a.len());
-    console_dbg!(count);
+    // console_dbg!(table.saves);
+    // console_dbg!(table.a.len());
+    // console_dbg!(count);
     results.dedup_by_key(|x| x.eval);
 
-    results.pop().unwrap()
+    let mov = results.pop().unwrap();
+
+    mov
 }
 
 #[derive(Debug)]
@@ -245,45 +248,53 @@ pub struct EvalRetGeneric<T> {
     pub mov: Option<T>,
     pub eval: Eval,
 }
+impl<T> EvalRetGeneric<T> {
+    pub fn map<K>(self, func: impl FnOnce(T) -> K) -> EvalRetGeneric<K> {
+        EvalRetGeneric {
+            mov: self.mov.map(func),
+            eval: self.eval,
+        }
+    }
+}
 type EvalRet = EvalRetGeneric<PossibleMove>;
 
 impl<'a> AlphaBeta<'a> {
-    pub fn quiensense_search(
-        &mut self,
-        cand: PossibleMove,
-        ab: ABAB,
-        team: ActiveTeam,
-        depth: usize,
-    ) -> EvalRet {
-        let the_move = cand.the_move;
-        let node = cand.game_after_move;
-        self.path.push(the_move.clone());
-        let all_moves: Vec<_> = for_all_capture_and_jump_moves(node.clone(), team).collect();
-        //console_dbg!(all_moves.len());
-        let ret = if depth == 0 || game_is_over(node.view(team)) || all_moves.is_empty() {
-            //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
-            //TODO do Quiescence Search
-            self.calls.add_eval();
-            self.table.lookup_leaf_all(&node)
-        } else {
-            //let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
+    // pub fn quiensense_search(
+    //     &mut self,
+    //     cand: PossibleMove,
+    //     ab: ABAB,
+    //     team: ActiveTeam,
+    //     depth: usize,
+    // ) -> EvalRet {
+    //     let the_move = cand.the_move;
+    //     let node = cand.game_after_move;
+    //     self.path.push(the_move.clone());
+    //     let all_moves: Vec<_> = for_all_capture_and_jump_moves(node.clone(), team).collect();
+    //     //console_dbg!(all_moves.len());
+    //     let ret = if depth == 0 || game_is_over(node.view(team)) || all_moves.is_empty() {
+    //         //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
+    //         //TODO do Quiescence Search
+    //         self.calls.add_eval();
+    //         self.table.lookup_leaf_all(&node)
+    //     } else {
+    //         //let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
-            let it = all_moves.into_iter();
-            let foo = |cand, ab| self.quiensense_search(cand, ab, team.not(), depth - 1);
-            let ret = if team == ActiveTeam::Cats {
-                ab.maxxer(it, foo)
-            } else {
-                ab.minner(it, foo)
-            };
+    //         let it = all_moves.into_iter();
+    //         let foo = |cand, ab| self.quiensense_search(cand, ab, team.not(), depth - 1);
+    //         let ret = if team == ActiveTeam::Cats {
+    //             ab.maxxer(it, foo)
+    //         } else {
+    //             ab.minner(it, foo)
+    //         };
 
-            //self.prev_cache.update(&self.path, &ret);
+    //         //self.prev_cache.update(&self.path, &ret);
 
-            ret
-        };
-        let k = self.path.pop().unwrap();
-        assert_eq!(k, the_move);
-        ret
-    }
+    //         ret
+    //     };
+    //     let k = self.path.pop().unwrap();
+    //     assert_eq!(k, the_move);
+    //     ret
+    // }
 
     pub fn alpha_beta(
         &mut self,
@@ -306,20 +317,50 @@ impl<'a> AlphaBeta<'a> {
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
             let it = reorder_front(pvariation, for_all_moves(node.clone(), team));
-            let foo = |cand: PossibleMove, ab| {
-                let new_ext = if depth <= 2 && ext < 3 && is_check(&cand.game_after_move) {
-                    1
+
+            let moves: Vec<_> = it
+                .map(|x| {
+                    let c = is_check(&x.game_after_move);
+                    (c, x)
+                })
+                .collect();
+
+            //let num_check_moves=moves.iter().filter(|x|x.0).count();
+            //if num_check_moves>1{
+            if depth == 2 {
+                //console_dbg!(depth,num_check_moves,moves.len());
+            }
+            //}
+
+            let foo = |(is_checky, cand): (bool, PossibleMove), ab| {
+                let new_ext = if depth <= 2 && ext < 2 && is_checky {
+                    //1
+                    0
                 } else {
                     0
                 };
-                //console_dbg!(ext,depth);
-                self.alpha_beta(cand, ab, team.not(), new_ext + depth - 1, ext + new_ext)
+
+                // let inhibit=if num_check_moves>0{
+                //     if is_checky{
+                //         0
+                //     }else{
+                //         4
+                //     }
+                // }else{
+                //     0
+                // };
+                let new_depth = new_ext + depth - 1; //.saturating_sub(inhibit);
+                                                     //assert!(new_depth<6);
+                                                     //console_dbg!(ext,depth);
+                self.alpha_beta(cand, ab, team.not(), new_depth, ext + new_ext)
             };
             let ret = if team == ActiveTeam::Cats {
-                ab.maxxer(it, foo)
+                ab.maxxer(moves, foo)
             } else {
-                ab.minner(it, foo)
+                ab.minner(moves, foo)
             };
+
+            let ret = ret.map(|x| x.1);
 
             self.prev_cache.update(&self.path, &ret);
 
@@ -349,7 +390,7 @@ mod abab {
 
         pub fn minner<T: Clone>(
             mut self,
-            it: impl Iterator<Item = T>,
+            it: impl IntoIterator<Item = T>,
             mut func: impl FnMut(T, Self) -> EvalRet,
         ) -> EvalRetGeneric<T> {
             let mut mm: Option<T> = None;
@@ -375,7 +416,7 @@ mod abab {
         }
         pub fn maxxer<T: Clone>(
             mut self,
-            it: impl Iterator<Item = T>,
+            it: impl IntoIterator<Item = T>,
             mut func: impl FnMut(T, Self) -> EvalRet,
         ) -> EvalRetGeneric<T> {
             let mut mm: Option<T> = None;
@@ -426,7 +467,7 @@ fn reorder_front(
     v.into_iter()
 }
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PossibleMove {
     pub the_move: moves::ActualMove,
     pub mesh: MovementMesh,
