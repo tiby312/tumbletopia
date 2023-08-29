@@ -185,7 +185,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         a: std::collections::HashMap::new(),
     };
 
-    let max_depth = 7;
+    let max_depth = 6;
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
@@ -433,15 +433,6 @@ impl<'a> AlphaBeta<'a> {
                     num_sorted += 1;
                 }
             }
-
-            //TODO do more move ordering!!!
-
-            //let num_check_moves=moves.iter().filter(|x|x.0).count();
-            //if num_check_moves>1{
-            if depth == 2 {
-                //console_dbg!(depth,num_check_moves,moves.len());
-            }
-            //}
 
             let foo = |ssself: &mut AlphaBeta, (is_checky, cand): (bool, PossibleMove), ab| {
                 let new_ext = if depth <= 2 && ext < 2 && is_checky {
