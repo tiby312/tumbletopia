@@ -41,7 +41,10 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .cats
         .units
         .iter()
-        .map(|x| x.position.to_cube().dist(&dog_king.position.to_cube()))
+        .map(|x| {
+            let x = x.position.to_cube().dist(&dog_king.position.to_cube());
+            x * x
+        })
         .fold(0, |acc, f| acc + f) as i64;
 
     //how close dogs are to cat king.
@@ -49,7 +52,10 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .dogs
         .units
         .iter()
-        .map(|x| x.position.to_cube().dist(&cat_king.position.to_cube()))
+        .map(|x| {
+            let x = x.position.to_cube().dist(&cat_king.position.to_cube());
+            x * x
+        })
         .fold(0, |acc, f| acc + f) as i64;
 
     let val = diff * 100 - cat_distance_to_dog_king + dog_distance_to_cat_king;
@@ -199,15 +205,17 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
             //mesh: MovementMesh::new(),
             game_after_move: game.clone(),
         };
-        let res = ai::AlphaBeta {
+        let mut aaaa = ai::AlphaBeta {
             table: &mut table,
             prev_cache: &mut foo1,
             calls: &mut count,
             path: &mut vec![],
             killer_moves: &mut k,
-        }
-        .alpha_beta(pp, ABAB::new(), team, depth, 0);
+            max_ext: 0,
+        };
+        let res = aaaa.alpha_beta(pp, ABAB::new(), team, depth, 0);
 
+        console_dbg!(aaaa.max_ext);
         // assert_eq!(
         //     res.mov.as_ref(),
 
@@ -272,6 +280,7 @@ pub struct AlphaBeta<'a> {
     calls: &'a mut Counter,
     path: &'a mut Vec<moves::ActualMove>,
     killer_moves: &'a mut KillerMoves,
+    max_ext: usize,
 }
 
 pub struct KillerMoves {
@@ -352,6 +361,7 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
         ext: usize,
     ) -> Eval {
+        self.max_ext = self.max_ext.max(ext);
         let the_move = cand.the_move.clone();
         let mut gg = cand.game_after_move.clone();
 
@@ -379,17 +389,29 @@ impl<'a> AlphaBeta<'a> {
             //     ,
             // );
 
+            // let enemy_king_pos=if let Some(enemy_king)=cand.game_after_move.view(team).that_team.units.iter().find(|x|x.typ==Type::Para){
+            //     let pos=enemy_king.position;
+            //     Some(pos)
+            // }else{
+            //     None
+            // };
+
             let mut moves: Vec<_> = for_all_moves(node.clone(), team)
-                .map(|x| {
+                .map(|mut x| {
                     //let c = is_check(&x.game_after_move);
-                    let c = false;
-                    (c, x)
+                    //let c1 = this_team_in_check(&mut x.game_after_move, team);
+                    //let c2 = this_team_in_check(&mut x.game_after_move, team.not());
+
+                    //let c = false;
+                    (false, x)
                 })
                 .collect();
 
-            if is_check(&moves[0].1.game_after_move) {
-                moves[0].0 = true;
-            }
+            let num_checky = moves.iter().filter(|x| x.0).count();
+            //console_dbg!(num_checky);
+            // if is_check(&moves[0].1.game_after_move) {
+            //     moves[0].0 = true;
+            // }
 
             //console_dbg!(moves.len());
 
@@ -441,20 +463,21 @@ impl<'a> AlphaBeta<'a> {
             }
 
             let foo = |ssself: &mut AlphaBeta, (is_checky, cand): (bool, PossibleMove), ab| {
-                let new_ext = if depth <= 2 && ext < 2 && is_checky {
+                let new_ext = if ext < 2 && is_checky {
                     //1
-                    1
+                    //1
+                    0
                 } else {
                     0
                 };
 
-                // let inhibit=if num_check_moves>0{
-                //     if is_checky{
+                // let inhibit = if num_checky > 0 {
+                //     if is_checky {
                 //         0
-                //     }else{
-                //         4
+                //     } else {
+                //         3
                 //     }
-                // }else{
+                // } else {
                 //     0
                 // };
 
@@ -611,73 +634,116 @@ pub struct PossibleMove {
     pub game_after_move: GameState,
 }
 
-fn is_check(state: &GameState) -> bool {
-    let a = for_all_moves(state.clone(), ActiveTeam::Cats)
-        .find(move |a| {
-            a.game_after_move
-                .dogs
-                .units
-                .iter()
-                .find(|x| x.typ == Type::Para)
-                .is_none()
-        })
-        .is_some();
+//TODO pass readonly
+fn this_team_in_check(state: &mut GameState, team: ActiveTeam) -> bool {
+    let mut gg = state.clone();
 
-    let b = for_all_moves(state.clone(), ActiveTeam::Dogs)
-        .find(move |a| {
-            a.game_after_move
-                .cats
-                .units
-                .iter()
-                .find(|x| x.typ == Type::Para)
-                .is_none()
-        })
-        .is_some();
-
-    a || b
-}
-
-fn for_all_capture_and_jump_moves(
-    state: GameState,
-    team: ActiveTeam,
-) -> impl Iterator<Item = PossibleMove> {
-    let n = state.clone();
-    //let in_check = { in_check(n.clone(), team) || in_check(n.clone(), team.not()) };
-    let enemy_king_pos = if let Some(enemy_king_pos) = state
-        .view(team.not())
-        .this_team
-        .units
-        .iter()
-        .find(|a| a.typ == Type::Para)
-    {
-        Some(enemy_king_pos.position)
+    //TODO additionally check for jump checks.
+    let game = state.view_mut(team);
+    let king = if let Some(king) = game.this_team.units.iter().find(|a| a.typ == Type::Para) {
+        king.clone()
     } else {
-        None
+        return false;
     };
 
-    for_all_moves(state, team).filter(move |a| {
-        // let check = if let Some(enemy_king_pos) = enemy_king_pos {
-        //     match &a.the_move {
-        //         moves::ActualMove::NormalMove(o) => o.moveto == enemy_king_pos,
-        //         moves::ActualMove::ExtraMove(_, o) => o.moveto == enemy_king_pos,
-        //         _ => false,
-        //     }
-        // } else {
-        //     false
-        // };
+    //let mut ee = king.clone();
+    //ee.typ = Type::Warrior;
+    //let _ = gg.view_mut(team).this_team.find_take(&ee.position);
+    //let mesh = selection::generate_unit_possible_moves_inner(&ee, &gg.view_mut(team), None);
+    let mesh = movement::compute_moves2(
+        king.position,
+        &game
+            .world
+            .filter()
+            // .and(
+            //     game.that_team
+            //         .filter_type(Type::Warrior)
+            //         .and(game.that_team.filter())
+            //         .not(),
+            // )
+            .and(game.this_team.filter().not()),
+        &game.this_team.filter().or(movement::AcceptCoords::new(
+            board::water_border().map(|x| x.to_axial()),
+        )),
+        false,
+        true,
+    );
 
-        let jump_move = if let moves::ActualMove::ExtraMove(_, _) = a.the_move {
-            true
-        } else {
-            false
-        };
-        let b = &a.game_after_move;
+    for a in mesh.iter_mesh(king.position) {
+        //for a in king.position.to_cube().range(2){
+        //let a=a.to_axial();
+        if let Some(unit) = game.that_team.find_slow(&a) {
+            let dis = a.to_cube().dist(&king.position.to_cube());
+            //console_dbg!(dis);
+            if dis == 1 {
+                return true;
+            }
+            let restricted_movement = if let Some(_) = unit
+                .position
+                .to_cube()
+                .ring(1)
+                .map(|s| game.that_team.find_slow(&s.to_axial()).is_some())
+                .find(|a| *a)
+            {
+                true
+            } else {
+                match unit.typ {
+                    Type::Warrior => false,
+                    Type::Para => true,
+                    _ => todo!(),
+                }
+            };
 
-        jump_move
-            || b.dogs.units.len() < n.dogs.units.len()
-            || b.cats.units.len() < n.cats.units.len()
-    })
+            if !restricted_movement {
+                return true;
+            }
+        }
+    }
+
+    false
 }
+
+// fn for_all_capture_and_jump_moves(
+//     state: GameState,
+//     team: ActiveTeam,
+// ) -> impl Iterator<Item = PossibleMove> {
+//     let n = state.clone();
+//     //let in_check = { in_check(n.clone(), team) || in_check(n.clone(), team.not()) };
+//     let enemy_king_pos = if let Some(enemy_king_pos) = state
+//         .view(team.not())
+//         .this_team
+//         .units
+//         .iter()
+//         .find(|a| a.typ == Type::Para)
+//     {
+//         Some(enemy_king_pos.position)
+//     } else {
+//         None
+//     };
+
+//     for_all_moves(state, team).filter(move |a| {
+//         // let check = if let Some(enemy_king_pos) = enemy_king_pos {
+//         //     match &a.the_move {
+//         //         moves::ActualMove::NormalMove(o) => o.moveto == enemy_king_pos,
+//         //         moves::ActualMove::ExtraMove(_, o) => o.moveto == enemy_king_pos,
+//         //         _ => false,
+//         //     }
+//         // } else {
+//         //     false
+//         // };
+
+//         let jump_move = if let moves::ActualMove::ExtraMove(_, _) = a.the_move {
+//             true
+//         } else {
+//             false
+//         };
+//         let b = &a.game_after_move;
+
+//         jump_move
+//             || b.dogs.units.len() < n.dogs.units.len()
+//             || b.cats.units.len() < n.cats.units.len()
+//     })
+// }
 
 // pub struct PossibleMoveWithMesh {
 //     pub the_move: moves::ActualMove,
