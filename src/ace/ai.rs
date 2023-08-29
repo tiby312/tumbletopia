@@ -36,6 +36,8 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         return MATE;
     };
 
+    //TODO check if warriors are restricted
+    
     //how close cats are to dog king.
     let cat_distance_to_dog_king = view
         .cats
