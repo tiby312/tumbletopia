@@ -190,6 +190,8 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
         console_dbg!("searching", depth);
+
+        //TODO should this be outside the loop?
         let mut k = KillerMoves::new(max_depth);
 
         let pp = PossibleMove {
