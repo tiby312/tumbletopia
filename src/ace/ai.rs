@@ -88,10 +88,9 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         })
         .fold(0, |acc, f| acc + f) as i64;
 
-    let val = diff * 1000 - cat_distance_to_dog_king
-        + cat_distance_to_cat_king
+    let val = diff * 1000 - cat_distance_to_dog_king - cat_distance_to_cat_king
         + dog_distance_to_cat_king
-        - dog_distance_to_dog_king;
+        + dog_distance_to_dog_king;
     //assert!(!val.is_nan());
     val
 }
