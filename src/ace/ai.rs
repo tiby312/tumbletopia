@@ -493,6 +493,15 @@ impl<'a> AlphaBeta<'a> {
                 }
             };
 
+            // let num=if depth>3{
+            //     moves.len()
+            // }else{
+            //     moves.len()
+            //     //num_sorted*2
+            // };
+            // let num=20.min(num_sorted*2);
+            // let moves=moves.into_iter().take(num);
+
             if team == ActiveTeam::Cats {
                 if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
                     ss.killer_moves.consider(depth, m.1.the_move);
