@@ -549,7 +549,7 @@ pub async fn main_logic<'a>(
     };
 
     //Loop over each team!
-    'game_loop: for team_index in ActiveTeam::Cats.iter() {
+    'game_loop: for team_index in ActiveTeam::Dogs.iter() {
         //check if we lost.
         'check_end: {
             let game = game.view_mut(team_index);
@@ -579,7 +579,7 @@ pub async fn main_logic<'a>(
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Dogs {
+        if team_index == ActiveTeam::Cats {
             //{
             //if false {
             let the_move = ai::iterative_deepening(game, team_index);

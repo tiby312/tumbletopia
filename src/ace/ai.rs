@@ -51,9 +51,8 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         })
         .fold(0, |acc, f| acc + f) as i64;
 
-    //how close dogs are to cat king.
-    let dog_distance_to_cat_king = view
-        .dogs
+    let cat_distance_to_cat_king = view
+        .cats
         .units
         .iter()
         .map(|x| {
@@ -64,7 +63,35 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         })
         .fold(0, |acc, f| acc + f) as i64;
 
-    let val = diff * 1000 - cat_distance_to_dog_king + dog_distance_to_cat_king;
+    //how close dogs are to cat king.
+    let dog_distance_to_cat_king = view
+        .dogs
+        .units
+        .iter()
+        .map(|x| {
+            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Dogs));
+            let free = if free { 2 } else { 1 };
+            let x = x.position.to_cube().dist(&cat_king.position.to_cube());
+            x * x * free
+        })
+        .fold(0, |acc, f| acc + f) as i64;
+
+    let dog_distance_to_dog_king = view
+        .dogs
+        .units
+        .iter()
+        .map(|x| {
+            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Dogs));
+            let free = if free { 2 } else { 1 };
+            let x = x.position.to_cube().dist(&dog_king.position.to_cube());
+            x * x * free
+        })
+        .fold(0, |acc, f| acc + f) as i64;
+
+    let val = diff * 1000 - cat_distance_to_dog_king
+        + cat_distance_to_cat_king
+        + dog_distance_to_cat_king
+        - dog_distance_to_dog_king;
     //assert!(!val.is_nan());
     val
 }
