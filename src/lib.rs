@@ -246,6 +246,14 @@ pub struct GameViewMut<'a, 'b> {
     team: ActiveTeam,
 }
 impl<'a, 'b> GameViewMut<'a, 'b> {
+    pub fn into_const(&self) -> GameView<'_> {
+        GameView {
+            this_team: self.this_team,
+            that_team: self.that_team,
+            world: self.world,
+            team: self.team,
+        }
+    }
     pub fn absolute(&self) -> AbsoluteGameView<'_, 'b> {
         if self.team == ActiveTeam::Cats {
             AbsoluteGameView {

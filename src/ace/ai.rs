@@ -37,15 +37,17 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     };
 
     //TODO check if warriors are restricted
-    
+
     //how close cats are to dog king.
     let cat_distance_to_dog_king = view
         .cats
         .units
         .iter()
         .map(|x| {
+            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Cats));
+            let free = if free { 2 } else { 1 };
             let x = x.position.to_cube().dist(&dog_king.position.to_cube());
-            x * x
+            x * x * free
         })
         .fold(0, |acc, f| acc + f) as i64;
 
@@ -55,8 +57,10 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .units
         .iter()
         .map(|x| {
+            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Cats));
+            let free = if free { 2 } else { 1 };
             let x = x.position.to_cube().dist(&cat_king.position.to_cube());
-            x * x
+            x * x * free
         })
         .fold(0, |acc, f| acc + f) as i64;
 
@@ -193,7 +197,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         a: std::collections::HashMap::new(),
     };
 
-    let max_depth = 7;
+    let max_depth = 6;
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {

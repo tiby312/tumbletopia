@@ -279,13 +279,7 @@ impl MoveLog {
     // pub fn add_movement(&mut self, a: moves::MovementSigl) {}
 }
 
-pub fn generate_unit_possible_moves_inner(
-    unit: &UnitData,
-    game: &GameViewMut,
-    extra_attack_prev_coord: Option<GridCoord>,
-) -> movement::MovementMesh {
-    // If there is an enemy near by restrict movement.
-
+pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
     let restricted_movement = if let Some(_) = unit
         .position
         .to_cube()
@@ -301,6 +295,16 @@ pub fn generate_unit_possible_moves_inner(
             _ => todo!(),
         }
     };
+    restricted_movement
+}
+pub fn generate_unit_possible_moves_inner(
+    unit: &UnitData,
+    game: &GameViewMut,
+    extra_attack_prev_coord: Option<GridCoord>,
+) -> movement::MovementMesh {
+    // If there is an enemy near by restrict movement.
+
+    let restricted_movement = has_restricted_movement(unit, &game.into_const());
 
     let mm = if let Some(extra_attack_prev_coord) = extra_attack_prev_coord {
         let mut m = MovementMesh::new();
