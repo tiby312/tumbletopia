@@ -185,9 +185,13 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         a: std::collections::HashMap::new(),
     };
 
+    let max_depth = 6;
+
     //TODO stop searching if we found a game ending move.
-    for depth in 1..6 {
+    for depth in 1..max_depth {
         console_dbg!("searching", depth);
+        let mut k = KillerMoves::new(max_depth);
+
         let pp = PossibleMove {
             the_move: moves::ActualMove::SkipTurn,
             //mesh: MovementMesh::new(),
@@ -198,6 +202,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
             prev_cache: &mut foo1,
             calls: &mut count,
             path: &mut vec![],
+            killer_moves: &mut k,
         }
         .alpha_beta(pp, ABAB::new(), team, depth, 0);
 
@@ -264,6 +269,34 @@ pub struct AlphaBeta<'a> {
     prev_cache: &'a mut MoveOrdering,
     calls: &'a mut Counter,
     path: &'a mut Vec<moves::ActualMove>,
+    killer_moves: &'a mut KillerMoves,
+}
+
+pub struct KillerMoves {
+    a: Vec<smallvec::SmallVec<[moves::ActualMove; 2]>>,
+}
+
+impl KillerMoves {
+    pub fn new(a: usize) -> Self {
+        let v = (0..a).map(|_| smallvec::SmallVec::new()).collect();
+        Self { a: v }
+    }
+    pub fn get(&mut self, depth: usize) -> &mut [moves::ActualMove] {
+        &mut self.a[depth]
+    }
+    pub fn consider(&mut self, depth: usize, m: moves::ActualMove) {
+        let a = &mut self.a[depth];
+
+        if a.contains(&m) {
+            return;
+        }
+        if a.len() < 2 {
+            a.push(m);
+        } else {
+            a.swap(0, 1);
+            a[0] = m;
+        }
+    }
 }
 
 pub struct EvalRet<T> {
@@ -390,6 +423,17 @@ impl<'a> AlphaBeta<'a> {
                 }
             }
 
+            for a in self.killer_moves.get(depth) {
+                if let Some((x, _)) = moves[num_sorted..]
+                    .iter()
+                    .enumerate()
+                    .find(|(_, (_, x))| &x.the_move == a)
+                {
+                    moves.swap(x, num_sorted);
+                    num_sorted += 1;
+                }
+            }
+
             //TODO do more move ordering!!!
 
             //let num_check_moves=moves.iter().filter(|x|x.0).count();
@@ -399,7 +443,7 @@ impl<'a> AlphaBeta<'a> {
             }
             //}
 
-            let foo = |(is_checky, cand): (bool, PossibleMove), ab| {
+            let foo = |ssself: &mut AlphaBeta, (is_checky, cand): (bool, PossibleMove), ab| {
                 let new_ext = if depth <= 2 && ext < 2 && is_checky {
                     //1
                     0
@@ -421,22 +465,25 @@ impl<'a> AlphaBeta<'a> {
                 let new_depth = new_ext + depth - 1; //.saturating_sub(inhibit);
                                                      //assert!(new_depth<6);
                                                      //console_dbg!(ext,depth);
-                let eval = self.alpha_beta(cand, ab, team.not(), new_depth, ext + new_ext);
+                let eval = ssself.alpha_beta(cand, ab, team.not(), new_depth, ext + new_ext);
 
                 EvalRet {
                     eval,
                     mov: (is_checky, cc),
                 }
             };
+
             if team == ActiveTeam::Cats {
-                if let Some(ret) = ab.maxxer(moves, foo) {
+                if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
+                    ss.killer_moves.consider(depth, m.1.the_move);
+                }) {
                     self.prev_cache.update(&self.path, &ret.mov.1.the_move);
                     ret.eval
                 } else {
                     Eval::MIN
                 }
             } else {
-                if let Some(ret) = ab.minner(moves, foo) {
+                if let Some(ret) = ab.minner(moves, self, foo, |_, _, _| {}) {
                     self.prev_cache.update(&self.path, &ret.mov.1.the_move);
                     ret.eval
                 } else {
@@ -466,22 +513,25 @@ mod abab {
             }
         }
 
-        pub fn minner<T: Clone>(
+        pub fn minner<P, T: Clone>(
             mut self,
             it: impl IntoIterator<Item = T>,
-            mut func: impl FnMut(T, Self) -> EvalRet<T>,
+            mut payload: &mut P,
+            mut func: impl FnMut(&mut P, T, Self) -> EvalRet<T>,
+            mut func2: impl FnMut(&mut P, T, Self),
         ) -> Option<EvalRet<T>> {
             let mut mm: Option<T> = None;
 
             let mut value = i64::MAX;
             for cand in it {
-                let t = func(cand.clone(), self.clone());
+                let t = func(payload, cand.clone(), self.clone());
 
                 value = value.min(t.eval);
                 if value == t.eval {
-                    mm = Some(cand);
+                    mm = Some(cand.clone());
                 }
                 if t.eval < self.alpha {
+                    func2(payload, cand, self.clone());
                     break;
                 }
                 self.beta = self.beta.min(value)
@@ -496,22 +546,25 @@ mod abab {
                 None
             }
         }
-        pub fn maxxer<T: Clone>(
+        pub fn maxxer<P, T: Clone>(
             mut self,
             it: impl IntoIterator<Item = T>,
-            mut func: impl FnMut(T, Self) -> EvalRet<T>,
+            mut payload: &mut P,
+            mut func: impl FnMut(&mut P, T, Self) -> EvalRet<T>,
+            mut func2: impl FnMut(&mut P, T, Self),
         ) -> Option<EvalRet<T>> {
             let mut mm: Option<T> = None;
 
             let mut value = i64::MIN;
             for cand in it {
-                let t = func(cand.clone(), self.clone());
+                let t = func(&mut payload, cand.clone(), self.clone());
 
                 value = value.max(t.eval);
                 if value == t.eval {
-                    mm = Some(cand);
+                    mm = Some(cand.clone());
                 }
                 if t.eval > self.beta {
+                    func2(&mut payload, cand, self.clone());
                     break;
                 }
                 self.alpha = self.alpha.max(value)
