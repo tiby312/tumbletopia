@@ -191,7 +191,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         a: std::collections::HashMap::new(),
     };
 
-    let max_depth = 6;
+    let max_depth = 7;
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
@@ -611,31 +611,6 @@ mod abab {
     }
 }
 
-fn reorder_front(
-    a: Option<PossibleMove>,
-    b: impl Iterator<Item = PossibleMove>,
-) -> impl Iterator<Item = PossibleMove> {
-    let mut found_duplicate = false;
-    let it = a.clone().into_iter().chain(b.filter(|z| {
-        if let Some(p) = &a {
-            if p == z {
-                found_duplicate = true;
-                false
-            } else {
-                true
-            }
-        } else {
-            true
-        }
-    }));
-
-    let v: Vec<_> = it.collect();
-    if let Some(_) = a {
-        assert!(found_duplicate);
-    }
-    v.into_iter()
-}
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PossibleMove {
     pub the_move: moves::ActualMove,
@@ -816,6 +791,28 @@ pub fn execute_move_no_ani(
         moves::ActualMove::SkipTurn => {}
         moves::ActualMove::GameEnd(_) => todo!(),
     }
+}
+
+pub struct PartialMove {
+    pos: GridCoord,
+    moveto: GridCoord,
+}
+pub fn for_all_moves_v2(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PartialMove> {
+    let mut sss = state.clone();
+    state
+        .clone()
+        .into_view(team)
+        .this_team
+        .units
+        .into_iter()
+        .map(|a| RegularSelection { unit: a.clone() })
+        .flat_map(move |a| {
+            let mesh = a.generate(&sss.view_mut(team));
+            mesh.iter_mesh(a.unit.position).map(move |f| PartialMove {
+                pos: a.unit.position,
+                moveto: f,
+            })
+        })
 }
 
 pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
