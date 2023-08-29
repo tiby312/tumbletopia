@@ -387,6 +387,10 @@ impl<'a> AlphaBeta<'a> {
                 })
                 .collect();
 
+            if is_check(&moves[0].1.game_after_move) {
+                moves[0].0 = true;
+            }
+
             //console_dbg!(moves.len());
 
             let mut num_sorted = 0;
@@ -439,7 +443,7 @@ impl<'a> AlphaBeta<'a> {
             let foo = |ssself: &mut AlphaBeta, (is_checky, cand): (bool, PossibleMove), ab| {
                 let new_ext = if depth <= 2 && ext < 2 && is_checky {
                     //1
-                    0
+                    1
                 } else {
                     0
                 };
