@@ -64,7 +64,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         })
         .fold(0, |acc, f| acc + f) as i64;
 
-    let val = diff * 100 - cat_distance_to_dog_king + dog_distance_to_cat_king;
+    let val = diff * 1000 - cat_distance_to_dog_king + dog_distance_to_cat_king;
     //assert!(!val.is_nan());
     val
 }
@@ -625,11 +625,11 @@ pub struct PossibleMove {
 }
 
 //TODO pass readonly
-fn this_team_in_check(state: &mut GameState, team: ActiveTeam) -> bool {
+fn this_team_in_check(state: &GameState, team: ActiveTeam) -> bool {
     let mut gg = state.clone();
 
     //TODO additionally check for jump checks.
-    let game = state.view_mut(team);
+    let game = state.view(team);
     let king = if let Some(king) = game.this_team.units.iter().find(|a| a.typ == Type::Para) {
         king.clone()
     } else {
