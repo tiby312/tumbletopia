@@ -223,7 +223,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         a: std::collections::HashMap::new(),
     };
 
-    let max_depth = 5;
+    let max_depth = 6;
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
@@ -409,17 +409,13 @@ impl<'a> AlphaBeta<'a> {
         let mut gg = cand.game_after_move.clone();
 
         self.path.push(the_move.clone());
-        let ret = if depth == 0
-        /*|| game_is_over(cand.game_after_move.view(team)) */
-        {
-            // self.calls.add_eval();
-            // self.table.lookup_leaf_all(&cand.game_after_move)
+        let ret = if depth == 0 || game_is_over(cand.game_after_move.view(team)) {
+            self.calls.add_eval();
+            self.table.lookup_leaf_all(&cand.game_after_move)
 
-            let (m, eval) = self.quiensense_search(cand, ab, team, 1);
-            if let Some(m) = m {
-                //self.prev_cache.update(&self.path, &m);
-            }
-            eval
+            // let (m, eval) = self.quiensense_search(cand, ab, team, 3);
+
+            // eval
         } else {
             let node = cand.game_after_move;
 
