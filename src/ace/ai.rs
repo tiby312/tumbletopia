@@ -528,10 +528,9 @@ impl<'a> AlphaBeta<'a> {
                     let new_depth = new_ext + depth - 1; //.saturating_sub(inhibit);
                                                          //assert!(new_depth<6);
                                                          //console_dbg!(ext,depth);
-                    let mut ab2 = ab.clone();
-                    ab2.alpha = -ab.beta;
-                    ab2.beta = -ab.alpha;
-                    let eval = -ssself.alpha_beta(cand, ab2, team.not(), new_depth, ext + new_ext);
+                
+
+                    let eval = -ssself.alpha_beta(cand, ab.flip(), team.not(), new_depth, ext + new_ext);
 
                     EvalRet {
                         eval,
@@ -579,8 +578,8 @@ mod abab {
     use super::*;
     #[derive(Clone)]
     pub struct ABAB {
-        pub alpha: Eval,
-        pub beta: Eval,
+        alpha: Eval,
+        beta: Eval,
     }
     impl ABAB {
         pub fn new() -> Self {
@@ -588,6 +587,13 @@ mod abab {
                 alpha: Eval::MIN + 1,
                 beta: Eval::MAX,
             }
+        }
+
+        pub fn flip(mut self)->Self{
+            let k=self.clone();
+            self.alpha=-k.beta;
+            self.beta=-k.alpha;
+            self
         }
 
         pub fn minner<P, T: Clone>(
