@@ -93,7 +93,7 @@ fn absolute_evaluate(view: &GameState, team: ActiveTeam) -> Eval {
         + dog_distance_to_dog_king;
     //assert!(!val.is_nan());
 
-    if team == ActiveTeam::Cats {
+    if team == ActiveTeam::Dogs {
         return -val;
     }
     val
@@ -227,7 +227,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         a: std::collections::HashMap::new(),
     };
 
-    let max_depth = 4;
+    let max_depth = 6;
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
@@ -405,11 +405,12 @@ impl<'a> AlphaBeta<'a> {
         let ret = if depth == 0 || game_is_over(cand.game_after_move.view(team)) {
             self.calls.add_eval();
             let e = self.table.lookup_leaf_all(&cand.game_after_move, team);
-            if team == ActiveTeam::Dogs {
-                -e
-            } else {
-                e
-            }
+            // if team == ActiveTeam::Dogs {
+            //     -e
+            // } else {
+            //     e
+            // }
+            e
 
             //self.quiensense_search(cand, ab, team, 5)
         } else {
@@ -530,7 +531,7 @@ impl<'a> AlphaBeta<'a> {
                     let mut ab2 = ab.clone();
                     ab2.alpha = -ab.beta;
                     ab2.beta = -ab.alpha;
-                    let eval = -ssself.alpha_beta(cand, ab, team.not(), new_depth, ext + new_ext);
+                    let eval = -ssself.alpha_beta(cand, ab2, team.not(), new_depth, ext + new_ext);
 
                     EvalRet {
                         eval,
