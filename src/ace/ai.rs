@@ -10,7 +10,7 @@ pub type Eval = i64; //(f64);
 const MATE: i64 = 1_000_000;
 //cats maximizing
 //dogs minimizing
-fn absolute_evaluate(view: &GameState) -> Eval {
+fn absolute_evaluate(view: &GameState, team: ActiveTeam) -> Eval {
     //TODO check for checks!!!
     //let view = view.absolute();
     let num_cats = view.cats.units.len();
@@ -92,6 +92,10 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         + dog_distance_to_cat_king
         + dog_distance_to_dog_king;
     //assert!(!val.is_nan());
+
+    if team == ActiveTeam::Cats {
+        return -val;
+    }
     val
 }
 
@@ -203,12 +207,12 @@ impl LeafTranspositionTable {
             let _ = self.a.insert(game, eval);
         }
     }
-    pub fn lookup_leaf_all(&mut self, node: &GameState) -> Eval {
+    pub fn lookup_leaf_all(&mut self, node: &GameState, team: ActiveTeam) -> Eval {
         if let Some(&eval) = self.lookup_leaf(&node) {
             eval
         } else {
-            let eval = absolute_evaluate(&node);
-            self.consider_leaf(node.clone(), eval);
+            let eval = absolute_evaluate(&node, team);
+            //self.consider_leaf(node.clone(), eval);
             eval
         }
     }
@@ -223,7 +227,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         a: std::collections::HashMap::new(),
     };
 
-    let max_depth = 6;
+    let max_depth = 4;
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
@@ -400,7 +404,12 @@ impl<'a> AlphaBeta<'a> {
         self.path.push(the_move.clone());
         let ret = if depth == 0 || game_is_over(cand.game_after_move.view(team)) {
             self.calls.add_eval();
-            self.table.lookup_leaf_all(&cand.game_after_move)
+            let e = self.table.lookup_leaf_all(&cand.game_after_move, team);
+            if team == ActiveTeam::Dogs {
+                -e
+            } else {
+                e
+            }
 
             //self.quiensense_search(cand, ab, team, 5)
         } else {
@@ -494,36 +503,40 @@ impl<'a> AlphaBeta<'a> {
                 }
             }
 
-            let foo = |ssself: &mut AlphaBeta, (is_checky, cand): (bool, PossibleMove), ab| {
-                let new_ext = if ext < 2 && is_checky {
-                    //1
-                    //1
-                    0
-                } else {
-                    0
+            let foo =
+                |ssself: &mut AlphaBeta, (is_checky, cand): (bool, PossibleMove), ab: ABAB| {
+                    let new_ext = if ext < 2 && is_checky {
+                        //1
+                        //1
+                        0
+                    } else {
+                        0
+                    };
+
+                    // let inhibit = if num_checky > 0 {
+                    //     if is_checky {
+                    //         0
+                    //     } else {
+                    //         3
+                    //     }
+                    // } else {
+                    //     0
+                    // };
+
+                    let cc = cand.clone();
+                    let new_depth = new_ext + depth - 1; //.saturating_sub(inhibit);
+                                                         //assert!(new_depth<6);
+                                                         //console_dbg!(ext,depth);
+                    let mut ab2 = ab.clone();
+                    ab2.alpha = -ab.beta;
+                    ab2.beta = -ab.alpha;
+                    let eval = -ssself.alpha_beta(cand, ab, team.not(), new_depth, ext + new_ext);
+
+                    EvalRet {
+                        eval,
+                        mov: (is_checky, cc),
+                    }
                 };
-
-                // let inhibit = if num_checky > 0 {
-                //     if is_checky {
-                //         0
-                //     } else {
-                //         3
-                //     }
-                // } else {
-                //     0
-                // };
-
-                let cc = cand.clone();
-                let new_depth = new_ext + depth - 1; //.saturating_sub(inhibit);
-                                                     //assert!(new_depth<6);
-                                                     //console_dbg!(ext,depth);
-                let eval = ssself.alpha_beta(cand, ab, team.not(), new_depth, ext + new_ext);
-
-                EvalRet {
-                    eval,
-                    mov: (is_checky, cc),
-                }
-            };
 
             // let num=if depth>3{
             //     moves.len()
@@ -534,25 +547,25 @@ impl<'a> AlphaBeta<'a> {
             // let num=20.min(num_sorted*2);
             // let moves=moves.into_iter().take(num);
 
-            if team == ActiveTeam::Cats {
-                if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
-                    ss.killer_moves.consider(depth, m.1.the_move);
-                }) {
-                    self.prev_cache.update(&self.path, &ret.mov.1.the_move);
-                    ret.eval
-                } else {
-                    Eval::MIN
-                }
+            // if team == ActiveTeam::Cats {
+            if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
+                ss.killer_moves.consider(depth, m.1.the_move);
+            }) {
+                self.prev_cache.update(&self.path, &ret.mov.1.the_move);
+                ret.eval
             } else {
-                if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
-                    ss.killer_moves.consider(depth, m.1.the_move);
-                }) {
-                    self.prev_cache.update(&self.path, &ret.mov.1.the_move);
-                    ret.eval
-                } else {
-                    Eval::MAX
-                }
+                Eval::MIN + 1
             }
+            // } else {
+            //     if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
+            //         ss.killer_moves.consider(depth, m.1.the_move);
+            //     }) {
+            //         self.prev_cache.update(&self.path, &ret.mov.1.the_move);
+            //         ret.eval
+            //     } else {
+            //         Eval::MAX
+            //     }
+            // }
         };
         let k = self.path.pop().unwrap();
         assert_eq!(k, the_move);
@@ -565,13 +578,13 @@ mod abab {
     use super::*;
     #[derive(Clone)]
     pub struct ABAB {
-        alpha: Eval,
-        beta: Eval,
+        pub alpha: Eval,
+        pub beta: Eval,
     }
     impl ABAB {
         pub fn new() -> Self {
             ABAB {
-                alpha: Eval::MIN,
+                alpha: Eval::MIN + 1,
                 beta: Eval::MAX,
             }
         }
@@ -618,7 +631,7 @@ mod abab {
         ) -> Option<EvalRet<T>> {
             let mut mm: Option<T> = None;
 
-            let mut value = i64::MIN;
+            let mut value = i64::MIN + 1;
             for cand in it {
                 let t = func(&mut payload, cand.clone(), self.clone());
 
