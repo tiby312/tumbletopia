@@ -544,7 +544,9 @@ impl<'a> AlphaBeta<'a> {
                     Eval::MIN
                 }
             } else {
-                if let Some(ret) = ab.minner(moves, self, foo, |_, _, _| {}) {
+                if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
+                    ss.killer_moves.consider(depth, m.1.the_move);
+                }) {
                     self.prev_cache.update(&self.path, &ret.mov.1.the_move);
                     ret.eval
                 } else {
