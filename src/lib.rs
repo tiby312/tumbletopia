@@ -754,7 +754,7 @@ pub async fn worker_entry() {
 
     w.post_message(UiButton::NoUi);
 
-    log!("worker thread closin");
+    log!("Worker thread closin");
 }
 
 fn disable_depth(ctx: &WebGl2RenderingContext, func: impl FnOnce()) {

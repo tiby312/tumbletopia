@@ -131,7 +131,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         let cost = [-100_000, -50_000, -40_000];
 
         for (&a, b) in difference.iter().zip(cost) {
-            if a < 0 {
+            if a < 1 {
                 return b;
             }
         }
