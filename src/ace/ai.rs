@@ -51,17 +51,17 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         })
         .fold(0, |acc, f| acc + f) as i64;
 
-    let cat_distance_to_cat_king = view
-        .cats
-        .units
-        .iter()
-        .map(|x| {
-            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Cats));
-            let free = if free { 2 } else { 1 };
-            let x = x.position.to_cube().dist(&cat_king.position.to_cube());
-            x * x * free
-        })
-        .fold(0, |acc, f| acc + f) as i64;
+    // let cat_distance_to_cat_king = view
+    //     .cats
+    //     .units
+    //     .iter()
+    //     .map(|x| {
+    //         let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Cats));
+    //         let free = if free { 2 } else { 1 };
+    //         let x = x.position.to_cube().dist(&cat_king.position.to_cube());
+    //         x * x * free
+    //     })
+    //     .fold(0, |acc, f| acc + f) as i64;
 
     //how close dogs are to cat king.
     let dog_distance_to_cat_king = view
@@ -76,21 +76,74 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         })
         .fold(0, |acc, f| acc + f) as i64;
 
-    let dog_distance_to_dog_king = view
-        .dogs
-        .units
-        .iter()
-        .map(|x| {
-            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Dogs));
-            let free = if free { 2 } else { 1 };
-            let x = x.position.to_cube().dist(&dog_king.position.to_cube());
-            x * x * free
-        })
-        .fold(0, |acc, f| acc + f) as i64;
+    // let dog_distance_to_dog_king = view
+    //     .dogs
+    //     .units
+    //     .iter()
+    //     .map(|x| {
+    //         let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Dogs));
+    //         let free = if free { 2 } else { 1 };
+    //         let x = x.position.to_cube().dist(&dog_king.position.to_cube());
+    //         x * x * free
+    //     })
+    //     .fold(0, |acc, f| acc + f) as i64;
 
-    let val = diff * 1000 - cat_distance_to_dog_king - cat_distance_to_cat_king
-        + dog_distance_to_cat_king
-        + dog_distance_to_dog_king;
+    fn king_safety(view: &GameState, this_team: ActiveTeam) -> i64 {
+        let game = view.view(this_team);
+
+        let king = game
+            .this_team
+            .units
+            .iter()
+            .find(|a| a.typ == Type::Para)
+            .unwrap();
+
+        //TODO dynamically change radius
+
+        let mut enemies: Vec<_> = game
+            .that_team
+            .units
+            .iter()
+            .map(|x| x.position.to_cube().dist(&king.position.to_cube()))
+            .collect();
+
+        let mut friendlies: Vec<_> = game
+            .this_team
+            .units
+            .iter()
+            .filter(|x| x.position != king.position)
+            .map(|x| x.position.to_cube().dist(&king.position.to_cube()))
+            .collect();
+
+        enemies.sort();
+        friendlies.sort();
+
+        // console_dbg!(enemies);
+        // console_dbg!(friendlies);
+
+        let difference: Vec<_> = enemies
+            .iter()
+            .zip(friendlies.iter())
+            .map(|(&a, &b)| a - b)
+            .collect();
+
+        //console_dbg!(difference);
+        let cost = [-100_000, -50_000, -40_000];
+
+        for (&a, b) in difference.iter().zip(cost) {
+            if a < 0 {
+                return b;
+            }
+        }
+
+        0
+    }
+
+    let cat_safety = king_safety(view, ActiveTeam::Cats);
+    let dog_safety = -king_safety(view, ActiveTeam::Dogs);
+
+    let val =
+        diff * 1000 - cat_distance_to_dog_king + dog_distance_to_cat_king + cat_safety + dog_safety;
     //assert!(!val.is_nan());
     val
 }
