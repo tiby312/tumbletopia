@@ -128,7 +128,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             .collect();
 
         //console_dbg!(difference);
-        let cost = [-4_000, -2_000, -1_000];
+        let cost = [-400, -200, -100];
 
         for (&a, b) in difference.iter().zip(cost) {
             if a < 1 {
@@ -142,8 +142,10 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     let cat_safety = king_safety(view, ActiveTeam::Cats);
     let dog_safety = -king_safety(view, ActiveTeam::Dogs);
 
-    let val =
-        diff * 1000 - cat_distance_to_dog_king + dog_distance_to_cat_king + cat_safety + dog_safety;
+    let val = diff * 10_000 - cat_distance_to_dog_king
+        + dog_distance_to_cat_king
+        + cat_safety
+        + dog_safety;
     //assert!(!val.is_nan());
     val
 }
