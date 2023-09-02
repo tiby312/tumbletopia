@@ -385,18 +385,21 @@ mod invade {
 
                 InnerPartialMove::new(selected_unit,mesh,target_coord).$namey(game_view,doopa)$($_await)*;
 
-                func(game_view.that_team.find_take(&target_coord).unwrap());
+                if let Some(k)=game_view.that_team.find_take(&target_coord){
 
-
-
-                if let Some(f)=HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*{
-                    func(game_view.this_team.find_take(&f).unwrap());
+                    func(k);
                 }
+
+
                 for n in target_coord.to_cube().neighbours() {
                     if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),doopa)$($_await)*{
                         func(game_view.that_team.find_take(&f).unwrap());
                     }
                 }
+                if let Some(f)=HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*{
+                    func(game_view.this_team.find_take(&f).unwrap());
+                }
+
 
                 PartialMoveSigl{
                     unit:selected_unit,

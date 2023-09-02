@@ -66,48 +66,57 @@ impl ComboContinueSelection {
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
-        if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, mesh, target_cell);
+        let iii = moves::Invade::new(unit, mesh, target_cell);
 
-            let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
-            move_log.push(moves::ActualMove::ExtraMove(
-                self.extra.prev_move.clone(),
-                iii,
-            ));
-        } else {
-            let pm = moves::PartialMove::new(unit, mesh, target_cell);
-            let jjj = pm
-                .clone()
-                .execute_with_animation(game_view, doop, |_| {})
-                .await;
-
-            let jjj = match jjj {
-                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-                    //move_log.push(moves::ActualMove::NormalMove(sigl));
-                    move_log.push(moves::ActualMove::ExtraMove(
-                        self.extra.prev_move.clone(),
-                        sigl,
-                    ));
-                    Some(unit.position)
-                    //Some(selection::PossibleExtra::new(sigl, unit.clone()))
-                }
-                (sigl, moves::ExtraMove::FinishMoving) => {
-                    //move_log.push(moves::ActualMove::NormalMove(sigl));
-                    move_log.push(moves::ActualMove::ExtraMove(
-                        self.extra.prev_move.clone(),
-                        sigl,
-                    ));
-
-                    None
-                }
-            };
-
-            if let Some(a) = jjj {
-                let _ = game_view.this_team.find_take(&a);
-            }
-        };
+        let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
+        move_log.push(moves::ActualMove::ExtraMove(
+            self.extra.prev_move.clone(),
+            iii,
+        ));
 
         Ok(())
+        // if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
+        //     let iii = moves::Invade::new(unit, mesh, target_cell);
+
+        //     let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
+        //     move_log.push(moves::ActualMove::ExtraMove(
+        //         self.extra.prev_move.clone(),
+        //         iii,
+        //     ));
+        // } else {
+        //     let pm = moves::PartialMove::new(unit, mesh, target_cell);
+        //     let jjj = pm
+        //         .clone()
+        //         .execute_with_animation(game_view, doop, |_| {})
+        //         .await;
+
+        //     let jjj = match jjj {
+        //         (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+        //             //move_log.push(moves::ActualMove::NormalMove(sigl));
+        //             move_log.push(moves::ActualMove::ExtraMove(
+        //                 self.extra.prev_move.clone(),
+        //                 sigl,
+        //             ));
+        //             Some(unit.position)
+        //             //Some(selection::PossibleExtra::new(sigl, unit.clone()))
+        //         }
+        //         (sigl, moves::ExtraMove::FinishMoving) => {
+        //             //move_log.push(moves::ActualMove::NormalMove(sigl));
+        //             move_log.push(moves::ActualMove::ExtraMove(
+        //                 self.extra.prev_move.clone(),
+        //                 sigl,
+        //             ));
+
+        //             None
+        //         }
+        //     };
+
+        //     if let Some(a) = jjj {
+        //         let _ = game_view.this_team.find_take(&a);
+        //     }
+        // };
+
+        // Ok(())
     }
     pub fn execute_no_animation(
         &self,
@@ -118,45 +127,54 @@ impl ComboContinueSelection {
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
-        if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, mesh, target_cell);
+        let iii = moves::Invade::new(unit, mesh, target_cell);
 
-            let iii = iii.execute(game_view, |_| {});
-            move_log.push(moves::ActualMove::ExtraMove(
-                self.extra.prev_move.clone(),
-                iii,
-            ));
-        } else {
-            let pm = moves::PartialMove::new(unit, mesh, target_cell);
-            let jjj = pm.clone().execute(game_view, |_| {});
-            let jjj = match jjj {
-                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-                    //move_log.push(moves::ActualMove::NormalMove(sigl));
-                    move_log.push(moves::ActualMove::ExtraMove(
-                        self.extra.prev_move.clone(),
-                        sigl,
-                    ));
-                    Some(unit.position)
-                    //Some(selection::PossibleExtra::new(sigl, unit.clone()))
-                }
-                (sigl, moves::ExtraMove::FinishMoving) => {
-                    move_log.push(moves::ActualMove::ExtraMove(
-                        self.extra.prev_move.clone(),
-                        sigl,
-                    ));
-
-                    //move_log.push(moves::ActualMove::NormalMove(sigl));
-
-                    None
-                }
-            };
-
-            if let Some(a) = jjj {
-                let _ = game_view.this_team.find_take(&a);
-            }
-        };
+        let iii = iii.execute(game_view, |_| {});
+        move_log.push(moves::ActualMove::ExtraMove(
+            self.extra.prev_move.clone(),
+            iii,
+        ));
 
         Ok(())
+        // if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
+        //     let iii = moves::Invade::new(unit, mesh, target_cell);
+
+        //     let iii = iii.execute(game_view, |_| {});
+        //     move_log.push(moves::ActualMove::ExtraMove(
+        //         self.extra.prev_move.clone(),
+        //         iii,
+        //     ));
+        // } else {
+        //     let pm = moves::PartialMove::new(unit, mesh, target_cell);
+        //     let jjj = pm.clone().execute(game_view, |_| {});
+        //     let jjj = match jjj {
+        //         (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+        //             //move_log.push(moves::ActualMove::NormalMove(sigl));
+        //             move_log.push(moves::ActualMove::ExtraMove(
+        //                 self.extra.prev_move.clone(),
+        //                 sigl,
+        //             ));
+        //             Some(unit.position)
+        //             //Some(selection::PossibleExtra::new(sigl, unit.clone()))
+        //         }
+        //         (sigl, moves::ExtraMove::FinishMoving) => {
+        //             move_log.push(moves::ActualMove::ExtraMove(
+        //                 self.extra.prev_move.clone(),
+        //                 sigl,
+        //             ));
+
+        //             //move_log.push(moves::ActualMove::NormalMove(sigl));
+
+        //             None
+        //         }
+        //     };
+
+        //     if let Some(a) = jjj {
+        //         let _ = game_view.this_team.find_take(&a);
+        //     }
+        // };
+
+        // Ok(())
     }
 }
 
@@ -201,33 +219,39 @@ impl RegularSelection {
         //let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
 
-        let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, mesh, target_cell);
+        let iii = moves::Invade::new(unit, mesh, target_cell);
 
-            let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
+        let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
 
-            move_log.push(moves::ActualMove::NormalMove(iii));
+        move_log.push(moves::ActualMove::NormalMove(iii));
 
-            None
-        } else {
-            let pm = moves::PartialMove::new(unit, mesh, target_cell);
-            let jjj = pm
-                .clone()
-                .execute_with_animation(game_view, doop, |_| {})
-                .await;
+        // let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
+        //     let iii = moves::Invade::new(unit, mesh, target_cell);
 
-            match jjj {
-                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-                    Some(selection::PossibleExtra::new(sigl, unit.clone()))
-                }
-                (sigl, moves::ExtraMove::FinishMoving) => {
-                    move_log.push(moves::ActualMove::NormalMove(sigl));
-                    None
-                }
-            }
-        };
+        //     let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
 
-        Ok(e)
+        //     move_log.push(moves::ActualMove::NormalMove(iii));
+
+        //     None
+        // } else {
+        //     let pm = moves::PartialMove::new(unit, mesh, target_cell);
+        //     let jjj = pm
+        //         .clone()
+        //         .execute_with_animation(game_view, doop, |_| {})
+        //         .await;
+
+        //     match jjj {
+        //         (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+        //             Some(selection::PossibleExtra::new(sigl, unit.clone()))
+        //         }
+        //         (sigl, moves::ExtraMove::FinishMoving) => {
+        //             move_log.push(moves::ActualMove::NormalMove(sigl));
+        //             None
+        //         }
+        //     }
+        // };
+
+        Ok(None)
     }
     pub fn execute_no_animation(
         &self,
@@ -238,30 +262,37 @@ impl RegularSelection {
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
         //let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
+        let iii = moves::Invade::new(unit, mesh, target_cell);
 
-        let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, mesh, target_cell);
+        let iii = iii.execute(game_view, |_| {});
 
-            let iii = iii.execute(game_view, |_| {});
+        move_log.push(moves::ActualMove::NormalMove(iii));
 
-            move_log.push(moves::ActualMove::NormalMove(iii));
-            None
-        } else {
-            let pm = moves::PartialMove::new(unit, mesh, target_cell);
-            let jjj = pm.clone().execute(game_view, |_| {});
+        Ok(None)
 
-            match jjj {
-                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-                    Some(selection::PossibleExtra::new(sigl, unit.clone()))
-                }
-                (sigl, moves::ExtraMove::FinishMoving) => {
-                    move_log.push(moves::ActualMove::NormalMove(sigl));
-                    None
-                }
-            }
-        };
+        // let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
+        //     let iii = moves::Invade::new(unit, mesh, target_cell);
 
-        Ok(e)
+        //     let iii = iii.execute(game_view, |_| {});
+
+        //     move_log.push(moves::ActualMove::NormalMove(iii));
+        //     None
+        // } else {
+        //     let pm = moves::PartialMove::new(unit, mesh, target_cell);
+        //     let jjj = pm.clone().execute(game_view, |_| {});
+
+        //     match jjj {
+        //         (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+        //             Some(selection::PossibleExtra::new(sigl, unit.clone()))
+        //         }
+        //         (sigl, moves::ExtraMove::FinishMoving) => {
+        //             move_log.push(moves::ActualMove::NormalMove(sigl));
+        //             None
+        //         }
+        //     }
+        // };
+
+        // Ok(e)
     }
 }
 
