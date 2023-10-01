@@ -898,6 +898,16 @@ pub fn for_all_moves_v2(state: GameState, team: ActiveTeam) -> impl Iterator<Ite
         })
 }
 
+
+
+//TODO use this
+// pub fn for_all_moves_v3(game:&GameState,team:ActiveTeam) -> impl Iterator<Item = RegularSelection2>+'_ {
+//     game.view(team).this_team.units.iter().map(move |a|RegularSelection2{
+//         unit:a,
+//         mesh:generate_unit_possible_moves_inner3(a, game)
+//     })
+// }
+
 pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
     let foo = PossibleMove {
         the_move: moves::ActualMove::SkipTurn,
