@@ -185,6 +185,11 @@ mod inner_partial {
                 //this_unit.position= path.get_end_coord(this_unit.position);
                 this_unit.position=end;
 
+                if let Some(g)=game_view.that_team.find_take(&end){
+                    //TODO removed
+                }
+
+
             }
         }
     }
@@ -266,49 +271,50 @@ mod partial_move {
 
 
 
-                let k=HandleSurround::new(target_cell).$namey(&mut game_view, doopa)$($_await)*;
+                //let k=HandleSurround::new(target_cell).$namey(&mut game_view, doopa)$($_await)*;
 
 
                 let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
 
 
-                if let Some(k) = k {
+                // if let Some(k) = k {
 
-                    //let p=ace::selection::PossibleExtra::new(sigl.clone(),unit.clone());
+                //     //let p=ace::selection::PossibleExtra::new(sigl.clone(),unit.clone());
 
-                    //let mesh=p.select().generate(game_view);
+                //     //let mesh=p.select().generate(game_view);
 
-                    // if mesh.iter_mesh(target_cell).count()==0{
-                    //     let _ = game_view.this_team.find_take(&target_cell);
-                    //     (sigl,ExtraMove::FinishMoving)
-                    // }else{
-                    //     let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
+                //     // if mesh.iter_mesh(target_cell).count()==0{
+                //     //     let _ = game_view.this_team.find_take(&target_cell);
+                //     //     (sigl,ExtraMove::FinishMoving)
+                //     // }else{
+                //     //     let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
 
-                    //     (sigl,ExtraMove::ExtraMove{unit})
-                    // }
-                    //let mesh=ace::selection::generate_unit_possible_moves_inner(&unit, game_view, Some(2));
-                    if sigl.unit.to_cube().dist(&sigl.moveto.to_cube())==1{
-                        let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
+                //     //     (sigl,ExtraMove::ExtraMove{unit})
+                //     // }
+                //     //let mesh=ace::selection::generate_unit_possible_moves_inner(&unit, game_view, Some(2));
+                //     if sigl.unit.to_cube().dist(&sigl.moveto.to_cube())==1{
+                //         let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
 
-                        (sigl,ExtraMove::ExtraMove{unit})
-                    }else{
-                        let _ =game_view.this_team.find_take(&target_cell).unwrap();
-                        (sigl,ExtraMove::FinishMoving)
-                    }
+                //         (sigl,ExtraMove::ExtraMove{unit})
+                //     }else{
+                //         let _ =game_view.this_team.find_take(&target_cell).unwrap();
+                //         (sigl,ExtraMove::FinishMoving)
+                //     }
 
 
-                    //(sigl,ExtraMove::ExtraMove{unit})
-                } else {
+                //     //(sigl,ExtraMove::ExtraMove{unit})
+                // } else {
 
-                    for n in target_cell.to_cube().neighbours() {
-                        if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
-                            func(game_view.that_team.find_take(&f).unwrap());
-                        }
-                    }
+                //     // for n in target_cell.to_cube().neighbours() {
+                //     //     if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
+                //     //         func(game_view.that_team.find_take(&f).unwrap());
+                //     //     }
+                //     // }
 
-                    //Finish this players turn.
-                    (sigl,ExtraMove::FinishMoving)
-                }
+                //     //Finish this players turn.
+                //     (sigl,ExtraMove::FinishMoving)
+                // }
+                (sigl,ExtraMove::FinishMoving)
             }
         }
     }
@@ -391,14 +397,14 @@ mod invade {
                 }
 
 
-                for n in target_coord.to_cube().neighbours() {
-                    if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),doopa)$($_await)*{
-                        func(game_view.that_team.find_take(&f).unwrap());
-                    }
-                }
-                if let Some(f)=HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*{
-                    func(game_view.this_team.find_take(&f).unwrap());
-                }
+                // for n in target_coord.to_cube().neighbours() {
+                //     if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),doopa)$($_await)*{
+                //         func(game_view.that_team.find_take(&f).unwrap());
+                //     }
+                // }
+                // if let Some(f)=HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*{
+                //     func(game_view.this_team.find_take(&f).unwrap());
+                // }
 
 
                 PartialMoveSigl{

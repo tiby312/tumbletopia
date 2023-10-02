@@ -323,7 +323,8 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
         match unit.typ {
             Type::Warrior => false,
             Type::Para => true,
-            _ => todo!(),
+            Type::Rook=>true,
+            _=>todo!()
         }
     };
     restricted_movement
@@ -383,17 +384,22 @@ pub fn generate_unit_possible_moves_inner(
         //     ph,
         // )
     } else {
+        let rook_pos:Vec<_>=game.that_team.units.iter().filter(|a|a.typ==Type::Rook).map(|a|a.position).collect();
+        let rook_pos=rook_pos.into_iter().flat_map(|a|a.to_cube().neighbours().map(|a|a.to_axial()));
         movement::compute_moves2(
             unit.position,
             &game
                 .world
                 .filter()
                 .and(
-                    game.that_team
-                        .filter_type(Type::Warrior)
-                        .and(game.that_team.filter())
-                        .not(),
+                    movement::AcceptCoords::new(rook_pos.into_iter()).not()
                 )
+                // .and(
+                //     game.that_team
+                //         .filter_type(Type::Warrior)
+                //         .and(game.that_team.filter())
+                //         .not(),
+                // )
                 .and(game.this_team.filter().not()),
             &game.this_team.filter().or(movement::AcceptCoords::new(
                 board::water_border().map(|x| x.to_axial()),

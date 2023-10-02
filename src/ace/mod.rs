@@ -579,9 +579,9 @@ pub async fn main_logic<'a>(
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Cats {
+        //if team_index == ActiveTeam::Cats {
         //{
-            //if false {
+            if false {
             let the_move = ai::iterative_deepening(game, team_index);
 
             let mut game = game.view_mut(team_index);
