@@ -311,23 +311,23 @@ impl MoveLog {
 }
 
 pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
-    let restricted_movement = if let Some(_) = unit
-        .position
-        .to_cube()
-        .ring(1)
-        .map(|s| game.that_team.find_slow(&s.to_axial()).is_some())
-        .find(|a| *a)
-    {
-        true
-    } else {
+    // let restricted_movement = if let Some(_) = unit
+    //     .position
+    //     .to_cube()
+    //     .ring(1)
+    //     .map(|s| game.that_team.find_slow(&s.to_axial()).is_some())
+    //     .find(|a| *a)
+    // {
+    //     true
+    // } else {
         match unit.typ {
             Type::Warrior => false,
             Type::Para => true,
             Type::Rook=>true,
             _=>todo!()
         }
-    };
-    restricted_movement
+    // };
+    // restricted_movement
 }
 pub fn generate_unit_possible_moves_inner(
     unit: &UnitData,
@@ -386,6 +386,7 @@ pub fn generate_unit_possible_moves_inner(
     } else {
         let rook_pos:Vec<_>=game.that_team.units.iter().filter(|a|a.typ==Type::Rook).map(|a|a.position).collect();
         let rook_pos=rook_pos.into_iter().flat_map(|a|a.to_cube().neighbours().map(|a|a.to_axial()));
+        
         movement::compute_moves2(
             unit.position,
             &game
