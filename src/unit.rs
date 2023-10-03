@@ -52,7 +52,7 @@ impl Type {
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Tribe {
-    pub units: smallvec::SmallVec<[UnitData; 5]>,
+    pub units: smallvec::SmallVec<[UnitData; 6]>,
 }
 impl Tribe {
     pub fn add(&mut self, a: UnitData) {

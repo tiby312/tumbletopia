@@ -317,19 +317,22 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-    let cats: smallvec::SmallVec<[UnitData; 5]> = smallvec::smallvec![
-        UnitData::new(GridCoord([-2, 2]), Type::Para),
-        UnitData::new(GridCoord([-2, 1]), Type::Warrior),
-        UnitData::new(GridCoord([-1, 1]), Type::Rook),
-        UnitData::new(GridCoord([-1, 2]), Type::Warrior),
-        //UnitData::new(GridCoord([-3, 3]), Type::Warrior),
+    let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
+        UnitData::new(GridCoord([-4, 4]), Type::Para),
+        UnitData::new(GridCoord([-2, 1]), Type::Rook),
+        //UnitData::new(GridCoord([-1, 1]), Type::Rook),
+        UnitData::new(GridCoord([-1, 2]), Type::Rook),
+        UnitData::new(GridCoord([-3, 1]), Type::Warrior),
+        UnitData::new(GridCoord([-1, 3]), Type::Warrior),
     ];
 
     let dogs = smallvec::smallvec![
-        UnitData::new(GridCoord([2, -2]), Type::Para),
-        UnitData::new(GridCoord([1, -2]), Type::Warrior),
-        UnitData::new(GridCoord([1, -1]), Type::Rook),
-        UnitData::new(GridCoord([2, -1]), Type::Warrior),
+        UnitData::new(GridCoord([4, -4]), Type::Para),
+        UnitData::new(GridCoord([1, -2]), Type::Rook),
+        //UnitData::new(GridCoord([1, -1]), Type::Rook),
+        UnitData::new(GridCoord([2, -1]), Type::Rook),
+        UnitData::new(GridCoord([1, -3]), Type::Warrior),
+        UnitData::new(GridCoord([3, -1]), Type::Warrior),
     ];
 
     let mut ggame = GameState {
