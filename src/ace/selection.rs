@@ -320,12 +320,12 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
     // {
     //     true
     // } else {
-        match unit.typ {
-            Type::Warrior => false,
-            Type::Para => true,
-            Type::Rook=>true,
-            _=>todo!()
-        }
+    match unit.typ {
+        Type::Warrior => false,
+        Type::Para => true,
+        Type::Rook => true,
+        _ => todo!(),
+    }
     // };
     // restricted_movement
 }
@@ -384,17 +384,32 @@ pub fn generate_unit_possible_moves_inner(
         //     ph,
         // )
     } else {
-        let rook_pos:Vec<_>=game.that_team.units.iter().filter(|a|a.typ==Type::Rook).map(|a|a.position).collect();
-        let rook_pos=rook_pos.into_iter().flat_map(|a|a.to_cube().neighbours().map(|a|a.to_axial()));
-        
+        let rook_pos: Vec<_> = game
+            .that_team
+            .units
+            .iter()
+            .filter(|a| a.typ == Type::Rook)
+            .map(|a| a.position)
+            .collect();
+        let rook_pos = rook_pos
+            .into_iter()
+            .flat_map(|a| a.to_cube().neighbours().map(|a| a.to_axial()));
+        let rook_pos = rook_pos.filter(|a| game.that_team.find_slow(a).is_none());
+        let foo = movement::AcceptCoords::new(rook_pos.into_iter()).not();
+
+        let foo = if restricted_movement {
+            movement::Either::A(movement::NoFilter)
+        } else {
+            movement::Either::B(foo)
+        };
+
         movement::compute_moves2(
             unit.position,
             &game
                 .world
                 .filter()
-                .and(
-                    movement::AcceptCoords::new(rook_pos.into_iter()).not()
-                )
+                .and(foo)
+                .and(game.that_team.filter().not())
                 // .and(
                 //     game.that_team
                 //         .filter_type(Type::Warrior)
@@ -402,11 +417,12 @@ pub fn generate_unit_possible_moves_inner(
                 //         .not(),
                 // )
                 .and(game.this_team.filter().not()),
-            &game.this_team.filter().or(movement::AcceptCoords::new(
-                board::water_border().map(|x| x.to_axial()),
-            )),
+            &game.that_team.filter(),
+            // &game.this_team.filter().or(movement::AcceptCoords::new(
+            //     board::water_border().map(|x| x.to_axial()),
+            // )),
             restricted_movement,
-            true,
+            false, //true
         )
     };
     mm

@@ -223,9 +223,6 @@ impl FilterRes {
     }
 }
 
-
-
-
 pub struct AcceptCoords<I> {
     coords: I,
 }
@@ -280,6 +277,19 @@ impl<F: Filter> Filter for NotFilter<F> {
         match self.filter.filter(a) {
             FilterRes::Accept => FilterRes::Stop,
             FilterRes::Stop => FilterRes::Accept,
+        }
+    }
+}
+
+pub enum Either<A, B> {
+    A(A),
+    B(B),
+}
+impl<A: Filter, B: Filter> Filter for Either<A, B> {
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        match self {
+            Either::A(c) => c.filter(a),
+            Either::B(c) => c.filter(a),
         }
     }
 }
@@ -589,40 +599,45 @@ pub fn compute_moves2<F: Filter, F2: Filter>(
         //TODO first check if this cell is already set
 
         if let FilterRes::Stop = filter.filter(&first) {
-            return false;
-        }
-
-        if slide_rule {
-            let ttt1_skip = match skip_filter.filter(&coord.advance(dir.rotate60_right())) {
-                FilterRes::Stop => false,
-                FilterRes::Accept => true,
-            };
-
-            let ttt2_skip = match skip_filter.filter(&coord.advance(dir.rotate60_left())) {
-                FilterRes::Stop => false,
-                FilterRes::Accept => true,
-            };
-
-            //let skip_foo=ttt1_skip | ttt2_skip;
-
-            let ttt1 = match filter.filter(&coord.advance(dir.rotate60_right())) {
-                FilterRes::Stop => false,
-                FilterRes::Accept => true,
-            };
-
-            let ttt2 = match filter.filter(&coord.advance(dir.rotate60_left())) {
-                FilterRes::Stop => false,
-                FilterRes::Accept => true,
-            };
-
-            if !ttt1 && !ttt2 && !ttt1_skip && !ttt2_skip {
-                return false;
+            if let FilterRes::Accept = skip_filter.filter(&first) {
+                m.add(first.sub(&base));
             }
-        }
-
-        if let FilterRes::Stop = filter.filter(&first) {
             return false;
         }
+
+        m.add(first.sub(&base));
+
+        // if slide_rule {
+        //     let ttt1_skip = match skip_filter.filter(&coord.advance(dir.rotate60_right())) {
+        //         FilterRes::Stop => false,
+        //         FilterRes::Accept => true,
+        //     };
+
+        //     let ttt2_skip = match skip_filter.filter(&coord.advance(dir.rotate60_left())) {
+        //         FilterRes::Stop => false,
+        //         FilterRes::Accept => true,
+        //     };
+
+        //     //let skip_foo=ttt1_skip | ttt2_skip;
+
+        //     let ttt1 = match filter.filter(&coord.advance(dir.rotate60_right())) {
+        //         FilterRes::Stop => false,
+        //         FilterRes::Accept => true,
+        //     };
+
+        //     let ttt2 = match filter.filter(&coord.advance(dir.rotate60_left())) {
+        //         FilterRes::Stop => false,
+        //         FilterRes::Accept => true,
+        //     };
+
+        //     if !ttt1 && !ttt2 && !ttt1_skip && !ttt2_skip {
+        //         return false;
+        //     }
+        // }
+
+        // if let FilterRes::Stop = filter.filter(&first) {
+        //     return false;
+        // }
 
         //if let FilterRes::Accept = skip_filter.filter(&first) {
         m.add(first.sub(&base));

@@ -898,8 +898,6 @@ pub fn for_all_moves_v2(state: GameState, team: ActiveTeam) -> impl Iterator<Ite
         })
 }
 
-
-
 //TODO use this
 // pub fn for_all_moves_v3(game:&GameState,team:ActiveTeam) -> impl Iterator<Item = RegularSelection2>+'_ {
 //     game.view(team).this_team.units.iter().map(move |a|RegularSelection2{
