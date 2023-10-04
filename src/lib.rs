@@ -324,6 +324,7 @@ pub async fn worker_entry() {
         UnitData::new(GridCoord([-1, 2]), Type::Rook),
         UnitData::new(GridCoord([-3, 1]), Type::Warrior),
         UnitData::new(GridCoord([-1, 3]), Type::Warrior),
+        UnitData::new(GridCoord([-3, 3]), Type::Mage),
     ];
 
     let dogs = smallvec::smallvec![
@@ -333,6 +334,7 @@ pub async fn worker_entry() {
         UnitData::new(GridCoord([2, -1]), Type::Rook),
         UnitData::new(GridCoord([1, -3]), Type::Warrior),
         UnitData::new(GridCoord([3, -1]), Type::Warrior),
+        UnitData::new(GridCoord([3, -3]), Type::Mage),
     ];
 
     let mut ggame = GameState {

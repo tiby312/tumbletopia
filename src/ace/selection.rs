@@ -324,6 +324,7 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
         Type::Warrior => false,
         Type::Para => true,
         Type::Rook => true,
+        Type::Mage => false,
         _ => todo!(),
     }
     // };
@@ -397,7 +398,7 @@ pub fn generate_unit_possible_moves_inner(
         let rook_pos = rook_pos.filter(|a| game.that_team.find_slow(a).is_none());
         let foo = movement::AcceptCoords::new(rook_pos.into_iter()).not();
 
-        let foo = if restricted_movement {
+        let foo = if restricted_movement || unit.typ == Type::Mage {
             movement::Either::A(movement::NoFilter)
         } else {
             movement::Either::B(foo)
