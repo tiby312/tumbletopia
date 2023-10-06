@@ -324,7 +324,7 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
         Type::Warrior => false,
         Type::Para => true,
         Type::Rook => true,
-        Type::Mage => false,
+        Type::Mage => true,
         _ => todo!(),
     }
     // };
