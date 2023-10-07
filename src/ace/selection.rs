@@ -1,4 +1,4 @@
-use crate::movement::MovementMesh;
+use crate::movement::{MovementMesh, FilterRes};
 
 use super::*;
 
@@ -386,7 +386,7 @@ pub fn generate_unit_possible_moves_inner(
         // )
     } else {
         let rook_pos: Vec<_> = game
-            .that_team
+            .this_team
             .units
             .iter()
             .filter(|a| a.typ == Type::Rook)
@@ -395,13 +395,30 @@ pub fn generate_unit_possible_moves_inner(
         let rook_pos = rook_pos
             .into_iter()
             .flat_map(|a| a.to_cube().neighbours().map(|a| a.to_axial()));
-        let rook_pos = rook_pos.filter(|a| game.that_team.find_slow(a).is_none());
-        let foo = movement::AcceptCoords::new(rook_pos.into_iter()).not();
+        let rook_pos = rook_pos.filter(|a| game.this_team.find_slow(a).is_none());
+        let foo = movement::AcceptCoords::new(rook_pos.into_iter());
 
         let foo = if restricted_movement || unit.typ == Type::Mage {
-            movement::Either::A(movement::NoFilter)
+            movement::Either::A(movement::AllFilter)
         } else {
-            movement::Either::B(foo)
+            let rook_pos: Vec<_> = game
+            .this_team
+            .units
+            .iter()
+            .filter(|a| a.typ == Type::Rook)
+            .map(|a| a.position)
+            .collect();
+            let rook_pos = rook_pos
+                .into_iter()
+                .flat_map(|a| a.to_cube().neighbours().map(|a| a.to_axial()));
+            let foo2 = movement::AcceptCoords::new(rook_pos.into_iter());
+
+            let kk=if foo2.filter(&unit.position)==FilterRes::Accept{
+                movement::Either::A(foo)
+            }else{
+                movement::Either::B(movement::NegFilter)
+            };
+            movement::Either::B(kk)
         };
 
         movement::compute_moves2(

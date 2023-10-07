@@ -174,11 +174,21 @@ impl<T: Filter> Filter for &T {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct NoFilter;
+pub struct AllFilter;
 
-impl Filter for NoFilter {
+impl Filter for AllFilter {
     fn filter(&self, _: &GridCoord) -> FilterRes {
         FilterRes::from_bool(true)
+    }
+}
+
+
+#[derive(Copy, Clone, Debug)]
+pub struct NegFilter;
+
+impl Filter for NegFilter {
+    fn filter(&self, _: &GridCoord) -> FilterRes {
+        FilterRes::from_bool(false)
     }
 }
 
