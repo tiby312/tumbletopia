@@ -104,6 +104,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             .that_team
             .units
             .iter()
+            .filter(|x| x.typ == Type::Warrior)
             .map(|x| x.position.to_cube().dist(&king.position.to_cube()))
             .collect();
 
@@ -111,6 +112,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             .this_team
             .units
             .iter()
+            .filter(|x| x.typ == Type::Warrior)
             .filter(|x| x.position != king.position)
             .map(|x| x.position.to_cube().dist(&king.position.to_cube()))
             .collect();

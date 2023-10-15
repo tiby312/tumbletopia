@@ -196,6 +196,12 @@ pub enum FilterRes {
     Stop,
 }
 impl FilterRes {
+    pub fn to_bool(self) -> bool {
+        match self {
+            FilterRes::Accept => true,
+            FilterRes::Stop => false,
+        }
+    }
     pub fn and(self, other: FilterRes) -> FilterRes {
         match (self, other) {
             (FilterRes::Accept, FilterRes::Accept) => FilterRes::Accept,
@@ -577,6 +583,56 @@ pub struct MoveCand<P> {
 //     }
 // }
 
+pub enum ComputeMovesRes {
+    Add,
+    AddAndStop,
+    Stop,
+    NoAddContinue,
+}
+
+pub fn compute_moves22<F: FnMut(&GridCoord) -> ComputeMovesRes>(
+    coord: GridCoord,
+    restricted_movement: bool,
+    mut func: F,
+) -> MovementMesh {
+    fn handle<F: FnMut(&GridCoord) -> ComputeMovesRes>(
+        m: &mut MovementMesh,
+        base: GridCoord,
+        coord: GridCoord,
+        dir: HexDir,
+        mut func: F,
+    ) -> bool {
+        let first = coord.advance(dir);
+
+        match func(&first) {
+            ComputeMovesRes::Add => {
+                m.add(first.sub(&base));
+                true
+            }
+            ComputeMovesRes::AddAndStop => {
+                m.add(first.sub(&base));
+                false
+            }
+            ComputeMovesRes::Stop => false,
+            ComputeMovesRes::NoAddContinue => true,
+        }
+    }
+
+    let mut m = MovementMesh::new();
+
+    for (a, rest) in self::movement_mesh::explore_outward_two() {
+        if handle(&mut m, coord, coord, a, &mut func) {
+            if !restricted_movement {
+                let first = coord.advance(a);
+                for a in rest {
+                    let _ = handle(&mut m, coord, first, a, &mut func);
+                }
+            }
+        }
+    }
+
+    m
+}
 pub fn compute_moves2<F: Filter, F2: Filter>(
     coord: GridCoord,
     filter: &F,
@@ -586,6 +642,7 @@ pub fn compute_moves2<F: Filter, F2: Filter>(
 ) -> MovementMesh {
     let mut m = MovementMesh::new();
 
+    //TODO make this a closure
     fn handle<F: Filter, F2: Filter>(
         m: &mut MovementMesh,
         base: GridCoord,
