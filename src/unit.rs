@@ -6,10 +6,16 @@ use super::*;
 pub struct UnitData {
     pub position: GridCoord,
     pub typ: Type,
+    pub direction: hex::Dir,
 }
+
 impl UnitData {
     pub fn new(position: GridCoord, typ: Type) -> Self {
-        UnitData { position, typ }
+        UnitData {
+            position,
+            typ,
+            direction: std::default::Default::default(),
+        }
     }
 }
 

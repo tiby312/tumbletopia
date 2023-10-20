@@ -1,4 +1,4 @@
-use crate::movement::{Filter, FilterRes, GridCoord};
+use crate::movement::{Filter, FilterRes, GridCoord, HexDir};
 
 // pub const OFFSETS: [[i16; 3]; 6] = [
 //     [0, 1, -1],
@@ -18,8 +18,19 @@ pub const OFFSETS: [[i16; 3]; 6] = [
     [0, 1, -1],
 ];
 
+#[test]
+fn what() {
+    let k = Cube(OFFSETS[0]);
+
+    let j = k.rotate_60_right().rotate_60_right();
+
+    assert_eq!(j.0, [0, -1, 1]);
+}
+
 //TODO use this
+#[derive(Copy, Clone, Default, Hash, Debug, PartialEq, Eq)]
 pub enum Dir {
+    #[default]
     BottomRight = 0,
     TopRight = 1,
     Top = 2,
@@ -56,6 +67,31 @@ pub const HEX_PROJ_FLAT: cgmath::Matrix2<f32> =
 #[derive(Copy, Clone, Debug)]
 pub struct Cube(pub [i16; 3]);
 impl Cube {
+    // triplex & operator*=(const triplex &rhs)
+    // {
+    //     /*
+    //      * (this->r + this->s * f) * (rhs.r + rhs.s * f)
+    //      * = this->r * rhs.r + (this->r * rhs.s + this->s * rhs.r ) * f
+    //      *   + this->s * rhs.s * f * f
+    //      *
+    //      * ... remembering that f * f = -3 ...
+    //      *
+    //      * = (this->r * rhs.r - 3 * this->s * rhs.s)
+    //      *   + (this->r * rhs.s + this->s * rhs.r) * f
+    //      */
+    //     int new_r = this->r * rhs.r - 3 * this->s * rhs.s;
+    //     int new_s = this->r * rhs.s + this->s * rhs.r;
+    //     this->r = new_r; this->s = new_s;
+    //     return *this;
+    // }
+    pub fn triplex(self, other: &Cube) -> Self {
+        let this = &self.0;
+        let other = &other.0;
+        let new_q = this[0] * other[0] - 3 * this[1] * other[1];
+        let new_r = this[0] * other[1] + this[1] * other[1];
+        Cube::new(new_q, new_r)
+    }
+
     pub fn new(q: i16, r: i16) -> Self {
         Cube([q, r, -q - r])
     }
@@ -67,6 +103,20 @@ impl Cube {
         let [q, r, s] = self.0;
         Cube([r, s, q])
     }
+
+    pub fn rotate(self, dir: HexDir) -> Cube {
+        let k = self;
+        match dir.dir {
+            0 => k,
+            1 => k.rotate_60_right(),
+            2 => k.rotate_60_right().rotate_60_right(),
+            3 => k.rotate_60_right().rotate_60_right().rotate_60_right(),
+            4 => k.rotate_60_left().rotate_60_left(),
+            5 => k.rotate_60_left(),
+            _ => unreachable!(),
+        }
+    }
+
     pub fn round(frac: [f32; 3]) -> Cube {
         let mut q = frac[0].round() as i16;
         let mut r = frac[1].round() as i16;
@@ -86,7 +136,7 @@ impl Cube {
         return Cube([q, r, s]);
     }
 
-    pub fn to_axial(&self) -> GridCoord {
+    pub const fn to_axial(&self) -> GridCoord {
         GridCoord([self.0[0], self.0[1]])
     }
 

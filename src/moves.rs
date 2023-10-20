@@ -185,6 +185,15 @@ mod inner_partial {
                 //this_unit.position= path.get_end_coord(this_unit.position);
                 this_unit.position=end;
 
+                match this_unit.typ{
+                    Type::Warrior=>{
+
+                    },
+                    _=>{
+                        todo!()
+                    }
+                }
+
                 if let Some(g)=game_view.that_team.find_take(&end){
                     //TODO removed
                 }

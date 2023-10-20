@@ -1,4 +1,4 @@
-use crate::movement::{ComputeMovesRes, MovementMesh};
+use crate::movement::{ComputeMovesRes, HexDir, MovementMesh};
 
 use super::*;
 
@@ -330,6 +330,24 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
     // };
     // restricted_movement
 }
+
+pub enum Steering {
+    Left,
+    Right,
+    None,
+}
+
+pub const WARRIOR_STEERING: [(GridCoord, Steering); 3] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    [
+        (f1, Steering::Left),
+        (f2, Steering::Right),
+        (f3, Steering::None),
+    ]
+};
+
 pub fn generate_unit_possible_moves_inner(
     unit: &UnitData,
     game: &GameViewMut,
@@ -386,44 +404,57 @@ pub fn generate_unit_possible_moves_inner(
         // )
     } else {
         if unit.typ == Type::Warrior {
-            let rook_pos: Vec<_> = game
-                .that_team
-                .units
-                .iter()
-                .filter(|a| a.typ == Type::Rook)
-                .map(|a| a.position)
-                .collect();
-            let rook_pos = rook_pos
-                .into_iter()
-                .flat_map(|a| a.to_cube().neighbours().map(|a| a.to_axial()));
-            let rook_pos = rook_pos.filter(|a| game.that_team.find_slow(a).is_none());
-            let foo = movement::AcceptCoords::new(rook_pos.into_iter()).not();
+            let mut mesh = movement::MovementMesh::new();
 
-            movement::compute_moves22(unit.position, false, |pos| {
-                let f1 = game.world.filter().filter(pos).to_bool();
-                let f2 = foo.filter(pos).to_bool();
-                let f3 = game.that_team.filter().filter(pos).to_bool();
-                let f4 = game.this_team.filter().filter(pos).to_bool();
+            let k = HexDir {
+                dir: unit.direction as u8,
+            };
 
-                if f1 && f2 && !f3 && !f4 {
-                    ComputeMovesRes::Add
-                } else {
-                    if let Some(f) = game.that_team.find_slow(pos) {
-                        if f.typ == Type::Warrior || f.typ == Type::Para {
-                            ComputeMovesRes::AddAndStop
-                        } else {
-                            ComputeMovesRes::Stop
-                        }
-                    } else {
-                        ComputeMovesRes::Stop
-                    }
-                    // if game.that_team.filter().filter(pos).to_bool() {
-                    //     ComputeMovesRes::AddAndStop
-                    // } else {
-                    //     ComputeMovesRes::Stop
-                    // }
-                }
-            })
+            let m = WARRIOR_STEERING.map(|a| a.0.to_cube().rotate(k));
+
+            for a in m {
+                mesh.add(a.to_axial());
+            }
+
+            mesh
+            // let rook_pos: Vec<_> = game
+            //     .that_team
+            //     .units
+            //     .iter()
+            //     .filter(|a| a.typ == Type::Rook)
+            //     .map(|a| a.position)
+            //     .collect();
+            // let rook_pos = rook_pos
+            //     .into_iter()
+            //     .flat_map(|a| a.to_cube().neighbours().map(|a| a.to_axial()));
+            // let rook_pos = rook_pos.filter(|a| game.that_team.find_slow(a).is_none());
+            // let foo = movement::AcceptCoords::new(rook_pos.into_iter()).not();
+
+            // movement::compute_moves22(unit.position, false, |pos| {
+            //     let f1 = game.world.filter().filter(pos).to_bool();
+            //     let f2 = foo.filter(pos).to_bool();
+            //     let f3 = game.that_team.filter().filter(pos).to_bool();
+            //     let f4 = game.this_team.filter().filter(pos).to_bool();
+
+            //     if f1 && f2 && !f3 && !f4 {
+            //         ComputeMovesRes::Add
+            //     } else {
+            //         if let Some(f) = game.that_team.find_slow(pos) {
+            //             if f.typ == Type::Warrior || f.typ == Type::Para {
+            //                 ComputeMovesRes::AddAndStop
+            //             } else {
+            //                 ComputeMovesRes::Stop
+            //             }
+            //         } else {
+            //             ComputeMovesRes::Stop
+            //         }
+            //         // if game.that_team.filter().filter(pos).to_bool() {
+            //         //     ComputeMovesRes::AddAndStop
+            //         // } else {
+            //         //     ComputeMovesRes::Stop
+            //         // }
+            //     }
+            // })
         } else if unit.typ == Type::Rook {
             movement::compute_moves22(unit.position, false, |pos| {
                 let f1 = game.world.filter().filter(pos).to_bool();

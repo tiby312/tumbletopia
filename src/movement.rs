@@ -16,14 +16,14 @@ impl MoveStrategy for WarriorMovement {
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct HexDir {
-    dir: u8,
+    pub dir: u8,
 }
 
 impl HexDir {
     pub fn all() -> impl Iterator<Item = HexDir> {
         (0..6).map(|dir| HexDir { dir })
     }
-    pub fn rotate60_right(&self) -> HexDir {
+    pub const fn rotate60_right(&self) -> HexDir {
         // 0->4
         // 1->5
         // 2->0
@@ -36,7 +36,7 @@ impl HexDir {
         }
     }
 
-    pub fn rotate60_left(&self) -> HexDir {
+    pub const fn rotate60_left(&self) -> HexDir {
         // 0->2
         // 1->3
         // 2->4
@@ -49,7 +49,7 @@ impl HexDir {
         }
     }
 
-    pub fn to_relative(&self) -> GridCoord {
+    pub const fn to_relative(&self) -> GridCoord {
         hex::Cube(hex::OFFSETS[self.dir as usize]).to_axial()
     }
 }
@@ -141,7 +141,7 @@ impl GridCoord {
         let a = self.0;
         hex::Cube([a[0], a[1], -a[0] - a[1]])
     }
-    pub fn advance(self, m: HexDir) -> GridCoord {
+    pub const fn advance(self, m: HexDir) -> GridCoord {
         self.add(m.to_relative())
     }
     pub fn sub(mut self, o: &GridCoord) -> Self {
@@ -149,7 +149,7 @@ impl GridCoord {
         self.0[1] -= o.0[1];
         self
     }
-    pub fn add(mut self, o: GridCoord) -> Self {
+    pub const fn add(mut self, o: GridCoord) -> Self {
         self.0[0] += o.0[0];
         self.0[1] += o.0[1];
         self
