@@ -414,12 +414,8 @@ pub fn generate_unit_possible_moves_inner(
 
             let k = unit.direction;
 
-            console_dbg!("START ROTATE", k);
-            //let k=HexDir{dir: as u8};
-
             let m = WARRIOR_STEERING.map(|a| (a.0.to_cube().rotate_back(k), a.1, a.2));
-            console_dbg!(WARRIOR_STEERING, m);
-
+            
             for (rel_coord, _, attack) in m {
                 let abs_coord = unit.position.add(rel_coord.to_axial());
 
@@ -442,44 +438,7 @@ pub fn generate_unit_possible_moves_inner(
             }
 
             mesh
-            // let rook_pos: Vec<_> = game
-            //     .that_team
-            //     .units
-            //     .iter()
-            //     .filter(|a| a.typ == Type::Rook)
-            //     .map(|a| a.position)
-            //     .collect();
-            // let rook_pos = rook_pos
-            //     .into_iter()
-            //     .flat_map(|a| a.to_cube().neighbours().map(|a| a.to_axial()));
-            // let rook_pos = rook_pos.filter(|a| game.that_team.find_slow(a).is_none());
-            // let foo = movement::AcceptCoords::new(rook_pos.into_iter()).not();
-
-            // movement::compute_moves22(unit.position, false, |pos| {
-            //     let f1 = game.world.filter().filter(pos).to_bool();
-            //     let f2 = foo.filter(pos).to_bool();
-            //     let f3 = game.that_team.filter().filter(pos).to_bool();
-            //     let f4 = game.this_team.filter().filter(pos).to_bool();
-
-            //     if f1 && f2 && !f3 && !f4 {
-            //         ComputeMovesRes::Add
-            //     } else {
-            //         if let Some(f) = game.that_team.find_slow(pos) {
-            //             if f.typ == Type::Warrior || f.typ == Type::Para {
-            //                 ComputeMovesRes::AddAndStop
-            //             } else {
-            //                 ComputeMovesRes::Stop
-            //             }
-            //         } else {
-            //             ComputeMovesRes::Stop
-            //         }
-            //         // if game.that_team.filter().filter(pos).to_bool() {
-            //         //     ComputeMovesRes::AddAndStop
-            //         // } else {
-            //         //     ComputeMovesRes::Stop
-            //         // }
-            //     }
-            // })
+            
         } else if unit.typ == Type::Rook {
             movement::compute_moves22(unit.position, false, |pos| {
                 let f1 = game.world.filter().filter(pos).to_bool();
