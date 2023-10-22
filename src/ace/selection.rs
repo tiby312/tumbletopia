@@ -330,27 +330,54 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
     // };
     // restricted_movement
 }
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum Steering {
     Left,
     Right,
     None,
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum Attackable {
     Yes,
     No,
 }
 
-pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable); 3] = {
+#[derive(Copy, Clone, Debug)]
+pub enum StopsIter {
+    Yes,
+    No,
+}
+
+pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 3] = {
     let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
     let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
     let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
     [
-        (f1, Steering::Left, Attackable::Yes),
-        (f2, Steering::Right, Attackable::Yes),
-        (f3, Steering::None, Attackable::No),
+        (f1, Steering::Left, Attackable::Yes, StopsIter::No),
+        (f2, Steering::Right, Attackable::Yes, StopsIter::No),
+        (f3, Steering::None, Attackable::No, StopsIter::No),
+    ]
+};
+
+pub const ROOK_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 5] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    let f4 = GridCoord([0, 0])
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 });
+    let f5 = GridCoord([0, 0])
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 });
+
+    [
+        (f1, Steering::Left, Attackable::No, StopsIter::No),
+        (f2, Steering::Right, Attackable::No, StopsIter::No),
+        (f3, Steering::None, Attackable::Yes, StopsIter::Yes),
+        (f4, Steering::None, Attackable::Yes, StopsIter::Yes),
+        (f5, Steering::None, Attackable::Yes, StopsIter::Yes),
     ]
 };
 
@@ -409,79 +436,95 @@ pub fn generate_unit_possible_moves_inner(
         //     ph,
         // )
     } else {
-        if unit.typ == Type::Warrior {
-            let mut mesh = movement::MovementMesh::new();
-
-            let k = unit.direction;
-
-            let m = WARRIOR_STEERING.map(|a| (a.0.to_cube().rotate_back(k), a.1, a.2));
-            
-            for (rel_coord, _, attack) in m {
-                let abs_coord = unit.position.add(rel_coord.to_axial());
-
-                let mm = if let Attackable::No = attack {
-                    if game.that_team.find_slow(&abs_coord).is_some() {
-                        false
-                    } else {
-                        true
-                    }
-                } else {
-                    true
-                };
-
-                let f1 = game.world.filter().filter(&abs_coord).to_bool();
-                let f2 = game.this_team.filter().filter(&abs_coord).to_bool();
-
-                if mm && f1 && !f2 {
-                    mesh.add(rel_coord.to_axial());
-                }
-            }
-
-            mesh
-            
+        let steering = if unit.typ == Type::Warrior || unit.typ == Type::Para {
+            WARRIOR_STEERING.iter()
         } else if unit.typ == Type::Rook {
-            movement::compute_moves22(unit.position, false, |pos| {
-                let f1 = game.world.filter().filter(pos).to_bool();
-                let f3 = game.that_team.filter().filter(pos).to_bool();
-                let f4 = game.this_team.filter().filter(pos).to_bool();
+            ROOK_STEERING.iter()
 
-                if f1 && !f3 && !f4 {
-                    ComputeMovesRes::Add
-                } else {
-                    // if let Some(k)=game.that_team.find_slow(pos){
-                    //     if k.typ==Type::Rook{
-                    //         ComputeMovesRes::Add
-                    //     }else{
-                    //         ComputeMovesRes::NoAddContinue
-                    //     }
-                    // }else{
-                    //     ComputeMovesRes::NoAddContinue
-                    // }
+            // movement::compute_moves22(unit.position, false, |pos| {
+            //     let f1 = game.world.filter().filter(pos).to_bool();
+            //     let f3 = game.that_team.filter().filter(pos).to_bool();
+            //     let f4 = game.this_team.filter().filter(pos).to_bool();
 
-                    ComputeMovesRes::NoAddContinue
-                    // if game.that_team.filter().filter(pos).to_bool(){
-                    //     ComputeMovesRes::AddAndStop
-                    // }else{
-                    //     ComputeMovesRes::Stop
-                    // }
-                }
-            })
-        } else if unit.typ == Type::Para {
-            movement::compute_moves2(
-                unit.position,
-                &game
-                    .world
-                    .filter()
-                    //.and(foo)
-                    .and(game.that_team.filter().not())
-                    .and(game.this_team.filter().not()),
-                &game.that_team.filter(),
-                true,
-                false, //true
-            )
+            //     if f1 && !f3 && !f4 {
+            //         ComputeMovesRes::Add
+            //     } else {
+            //         // if let Some(k)=game.that_team.find_slow(pos){
+            //         //     if k.typ==Type::Rook{
+            //         //         ComputeMovesRes::Add
+            //         //     }else{
+            //         //         ComputeMovesRes::NoAddContinue
+            //         //     }
+            //         // }else{
+            //         //     ComputeMovesRes::NoAddContinue
+            //         // }
+
+            //         ComputeMovesRes::NoAddContinue
+            //         // if game.that_team.filter().filter(pos).to_bool(){
+            //         //     ComputeMovesRes::AddAndStop
+            //         // }else{
+            //         //     ComputeMovesRes::Stop
+            //         // }
+            //     }
+            // })
+            // } else if unit.typ == Type::Para {
+            //     movement::compute_moves2(
+            //         unit.position,
+            //         &game
+            //             .world
+            //             .filter()
+            //             //.and(foo)
+            //             .and(game.that_team.filter().not())
+            //             .and(game.this_team.filter().not()),
+            //         &game.that_team.filter(),
+            //         true,
+            //         false, //true
+            //     )
         } else {
             unreachable!()
+        };
+
+        let mut mesh = movement::MovementMesh::new();
+
+        let k = unit.direction;
+
+        let m = steering.map(|a| (a.0.to_cube().rotate_back(k), a.1, a.2, a.3));
+
+        for (rel_coord, _, attack, stop_iter) in m {
+            let abs_coord = unit.position.add(rel_coord.to_axial());
+
+            let mm = if let Attackable::No = attack {
+                if game.that_team.find_slow(&abs_coord).is_some() {
+                    false
+                } else {
+                    true
+                }
+            } else {
+                true
+            };
+
+            let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
+            let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
+
+            let is_world_cell = game.world.filter().filter(&abs_coord).to_bool();
+            //let f2 = game.this_team.filter().filter(&abs_coord).to_bool();
+
+            let move_ok = if enemy_exist {
+                if let Attackable::Yes = attack {
+                    true
+                } else {
+                    false
+                }
+            } else {
+                true
+            };
+
+            if move_ok && !friendly_exist && is_world_cell {
+                mesh.add(rel_coord.to_axial());
+            }
         }
+
+        mesh
         // let rook_pos: Vec<_> = game
         //     .that_team
         //     .units

@@ -185,43 +185,41 @@ mod inner_partial {
                 //this_unit.position= path.get_end_coord(this_unit.position);
                 this_unit.position=end;
 
-                match this_unit.typ{
-                    Type::Warrior=>{
-                        let offset=end.sub(&start);
+
+                let mut steering=match this_unit.typ{
+                    Type::Warrior | Type::Para=>{
                         use crate::ace::selection::WARRIOR_STEERING;
-                        use crate::movement::HexDir;
-                        let k = this_unit.direction;;
 
-                        console_dbg!(offset,k);
+                        WARRIOR_STEERING.iter()
+                    },
+                    Type::Rook=>{
+                        use crate::ace::selection::ROOK_STEERING;
+
+                        ROOK_STEERING.iter()
+                    },
+                    _=>todo!()
+                };
+
+                        let offset=end.sub(&start);
+                        let k = this_unit.direction;
+
                         let f=offset.to_cube().rotate(k);
-                        console_dbg!(offset,f,k);
 
-                        let ans=WARRIOR_STEERING.iter().find(|a|a.0==f.to_axial()).expect("impossible steer");
+                        let ans=steering.find(|a|a.0==f.to_axial()).expect("impossible steer");
                         use crate::ace::selection::Steering;
                         match ans.1{
                             Steering::Left=>{
-                                console_dbg!("left",k);
                                 this_unit.direction=k.rotate60_right();
-                                console_dbg!(this_unit.direction);
 
                             },
                             Steering::Right=>{
-                                console_dbg!("right",k);
-
                                 this_unit.direction=k.rotate60_left();
-                                console_dbg!(this_unit.direction);
 
                             },
                             Steering::None=>{
 
                             }
                         }
-
-                    },
-                    _=>{
-                        todo!()
-                    }
-                }
 
                 if let Some(g)=game_view.that_team.find_take(&end){
                     //TODO removed
