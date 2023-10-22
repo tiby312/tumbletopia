@@ -406,12 +406,11 @@ pub fn generate_unit_possible_moves_inner(
         if unit.typ == Type::Warrior {
             let mut mesh = movement::MovementMesh::new();
 
-            let k = HexDir {
-                dir: unit.direction as u8,
-            };
+            let k = unit.direction;
 
-            let m = WARRIOR_STEERING.map(|a| a.0.to_cube().rotate(k));
+            let m = WARRIOR_STEERING.map(|a| a.0.to_cube().rotate_back(k));
 
+            
             for a in m {
                 mesh.add(a.to_axial());
             }

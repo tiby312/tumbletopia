@@ -14,7 +14,7 @@ impl MoveStrategy for WarriorMovement {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Hash,Clone, Debug, Eq, PartialEq,Default)]
 pub struct HexDir {
     pub dir: u8,
 }

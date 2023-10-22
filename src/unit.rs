@@ -6,7 +6,7 @@ use super::*;
 pub struct UnitData {
     pub position: GridCoord,
     pub typ: Type,
-    pub direction: hex::Dir,
+    pub direction: movement::HexDir,
 }
 
 impl UnitData {

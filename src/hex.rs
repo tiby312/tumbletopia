@@ -32,22 +32,22 @@ fn what() {
 pub enum Dir {
     #[default]
     BottomRight = 0,
-    TopRight = 1,
-    Top = 2,
+    Bottom = 1,
+    BottomLeft = 2,
     TopLeft = 3,
-    BottomLeft = 4,
-    Bottom = 5,
+    Top = 4,
+    TopRight = 5,
 }
 impl From<u8> for Dir {
     fn from(value: u8) -> Self {
         use Dir::*;
         match value {
             0 => BottomRight,
-            1 => TopRight,
-            2 => Top,
+            1 => Bottom,
+            2 => BottomLeft,
             3 => TopLeft,
-            4 => BottomLeft,
-            5 => Bottom,
+            4 => Top,
+            5 => TopRight,
             _ => unreachable!(),
         }
     }
@@ -116,7 +116,18 @@ impl Cube {
             _ => unreachable!(),
         }
     }
-
+    pub fn rotate_back(self, dir: HexDir) -> Cube {
+        let k = self;
+        match dir.dir {
+            0 => k,
+            5 => k.rotate_60_right(),
+            4 => k.rotate_60_right().rotate_60_right(),
+            3 => k.rotate_60_right().rotate_60_right().rotate_60_right(),
+            2 => k.rotate_60_left().rotate_60_left(),
+            1 => k.rotate_60_left(),
+            _ => unreachable!(),
+        }
+    }
     pub fn round(frac: [f32; 3]) -> Cube {
         let mut q = frac[0].round() as i16;
         let mut r = frac[1].round() as i16;
