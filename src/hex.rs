@@ -96,12 +96,12 @@ impl Cube {
         Cube([q, r, -q - r])
     }
     pub fn rotate_60_right(self) -> Cube {
-        let [q, r, s] = self.0;
-        Cube([s, q, r])
+        let [q, _, s] = self.0;
+        Cube::new(-s, -q)
     }
     pub fn rotate_60_left(self) -> Cube {
-        let [q, r, s] = self.0;
-        Cube([r, s, q])
+        let [_, r, s] = self.0;
+        Cube::new(-r, -s)
     }
 
     pub fn rotate(self, dir: HexDir) -> Cube {

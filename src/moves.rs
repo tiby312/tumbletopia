@@ -191,11 +191,11 @@ mod inner_partial {
                         use crate::ace::selection::WARRIOR_STEERING;
                         use crate::movement::HexDir;
                         let k = this_unit.direction;;
-            
+
                         console_dbg!(offset,k);
-                        let f=offset.to_cube().rotate_back(k);
+                        let f=offset.to_cube().rotate(k);
                         console_dbg!(offset,f,k);
-                        
+
                         let ans=WARRIOR_STEERING.iter().find(|a|a.0==f.to_axial()).expect("impossible steer");
                         use crate::ace::selection::Steering;
                         match ans.1{
@@ -203,14 +203,14 @@ mod inner_partial {
                                 console_dbg!("left",k);
                                 this_unit.direction=k.rotate60_right();
                                 console_dbg!(this_unit.direction);
-                                
+
                             },
                             Steering::Right=>{
                                 console_dbg!("right",k);
-                                
+
                                 this_unit.direction=k.rotate60_left();
                                 console_dbg!(this_unit.direction);
-                                
+
                             },
                             Steering::None=>{
 

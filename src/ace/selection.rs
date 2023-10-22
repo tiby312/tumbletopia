@@ -330,7 +330,7 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
     // };
     // restricted_movement
 }
-
+#[derive(Debug)]
 pub enum Steering {
     Left,
     Right,
@@ -408,9 +408,12 @@ pub fn generate_unit_possible_moves_inner(
 
             let k = unit.direction;
 
-            let m = WARRIOR_STEERING.map(|a| a.0.to_cube().rotate_back(k));
+            console_dbg!("START ROTATE", k);
+            //let k=HexDir{dir: as u8};
 
-            
+            let m = WARRIOR_STEERING.map(|a| a.0.to_cube().rotate_back(k));
+            console_dbg!(WARRIOR_STEERING, m);
+
             for a in m {
                 mesh.add(a.to_axial());
             }
