@@ -318,22 +318,22 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
-        UnitData::new(GridCoord([-4, 4]), Type::Para),
+        UnitData::new(GridCoord([-4, 4]), Type::Para, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-2, 1]), Type::Rook),
         // //UnitData::new(GridCoord([-1, 1]), Type::Rook),
         // UnitData::new(GridCoord([-1, 2]), Type::Rook),
-        UnitData::new(GridCoord([-3, 1]), Type::Warrior),
-        UnitData::new(GridCoord([-1, 3]), Type::Warrior),
+        UnitData::new(GridCoord([-3, 1]), Type::Warrior, HexDir { dir: 5 }),
+        UnitData::new(GridCoord([-1, 3]), Type::Warrior, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 3]), Type::Rook),
     ];
 
     let dogs = smallvec::smallvec![
-        UnitData::new(GridCoord([4, -4]), Type::Para),
+        UnitData::new(GridCoord([4, -4]), Type::Para, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -2]), Type::Rook),
         // //UnitData::new(GridCoord([1, -1]), Type::Rook),
         // UnitData::new(GridCoord([2, -1]), Type::Rook),
-        UnitData::new(GridCoord([1, -3]), Type::Warrior),
-        UnitData::new(GridCoord([3, -1]), Type::Warrior),
+        UnitData::new(GridCoord([1, -3]), Type::Warrior, HexDir { dir: 2 }),
+        UnitData::new(GridCoord([3, -1]), Type::Warrior, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([3, -3]), Type::Rook),
     ];
 
@@ -847,6 +847,7 @@ fn string_to_coords<'a>(st: &str) -> model::ModelData {
 use web_sys::WebGl2RenderingContext;
 
 use crate::ace::{ActiveTeam, MousePrompt, Pototo};
+use crate::movement::HexDir;
 //use crate::gameplay::GameStepper;
 use crate::movement::MoveUnit;
 use crate::terrain::MoveCost;

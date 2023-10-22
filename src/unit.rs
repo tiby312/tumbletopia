@@ -10,11 +10,11 @@ pub struct UnitData {
 }
 
 impl UnitData {
-    pub fn new(position: GridCoord, typ: Type) -> Self {
+    pub fn new(position: GridCoord, typ: Type, direction: movement::HexDir) -> Self {
         UnitData {
             position,
             typ,
-            direction: std::default::Default::default(),
+            direction,
         }
     }
 }

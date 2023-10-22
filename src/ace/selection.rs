@@ -337,14 +337,20 @@ pub enum Steering {
     None,
 }
 
-pub const WARRIOR_STEERING: [(GridCoord, Steering); 3] = {
+#[derive(Debug)]
+pub enum Attackable {
+    Yes,
+    No,
+}
+
+pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable); 3] = {
     let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
     let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
     let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
     [
-        (f1, Steering::Left),
-        (f2, Steering::Right),
-        (f3, Steering::None),
+        (f1, Steering::Left, Attackable::Yes),
+        (f2, Steering::Right, Attackable::Yes),
+        (f3, Steering::None, Attackable::No),
     ]
 };
 
@@ -411,11 +417,28 @@ pub fn generate_unit_possible_moves_inner(
             console_dbg!("START ROTATE", k);
             //let k=HexDir{dir: as u8};
 
-            let m = WARRIOR_STEERING.map(|a| a.0.to_cube().rotate_back(k));
+            let m = WARRIOR_STEERING.map(|a| (a.0.to_cube().rotate_back(k), a.1, a.2));
             console_dbg!(WARRIOR_STEERING, m);
 
-            for a in m {
-                mesh.add(a.to_axial());
+            for (rel_coord, _, attack) in m {
+                let abs_coord = unit.position.add(rel_coord.to_axial());
+
+                let mm = if let Attackable::No = attack {
+                    if game.that_team.find_slow(&abs_coord).is_some() {
+                        false
+                    } else {
+                        true
+                    }
+                } else {
+                    true
+                };
+
+                let f1 = game.world.filter().filter(&abs_coord).to_bool();
+                let f2 = game.this_team.filter().filter(&abs_coord).to_bool();
+
+                if mm && f1 && !f2 {
+                    mesh.add(rel_coord.to_axial());
+                }
             }
 
             mesh
