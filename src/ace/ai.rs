@@ -41,54 +41,37 @@ fn absolute_evaluate(view: &GameState) -> Eval {
 
     //TODO check if warriors are restricted
 
+    fn doop(me: &UnitData, king: &UnitData) -> i64 {
+        let king_pos = king.position;
+        let king_dir = king.direction;
+
+        let distance = me.position.to_cube().dist(&king_pos.to_cube());
+
+        let projected_king_pos = king_pos.add(
+            king_dir
+                .to_relative()
+                .advance_by(king_dir, distance.try_into().unwrap()),
+        );
+
+        let distance_to_projected = me.position.to_cube().dist(&projected_king_pos.to_cube());
+
+        let x = distance_to_projected as i64;
+        x * x
+    }
+    //TODO handle case where it runs off the board?
     let cat_distance_to_dog2 = view
         .cats
         .units
         .iter()
-        .map(|x| {
-            let king_pos = dog_king.position;
-            let king_dir = dog_king.direction;
-
-            let distance = x.position.to_cube().dist(&king_pos.to_cube());
-
-            let projected_king_pos = king_pos.add(
-                king_dir
-                    .to_relative()
-                    .advance_by(king_dir, distance.try_into().unwrap()),
-            );
-
-            let distance_to_projected = x.position.to_cube().dist(&projected_king_pos.to_cube());
-
-            let x = distance_to_projected as i64;
-            x * x
-        })
+        .map(|x| doop(x, dog_king))
         .fold(0, |acc, f| acc + f);
 
-    //how close cats are to dog king.
-    let cat_distance_to_dog_king = view
-        .cats
-        .units
-        .iter()
-        .map(|x| {
-            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Cats));
-            let free = if free { 2 } else { 1 };
-            let x = x.position.to_cube().dist(&dog_king.position.to_cube());
-            x * x * free
-        })
-        .fold(0, |acc, f| acc + f) as i64;
-
-    //how close dogs are to cat king.
-    let dog_distance_to_cat_king = view
+    let dog_distance_to_cat2 = view
         .dogs
         .units
         .iter()
-        .map(|x| {
-            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Dogs));
-            let free = if free { 2 } else { 1 };
-            let x = x.position.to_cube().dist(&cat_king.position.to_cube());
-            x * x * free
-        })
-        .fold(0, |acc, f| acc + f) as i64;
+        .map(|x| doop(x, cat_king))
+        .fold(0, |acc, f| acc + f);
 
     fn king_safety(view: &GameState, this_team: ActiveTeam) -> i64 {
         let game = view.view(this_team);
@@ -146,7 +129,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     //let cat_safety = king_safety(view, ActiveTeam::Cats);
     //let dog_safety = -king_safety(view, ActiveTeam::Dogs);
 
-    let val = diff * 10_000 - cat_distance_to_dog2;
+    let val = diff * 10_000 - cat_distance_to_dog2 + dog_distance_to_cat2;
     // + cat_safety / 20
     // + dog_safety / 20;
     //console_dbg!(val);
@@ -346,16 +329,16 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
     //results.dedup_by_key(|x| x.eval);
 
     let target_eval = results.last().unwrap().eval;
-    let mov = if let Some(a) = results
-        .iter()
-        .rev()
-        .find(|a| a.eval == target_eval && a.mov != ActualMove::SkipTurn)
-    {
-        a.clone()
-    } else {
-        results.pop().unwrap()
-    };
-
+    // let mov = if let Some(a) = results
+    //     .iter()
+    //     .rev()
+    //     .find(|a| a.eval == target_eval && a.mov != ActualMove::SkipTurn)
+    // {
+    //     a.clone()
+    // } else {
+    //     results.pop().unwrap()
+    // };
+    let mov = results.pop().unwrap();
     //let mov =
     let m = mov;
 
