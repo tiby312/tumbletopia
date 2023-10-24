@@ -1,4 +1,4 @@
-use crate::movement::MovementMesh;
+use crate::{movement::MovementMesh, moves::ActualMove};
 
 use super::{
     selection::{MoveLog, RegularSelection},
@@ -16,6 +16,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     let num_cats = view.cats.units.len();
     let num_dogs = view.dogs.units.len();
     let diff = num_cats as i64 - num_dogs as i64;
+    //console_dbg!("HAYYY",diff);
 
     let Some(cat_king)=view
         .cats
@@ -51,17 +52,17 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         })
         .fold(0, |acc, f| acc + f) as i64;
 
-    // let cat_distance_to_cat_king = view
-    //     .cats
-    //     .units
-    //     .iter()
-    //     .map(|x| {
-    //         let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Cats));
-    //         let free = if free { 2 } else { 1 };
-    //         let x = x.position.to_cube().dist(&cat_king.position.to_cube());
-    //         x * x * free
-    //     })
-    //     .fold(0, |acc, f| acc + f) as i64;
+    let cat_distance_to_cat_king = view
+        .cats
+        .units
+        .iter()
+        .map(|x| {
+            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Cats));
+            let free = if free { 2 } else { 1 };
+            let x = x.position.to_cube().dist(&cat_king.position.to_cube());
+            x * x * free
+        })
+        .fold(0, |acc, f| acc + f) as i64;
 
     //how close dogs are to cat king.
     let dog_distance_to_cat_king = view
@@ -76,17 +77,17 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         })
         .fold(0, |acc, f| acc + f) as i64;
 
-    // let dog_distance_to_dog_king = view
-    //     .dogs
-    //     .units
-    //     .iter()
-    //     .map(|x| {
-    //         let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Dogs));
-    //         let free = if free { 2 } else { 1 };
-    //         let x = x.position.to_cube().dist(&dog_king.position.to_cube());
-    //         x * x * free
-    //     })
-    //     .fold(0, |acc, f| acc + f) as i64;
+    let dog_distance_to_dog_king = view
+        .dogs
+        .units
+        .iter()
+        .map(|x| {
+            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Dogs));
+            let free = if free { 2 } else { 1 };
+            let x = x.position.to_cube().dist(&dog_king.position.to_cube());
+            x * x * free
+        })
+        .fold(0, |acc, f| acc + f) as i64;
 
     fn king_safety(view: &GameState, this_team: ActiveTeam) -> i64 {
         let game = view.view(this_team);
@@ -104,7 +105,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             .that_team
             .units
             .iter()
-            .filter(|x| x.typ == Type::Warrior)
+            //.filter(|x| x.typ == Type::Warrior)
             .map(|x| x.position.to_cube().dist(&king.position.to_cube()))
             .collect();
 
@@ -112,7 +113,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             .this_team
             .units
             .iter()
-            .filter(|x| x.typ == Type::Warrior)
+            //.filter(|x| x.typ == Type::Warrior)
             .filter(|x| x.position != king.position)
             .map(|x| x.position.to_cube().dist(&king.position.to_cube()))
             .collect();
@@ -144,10 +145,13 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     let cat_safety = king_safety(view, ActiveTeam::Cats);
     let dog_safety = -king_safety(view, ActiveTeam::Dogs);
 
-    let val = diff * 10_000 - cat_distance_to_dog_king
-        + dog_distance_to_cat_king
-        + cat_safety
-        + dog_safety;
+    let val = diff * 10_000 - cat_distance_to_dog_king / 20
+        + dog_distance_to_cat_king / 20
+        + cat_safety / 20
+        + dog_safety / 20;
+    //console_dbg!(val);
+    //let val = diff;
+
     //assert!(!val.is_nan());
     val
 }
@@ -280,7 +284,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         a: std::collections::HashMap::new(),
     };
 
-    let max_depth = 6;
+    let max_depth = 10;
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
@@ -303,12 +307,6 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
             max_ext: 0,
         };
         let res = aaaa.alpha_beta(pp, ABAB::new(), team, depth, 0);
-
-        console_dbg!(res);
-        // assert_eq!(
-        //     res.mov.as_ref(),
-
-        // );
 
         let mov = foo1
             .a
@@ -342,10 +340,23 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
     // console_dbg!(table.saves);
     // console_dbg!(table.a.len());
     console_dbg!(count);
-    results.dedup_by_key(|x| x.eval);
+    console_dbg!(&results);
 
-    let mov = results.pop().unwrap();
+    //TODO THIS CAUSES ISSUES
+    //results.dedup_by_key(|x| x.eval);
 
+    let target_eval = results.last().unwrap().eval;
+    let mov = if let Some(a) = results
+        .iter()
+        .rev()
+        .find(|a| a.eval == target_eval && a.mov != ActualMove::SkipTurn)
+    {
+        a.clone()
+    } else {
+        results.pop().unwrap()
+    };
+
+    //let mov =
     let m = mov;
 
     console_dbg!("AI MOVE::", m.mov, m.eval);
@@ -399,60 +410,13 @@ impl KillerMoves {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct EvalRet<T> {
     pub mov: T,
     pub eval: Eval,
 }
 
 impl<'a> AlphaBeta<'a> {
-    pub fn quiensense_search(
-        &mut self,
-        cand: PossibleMove,
-        ab: ABAB,
-        team: ActiveTeam,
-        depth: usize,
-    ) -> (Option<moves::ActualMove>, Eval) {
-        let the_move = cand.the_move;
-        let node = cand.game_after_move;
-        //self.path.push(the_move.clone());
-        let moves: Vec<_> = for_all_capture_and_jump_moves(node.clone(), team).collect();
-        //console_dbg!(all_moves.len());
-
-        let ee = self.table.lookup_leaf_all(&node);
-        let ret = if depth == 0 || game_is_over(node.view(team)) || moves.is_empty() {
-            //(None,quiescence_search(node, team,table,calls, 5, alpha, beta))
-            //TODO do Quiescence Search
-            self.calls.add_eval();
-            (None, ee)
-        } else {
-            //let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
-
-            let foo = |a: &mut AlphaBeta, cand: PossibleMove, ab| {
-                let (_, eval) = a.quiensense_search(cand.clone(), ab, team.not(), depth - 1);
-                EvalRet { eval, mov: cand }
-            };
-
-            if team == ActiveTeam::Cats {
-                if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {}) {
-                    //self.prev_cache.update(&self.path, &ret.mov.the_move);
-                    (Some(ret.mov.the_move), ret.eval)
-                } else {
-                    (None, ee)
-                }
-            } else {
-                if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {}) {
-                    //self.prev_cache.update(&self.path, &ret.mov.the_move);
-                    (Some(ret.mov.the_move), ret.eval)
-                } else {
-                    (None, ee)
-                }
-            }
-        };
-        // let k = self.path.pop().unwrap();
-        // assert_eq!(k, the_move);
-        ret
-    }
-
     pub fn alpha_beta(
         &mut self,
         cand: PossibleMove,
@@ -468,7 +432,9 @@ impl<'a> AlphaBeta<'a> {
         self.path.push(the_move.clone());
         let ret = if depth == 0 || game_is_over(cand.game_after_move.view(team)) {
             self.calls.add_eval();
-            self.table.lookup_leaf_all(&cand.game_after_move)
+            let e = self.table.lookup_leaf_all(&cand.game_after_move);
+            //console_dbg!("FOOO",e);
+            e
 
             // let (m, eval) = self.quiensense_search(cand, ab, team, 3);
 
@@ -478,13 +444,13 @@ impl<'a> AlphaBeta<'a> {
 
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
-            // let pvariation = pvariation.map(|x| {
-            //     execute_move_no_ani(&mut gg, team, x.clone());
-            //     PossibleMove {
-            //         the_move: x,
-            //         game_after_move: gg,
-            //     }
-            // });
+            let pvariation = pvariation.map(|x| {
+                execute_move_no_ani(&mut gg, team, x.clone());
+                PossibleMove {
+                    the_move: x,
+                    game_after_move: gg,
+                }
+            });
 
             // let it = reorder_front(
             //     pvariation,
@@ -509,6 +475,8 @@ impl<'a> AlphaBeta<'a> {
                 })
                 .collect();
 
+            //console_dbg!(moves.iter().map(|x|&x.1.the_move).collect::<Vec<_>>());
+
             let num_checky = moves.iter().filter(|x| x.0).count();
             //console_dbg!(num_checky);
             // if is_check(&moves[0].1.game_after_move) {
@@ -522,35 +490,11 @@ impl<'a> AlphaBeta<'a> {
                 let f = moves
                     .iter()
                     .enumerate()
-                    .find(|(_, (_, x))| x.the_move == p)
+                    .find(|(_, (_, x))| x.the_move == p.the_move)
                     .unwrap();
                 let swap_ind = f.0;
                 moves.swap(0, swap_ind);
                 num_sorted += 1;
-            }
-
-            for a in num_sorted..moves.len() {
-                //moves[a].1.game_after_move
-
-                let interesting_move = {
-                    let a = &moves[a].1;
-
-                    let jump_move = if let moves::ActualMove::ExtraMove(_, _) = a.the_move {
-                        true
-                    } else {
-                        false
-                    };
-                    let b = &a.game_after_move;
-
-                    jump_move
-                        || b.dogs.units.len() < gg.dogs.units.len()
-                        || b.cats.units.len() < gg.cats.units.len()
-                };
-
-                if interesting_move {
-                    moves.swap(a, num_sorted);
-                    num_sorted += 1;
-                }
             }
 
             for a in self.killer_moves.get(depth) {
@@ -565,20 +509,12 @@ impl<'a> AlphaBeta<'a> {
             }
 
             let foo = |ssself: &mut AlphaBeta, (is_checky, cand): (bool, PossibleMove), ab| {
-                let new_ext = if ext < 2 && is_checky {
-                    //1
-                    //1
-                    0
-                } else {
-                    0
-                };
-
                 let cc = cand.clone();
-                let new_depth = new_ext + depth - 1; //.saturating_sub(inhibit);
-                                                     //assert!(new_depth<6);
-                                                     //console_dbg!(ext,depth);
-                let eval = ssself.alpha_beta(cand, ab, team.not(), new_depth, ext + new_ext);
-
+                let new_depth = depth - 1; //.saturating_sub(inhibit);
+                                           //assert!(new_depth<6);
+                                           //console_dbg!(ext,depth);
+                let eval = ssself.alpha_beta(cand, ab, team.not(), new_depth, ext);
+                //console_dbg!("inner eval=",eval);
                 EvalRet {
                     eval,
                     mov: (is_checky, cc),
@@ -586,6 +522,7 @@ impl<'a> AlphaBeta<'a> {
             };
 
             if team == ActiveTeam::Cats {
+                //console_dbg!("maxing");
                 if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
                     ss.killer_moves.consider(depth, m.1.the_move);
                 }) {
@@ -595,10 +532,12 @@ impl<'a> AlphaBeta<'a> {
                     Eval::MIN
                 }
             } else {
+                //console_dbg!("mining");
                 if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
                     ss.killer_moves.consider(depth, m.1.the_move);
                 }) {
                     self.prev_cache.update(&self.path, &ret.mov.1.the_move);
+                    //console_dbg!("FOUND",ret.eval);
                     ret.eval
                 } else {
                     Eval::MAX
@@ -607,6 +546,7 @@ impl<'a> AlphaBeta<'a> {
         };
         let k = self.path.pop().unwrap();
         assert_eq!(k, the_move);
+        //console_dbg!("alpha beta ret=",ret,depth);
         ret
     }
 }
@@ -704,115 +644,6 @@ pub struct PossibleMove {
 }
 
 //TODO pass readonly
-fn this_team_in_check(state: &GameState, team: ActiveTeam) -> bool {
-    let mut gg = state.clone();
-
-    //TODO additionally check for jump checks.
-    let game = state.view(team);
-    let king = if let Some(king) = game.this_team.units.iter().find(|a| a.typ == Type::Para) {
-        king.clone()
-    } else {
-        return false;
-    };
-
-    //let mut ee = king.clone();
-    //ee.typ = Type::Warrior;
-    //let _ = gg.view_mut(team).this_team.find_take(&ee.position);
-    //let mesh = selection::generate_unit_possible_moves_inner(&ee, &gg.view_mut(team), None);
-    let mesh = movement::compute_moves2(
-        king.position,
-        &game
-            .world
-            .filter()
-            // .and(
-            //     game.that_team
-            //         .filter_type(Type::Warrior)
-            //         .and(game.that_team.filter())
-            //         .not(),
-            // )
-            .and(game.this_team.filter().not()),
-        &game.this_team.filter().or(movement::AcceptCoords::new(
-            board::water_border().map(|x| x.to_axial()),
-        )),
-        false,
-        true,
-    );
-
-    for a in mesh.iter_mesh(king.position) {
-        //for a in king.position.to_cube().range(2){
-        //let a=a.to_axial();
-        if let Some(unit) = game.that_team.find_slow(&a) {
-            let dis = a.to_cube().dist(&king.position.to_cube());
-            //console_dbg!(dis);
-            if dis == 1 {
-                return true;
-            }
-            let restricted_movement = if let Some(_) = unit
-                .position
-                .to_cube()
-                .ring(1)
-                .map(|s| game.that_team.find_slow(&s.to_axial()).is_some())
-                .find(|a| *a)
-            {
-                true
-            } else {
-                match unit.typ {
-                    Type::Warrior => false,
-                    Type::Para => true,
-                    _ => todo!(),
-                }
-            };
-
-            if !restricted_movement {
-                return true;
-            }
-        }
-    }
-
-    false
-}
-
-fn for_all_capture_and_jump_moves(
-    state: GameState,
-    team: ActiveTeam,
-) -> impl Iterator<Item = PossibleMove> {
-    let n = state.clone();
-    //let in_check = { in_check(n.clone(), team) || in_check(n.clone(), team.not()) };
-    let enemy_king_pos = if let Some(enemy_king_pos) = state
-        .view(team.not())
-        .this_team
-        .units
-        .iter()
-        .find(|a| a.typ == Type::Para)
-    {
-        Some(enemy_king_pos.position)
-    } else {
-        None
-    };
-
-    for_all_moves(state, team).filter(move |a| {
-        // let check = if let Some(enemy_king_pos) = enemy_king_pos {
-        //     match &a.the_move {
-        //         moves::ActualMove::NormalMove(o) => o.moveto == enemy_king_pos,
-        //         moves::ActualMove::ExtraMove(_, o) => o.moveto == enemy_king_pos,
-        //         _ => false,
-        //     }
-        // } else {
-        //     false
-        // };
-
-        let jump_move = if let moves::ActualMove::ExtraMove(_, _) = a.the_move {
-            true
-        } else {
-            false
-        };
-        let b = &a.game_after_move;
-
-        jump_move
-            || b.dogs.units.len() < n.dogs.units.len()
-            || b.cats.units.len() < n.cats.units.len()
-    })
-}
 
 // pub struct PossibleMoveWithMesh {
 //     pub the_move: moves::ActualMove,
@@ -858,7 +689,7 @@ pub fn execute_move_no_ani(
             let r = r
                 .execute_no_animation(o.moveto, mesh, &mut game, &mut game_history)
                 .unwrap();
-            console_dbg!("WOOO");
+            //console_dbg!("WOOO");
 
             //let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 

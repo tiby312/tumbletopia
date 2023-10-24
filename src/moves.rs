@@ -200,28 +200,29 @@ mod inner_partial {
                     _=>todo!()
                 };
 
-                        let offset=end.sub(&start);
-                        let k = this_unit.direction;
+                let offset=end.sub(&start);
+                let k = this_unit.direction;
 
-                        let f=offset.to_cube().rotate(k);
+                let f=offset.to_cube().rotate(k);
 
-                        let ans=steering.find(|a|a.0==f.to_axial()).expect("impossible steer");
-                        use crate::ace::selection::Steering;
-                        match ans.1{
-                            Steering::Left=>{
-                                this_unit.direction=k.rotate60_right();
+                let ans=steering.find(|a|a.0==f.to_axial()).expect("impossible steer");
+                use crate::ace::selection::Steering;
+                match ans.1{
+                    Steering::Left=>{
+                        this_unit.direction=k.rotate60_right();
 
-                            },
-                            Steering::Right=>{
-                                this_unit.direction=k.rotate60_left();
+                    },
+                    Steering::Right=>{
+                        this_unit.direction=k.rotate60_left();
 
-                            },
-                            Steering::None=>{
+                    },
+                    Steering::None=>{
 
-                            }
-                        }
+                    }
+                }
 
                 if let Some(g)=game_view.that_team.find_take(&end){
+                    //console_dbg!(end);
                     //TODO removed
                 }
 
