@@ -37,7 +37,32 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         return MATE;
     };
 
+    //TODO add dead rekoning look ahead
+
     //TODO check if warriors are restricted
+
+    let cat_distance_to_dog2 = view
+        .cats
+        .units
+        .iter()
+        .map(|x| {
+            let king_pos = dog_king.position;
+            let king_dir = dog_king.direction;
+
+            let distance = x.position.to_cube().dist(&king_pos.to_cube());
+
+            let projected_king_pos = king_pos.add(
+                king_dir
+                    .to_relative()
+                    .advance_by(king_dir, distance.try_into().unwrap()),
+            );
+
+            let distance_to_projected = x.position.to_cube().dist(&projected_king_pos.to_cube());
+
+            let x = distance_to_projected as i64;
+            x * x
+        })
+        .fold(0, |acc, f| acc + f);
 
     //how close cats are to dog king.
     let cat_distance_to_dog_king = view
@@ -52,18 +77,6 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         })
         .fold(0, |acc, f| acc + f) as i64;
 
-    let cat_distance_to_cat_king = view
-        .cats
-        .units
-        .iter()
-        .map(|x| {
-            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Cats));
-            let free = if free { 2 } else { 1 };
-            let x = x.position.to_cube().dist(&cat_king.position.to_cube());
-            x * x * free
-        })
-        .fold(0, |acc, f| acc + f) as i64;
-
     //how close dogs are to cat king.
     let dog_distance_to_cat_king = view
         .dogs
@@ -73,18 +86,6 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Dogs));
             let free = if free { 2 } else { 1 };
             let x = x.position.to_cube().dist(&cat_king.position.to_cube());
-            x * x * free
-        })
-        .fold(0, |acc, f| acc + f) as i64;
-
-    let dog_distance_to_dog_king = view
-        .dogs
-        .units
-        .iter()
-        .map(|x| {
-            let free = selection::has_restricted_movement(x, &view.view(ActiveTeam::Dogs));
-            let free = if free { 2 } else { 1 };
-            let x = x.position.to_cube().dist(&dog_king.position.to_cube());
             x * x * free
         })
         .fold(0, |acc, f| acc + f) as i64;
@@ -142,13 +143,12 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         0
     }
 
-    let cat_safety = king_safety(view, ActiveTeam::Cats);
-    let dog_safety = -king_safety(view, ActiveTeam::Dogs);
+    //let cat_safety = king_safety(view, ActiveTeam::Cats);
+    //let dog_safety = -king_safety(view, ActiveTeam::Dogs);
 
-    let val = diff * 10_000 - cat_distance_to_dog_king / 20
-        + dog_distance_to_cat_king / 20
-        + cat_safety / 20
-        + dog_safety / 20;
+    let val = diff * 10_000 - cat_distance_to_dog2;
+    // + cat_safety / 20
+    // + dog_safety / 20;
     //console_dbg!(val);
     //let val = diff;
 

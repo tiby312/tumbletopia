@@ -320,9 +320,9 @@ pub async fn worker_entry() {
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([1, -1]), Type::Para, HexDir { dir: 5 }),
         UnitData::new(GridCoord([2, -1]), Type::Warrior, HexDir { dir: 5 }),
-        UnitData::new(GridCoord([3, -1]), Type::Warrior, HexDir { dir: 5 }),
-        // UnitData::new(GridCoord([-4, 4]), Type::Para, HexDir { dir: 5 }),
+        //UnitData::new(GridCoord([3, -1]), Type::Warrior, HexDir { dir: 5 }),
 
+        // UnitData::new(GridCoord([-4, 4]), Type::Para, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-2, 1]), Type::Rook, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Warrior, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-1, 3]), Type::Warrior, HexDir { dir: 5 }),

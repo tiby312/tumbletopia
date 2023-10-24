@@ -141,6 +141,9 @@ impl GridCoord {
         let a = self.0;
         hex::Cube([a[0], a[1], -a[0] - a[1]])
     }
+    pub fn advance_by(self, m: HexDir, val: usize) -> GridCoord {
+        (0..val).fold(self, |acc, o| acc.advance(m))
+    }
     pub const fn advance(self, m: HexDir) -> GridCoord {
         self.add(m.to_relative())
     }
