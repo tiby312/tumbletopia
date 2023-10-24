@@ -42,6 +42,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     //TODO check if warriors are restricted
 
     fn doop(me: &UnitData, king: &UnitData) -> i64 {
+        //TODO handle case where it runs off the board?
         let king_pos = king.position;
         let king_dir = king.direction;
 
@@ -50,7 +51,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         let projected_king_pos = king_pos.add(
             king_dir
                 .to_relative()
-                .advance_by(king_dir, distance.try_into().unwrap()),
+                .advance_by(king_dir, usize::try_from(distance).unwrap().max(3)),
         );
 
         let distance_to_projected = me.position.to_cube().dist(&projected_king_pos.to_cube());
@@ -58,20 +59,24 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         let x = distance_to_projected as i64;
         x * x
     }
-    //TODO handle case where it runs off the board?
+
+    //We multiply by the entire number of units so that
+    //the team is more aggressive if it has more pieces.
     let cat_distance_to_dog2 = view
         .cats
         .units
         .iter()
         .map(|x| doop(x, dog_king))
-        .fold(0, |acc, f| acc + f);
+        .fold(0, |acc, f| acc + f)
+        * num_cats as i64;
 
     let dog_distance_to_cat2 = view
         .dogs
         .units
         .iter()
         .map(|x| doop(x, cat_king))
-        .fold(0, |acc, f| acc + f);
+        .fold(0, |acc, f| acc + f)
+        * num_dogs as i64;
 
     fn king_safety(view: &GameState, this_team: ActiveTeam) -> i64 {
         let game = view.view(this_team);
