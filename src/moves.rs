@@ -213,7 +213,6 @@ mod inner_partial {
                     },
                     Steering::Right=>{
                         this_unit.direction=k.rotate60_left();
-
                     },
                     Steering::None=>{
 
