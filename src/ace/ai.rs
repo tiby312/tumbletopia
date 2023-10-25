@@ -51,7 +51,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         let projected_king_pos = king_pos.add(
             king_dir
                 .to_relative()
-                .advance_by(king_dir, usize::try_from(distance).unwrap().max(3)),
+                .advance_by(king_dir, usize::try_from(distance).unwrap().max(2)),
         );
 
         let distance_to_projected = me.position.to_cube().dist(&projected_king_pos.to_cube());

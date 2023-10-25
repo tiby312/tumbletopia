@@ -210,7 +210,6 @@ mod inner_partial {
                 match ans.1{
                     Steering::Left=>{
                         this_unit.direction=k.rotate60_right();
-
                     },
                     Steering::Right=>{
                         this_unit.direction=k.rotate60_left();
