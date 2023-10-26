@@ -360,7 +360,7 @@ pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 3] = 
     ]
 };
 
-pub const ROOK_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 7] = {
+pub const ROOK_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 4] = {
     let f0 = GridCoord([0, 0]).advance(HexDir { dir: 3 });
 
     let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
@@ -385,12 +385,12 @@ pub const ROOK_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 7] = {
         .advance(HexDir { dir: 0 });
 
     [
-        (f0, Steering::None, Attackable::No, StopsIter::No),
-        (f1, Steering::None, Attackable::Yes, StopsIter::No),
-        (f2, Steering::None, Attackable::Yes, StopsIter::No),
-        (ff1, Steering::Right, Attackable::No, StopsIter::No),
-        (ff2, Steering::Left, Attackable::No, StopsIter::No),
-        (f3, Steering::None, Attackable::Yes, StopsIter::Yes),
+        // (f0, Steering::None, Attackable::No, StopsIter::No),
+        (f1, Steering::Left, Attackable::Yes, StopsIter::No),
+        (f2, Steering::Right, Attackable::Yes, StopsIter::No),
+        // (ff1, Steering::Right, Attackable::No, StopsIter::No),
+        // (ff2, Steering::Left, Attackable::No, StopsIter::No),
+        (f3, Steering::None, Attackable::No, StopsIter::Yes),
         (f4, Steering::None, Attackable::Yes, StopsIter::Yes),
         //(f5, Steering::None, Attackable::Yes, StopsIter::Yes),
         //(f6, Steering::None, Attackable::Yes, StopsIter::Yes),
