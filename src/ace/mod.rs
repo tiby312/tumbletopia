@@ -557,13 +557,13 @@ pub async fn main_logic<'a>(
                 .this_team
                 .units
                 .iter()
-                .find(|a| a.typ == Type::Para)
+                .find(|a| a.typ == Type::King)
                 .is_none();
             let their_king_dead = game
                 .that_team
                 .units
                 .iter()
-                .find(|a| a.typ == Type::Para)
+                .find(|a| a.typ == Type::King)
                 .is_none();
 
             let g = match (our_king_dead, their_king_dead) {

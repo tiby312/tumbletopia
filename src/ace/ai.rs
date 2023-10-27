@@ -22,7 +22,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .cats
         .units
         .iter()
-        .find(|a| a.typ == Type::Para)
+        .find(|a| a.typ == Type::King)
     else {
         return -MATE;
     };
@@ -31,7 +31,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .dogs
         .units
         .iter()
-        .find(|a| a.typ == Type::Para)
+        .find(|a| a.typ == Type::King)
     else
     {
         return MATE;
@@ -85,7 +85,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             .this_team
             .units
             .iter()
-            .find(|a| a.typ == Type::Para)
+            .find(|a| a.typ == Type::King)
             .unwrap();
 
         //TODO dynamically change radius
@@ -163,11 +163,11 @@ fn absolute_evaluate(view: &GameState) -> Eval {
 // }
 
 pub fn we_in_check(view: GameView<'_>) -> bool {
-    let Some(king_pos)=view.this_team.units.iter().find(|a|a.typ==Type::Para) else{
+    let Some(king_pos)=view.this_team.units.iter().find(|a|a.typ==Type::King) else{
         return false
     };
 
-    for a in view.this_team.units.iter().filter(|a| a.typ == Type::Para) {}
+    for a in view.this_team.units.iter().filter(|a| a.typ == Type::King) {}
 
     true
 }
@@ -176,7 +176,7 @@ pub fn game_is_over(view: GameView<'_>) -> bool {
         .this_team
         .units
         .iter()
-        .find(|a| a.typ == Type::Para)
+        .find(|a| a.typ == Type::King)
         .is_none()
     {
         return true;
@@ -186,7 +186,7 @@ pub fn game_is_over(view: GameView<'_>) -> bool {
         .that_team
         .units
         .iter()
-        .find(|a| a.typ == Type::Para)
+        .find(|a| a.typ == Type::King)
         .is_none()
     {
         return true;

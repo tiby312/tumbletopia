@@ -322,8 +322,8 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
     // } else {
     match unit.typ {
         Type::Warrior => false,
-        Type::Para => true,
-        Type::Rook => false,
+        Type::King => true,
+        Type::Archer => false,
         Type::Catapault => true,
         _ => todo!(),
     }
@@ -381,7 +381,7 @@ pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 5] 
     ]
 };
 
-pub const ROOK_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 4] = {
+pub const ARCHER_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 4] = {
     let f0 = GridCoord([0, 0]).advance(HexDir { dir: 3 });
 
     let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
@@ -427,10 +427,10 @@ pub fn generate_unit_possible_moves_inner(
 
     let restricted_movement = has_restricted_movement(unit, &game.into_const());
 
-    let steering = if unit.typ == Type::Warrior || unit.typ == Type::Para {
+    let steering = if unit.typ == Type::Warrior || unit.typ == Type::King {
         WARRIOR_STEERING.iter()
-    } else if unit.typ == Type::Rook {
-        ROOK_STEERING.iter()
+    } else if unit.typ == Type::Archer {
+        ARCHER_STEERING.iter()
     } else if unit.typ == Type::Catapault {
         CATAPAULT_STEERING.iter()
     } else {

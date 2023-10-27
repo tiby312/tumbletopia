@@ -29,8 +29,8 @@ pub enum CellSelection {
 pub enum Type {
     #[default]
     Warrior,
-    Para,
-    Rook,
+    King,
+    Archer,
     Catapault,
 }
 
@@ -39,8 +39,8 @@ impl Type {
         let a = self;
         match a {
             Type::Warrior => 0,
-            Type::Para => 1,
-            Type::Rook => 2,
+            Type::King => 1,
+            Type::Archer => 2,
             Type::Catapault => 3,
         }
     }
@@ -48,8 +48,8 @@ impl Type {
     pub fn type_index_inverse(a: usize) -> Type {
         match a {
             0 => Type::Warrior,
-            1 => Type::Para,
-            2 => Type::Rook,
+            1 => Type::King,
+            2 => Type::Archer,
             3 => Type::Catapault,
             _ => unreachable!(),
         }

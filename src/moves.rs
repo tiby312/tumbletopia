@@ -187,14 +187,14 @@ mod inner_partial {
 
 
                 let mut steering=match this_unit.typ{
-                    Type::Warrior | Type::Para=>{
+                    Type::Warrior | Type::King=>{
                         use crate::ace::selection::WARRIOR_STEERING;
 
                         WARRIOR_STEERING.iter()
                     },
-                    Type::Rook=>{
-                        use crate::ace::selection::ROOK_STEERING;
-                        ROOK_STEERING.iter()
+                    Type::Archer=>{
+                        use crate::ace::selection::ARCHER_STEERING;
+                        ARCHER_STEERING.iter()
                     },
                     Type::Catapault=>{
                         use crate::ace::selection::CATAPAULT_STEERING;
