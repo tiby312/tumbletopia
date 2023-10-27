@@ -31,7 +31,7 @@ pub enum Type {
     Warrior,
     Para,
     Rook,
-    Mage,
+    Catapault,
 }
 
 impl Type {
@@ -41,7 +41,7 @@ impl Type {
             Type::Warrior => 0,
             Type::Para => 1,
             Type::Rook => 2,
-            Type::Mage => 3,
+            Type::Catapault => 3,
         }
     }
 
@@ -50,7 +50,7 @@ impl Type {
             0 => Type::Warrior,
             1 => Type::Para,
             2 => Type::Rook,
-            3 => Type::Mage,
+            3 => Type::Catapault,
             _ => unreachable!(),
         }
     }

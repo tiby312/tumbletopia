@@ -194,9 +194,12 @@ mod inner_partial {
                     },
                     Type::Rook=>{
                         use crate::ace::selection::ROOK_STEERING;
-
                         ROOK_STEERING.iter()
                     },
+                    Type::Catapault=>{
+                        use crate::ace::selection::CATAPAULT_STEERING;
+                        CATAPAULT_STEERING.iter()
+                    }
                     _=>todo!()
                 };
 

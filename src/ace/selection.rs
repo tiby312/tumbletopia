@@ -324,7 +324,7 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
         Type::Warrior => false,
         Type::Para => true,
         Type::Rook => false,
-        Type::Mage => true,
+        Type::Catapault => true,
         _ => todo!(),
     }
     // };
@@ -357,6 +357,27 @@ pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 3] = 
         (f1, Steering::Left, Attackable::Yes, StopsIter::No),
         (f2, Steering::Right, Attackable::Yes, StopsIter::No),
         (f3, Steering::None, Attackable::No, StopsIter::No),
+    ]
+};
+
+pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 5] = {
+    let ff1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left().rotate60_left());
+    let ff2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right().rotate60_right());
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    let f4 = GridCoord([0, 0])
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 });
+    let f5 = GridCoord([0, 0])
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 });
+
+    [
+        (ff1, Steering::Right, Attackable::No, StopsIter::No),
+        (ff2, Steering::Left, Attackable::No, StopsIter::No),
+        (f3, Steering::None, Attackable::Yes, StopsIter::Yes),
+        (f4, Steering::None, Attackable::Yes, StopsIter::Yes),
+        (f5, Steering::None, Attackable::Yes, StopsIter::Yes),
     ]
 };
 
@@ -410,6 +431,8 @@ pub fn generate_unit_possible_moves_inner(
         WARRIOR_STEERING.iter()
     } else if unit.typ == Type::Rook {
         ROOK_STEERING.iter()
+    } else if unit.typ == Type::Catapault {
+        CATAPAULT_STEERING.iter()
     } else {
         unreachable!()
     };
