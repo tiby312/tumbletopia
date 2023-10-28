@@ -199,6 +199,10 @@ mod inner_partial {
                     Type::Catapault=>{
                         use crate::ace::selection::CATAPAULT_STEERING;
                         CATAPAULT_STEERING.iter()
+                    },
+                    Type::Lancer=>{
+                        use crate::ace::selection::LANCER_STEERING;
+                        LANCER_STEERING.iter()
                     }
                     _=>todo!()
                 };

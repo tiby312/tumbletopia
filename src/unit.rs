@@ -32,6 +32,7 @@ pub enum Type {
     King,
     Archer,
     Catapault,
+    Lancer,
 }
 
 impl Type {
@@ -42,6 +43,7 @@ impl Type {
             Type::King => 1,
             Type::Archer => 2,
             Type::Catapault => 3,
+            Type::Lancer => 4,
         }
     }
 
@@ -51,6 +53,7 @@ impl Type {
             1 => Type::King,
             2 => Type::Archer,
             3 => Type::Catapault,
+            4 => Type::Lancer,
             _ => unreachable!(),
         }
     }

@@ -325,6 +325,7 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
         Type::King => true,
         Type::Archer => false,
         Type::Catapault => true,
+        Type::Catapault => true,
         _ => todo!(),
     }
     // };
@@ -349,18 +350,120 @@ pub enum StopsIter {
     No,
 }
 
-pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 3] = {
+#[derive(Copy, Clone, Debug)]
+pub enum ResetIter {
+    Yes,
+    No,
+}
+
+pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 3] = {
     let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
     let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
     let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
     [
-        (f1, Steering::Left, Attackable::Yes, StopsIter::No),
-        (f2, Steering::Right, Attackable::Yes, StopsIter::No),
-        (f3, Steering::None, Attackable::No, StopsIter::No),
+        (
+            f1,
+            Steering::Left,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::Right,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
     ]
 };
 
-pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 5] = {
+pub const ARCHER_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 4] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
+
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    let f4 = GridCoord([0, 0])
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 });
+
+    [
+        (
+            f1,
+            Steering::Left,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::Right,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::No,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+        (
+            f4,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+    ]
+};
+
+pub const LANCER_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 4] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    let f2 = f1.advance(HexDir { dir: 0 }.rotate60_left());
+    let f3 = f1.advance(HexDir { dir: 0 }.rotate60_right());
+
+    [
+        (
+            f1,
+            Steering::None,
+            Attackable::No,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::Left,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+        (
+            f1,
+            Steering::None,
+            Attackable::No,
+            StopsIter::Yes,
+            ResetIter::Yes,
+        ),
+        (
+            f3,
+            Steering::Right,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+    ]
+};
+
+pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 5] = {
     let ff1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left().rotate60_left());
     let ff2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right().rotate60_right());
     let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
@@ -373,48 +476,41 @@ pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 5] 
         .advance(HexDir { dir: 0 });
 
     [
-        (ff1, Steering::Right, Attackable::No, StopsIter::No),
-        (ff2, Steering::Left, Attackable::No, StopsIter::No),
-        (f3, Steering::None, Attackable::Yes, StopsIter::Yes),
-        (f4, Steering::None, Attackable::Yes, StopsIter::Yes),
-        (f5, Steering::None, Attackable::Yes, StopsIter::Yes),
-    ]
-};
-
-pub const ARCHER_STEERING: [(GridCoord, Steering, Attackable, StopsIter); 4] = {
-    let f0 = GridCoord([0, 0]).advance(HexDir { dir: 3 });
-
-    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
-    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
-
-    let ff1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left().rotate60_left());
-    let ff2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right().rotate60_right());
-
-    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
-    let f4 = GridCoord([0, 0])
-        .advance(HexDir { dir: 0 })
-        .advance(HexDir { dir: 0 });
-    let f5 = GridCoord([0, 0])
-        .advance(HexDir { dir: 0 })
-        .advance(HexDir { dir: 0 })
-        .advance(HexDir { dir: 0 });
-
-    let f6 = GridCoord([0, 0])
-        .advance(HexDir { dir: 0 })
-        .advance(HexDir { dir: 0 })
-        .advance(HexDir { dir: 0 })
-        .advance(HexDir { dir: 0 });
-
-    [
-        // (f0, Steering::None, Attackable::No, StopsIter::No),
-        (f1, Steering::Left, Attackable::Yes, StopsIter::No),
-        (f2, Steering::Right, Attackable::Yes, StopsIter::No),
-        // (ff1, Steering::Right, Attackable::No, StopsIter::No),
-        // (ff2, Steering::Left, Attackable::No, StopsIter::No),
-        (f3, Steering::None, Attackable::No, StopsIter::Yes),
-        (f4, Steering::None, Attackable::Yes, StopsIter::Yes),
-        //(f5, Steering::None, Attackable::Yes, StopsIter::Yes),
-        //(f6, Steering::None, Attackable::Yes, StopsIter::Yes),
+        (
+            ff1,
+            Steering::Right,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            ff2,
+            Steering::Left,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+        (
+            f4,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+        (
+            f5,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
     ]
 };
 
@@ -425,7 +521,7 @@ pub fn generate_unit_possible_moves_inner(
 ) -> movement::MovementMesh {
     // If there is an enemy near by restrict movement.
 
-    let restricted_movement = has_restricted_movement(unit, &game.into_const());
+    //let restricted_movement = has_restricted_movement(unit, &game.into_const());
 
     let steering = if unit.typ == Type::Warrior || unit.typ == Type::King {
         WARRIOR_STEERING.iter()
@@ -433,6 +529,8 @@ pub fn generate_unit_possible_moves_inner(
         ARCHER_STEERING.iter()
     } else if unit.typ == Type::Catapault {
         CATAPAULT_STEERING.iter()
+    } else if unit.typ == Type::Lancer {
+        LANCER_STEERING.iter()
     } else {
         unreachable!()
     };
@@ -441,9 +539,18 @@ pub fn generate_unit_possible_moves_inner(
 
     let k = unit.direction;
 
-    let m = steering.map(|a| (a.0.to_cube().rotate_back(k), a.1, a.2, a.3));
+    let m = steering.map(|a| (a.0.to_cube().rotate_back(k), a.1, a.2, a.3, a.4));
 
-    for (rel_coord, _, attack, stop_iter) in m {
+    let mut skip = false;
+
+    for (rel_coord, _, attack, stop_iter, reset_iter) in m {
+        if let ResetIter::Yes = reset_iter {
+            skip = false;
+        }
+
+        if skip {
+            continue;
+        }
         let abs_coord = unit.position.add(rel_coord.to_axial());
 
         let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
@@ -467,12 +574,14 @@ pub fn generate_unit_possible_moves_inner(
 
             if enemy_exist {
                 if let StopsIter::Yes = stop_iter {
-                    break;
+                    skip = true;
+                    //break;
                 }
             }
         } else {
             if let StopsIter::Yes = stop_iter {
-                break;
+                skip = true;
+                //break;
             }
         }
     }
