@@ -435,7 +435,7 @@ pub const LANCER_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIt
         (
             f1,
             Steering::None,
-            Attackable::No,
+            Attackable::Yes,
             StopsIter::Yes,
             ResetIter::No,
         ),
@@ -449,7 +449,7 @@ pub const LANCER_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIt
         (
             f1,
             Steering::None,
-            Attackable::No,
+            Attackable::Yes,
             StopsIter::Yes,
             ResetIter::Yes,
         ),
