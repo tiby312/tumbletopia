@@ -565,11 +565,41 @@ pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter, Rese
     ]
 };
 
+
+
+pub struct SwingMove{
+    relative_anchor_point:GridCoord,
+    radius:i16,
+    clockwise:bool
+}
+
+pub struct MovementMeshComplete{
+    regular_moves:movement::MovementMesh,
+    swing_moves:Vec<SwingMove>
+}
+
+
 pub fn generate_unit_possible_moves_inner(
     unit: &UnitData,
     game: &GameViewMut,
     extra_attack_prev_coord: Option<GridCoord>,
 ) -> movement::MovementMesh {
+
+    let swing_moves:Vec<SwingMove>={
+        game.this_team.units.iter().filter(|a|a.typ==Type::Spotter).filter_map(|a|{
+            let relative_anchor_point=a.position.sub(&unit.position);
+            if relative_anchor_point.to_cube().dist(&hex::Cube::new(0,0)) == 2{
+                Some(SwingMove{
+                    relative_anchor_point,
+                    radius:2,
+                    clockwise:true
+                })
+            }else{
+                None
+            }
+        }).collect()
+    };
+    
     // If there is an enemy near by restrict movement.
 
     //let restricted_movement = has_restricted_movement(unit, &game.into_const());
@@ -582,8 +612,10 @@ pub fn generate_unit_possible_moves_inner(
         CATAPAULT_STEERING.iter()
     } else if unit.typ == Type::Lancer {
         LANCER_STEERING.iter()
-    } else {
-        unreachable!()
+    } else if unit.typ == Type::Spotter{
+        WARRIOR_STEERING.iter()
+    } else{
+        unreachable!();
     };
 
     let mut mesh = movement::MovementMesh::new();

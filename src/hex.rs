@@ -177,6 +177,9 @@ impl Cube {
                 .map(|(_, a)| a)
         })
     }
+
+
+    //clockwise
     pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> + Clone {
         let mut hex = self.add(Cube::direction(Dir::BottomLeft).scale(n));
 
