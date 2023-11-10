@@ -191,6 +191,7 @@ impl Cube {
     pub fn ring(&self, n: i16) -> impl DoubleEndedIterator<Item = (HexDir, Cube)> + Clone {
         let mut hex = self.add(Cube::direction(Dir::Top).scale(n));
 
+        //TODO better way to do this?
         //Do this so that we can reverse it.
         let mut k = std::iter::repeat(())
             .take(n as usize)

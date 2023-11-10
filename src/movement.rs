@@ -435,6 +435,23 @@ pub mod movement_mesh {
         pub radius: i16,
         pub clockwise: bool,
     }
+    impl SwingMove {
+        pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+            let radius = 2;
+            let num_cell = 6;
+            let i = self
+                .relative_anchor_point
+                .to_cube()
+                .ring(radius)
+                .map(|(d, a)| (d, a.to_axial()));
+            let ii = i.clone();
+            let i = i.chain(ii);
+            i.skip_while(|(_, z)| *z != GridCoord([0; 2]))
+                .skip(1)
+                .take(num_cell)
+                .map(move |(d, z)| (d, point.add(z)))
+        }
+    }
 
     use super::GridCoord;
 
@@ -467,56 +484,81 @@ pub mod movement_mesh {
         }
         //TODO
         pub fn path(&self, a: GridCoord) -> impl Iterator<Item = HexDir> {
-            ///let swings=self.swing_moves(GridCoord([0;2])).take_while(|(a,b)|b!=a).collect();
-            validate_rel(a);
-            let x = a.0[0];
-            let y = a.0[1];
-            let first = if GridCoord([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
-                Some([GridCoord([0, 0]).dir_to(&a)])
-            } else {
-                None
-            };
-
-            //diagonal
-            let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
-                //TODO inefficient
-                let mut k = GridCoord([0, 0])
-                    .to_cube()
-                    .neighbours()
-                    .filter(|x| x.dist(&a.to_cube()) == 1);
-                let first = k.next().unwrap().to_axial();
-                let second = k.next().unwrap().to_axial();
-                if self.is_set(first) {
-                    Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
-                } else {
-                    //TODO this is not true teamates jumping over each other.
-                    //assert!(self.is_set(second));
-                    Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
+            //let swings=self.swing_moves(GridCoord([0;2])).take_while(|(a,b)|b!=a).collect();
+            let mut swing_iter = None;
+            for b in self.swing_moves.iter() {
+                if b.iter_cells(GridCoord([0; 2]))
+                    .find(|(_, b)| *b == a)
+                    .is_some()
+                {
+                    swing_iter = Some(
+                        b.iter_cells(GridCoord([0; 2]))
+                            .take_while(move |(_, b)| *b != a)
+                            .map(|a| a.0),
+                    );
                 }
+            }
+
+            let mesh_iter = if swing_iter.is_none() {
+                validate_rel(a);
+                let x = a.0[0];
+                let y = a.0[1];
+                let first = if GridCoord([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
+                    Some([GridCoord([0, 0]).dir_to(&a)])
+                } else {
+                    None
+                };
+
+                //diagonal
+                let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
+                    //TODO inefficient
+                    let mut k = GridCoord([0, 0])
+                        .to_cube()
+                        .neighbours()
+                        .filter(|x| x.dist(&a.to_cube()) == 1);
+                    let first = k.next().unwrap().to_axial();
+                    let second = k.next().unwrap().to_axial();
+                    if self.is_set(first) {
+                        Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
+                    } else {
+                        //TODO this is not true teamates jumping over each other.
+                        //assert!(self.is_set(second));
+                        Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
+                    }
+                } else {
+                    None
+                };
+
+                let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2)
+                {
+                    let h = GridCoord([0, 0]).dir_to(&a);
+                    Some([h, h])
+                } else {
+                    None
+                };
+
+                // size 3 spokes
+                let fourth =
+                    if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
+                        let h = GridCoord([0, 0]).dir_to(&a);
+                        Some([h, h, h])
+                    } else {
+                        None
+                    };
+
+                let a = first.into_iter().flatten();
+                let b = second.into_iter().flatten();
+                let c = third.into_iter().flatten();
+                let d = fourth.into_iter().flatten();
+                Some(a.chain(b).chain(c).chain(d))
             } else {
                 None
             };
 
-            let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2) {
-                let h = GridCoord([0, 0]).dir_to(&a);
-                Some([h, h])
-            } else {
-                None
-            };
-
-            // size 3 spokes
-            let fourth = if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
-                let h = GridCoord([0, 0]).dir_to(&a);
-                Some([h, h, h])
-            } else {
-                None
-            };
-
-            let a = first.into_iter().flatten();
-            let b = second.into_iter().flatten();
-            let c = third.into_iter().flatten();
-            let d = fourth.into_iter().flatten();
-            a.chain(b).chain(c).chain(d)
+            swing_iter
+                .into_iter()
+                .flatten()
+                .chain(mesh_iter.into_iter().flatten())
         }
         pub fn add(&mut self, a: GridCoord) {
             validate_rel(a);
@@ -535,22 +577,10 @@ pub mod movement_mesh {
 
         pub fn swing_moves(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             let kk = self.swing_moves.clone();
-            kk.into_iter().flat_map(move |a| {
-                let radius = 2;
-                let num_cell = 6;
-                let i = a
-                    .relative_anchor_point
-                    .to_cube()
-                    .ring(radius)
-                    .map(|(_, a)| a.to_axial());
-                let ii = i.clone();
-                let i = i.chain(ii);
-                i.skip_while(|z| *z != GridCoord([0; 2]))
-                    .skip(1)
-                    .take(num_cell)
-                    .map(move |z| point.add(z))
-            })
+            kk.into_iter()
+                .flat_map(move |a| a.iter_cells(point).map(|a| a.1))
         }
+
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             let inner = self.inner;
 
