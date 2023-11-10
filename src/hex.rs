@@ -188,15 +188,21 @@ impl Cube {
     }
 
     //clockwise
-    pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> + Clone {
+    pub fn ring(&self, n: i16) -> impl DoubleEndedIterator<Item = (HexDir, Cube)> + Clone {
         let mut hex = self.add(Cube::direction(Dir::Top).scale(n));
 
+        //Do this so that we can reverse it.
+        let mut k = std::iter::repeat(())
+            .take(n as usize)
+            .collect::<Vec<_>>()
+            .into_iter();
+
         (0..6)
-            .flat_map(move |i| std::iter::repeat(i).take(n as usize))
+            .flat_map(move |i| k.clone().map(move |_| i))
             .map(move |i| {
                 let h = hex;
                 hex = hex.neighbour(i.into());
-                h
+                (HexDir { dir: i }, h)
             })
     }
 

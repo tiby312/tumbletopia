@@ -467,6 +467,7 @@ pub mod movement_mesh {
         }
         //TODO
         pub fn path(&self, a: GridCoord) -> impl Iterator<Item = HexDir> {
+            ///let swings=self.swing_moves(GridCoord([0;2])).take_while(|(a,b)|b!=a).collect();
             validate_rel(a);
             let x = a.0[0];
             let y = a.0[1];
@@ -532,27 +533,28 @@ pub mod movement_mesh {
             self.inner & (1 << ind) != 0
         }
 
-        pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
-            let inner = self.inner;
-
+        pub fn swing_moves(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             let kk = self.swing_moves.clone();
-            let skip_moves = kk.into_iter().flat_map(move |a| {
+            kk.into_iter().flat_map(move |a| {
                 let radius = 2;
                 let num_cell = 6;
                 let i = a
                     .relative_anchor_point
                     .to_cube()
                     .ring(radius)
-                    .map(|a| a.to_axial());
+                    .map(|(_, a)| a.to_axial());
                 let ii = i.clone();
                 let i = i.chain(ii);
                 i.skip_while(|z| *z != GridCoord([0; 2]))
                     .skip(1)
                     .take(num_cell)
                     .map(move |z| point.add(z))
-                // ii.map(move |z|z)
-                //point.to_cube().ring(2).map(|a|a.to_axial())
-            });
+            })
+        }
+        pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
+            let inner = self.inner;
+
+            let skip_moves = self.swing_moves(point);
 
             // TABLE
             //     .iter()

@@ -16,7 +16,7 @@ impl movement::Filter for GridFilter {
 }
 
 pub fn water_border() -> impl Iterator<Item = hex::Cube> + Clone {
-    hex::Cube::new(0, 0).ring(5)
+    hex::Cube::new(0, 0).ring(5).map(|(_, a)| a)
 }
 
 fn world() -> impl Iterator<Item = hex::Cube> {
