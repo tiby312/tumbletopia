@@ -744,7 +744,7 @@ pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item =
         .flat_map(move |a| {
             let mesh = a.generate(&sss.view_mut(team));
             mesh.iter_mesh(a.unit.position)
-                .map(move |f| (a.clone(), mesh, f))
+                .map(move |f| (a.clone(), mesh.clone(), f))
         })
         .flat_map(move |(s, mesh, m)| {
             let mut v = state.clone();
@@ -764,7 +764,7 @@ pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item =
                     let mut mm2 = MoveLog::new();
 
                     let mut vfv = klkl.view_mut(team);
-                    cll.execute_no_animation(m, mesh2, &mut vfv, &mut mm2)
+                    cll.execute_no_animation(m, mesh2.clone(), &mut vfv, &mut mm2)
                         .unwrap();
 
                     PossibleMove {

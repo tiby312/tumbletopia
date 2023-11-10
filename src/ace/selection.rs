@@ -1,4 +1,4 @@
-use crate::movement::{ComputeMovesRes, HexDir, MovementMesh};
+use crate::movement::{movement_mesh::SwingMove, ComputeMovesRes, HexDir, MovementMesh};
 
 use super::*;
 
@@ -565,41 +565,34 @@ pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter, Rese
     ]
 };
 
-
-
-pub struct SwingMove{
-    relative_anchor_point:GridCoord,
-    radius:i16,
-    clockwise:bool
-}
-
-pub struct MovementMeshComplete{
-    regular_moves:movement::MovementMesh,
-    swing_moves:Vec<SwingMove>
-}
-
-
 pub fn generate_unit_possible_moves_inner(
     unit: &UnitData,
     game: &GameViewMut,
     extra_attack_prev_coord: Option<GridCoord>,
 ) -> movement::MovementMesh {
-
-    let swing_moves:Vec<SwingMove>={
-        game.this_team.units.iter().filter(|a|a.typ==Type::Spotter).filter_map(|a|{
-            let relative_anchor_point=a.position.sub(&unit.position);
-            if relative_anchor_point.to_cube().dist(&hex::Cube::new(0,0)) == 2{
-                Some(SwingMove{
-                    relative_anchor_point,
-                    radius:2,
-                    clockwise:true
-                })
-            }else{
-                None
-            }
-        }).collect()
+    let swing_moves: Vec<SwingMove> = {
+        game.this_team
+            .units
+            .iter()
+            .filter(|a| a.typ == Type::Spotter)
+            .filter_map(|a| {
+                let relative_anchor_point = a.position.sub(&unit.position);
+                //let relative_anchor_point = unit.position.sub(&a.position);
+                let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
+                console_dbg!("distance to spotter=", d, relative_anchor_point);
+                if d == 2 {
+                    Some(SwingMove {
+                        relative_anchor_point,
+                        radius: 2,
+                        clockwise: true,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
     };
-    
+
     // If there is an enemy near by restrict movement.
 
     //let restricted_movement = has_restricted_movement(unit, &game.into_const());
@@ -612,13 +605,13 @@ pub fn generate_unit_possible_moves_inner(
         CATAPAULT_STEERING.iter()
     } else if unit.typ == Type::Lancer {
         LANCER_STEERING.iter()
-    } else if unit.typ == Type::Spotter{
+    } else if unit.typ == Type::Spotter {
         WARRIOR_STEERING.iter()
-    } else{
+    } else {
         unreachable!();
     };
 
-    let mut mesh = movement::MovementMesh::new();
+    let mut mesh = movement::MovementMesh::new(swing_moves);
 
     let k = unit.direction;
 

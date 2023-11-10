@@ -361,7 +361,7 @@ pub mod movement_mesh {
         let k1 = GridCoord([1, -1]);
         let k2 = GridCoord([1, -2]);
 
-        let mut mesh = MovementMesh::new();
+        let mut mesh = MovementMesh::new(vec![]);
         mesh.add(k1);
         mesh.add(k2);
 
@@ -383,7 +383,7 @@ pub mod movement_mesh {
         let k2 = GridCoord([2, -2]);
         let k3 = GridCoord([-2, 1]);
 
-        let mut mesh = MovementMesh::new();
+        let mut mesh = MovementMesh::new(vec![]);
         mesh.add(k1);
         mesh.add(k2);
         mesh.add(k3);
@@ -429,15 +429,24 @@ pub mod movement_mesh {
     //     [2, 0],
     // ];
 
+    #[derive(PartialEq, Eq, Debug, Clone)]
+    pub struct SwingMove {
+        pub relative_anchor_point: GridCoord,
+        pub radius: i16,
+        pub clockwise: bool,
+    }
+
     use super::GridCoord;
 
-    #[derive(PartialEq, Eq, Debug, Copy, Clone)]
+    #[derive(PartialEq, Eq, Debug, Clone)]
     pub struct MovementMesh {
         //A ring of size two not including the center cell has 1+6+12=19 cells.
 
         //We need an additional bit to describe the path that needs to be taken to each that spot.
         //Either left or right. (only applies for diagonal outer cells)
         inner: u64,
+
+        swing_moves: Vec<SwingMove>,
     }
 
     fn validate_rel(a: GridCoord) {
@@ -450,8 +459,11 @@ pub mod movement_mesh {
         assert!(x != 0 || y != 0);
     }
     impl MovementMesh {
-        pub fn new() -> Self {
-            MovementMesh { inner: 0 }
+        pub fn new(swing_moves: Vec<SwingMove>) -> Self {
+            MovementMesh {
+                inner: 0,
+                swing_moves,
+            }
         }
         //TODO
         pub fn path(&self, a: GridCoord) -> impl Iterator<Item = HexDir> {
@@ -522,18 +534,40 @@ pub mod movement_mesh {
 
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             let inner = self.inner;
+
+            let kk = self.swing_moves.clone();
+            let skip_moves = kk.into_iter().flat_map(move |a| {
+                let radius = 2;
+                let num_cell = 6;
+                let i = a
+                    .relative_anchor_point
+                    .to_cube()
+                    .ring(radius)
+                    .map(|a| a.to_axial());
+                let ii = i.clone();
+                let i = i.chain(ii);
+                i.skip_while(|z| *z != GridCoord([0; 2]))
+                    .skip(1)
+                    .take(num_cell)
+                    .map(move |z| point.add(z))
+                // ii.map(move |z|z)
+                //point.to_cube().ring(2).map(|a|a.to_axial())
+            });
+
             // TABLE
             //     .iter()
             //     .enumerate()
             //     .filter(move |(x, _)| inner & (1 << x) != 0)
             //     .map(move |(_, x)| point.add(GridCoord(*x)))
-            (0..64)
+            let mesh_moves = (0..64)
                 .filter(move |x| inner & (1 << x) != 0)
                 .map(move |a| {
                     let x = a / 7;
                     let y = a % 7;
                     point.add(GridCoord([x - 3, y - 3]))
-                })
+                });
+
+            mesh_moves.chain(skip_moves)
         }
     }
     fn conv(a: GridCoord) -> usize {
@@ -621,7 +655,7 @@ pub fn compute_moves22<F: FnMut(&GridCoord) -> ComputeMovesRes>(
         }
     }
 
-    let mut m = MovementMesh::new();
+    let mut m = MovementMesh::new(vec![]);
 
     for (a, rest) in self::movement_mesh::explore_outward_two() {
         if handle(&mut m, coord, coord, a, &mut func) {
@@ -643,7 +677,7 @@ pub fn compute_moves2<F: Filter, F2: Filter>(
     restricted_movement: bool,
     slide_rule: bool,
 ) -> MovementMesh {
-    let mut m = MovementMesh::new();
+    let mut m = MovementMesh::new(vec![]);
 
     //TODO make this a closure
     fn handle<F: Filter, F2: Filter>(

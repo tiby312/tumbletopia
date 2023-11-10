@@ -367,6 +367,7 @@ mod partial_move {
         }
     }
 
+    //TODO pass movement mesh as reference not clone
     #[derive(Clone, Debug)]
     pub struct PartialMove {
         selected_unit: GridCoord,

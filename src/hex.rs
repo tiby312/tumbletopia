@@ -166,6 +166,15 @@ impl Cube {
 
         self
     }
+    pub fn sub(mut self, other: Cube) -> Cube {
+        let a = &mut self.0;
+        let b = other.0;
+        a[0] -= b[0];
+        a[1] -= b[1];
+        a[2] -= b[2];
+
+        self
+    }
 
     pub fn rays(&self, start: i16, end: i16, ff: impl Filter + Copy) -> impl Iterator<Item = Cube> {
         let o = *self;
@@ -178,10 +187,9 @@ impl Cube {
         })
     }
 
-
     //clockwise
     pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> + Clone {
-        let mut hex = self.add(Cube::direction(Dir::BottomLeft).scale(n));
+        let mut hex = self.add(Cube::direction(Dir::Top).scale(n));
 
         (0..6)
             .flat_map(move |i| std::iter::repeat(i).take(n as usize))

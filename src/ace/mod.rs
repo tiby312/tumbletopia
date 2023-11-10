@@ -283,7 +283,7 @@ pub async fn reselect_loop(
         selection::SelectionType::Extra(e) => e.generate(&relative_game_view),
     };
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
-    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, ccA);
+    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, ccA.clone());
 
     let (cell, pototo) = doop.get_mouse_selection(cc, selected_unit.team, grey).await;
 
@@ -361,7 +361,7 @@ pub async fn reselect_loop(
             match n
                 .execute(
                     target_cell,
-                    ccA,
+                    ccA.clone(),
                     &mut relative_game_view,
                     doop,
                     game_history,
@@ -383,7 +383,7 @@ pub async fn reselect_loop(
         selection::SelectionType::Extra(e) => {
             e.execute(
                 target_cell,
-                ccA,
+                ccA.clone(),
                 &mut relative_game_view,
                 doop,
                 game_history,
@@ -580,7 +580,7 @@ pub async fn main_logic<'a>(
 
         //Add AIIIIII.
         //if team_index == ActiveTeam::Cats {
-            //    {
+        //    {
         if false {
             let the_move = ai::iterative_deepening(game, team_index);
 
