@@ -63,6 +63,12 @@ pub(crate) const SQRT_3: f32 = 1.73205080757;
 pub const HEX_PROJ_FLAT: cgmath::Matrix2<f32> =
     cgmath::Matrix2::new(3.0 / 2.0, SQRT_3 / 2.0, 0.0, SQRT_3);
 
+// #[test]
+// fn hex_range_test(){
+//     let k=Cube::new(0,0).range(6).count();
+//     panic!("{}",k);
+// }
+
 //q r s
 #[derive(Copy, Clone, Debug)]
 pub struct Cube(pub [i16; 3]);

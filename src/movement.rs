@@ -467,7 +467,7 @@ pub mod movement_mesh {
 
         //We need an additional bit to describe the path that needs to be taken to each that spot.
         //Either left or right. (only applies for diagonal outer cells)
-        inner: u64,
+        inner: u128,
 
         swing_moves: Vec<SwingMove>,
     }
@@ -476,8 +476,8 @@ pub mod movement_mesh {
         let x = a.0[0];
         let y = a.0[1];
 
-        assert!(x <= 3 && x >= -3);
-        assert!(y <= 3 && y >= -3);
+        assert!(x <= 6 && x >= -6);
+        assert!(y <= 6 && y >= -6);
 
         assert!(x != 0 || y != 0);
     }
@@ -487,6 +487,9 @@ pub mod movement_mesh {
                 inner: 0,
                 swing_moves,
             }
+        }
+        pub fn add_swing_move(&mut self, a: SwingMove) {
+            self.swing_moves.push(a);
         }
         //TODO
         pub fn path(&self, a: GridCoord) -> impl Iterator<Item = HexDir> {
@@ -587,7 +590,7 @@ pub mod movement_mesh {
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             let inner = self.inner;
 
-            let skip_moves = self.swing_moves(point);
+            //let skip_moves = self.swing_moves(point);
 
             // TABLE
             //     .iter()
@@ -602,7 +605,7 @@ pub mod movement_mesh {
                     point.add(GridCoord([x - 3, y - 3]))
                 });
 
-            mesh_moves.chain(skip_moves)
+            mesh_moves //.chain(skip_moves)
         }
     }
     fn conv(a: GridCoord) -> usize {

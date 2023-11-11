@@ -570,6 +570,8 @@ pub fn generate_unit_possible_moves_inner(
     game: &GameViewMut,
     extra_attack_prev_coord: Option<GridCoord>,
 ) -> movement::MovementMesh {
+    let mut mesh = movement::MovementMesh::new(vec![]);
+
     let swing_moves: Vec<SwingMove> = {
         game.this_team
             .units
@@ -581,11 +583,33 @@ pub fn generate_unit_possible_moves_inner(
                 let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
                 console_dbg!("distance to spotter=", d, relative_anchor_point);
                 if d == 2 {
-                    Some(SwingMove {
+                    let s = SwingMove {
                         relative_anchor_point,
                         radius: 2,
                         clockwise: true,
-                    })
+                    };
+
+                    for (_, rel_coord) in s.iter_cells(GridCoord([0; 2])) {
+                        let abs_coord = unit.position.add(rel_coord);
+
+                        let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
+                        let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
+
+                        let is_world_cell = game.world.filter().filter(&abs_coord).to_bool();
+
+                        if friendly_exist || !is_world_cell {
+                            break;
+                        }
+
+                        mesh.add(rel_coord);
+
+                        if enemy_exist {
+                            break;
+                        }
+                    }
+                    mesh.add_swing_move(s.clone());
+
+                    Some(s)
                 } else {
                     None
                 }
@@ -610,8 +634,6 @@ pub fn generate_unit_possible_moves_inner(
     } else {
         unreachable!();
     };
-
-    let mut mesh = movement::MovementMesh::new(swing_moves);
 
     let k = unit.direction;
 
