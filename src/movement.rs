@@ -597,12 +597,12 @@ pub mod movement_mesh {
             //     .enumerate()
             //     .filter(move |(x, _)| inner & (1 << x) != 0)
             //     .map(move |(_, x)| point.add(GridCoord(*x)))
-            let mesh_moves = (0..64)
+            let mesh_moves = (0..128)
                 .filter(move |x| inner & (1 << x) != 0)
                 .map(move |a| {
-                    let x = a / 7;
-                    let y = a % 7;
-                    point.add(GridCoord([x - 3, y - 3]))
+                    let x = a / 13;
+                    let y = a % 13;
+                    point.add(GridCoord([x - 6, y - 6]))
                 });
 
             mesh_moves //.chain(skip_moves)
@@ -612,8 +612,9 @@ pub mod movement_mesh {
         let [x, y] = a.0;
         //     let ind=x/7+y%7;
         //     // -3 -2 -1 0 1 2 3
+        //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
         // ind as usize
-        ((x + 3) * 7 + (y + 3)) as usize
+        ((x + 6) * 13 + (y + 6)) as usize
 
         // TABLE
         //     .iter()
