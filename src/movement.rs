@@ -640,6 +640,10 @@ pub mod movement_mesh {
         //         .flat_map(move |a| a.iter_cells(point).map(|a| a.1))
         // }
 
+        pub fn iter_swing_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
+            self.just_swing_inner.iter_mesh(point)
+        }
+
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             let mut j = self.inner.clone();
             j.inner |= self.just_swing_inner.inner;

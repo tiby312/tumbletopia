@@ -633,6 +633,19 @@ pub async fn worker_entry() {
 
                                     //select_model.draw(&mut v);
                                 }
+
+                                for a in mesh.iter_swing_mesh(*point) {
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                                    let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                                    let m = matrix.chain(t).generate();
+
+                                    let mut v = draw_sys.view(m.as_ref());
+
+                                    attack_model.draw_ext(&mut v, greyscale, false, false, false);
+
+                                    //select_model.draw(&mut v);
+                                }
                             }
                             CellSelection::BuildSelection(_) => {}
                         }
