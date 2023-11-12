@@ -362,8 +362,8 @@ pub mod movement_mesh {
         let k2 = GridCoord([1, -2]);
 
         let mut mesh = MovementMesh::new(vec![]);
-        mesh.add(k1);
-        mesh.add(k2);
+        mesh.add_normal_cell(k1);
+        mesh.add_normal_cell(k2);
 
         let res: Vec<_> = mesh.path(GridCoord([1, -2])).collect();
         dbg!(res);
@@ -383,7 +383,7 @@ pub mod movement_mesh {
         let k2 = GridCoord([2, -2]);
         let k3 = GridCoord([-2, 1]);
 
-        let mut mesh = MovementMesh::new(vec![]);
+        let mut mesh = Mesh::new();
         mesh.add(k1);
         mesh.add(k2);
         mesh.add(k3);
@@ -459,6 +459,58 @@ pub mod movement_mesh {
         }
     }
 
+    #[derive(PartialEq, Eq, Debug, Clone)]
+    pub struct Mesh {
+        inner: u128,
+    }
+
+    impl Mesh {
+        pub fn new() -> Mesh {
+            Mesh { inner: 0 }
+        }
+        fn validate_rel(a: GridCoord) {
+            let x = a.0[0];
+            let y = a.0[1];
+
+            assert!(x <= 6 && x >= -6);
+            assert!(y <= 6 && y >= -6);
+
+            assert!(x != 0 || y != 0);
+        }
+        pub fn add(&mut self, a: GridCoord) {
+            validate_rel(a);
+            let ind = conv(a);
+            self.inner = self.inner | (1 << ind);
+        }
+
+        pub fn is_set(&self, a: GridCoord) -> bool {
+            validate_rel(a);
+
+            let ind = conv(a);
+
+            self.inner & (1 << ind) != 0
+        }
+        pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
+            let inner = self.inner;
+
+            //let skip_moves = self.swing_moves(point);
+
+            // TABLE
+            //     .iter()
+            //     .enumerate()
+            //     .filter(move |(x, _)| inner & (1 << x) != 0)
+            //     .map(move |(_, x)| point.add(GridCoord(*x)))
+            let mesh_moves = (0..128)
+                .filter(move |x| inner & (1 << x) != 0)
+                .map(move |a| {
+                    let x = a / 13;
+                    let y = a % 13;
+                    point.add(GridCoord([x - 6, y - 6]))
+                });
+
+            mesh_moves //.chain(skip_moves)
+        }
+    }
     use super::GridCoord;
 
     #[derive(PartialEq, Eq, Debug, Clone)]
@@ -467,7 +519,9 @@ pub mod movement_mesh {
 
         //We need an additional bit to describe the path that needs to be taken to each that spot.
         //Either left or right. (only applies for diagonal outer cells)
-        inner: u128,
+        inner: Mesh,
+
+        just_swing_inner: Mesh,
 
         swing_moves: Vec<SwingMove>,
     }
@@ -484,7 +538,8 @@ pub mod movement_mesh {
     impl MovementMesh {
         pub fn new(swing_moves: Vec<SwingMove>) -> Self {
             MovementMesh {
-                inner: 0,
+                inner: Mesh::new(),
+                just_swing_inner: Mesh::new(),
                 swing_moves,
             }
         }
@@ -495,6 +550,8 @@ pub mod movement_mesh {
         pub fn path(&self, a: GridCoord) -> impl Iterator<Item = HexDir> {
             //let swings=self.swing_moves(GridCoord([0;2])).take_while(|(a,b)|b!=a).collect();
             let mut swing_iter = None;
+
+            //TODO look at swing mesh instead??
             for b in self.swing_moves.iter() {
                 if let Some((i, _)) = b
                     .iter_cells(GridCoord([0; 2]))
@@ -566,46 +623,27 @@ pub mod movement_mesh {
                 .flatten()
                 .chain(mesh_iter.into_iter().flatten())
         }
-        pub fn add(&mut self, a: GridCoord) {
-            validate_rel(a);
-            let ind = conv(a);
-            dbg!(ind);
-            self.inner = self.inner | (1 << ind);
+        pub fn add_swing_cell(&mut self, a: GridCoord) {
+            self.just_swing_inner.add(a);
+        }
+        pub fn add_normal_cell(&mut self, a: GridCoord) {
+            self.inner.add(a);
         }
 
-        pub fn is_set(&self, a: GridCoord) -> bool {
-            validate_rel(a);
-
-            let ind = conv(a);
-
-            self.inner & (1 << ind) != 0
+        fn is_set(&self, a: GridCoord) -> bool {
+            self.inner.is_set(a)
         }
 
-        pub fn swing_moves(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
-            let kk = self.swing_moves.clone();
-            kk.into_iter()
-                .flat_map(move |a| a.iter_cells(point).map(|a| a.1))
-        }
+        // fn swing_moves(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
+        //     let kk = self.swing_moves.clone();
+        //     kk.into_iter()
+        //         .flat_map(move |a| a.iter_cells(point).map(|a| a.1))
+        // }
 
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
-            let inner = self.inner;
-
-            //let skip_moves = self.swing_moves(point);
-
-            // TABLE
-            //     .iter()
-            //     .enumerate()
-            //     .filter(move |(x, _)| inner & (1 << x) != 0)
-            //     .map(move |(_, x)| point.add(GridCoord(*x)))
-            let mesh_moves = (0..128)
-                .filter(move |x| inner & (1 << x) != 0)
-                .map(move |a| {
-                    let x = a / 13;
-                    let y = a % 13;
-                    point.add(GridCoord([x - 6, y - 6]))
-                });
-
-            mesh_moves //.chain(skip_moves)
+            let mut j = self.inner.clone();
+            j.inner |= self.just_swing_inner.inner;
+            j.iter_mesh(point)
         }
     }
     fn conv(a: GridCoord) -> usize {
@@ -666,132 +704,132 @@ pub enum ComputeMovesRes {
     NoAddContinue,
 }
 
-pub fn compute_moves22<F: FnMut(&GridCoord) -> ComputeMovesRes>(
-    coord: GridCoord,
-    restricted_movement: bool,
-    mut func: F,
-) -> MovementMesh {
-    fn handle<F: FnMut(&GridCoord) -> ComputeMovesRes>(
-        m: &mut MovementMesh,
-        base: GridCoord,
-        coord: GridCoord,
-        dir: HexDir,
-        mut func: F,
-    ) -> bool {
-        let first = coord.advance(dir);
+// pub fn compute_moves22<F: FnMut(&GridCoord) -> ComputeMovesRes>(
+//     coord: GridCoord,
+//     restricted_movement: bool,
+//     mut func: F,
+// ) -> MovementMesh {
+//     fn handle<F: FnMut(&GridCoord) -> ComputeMovesRes>(
+//         m: &mut MovementMesh,
+//         base: GridCoord,
+//         coord: GridCoord,
+//         dir: HexDir,
+//         mut func: F,
+//     ) -> bool {
+//         let first = coord.advance(dir);
 
-        match func(&first) {
-            ComputeMovesRes::Add => {
-                m.add(first.sub(&base));
-                true
-            }
-            ComputeMovesRes::AddAndStop => {
-                m.add(first.sub(&base));
-                false
-            }
-            ComputeMovesRes::Stop => false,
-            ComputeMovesRes::NoAddContinue => true,
-        }
-    }
+//         match func(&first) {
+//             ComputeMovesRes::Add => {
+//                 m.add(first.sub(&base));
+//                 true
+//             }
+//             ComputeMovesRes::AddAndStop => {
+//                 m.add(first.sub(&base));
+//                 false
+//             }
+//             ComputeMovesRes::Stop => false,
+//             ComputeMovesRes::NoAddContinue => true,
+//         }
+//     }
 
-    let mut m = MovementMesh::new(vec![]);
+//     let mut m = MovementMesh::new(vec![]);
 
-    for (a, rest) in self::movement_mesh::explore_outward_two() {
-        if handle(&mut m, coord, coord, a, &mut func) {
-            if !restricted_movement {
-                let first = coord.advance(a);
-                for a in rest {
-                    let _ = handle(&mut m, coord, first, a, &mut func);
-                }
-            }
-        }
-    }
+//     for (a, rest) in self::movement_mesh::explore_outward_two() {
+//         if handle(&mut m, coord, coord, a, &mut func) {
+//             if !restricted_movement {
+//                 let first = coord.advance(a);
+//                 for a in rest {
+//                     let _ = handle(&mut m, coord, first, a, &mut func);
+//                 }
+//             }
+//         }
+//     }
 
-    m
-}
-pub fn compute_moves2<F: Filter, F2: Filter>(
-    coord: GridCoord,
-    filter: &F,
-    skip_filter: &F2,
-    restricted_movement: bool,
-    slide_rule: bool,
-) -> MovementMesh {
-    let mut m = MovementMesh::new(vec![]);
+//     m
+// }
+// pub fn compute_moves2<F: Filter, F2: Filter>(
+//     coord: GridCoord,
+//     filter: &F,
+//     skip_filter: &F2,
+//     restricted_movement: bool,
+//     slide_rule: bool,
+// ) -> MovementMesh {
+//     let mut m = MovementMesh::new(vec![]);
 
-    //TODO make this a closure
-    fn handle<F: Filter, F2: Filter>(
-        m: &mut MovementMesh,
-        base: GridCoord,
-        coord: GridCoord,
-        dir: HexDir,
-        filter: &F,
-        skip_filter: &F2,
-        slide_rule: bool,
-    ) -> bool {
-        let first = coord.advance(dir);
-        //TODO first check if this cell is already set
+//     //TODO make this a closure
+//     fn handle<F: Filter, F2: Filter>(
+//         m: &mut MovementMesh,
+//         base: GridCoord,
+//         coord: GridCoord,
+//         dir: HexDir,
+//         filter: &F,
+//         skip_filter: &F2,
+//         slide_rule: bool,
+//     ) -> bool {
+//         let first = coord.advance(dir);
+//         //TODO first check if this cell is already set
 
-        if let FilterRes::Stop = filter.filter(&first) {
-            if let FilterRes::Accept = skip_filter.filter(&first) {
-                m.add(first.sub(&base));
-            }
-            return false;
-        }
+//         if let FilterRes::Stop = filter.filter(&first) {
+//             if let FilterRes::Accept = skip_filter.filter(&first) {
+//                 m.add(first.sub(&base));
+//             }
+//             return false;
+//         }
 
-        m.add(first.sub(&base));
+//         m.add(first.sub(&base));
 
-        // if slide_rule {
-        //     let ttt1_skip = match skip_filter.filter(&coord.advance(dir.rotate60_right())) {
-        //         FilterRes::Stop => false,
-        //         FilterRes::Accept => true,
-        //     };
+//         // if slide_rule {
+//         //     let ttt1_skip = match skip_filter.filter(&coord.advance(dir.rotate60_right())) {
+//         //         FilterRes::Stop => false,
+//         //         FilterRes::Accept => true,
+//         //     };
 
-        //     let ttt2_skip = match skip_filter.filter(&coord.advance(dir.rotate60_left())) {
-        //         FilterRes::Stop => false,
-        //         FilterRes::Accept => true,
-        //     };
+//         //     let ttt2_skip = match skip_filter.filter(&coord.advance(dir.rotate60_left())) {
+//         //         FilterRes::Stop => false,
+//         //         FilterRes::Accept => true,
+//         //     };
 
-        //     //let skip_foo=ttt1_skip | ttt2_skip;
+//         //     //let skip_foo=ttt1_skip | ttt2_skip;
 
-        //     let ttt1 = match filter.filter(&coord.advance(dir.rotate60_right())) {
-        //         FilterRes::Stop => false,
-        //         FilterRes::Accept => true,
-        //     };
+//         //     let ttt1 = match filter.filter(&coord.advance(dir.rotate60_right())) {
+//         //         FilterRes::Stop => false,
+//         //         FilterRes::Accept => true,
+//         //     };
 
-        //     let ttt2 = match filter.filter(&coord.advance(dir.rotate60_left())) {
-        //         FilterRes::Stop => false,
-        //         FilterRes::Accept => true,
-        //     };
+//         //     let ttt2 = match filter.filter(&coord.advance(dir.rotate60_left())) {
+//         //         FilterRes::Stop => false,
+//         //         FilterRes::Accept => true,
+//         //     };
 
-        //     if !ttt1 && !ttt2 && !ttt1_skip && !ttt2_skip {
-        //         return false;
-        //     }
-        // }
+//         //     if !ttt1 && !ttt2 && !ttt1_skip && !ttt2_skip {
+//         //         return false;
+//         //     }
+//         // }
 
-        // if let FilterRes::Stop = filter.filter(&first) {
-        //     return false;
-        // }
+//         // if let FilterRes::Stop = filter.filter(&first) {
+//         //     return false;
+//         // }
 
-        //if let FilterRes::Accept = skip_filter.filter(&first) {
-        m.add(first.sub(&base));
-        //}
+//         //if let FilterRes::Accept = skip_filter.filter(&first) {
+//         m.add(first.sub(&base));
+//         //}
 
-        return true;
-    }
+//         return true;
+//     }
 
-    for (a, rest) in self::movement_mesh::explore_outward_two() {
-        if handle(&mut m, coord, coord, a, filter, skip_filter, slide_rule) {
-            if !restricted_movement {
-                let first = coord.advance(a);
-                for a in rest {
-                    let _ = handle(&mut m, coord, first, a, filter, skip_filter, slide_rule);
-                }
-            }
-        }
-    }
+//     for (a, rest) in self::movement_mesh::explore_outward_two() {
+//         if handle(&mut m, coord, coord, a, filter, skip_filter, slide_rule) {
+//             if !restricted_movement {
+//                 let first = coord.advance(a);
+//                 for a in rest {
+//                     let _ = handle(&mut m, coord, first, a, filter, skip_filter, slide_rule);
+//                 }
+//             }
+//         }
+//     }
 
-    m
-}
+//     m
+// }
 
 // pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost, PH: PathHave>(
 //     movement: &K,

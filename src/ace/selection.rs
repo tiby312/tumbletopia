@@ -656,7 +656,7 @@ pub fn generate_unit_possible_moves_inner(
                             break;
                         }
 
-                        mesh.add(rel_coord);
+                        mesh.add_swing_cell(rel_coord);
 
                         if enemy_exist {
                             break;
@@ -723,7 +723,7 @@ pub fn generate_unit_possible_moves_inner(
         };
 
         if move_ok && !friendly_exist && is_world_cell {
-            mesh.add(rel_coord.to_axial());
+            mesh.add_normal_cell(rel_coord.to_axial());
 
             if enemy_exist {
                 if let StopsIter::Yes = stop_iter {
