@@ -319,10 +319,10 @@ pub async fn worker_entry() {
 
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([-4, 4]), Type::King, HexDir { dir: 5 }),
-        // UnitData::new(GridCoord([-2, 1]), Type::Archer, HexDir { dir: 5 }),
+        //UnitData::new(GridCoord([-2, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Warrior, HexDir { dir: 5 }),
-        // UnitData::new(GridCoord([-1, 3]), Type::Warrior, HexDir { dir: 5 }),
+        UnitData::new(GridCoord([-1, 3]), Type::Warrior, HexDir { dir: 5 }),
     ];
 
     //player
@@ -374,6 +374,8 @@ pub async fn worker_entry() {
     let select_model = quick_load(SELECT_GLB, 1, None);
 
     let attack_model = quick_load(ATTACK_GLB, 1, None);
+
+    let arrow_model = quick_load(ARROW_GLB, 1, None);
 
     //let friendly_model = quick_load(FRIENDLY_GLB, 1, None);
 
@@ -642,7 +644,7 @@ pub async fn worker_entry() {
 
                                     let mut v = draw_sys.view(m.as_ref());
 
-                                    attack_model.draw_ext(&mut v, greyscale, false, false, false);
+                                    arrow_model.draw_ext(&mut v, greyscale, false, false, false);
 
                                     //select_model.draw(&mut v);
                                 }
@@ -868,6 +870,9 @@ const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
 const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
 const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
+
+const ARROW_GLB: &'static [u8] = include_bytes!("../assets/arrow.glb");
+
 //const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
 
 // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");

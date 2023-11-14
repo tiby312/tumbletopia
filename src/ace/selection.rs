@@ -1,4 +1,7 @@
-use crate::movement::{movement_mesh::SwingMove, ComputeMovesRes, HexDir, MovementMesh};
+use crate::movement::{
+    movement_mesh::{SwingMove, SwingMoveRay},
+    ComputeMovesRes, HexDir, MovementMesh,
+};
 
 use super::*;
 
@@ -638,13 +641,16 @@ pub fn generate_unit_possible_moves_inner(
                 let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
                 console_dbg!("distance to spotter=", d, relative_anchor_point);
                 if d == 2 {
-                    let s = SwingMove {
+                    let mut s = SwingMove {
                         relative_anchor_point,
                         radius: 2,
                         clockwise: true,
                     };
 
-                    for (_, rel_coord) in s.iter_cells(GridCoord([0; 2])) {
+                    let mut num_steps = 0;
+                    for (i, (_, rel_coord)) in s.iter_cells(GridCoord([0; 2])).enumerate() {
+                        num_steps = i;
+
                         let abs_coord = unit.position.add(rel_coord);
 
                         let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
@@ -656,13 +662,20 @@ pub fn generate_unit_possible_moves_inner(
                             break;
                         }
 
-                        mesh.add_swing_cell(rel_coord);
-
+                        //mesh.add_swing_cell(rel_coord);
                         if enemy_exist {
+                            num_steps += 1;
+
                             break;
                         }
                     }
-                    mesh.add_swing_move(s.clone());
+
+                    let ss = SwingMoveRay {
+                        swing: s.clone(),
+                        num_steps,
+                    };
+
+                    mesh.add_swing_move(ss);
 
                     Some(s)
                 } else {

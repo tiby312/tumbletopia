@@ -430,6 +430,18 @@ pub mod movement_mesh {
     // ];
 
     #[derive(PartialEq, Eq, Debug, Clone)]
+    pub struct SwingMoveRay {
+        pub swing: SwingMove,
+        pub num_steps: usize,
+    }
+
+    impl SwingMoveRay {
+        pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+            self.swing.iter_cells(point).take(self.num_steps)
+        }
+    }
+
+    #[derive(PartialEq, Eq, Debug, Clone)]
     pub struct SwingMove {
         pub relative_anchor_point: GridCoord,
         pub radius: i16,
@@ -521,9 +533,8 @@ pub mod movement_mesh {
         //Either left or right. (only applies for diagonal outer cells)
         inner: Mesh,
 
-        just_swing_inner: Mesh,
-
-        swing_moves: Vec<SwingMove>,
+        //just_swing_inner: Mesh,
+        swing_moves: Vec<SwingMoveRay>,
     }
 
     fn validate_rel(a: GridCoord) {
@@ -536,14 +547,14 @@ pub mod movement_mesh {
         assert!(x != 0 || y != 0);
     }
     impl MovementMesh {
-        pub fn new(swing_moves: Vec<SwingMove>) -> Self {
+        pub fn new(swing_moves: Vec<SwingMoveRay>) -> Self {
             MovementMesh {
                 inner: Mesh::new(),
-                just_swing_inner: Mesh::new(),
+                //just_swing_inner: Mesh::new(),
                 swing_moves,
             }
         }
-        pub fn add_swing_move(&mut self, a: SwingMove) {
+        pub fn add_swing_move(&mut self, a: SwingMoveRay) {
             self.swing_moves.push(a);
         }
         //TODO
@@ -623,9 +634,9 @@ pub mod movement_mesh {
                 .flatten()
                 .chain(mesh_iter.into_iter().flatten())
         }
-        pub fn add_swing_cell(&mut self, a: GridCoord) {
-            self.just_swing_inner.add(a);
-        }
+        // pub fn add_swing_cell(&mut self, a: GridCoord) {
+        //     self.just_swing_inner.add(a);
+        // }
         pub fn add_normal_cell(&mut self, a: GridCoord) {
             self.inner.add(a);
         }
@@ -641,13 +652,20 @@ pub mod movement_mesh {
         // }
 
         pub fn iter_swing_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
-            self.just_swing_inner.iter_mesh(point)
+            self.swing_moves
+                .clone()
+                .into_iter()
+                .flat_map(move |a| a.iter_cells(point).map(|a| a.1))
+            //self.just_swing_inner.iter_mesh(point)
         }
 
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
-            let mut j = self.inner.clone();
-            j.inner |= self.just_swing_inner.inner;
-            j.iter_mesh(point)
+            self.inner
+                .iter_mesh(point)
+                .chain(self.iter_swing_mesh(point))
+            // let mut j = self.inner.clone();
+            // //j.inner |= self.just_swing_inner.inner;
+            // j.iter_mesh(point)
         }
     }
     fn conv(a: GridCoord) -> usize {
