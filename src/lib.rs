@@ -640,9 +640,9 @@ pub async fn worker_entry() {
                                 for (dir, a) in mesh.iter_swing_mesh(*point) {
                                     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
-                                    let mm = dir.dir as f32 / 6.0;
+                                    let mm = ((dir.dir + 1) % 6) as f32 / 6.0;
                                     //let mm=(counter.round() as isize % 6) as f32 /6.0;
-                                    let zrot = matrix::z_rotation(mm * (std::f32::consts::TAU));
+                                    let zrot = matrix::z_rotation(-mm * (std::f32::consts::TAU));
                                     let vv = grid_matrix.spacing();
                                     let r =
                                         zrot.chain(matrix::translation(-vv / 2.0, -vv / 2.0, 0.0));
