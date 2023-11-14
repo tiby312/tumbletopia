@@ -72,10 +72,10 @@ impl Doop {
             *p = kk.transform_point((*p).into()).into();
         }
 
-        let s = matrix::translation(-v / 2.0, -v / 2.0, 0.0).generate();
-        for p in m.positions.iter_mut() {
-            *p = s.transform_point((*p).into()).into();
-        }
+        // let s = matrix::translation(-v / 2.0, -v / 2.0, 0.0).generate();
+        // for p in m.positions.iter_mut() {
+        //     *p = s.transform_point((*p).into()).into();
+        // }
 
         (m, tex)
     }

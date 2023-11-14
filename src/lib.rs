@@ -301,7 +301,7 @@ pub async fn worker_entry() {
     let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
 
     let mut draw_sys = ctx.shader_system();
-    let mut counter = 0.0;
+    let mut counter: f32 = 0.0;
     //TODO get rid of this somehow.
     //these values are incorrect.
     //they are set correctly after resize is called on startup.
@@ -640,10 +640,13 @@ pub async fn worker_entry() {
                                 for (dir, a) in mesh.iter_swing_mesh(*point) {
                                     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
-                                    let mm = dir.dir as f32 / 5.0;
-                                    //let r = matrix::z_rotation(mm * (std::f32::consts::TAU / 6.0));
-                                    let r = matrix::z_rotation(counter);
-
+                                    let mm = dir.dir as f32 / 6.0;
+                                    //let mm=(counter.round() as isize % 6) as f32 /6.0;
+                                    let zrot = matrix::z_rotation(mm * (std::f32::consts::TAU));
+                                    let vv = grid_matrix.spacing();
+                                    let r =
+                                        zrot.chain(matrix::translation(-vv / 2.0, -vv / 2.0, 0.0));
+                                    let r = matrix::translation(vv / 2.0, vv / 2.0, 0.0).chain(r);
                                     let m = matrix.chain(t).chain(r).generate();
 
                                     let mut v = draw_sys.view(m.as_ref());
