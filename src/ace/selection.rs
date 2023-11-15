@@ -655,10 +655,10 @@ pub fn generate_unit_possible_moves_inner(
 
                         let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
                         let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
-
+                        let is_self = abs_coord == unit.position;
                         let is_world_cell = game.world.filter().filter(&abs_coord).to_bool();
 
-                        if friendly_exist || !is_world_cell {
+                        if (friendly_exist && !is_self) || !is_world_cell {
                             break;
                         }
 
@@ -669,6 +669,7 @@ pub fn generate_unit_possible_moves_inner(
                             break;
                         }
                     }
+                    console_dbg!(num_steps);
 
                     let ss = SwingMoveRay {
                         swing: s.clone(),
