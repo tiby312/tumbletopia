@@ -630,18 +630,18 @@ pub fn generate_unit_possible_moves_inner(
 ) -> movement::MovementMesh {
     let mut mesh = movement::MovementMesh::new(vec![]);
 
-    let swing_moves: Vec<SwingMove> = {
+    if unit.typ == Type::Warrior {
         game.this_team
             .units
             .iter()
             .filter(|a| a.typ == Type::Spotter)
-            .filter_map(|a| {
+            .for_each(|a| {
                 let relative_anchor_point = a.position.sub(&unit.position);
                 //let relative_anchor_point = unit.position.sub(&a.position);
                 let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
                 console_dbg!("distance to spotter=", d, relative_anchor_point);
                 if d == 2 {
-                    let mut s = SwingMove {
+                    let s = SwingMove {
                         relative_anchor_point,
                         radius: 2,
                         clockwise: true,
@@ -672,23 +672,14 @@ pub fn generate_unit_possible_moves_inner(
                     console_dbg!(num_steps);
 
                     let ss = SwingMoveRay {
-                        swing: s.clone(),
+                        swing: s,
                         num_steps,
                     };
 
                     mesh.add_swing_move(ss);
-
-                    Some(s)
-                } else {
-                    None
                 }
-            })
-            .collect()
-    };
-
-    // If there is an enemy near by restrict movement.
-
-    //let restricted_movement = has_restricted_movement(unit, &game.into_const());
+            });
+    }
 
     let steering = if unit.typ == Type::Warrior || unit.typ == Type::King {
         WARRIOR_STEERING.iter()
