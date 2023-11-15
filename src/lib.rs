@@ -113,7 +113,7 @@ impl<'a> WarriorDraw<'a> {
             let s = matrix::scale(5.0, 5.0, 5.0);
             let m = new_proj.chain(s).generate();
 
-            let nn = health_numbers.get_number(ccat.typ as i8);
+            let nn = health_numbers.get_number(ccat.typ.type_index() as i8);
             let mut v = draw_sys.view(m.as_ref());
             nn.draw_ext(&mut v, false, false, true, false);
 
@@ -328,8 +328,16 @@ pub async fn worker_entry() {
     //player
     let dogs = smallvec::smallvec![
         UnitData::new(GridCoord([4, -4]), Type::King, HexDir { dir: 2 }),
-        UnitData::new(GridCoord([1, -2]), Type::Spotter, HexDir { dir: 2 }),
-        UnitData::new(GridCoord([2, -2]), Type::Spotter, HexDir { dir: 2 }),
+        UnitData::new(
+            GridCoord([1, -2]),
+            Type::Spotter { clockwise: true },
+            HexDir { dir: 2 }
+        ),
+        UnitData::new(
+            GridCoord([2, -2]),
+            Type::Spotter { clockwise: false },
+            HexDir { dir: 2 }
+        ),
         UnitData::new(GridCoord([1, -3]), Type::Warrior, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -2]), Type::Rook, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -3]), Type::Rook, HexDir { dir: 2 }),

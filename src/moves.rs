@@ -187,7 +187,7 @@ mod inner_partial {
 
 
                 let mut steering=match this_unit.typ{
-                    Type::Warrior | Type::King | Type::Spotter=>{
+                    Type::Warrior | Type::King | Type::Spotter{..}=>{
                         use crate::ace::selection::WARRIOR_STEERING;
 
                         WARRIOR_STEERING.iter()

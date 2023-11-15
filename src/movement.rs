@@ -451,11 +451,22 @@ pub mod movement_mesh {
         pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
             let radius = 2;
             let num_cell = 13;
-            let i = self
-                .relative_anchor_point
-                .to_cube()
-                .ring(radius)
-                .map(|(d, a)| (d, a.to_axial()));
+            let i = self.relative_anchor_point.to_cube();
+
+            let i1 = if self.clockwise {
+                Some(i.ring(radius))
+            } else {
+                None
+            };
+            let i2 = if !self.clockwise {
+                Some(i.cc_ring(radius))
+            } else {
+                None
+            };
+
+            let i = i1.into_iter().flatten().chain(i2.into_iter().flatten());
+
+            let i = i.map(|(d, a)| (d, a.to_axial()));
             let ii = i.clone();
             let i = i.chain(ii);
 

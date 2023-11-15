@@ -33,7 +33,9 @@ pub enum Type {
     Archer,
     Catapault,
     Lancer,
-    Spotter,
+    Spotter {
+        clockwise: bool,
+    },
 }
 
 impl Type {
@@ -45,21 +47,21 @@ impl Type {
             Type::Archer => 2,
             Type::Catapault => 3,
             Type::Lancer => 4,
-            Type::Spotter => 5,
+            Type::Spotter { .. } => 5,
         }
     }
 
-    pub fn type_index_inverse(a: usize) -> Type {
-        match a {
-            0 => Type::Warrior,
-            1 => Type::King,
-            2 => Type::Archer,
-            3 => Type::Catapault,
-            4 => Type::Lancer,
-            5 => Type::Spotter,
-            _ => unreachable!(),
-        }
-    }
+    // pub fn type_index_inverse(a: usize) -> Type {
+    //     match a {
+    //         0 => Type::Warrior,
+    //         1 => Type::King,
+    //         2 => Type::Archer,
+    //         3 => Type::Catapault,
+    //         4 => Type::Lancer,
+    //         5 => Type::Spotter,
+    //         _ => unreachable!(),
+    //     }
+    // }
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]

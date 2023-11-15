@@ -634,65 +634,61 @@ pub fn generate_unit_possible_moves_inner(
         game.this_team
             .units
             .iter()
-            .filter(|a| a.typ == Type::Spotter)
+            //.filter(|a| a.typ == Type::Spotter)
             .for_each(|a| {
-                let relative_anchor_point = a.position.sub(&unit.position);
-                //let relative_anchor_point = unit.position.sub(&a.position);
-                let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
-                console_dbg!("distance to spotter=", d, relative_anchor_point);
-                if d == 2 {
-                    let s = SwingMove {
-                        relative_anchor_point,
-                        radius: 2,
-                        clockwise: true,
-                    };
+                if let Type::Spotter { clockwise } = a.typ {
+                    let relative_anchor_point = a.position.sub(&unit.position);
+                    //let relative_anchor_point = unit.position.sub(&a.position);
+                    let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
+                    console_dbg!("distance to spotter=", d, relative_anchor_point);
+                    if d == 2 {
+                        let s = SwingMove {
+                            relative_anchor_point,
+                            radius: 2,
+                            clockwise,
+                        };
 
-                    let mut num_steps = 0;
-                    for (i, (_, rel_coord)) in s.iter_cells(GridCoord([0; 2])).enumerate() {
-                        num_steps = i;
+                        let mut num_steps = 0;
+                        for (i, (_, rel_coord)) in s.iter_cells(GridCoord([0; 2])).enumerate() {
+                            num_steps = i;
 
-                        let abs_coord = unit.position.add(rel_coord);
+                            let abs_coord = unit.position.add(rel_coord);
 
-                        let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
-                        let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
-                        let is_self = abs_coord == unit.position;
-                        let is_world_cell = game.world.filter().filter(&abs_coord).to_bool();
+                            let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
+                            let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
+                            let is_self = abs_coord == unit.position;
+                            let is_world_cell = game.world.filter().filter(&abs_coord).to_bool();
 
-                        if (friendly_exist && !is_self) || !is_world_cell {
-                            break;
+                            if (friendly_exist && !is_self) || !is_world_cell {
+                                break;
+                            }
+
+                            //mesh.add_swing_cell(rel_coord);
+                            if enemy_exist {
+                                num_steps += 1;
+
+                                break;
+                            }
                         }
+                        console_dbg!(num_steps);
 
-                        //mesh.add_swing_cell(rel_coord);
-                        if enemy_exist {
-                            num_steps += 1;
+                        let ss = SwingMoveRay {
+                            swing: s,
+                            num_steps,
+                        };
 
-                            break;
-                        }
+                        mesh.add_swing_move(ss);
                     }
-                    console_dbg!(num_steps);
-
-                    let ss = SwingMoveRay {
-                        swing: s,
-                        num_steps,
-                    };
-
-                    mesh.add_swing_move(ss);
                 }
             });
     }
 
-    let steering = if unit.typ == Type::Warrior || unit.typ == Type::King {
-        WARRIOR_STEERING.iter()
-    } else if unit.typ == Type::Archer {
-        ARCHER_STEERING.iter()
-    } else if unit.typ == Type::Catapault {
-        CATAPAULT_STEERING.iter()
-    } else if unit.typ == Type::Lancer {
-        LANCER_STEERING.iter()
-    } else if unit.typ == Type::Spotter {
-        WARRIOR_STEERING.iter()
-    } else {
-        unreachable!();
+    let steering = match unit.typ {
+        Type::Warrior | Type::King => WARRIOR_STEERING.iter(),
+        Type::Archer => ARCHER_STEERING.iter(),
+        Type::Catapault => CATAPAULT_STEERING.iter(),
+        Type::Lancer => LANCER_STEERING.iter(),
+        Type::Spotter { clockwise } => WARRIOR_STEERING.iter(),
     };
 
     let k = unit.direction;
