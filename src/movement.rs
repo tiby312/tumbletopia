@@ -659,8 +659,9 @@ pub mod movement_mesh {
             self.swing_moves
                 .clone()
                 .into_iter()
-                .flat_map(move |a| a.iter_cells(point))
-                .filter(move |a| a.1 != point)
+                .flat_map(move |a| a.iter_cells(point).skip(1))
+
+            //.filter(move |a| a.1 != point)
             //self.just_swing_inner.iter_mesh(point)
         }
 

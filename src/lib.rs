@@ -329,6 +329,7 @@ pub async fn worker_entry() {
     let dogs = smallvec::smallvec![
         UnitData::new(GridCoord([4, -4]), Type::King, HexDir { dir: 2 }),
         UnitData::new(GridCoord([1, -2]), Type::Spotter, HexDir { dir: 2 }),
+        UnitData::new(GridCoord([2, -2]), Type::Spotter, HexDir { dir: 2 }),
         UnitData::new(GridCoord([1, -3]), Type::Warrior, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -2]), Type::Rook, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -3]), Type::Rook, HexDir { dir: 2 }),
