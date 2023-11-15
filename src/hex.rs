@@ -204,17 +204,14 @@ impl Cube {
             .collect::<Vec<_>>()
             .into_iter();
 
-        let a: Vec<_> = (0..6)
+        (0..6)
             .flat_map(move |i| k.clone().map(move |_| i))
             .map(move |i| {
                 let h = hex;
                 hex = hex.neighbour(i.into());
 
-                (HexDir { dir: (i) % 6 }, h)
+                (HexDir { dir: i }, h)
             })
-            .collect();
-
-        a.into_iter()
     }
 
     pub fn scale(self, n: i16) -> Cube {
