@@ -450,7 +450,7 @@ pub mod movement_mesh {
     impl SwingMove {
         pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
             let radius = 2;
-            let num_cell = 13;
+            let num_cell = 8;
             let i = self.relative_anchor_point.to_cube();
 
             let i1 = if self.clockwise {
