@@ -459,15 +459,8 @@ pub mod movement_mesh {
             let ii = i.clone();
             let i = i.chain(ii);
 
-            let mut iiii = i.skip_while(|(_, z)| *z != GridCoord([0; 2]));
-            // let (mut h, pp) = iiii.next().unwrap();
+            let iiii = i.skip_while(|(_, z)| *z != GridCoord([0; 2]));
 
-            // //.skip(1)
-            // iiii.take(num_cell).map(move |(d, z)| {
-            //     let o = (h, point.add(z));
-            //     h = d;
-            //     o
-            // })
             iiii.take(num_cell).map(move |(d, z)| (d, point.add(z)))
         }
     }
