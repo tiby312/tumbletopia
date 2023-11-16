@@ -649,9 +649,13 @@ pub fn generate_unit_possible_moves_inner(
                         };
 
                         let mut num_steps = 0;
+                        let mut last_move_enemy = false;
                         for (i, (_, rel_coord)) in s.iter_cells(GridCoord([0; 2])).enumerate() {
                             num_steps = i;
 
+                            if last_move_enemy {
+                                break;
+                            }
                             let abs_coord = unit.position.add(rel_coord);
 
                             let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
@@ -665,9 +669,10 @@ pub fn generate_unit_possible_moves_inner(
 
                             //mesh.add_swing_cell(rel_coord);
                             if enemy_exist {
-                                num_steps += 1;
+                                last_move_enemy = true;
+                                //num_steps += 1;
 
-                                break;
+                                //break;
                             }
                         }
                         console_dbg!(num_steps);
