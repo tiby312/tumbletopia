@@ -319,10 +319,20 @@ pub async fn worker_entry() {
 
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([-4, 4]), Type::King, HexDir { dir: 5 }),
+        // UnitData::new(
+        //     GridCoord([2, -1]),
+        //     Type::Spotter { clockwise: true },
+        //     HexDir { dir: 2 }
+        // ),
+        // UnitData::new(
+        //     GridCoord([-3, -1]),
+        //     Type::Spotter { clockwise: false },
+        //     HexDir { dir: 2 }
+        // ),
         //UnitData::new(GridCoord([-2, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Warrior, HexDir { dir: 5 }),
-        UnitData::new(GridCoord([-1, 3]), Type::Warrior, HexDir { dir: 5 }),
+        //UnitData::new(GridCoord([-1, 3]), Type::Warrior, HexDir { dir: 5 }),
     ];
 
     //player
@@ -641,6 +651,18 @@ pub async fn worker_entry() {
                                     let mut v = draw_sys.view(m.as_ref());
 
                                     select_model.draw_ext(&mut v, greyscale, false, false, false);
+
+                                    //select_model.draw(&mut v);
+                                }
+                                for a in mesh.iter_attackable_normal(*point) {
+                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                                    let t = matrix::translation(pos[0], pos[1], 0.0);
+
+                                    let m = matrix.chain(t).generate();
+
+                                    let mut v = draw_sys.view(m.as_ref());
+
+                                    attack_model.draw_ext(&mut v, greyscale, false, false, false);
 
                                     //select_model.draw(&mut v);
                                 }

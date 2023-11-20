@@ -172,10 +172,15 @@ mod inner_partial {
             {
                 let (start,mesh,end,doopa,game_view):(GridCoord,MovementMesh,_,_,&mut GameViewMut<'_,'_>)=$args;
 
+
+
                 let this_unit = game_view
                 .this_team
                 .find_slow_mut(&start)
                 .unwrap();
+
+                let initial_pops=this_unit.position;
+
 
                 let team=game_view.team;
                 let _ = doopa
@@ -211,29 +216,39 @@ mod inner_partial {
 
                 let f=offset.to_cube().rotate(k);
 
-                //let ans=.expect("impossible steer");
-                if let Some(ans)=steering.find(|a|a.0==f.to_axial()){
-                    use crate::ace::selection::Steering;
-                    match ans.1{
-                        Steering::Left=>{
-                            this_unit.direction=k.rotate60_right();
-                        },
-                        Steering::Right=>{
-                            this_unit.direction=k.rotate60_left();
-                        },
-                        Steering::LeftLeft=>{
-                            this_unit.direction=k.rotate60_right().rotate60_right();
-                        },
-                        Steering::RightRight=>{
-                            this_unit.direction=k.rotate60_left().rotate60_left();
-                        },
-                        Steering::None=>{
 
-                        }
-                    }
-                }else{
-                    console_dbg!("couldnt find steer");
+                //console_dbg!("foo",initial_pops,this_unit.position);
+
+                if this_unit.position.to_cube().dist(&initial_pops.to_cube())==1{
+                    let foo=initial_pops.dir_to2(&this_unit.position);
+                    //let foo=this_unit.position.dir_to(&initial_pops);
+
+                    this_unit.direction=foo;
                 }
+
+                // //let ans=.expect("impossible steer");
+                // if let Some(ans)=steering.find(|a|a.0==f.to_axial()){
+                //     use crate::ace::selection::Steering;
+                //     match ans.1{
+                //         Steering::Left=>{
+                //             this_unit.direction=k.rotate60_right();
+                //         },
+                //         Steering::Right=>{
+                //             this_unit.direction=k.rotate60_left();
+                //         },
+                //         Steering::LeftLeft=>{
+                //             this_unit.direction=k.rotate60_right().rotate60_right();
+                //         },
+                //         Steering::RightRight=>{
+                //             this_unit.direction=k.rotate60_left().rotate60_left();
+                //         },
+                //         Steering::None=>{
+
+                //         }
+                //     }
+                // }else{
+                //     //console_dbg!("couldnt find steer");
+                // }
 
 
                 if let Some(g)=game_view.that_team.find_take(&end){

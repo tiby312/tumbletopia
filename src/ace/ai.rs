@@ -272,7 +272,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         a: std::collections::HashMap::new(),
     };
 
-    let max_depth = 10;
+    let max_depth = 6;
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {

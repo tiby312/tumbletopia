@@ -362,26 +362,39 @@ pub enum ResetIter {
 }
 
 pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 6] = {
-    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
-    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 1 });
-    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 2 });
+    // let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    // let f2 = GridCoord([0, 0]).advance(HexDir { dir: 1 });
+    // let f3 = GridCoord([0, 0]).advance(HexDir { dir: 2 });
 
-    let f4 = GridCoord([0, 0]).advance(HexDir { dir: 3 });
-    let f5 = GridCoord([0, 0]).advance(HexDir { dir: 4 });
-    let f6 = GridCoord([0, 0]).advance(HexDir { dir: 5 });
+    // let f4 = GridCoord([0, 0]).advance(HexDir { dir: 3 });
+    // let f5 = GridCoord([0, 0]).advance(HexDir { dir: 4 });
+    // let f6 = GridCoord([0, 0]).advance(HexDir { dir: 5 });
+
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+
+    let f4 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left().rotate60_left());
+    let f5 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right().rotate60_right());
+    let f6 = GridCoord([0, 0]).advance(
+        HexDir { dir: 0 }
+            .rotate60_right()
+            .rotate60_right()
+            .rotate60_right(),
+    );
 
     [
         (
             f1,
             Steering::None,
-            Attackable::No,
+            Attackable::Yes,
             StopsIter::No,
             ResetIter::No,
         ),
         (
             f2,
             Steering::None,
-            Attackable::No,
+            Attackable::Yes,
             StopsIter::No,
             ResetIter::No,
         ),
@@ -640,7 +653,7 @@ pub fn generate_unit_possible_moves_inner(
                     let relative_anchor_point = a.position.sub(&unit.position);
                     //let relative_anchor_point = unit.position.sub(&a.position);
                     let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
-                    console_dbg!("distance to spotter=", d, relative_anchor_point);
+                    //console_dbg!("distance to spotter=", d, relative_anchor_point);
                     if d == 2 {
                         let s = SwingMove {
                             relative_anchor_point,
@@ -675,7 +688,7 @@ pub fn generate_unit_possible_moves_inner(
                                 //break;
                             }
                         }
-                        console_dbg!(num_steps);
+                        //console_dbg!(num_steps);
 
                         let ss = SwingMoveRay {
                             swing: s,
@@ -718,18 +731,16 @@ pub fn generate_unit_possible_moves_inner(
         let is_world_cell = game.world.filter().filter(&abs_coord).to_bool();
         //let f2 = game.this_team.filter().filter(&abs_coord).to_bool();
 
-        let move_ok = if enemy_exist {
-            if let Attackable::Yes = attack {
-                true
-            } else {
-                false
-            }
-        } else {
+        let attackable = if let Attackable::Yes = attack {
             true
+        } else {
+            false
         };
 
+        let move_ok = if enemy_exist { attackable } else { true };
+
         if move_ok && !friendly_exist && is_world_cell {
-            mesh.add_normal_cell(rel_coord.to_axial());
+            mesh.add_normal_cell(rel_coord.to_axial(), attackable);
 
             if enemy_exist {
                 if let StopsIter::Yes = stop_iter {

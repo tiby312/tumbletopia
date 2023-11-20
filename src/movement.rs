@@ -137,6 +137,25 @@ impl GridCoord {
             .map(|(i, _)| HexDir { dir: i as u8 })
             .unwrap()
     }
+    pub fn dir_to2(&self, other: &GridCoord) -> HexDir {
+        let mut offset = other.sub(self);
+
+        offset.0[0] = offset.0[0].clamp(-1, 1);
+        offset.0[1] = offset.0[1].clamp(-1, 1);
+
+        // assert!(offset.0[0].abs() <= 1);
+        // assert!(offset.0[1].abs() <= 1);
+        let offset = offset.to_cube();
+
+        hex::OFFSETS
+            .iter()
+            .rev()
+            .enumerate()
+            .find(|(_, x)| **x == offset.0)
+            .map(|(i, _)| HexDir { dir: i as u8 })
+            .unwrap()
+            .rotate60_right()
+    }
     pub fn to_cube(self) -> hex::Cube {
         let a = self.0;
         hex::Cube([a[0], a[1], -a[0] - a[1]])
@@ -362,8 +381,8 @@ pub mod movement_mesh {
         let k2 = GridCoord([1, -2]);
 
         let mut mesh = MovementMesh::new(vec![]);
-        mesh.add_normal_cell(k1);
-        mesh.add_normal_cell(k2);
+        mesh.add_normal_cell(k1, false);
+        mesh.add_normal_cell(k2, false);
 
         let res: Vec<_> = mesh.path(GridCoord([1, -2])).collect();
         dbg!(res);
@@ -450,7 +469,12 @@ pub mod movement_mesh {
     impl SwingMove {
         pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
             let radius = 2;
-            let num_cell = 8;
+            //let num_cell = 8;
+            let num_cell = 13;
+
+            // let radius = 3;
+            // let num_cell = 32;
+
             let i = self.relative_anchor_point.to_cube();
 
             let i1 = if self.clockwise {
@@ -538,6 +562,8 @@ pub mod movement_mesh {
         //Either left or right. (only applies for diagonal outer cells)
         inner: Mesh,
 
+        attack_mesh: Mesh,
+
         //just_swing_inner: Mesh,
         swing_moves: Vec<SwingMoveRay>,
     }
@@ -555,6 +581,7 @@ pub mod movement_mesh {
         pub fn new(swing_moves: Vec<SwingMoveRay>) -> Self {
             MovementMesh {
                 inner: Mesh::new(),
+                attack_mesh: Mesh::new(),
                 //just_swing_inner: Mesh::new(),
                 swing_moves,
             }
@@ -642,8 +669,11 @@ pub mod movement_mesh {
         // pub fn add_swing_cell(&mut self, a: GridCoord) {
         //     self.just_swing_inner.add(a);
         // }
-        pub fn add_normal_cell(&mut self, a: GridCoord) {
+        pub fn add_normal_cell(&mut self, a: GridCoord, attackable: bool) {
             self.inner.add(a);
+            if attackable {
+                self.attack_mesh.add(a);
+            }
         }
 
         fn is_set(&self, a: GridCoord) -> bool {
@@ -667,6 +697,10 @@ pub mod movement_mesh {
 
             //.filter(move |a| a.1 != point)
             //self.just_swing_inner.iter_mesh(point)
+        }
+
+        pub fn iter_attackable_normal(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
+            self.attack_mesh.iter_mesh(point)
         }
 
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
