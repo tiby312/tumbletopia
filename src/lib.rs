@@ -319,20 +319,20 @@ pub async fn worker_entry() {
 
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([-4, 4]), Type::King, HexDir { dir: 5 }),
-        // UnitData::new(
-        //     GridCoord([2, -1]),
-        //     Type::Spotter { clockwise: true },
-        //     HexDir { dir: 2 }
-        // ),
-        // UnitData::new(
-        //     GridCoord([-3, -1]),
-        //     Type::Spotter { clockwise: false },
-        //     HexDir { dir: 2 }
-        // ),
+        UnitData::new(
+            GridCoord([2, -1]),
+            Type::Spotter { clockwise: true },
+            HexDir { dir: 2 }
+        ),
+        UnitData::new(
+            GridCoord([-3, -1]),
+            Type::Spotter { clockwise: false },
+            HexDir { dir: 2 }
+        ),
         //UnitData::new(GridCoord([-2, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Warrior, HexDir { dir: 5 }),
-        //UnitData::new(GridCoord([-1, 3]), Type::Warrior, HexDir { dir: 5 }),
+        UnitData::new(GridCoord([-1, 3]), Type::Warrior, HexDir { dir: 5 }),
     ];
 
     //player

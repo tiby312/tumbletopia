@@ -711,7 +711,7 @@ pub fn generate_unit_possible_moves_inner(
 
     let k = unit.direction;
 
-    let m = steering.map(|a| (a.0.to_cube().rotate_back(k), a.1, a.2, a.3, a.4));
+    let m = steering.map(|a| (a.0.to_cube().rotate(k), a.1, a.2, a.3, a.4));
 
     let mut skip = false;
 

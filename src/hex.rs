@@ -122,18 +122,18 @@ impl Cube {
             _ => unreachable!(),
         }
     }
-    pub fn rotate_back(self, dir: HexDir) -> Cube {
-        let k = self;
-        match dir.dir {
-            0 => k,
-            5 => k.rotate_60_right(),
-            4 => k.rotate_60_right().rotate_60_right(),
-            3 => k.rotate_60_right().rotate_60_right().rotate_60_right(),
-            2 => k.rotate_60_left().rotate_60_left(),
-            1 => k.rotate_60_left(),
-            _ => unreachable!(),
-        }
-    }
+    // pub fn rotate_back(self, dir: HexDir) -> Cube {
+    //     let k = self;
+    //     match dir.dir {
+    //         0 => k,
+    //         5 => k.rotate_60_right(),
+    //         4 => k.rotate_60_right().rotate_60_right(),
+    //         3 => k.rotate_60_right().rotate_60_right().rotate_60_right(),
+    //         2 => k.rotate_60_left().rotate_60_left(),
+    //         1 => k.rotate_60_left(),
+    //         _ => unreachable!(),
+    //     }
+    // }
     pub fn round(frac: [f32; 3]) -> Cube {
         let mut q = frac[0].round() as i16;
         let mut r = frac[1].round() as i16;

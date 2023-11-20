@@ -181,6 +181,8 @@ mod inner_partial {
 
                 let initial_pops=this_unit.position;
 
+                //TODO inefficient?
+                let last_dir=mesh.path(end.sub(&initial_pops)).last().unwrap();
 
                 let team=game_view.team;
                 let _ = doopa
@@ -219,12 +221,15 @@ mod inner_partial {
 
                 //console_dbg!("foo",initial_pops,this_unit.position);
 
-                if this_unit.position.to_cube().dist(&initial_pops.to_cube())==1{
-                    let foo=initial_pops.dir_to2(&this_unit.position);
-                    //let foo=this_unit.position.dir_to(&initial_pops);
 
-                    this_unit.direction=foo;
-                }
+                this_unit.direction=last_dir;
+
+                // if this_unit.position.to_cube().dist(&initial_pops.to_cube())==1{
+                //     let foo=initial_pops.dir_to2(&this_unit.position);
+                //     //let foo=this_unit.position.dir_to(&initial_pops);
+
+                //     this_unit.direction=foo;
+                // }
 
                 // //let ans=.expect("impossible steer");
                 // if let Some(ans)=steering.find(|a|a.0==f.to_axial()){
@@ -642,7 +647,15 @@ impl Movement {
 impl UnwrapMe for Movement {
     type Item = UnitData;
 
-    fn direct_unwrap(self) -> Self::Item {
+    fn direct_unwrap(mut self) -> Self::Item {
+        let last_dir = self
+            .mesh
+            .path(self.end.sub(&self.start.position))
+            .last()
+            .unwrap();
+
+        //TODO is this right????
+        self.start.position = self.end;
         self.start
     }
     fn into_command(self) -> animation::AnimationCommand {
