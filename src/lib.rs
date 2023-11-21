@@ -63,8 +63,11 @@ impl<'a> WarriorDraw<'a> {
             // let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
 
             let t = matrix::translation(pos[0], pos[1], 0.0);
-            let s = matrix::scale(1.0, 1.0, 1.0);
-            let m = matrix.chain(t).chain(s).generate();
+            //let s = matrix::scale(1.0, 1.0, 1.0);
+
+            //let r=rotate_by_dir(cc.direction,gg.spacing());
+
+            let m = matrix.chain(t).generate();
             let mut v = draw_sys.view(m.as_ref());
 
             self.model.draw_ext(
@@ -671,13 +674,9 @@ pub async fn worker_entry() {
                                 for (dir, a) in mesh.iter_swing_mesh(*point) {
                                     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
-                                    let mm = ((dir.dir + 1) % 6) as f32 / 6.0;
-                                    //let mm=(counter.round() as isize % 6) as f32 /6.0;
-                                    let zrot = matrix::z_rotation(-mm * (std::f32::consts::TAU));
-                                    let vv = grid_matrix.spacing();
-                                    let r =
-                                        zrot.chain(matrix::translation(-vv / 2.0, -vv / 2.0, 0.0));
-                                    let r = matrix::translation(vv / 2.0, vv / 2.0, 0.0).chain(r);
+
+                                    let r = rotate_by_dir(dir, grid_matrix.spacing());
+
                                     let m = matrix.chain(t).chain(r).generate();
 
                                     let mut v = draw_sys.view(m.as_ref());
@@ -948,4 +947,16 @@ impl<'a> NumberTextManager<'a> {
             model: gpu,
         }
     }
+}
+
+fn rotate_by_dir(dir: HexDir, spacing: f32) -> impl MyMatrix {
+    use matrix::Inverse;
+    let mm = ((dir.dir + 1) % 6) as f32 / 6.0;
+
+    let zrot = matrix::z_rotation(-mm * (std::f32::consts::TAU));
+    let tt = matrix::translation(-spacing / 2.0, -spacing / 2.0, 0.0);
+    let tt2 = tt.clone().inverse();
+
+    let r = tt2.chain(zrot).chain(tt);
+    r
 }
