@@ -44,19 +44,27 @@ enum UiButton {
 pub struct WarriorDraw<'a> {
     model: &'a MyModel,
     drop_shadow: &'a MyModel,
+    direction: &'a MyModel,
     col: &'a [UnitData],
 }
 
 impl<'a> WarriorDraw<'a> {
-    fn new(col: &'a [UnitData], model: &'a MyModel, drop_shadow: &'a MyModel) -> Self {
+    fn new(
+        col: &'a [UnitData],
+        model: &'a MyModel,
+        drop_shadow: &'a MyModel,
+        direction: &'a MyModel,
+    ) -> Self {
         Self {
             model,
             drop_shadow,
             col,
+            direction,
         }
     }
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
         //let grey = self.typ == Type::Para;
+        //TODO don't loop in this function!!!
         for cc in self.col.iter() {
             let pos = gg.hex_axial_to_world(&cc.position);
 
@@ -67,10 +75,21 @@ impl<'a> WarriorDraw<'a> {
 
             //let r=rotate_by_dir(cc.direction,gg.spacing());
 
-            let m = matrix.chain(t).generate();
+            let m = matrix.chain(t.clone()).generate();
             let mut v = draw_sys.view(m.as_ref());
 
             self.model.draw_ext(
+                &mut v, false, /*  !cc.selectable(game)  */
+                false, false, true,
+            );
+
+            let m = matrix
+                .chain(t)
+                .chain(rotate_by_dir(cc.direction, gg.spacing()))
+                .generate();
+            let mut v = draw_sys.view(m.as_ref());
+
+            self.direction.draw_ext(
                 &mut v, false, /*  !cc.selectable(game)  */
                 false, false, true,
             );
@@ -399,6 +418,8 @@ pub async fn worker_entry() {
 
     let arrow_model = quick_load(ARROW_GLB, 1, None);
 
+    let direction_model = quick_load(DIRECTION_GLB, 1, None);
+
     //let friendly_model = quick_load(FRIENDLY_GLB, 1, None);
 
     let text_texture = {
@@ -697,8 +718,10 @@ pub async fn worker_entry() {
                 });
 
                 {
-                    let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
-                    let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
+                    let cat_draw =
+                        WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow, &direction_model);
+                    let dog_draw =
+                        WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow, &direction_model);
 
                     disable_depth(&ctx, || {
                         //draw dropshadow
@@ -719,15 +742,19 @@ pub async fn worker_entry() {
                 }
 
                 {
-                    let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
-                    let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
+                    let cat_draw =
+                        WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow, &direction_model);
+                    let dog_draw =
+                        WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow, &direction_model);
                     cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                     dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
                 }
 
                 {
-                    let cat_draw = WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow);
-                    let dog_draw = WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow);
+                    let cat_draw =
+                        WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow, &direction_model);
+                    let dog_draw =
+                        WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow, &direction_model);
                     disable_depth(&ctx, || {
                         cat_draw.draw_health_text(
                             &grid_matrix,
@@ -919,6 +946,8 @@ const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
 const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
 
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/hex-grass.glb");
+
+const DIRECTION_GLB: &'static [u8] = include_bytes!("../assets/direction.glb");
 
 pub struct NumberTextManager<'a> {
     pub numbers: Vec<model_parse::ModelGpu>,
