@@ -362,14 +362,61 @@ pub enum ResetIter {
 }
 
 pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 6] = {
-    // let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
-    // let f2 = GridCoord([0, 0]).advance(HexDir { dir: 1 });
-    // let f3 = GridCoord([0, 0]).advance(HexDir { dir: 2 });
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 1 });
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 2 });
 
-    // let f4 = GridCoord([0, 0]).advance(HexDir { dir: 3 });
-    // let f5 = GridCoord([0, 0]).advance(HexDir { dir: 4 });
-    // let f6 = GridCoord([0, 0]).advance(HexDir { dir: 5 });
+    let f4 = GridCoord([0, 0]).advance(HexDir { dir: 3 });
+    let f5 = GridCoord([0, 0]).advance(HexDir { dir: 4 });
+    let f6 = GridCoord([0, 0]).advance(HexDir { dir: 5 });
 
+    [
+        (
+            f1,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f4,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f5,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f6,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+    ]
+};
+
+pub const WARRIOR_STEERING_OLD2: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 6] = {
     let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
     let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
     let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });

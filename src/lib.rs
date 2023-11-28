@@ -89,10 +89,10 @@ impl<'a> WarriorDraw<'a> {
                 .generate();
             let mut v = draw_sys.view(m.as_ref());
 
-            self.direction.draw_ext(
-                &mut v, false, /*  !cc.selectable(game)  */
-                false, false, true,
-            );
+            // self.direction.draw_ext(
+            //     &mut v, false, /*  !cc.selectable(game)  */
+            //     false, false, true,
+            // );
         }
     }
 
