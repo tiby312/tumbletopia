@@ -467,10 +467,26 @@ pub mod movement_mesh {
         pub clockwise: bool,
     }
     impl SwingMove {
+        pub fn iter_left(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+            self.iter_cells_inner(point, 2, 7, false)
+        }
+        pub fn iter_right(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+            self.iter_cells_inner(point, 2, 5, true)
+        }
+
         pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-            let radius = 2;
+            self.iter_cells_inner(point, 2, 13, self.clockwise)
+        }
+        pub fn iter_cells_inner(
+            &self,
+            point: GridCoord,
+            radius: i16,
+            num_cell: usize,
+            clockwise: bool,
+        ) -> impl Iterator<Item = (HexDir, GridCoord)> {
+            //let radius = 2;
             //let num_cell = 8;
-            let num_cell = 13;
+            //let num_cell = 13;
 
             // let radius = 3;
             // let num_cell = 32;

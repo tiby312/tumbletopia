@@ -710,7 +710,7 @@ pub fn generate_unit_possible_moves_inner(
 
                         let mut num_steps = 0;
                         let mut last_move_enemy = false;
-                        for (i, (_, rel_coord)) in s.iter_cells(GridCoord([0; 2])).enumerate() {
+                        for (i, (_, rel_coord)) in s.iter_left(GridCoord([0; 2])).enumerate() {
                             num_steps = i;
 
                             if last_move_enemy {
