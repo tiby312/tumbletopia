@@ -324,7 +324,7 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
     //     true
     // } else {
     match unit.typ {
-        Type::Warrior => false,
+        Type::Warrior { .. } => false,
         Type::King => true,
         Type::Archer => false,
         Type::Catapault => true,
@@ -688,9 +688,96 @@ pub fn generate_unit_possible_moves_inner(
     game: &GameViewMut,
     extra_attack_prev_coord: Option<GridCoord>,
 ) -> movement::MovementMesh {
+    if let Type::Warrior { doop } = unit.typ {
+        return if let Some(doop) = doop {
+            let mut mesh = movement::MovementMesh::new(vec![]);
+
+            let a = game.this_team.find_slow(&doop).unwrap();
+
+            let relative_anchor_point = a.position.sub(&unit.position);
+            //let relative_anchor_point = unit.position.sub(&a.position);
+            let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
+            //console_dbg!("distance to spotter=", d, relative_anchor_point);
+            if d == 2 {
+                let mut num_steps = 0;
+                let mut last_move_enemy = false;
+                for i in 0..2 {
+                    let s = SwingMove {
+                        relative_anchor_point,
+                        radius: 2,
+                        clockwise: i == 0,
+                    };
+                    let ii1 = if i == 0 {
+                        Some(s.iter_left(GridCoord([0; 2])))
+                    } else {
+                        None
+                    };
+
+                    let ii2 = if i == 1 {
+                        Some(s.iter_right(GridCoord([0; 2])))
+                    } else {
+                        None
+                    };
+
+                    let ii = ii1.into_iter().flatten().chain(ii2.into_iter().flatten());
+
+                    'inner: for (i, (_, rel_coord)) in ii.enumerate() {
+                        num_steps = i;
+
+                        if last_move_enemy {
+                            break 'inner;
+                        }
+                        let abs_coord = unit.position.add(rel_coord);
+
+                        let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
+                        let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
+                        let is_self = abs_coord == unit.position;
+                        let is_world_cell = game.world.filter().filter(&abs_coord).to_bool();
+
+                        if (friendly_exist && !is_self) || !is_world_cell {
+                            break 'inner;
+                        }
+
+                        //mesh.add_swing_cell(rel_coord);
+                        if enemy_exist {
+                            last_move_enemy = true;
+                            //num_steps += 1;
+
+                            //break;
+                        }
+                    }
+                    let ss = SwingMoveRay {
+                        swing: s,
+                        num_steps,
+                    };
+
+                    mesh.add_swing_move(ss);
+                }
+                //console_dbg!(num_steps);
+            }
+
+            mesh
+        } else {
+            let mut mesh = movement::MovementMesh::new(vec![]);
+
+            for (_, a) in unit.position.to_cube().ring(2) {
+                let is_world_cell = game.world.filter().filter(&a.to_axial()).to_bool();
+
+                if is_world_cell
+                    && game.this_team.find_slow(&a.to_axial()).is_none()
+                    && game.that_team.find_slow(&a.to_axial()).is_none()
+                {
+                    mesh.add_normal_cell(a.to_axial().sub(&unit.position), false);
+                }
+            }
+
+            mesh
+        };
+    }
+
     let mut mesh = movement::MovementMesh::new(vec![]);
 
-    if unit.typ == Type::Warrior {
+    if let Type::Warrior { doop } = unit.typ {
         game.this_team
             .units
             .iter()
@@ -764,11 +851,11 @@ pub fn generate_unit_possible_moves_inner(
     }
 
     let steering = match unit.typ {
-        Type::Warrior | Type::King => WARRIOR_STEERING.iter(),
+        Type::Warrior { .. } | Type::King => WARRIOR_STEERING.iter(),
         Type::Archer => ARCHER_STEERING.iter(),
         Type::Catapault => CATAPAULT_STEERING.iter(),
         Type::Lancer => LANCER_STEERING.iter(),
-        Type::Spotter { clockwise } => WARRIOR_STEERING.iter(),
+        Type::Spotter { clockwise } => [].iter(),
     };
 
     let k = unit.direction;

@@ -174,10 +174,26 @@ mod inner_partial {
 
 
 
+
                 let this_unit = game_view
                 .this_team
                 .find_slow_mut(&start)
                 .unwrap();
+
+
+            if let Type::Warrior{doop}=this_unit.typ{
+                if let Some(doop)=doop{
+                }else{
+
+                    this_unit.typ=Type::Warrior{doop:Some(end)};
+                    game_view.this_team.units.push(UnitData::new(
+                        end,
+                        Type::Spotter { clockwise: true },
+                        HexDir { dir: 2 }
+                    ));
+                    return;
+                }
+            }
 
                 let initial_pops=this_unit.position;
 
@@ -193,8 +209,10 @@ mod inner_partial {
                 this_unit.position=end;
 
 
+
+
                 let mut steering=match this_unit.typ{
-                    Type::Warrior | Type::King | Type::Spotter{..}=>{
+                    Type::Warrior{..} | Type::King | Type::Spotter{..}=>{
                         use crate::ace::selection::WARRIOR_STEERING;
 
                         WARRIOR_STEERING.iter()
@@ -224,6 +242,15 @@ mod inner_partial {
 
                 this_unit.direction=last_dir;
 
+                if let Type::Warrior{doop}=this_unit.typ{
+                    if let Some(doop)=doop{
+                        this_unit.typ=Type::Warrior{doop:None};
+                        game_view.this_team.find_take(&doop).unwrap();
+
+                    }else{
+
+                    }
+                }
                 // if this_unit.position.to_cube().dist(&initial_pops.to_cube())==1{
                 //     let foo=initial_pops.dir_to2(&this_unit.position);
                 //     //let foo=this_unit.position.dir_to(&initial_pops);
