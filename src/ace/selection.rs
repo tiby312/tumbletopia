@@ -756,6 +756,7 @@ pub fn generate_unit_possible_moves_inner(
                 //console_dbg!(num_steps);
             }
 
+            mesh.add_normal_cell(doop.sub(&unit.position), false);
             mesh
         } else {
             let mut mesh = movement::MovementMesh::new(vec![]);

@@ -310,9 +310,12 @@ pub async fn reselect_loop(
 
     //If we select a friendly unit quick swap
     if let Some(target) = relative_game_view.this_team.find_slow(&target_cell) {
-        //it should be impossible for a unit to move onto a friendly
-        assert!(!contains);
-        return LoopRes::Select(selected_unit.with(target.position));
+        if let Type::Spotter { .. } = target.typ {
+        } else {
+            //it should be impossible for a unit to move onto a friendly
+            assert!(!contains);
+            return LoopRes::Select(selected_unit.with(target.position));
+        }
     }
 
     //If we select an enemy unit quick swap
@@ -579,9 +582,9 @@ pub async fn main_logic<'a>(
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Cats {
-            //{
-            //if false {
+        //if team_index == ActiveTeam::Cats {
+        //{
+        if false {
             let the_move = ai::iterative_deepening(game, team_index);
 
             let mut game = game.view_mut(team_index);
@@ -609,7 +612,7 @@ pub async fn main_logic<'a>(
                         .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
                         .await
                         .unwrap();
-                    console_dbg!("WOOO");
+                    //console_dbg!("WOOO");
 
                     //let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
