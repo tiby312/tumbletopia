@@ -700,9 +700,10 @@ pub fn generate_unit_possible_moves_inner(
             //console_dbg!("distance to spotter=", d, relative_anchor_point);
             //if distance == 2 {
             {
-                let mut num_steps = 0;
-                let mut last_move_enemy = false;
                 for i in 0..2 {
+                    let mut num_steps = 0;
+                    let mut last_move_enemy = false;
+
                     let s = SwingMove {
                         relative_anchor_point,
                         radius: distance,

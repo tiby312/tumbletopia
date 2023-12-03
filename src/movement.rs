@@ -468,10 +468,36 @@ pub mod movement_mesh {
     }
     impl SwingMove {
         pub fn iter_left(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-            self.iter_cells_inner(point, 8, true)
+            // let f=match self.radius{
+            //     0=>0,
+            //     1=>3,
+            //     2=>6,
+            //     3=>9,
+            //     4=>12,
+            //     5=>12,
+            //     _=>12
+            // };
+            let f = 3 * self.radius as usize;
+            //radius 1-> 3 (or 4)
+            //radius 2-> 6 (or 7 including spot)
+            //radius 3-> 9 (or 10)
+            //radius 4-> 11 (or 12)
+            //radius 5-> 12 (or 13)
+
+            self.iter_cells_inner(point, f, true)
         }
         pub fn iter_right(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-            self.iter_cells_inner(point, 8, false)
+            // let f=match self.radius{
+            //     0=>0,
+            //     1=>3,
+            //     2=>6,
+            //     3=>9,
+            //     4=>12,
+            //     5=>12,
+            //     _=>12
+            // };
+            let f = 3 * self.radius as usize;
+            self.iter_cells_inner(point, f, false)
         }
 
         pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
@@ -512,7 +538,7 @@ pub mod movement_mesh {
 
             let iiii = i.skip_while(|(_, z)| *z != GridCoord([0; 2]));
 
-            iiii.take(num_cell).map(move |(d, z)| (d, point.add(z)))
+            iiii.take(num_cell + 2).map(move |(d, z)| (d, point.add(z)))
         }
     }
 
