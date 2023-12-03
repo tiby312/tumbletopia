@@ -688,23 +688,24 @@ pub fn generate_unit_possible_moves_inner(
     game: &GameViewMut,
     extra_attack_prev_coord: Option<GridCoord>,
 ) -> movement::MovementMesh {
-    if let Type::Warrior { doop } = unit.typ {
-        return if let Some(doop) = doop {
-            let mut mesh = movement::MovementMesh::new(vec![]);
+    let mut mesh = movement::MovementMesh::new(vec![]);
 
+    if let Type::Warrior { doop } = unit.typ {
+        if let Some(doop) = doop {
             let a = game.this_team.find_slow(&doop).unwrap();
 
             let relative_anchor_point = a.position.sub(&unit.position);
             //let relative_anchor_point = unit.position.sub(&a.position);
-            let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
+            let distance = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
             //console_dbg!("distance to spotter=", d, relative_anchor_point);
-            if d == 2 {
+            //if distance == 2 {
+            {
                 let mut num_steps = 0;
                 let mut last_move_enemy = false;
                 for i in 0..2 {
                     let s = SwingMove {
                         relative_anchor_point,
-                        radius: 2,
+                        radius: distance,
                         clockwise: i == 0,
                     };
                     let ii1 = if i == 0 {
@@ -756,107 +757,132 @@ pub fn generate_unit_possible_moves_inner(
                 //console_dbg!(num_steps);
             }
 
-            mesh.add_normal_cell(doop.sub(&unit.position), false);
-            mesh
-        } else {
-            let mut mesh = movement::MovementMesh::new(vec![]);
+            //mesh.add_normal_cell(doop.sub(&unit.position), false);
 
-            for (_, a) in unit.position.to_cube().ring(2) {
-                let is_world_cell = game.world.filter().filter(&a.to_axial()).to_bool();
-
-                if is_world_cell
-                    && game.this_team.find_slow(&a.to_axial()).is_none()
-                    && game.that_team.find_slow(&a.to_axial()).is_none()
-                {
-                    mesh.add_normal_cell(a.to_axial().sub(&unit.position), false);
-                }
-            }
-
-            mesh
-        };
-    }
-
-    let mut mesh = movement::MovementMesh::new(vec![]);
-
-    if let Type::Warrior { doop } = unit.typ {
-        game.this_team
-            .units
-            .iter()
-            //.filter(|a| a.typ == Type::Spotter)
-            .for_each(|a| {
-                if let Type::Spotter { clockwise } = a.typ {
-                    let relative_anchor_point = a.position.sub(&unit.position);
-                    //let relative_anchor_point = unit.position.sub(&a.position);
-                    let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
-                    //console_dbg!("distance to spotter=", d, relative_anchor_point);
-                    if d == 2 {
-                        let mut num_steps = 0;
-                        let mut last_move_enemy = false;
-                        for i in 0..2 {
-                            let s = SwingMove {
-                                relative_anchor_point,
-                                radius: 2,
-                                clockwise: i == 0,
-                            };
-                            let ii1 = if i == 0 {
-                                Some(s.iter_left(GridCoord([0; 2])))
-                            } else {
-                                None
-                            };
-
-                            let ii2 = if i == 1 {
-                                Some(s.iter_right(GridCoord([0; 2])))
-                            } else {
-                                None
-                            };
-
-                            let ii = ii1.into_iter().flatten().chain(ii2.into_iter().flatten());
-
-                            'inner: for (i, (_, rel_coord)) in ii.enumerate() {
-                                num_steps = i;
-
-                                if last_move_enemy {
-                                    break 'inner;
-                                }
-                                let abs_coord = unit.position.add(rel_coord);
-
-                                let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
-                                let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
-                                let is_self = abs_coord == unit.position;
-                                let is_world_cell =
-                                    game.world.filter().filter(&abs_coord).to_bool();
-
-                                if (friendly_exist && !is_self) || !is_world_cell {
-                                    break 'inner;
-                                }
-
-                                //mesh.add_swing_cell(rel_coord);
-                                if enemy_exist {
-                                    last_move_enemy = true;
-                                    //num_steps += 1;
-
-                                    //break;
-                                }
-                            }
-                            let ss = SwingMoveRay {
-                                swing: s,
-                                num_steps,
-                            };
-
-                            mesh.add_swing_move(ss);
-                        }
-                        //console_dbg!(num_steps);
+            for a in game.this_team.units.iter() {
+                if let Type::Spotter { .. } = a.typ {
+                    if a.position != doop {
+                        mesh.add_far_away_cell(a.position.sub(&unit.position));
                     }
                 }
-            });
+            }
+        } else {
+            for a in game.this_team.units.iter() {
+                if let Type::Spotter { .. } = a.typ {
+                    mesh.add_far_away_cell(a.position.sub(&unit.position));
+                }
+            }
+        }
     }
+
+    //let mut mesh = movement::MovementMesh::new(vec![]);
+
+    // if let Type::Warrior { doop } = unit.typ {
+    //     game.this_team
+    //         .units
+    //         .iter()
+    //         //.filter(|a| a.typ == Type::Spotter)
+    //         .for_each(|a| {
+    //             if let Type::Spotter { clockwise } = a.typ {
+    //                 let relative_anchor_point = a.position.sub(&unit.position);
+    //                 //let relative_anchor_point = unit.position.sub(&a.position);
+    //                 let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
+    //                 //console_dbg!("distance to spotter=", d, relative_anchor_point);
+    //                 if d == 2 {
+    //                     for i in 0..2 {
+    //                         let mut num_steps = 0;
+    //                         let mut last_move_enemy = false;
+
+    //                         let s = SwingMove {
+    //                             relative_anchor_point,
+    //                             radius: 2,
+    //                             clockwise: i == 0,
+    //                         };
+    //                         let ii1 = if i == 0 {
+    //                             Some(s.iter_left(GridCoord([0; 2])))
+    //                         } else {
+    //                             None
+    //                         };
+
+    //                         let ii2 = if i == 1 {
+    //                             Some(s.iter_right(GridCoord([0; 2])))
+    //                         } else {
+    //                             None
+    //                         };
+
+    //                         let ii = ii1.into_iter().flatten().chain(ii2.into_iter().flatten());
+
+    //                         'inner: for (i, (_, rel_coord)) in ii.enumerate() {
+    //                             num_steps = i;
+
+    //                             if last_move_enemy {
+    //                                 break 'inner;
+    //                             }
+    //                             let abs_coord = unit.position.add(rel_coord);
+
+    //                             let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
+    //                             let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
+    //                             let is_self = abs_coord == unit.position;
+    //                             let is_world_cell =
+    //                                 game.world.filter().filter(&abs_coord).to_bool();
+
+    //                             if (friendly_exist && !is_self) || !is_world_cell {
+    //                                 break 'inner;
+    //                             }
+
+    //                             //mesh.add_swing_cell(rel_coord);
+    //                             if enemy_exist {
+    //                                 last_move_enemy = true;
+    //                                 //num_steps += 1;
+
+    //                                 //break;
+    //                             }
+    //                         }
+    //                         let ss = SwingMoveRay {
+    //                             swing: s,
+    //                             num_steps,
+    //                         };
+
+    //                         mesh.add_swing_move(ss);
+    //                     }
+    //                     //console_dbg!(num_steps);
+    //                 }
+    //             }
+    //         });
+    // }
 
     let steering = match unit.typ {
         Type::Warrior { .. } | Type::King => WARRIOR_STEERING.iter(),
         Type::Archer => ARCHER_STEERING.iter(),
         Type::Catapault => CATAPAULT_STEERING.iter(),
         Type::Lancer => LANCER_STEERING.iter(),
-        Type::Spotter { clockwise } => [].iter(),
+        Type::Spotter { clockwise } => {
+            if game
+                .this_team
+                .units
+                .iter()
+                .find(|a| {
+                    if let Type::Warrior { doop } = a.typ {
+                        if let Some(doop) = doop {
+                            if doop == unit.position {
+                                true
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                })
+                .is_some()
+            {
+                [].iter()
+            } else {
+                WARRIOR_STEERING.iter()
+            }
+        }
     };
 
     let k = unit.direction;

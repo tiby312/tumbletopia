@@ -174,35 +174,49 @@ mod inner_partial {
 
 
 
+                let target_is_spotter=if let Some(o)=game_view.this_team.find_slow_mut(&end){
+                    if let Type::Spotter{..}=o.typ{
+                        true
+                    }else{
+                        false
+                    }
+                }else{
+                    false
+                };
+
+
                 let this_unit = game_view
                 .this_team
                 .find_slow_mut(&start)
                 .unwrap();
 
 
-            if let Type::Warrior{doop}=this_unit.typ{
-                if let Some(doop)=doop{
-                    if end==doop{
-                        this_unit.typ=Type::Warrior{doop:None};
-                        game_view.this_team.find_take(&doop).unwrap();
-                        return;
-                    }
-                }
-            }
+            // if let Type::Warrior{doop}=this_unit.typ{
+            //     if let Some(doop)=doop{
+            //         if end==doop{
+            //             this_unit.typ=Type::Warrior{doop:None};
+            //             game_view.this_team.find_take(&doop).unwrap();
+            //             return;
+            //         }
+            //     }
+            // }
 
 
                 if let Type::Warrior{doop}=this_unit.typ{
-                    if let Some(doop)=doop{
-                    }else{
+                    // if let Some(doop)=doop{
+                    // }else{
 
-                        this_unit.typ=Type::Warrior{doop:Some(end)};
-                        game_view.this_team.units.push(UnitData::new(
-                            end,
-                            Type::Spotter { clockwise: true },
-                            HexDir { dir: 2 }
-                        ));
-                        return;
-                    }
+                        if target_is_spotter{
+
+                            this_unit.typ=Type::Warrior{doop:Some(end)};
+                            // game_view.this_team.units.push(UnitData::new(
+                            //     end,
+                            //     Type::Spotter { clockwise: true },
+                            //     HexDir { dir: 2 }
+                            // ));
+                            return;
+                        }
+                    // }
                 }
 
                 let initial_pops=this_unit.position;

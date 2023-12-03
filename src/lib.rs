@@ -360,16 +360,16 @@ pub async fn worker_entry() {
     //player
     let dogs = smallvec::smallvec![
         UnitData::new(GridCoord([4, -4]), Type::King, HexDir { dir: 2 }),
-        // UnitData::new(
-        //     GridCoord([1, -2]),
-        //     Type::Spotter { clockwise: true },
-        //     HexDir { dir: 2 }
-        // ),
-        // UnitData::new(
-        //     GridCoord([2, -2]),
-        //     Type::Spotter { clockwise: false },
-        //     HexDir { dir: 2 }
-        // ),
+        UnitData::new(
+            GridCoord([1, -2]),
+            Type::Spotter { clockwise: true },
+            HexDir { dir: 2 }
+        ),
+        UnitData::new(
+            GridCoord([2, -2]),
+            Type::Spotter { clockwise: false },
+            HexDir { dir: 2 }
+        ),
         UnitData::new(
             GridCoord([1, -3]),
             Type::Warrior { doop: None },
@@ -687,18 +687,18 @@ pub async fn worker_entry() {
 
                                     //select_model.draw(&mut v);
                                 }
-                                for a in mesh.iter_attackable_normal(*point) {
-                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                                    let t = matrix::translation(pos[0], pos[1], 0.0);
+                                // for a in mesh.iter_attackable_normal(*point) {
+                                //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                                //     let t = matrix::translation(pos[0], pos[1], 0.0);
 
-                                    let m = matrix.chain(t).generate();
+                                //     let m = matrix.chain(t).generate();
 
-                                    let mut v = draw_sys.view(m.as_ref());
+                                //     let mut v = draw_sys.view(m.as_ref());
 
-                                    attack_model.draw_ext(&mut v, greyscale, false, false, false);
+                                //     attack_model.draw_ext(&mut v, greyscale, false, false, false);
 
-                                    //select_model.draw(&mut v);
-                                }
+                                //     //select_model.draw(&mut v);
+                                // }
 
                                 counter += 0.02;
                                 for (dir, a) in mesh.iter_swing_mesh(*point) {

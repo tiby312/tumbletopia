@@ -310,10 +310,9 @@ pub async fn reselect_loop(
 
     //If we select a friendly unit quick swap
     if let Some(target) = relative_game_view.this_team.find_slow(&target_cell) {
-        if let Type::Spotter { .. } = target.typ {
-        } else {
+        if !contains {
             //it should be impossible for a unit to move onto a friendly
-            assert!(!contains);
+            //assert!(!contains);
             return LoopRes::Select(selected_unit.with(target.position));
         }
     }
