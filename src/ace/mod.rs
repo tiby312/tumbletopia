@@ -581,8 +581,8 @@ pub async fn main_logic<'a>(
         }
 
         //Add AIIIIII.
-        //if team_index == ActiveTeam::Cats {
-        {
+        if team_index == ActiveTeam::Cats {
+        //{
             //if false {
             let the_move = ai::iterative_deepening(game, team_index);
 
