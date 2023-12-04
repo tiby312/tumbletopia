@@ -176,6 +176,21 @@ mod inner_partial {
 
                 let target_is_spotter=if let Some(o)=game_view.this_team.find_slow_mut(&end){
                     if let Type::Spotter{..}=o.typ{
+
+                        // if o.position==end{
+
+                        //     let this_unit = game_view
+                        //     .this_team
+                        //     .find_slow_mut(&start)
+                        //     .unwrap();
+
+                        //     if let Type::Warrior{doop}=this_unit{
+                        //         if doop==
+                        //     }
+
+                        //     this_unit.typ=Type::Warrior{doop:None};
+                        //     return;
+                        // }
                         true
                     }else{
                         false
@@ -205,19 +220,43 @@ mod inner_partial {
                 if let Type::Warrior{doop}=this_unit.typ{
                     // if let Some(doop)=doop{
                     // }else{
+                        if let Some(o)=game_view.this_team.find_slow_mut(&end){
+                            if let Type::Spotter{..}=o.typ{
+                                let o_position=o.position;
 
-                        if target_is_spotter{
+                                let this_unit = game_view
+                                    .this_team
+                                    .find_slow_mut(&start)
+                                    .unwrap();
+                                //We selected the current anchor, deselect
+                                if let Some(doop)=doop{
+                                    if o_position==doop{
 
-                            this_unit.typ=Type::Warrior{doop:Some(end)};
-                            // game_view.this_team.units.push(UnitData::new(
-                            //     end,
-                            //     Type::Spotter { clockwise: true },
-                            //     HexDir { dir: 2 }
-                            // ));
-                            return;
+                                        this_unit.typ=Type::Warrior{doop:None};
+                                        return;
+                                    }
+
+                                }
+                                this_unit.typ=Type::Warrior{doop:Some(end)};
+                                // game_view.this_team.units.push(UnitData::new(
+                                //     end,
+                                //     Type::Spotter { clockwise: true },
+                                //     HexDir { dir: 2 }
+                                // ));
+                                return;
+
+                            }
                         }
+
+
+
                     // }
                 }
+
+                let this_unit = game_view
+                .this_team
+                .find_slow_mut(&start)
+                .unwrap();
 
                 let initial_pops=this_unit.position;
 

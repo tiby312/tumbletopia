@@ -760,18 +760,18 @@ pub fn generate_unit_possible_moves_inner(
 
             //mesh.add_normal_cell(doop.sub(&unit.position), false);
 
-            for a in game.this_team.units.iter() {
-                if let Type::Spotter { .. } = a.typ {
-                    if a.position != doop {
-                        mesh.add_far_away_cell(a.position.sub(&unit.position));
-                    }
-                }
-            }
+            // for a in game.this_team.units.iter() {
+            //     if let Type::Spotter { .. } = a.typ {
+            //         if a.position != doop {
+            //             mesh.add_far_away_cell(a.position.sub(&unit.position));
+            //         }
+            //     }
+            // }
         } else {
-            for a in game.this_team.units.iter() {
-                if let Type::Spotter { .. } = a.typ {
-                    mesh.add_far_away_cell(a.position.sub(&unit.position));
-                }
+        }
+        for a in game.this_team.units.iter() {
+            if let Type::Spotter { .. } = a.typ {
+                mesh.add_far_away_cell(a.position.sub(&unit.position));
             }
         }
     }
