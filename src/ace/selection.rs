@@ -416,6 +416,62 @@ pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetI
     ]
 };
 
+pub const WARRIOR_STEERING_ATTACKABLE: [(GridCoord, Steering, Attackable, StopsIter, ResetIter);
+    6] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 1 });
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 2 });
+
+    let f4 = GridCoord([0, 0]).advance(HexDir { dir: 3 });
+    let f5 = GridCoord([0, 0]).advance(HexDir { dir: 4 });
+    let f6 = GridCoord([0, 0]).advance(HexDir { dir: 5 });
+
+    [
+        (
+            f1,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f4,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f5,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f6,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+    ]
+};
+
 pub const WARRIOR_STEERING_OLD2: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 6] = {
     let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
     let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
@@ -760,18 +816,24 @@ pub fn generate_unit_possible_moves_inner(
 
             //mesh.add_normal_cell(doop.sub(&unit.position), false);
 
-            // for a in game.this_team.units.iter() {
-            //     if let Type::Spotter { .. } = a.typ {
-            //         if a.position != doop {
-            //             mesh.add_far_away_cell(a.position.sub(&unit.position));
-            //         }
-            //     }
-            // }
+            for a in game.this_team.units.iter() {
+                if let Type::Spotter { .. } = a.typ {
+                    if a.position != doop {
+                        if a.position.to_cube().dist(&unit.position.to_cube()) == 1 {
+                            mesh.add_far_away_cell(a.position.sub(&unit.position));
+                        }
+                    } else {
+                        mesh.add_far_away_cell(a.position.sub(&unit.position));
+                    }
+                }
+            }
         } else {
-        }
-        for a in game.this_team.units.iter() {
-            if let Type::Spotter { .. } = a.typ {
-                mesh.add_far_away_cell(a.position.sub(&unit.position));
+            for a in game.this_team.units.iter() {
+                if let Type::Spotter { .. } = a.typ {
+                    if a.position.to_cube().dist(&unit.position.to_cube()) == 1 {
+                        mesh.add_far_away_cell(a.position.sub(&unit.position));
+                    }
+                }
             }
         }
     }
@@ -853,7 +915,8 @@ pub fn generate_unit_possible_moves_inner(
     // }
 
     let steering = match unit.typ {
-        Type::Warrior { .. } | Type::King => WARRIOR_STEERING.iter(),
+        Type::Warrior { .. } => WARRIOR_STEERING.iter(),
+        Type::King => WARRIOR_STEERING_ATTACKABLE.iter(),
         Type::Archer => ARCHER_STEERING.iter(),
         Type::Catapault => CATAPAULT_STEERING.iter(),
         Type::Lancer => LANCER_STEERING.iter(),
