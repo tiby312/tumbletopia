@@ -339,6 +339,18 @@ mod inner_partial {
 
 
                 if let Some(g)=game_view.that_team.find_take(&end){
+
+                    if let Type::Spotter{..}=g.typ{
+                        for a in game_view.that_team.units.iter_mut(){
+                            if let Type::Warrior{doop}=a.typ{
+                                if let Some(doop)=doop{
+                                    if doop==g.position{
+                                        a.typ=Type::Warrior{doop:None};
+                                    }
+                                }
+                            }
+                        }
+                    }
                     //console_dbg!(end);
                     //TODO removed
                 }
