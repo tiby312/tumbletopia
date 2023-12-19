@@ -65,7 +65,7 @@ impl<'a> WarriorDraw<'a> {
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
         //let grey = self.typ == Type::Para;
         //TODO don't loop in this function!!!
-        for cc in self.col.iter() {
+        for cc in self.col.iter().filter(|a| a.typ != Type::Archer) {
             let pos = gg.hex_axial_to_world(&cc.position);
 
             // let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
@@ -102,7 +102,12 @@ impl<'a> WarriorDraw<'a> {
         draw_sys: &mut ShaderSystem,
         matrix: &Matrix4<f32>,
     ) {
-        for a in self.col.iter().map(|a| &a.position) {
+        for a in self
+            .col
+            .iter()
+            .filter(|a| a.typ != Type::Archer)
+            .map(|a| &a.position)
+        {
             let pos: [f32; 2] = gg.hex_axial_to_world(a).into();
             let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -122,7 +127,7 @@ impl<'a> WarriorDraw<'a> {
         draw_sys: &mut ShaderSystem,
     ) {
         //draw text
-        for ccat in self.col.iter() {
+        for ccat in self.col.iter().filter(|a| a.typ != Type::Archer) {
             let pos: [f32; 2] = gg.hex_axial_to_world(&ccat.position).into();
 
             let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
@@ -158,6 +163,7 @@ pub struct GameStateRelative {
 pub struct GameState {
     dogs: Tribe,
     cats: Tribe,
+    land: Vec<GridCoord>,
     world: board::World,
 }
 impl GameState {
@@ -196,12 +202,14 @@ impl GameState {
     fn view_mut(&mut self, team_index: ActiveTeam) -> GameViewMut {
         match team_index {
             ActiveTeam::Cats => GameViewMut {
+                land: &mut self.land,
                 this_team: &mut self.cats,
                 that_team: &mut self.dogs,
                 world: &mut self.world,
                 team: ActiveTeam::Cats,
             },
             ActiveTeam::Dogs => GameViewMut {
+                land: &mut self.land,
                 this_team: &mut self.dogs,
                 that_team: &mut self.cats,
                 world: &mut self.world,
@@ -215,6 +223,7 @@ impl GameState {
 pub struct GameThing<'a> {
     this_team: Tribe,
     that_team: Tribe,
+    land: Vec<GridCoord>,
     world: &'a board::World,
     team: ActiveTeam,
 }
@@ -223,12 +232,14 @@ impl<'a> GameThing<'a> {
         GameThing {
             this_team: self.that_team,
             that_team: self.this_team,
+            land: self.land,
             world: self.world,
             team: self.team.not(),
         }
     }
     pub fn view(&mut self) -> GameViewMut<'_, 'a> {
         GameViewMut {
+            land: &mut self.land,
             this_team: &mut self.this_team,
             that_team: &mut self.that_team,
             world: self.world,
@@ -264,6 +275,7 @@ pub struct AbsoluteGameView<'a, 'b> {
 pub struct GameViewMut<'a, 'b> {
     this_team: &'a mut Tribe,
     that_team: &'a mut Tribe,
+    land: &'a mut Vec<GridCoord>,
     world: &'b board::World,
     team: ActiveTeam,
 }
@@ -293,6 +305,7 @@ impl<'a, 'b> GameViewMut<'a, 'b> {
     }
     pub fn duplicate(&self) -> GameThing<'b> {
         GameThing {
+            land: self.land.clone(),
             this_team: self.this_team.clone(),
             that_team: self.that_team.clone(),
             world: self.world,
@@ -302,6 +315,7 @@ impl<'a, 'b> GameViewMut<'a, 'b> {
 
     pub fn not(&mut self) -> GameViewMut {
         GameViewMut {
+            land: self.land,
             this_team: self.that_team,
             that_team: self.this_team,
             world: self.world,
@@ -353,23 +367,31 @@ pub async fn worker_entry() {
         // ),
         //UnitData::new(GridCoord([-2, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Archer, HexDir { dir: 5 }),
-        // UnitData::new(GridCoord([-3, 1]), Type::Warrior, HexDir { dir: 5 }),
-        // UnitData::new(GridCoord([-1, 3]), Type::Warrior, HexDir { dir: 5 }),
+        UnitData::new(
+            GridCoord([-3, 1]),
+            Type::Warrior { doop: None },
+            HexDir { dir: 5 }
+        ),
+        UnitData::new(
+            GridCoord([-1, 3]),
+            Type::Warrior { doop: None },
+            HexDir { dir: 5 }
+        ),
     ];
 
     //player
     let dogs = smallvec::smallvec![
         UnitData::new(GridCoord([4, -4]), Type::King, HexDir { dir: 2 }),
-        UnitData::new(
-            GridCoord([1, -2]),
-            Type::Spotter { clockwise: true },
-            HexDir { dir: 2 }
-        ),
-        UnitData::new(
-            GridCoord([2, -2]),
-            Type::Spotter { clockwise: false },
-            HexDir { dir: 2 }
-        ),
+        // UnitData::new(
+        //     GridCoord([1, -2]),
+        //     Type::Spotter { clockwise: true },
+        //     HexDir { dir: 2 }
+        // ),
+        // UnitData::new(
+        //     GridCoord([2, -2]),
+        //     Type::Spotter { clockwise: false },
+        //     HexDir { dir: 2 }
+        // ),
         UnitData::new(
             GridCoord([1, -3]),
             Type::Warrior { doop: None },
@@ -389,6 +411,7 @@ pub async fn worker_entry() {
     let mut ggame = GameState {
         dogs: Tribe { units: dogs },
         cats: Tribe { units: cats },
+        land: vec![],
         world: board::World::new(),
     };
 
@@ -418,6 +441,8 @@ pub async fn worker_entry() {
     let cat = quick_load(CAT_GLB, RESIZE, None);
 
     let _road = quick_load(ROAD_GLB, 1, None);
+
+    let water = quick_load(WATER_GLB, RESIZE, None);
 
     let grass = quick_load(GRASS_GLB, RESIZE, None);
 
@@ -662,9 +687,19 @@ pub async fn worker_entry() {
                     let m = matrix.chain(t).chain(s).generate();
                     let mut v = draw_sys.view(m.as_ref());
 
+                    water.draw(&mut v);
+                }
+                for c in ggame.land.iter() {
+                    let pos = grid_matrix.hex_axial_to_world(&c);
+
+                    //let pos = a.calc_pos();
+                    let t = matrix::translation(pos[0], pos[1], -10.0);
+                    let s = matrix::scale(1.0, 1.0, 1.0);
+                    let m = matrix.chain(t).chain(s).generate();
+                    let mut v = draw_sys.view(m.as_ref());
+
                     grass.draw(&mut v);
                 }
-
                 disable_depth(&ctx, || {
                     if let ace::ProcessedCommand::GetMouseInput(a) = &command {
                         let (a, &greyscale) = match a {
@@ -955,6 +990,7 @@ const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
 const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
 
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/hex-grass.glb");
+const WATER_GLB: &'static [u8] = include_bytes!("../assets/water.glb");
 
 const DIRECTION_GLB: &'static [u8] = include_bytes!("../assets/direction.glb");
 

@@ -355,6 +355,16 @@ mod inner_partial {
                     //TODO removed
                 }
 
+                game_view.land.push(start);
+
+                // game_view.this_team.units.push(
+                //     UnitData::new(
+                //         start,
+                //         Type::Archer,
+                //         HexDir { dir: 0 }
+                //     )
+                // )
+
 
             }
         }
