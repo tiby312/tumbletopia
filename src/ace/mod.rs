@@ -244,6 +244,7 @@ pub async fn reselect_loop(
     selected_unit: SelectType,
     game_history: &mut selection::MoveLog,
 ) -> LoopRes<SelectType> {
+    console_dbg!(extra_attack.is_some());
     //At this point we know a friendly unit is currently selected.
 
     let mut relative_game_view = game.view_mut(selected_unit.team);

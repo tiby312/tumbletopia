@@ -69,12 +69,15 @@ impl ComboContinueSelection {
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
-        let iii = moves::Invade::new(unit, mesh, target_cell);
+        let iii = moves::PartialMove::new(unit, mesh, target_cell, true);
 
         let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
+
+        //TODO add this!
+
         move_log.push(moves::ActualMove::ExtraMove(
             self.extra.prev_move.clone(),
-            iii,
+            iii.0,
         ));
 
         Ok(())
@@ -222,11 +225,23 @@ impl RegularSelection {
         //let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
 
-        let iii = moves::Invade::new(unit, mesh, target_cell);
+        let iii = moves::PartialMove::new(unit, mesh, target_cell, false);
 
         let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
 
-        move_log.push(moves::ActualMove::NormalMove(iii));
+        //move_log.push(moves::ActualMove::NormalMove(iii));
+
+        Ok(match iii {
+            (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+                Some(selection::PossibleExtra::new(sigl, unit.clone()))
+            }
+            (sigl, moves::ExtraMove::FinishMoving) => {
+                move_log.push(moves::ActualMove::NormalMove(sigl));
+                None
+            }
+        })
+
+        //TODO here
 
         // let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
         //     let iii = moves::Invade::new(unit, mesh, target_cell);
@@ -253,8 +268,6 @@ impl RegularSelection {
         //         }
         //     }
         // };
-
-        Ok(None)
     }
     pub fn execute_no_animation(
         &self,
@@ -1009,11 +1022,14 @@ pub fn generate_unit_possible_moves_inner(
 
         if cond(a) {
             mesh.add_normal_cell(a.sub(&unit.position), false);
-            for (_, b) in a.to_cube().ring(1) {
-                let b = b.to_axial();
-                //TODO inefficient
-                if cond(b) {
-                    mesh.add_normal_cell(b.sub(&unit.position), false);
+
+            if extra_attack_prev_coord.is_none() {
+                for (_, b) in a.to_cube().ring(1) {
+                    let b = b.to_axial();
+                    //TODO inefficient
+                    if cond(b) {
+                        mesh.add_normal_cell(b.sub(&unit.position), false);
+                    }
                 }
             }
         }

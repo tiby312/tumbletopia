@@ -355,7 +355,7 @@ mod inner_partial {
                     //TODO removed
                 }
 
-                game_view.land.push(start);
+                //game_view.land.push(start);
 
                 // game_view.this_team.units.push(
                 //     UnitData::new(
@@ -436,61 +436,31 @@ mod partial_move {
     macro_rules! resolve_movement_impl {
         ($args:expr,$namey:ident, $($_await:tt)*) => {
             {
-                let (selected_unit,mesh,target_cell, doopa,mut game_view,mut func):(GridCoord,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_)=$args;
+                let (selected_unit,mesh,target_cell, doopa,mut game_view,mut func,is_extra):(GridCoord,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_,_)=$args;
 
 
                 //let target_cell=path.get_end_coord(selected_unit);
 
 
-                InnerPartialMove::new(selected_unit,mesh,target_cell).$namey(&mut game_view,doopa)$($_await)*;
+
+                if !is_extra{
+                    InnerPartialMove::new(selected_unit,mesh,target_cell).$namey(&mut game_view,doopa)$($_await)*;
 
 
 
 
-                //let k=HandleSurround::new(target_cell).$namey(&mut game_view, doopa)$($_await)*;
 
+                    let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
 
-                let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
+                    let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
+                    (sigl,ExtraMove::ExtraMove{unit})
+                }else{
+                    let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
 
+                    game_view.land.push(target_cell);
+                    (sigl,ExtraMove::FinishMoving)
+                }
 
-                // if let Some(k) = k {
-
-                //     //let p=ace::selection::PossibleExtra::new(sigl.clone(),unit.clone());
-
-                //     //let mesh=p.select().generate(game_view);
-
-                //     // if mesh.iter_mesh(target_cell).count()==0{
-                //     //     let _ = game_view.this_team.find_take(&target_cell);
-                //     //     (sigl,ExtraMove::FinishMoving)
-                //     // }else{
-                //     //     let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
-
-                //     //     (sigl,ExtraMove::ExtraMove{unit})
-                //     // }
-                //     //let mesh=ace::selection::generate_unit_possible_moves_inner(&unit, game_view, Some(2));
-                //     if sigl.unit.to_cube().dist(&sigl.moveto.to_cube())==1{
-                //         let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
-
-                //         (sigl,ExtraMove::ExtraMove{unit})
-                //     }else{
-                //         let _ =game_view.this_team.find_take(&target_cell).unwrap();
-                //         (sigl,ExtraMove::FinishMoving)
-                //     }
-
-
-                //     //(sigl,ExtraMove::ExtraMove{unit})
-                // } else {
-
-                //     // for n in target_cell.to_cube().neighbours() {
-                //     //     if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
-                //     //         func(game_view.that_team.find_take(&f).unwrap());
-                //     //     }
-                //     // }
-
-                //     //Finish this players turn.
-                //     (sigl,ExtraMove::FinishMoving)
-                // }
-                (sigl,ExtraMove::FinishMoving)
             }
         }
     }
@@ -501,14 +471,16 @@ mod partial_move {
         selected_unit: GridCoord,
         mesh: MovementMesh,
         end: GridCoord,
+        is_extra: bool,
     }
 
     impl PartialMove {
-        pub fn new(a: GridCoord, mesh: MovementMesh, end: GridCoord) -> Self {
+        pub fn new(a: GridCoord, mesh: MovementMesh, end: GridCoord, is_extra: bool) -> Self {
             PartialMove {
                 selected_unit: a,
                 mesh,
                 end,
+                is_extra,
             }
         }
 
@@ -519,7 +491,15 @@ mod partial_move {
             func: impl FnMut(UnitData),
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
             resolve_movement_impl!(
-                (self.selected_unit, self.mesh, self.end, a, game_view, func),
+                (
+                    self.selected_unit,
+                    self.mesh,
+                    self.end,
+                    a,
+                    game_view,
+                    func,
+                    self.is_extra
+                ),
                 inner_execute_no_animate,
             )
         }
@@ -530,7 +510,7 @@ mod partial_move {
             a: &mut Doopa<'_, '_>,
             func: impl FnMut(UnitData),
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
-            resolve_movement_impl!((self.selected_unit, self.mesh,self.end, a, game_view,func),inner_execute_animate,.await)
+            resolve_movement_impl!((self.selected_unit, self.mesh,self.end, a, game_view,func,self.is_extra),inner_execute_animate,.await)
         }
 
         pub fn execute<'b>(
