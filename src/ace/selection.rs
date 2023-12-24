@@ -1011,24 +1011,36 @@ pub fn generate_unit_possible_moves_inner(
 
     let cond = |a: GridCoord| {
         let is_world_cell = game.world.filter().filter(&a).to_bool();
-        a != unit.position
-            && is_world_cell
-            && game.this_team.find_slow(&a).is_none()
-            && game.that_team.find_slow(&a).is_none()
+        a != unit.position && is_world_cell && game.land.iter().find(|&&b| a == b).is_none()
+        //&& game.this_team.find_slow(&a).is_none()
+        //&& game.that_team.find_slow(&a).is_none()
+    };
+    let cond2 = |a: GridCoord| {
+        game.this_team.find_slow(&a).is_none() && game.that_team.find_slow(&a).is_none()
     };
 
+    for a in unit.position.to_cube().range(2) {
+        let a = a.to_axial();
+
+        if game.land.iter().find(|&&b| a == b).is_some() {
+            mesh.add_wall(a.sub(&unit.position));
+        }
+    }
     for (_, a) in unit.position.to_cube().ring(1) {
         let a = a.to_axial();
 
         if cond(a) {
-            mesh.add_normal_cell(a.sub(&unit.position), false);
-
+            if cond2(a) {
+                mesh.add_normal_cell(a.sub(&unit.position), false);
+            }
             if extra_attack_prev_coord.is_none() {
                 for (_, b) in a.to_cube().ring(1) {
                     let b = b.to_axial();
                     //TODO inefficient
                     if cond(b) {
-                        mesh.add_normal_cell(b.sub(&unit.position), false);
+                        if cond2(b) {
+                            mesh.add_normal_cell(b.sub(&unit.position), false);
+                        }
                     }
                 }
             }

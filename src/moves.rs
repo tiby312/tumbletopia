@@ -454,6 +454,9 @@ mod partial_move {
 
                     let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
                     (sigl,ExtraMove::ExtraMove{unit})
+                    //(sigl,ExtraMove::FinishMoving)
+
+
                 }else{
                     let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
 

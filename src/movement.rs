@@ -604,6 +604,8 @@ pub mod movement_mesh {
         //Either left or right. (only applies for diagonal outer cells)
         inner: Mesh,
 
+        walls: Mesh,
+
         attack_mesh: Mesh,
 
         //just_swing_inner: Mesh,
@@ -626,6 +628,7 @@ pub mod movement_mesh {
             MovementMesh {
                 inner: Mesh::new(),
                 attack_mesh: Mesh::new(),
+                walls: Mesh::new(),
                 //just_swing_inner: Mesh::new(),
                 swing_moves,
                 far_away_spots: Vec::new(),
@@ -669,7 +672,7 @@ pub mod movement_mesh {
                         .filter(|x| x.dist(&a.to_cube()) == 1);
                     let first = k.next().unwrap().to_axial();
                     let second = k.next().unwrap().to_axial();
-                    if self.is_set(first) {
+                    if self.is_set(first) || !self.walls.is_set(first) {
                         Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
                     } else {
                         //TODO this is not true teamates jumping over each other.
@@ -719,6 +722,9 @@ pub mod movement_mesh {
             if attackable {
                 self.attack_mesh.add(a);
             }
+        }
+        pub fn add_wall(&mut self, a: GridCoord) {
+            self.walls.add(a);
         }
 
         pub fn add_far_away_cell(&mut self, a: GridCoord) {
