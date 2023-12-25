@@ -554,31 +554,42 @@ pub async fn main_logic<'a>(
     //Loop over each team!
     'game_loop: for team_index in ActiveTeam::Dogs.iter() {
         //check if we lost.
-        'check_end: {
+        {
             let game = game.view_mut(team_index);
-            let our_king_dead = game
-                .this_team
-                .units
-                .iter()
-                .find(|a| a.typ == Type::King)
-                .is_none();
-            let their_king_dead = game
-                .that_team
-                .units
-                .iter()
-                .find(|a| a.typ == Type::King)
-                .is_none();
 
-            let g = match (our_king_dead, their_king_dead) {
-                (true, true) => moves::GameEnding::Draw,
-                (true, false) => moves::GameEnding::Win(team_index.not()),
-                (false, true) => moves::GameEnding::Win(team_index),
-                (false, false) => {
-                    break 'check_end;
+            for unit in game.this_team.units.iter() {
+                let mesh = selection::generate_unit_possible_moves_inner(unit, &game, None);
+                if mesh.iter_mesh(GridCoord([0; 2])).count() == 0 {
+                    console_dbg!("This team won:", team_index);
+                    game_history.push(moves::ActualMove::GameEnd(moves::GameEnding::Win(
+                        team_index,
+                    )));
+                    break 'game_loop;
                 }
-            };
-            game_history.push(moves::ActualMove::GameEnd(g));
-            break 'game_loop;
+            }
+            // let our_king_dead = game
+            //     .this_team
+            //     .units
+            //     .iter()
+            //     .find(|a| a.typ == Type::King)
+            //     .is_none();
+            // let their_king_dead = game
+            //     .that_team
+            //     .units
+            //     .iter()
+            //     .find(|a| a.typ == Type::King)
+            //     .is_none();
+
+            // let g = match (our_king_dead, their_king_dead) {
+            //     (true, true) => moves::GameEnding::Draw,
+            //     (true, false) => moves::GameEnding::Win(team_index.not()),
+            //     (false, true) => moves::GameEnding::Win(team_index),
+            //     (false, false) => {
+            //         break 'check_end;
+            //     }
+            // };
+            // game_history.push(moves::ActualMove::GameEnd(g));
+            // break 'game_loop;
         }
 
         //Add AIIIIII.
