@@ -554,19 +554,20 @@ pub async fn main_logic<'a>(
     //Loop over each team!
     'game_loop: for team_index in ActiveTeam::Dogs.iter() {
         //check if we lost.
-        {
+        'check_end: {
             let game = game.view_mut(team_index);
 
             for unit in game.this_team.units.iter() {
                 let mesh = selection::generate_unit_possible_moves_inner(unit, &game, None);
-                if mesh.iter_mesh(GridCoord([0; 2])).count() == 0 {
-                    console_dbg!("This team won:", team_index);
-                    game_history.push(moves::ActualMove::GameEnd(moves::GameEnding::Win(
-                        team_index,
-                    )));
-                    break 'game_loop;
+                if mesh.iter_mesh(GridCoord([0; 2])).count() != 0 {
+                    break 'check_end;
                 }
             }
+            console_dbg!("This team won:", team_index);
+            game_history.push(moves::ActualMove::GameEnd(moves::GameEnding::Win(
+                team_index,
+            )));
+            break 'game_loop;
             // let our_king_dead = game
             //     .this_team
             //     .units
