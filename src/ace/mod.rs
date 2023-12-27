@@ -535,15 +535,14 @@ pub async fn reselect_loop(
 //     Ok(())
 // }
 
-
-#[derive(Debug,Copy,Clone)]
-pub enum GameOver{
+#[derive(Debug, Copy, Clone)]
+pub enum GameOver {
     CatWon,
     DogWon,
-    Tie
+    Tie,
 }
 
-pub fn game_is_over(game:&mut GameState,team_index: ActiveTeam) -> Option<GameOver> {
+pub fn game_is_over(game: &mut GameState, team_index: ActiveTeam) -> Option<GameOver> {
     let game = game.view_mut(team_index);
 
     for unit in game.this_team.units.iter() {
@@ -554,13 +553,12 @@ pub fn game_is_over(game:&mut GameState,team_index: ActiveTeam) -> Option<GameOv
     }
 
     //console_dbg!("This team won:", team_index);
-    if team_index==ActiveTeam::Cats{
+    if team_index == ActiveTeam::Cats {
         return Some(GameOver::DogWon);
-    }else{
+    } else {
         return Some(GameOver::DogWon);
     }
 }
-
 
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
@@ -580,16 +578,15 @@ pub async fn main_logic<'a>(
 
     //Loop over each team!
     'game_loop: for team_index in ActiveTeam::Dogs.iter() {
-
-        if let Some(g)=game_is_over(game,team_index){
-            console_dbg!("Game over=",g);
+        if let Some(g) = game_is_over(game, team_index) {
+            console_dbg!("Game over=", g);
             break 'game_loop;
         }
-        
+
         //Add AIIIIII.
         if team_index == ActiveTeam::Cats {
-        //{
-        //if false {
+            //{
+            //if false {
             let the_move = ai::iterative_deepening(game, team_index);
 
             let mut game = game.view_mut(team_index);

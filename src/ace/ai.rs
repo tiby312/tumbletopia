@@ -11,20 +11,34 @@ const MATE: i64 = 1_000_000;
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
-
-
-    let mut points=0;
-    for a in view.world.iter_cells().map(|x|x.to_axial()).filter(|x|!view.land.contains(x)){
-        let closest_cat=view.cats.units.iter().map(|x|x.position.to_cube().dist(&a.to_cube())).min().unwrap();
-        let closest_dog=view.dogs.units.iter().map(|x|x.position.to_cube().dist(&a.to_cube())).min().unwrap();
-        if closest_cat<closest_dog{
-            points+=1;
-        }else if closest_cat>closest_dog{
-            points-=1;
+    let mut points = 0;
+    for a in view
+        .world
+        .iter_cells()
+        .map(|x| x.to_axial())
+        .filter(|x| !view.land.contains(x))
+    {
+        let closest_cat = view
+            .cats
+            .units
+            .iter()
+            .map(|x| x.position.to_cube().dist(&a.to_cube()))
+            .min()
+            .unwrap();
+        let closest_dog = view
+            .dogs
+            .units
+            .iter()
+            .map(|x| x.position.to_cube().dist(&a.to_cube()))
+            .min()
+            .unwrap();
+        if closest_cat < closest_dog {
+            points += 1;
+        } else if closest_cat > closest_dog {
+            points -= 1;
         }
-
     }
-    console_dbg!(points);
+    //console_dbg!(points);
     return points;
 
     //TODO check for checks!!!
@@ -187,8 +201,6 @@ pub fn we_in_check(view: GameView<'_>) -> bool {
 
     true
 }
-
-
 
 //TODO use bump allocator!!!!!
 //TODO just store best move? not gamestate?
@@ -413,7 +425,7 @@ impl<'a> AlphaBeta<'a> {
         let mut gg = cand.game_after_move.clone();
 
         self.path.push(the_move.clone());
-        let ret = if depth == 0 || game_is_over(&mut cand.game_after_move,team).is_some() {
+        let ret = if depth == 0 || game_is_over(&mut cand.game_after_move, team).is_some() {
             //console_dbg!(game_is_over(cand.game_after_move.view(team)));
 
             self.calls.add_eval();
@@ -463,7 +475,7 @@ impl<'a> AlphaBeta<'a> {
                     (false, x)
                 })
                 .collect();
-            console_dbg!("FOOOO",moves.len());
+            //console_dbg!("FOOOO",moves.len());
             //console_dbg!(moves.iter().map(|x|&x.1.the_move).collect::<Vec<_>>());
 
             let num_checky = moves.iter().filter(|x| x.0).count();
@@ -755,6 +767,7 @@ pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item =
                 .execute_no_animation(m, mesh, &mut v.view_mut(team), &mut mm)
                 .unwrap()
             {
+                //console_dbg!("YOOOOOOO");
                 let cll = l.select();
 
                 //let mut kk = v.view().duplicate();
@@ -779,6 +792,7 @@ pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item =
             };
 
             let second = if first.is_none() {
+                //console_dbg!("NEVER HAPPEN");
                 Some([PossibleMove {
                     game_after_move: v,
                     //mesh,
@@ -792,5 +806,5 @@ pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item =
             let f2 = second.into_iter().flatten();
             f1.chain(f2)
         })
-        //.chain([foo].into_iter())
+    //.chain([foo].into_iter())
 }

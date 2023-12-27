@@ -278,13 +278,30 @@ impl RegularSelection {
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
         //let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
-        let iii = moves::Invade::new(unit, mesh, target_cell);
+
+        let iii = moves::PartialMove::new(unit, mesh, target_cell, false);
 
         let iii = iii.execute(game_view, |_| {});
 
-        move_log.push(moves::ActualMove::NormalMove(iii));
+        //move_log.push(moves::ActualMove::NormalMove(iii));
 
-        Ok(None)
+        Ok(match iii {
+            (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+                Some(selection::PossibleExtra::new(sigl, unit.clone()))
+            }
+            (sigl, moves::ExtraMove::FinishMoving) => {
+                move_log.push(moves::ActualMove::NormalMove(sigl));
+                None
+            }
+        })
+
+        // let iii = moves::Invade::new(unit, mesh, target_cell);
+
+        // let iii = iii.execute(game_view, |_| {});
+
+        // move_log.push(moves::ActualMove::NormalMove(iii));
+
+        // Ok(None)
 
         // let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
         //     let iii = moves::Invade::new(unit, mesh, target_cell);
