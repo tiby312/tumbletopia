@@ -79,7 +79,7 @@ pub fn from_foo(input: &str) -> Result<Vec<ActualMove>, std::fmt::Error> {
                 //     let moveto = GridCoord([foo()?, foo()?]);
                 //     Ok(ActualMove::Invade(InvadeSigl { unit, moveto }))
                 // }
-                'S' => Ok(ActualMove::SkipTurn),
+                //'S' => Ok(ActualMove::SkipTurn),
                 'F' => {
                     let c = s.next().ok_or(std::fmt::Error)?;
                     Ok(ActualMove::GameEnd(match c {

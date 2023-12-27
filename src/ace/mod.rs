@@ -535,6 +535,33 @@ pub async fn reselect_loop(
 //     Ok(())
 // }
 
+
+#[derive(Debug,Copy,Clone)]
+pub enum GameOver{
+    CatWon,
+    DogWon,
+    Tie
+}
+
+pub fn game_is_over(game:&mut GameState,team_index: ActiveTeam) -> Option<GameOver> {
+    let game = game.view_mut(team_index);
+
+    for unit in game.this_team.units.iter() {
+        let mesh = selection::generate_unit_possible_moves_inner(unit, &game, None);
+        if mesh.iter_mesh(GridCoord([0; 2])).count() != 0 {
+            return None;
+        }
+    }
+
+    //console_dbg!("This team won:", team_index);
+    if team_index==ActiveTeam::Cats{
+        return Some(GameOver::DogWon);
+    }else{
+        return Some(GameOver::DogWon);
+    }
+}
+
+
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
@@ -553,50 +580,16 @@ pub async fn main_logic<'a>(
 
     //Loop over each team!
     'game_loop: for team_index in ActiveTeam::Dogs.iter() {
-        //check if we lost.
-        'check_end: {
-            let game = game.view_mut(team_index);
 
-            for unit in game.this_team.units.iter() {
-                let mesh = selection::generate_unit_possible_moves_inner(unit, &game, None);
-                if mesh.iter_mesh(GridCoord([0; 2])).count() != 0 {
-                    break 'check_end;
-                }
-            }
-            console_dbg!("This team won:", team_index);
-            game_history.push(moves::ActualMove::GameEnd(moves::GameEnding::Win(
-                team_index,
-            )));
+        if let Some(g)=game_is_over(game,team_index){
+            console_dbg!("Game over=",g);
             break 'game_loop;
-            // let our_king_dead = game
-            //     .this_team
-            //     .units
-            //     .iter()
-            //     .find(|a| a.typ == Type::King)
-            //     .is_none();
-            // let their_king_dead = game
-            //     .that_team
-            //     .units
-            //     .iter()
-            //     .find(|a| a.typ == Type::King)
-            //     .is_none();
-
-            // let g = match (our_king_dead, their_king_dead) {
-            //     (true, true) => moves::GameEnding::Draw,
-            //     (true, false) => moves::GameEnding::Win(team_index.not()),
-            //     (false, true) => moves::GameEnding::Win(team_index),
-            //     (false, false) => {
-            //         break 'check_end;
-            //     }
-            // };
-            // game_history.push(moves::ActualMove::GameEnd(g));
-            // break 'game_loop;
         }
-
+        
         //Add AIIIIII.
-        //if team_index == ActiveTeam::Cats {
+        if team_index == ActiveTeam::Cats {
         //{
-        if false {
+        //if false {
             let the_move = ai::iterative_deepening(game, team_index);
 
             let mut game = game.view_mut(team_index);
@@ -657,8 +650,8 @@ pub async fn main_logic<'a>(
                 let cell = match data {
                     Pototo::Normal(a) => a,
                     Pototo::EndTurn => {
-                        log!("End the turn!");
-                        game_history.push(moves::ActualMove::SkipTurn);
+                        log!("cant end turn!");
+                        //game_history.push(moves::ActualMove::SkipTurn);
 
                         break 'select_loop;
                     }

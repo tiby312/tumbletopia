@@ -11,6 +11,22 @@ const MATE: i64 = 1_000_000;
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
+
+
+    let mut points=0;
+    for a in view.world.iter_cells().map(|x|x.to_axial()).filter(|x|!view.land.contains(x)){
+        let closest_cat=view.cats.units.iter().map(|x|x.position.to_cube().dist(&a.to_cube())).min().unwrap();
+        let closest_dog=view.dogs.units.iter().map(|x|x.position.to_cube().dist(&a.to_cube())).min().unwrap();
+        if closest_cat<closest_dog{
+            points+=1;
+        }else if closest_cat>closest_dog{
+            points-=1;
+        }
+
+    }
+    console_dbg!(points);
+    return points;
+
     //TODO check for checks!!!
     //let view = view.absolute();
     let num_cats = view.cats.units.len();
@@ -171,29 +187,8 @@ pub fn we_in_check(view: GameView<'_>) -> bool {
 
     true
 }
-pub fn game_is_over(view: GameView<'_>) -> bool {
-    if view
-        .this_team
-        .units
-        .iter()
-        .find(|a| a.typ == Type::King)
-        .is_none()
-    {
-        return true;
-    };
 
-    if view
-        .that_team
-        .units
-        .iter()
-        .find(|a| a.typ == Type::King)
-        .is_none()
-    {
-        return true;
-    };
 
-    false
-}
 
 //TODO use bump allocator!!!!!
 //TODO just store best move? not gamestate?
@@ -272,7 +267,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         a: std::collections::HashMap::new(),
     };
 
-    let max_depth = 6;
+    let max_depth = 4;
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
@@ -407,7 +402,7 @@ pub struct EvalRet<T> {
 impl<'a> AlphaBeta<'a> {
     pub fn alpha_beta(
         &mut self,
-        cand: PossibleMove,
+        mut cand: PossibleMove,
         ab: ABAB,
         team: ActiveTeam,
         depth: usize,
@@ -418,9 +413,15 @@ impl<'a> AlphaBeta<'a> {
         let mut gg = cand.game_after_move.clone();
 
         self.path.push(the_move.clone());
-        let ret = if depth == 0 || game_is_over(cand.game_after_move.view(team)) {
+        let ret = if depth == 0 || game_is_over(&mut cand.game_after_move,team).is_some() {
+            //console_dbg!(game_is_over(cand.game_after_move.view(team)));
+
             self.calls.add_eval();
             let e = self.table.lookup_leaf_all(&cand.game_after_move);
+
+            // if self.prev_cache.a.get(self.path).is_none(){
+            //     self.prev_cache.update(&self.path, &cand.the_move);
+            // }
             //console_dbg!("FOOO",e);
             e
 
@@ -462,7 +463,7 @@ impl<'a> AlphaBeta<'a> {
                     (false, x)
                 })
                 .collect();
-
+            console_dbg!("FOOOO",moves.len());
             //console_dbg!(moves.iter().map(|x|&x.1.the_move).collect::<Vec<_>>());
 
             let num_checky = moves.iter().filter(|x| x.0).count();
@@ -728,11 +729,11 @@ pub fn for_all_moves_v2(state: GameState, team: ActiveTeam) -> impl Iterator<Ite
 // }
 
 pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
-    let foo = PossibleMove {
-        the_move: moves::ActualMove::SkipTurn,
-        game_after_move: state.clone(),
-        //mesh: MovementMesh::new(),
-    };
+    // let foo = PossibleMove {
+    //     the_move: moves::ActualMove::SkipTurn,
+    //     game_after_move: state.clone(),
+    //     //mesh: MovementMesh::new(),
+    // };
 
     let mut sss = state.clone();
     let ss = state.clone();
@@ -791,5 +792,5 @@ pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item =
             let f2 = second.into_iter().flatten();
             f1.chain(f2)
         })
-        .chain([foo].into_iter())
+        //.chain([foo].into_iter())
 }
