@@ -45,7 +45,7 @@ impl ProcessedCommand {
         let mut a = ProcessedCommand::Nothing;
         std::mem::swap(self, &mut a);
 
-        let ProcessedCommand::Animate(a)=a else{
+        let ProcessedCommand::Animate(a) = a else {
             panic!();
         };
 
@@ -56,7 +56,7 @@ impl ProcessedCommand {
         let mut a = ProcessedCommand::Nothing;
         std::mem::swap(self, &mut a);
 
-        let ProcessedCommand::GetMouseInput(a)=a else{
+        let ProcessedCommand::GetMouseInput(a) = a else {
             panic!();
         };
 
@@ -133,7 +133,7 @@ impl<'a> WorkerManager<'a> {
             .unwrap();
 
         let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
-        let Response::AnimationFinish(o)=data else{
+        let Response::AnimationFinish(o) = data else {
             unreachable!();
         };
 
@@ -160,7 +160,11 @@ impl<'a> WorkerManager<'a> {
             )
             .await;
 
-        let MousePrompt::Selection{selection,grey:grey2}=b else{
+        let MousePrompt::Selection {
+            selection,
+            grey: grey2,
+        } = b
+        else {
             unreachable!()
         };
         assert_eq!(grey2, grey);
@@ -186,7 +190,7 @@ impl<'a> WorkerManager<'a> {
 
         let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
 
-        let Response::Mouse(cell,o)=data else{
+        let Response::Mouse(cell, o) = data else {
             unreachable!();
         };
 
@@ -298,7 +302,7 @@ pub async fn reselect_loop(
     let target_cell = mouse_world;
 
     //This is the cell the user selected from the pool of available moves for the unit
-    let CellSelection::MoveSelection(_,ss)=cell else{
+    let CellSelection::MoveSelection(_, ss) = cell else {
         unreachable!()
     };
 

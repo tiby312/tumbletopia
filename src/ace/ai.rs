@@ -38,14 +38,14 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             points -= 1;
         }
     }
+    //console_dbg!(points);
+    // for a in view.dogs.units.iter() {
+    //     points -= count_spread(a.position, view) as i64;
+    // }
 
-    for a in view.dogs.units.iter() {
-        points -= count_spread(a.position, view) as i64;
-    }
-
-    for a in view.cats.units.iter() {
-        points += count_spread(a.position, view) as i64;
-    }
+    // for a in view.cats.units.iter() {
+    //     points += count_spread(a.position, view) as i64;
+    // }
     points
 }
 
@@ -53,8 +53,8 @@ fn count_spread(position: GridCoord, game: &GameState) -> usize {
     let mut mesh = crate::movement::MovementMesh::new(vec![]);
 
     let cond = |a: GridCoord| {
-        let is_world_cell = game.world.filter().filter(&a).to_bool();
-        a != position && is_world_cell && game.land.iter().find(|&&b| a == b).is_none()
+        //let is_world_cell = game.world.filter().filter(&a).to_bool();
+        a != position && game.land.iter().find(|&&b| a == b).is_none()
         //&& game.this_team.find_slow(&a).is_none()
         //&& game.that_team.find_slow(&a).is_none()
     };
@@ -106,8 +106,8 @@ fn count_spread(position: GridCoord, game: &GameState) -> usize {
 // }
 
 pub fn we_in_check(view: GameView<'_>) -> bool {
-    let Some(king_pos)=view.this_team.units.iter().find(|a|a.typ==Type::King) else{
-        return false
+    let Some(king_pos) = view.this_team.units.iter().find(|a| a.typ == Type::King) else {
+        return false;
     };
 
     for a in view.this_team.units.iter().filter(|a| a.typ == Type::King) {}
@@ -188,14 +188,13 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
     let mut results = Vec::new();
     let mut table = LeafTranspositionTable::new();
 
-    let mut foo1 = MoveOrdering {
-        a: std::collections::HashMap::new(),
-    };
-
     let max_depth = 4;
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
+        let mut foo1 = MoveOrdering {
+            a: std::collections::HashMap::new(),
+        };
         console_dbg!("searching", depth);
 
         //TODO should this be outside the loop?
@@ -237,6 +236,8 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         // );
 
         let eval = res.eval;
+        console_dbg!(eval);
+
         results.push(res);
 
         if eval.abs() == MATE {
@@ -252,6 +253,8 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
 
     //TODO THIS CAUSES ISSUES
     //results.dedup_by_key(|x| x.eval);
+
+    //console_dbg!("deduped",&results);
 
     let target_eval = results.last().unwrap().eval;
     // let mov = if let Some(a) = results
@@ -322,6 +325,22 @@ impl KillerMoves {
 pub struct EvalRet<T> {
     pub mov: T,
     pub eval: Eval,
+}
+
+pub struct MoveJustification {
+    the_move: Move,
+    principal_variation: Vec<Move>,
+}
+
+pub struct SimpleAlphaBeta {}
+impl SimpleAlphaBeta {}
+
+pub fn handle(
+    principal_variation: Option<MoveJustification>,
+    state: GameState,
+    team: ActiveTeam,
+) -> MoveJustification {
+    todo!();
 }
 
 impl<'a> AlphaBeta<'a> {
@@ -440,6 +459,8 @@ impl<'a> AlphaBeta<'a> {
                 if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
                     ss.killer_moves.consider(depth, m.1.the_move);
                 }) {
+                    //console_dbg!("FOUND",ret.eval);
+
                     self.prev_cache.update(&self.path, &ret.mov.1.the_move);
                     ret.eval
                 } else {
@@ -465,6 +486,110 @@ impl<'a> AlphaBeta<'a> {
     }
 }
 
+mod abab_simple {
+
+    pub trait MoveFinder {
+        type EE: PartialOrd + Ord + Copy;
+        type T: Clone;
+        type Mo: Copy;
+        type Finder;
+        fn eval(&mut self, game: &Self::T) -> Self::EE;
+
+        fn min_eval(&self) -> Self::EE;
+        fn max_eval(&self) -> Self::EE;
+
+        fn apply_move(&mut self, game: &mut Self::T, a: Self::Mo);
+
+        fn generate_finder(&mut self, state: &Self::T, path: &[Self::Mo]) -> Self::Finder;
+        fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo>;
+    }
+
+    use super::*;
+    #[derive(Clone)]
+    pub struct ABAB<X, Y, Z> {
+        alpha: Z,
+        beta: Z,
+        data: X,
+        path: Vec<Y>,
+    }
+    impl<X: MoveFinder> ABAB<X, X::Mo, X::EE> {
+        pub fn new(data: X) -> Self {
+            ABAB {
+                alpha: data.min_eval(),
+                beta: data.max_eval(),
+                data,
+                path: vec![],
+            }
+        }
+
+        pub fn alpha_beta(
+            &mut self,
+            depth: usize,
+            game_state: X::T,
+            maximizer: bool,
+        ) -> (X::EE, Vec<X::Mo>) {
+            if depth == 0 {
+                return (self.data.eval(&game_state), vec![]);
+            } else {
+                if maximizer {
+                    let mut value = self.data.min_eval();
+                    let mut ll = vec![];
+                    let mut best_move = None;
+
+                    let mut gs = self.data.generate_finder(&game_state, &self.path);
+                    while let Some(mo) = self.data.select_move(&mut gs) {
+                        let mut ga = game_state.clone();
+                        self.data.apply_move(&mut ga, mo);
+                        self.path.push(mo);
+                        let (eval, move_list) = self.alpha_beta(depth - 1, ga, !maximizer);
+                        self.path.pop();
+
+                        if eval > value {
+                            value = eval;
+                            ll = move_list;
+                            best_move = Some(mo);
+                        }
+
+                        if value > self.beta {
+                            break;
+                        }
+                        self.alpha = self.alpha.max(value);
+                    }
+
+                    ll.push(best_move.unwrap());
+                    (value, ll)
+                } else {
+                    let mut value = self.data.max_eval();
+                    let mut ll = vec![];
+                    let mut best_move = None;
+
+                    let mut gs = self.data.generate_finder(&game_state, &self.path);
+                    while let Some(mo) = self.data.select_move(&mut gs) {
+                        let mut ga = game_state.clone();
+                        self.data.apply_move(&mut ga, mo);
+                        self.path.push(mo);
+                        let (eval, move_list) = self.alpha_beta(depth - 1, ga, !maximizer);
+                        self.path.pop();
+
+                        if eval > value {
+                            value = eval;
+                            ll = move_list;
+                            best_move = Some(mo);
+                        }
+
+                        if value < self.alpha {
+                            break;
+                        }
+                        self.beta = self.beta.min(value);
+                    }
+
+                    ll.push(best_move.unwrap());
+                    (value, ll)
+                }
+            }
+        }
+    }
+}
 use abab::ABAB;
 mod abab {
     use super::*;

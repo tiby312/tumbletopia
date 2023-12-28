@@ -753,7 +753,7 @@ impl UnwrapMe for Movement {
         }
     }
     fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
-        let animation::AnimationCommand::Movement{unit,..}=a else{
+        let animation::AnimationCommand::Movement { unit, .. } = a else {
             unreachable!()
         };
         unit
@@ -781,7 +781,7 @@ impl UnwrapMe for Attack {
         }
     }
     fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
-        let animation::AnimationCommand::Attack{attacker,defender}=a else{
+        let animation::AnimationCommand::Attack { attacker, defender } = a else {
             unreachable!()
         };
         [attacker, defender]
