@@ -1036,6 +1036,7 @@ pub fn generate_unit_possible_moves_inner(
         game.this_team.find_slow(&a).is_none() && game.that_team.find_slow(&a).is_none()
     };
 
+    //TODO don't do this most of the time. ai doesnt care
     for a in unit.position.to_cube().range(2) {
         let a = a.to_axial();
 

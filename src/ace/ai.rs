@@ -38,140 +38,53 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             points -= 1;
         }
     }
-    //console_dbg!(points);
-    return points;
 
-    //TODO check for checks!!!
-    //let view = view.absolute();
-    let num_cats = view.cats.units.len();
-    let num_dogs = view.dogs.units.len();
-    let diff = num_cats as i64 - num_dogs as i64;
-    //console_dbg!("HAYYY",diff);
-
-    let Some(cat_king)=view
-        .cats
-        .units
-        .iter()
-        .find(|a| a.typ == Type::King)
-    else {
-        return -MATE;
-    };
-
-    let Some(dog_king)=view
-        .dogs
-        .units
-        .iter()
-        .find(|a| a.typ == Type::King)
-    else
-    {
-        return MATE;
-    };
-
-    //TODO add dead rekoning look ahead
-
-    //TODO check if warriors are restricted
-
-    fn doop(me: &UnitData, king: &UnitData) -> i64 {
-        //TODO handle case where it runs off the board?
-        let king_pos = king.position;
-        let king_dir = king.direction;
-
-        let distance = me.position.to_cube().dist(&king_pos.to_cube());
-
-        let projected_king_pos = king_pos.add(
-            king_dir
-                .to_relative()
-                .advance_by(king_dir, usize::try_from(distance).unwrap().max(2)),
-        );
-
-        let distance_to_projected = me.position.to_cube().dist(&projected_king_pos.to_cube());
-
-        let x = distance_to_projected as i64;
-        x * x
+    for a in view.dogs.units.iter() {
+        points -= count_spread(a.position, view) as i64;
     }
 
-    //We multiply by the entire number of units so that
-    //the team is more aggressive if it has more pieces.
-    let cat_distance_to_dog2 = view
-        .cats
-        .units
-        .iter()
-        .map(|x| doop(x, dog_king))
-        .fold(0, |acc, f| acc + f)
-        * num_cats as i64;
+    for a in view.cats.units.iter() {
+        points += count_spread(a.position, view) as i64;
+    }
+    points
+}
 
-    let dog_distance_to_cat2 = view
-        .dogs
-        .units
-        .iter()
-        .map(|x| doop(x, cat_king))
-        .fold(0, |acc, f| acc + f)
-        * num_dogs as i64;
+fn count_spread(position: GridCoord, game: &GameState) -> usize {
+    let mut mesh = crate::movement::MovementMesh::new(vec![]);
 
-    fn king_safety(view: &GameState, this_team: ActiveTeam) -> i64 {
-        let game = view.view(this_team);
+    let cond = |a: GridCoord| {
+        let is_world_cell = game.world.filter().filter(&a).to_bool();
+        a != position && is_world_cell && game.land.iter().find(|&&b| a == b).is_none()
+        //&& game.this_team.find_slow(&a).is_none()
+        //&& game.that_team.find_slow(&a).is_none()
+    };
 
-        let king = game
-            .this_team
-            .units
-            .iter()
-            .find(|a| a.typ == Type::King)
-            .unwrap();
+    for (_, a) in position.to_cube().ring(1) {
+        let a = a.to_axial();
 
-        //TODO dynamically change radius
+        if cond(a) {
+            mesh.add_normal_cell(a.sub(&position), false);
 
-        let mut enemies: Vec<_> = game
-            .that_team
-            .units
-            .iter()
-            //.filter(|x| x.typ == Type::Warrior)
-            .map(|x| x.position.to_cube().dist(&king.position.to_cube()))
-            .collect();
+            for (_, b) in a.to_cube().ring(1) {
+                let b = b.to_axial();
+                //TODO inefficient
+                if cond(b) {
+                    mesh.add_normal_cell(b.sub(&position), false);
 
-        let mut friendlies: Vec<_> = game
-            .this_team
-            .units
-            .iter()
-            //.filter(|x| x.typ == Type::Warrior)
-            .filter(|x| x.position != king.position)
-            .map(|x| x.position.to_cube().dist(&king.position.to_cube()))
-            .collect();
-
-        enemies.sort();
-        friendlies.sort();
-
-        // console_dbg!(enemies);
-        // console_dbg!(friendlies);
-
-        let difference: Vec<_> = enemies
-            .iter()
-            .zip(friendlies.iter())
-            .map(|(&a, &b)| a - b)
-            .collect();
-
-        //console_dbg!(difference);
-        let cost = [-400, -200, -100];
-
-        for (&a, b) in difference.iter().zip(cost) {
-            if a < 1 {
-                return b;
+                    for (_, c) in b.to_cube().ring(1) {
+                        let c = c.to_axial();
+                        //TODO inefficient
+                        if cond(c) {
+                            mesh.add_normal_cell(c.sub(&position), false);
+                        }
+                    }
+                }
             }
         }
-
-        0
     }
-
-    //let cat_safety = king_safety(view, ActiveTeam::Cats);
-    //let dog_safety = -king_safety(view, ActiveTeam::Dogs);
-
-    let val = diff * 10_000 - cat_distance_to_dog2 + dog_distance_to_cat2;
-    // + cat_safety / 20
-    // + dog_safety / 20;
-    //console_dbg!(val);
-    //let val = diff;
-
-    //assert!(!val.is_nan());
-    val
+    let k = mesh.iter_mesh(GridCoord([0; 2])).count();
+    //assert!(k<=18,"{}",k);
+    k
 }
 
 // pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
