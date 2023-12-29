@@ -257,11 +257,6 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         //TODO should this be outside the loop?
         let mut k = KillerMoves::new(max_depth);
 
-        let pp = PossibleMove {
-            the_move: moves::ActualMove::SkipTurn,
-            //mesh: MovementMesh::new(),
-            game_after_move: game.clone(),
-        };
         let mut aaaa = ai::AlphaBeta {
             table: &mut table,
             prev_cache: &mut foo1,
@@ -270,13 +265,9 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
             killer_moves: &mut k,
             max_ext: 0,
         };
-        let res = aaaa.alpha_beta(pp, ABAB::new(), team, depth, 0);
+        let res = aaaa.alpha_beta(game.clone(), ABAB::new(), team, depth, 0);
 
-        let mov = foo1
-            .a
-            .get(&[moves::ActualMove::SkipTurn] as &[_])
-            .cloned()
-            .unwrap();
+        let mov = foo1.a.get(&[] as &[_]).cloned().unwrap();
         let res = EvalRet { mov, eval: res };
 
         // let res = ai::alpha_beta(
@@ -387,22 +378,21 @@ pub struct EvalRet<T> {
 impl<'a> AlphaBeta<'a> {
     pub fn alpha_beta(
         &mut self,
-        mut cand: PossibleMove,
+        mut game_after_move: GameState,
         ab: ABAB,
         team: ActiveTeam,
         depth: usize,
         ext: usize,
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
-        let the_move = cand.the_move.clone();
-        let mut gg = cand.game_after_move.clone();
+        //let the_move = cand.the_move.clone();
+        let mut gg = game_after_move.clone();
 
-        self.path.push(the_move.clone());
-        let ret = if depth == 0 || game_is_over(&mut cand.game_after_move, team).is_some() {
+        let ret = if depth == 0 || game_is_over(&mut game_after_move, team).is_some() {
             //console_dbg!(game_is_over(cand.game_after_move.view(team)));
 
             self.calls.add_eval();
-            let e = self.table.lookup_leaf_all(&cand.game_after_move);
+            let e = self.table.lookup_leaf_all(&game_after_move);
 
             // if self.prev_cache.a.get(self.path).is_none(){
             //     self.prev_cache.update(&self.path, &cand.the_move);
@@ -414,7 +404,9 @@ impl<'a> AlphaBeta<'a> {
 
             // eval
         } else {
-            let node = cand.game_after_move;
+            let gg2 = game_after_move.clone();
+
+            let node = game_after_move;
 
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
@@ -438,20 +430,12 @@ impl<'a> AlphaBeta<'a> {
             //     None
             // };
 
-            let mut moves: Vec<_> = for_all_moves(node.clone(), team)
-                .map(|mut x| {
-                    //let c = is_check(&x.game_after_move);
-                    //let c1 = this_team_in_check(&mut x.game_after_move, team);
-                    //let c2 = this_team_in_check(&mut x.game_after_move, team.not());
+            let mut moves = for_all_moves_fast(node.clone(), team);
 
-                    //let c = false;
-                    (false, x)
-                })
-                .collect();
             //console_dbg!("FOOOO",moves.len());
             //console_dbg!(moves.iter().map(|x|&x.1.the_move).collect::<Vec<_>>());
 
-            let num_checky = moves.iter().filter(|x| x.0).count();
+            let num_checky = moves.iter().count();
             //console_dbg!(num_checky);
             // if is_check(&moves[0].1.game_after_move) {
             //     moves[0].0 = true;
@@ -464,7 +448,7 @@ impl<'a> AlphaBeta<'a> {
                 let f = moves
                     .iter()
                     .enumerate()
-                    .find(|(_, (_, x))| x.the_move == p.the_move)
+                    .find(|(_, x)| **x == p.the_move)
                     .unwrap();
                 let swap_ind = f.0;
                 moves.swap(0, swap_ind);
@@ -475,34 +459,38 @@ impl<'a> AlphaBeta<'a> {
                 if let Some((x, _)) = moves[num_sorted..]
                     .iter()
                     .enumerate()
-                    .find(|(_, (_, x))| &x.the_move == a)
+                    .find(|(_, x)| *x == a)
                 {
                     moves.swap(x, num_sorted);
                     num_sorted += 1;
                 }
             }
 
-            let foo = |ssself: &mut AlphaBeta, (is_checky, cand): (bool, PossibleMove), ab| {
+            let foo = |ssself: &mut AlphaBeta, cand: moves::ActualMove, ab| {
                 let cc = cand.clone();
                 let new_depth = depth - 1; //.saturating_sub(inhibit);
                                            //assert!(new_depth<6);
                                            //console_dbg!(ext,depth);
-                let eval = ssself.alpha_beta(cand, ab, team.not(), new_depth, ext);
+
+                let mut gg = gg2.clone();
+                apply_move(cand, &mut gg, team);
+
+                ssself.path.push(cand.clone());
+                let eval = ssself.alpha_beta(gg, ab, team.not(), new_depth, ext);
+                let k = ssself.path.pop().unwrap();
+
                 //console_dbg!("inner eval=",eval);
-                EvalRet {
-                    eval,
-                    mov: (is_checky, cc),
-                }
+                EvalRet { eval, mov: cc }
             };
 
             if team == ActiveTeam::Cats {
                 //console_dbg!("maxing");
                 if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
-                    ss.killer_moves.consider(depth, m.1.the_move);
+                    ss.killer_moves.consider(depth, m);
                 }) {
                     //console_dbg!("FOUND",ret.eval);
 
-                    self.prev_cache.update(&self.path, &ret.mov.1.the_move);
+                    self.prev_cache.update(&self.path, &ret.mov);
                     ret.eval
                 } else {
                     Eval::MIN
@@ -510,9 +498,9 @@ impl<'a> AlphaBeta<'a> {
             } else {
                 //console_dbg!("mining");
                 if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
-                    ss.killer_moves.consider(depth, m.1.the_move);
+                    ss.killer_moves.consider(depth, m);
                 }) {
-                    self.prev_cache.update(&self.path, &ret.mov.1.the_move);
+                    self.prev_cache.update(&self.path, &ret.mov);
                     //console_dbg!("FOUND",ret.eval);
                     ret.eval
                 } else {
@@ -520,8 +508,6 @@ impl<'a> AlphaBeta<'a> {
                 }
             }
         };
-        let k = self.path.pop().unwrap();
-        assert_eq!(k, the_move);
         //console_dbg!("alpha beta ret=",ret,depth);
         ret
     }
