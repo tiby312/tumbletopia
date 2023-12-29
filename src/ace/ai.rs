@@ -1,4 +1,6 @@
-use crate::{movement::MovementMesh, moves::ActualMove};
+use crate::{
+    ace::selection::generate_unit_possible_moves_inner, movement::MovementMesh, moves::ActualMove,
+};
 
 use super::{
     selection::{MoveLog, RegularSelection},
@@ -8,9 +10,65 @@ use super::{
 pub type Eval = i64; //(f64);
 
 const MATE: i64 = 1_000_000;
+
+//number of nearby liberties
+fn num_liberties(
+    a: GridCoord,
+    visited: &mut Vec<GridCoord>,
+    liberties: &mut Vec<GridCoord>,
+    game: &GameState,
+    depth: usize,
+) {
+    //console_dbg!(depth,visited.len());
+    if depth > 5 {
+        return;
+    }
+
+    if !game.world.filter().filter(&a).to_bool() {
+        return;
+    }
+
+    if visited.contains(&a) {
+        return;
+    }
+
+    visited.push(a);
+
+    for (_, b) in a.to_cube().ring(1) {
+        let b = b.to_axial();
+
+        if !game.land.contains(&b) {
+            if !liberties.contains(&b) {
+                liberties.push(b);
+            }
+            num_liberties(b, visited, liberties, game, depth + 1);
+        }
+    }
+}
+
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
+    let cat_liberties = {
+        let mut liberties = vec![];
+        for aa in view.cats.units.iter() {
+            let mut v = vec![];
+
+            num_liberties(aa.position, &mut v, &mut liberties, &view, 0);
+        }
+        liberties.len() as i64
+    };
+
+    let dog_liberties = {
+        let mut liberties = vec![];
+        for aa in view.dogs.units.iter() {
+            let mut v = vec![];
+
+            num_liberties(aa.position, &mut v, &mut liberties, &view, 0);
+        }
+        liberties.len() as i64
+    };
+
     let mut points = 0;
     for a in view
         .world
@@ -46,7 +104,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     // for a in view.cats.units.iter() {
     //     points += count_spread(a.position, view) as i64;
     // }
-    points
+    points + cat_liberties - dog_liberties
 }
 
 fn count_spread(position: GridCoord, game: &GameState) -> usize {
@@ -835,6 +893,33 @@ pub struct OneMove {
     start: GridCoord,
     end: GridCoord,
     hex: HexDir,
+}
+
+//TODO use this!!!
+pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<OneMove> {
+    let mut movs = Vec::new();
+    for i in 0..state.view_mut(team).this_team.units.len() {
+        let pos = state.view_mut(team).this_team.units[i].position;
+        let mesh = generate_unit_possible_moves_inner(&pos, &state.view_mut(team), None);
+        for mm in mesh.iter_mesh(pos) {
+            //Temporarily move the player in the game world.
+            state.view_mut(team).this_team.units[i].position = mm;
+
+            let second_mesh =
+                generate_unit_possible_moves_inner(&mm, &state.view_mut(team), Some(mm));
+
+            for sm in second_mesh.iter_mesh(mm) {
+                movs.push(OneMove {
+                    start: pos,
+                    end: mm,
+                    hex: mm.dir_to(&sm),
+                })
+            }
+        }
+        //revert it back.
+        state.view_mut(team).this_team.units[i].position = pos;
+    }
+    movs
 }
 
 pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
