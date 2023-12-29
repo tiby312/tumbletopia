@@ -107,43 +107,43 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     points + cat_liberties - dog_liberties
 }
 
-fn count_spread(position: GridCoord, game: &GameState) -> usize {
-    let mut mesh = crate::movement::MovementMesh::new(vec![]);
+// fn count_spread(position: GridCoord, game: &GameState) -> usize {
+//     let mut mesh = crate::movement::MovementMesh::new(vec![]);
 
-    let cond = |a: GridCoord| {
-        //let is_world_cell = game.world.filter().filter(&a).to_bool();
-        a != position && game.land.iter().find(|&&b| a == b).is_none()
-        //&& game.this_team.find_slow(&a).is_none()
-        //&& game.that_team.find_slow(&a).is_none()
-    };
+//     let cond = |a: GridCoord| {
+//         //let is_world_cell = game.world.filter().filter(&a).to_bool();
+//         a != position && game.land.iter().find(|&&b| a == b).is_none()
+//         //&& game.this_team.find_slow(&a).is_none()
+//         //&& game.that_team.find_slow(&a).is_none()
+//     };
 
-    for (_, a) in position.to_cube().ring(1) {
-        let a = a.to_axial();
+//     for (_, a) in position.to_cube().ring(1) {
+//         let a = a.to_axial();
 
-        if cond(a) {
-            mesh.add_normal_cell(a.sub(&position), false);
+//         if cond(a) {
+//             mesh.add_normal_cell(a.sub(&position));
 
-            for (_, b) in a.to_cube().ring(1) {
-                let b = b.to_axial();
-                //TODO inefficient
-                if cond(b) {
-                    mesh.add_normal_cell(b.sub(&position), false);
+//             for (_, b) in a.to_cube().ring(1) {
+//                 let b = b.to_axial();
+//                 //TODO inefficient
+//                 if cond(b) {
+//                     mesh.add_normal_cell(b.sub(&position));
 
-                    for (_, c) in b.to_cube().ring(1) {
-                        let c = c.to_axial();
-                        //TODO inefficient
-                        if cond(c) {
-                            mesh.add_normal_cell(c.sub(&position), false);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    let k = mesh.iter_mesh(GridCoord([0; 2])).count();
-    //assert!(k<=18,"{}",k);
-    k
-}
+//                     for (_, c) in b.to_cube().ring(1) {
+//                         let c = c.to_axial();
+//                         //TODO inefficient
+//                         if cond(c) {
+//                             mesh.add_normal_cell(c.sub(&position));
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     let k = mesh.iter_mesh(GridCoord([0; 2])).count();
+//     //assert!(k<=18,"{}",k);
+//     k
+// }
 
 // pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
 //     let num_enemy = node.that_team.units.len();
@@ -895,8 +895,32 @@ pub struct OneMove {
     hex: HexDir,
 }
 
+pub fn apply_move(mo: moves::ActualMove, state: &mut GameState, team: ActiveTeam) {
+    let moves::ActualMove::ExtraMove(
+        moves::PartialMoveSigl {
+            unit: pos,
+            moveto: mm,
+        },
+        moves::PartialMoveSigl {
+            unit: _,
+            moveto: sm,
+        },
+    ) = mo
+    else {
+        unreachable!()
+    };
+
+    state
+        .view_mut(team)
+        .this_team
+        .find_slow_mut(&pos)
+        .unwrap()
+        .position = mm;
+    state.land.push(sm);
+}
+
 //TODO use this!!!
-pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<OneMove> {
+pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<moves::ActualMove> {
     let mut movs = Vec::new();
     for i in 0..state.view_mut(team).this_team.units.len() {
         let pos = state.view_mut(team).this_team.units[i].position;
@@ -909,11 +933,21 @@ pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<OneMove
                 generate_unit_possible_moves_inner(&mm, &state.view_mut(team), Some(mm));
 
             for sm in second_mesh.iter_mesh(mm) {
-                movs.push(OneMove {
-                    start: pos,
-                    end: mm,
-                    hex: mm.dir_to(&sm),
-                })
+                // movs.push(OneMove {
+                //     start: pos,
+                //     end: mm,
+                //     hex: mm.dir_to(&sm),
+                // })
+                movs.push(moves::ActualMove::ExtraMove(
+                    moves::PartialMoveSigl {
+                        unit: pos,
+                        moveto: mm,
+                    },
+                    moves::PartialMoveSigl {
+                        unit: mm,
+                        moveto: sm,
+                    },
+                ))
             }
         }
         //revert it back.

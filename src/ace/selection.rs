@@ -631,7 +631,7 @@ pub fn generate_unit_possible_moves_inner(
 
         if cond(a) {
             if cond2(a) {
-                mesh.add_normal_cell(a.sub(&unit), false);
+                mesh.add_normal_cell(a.sub(&unit));
             }
             if extra_attack_prev_coord.is_none() {
                 for (_, b) in a.to_cube().ring(1) {
@@ -639,7 +639,7 @@ pub fn generate_unit_possible_moves_inner(
                     //TODO inefficient
                     if cond(b) {
                         if cond2(b) {
-                            mesh.add_normal_cell(b.sub(&unit), false);
+                            mesh.add_normal_cell(b.sub(&unit));
                         }
                     }
                 }

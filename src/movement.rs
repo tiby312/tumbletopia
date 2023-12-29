@@ -381,8 +381,8 @@ pub mod movement_mesh {
         let k2 = GridCoord([1, -2]);
 
         let mut mesh = MovementMesh::new(vec![]);
-        mesh.add_normal_cell(k1, false);
-        mesh.add_normal_cell(k2, false);
+        mesh.add_normal_cell(k1);
+        mesh.add_normal_cell(k2);
 
         let res: Vec<_> = mesh.path(GridCoord([1, -2]), &Mesh::new()).collect();
         dbg!(res);
@@ -603,14 +603,13 @@ pub mod movement_mesh {
         //We need an additional bit to describe the path that needs to be taken to each that spot.
         //Either left or right. (only applies for diagonal outer cells)
         inner: Mesh,
-
         //walls: Mesh,
-        attack_mesh: Mesh,
+        //attack_mesh: Mesh,
 
         //just_swing_inner: Mesh,
-        swing_moves: Vec<SwingMoveRay>,
+        //swing_moves: Vec<SwingMoveRay>,
 
-        far_away_spots: Vec<GridCoord>,
+        //far_away_spots: Vec<GridCoord>,
     }
 
     fn validate_rel(a: GridCoord) {
@@ -626,32 +625,32 @@ pub mod movement_mesh {
         pub fn new(swing_moves: Vec<SwingMoveRay>) -> Self {
             MovementMesh {
                 inner: Mesh::new(),
-                attack_mesh: Mesh::new(),
+                //attack_mesh: Mesh::new(),
                 //just_swing_inner: Mesh::new(),
-                swing_moves,
-                far_away_spots: Vec::new(),
+                //swing_moves,
+                //far_away_spots: Vec::new(),
             }
         }
-        pub fn add_swing_move(&mut self, a: SwingMoveRay) {
-            self.swing_moves.push(a);
-        }
+        // pub fn add_swing_move(&mut self, a: SwingMoveRay) {
+        //     self.swing_moves.push(a);
+        // }
         //TODO
         pub fn path(&self, a: GridCoord, walls: &Mesh) -> impl Iterator<Item = HexDir> {
             //let swings=self.swing_moves(GridCoord([0;2])).take_while(|(a,b)|b!=a).collect();
-            let mut swing_iter = None;
+            //let mut swing_iter = None;
 
             //TODO look at swing mesh instead??
-            for b in self.swing_moves.iter() {
-                if let Some((i, _)) = b
-                    .iter_cells(GridCoord([0; 2]))
-                    .enumerate()
-                    .find(|(_, (_, b))| *b == a)
-                {
-                    swing_iter = Some(b.iter_cells(GridCoord([0; 2])).take(i).map(|a| a.0));
-                }
-            }
+            // for b in self.swing_moves.iter() {
+            //     if let Some((i, _)) = b
+            //         .iter_cells(GridCoord([0; 2]))
+            //         .enumerate()
+            //         .find(|(_, (_, b))| *b == a)
+            //     {
+            //         swing_iter = Some(b.iter_cells(GridCoord([0; 2])).take(i).map(|a| a.0));
+            //     }
+            // }
 
-            let mesh_iter = if swing_iter.is_none() {
+            let mesh_iter = {
                 validate_rel(a);
                 let x = a.0[0];
                 let y = a.0[1];
@@ -702,32 +701,20 @@ pub mod movement_mesh {
                 let b = second.into_iter().flatten();
                 let c = third.into_iter().flatten();
                 let d = fourth.into_iter().flatten();
-                Some(a.chain(b).chain(c).chain(d))
-            } else {
-                None
+                a.chain(b).chain(c).chain(d)
             };
 
-            swing_iter
-                .into_iter()
-                .flatten()
-                .chain(mesh_iter.into_iter().flatten())
+            mesh_iter.into_iter()
         }
         // pub fn add_swing_cell(&mut self, a: GridCoord) {
         //     self.just_swing_inner.add(a);
         // }
-        pub fn add_normal_cell(&mut self, a: GridCoord, attackable: bool) {
+        pub fn add_normal_cell(&mut self, a: GridCoord) {
             self.inner.add(a);
-            if attackable {
-                self.attack_mesh.add(a);
-            }
         }
         // pub fn add_wall(&mut self, a: GridCoord) {
         //     self.walls.add(a);
         // }
-
-        pub fn add_far_away_cell(&mut self, a: GridCoord) {
-            self.far_away_spots.push(a);
-        }
 
         fn is_set(&self, a: GridCoord) -> bool {
             self.inner.is_set(a)
@@ -739,34 +726,33 @@ pub mod movement_mesh {
         //         .flat_map(move |a| a.iter_cells(point).map(|a| a.1))
         // }
 
-        pub fn iter_swing_mesh(
-            &self,
-            point: GridCoord,
-        ) -> impl Iterator<Item = (HexDir, GridCoord)> {
-            self.swing_moves
-                .clone()
-                .into_iter()
-                .flat_map(move |a| a.iter_cells(point).skip(1))
+        // pub fn iter_swing_mesh(
+        //     &self,
+        //     point: GridCoord,
+        // ) -> impl Iterator<Item = (HexDir, GridCoord)> {
+        //     self.swing_moves
+        //         .clone()
+        //         .into_iter()
+        //         .flat_map(move |a| a.iter_cells(point).skip(1))
 
-            //.filter(move |a| a.1 != point)
-            //self.just_swing_inner.iter_mesh(point)
-        }
+        //     //.filter(move |a| a.1 != point)
+        //     //self.just_swing_inner.iter_mesh(point)
+        // }
 
-        pub fn iter_attackable_normal(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
-            self.attack_mesh.iter_mesh(point)
-        }
+        // pub fn iter_attackable_normal(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
+        //     self.attack_mesh.iter_mesh(point)
+        // }
 
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             //TODO get rid of clone()
-            self.inner
-                .iter_mesh(point)
-                .chain(self.iter_swing_mesh(point).map(|a| a.1))
-                .chain(
-                    self.far_away_spots
-                        .clone()
-                        .into_iter()
-                        .map(move |x| point.add(x)),
-                )
+            self.inner.iter_mesh(point)
+            // .chain(self.iter_swing_mesh(point).map(|a| a.1))
+            // .chain(
+            //     self.far_away_spots
+            //         .clone()
+            //         .into_iter()
+            //         .map(move |x| point.add(x)),
+            // )
             // let mut j = self.inner.clone();
             // //j.inner |= self.just_swing_inner.inner;
             // j.iter_mesh(point)
