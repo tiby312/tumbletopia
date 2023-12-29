@@ -189,12 +189,11 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
     let mut table = LeafTranspositionTable::new();
 
     let max_depth = 4;
-
+    let mut foo1 = MoveOrdering {
+        a: std::collections::HashMap::new(),
+    };
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
-        let mut foo1 = MoveOrdering {
-            a: std::collections::HashMap::new(),
-        };
         console_dbg!("searching", depth);
 
         //TODO should this be outside the loop?
@@ -326,7 +325,6 @@ pub struct EvalRet<T> {
     pub mov: T,
     pub eval: Eval,
 }
-
 
 impl<'a> AlphaBeta<'a> {
     pub fn alpha_beta(
@@ -471,15 +469,12 @@ impl<'a> AlphaBeta<'a> {
     }
 }
 
-
-pub struct MyMoveFinder{
-   
-}
-impl abab_simple::MoveFinder for MyMoveFinder{
-    type EE=Eval;
-    type T=GameState;
-    type Mo=moves::ActualMove;
-    type Finder=std::vec::IntoIter<PossibleMove>;
+pub struct MyMoveFinder {}
+impl abab_simple::MoveFinder for MyMoveFinder {
+    type EE = Eval;
+    type T = GameState;
+    type Mo = moves::ActualMove;
+    type Finder = std::vec::IntoIter<PossibleMove>;
 
     fn eval(&mut self, game: &Self::T) -> Self::EE {
         absolute_evaluate(game)
@@ -495,24 +490,26 @@ impl abab_simple::MoveFinder for MyMoveFinder{
 
     fn apply_move(&mut self, game: &mut Self::T, a: Self::Mo) {
         let mut mm = MoveLog::new();
-
-
     }
 
-    fn generate_finder(&mut self, state: &Self::T, path: &[Self::Mo],maximizer:bool) -> Self::Finder {
-
-        let team=if maximizer{
+    fn generate_finder(
+        &mut self,
+        state: &Self::T,
+        path: &[Self::Mo],
+        maximizer: bool,
+    ) -> Self::Finder {
+        let team = if maximizer {
             ActiveTeam::Cats
-        }else{
+        } else {
             ActiveTeam::Dogs
         };
 
-        let k:Vec<_>=for_all_moves(state.clone(),team).collect();
+        let k: Vec<_> = for_all_moves(state.clone(), team).collect();
         k.into_iter()
     }
 
     fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo> {
-        finder.next().map(|x|x.the_move)
+        finder.next().map(|x| x.the_move)
     }
 }
 mod abab_simple {
@@ -529,12 +526,22 @@ mod abab_simple {
 
         fn apply_move(&mut self, game: &mut Self::T, a: Self::Mo);
 
-        fn generate_finder(&mut self, state: &Self::T, path: &[Self::Mo],maximizer:bool) -> Self::Finder;
+        fn generate_finder(
+            &mut self,
+            state: &Self::T,
+            path: &[Self::Mo],
+            maximizer: bool,
+        ) -> Self::Finder;
         fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo>;
     }
 
-    pub fn alpha_beta<X:MoveFinder>(data:X,depth:usize,game_state:X::T,maximizer:bool)->(X::EE,Vec<X::Mo>){
-        ABAB::new(data).alpha_beta(depth,game_state,maximizer)
+    pub fn alpha_beta<X: MoveFinder>(
+        data: X,
+        depth: usize,
+        game_state: X::T,
+        maximizer: bool,
+    ) -> (X::EE, Vec<X::Mo>) {
+        ABAB::new(data).alpha_beta(depth, game_state, maximizer)
     }
     use super::*;
     #[derive(Clone)]
@@ -568,7 +575,9 @@ mod abab_simple {
                     let mut ll = vec![];
                     let mut best_move = None;
 
-                    let mut gs = self.data.generate_finder(&game_state, &self.path,maximizer);
+                    let mut gs = self
+                        .data
+                        .generate_finder(&game_state, &self.path, maximizer);
                     while let Some(mo) = self.data.select_move(&mut gs) {
                         let mut ga = game_state.clone();
                         self.data.apply_move(&mut ga, mo);
@@ -595,7 +604,9 @@ mod abab_simple {
                     let mut ll = vec![];
                     let mut best_move = None;
 
-                    let mut gs = self.data.generate_finder(&game_state, &self.path,maximizer);
+                    let mut gs = self
+                        .data
+                        .generate_finder(&game_state, &self.path, maximizer);
                     while let Some(mo) = self.data.select_move(&mut gs) {
                         let mut ga = game_state.clone();
                         self.data.apply_move(&mut ga, mo);
@@ -810,7 +821,6 @@ pub fn for_all_moves_v2(state: GameState, team: ActiveTeam) -> impl Iterator<Ite
 //     })
 // }
 
-
 // pub fn for_all_moves2(state:GameState,team:ActiveTeam){
 //     state.view(team).this_team.units.iter().map(|a| RegularSelection { unit: a.clone() })
 //     .flat_map(move |a| {
@@ -821,15 +831,13 @@ pub fn for_all_moves_v2(state: GameState, team: ActiveTeam) -> impl Iterator<Ite
 
 // }
 
-pub struct OneMove{
-    start:GridCoord,
-    end:GridCoord,
-    hex:HexDir
+pub struct OneMove {
+    start: GridCoord,
+    end: GridCoord,
+    hex: HexDir,
 }
 
-
 pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
-    
     let mut sss = state.clone();
     let ss = state.clone();
     ss.into_view(team)

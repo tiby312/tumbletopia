@@ -599,7 +599,8 @@ pub async fn main_logic<'a>(
                 moves::ActualMove::NormalMove(o) => {
                     let unit = game.this_team.find_slow(&o.unit).unwrap();
 
-                    let mesh = selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
+                    let mesh =
+                        selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
 
                     let r = selection::RegularSelection::new(unit);
                     let r = r
@@ -611,7 +612,8 @@ pub async fn main_logic<'a>(
                 moves::ActualMove::ExtraMove(o, e) => {
                     let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
-                    let mesh = selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
+                    let mesh =
+                        selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
 
                     let r = selection::RegularSelection::new(&unit);
                     let r = r
@@ -713,7 +715,7 @@ pub async fn main_logic<'a>(
 // }
 
 //TODO use this!
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub enum Move {
     Warrior {
         from: GridCoord,
