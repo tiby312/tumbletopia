@@ -327,21 +327,6 @@ pub struct EvalRet<T> {
     pub eval: Eval,
 }
 
-pub struct MoveJustification {
-    the_move: Move,
-    principal_variation: Vec<Move>,
-}
-
-pub struct SimpleAlphaBeta {}
-impl SimpleAlphaBeta {}
-
-pub fn handle(
-    principal_variation: Option<MoveJustification>,
-    state: GameState,
-    team: ActiveTeam,
-) -> MoveJustification {
-    todo!();
-}
 
 impl<'a> AlphaBeta<'a> {
     pub fn alpha_beta(
@@ -486,6 +471,50 @@ impl<'a> AlphaBeta<'a> {
     }
 }
 
+
+pub struct MyMoveFinder{
+   
+}
+impl abab_simple::MoveFinder for MyMoveFinder{
+    type EE=Eval;
+    type T=GameState;
+    type Mo=moves::ActualMove;
+    type Finder=std::vec::IntoIter<PossibleMove>;
+
+    fn eval(&mut self, game: &Self::T) -> Self::EE {
+        absolute_evaluate(game)
+    }
+
+    fn min_eval(&self) -> Self::EE {
+        Eval::MIN
+    }
+
+    fn max_eval(&self) -> Self::EE {
+        Eval::MAX
+    }
+
+    fn apply_move(&mut self, game: &mut Self::T, a: Self::Mo) {
+        let mut mm = MoveLog::new();
+
+
+    }
+
+    fn generate_finder(&mut self, state: &Self::T, path: &[Self::Mo],maximizer:bool) -> Self::Finder {
+
+        let team=if maximizer{
+            ActiveTeam::Cats
+        }else{
+            ActiveTeam::Dogs
+        };
+
+        let k:Vec<_>=for_all_moves(state.clone(),team).collect();
+        k.into_iter()
+    }
+
+    fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo> {
+        finder.next().map(|x|x.the_move)
+    }
+}
 mod abab_simple {
 
     pub trait MoveFinder {
@@ -500,13 +529,16 @@ mod abab_simple {
 
         fn apply_move(&mut self, game: &mut Self::T, a: Self::Mo);
 
-        fn generate_finder(&mut self, state: &Self::T, path: &[Self::Mo]) -> Self::Finder;
+        fn generate_finder(&mut self, state: &Self::T, path: &[Self::Mo],maximizer:bool) -> Self::Finder;
         fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo>;
     }
 
+    pub fn alpha_beta<X:MoveFinder>(data:X,depth:usize,game_state:X::T,maximizer:bool)->(X::EE,Vec<X::Mo>){
+        ABAB::new(data).alpha_beta(depth,game_state,maximizer)
+    }
     use super::*;
     #[derive(Clone)]
-    pub struct ABAB<X, Y, Z> {
+    struct ABAB<X, Y, Z> {
         alpha: Z,
         beta: Z,
         data: X,
@@ -529,14 +561,14 @@ mod abab_simple {
             maximizer: bool,
         ) -> (X::EE, Vec<X::Mo>) {
             if depth == 0 {
-                return (self.data.eval(&game_state), vec![]);
+                (self.data.eval(&game_state), vec![])
             } else {
                 if maximizer {
                     let mut value = self.data.min_eval();
                     let mut ll = vec![];
                     let mut best_move = None;
 
-                    let mut gs = self.data.generate_finder(&game_state, &self.path);
+                    let mut gs = self.data.generate_finder(&game_state, &self.path,maximizer);
                     while let Some(mo) = self.data.select_move(&mut gs) {
                         let mut ga = game_state.clone();
                         self.data.apply_move(&mut ga, mo);
@@ -563,7 +595,7 @@ mod abab_simple {
                     let mut ll = vec![];
                     let mut best_move = None;
 
-                    let mut gs = self.data.generate_finder(&game_state, &self.path);
+                    let mut gs = self.data.generate_finder(&game_state, &self.path,maximizer);
                     while let Some(mo) = self.data.select_move(&mut gs) {
                         let mut ga = game_state.clone();
                         self.data.apply_move(&mut ga, mo);
@@ -711,7 +743,7 @@ pub fn execute_move_no_ani(
         moves::ActualMove::NormalMove(o) => {
             let unit = game.this_team.find_slow(&o.unit).unwrap();
 
-            let mesh = selection::generate_unit_possible_moves_inner(unit, &game, None);
+            let mesh = selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
 
             let r = selection::RegularSelection::new(unit);
             let r = r
@@ -722,7 +754,7 @@ pub fn execute_move_no_ani(
         moves::ActualMove::ExtraMove(o, e) => {
             let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
-            let mesh = selection::generate_unit_possible_moves_inner(&unit, &game, None);
+            let mesh = selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
 
             let r = selection::RegularSelection::new(&unit);
             let r = r
@@ -778,13 +810,26 @@ pub fn for_all_moves_v2(state: GameState, team: ActiveTeam) -> impl Iterator<Ite
 //     })
 // }
 
-pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
-    // let foo = PossibleMove {
-    //     the_move: moves::ActualMove::SkipTurn,
-    //     game_after_move: state.clone(),
-    //     //mesh: MovementMesh::new(),
-    // };
 
+// pub fn for_all_moves2(state:GameState,team:ActiveTeam){
+//     state.view(team).this_team.units.iter().map(|a| RegularSelection { unit: a.clone() })
+//     .flat_map(move |a| {
+//         let mesh = a.generate(&sss.view_mut(team));
+//         mesh.iter_mesh(a.unit.position)
+//             .map(move |f| (a.clone(), mesh.clone(), f))
+//     })
+
+// }
+
+pub struct OneMove{
+    start:GridCoord,
+    end:GridCoord,
+    hex:HexDir
+}
+
+
+pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
+    
     let mut sss = state.clone();
     let ss = state.clone();
     ss.into_view(team)

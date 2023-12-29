@@ -1,3 +1,5 @@
+use duckduckgeo::dists::grid::Grid;
+
 use crate::movement::{
     movement_mesh::{SwingMove, SwingMoveRay},
     ComputeMovesRes, HexDir, MovementMesh,
@@ -57,7 +59,7 @@ impl ComboContinueSelection {
         //     None
         // };
 
-        generate_unit_possible_moves_inner(&self.unit, game, Some(self.extra.prev_move.unit))
+        generate_unit_possible_moves_inner(&self.unit.position, game, Some(self.extra.prev_move.unit))
     }
     pub async fn execute(
         &self,
@@ -211,7 +213,7 @@ impl RegularSelection {
     //     Ok(p)
     // }
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        generate_unit_possible_moves_inner(&self.unit, game, None)
+        generate_unit_possible_moves_inner(&self.unit.position, game, None)
     }
 
     pub async fn execute(
@@ -770,265 +772,16 @@ pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter, Rese
 };
 
 pub fn generate_unit_possible_moves_inner(
-    unit: &UnitData,
+    unit: &GridCoord,
     game: &GameViewMut,
     extra_attack_prev_coord: Option<GridCoord>,
 ) -> movement::MovementMesh {
+    let unit=*unit;
     let mut mesh = movement::MovementMesh::new(vec![]);
-
-    // if let Type::Warrior { doop } = unit.typ {
-    //     if let Some(doop) = doop {
-    //         let a = game.this_team.find_slow(&doop).unwrap();
-
-    //         let relative_anchor_point = a.position.sub(&unit.position);
-    //         //let relative_anchor_point = unit.position.sub(&a.position);
-    //         let distance = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
-    //         //console_dbg!("distance to spotter=", d, relative_anchor_point);
-    //         //if distance == 2 {
-    //         {
-    //             for i in 0..2 {
-    //                 let mut num_steps = 0;
-    //                 let mut last_move_enemy = false;
-
-    //                 let s = SwingMove {
-    //                     relative_anchor_point,
-    //                     radius: distance,
-    //                     clockwise: i == 0,
-    //                 };
-    //                 let ii1 = if i == 0 {
-    //                     Some(s.iter_left(GridCoord([0; 2])))
-    //                 } else {
-    //                     None
-    //                 };
-
-    //                 let ii2 = if i == 1 {
-    //                     Some(s.iter_right(GridCoord([0; 2])))
-    //                 } else {
-    //                     None
-    //                 };
-
-    //                 let ii = ii1.into_iter().flatten().chain(ii2.into_iter().flatten());
-
-    //                 'inner: for (i, (_, rel_coord)) in ii.enumerate() {
-    //                     num_steps = i;
-
-    //                     if last_move_enemy {
-    //                         break 'inner;
-    //                     }
-    //                     let abs_coord = unit.position.add(rel_coord);
-
-    //                     let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
-    //                     let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
-    //                     let is_self = abs_coord == unit.position;
-    //                     let is_world_cell = game.world.filter().filter(&abs_coord).to_bool();
-
-    //                     if (friendly_exist && !is_self) || !is_world_cell {
-    //                         break 'inner;
-    //                     }
-
-    //                     //mesh.add_swing_cell(rel_coord);
-    //                     if enemy_exist {
-    //                         last_move_enemy = true;
-    //                         //num_steps += 1;
-
-    //                         //break;
-    //                     }
-    //                 }
-    //                 let ss = SwingMoveRay {
-    //                     swing: s,
-    //                     num_steps,
-    //                 };
-
-    //                 mesh.add_swing_move(ss);
-    //             }
-    //             //console_dbg!(num_steps);
-    //         }
-
-    //         //mesh.add_normal_cell(doop.sub(&unit.position), false);
-
-    //         for a in game.this_team.units.iter() {
-    //             if let Type::Spotter { .. } = a.typ {
-    //                 if a.position != doop {
-    //                     if a.position.to_cube().dist(&unit.position.to_cube()) == 1 {
-    //                         mesh.add_far_away_cell(a.position.sub(&unit.position));
-    //                     }
-    //                 } else {
-    //                     mesh.add_far_away_cell(a.position.sub(&unit.position));
-    //                 }
-    //             }
-    //         }
-    //     } else {
-    //         for a in game.this_team.units.iter() {
-    //             if let Type::Spotter { .. } = a.typ {
-    //                 if a.position.to_cube().dist(&unit.position.to_cube()) == 1 {
-    //                     mesh.add_far_away_cell(a.position.sub(&unit.position));
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    //let mut mesh = movement::MovementMesh::new(vec![]);
-
-    // if let Type::Warrior { doop } = unit.typ {
-    //     game.this_team
-    //         .units
-    //         .iter()
-    //         //.filter(|a| a.typ == Type::Spotter)
-    //         .for_each(|a| {
-    //             if let Type::Spotter { clockwise } = a.typ {
-    //                 let relative_anchor_point = a.position.sub(&unit.position);
-    //                 //let relative_anchor_point = unit.position.sub(&a.position);
-    //                 let d = relative_anchor_point.to_cube().dist(&hex::Cube::new(0, 0));
-    //                 //console_dbg!("distance to spotter=", d, relative_anchor_point);
-    //                 if d == 2 {
-    //                     for i in 0..2 {
-    //                         let mut num_steps = 0;
-    //                         let mut last_move_enemy = false;
-
-    //                         let s = SwingMove {
-    //                             relative_anchor_point,
-    //                             radius: 2,
-    //                             clockwise: i == 0,
-    //                         };
-    //                         let ii1 = if i == 0 {
-    //                             Some(s.iter_left(GridCoord([0; 2])))
-    //                         } else {
-    //                             None
-    //                         };
-
-    //                         let ii2 = if i == 1 {
-    //                             Some(s.iter_right(GridCoord([0; 2])))
-    //                         } else {
-    //                             None
-    //                         };
-
-    //                         let ii = ii1.into_iter().flatten().chain(ii2.into_iter().flatten());
-
-    //                         'inner: for (i, (_, rel_coord)) in ii.enumerate() {
-    //                             num_steps = i;
-
-    //                             if last_move_enemy {
-    //                                 break 'inner;
-    //                             }
-    //                             let abs_coord = unit.position.add(rel_coord);
-
-    //                             let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
-    //                             let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
-    //                             let is_self = abs_coord == unit.position;
-    //                             let is_world_cell =
-    //                                 game.world.filter().filter(&abs_coord).to_bool();
-
-    //                             if (friendly_exist && !is_self) || !is_world_cell {
-    //                                 break 'inner;
-    //                             }
-
-    //                             //mesh.add_swing_cell(rel_coord);
-    //                             if enemy_exist {
-    //                                 last_move_enemy = true;
-    //                                 //num_steps += 1;
-
-    //                                 //break;
-    //                             }
-    //                         }
-    //                         let ss = SwingMoveRay {
-    //                             swing: s,
-    //                             num_steps,
-    //                         };
-
-    //                         mesh.add_swing_move(ss);
-    //                     }
-    //                     //console_dbg!(num_steps);
-    //                 }
-    //             }
-    //         });
-    // }
-
-    // let steering = match unit.typ {
-    //     Type::Warrior { .. } => WARRIOR_STEERING.iter(),
-    //     Type::King => WARRIOR_STEERING_ATTACKABLE.iter(),
-    //     Type::Archer => ARCHER_STEERING.iter(),
-    //     Type::Catapault => CATAPAULT_STEERING.iter(),
-    //     Type::Lancer => LANCER_STEERING.iter(),
-    //     Type::Spotter { clockwise } => {
-    //         if game
-    //             .this_team
-    //             .units
-    //             .iter()
-    //             .find(|a| {
-    //                 if let Type::Warrior { doop } = a.typ {
-    //                     if let Some(doop) = doop {
-    //                         if doop == unit.position {
-    //                             true
-    //                         } else {
-    //                             false
-    //                         }
-    //                     } else {
-    //                         false
-    //                     }
-    //                 } else {
-    //                     false
-    //                 }
-    //             })
-    //             .is_some()
-    //         {
-    //             [].iter()
-    //         } else {
-    //             WARRIOR_STEERING.iter()
-    //         }
-    //     }
-    // };
-
-    // let k = unit.direction;
-
-    // let m = steering.map(|a| (a.0.to_cube().rotate(k), a.1, a.2, a.3, a.4));
-
-    // let mut skip = false;
-
-    // for (rel_coord, _, attack, stop_iter, reset_iter) in m {
-    //     if let ResetIter::Yes = reset_iter {
-    //         skip = false;
-    //     }
-
-    //     if skip {
-    //         continue;
-    //     }
-    //     let abs_coord = unit.position.add(rel_coord.to_axial());
-
-    //     let enemy_exist = game.that_team.find_slow(&abs_coord).is_some();
-    //     let friendly_exist = game.this_team.find_slow(&abs_coord).is_some();
-
-    //     let is_world_cell = game.world.filter().filter(&abs_coord).to_bool();
-    //     //let f2 = game.this_team.filter().filter(&abs_coord).to_bool();
-
-    //     let attackable = if let Attackable::Yes = attack {
-    //         true
-    //     } else {
-    //         false
-    //     };
-
-    //     let move_ok = if enemy_exist { attackable } else { true };
-
-    //     if move_ok && !friendly_exist && is_world_cell {
-    //         mesh.add_normal_cell(rel_coord.to_axial(), attackable);
-
-    //         if enemy_exist {
-    //             if let StopsIter::Yes = stop_iter {
-    //                 skip = true;
-    //                 //break;
-    //             }
-    //         }
-    //     } else {
-    //         if let StopsIter::Yes = stop_iter {
-    //             skip = true;
-    //             //break;
-    //         }
-    //     }
-    // }
 
     let cond = |a: GridCoord| {
         let is_world_cell = game.world.filter().filter(&a).to_bool();
-        a != unit.position && is_world_cell && game.land.iter().find(|&&b| a == b).is_none()
+        a != unit && is_world_cell && game.land.iter().find(|&&b| a == b).is_none()
         //&& game.this_team.find_slow(&a).is_none()
         //&& game.that_team.find_slow(&a).is_none()
     };
@@ -1036,20 +789,22 @@ pub fn generate_unit_possible_moves_inner(
         game.this_team.find_slow(&a).is_none() && game.that_team.find_slow(&a).is_none()
     };
 
-    //TODO don't do this most of the time. ai doesnt care
-    for a in unit.position.to_cube().range(2) {
+    //TODO don't do this most of the time. ai doesnt care. used just for animation
+    for a in unit.to_cube().range(2) {
         let a = a.to_axial();
 
         if game.land.iter().find(|&&b| a == b).is_some() {
-            mesh.add_wall(a.sub(&unit.position));
+            mesh.add_wall(a.sub(&unit));
         }
     }
-    for (_, a) in unit.position.to_cube().ring(1) {
+
+
+    for (_, a) in unit.to_cube().ring(1) {
         let a = a.to_axial();
 
         if cond(a) {
             if cond2(a) {
-                mesh.add_normal_cell(a.sub(&unit.position), false);
+                mesh.add_normal_cell(a.sub(&unit), false);
             }
             if extra_attack_prev_coord.is_none() {
                 for (_, b) in a.to_cube().ring(1) {
@@ -1057,7 +812,7 @@ pub fn generate_unit_possible_moves_inner(
                     //TODO inefficient
                     if cond(b) {
                         if cond2(b) {
-                            mesh.add_normal_cell(b.sub(&unit.position), false);
+                            mesh.add_normal_cell(b.sub(&unit), false);
                         }
                     }
                 }
