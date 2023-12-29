@@ -156,7 +156,7 @@ impl Doopa2 {
     }
 }
 
-use crate::movement::MovementMesh;
+use crate::movement::{movement_mesh::Mesh, MovementMesh};
 
 pub enum ExtraMove<T> {
     ExtraMove { unit: T },
@@ -261,11 +261,20 @@ mod inner_partial {
                 let initial_pops=this_unit.position;
 
                 //TODO inefficient?
-                let last_dir=mesh.path(end.sub(&initial_pops)).last().unwrap();
+                //let last_dir=mesh.path(end.sub(&initial_pops)).last().unwrap();
+
+                let mut walls=Mesh::new();
+                for a in this_unit.position.to_cube().range(2) {
+                    let a = a.to_axial();
+
+                    if game_view.land.iter().find(|&&b| a == b).is_some() {
+                        walls.add(a.sub(&this_unit.position));
+                    }
+                }
 
                 let team=game_view.team;
                 let _ = doopa
-                    .wait_animation(Movement::new(this_unit.clone(),mesh,end), team)
+                    .wait_animation(Movement::new(this_unit.clone(),mesh,walls,end), team)
                     $($_await)*;
 
                 //this_unit.position= path.get_end_coord(this_unit.position);
@@ -303,7 +312,7 @@ mod inner_partial {
                 //console_dbg!("foo",initial_pops,this_unit.position);
 
 
-                this_unit.direction=last_dir;
+                //this_unit.direction=last_dir;
 
 
                 // if this_unit.position.to_cube().dist(&initial_pops.to_cube())==1{
@@ -724,22 +733,28 @@ trait UnwrapMe {
 struct Movement {
     start: UnitData,
     mesh: MovementMesh,
+    walls: Mesh,
     end: GridCoord,
 }
 impl Movement {
-    pub fn new(start: UnitData, mesh: MovementMesh, end: GridCoord) -> Self {
-        Movement { start, mesh, end }
+    pub fn new(start: UnitData, mesh: MovementMesh, walls: Mesh, end: GridCoord) -> Self {
+        Movement {
+            start,
+            mesh,
+            walls,
+            end,
+        }
     }
 }
 impl UnwrapMe for Movement {
     type Item = UnitData;
 
     fn direct_unwrap(mut self) -> Self::Item {
-        let last_dir = self
-            .mesh
-            .path(self.end.sub(&self.start.position))
-            .last()
-            .unwrap();
+        // let last_dir = self
+        //     .mesh
+        //     .path(self.end.sub(&self.start.position))
+        //     .last()
+        //     .unwrap();
 
         //TODO is this right????
         self.start.position = self.end;
@@ -749,6 +764,7 @@ impl UnwrapMe for Movement {
         animation::AnimationCommand::Movement {
             unit: self.start,
             mesh: self.mesh,
+            walls: self.walls,
             end: self.end,
         }
     }

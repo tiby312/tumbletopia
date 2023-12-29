@@ -49,6 +49,7 @@ pub enum AnimationCommand {
     Movement {
         unit: UnitData,
         mesh: movement::MovementMesh,
+        walls: movement::movement_mesh::Mesh,
         end: GridCoord,
     },
     Attack {
@@ -60,13 +61,14 @@ pub enum AnimationCommand {
 pub fn movement(
     start: GridCoord,
     path: movement::MovementMesh,
+    walls: movement::movement_mesh::Mesh,
     end: GridCoord,
     v: &grids::GridMatrix,
 ) -> impl Iterator<Item = Vector2<f32>> {
     let v = v.clone();
     let mut counter = v.hex_axial_to_world(&start);
     let mut cc = start;
-    path.path(end.sub(&start)).flat_map(move |m| {
+    path.path(end.sub(&start), &walls).flat_map(move |m| {
         let a = m.to_relative();
         cc.0[0] += a.0[0];
         cc.0[1] += a.0[1];

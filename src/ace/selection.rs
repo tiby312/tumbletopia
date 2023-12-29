@@ -625,13 +625,6 @@ pub fn generate_unit_possible_moves_inner(
     };
 
     //TODO don't do this most of the time. ai doesnt care. used just for animation
-    for a in unit.to_cube().range(2) {
-        let a = a.to_axial();
-
-        if game.land.iter().find(|&&b| a == b).is_some() {
-            mesh.add_wall(a.sub(&unit));
-        }
-    }
 
     for (_, a) in unit.to_cube().ring(1) {
         let a = a.to_axial();

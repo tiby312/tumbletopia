@@ -75,8 +75,13 @@ impl Command {
         use Command::*;
         match self {
             Animate(a) => match a.clone() {
-                AnimationCommand::Movement { unit, mesh, end } => {
-                    let it = animation::movement(unit.position, mesh, end, grid);
+                AnimationCommand::Movement {
+                    unit,
+                    mesh,
+                    walls,
+                    end,
+                } => {
+                    let it = animation::movement(unit.position, mesh, walls, end, grid);
                     //let aa = AnimationOptions::Movement(unit);
                     let aa = animation::Animation::new(it, a);
                     ProcessedCommand::Animate(aa)
