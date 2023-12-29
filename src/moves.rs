@@ -304,9 +304,6 @@ mod inner_partial {
                 };
 
                 let offset=end.sub(&start);
-                let k = this_unit.direction;
-
-                let f=offset.to_cube().rotate(k);
 
 
                 //console_dbg!("foo",initial_pops,this_unit.position);

@@ -85,7 +85,7 @@ impl<'a> WarriorDraw<'a> {
 
             let m = matrix
                 .chain(t)
-                .chain(rotate_by_dir(cc.direction, gg.spacing()))
+                //.chain(rotate_by_dir(cc.direction, gg.spacing()))
                 .generate();
             let mut v = draw_sys.view(m.as_ref());
 
@@ -367,16 +367,8 @@ pub async fn worker_entry() {
         // ),
         //UnitData::new(GridCoord([-2, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Archer, HexDir { dir: 5 }),
-        UnitData::new(
-            GridCoord([-3, 1]),
-            Type::Warrior { doop: None },
-            HexDir { dir: 5 }
-        ),
-        UnitData::new(
-            GridCoord([-1, 3]),
-            Type::Warrior { doop: None },
-            HexDir { dir: 5 }
-        ),
+        UnitData::new(GridCoord([-3, 1]), Type::Warrior { doop: None }),
+        UnitData::new(GridCoord([-1, 3]), Type::Warrior { doop: None }),
     ];
 
     //player
@@ -392,16 +384,8 @@ pub async fn worker_entry() {
         //     Type::Spotter { clockwise: false },
         //     HexDir { dir: 2 }
         // ),
-        UnitData::new(
-            GridCoord([1, -3]),
-            Type::Warrior { doop: None },
-            HexDir { dir: 2 }
-        ),
-        UnitData::new(
-            GridCoord([1, -4]),
-            Type::Warrior { doop: None },
-            HexDir { dir: 2 }
-        ),
+        UnitData::new(GridCoord([1, -3]), Type::Warrior { doop: None }),
+        UnitData::new(GridCoord([1, -4]), Type::Warrior { doop: None }),
         // UnitData::new(GridCoord([1, -2]), Type::Rook, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -3]), Type::Rook, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -3]), Type::Warrior, HexDir { dir: 2 }),

@@ -6,16 +6,11 @@ use super::*;
 pub struct UnitData {
     pub position: GridCoord,
     pub typ: Type,
-    pub direction: movement::HexDir,
 }
 
 impl UnitData {
-    pub fn new(position: GridCoord, typ: Type, direction: movement::HexDir) -> Self {
-        UnitData {
-            position,
-            typ,
-            direction,
-        }
+    pub fn new(position: GridCoord, typ: Type) -> Self {
+        UnitData { position, typ }
     }
 }
 

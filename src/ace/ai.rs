@@ -547,9 +547,9 @@ impl abab_simple::MoveFinder for MyMoveFinder {
         } else {
             ActiveTeam::Dogs
         };
-
-        let k: Vec<_> = for_all_moves(state.clone(), team).collect();
-        k.into_iter()
+        todo!();
+        //let k: Vec<_> = for_all_moves(state.clone(), team).collect();
+        //k.into_iter()
     }
 
     fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo> {
@@ -835,52 +835,6 @@ pub fn execute_move_no_ani(
     }
 }
 
-pub struct PartialMove {
-    pos: GridCoord,
-    moveto: GridCoord,
-}
-pub fn for_all_moves_v2(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PartialMove> {
-    let mut sss = state.clone();
-    state
-        .clone()
-        .into_view(team)
-        .this_team
-        .units
-        .into_iter()
-        .map(|a| RegularSelection { unit: a.clone() })
-        .flat_map(move |a| {
-            let mesh = a.generate(&sss.view_mut(team));
-            mesh.iter_mesh(a.unit.position).map(move |f| PartialMove {
-                pos: a.unit.position,
-                moveto: f,
-            })
-        })
-}
-
-//TODO use this
-// pub fn for_all_moves_v3(game:&GameState,team:ActiveTeam) -> impl Iterator<Item = RegularSelection2>+'_ {
-//     game.view(team).this_team.units.iter().map(move |a|RegularSelection2{
-//         unit:a,
-//         mesh:generate_unit_possible_moves_inner3(a, game)
-//     })
-// }
-
-// pub fn for_all_moves2(state:GameState,team:ActiveTeam){
-//     state.view(team).this_team.units.iter().map(|a| RegularSelection { unit: a.clone() })
-//     .flat_map(move |a| {
-//         let mesh = a.generate(&sss.view_mut(team));
-//         mesh.iter_mesh(a.unit.position)
-//             .map(move |f| (a.clone(), mesh.clone(), f))
-//     })
-
-// }
-
-pub struct OneMove {
-    start: GridCoord,
-    end: GridCoord,
-    hex: HexDir,
-}
-
 pub fn apply_move(mo: moves::ActualMove, state: &mut GameState, team: ActiveTeam) {
     let moves::ActualMove::ExtraMove(
         moves::PartialMoveSigl {
@@ -942,65 +896,65 @@ pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<moves::
     movs
 }
 
-pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
-    let mut sss = state.clone();
-    let ss = state.clone();
-    ss.into_view(team)
-        .this_team
-        .units
-        .into_iter()
-        .map(|a| RegularSelection { unit: a.clone() })
-        .flat_map(move |a| {
-            let mesh = a.generate(&sss.view_mut(team));
-            mesh.iter_mesh(a.unit.position)
-                .map(move |f| (a.clone(), mesh.clone(), f))
-        })
-        .flat_map(move |(s, mesh, m)| {
-            let mut v = state.clone();
-            let mut mm = MoveLog::new();
+// pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
+//     let mut sss = state.clone();
+//     let ss = state.clone();
+//     ss.into_view(team)
+//         .this_team
+//         .units
+//         .into_iter()
+//         .map(|a| RegularSelection { unit: a.clone() })
+//         .flat_map(move |a| {
+//             let mesh = a.generate(&sss.view_mut(team));
+//             mesh.iter_mesh(a.unit.position)
+//                 .map(move |f| (a.clone(), mesh.clone(), f))
+//         })
+//         .flat_map(move |(s, mesh, m)| {
+//             let mut v = state.clone();
+//             let mut mm = MoveLog::new();
 
-            let first = if let Some(l) = s
-                .execute_no_animation(m, mesh, &mut v.view_mut(team), &mut mm)
-                .unwrap()
-            {
-                //console_dbg!("YOOOOOOO");
-                let cll = l.select();
+//             let first = if let Some(l) = s
+//                 .execute_no_animation(m, mesh, &mut v.view_mut(team), &mut mm)
+//                 .unwrap()
+//             {
+//                 //console_dbg!("YOOOOOOO");
+//                 let cll = l.select();
 
-                //let mut kk = v.view().duplicate();
-                let mut kk = v.clone();
-                let mesh2 = cll.generate(&mut kk.view_mut(team));
-                Some(mesh2.iter_mesh(l.coord()).map(move |m| {
-                    let mut klkl = kk.clone();
-                    let mut mm2 = MoveLog::new();
+//                 //let mut kk = v.view().duplicate();
+//                 let mut kk = v.clone();
+//                 let mesh2 = cll.generate(&mut kk.view_mut(team));
+//                 Some(mesh2.iter_mesh(l.coord()).map(move |m| {
+//                     let mut klkl = kk.clone();
+//                     let mut mm2 = MoveLog::new();
 
-                    let mut vfv = klkl.view_mut(team);
-                    cll.execute_no_animation(m, mesh2.clone(), &mut vfv, &mut mm2)
-                        .unwrap();
+//                     let mut vfv = klkl.view_mut(team);
+//                     cll.execute_no_animation(m, mesh2.clone(), &mut vfv, &mut mm2)
+//                         .unwrap();
 
-                    PossibleMove {
-                        game_after_move: klkl,
-                        //mesh: mesh2,
-                        the_move: mm2.inner[0].clone(),
-                    }
-                }))
-            } else {
-                None
-            };
+//                     PossibleMove {
+//                         game_after_move: klkl,
+//                         //mesh: mesh2,
+//                         the_move: mm2.inner[0].clone(),
+//                     }
+//                 }))
+//             } else {
+//                 None
+//             };
 
-            let second = if first.is_none() {
-                //console_dbg!("NEVER HAPPEN");
-                Some([PossibleMove {
-                    game_after_move: v,
-                    //mesh,
-                    the_move: mm.inner[0].clone(),
-                }])
-            } else {
-                None
-            };
+//             let second = if first.is_none() {
+//                 //console_dbg!("NEVER HAPPEN");
+//                 Some([PossibleMove {
+//                     game_after_move: v,
+//                     //mesh,
+//                     the_move: mm.inner[0].clone(),
+//                 }])
+//             } else {
+//                 None
+//             };
 
-            let f1 = first.into_iter().flatten();
-            let f2 = second.into_iter().flatten();
-            f1.chain(f2)
-        })
-    //.chain([foo].into_iter())
-}
+//             let f1 = first.into_iter().flatten();
+//             let f2 = second.into_iter().flatten();
+//             f1.chain(f2)
+//         })
+//     //.chain([foo].into_iter())
+// }
