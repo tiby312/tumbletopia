@@ -12,6 +12,69 @@ pub type Eval = i64; //(f64);
 const MATE: i64 = 1_000_000;
 
 const MAX_LIBERTY_DEPTH: usize = 5;
+
+fn find_a_dog(
+    a: GridCoord,
+    game: &GameState,
+    visited: &mut Vec<GridCoord>,
+    depth: usize,
+) -> Option<GridCoord> {
+    if depth > 10 {
+        return None;
+    }
+
+    if !game.world.filter().filter(&a).to_bool() {
+        return None;
+    }
+
+    if visited.contains(&a) {
+        return None;
+    }
+
+    if game.land.contains(&a) {
+        return None;
+    }
+
+    if let Some(g) = game.dogs.units.iter().find(|c| c.position == a) {
+        return Some(g.position);
+    }
+
+    visited.push(a);
+
+    for (_, b) in a.to_cube().ring(1) {
+        let b = b.to_axial();
+
+        if let Some(g) = find_a_dog(b, game, visited, depth + 1) {
+            return Some(g);
+        }
+    }
+
+    return None;
+}
+
+fn find_isolated(game: &GameState) -> (Vec<GridCoord>, Vec<GridCoord>) {
+    let mut dogs: Vec<_> = game.dogs.units.iter().map(|a| a.position).collect();
+
+    let cats: Vec<_> = game
+        .cats
+        .units
+        .iter()
+        .map(|a| a.position)
+        .filter(|cat| {
+            let mut v = vec![];
+            if let Some(dog) = find_a_dog(*cat, game, &mut v, 0) {
+                dogs.retain(|a| *a != dog);
+
+                false
+            } else {
+                true
+            }
+        })
+        .collect();
+
+    (cats, dogs)
+}
+
 //number of nearby liberties
 fn num_liberties(
     a: GridCoord,
@@ -53,8 +116,8 @@ fn num_liberties(
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
-    let cat_liberties = {
-        let mut t = 0;
+    let cat_liberty_deficit = {
+        let mut t: i64 = 0;
         for aa in view.cats.units.iter() {
             let mut v = vec![];
             let mut liberties = vec![];
@@ -67,14 +130,14 @@ fn absolute_evaluate(view: &GameState) -> Eval {
                 0,
                 &mut depth_counter,
             );
-            t += depth_counter;
+            t += depth_counter as i64 - MAX_LIBERTY_DEPTH as i64;
         }
         //liberties.len() as i64
-        t as i64
+        t
     };
 
-    let dog_liberties = {
-        let mut t = 0;
+    let dog_liberty_deficit = {
+        let mut t: i64 = 0;
 
         for aa in view.dogs.units.iter() {
             let mut v = vec![];
@@ -89,7 +152,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
                 0,
                 &mut depth_counter,
             );
-            t += depth_counter;
+            t += depth_counter as i64 - MAX_LIBERTY_DEPTH as i64;
         }
         //liberties.len() as i64
         t as i64
@@ -127,7 +190,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     }
 
     //}
-    //console_dbg!(cat_liberties,dog_liberties);
+    //console_dbg!(cat_liberty_deficit,dog_liberty_deficit);
     //console_dbg!(points);
     // for a in view.dogs.units.iter() {
     //     points -= count_spread(a.position, view) as i64;
@@ -137,16 +200,16 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     //     points += count_spread(a.position, view) as i64;
     // }
 
-    if cat_liberties == 0 {
-        return -MATE;
-    } else if dog_liberties == 0 {
-        return MATE;
-    }
+    // if cat_liberty_deficit == 0 {
+    //     return -MATE;
+    // } else if dog_liberties == 0 {
+    //     return MATE;
+    // }
 
     //max cat and dog liberties is 5+5  * 5+5 =  100
     //care about posititioning only when we are not in danger of being
     //surrounded and there are not opportunities to surround.
-    (points * cat_liberties * dog_liberties) / 200 + cat_liberties - dog_liberties
+    points + cat_liberty_deficit * 50 - dog_liberty_deficit * 50
 }
 
 // fn count_spread(position: GridCoord, game: &GameState) -> usize {
