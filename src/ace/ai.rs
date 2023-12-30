@@ -113,6 +113,69 @@ fn num_liberties(
     }
 }
 
+enum ClosestRet {
+    Cat,
+    Dog,
+    None,
+}
+fn is_closest_cat_or_dog(
+    point: GridCoord,
+    visited: &mut Vec<GridCoord>,
+    game: &GameState,
+    depth: usize,
+) -> ClosestRet {
+    if depth > 30 {
+        return ClosestRet::None;
+    }
+
+    if !game.world.filter().filter(&point).to_bool() {
+        return ClosestRet::None;
+    }
+
+    if visited.contains(&point) {
+        return ClosestRet::None;
+    }
+
+    if game.land.contains(&point) {
+        return ClosestRet::None;
+    }
+
+    let k = game.dogs.units.iter().find(|a| a.position == point);
+    let j = game.cats.units.iter().find(|a| a.position == point);
+
+    visited.push(point);
+
+    match (k, j) {
+        (Some(_), Some(_)) => return ClosestRet::None,
+        (Some(_), None) => return ClosestRet::Dog,
+        (None, Some(_)) => return ClosestRet::Cat,
+        (None, None) => {}
+    }
+
+    //find closest unit.
+
+    let target = game
+        .dogs
+        .units
+        .iter()
+        .chain(game.cats.units.iter())
+        .min_by_key(|x| x.position.to_cube().dist(&point.to_cube()))
+        .unwrap();
+
+    //TODO look at these in a better order.
+    let mut children: Vec<_> = point.to_cube().ring(1).map(|(_, b)| b.to_axial()).collect();
+    children.sort_unstable_by_key(|a| a.to_cube().dist(&target.position.to_cube()));
+
+    for b in children {
+        match is_closest_cat_or_dog(b, visited, game, depth + 1) {
+            ClosestRet::Dog => return ClosestRet::Dog,
+            ClosestRet::Cat => return ClosestRet::Cat,
+            ClosestRet::None => {}
+        }
+    }
+    ClosestRet::None
+}
+
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
@@ -168,25 +231,36 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .map(|x| x.to_axial())
         .filter(|x| !view.land.contains(x))
     {
-        let closest_cat = view
-            .cats
-            .units
-            .iter()
-            .map(|x| x.position.to_cube().dist(&a.to_cube()))
-            .min()
-            .unwrap();
-        let closest_dog = view
-            .dogs
-            .units
-            .iter()
-            .map(|x| x.position.to_cube().dist(&a.to_cube()))
-            .min()
-            .unwrap();
-        if closest_cat < closest_dog {
-            points += 1;
-        } else if closest_cat > closest_dog {
-            points -= 1;
+        let mut visited = vec![];
+        match is_closest_cat_or_dog(a, &mut visited, view, 0) {
+            ClosestRet::Cat => {
+                points += 1;
+            }
+            ClosestRet::Dog => {
+                points -= 1;
+            }
+            _ => {}
         }
+
+        // let closest_cat = view
+        //     .cats
+        //     .units
+        //     .iter()
+        //     .map(|x| x.position.to_cube().dist(&a.to_cube()))
+        //     .min()
+        //     .unwrap();
+        // let closest_dog = view
+        //     .dogs
+        //     .units
+        //     .iter()
+        //     .map(|x| x.position.to_cube().dist(&a.to_cube()))
+        //     .min()
+        //     .unwrap();
+        // if closest_cat < closest_dog {
+        //     points += 1;
+        // } else if closest_cat > closest_dog {
+        //     points -= 1;
+        // }
     }
 
     //}
