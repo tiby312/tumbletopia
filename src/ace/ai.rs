@@ -118,11 +118,13 @@ enum ClosestRet {
     Dog,
     None,
 }
+
 fn is_closest_cat_or_dog(
     point: GridCoord,
     visited: &mut Vec<GridCoord>,
     game: &GameState,
     depth: usize,
+    is_land: bool,
 ) -> ClosestRet {
     if depth > 10 {
         return ClosestRet::None;
@@ -136,12 +138,49 @@ fn is_closest_cat_or_dog(
         return ClosestRet::None;
     }
 
-    if game.land.contains(&point) {
-        return ClosestRet::None;
+    if is_land {
+        if !game.land.contains(&point) {
+            return ClosestRet::None;
+        }
+
+        if game.forest.contains(&point) {
+            return ClosestRet::None;
+        }
+    } else {
+        if game.land.contains(&point) {
+            return ClosestRet::None;
+        }
     }
 
-    let k = game.dogs.units.iter().find(|a| a.position == point);
-    let j = game.cats.units.iter().find(|a| a.position == point);
+    let (k, j) = if is_land {
+        let k = game
+            .dogs
+            .units
+            .iter()
+            .filter(|a| a.typ == Type::Foot)
+            .find(|a| a.position == point);
+        let j = game
+            .cats
+            .units
+            .iter()
+            .filter(|a| a.typ == Type::Foot)
+            .find(|a| a.position == point);
+        (k, j)
+    } else {
+        let k = game
+            .dogs
+            .units
+            .iter()
+            .filter(|a| a.typ == Type::Ship)
+            .find(|a| a.position == point);
+        let j = game
+            .cats
+            .units
+            .iter()
+            .filter(|a| a.typ == Type::Ship)
+            .find(|a| a.position == point);
+        (k, j)
+    };
 
     visited.push(point);
 
@@ -167,7 +206,7 @@ fn is_closest_cat_or_dog(
     children.sort_unstable_by_key(|a| a.to_cube().dist(&target.position.to_cube()));
 
     for b in children {
-        match is_closest_cat_or_dog(b, visited, game, depth + 1) {
+        match is_closest_cat_or_dog(b, visited, game, depth + 1, is_land) {
             ClosestRet::Dog => return ClosestRet::Dog,
             ClosestRet::Cat => return ClosestRet::Cat,
             ClosestRet::None => {}
@@ -232,7 +271,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .filter(|x| !view.land.contains(x))
     {
         let mut visited = vec![];
-        match is_closest_cat_or_dog(a, &mut visited, view, 0) {
+        match is_closest_cat_or_dog(a, &mut visited, view, 0, false) {
             ClosestRet::Cat => {
                 points += 1;
             }
@@ -241,26 +280,24 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             }
             _ => {}
         }
+    }
 
-        // let closest_cat = view
-        //     .cats
-        //     .units
-        //     .iter()
-        //     .map(|x| x.position.to_cube().dist(&a.to_cube()))
-        //     .min()
-        //     .unwrap();
-        // let closest_dog = view
-        //     .dogs
-        //     .units
-        //     .iter()
-        //     .map(|x| x.position.to_cube().dist(&a.to_cube()))
-        //     .min()
-        //     .unwrap();
-        // if closest_cat < closest_dog {
-        //     points += 1;
-        // } else if closest_cat > closest_dog {
-        //     points -= 1;
-        // }
+    for a in view
+        .world
+        .iter_cells()
+        .map(|x| x.to_axial())
+        .filter(|x| view.land.contains(x) && !view.forest.contains(x))
+    {
+        let mut visited = vec![];
+        match is_closest_cat_or_dog(a, &mut visited, view, 0, true) {
+            ClosestRet::Cat => {
+                points += 1;
+            }
+            ClosestRet::Dog => {
+                points -= 1;
+            }
+            _ => {}
+        }
     }
 
     //}
