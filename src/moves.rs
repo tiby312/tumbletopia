@@ -173,86 +173,6 @@ mod inner_partial {
                 let (start,mesh,end,doopa,game_view):(GridCoord,MovementMesh,_,_,&mut GameViewMut<'_,'_>)=$args;
 
 
-
-                let target_is_spotter=if let Some(o)=game_view.this_team.find_slow_mut(&end){
-                    if let Type::Spotter{..}=o.typ{
-
-                        // if o.position==end{
-
-                        //     let this_unit = game_view
-                        //     .this_team
-                        //     .find_slow_mut(&start)
-                        //     .unwrap();
-
-                        //     if let Type::Warrior{doop}=this_unit{
-                        //         if doop==
-                        //     }
-
-                        //     this_unit.typ=Type::Warrior{doop:None};
-                        //     return;
-                        // }
-                        true
-                    }else{
-                        false
-                    }
-                }else{
-                    false
-                };
-
-
-                let this_unit = game_view
-                .this_team
-                .find_slow_mut(&start)
-                .unwrap();
-
-
-            // if let Type::Warrior{doop}=this_unit.typ{
-            //     if let Some(doop)=doop{
-            //         if end==doop{
-            //             this_unit.typ=Type::Warrior{doop:None};
-            //             game_view.this_team.find_take(&doop).unwrap();
-            //             return;
-            //         }
-            //     }
-            // }
-
-
-                // if let Type::Warrior{doop}=this_unit.typ{
-                //     // if let Some(doop)=doop{
-                //     // }else{
-                //         if let Some(o)=game_view.this_team.find_slow_mut(&end){
-                //             if let Type::Spotter{..}=o.typ{
-                //                 let o_position=o.position;
-
-                //                 let this_unit = game_view
-                //                     .this_team
-                //                     .find_slow_mut(&start)
-                //                     .unwrap();
-                //                 //We selected the current anchor, deselect
-                //                 if let Some(doop)=doop{
-                //                     if o_position==doop{
-
-                //                         this_unit.typ=Type::Warrior{doop:None};
-                //                         return;
-                //                     }
-
-                //                 }
-                //                 this_unit.typ=Type::Warrior{doop:Some(end)};
-                //                 // game_view.this_team.units.push(UnitData::new(
-                //                 //     end,
-                //                 //     Type::Spotter { clockwise: true },
-                //                 //     HexDir { dir: 2 }
-                //                 // ));
-                //                 return;
-
-                //             }
-                //         }
-
-
-
-                //     // }
-                // }
-
                 let this_unit = game_view
                 .this_team
                 .find_slow_mut(&start)
@@ -264,10 +184,17 @@ mod inner_partial {
                 //let last_dir=mesh.path(end.sub(&initial_pops)).last().unwrap();
 
                 let mut walls=Mesh::new();
+
                 for a in this_unit.position.to_cube().range(2) {
                     let a = a.to_axial();
-
-                    if game_view.land.iter().find(|&&b| a == b).is_some() {
+                    //TODO this is duplicated logic in selection function???
+                    let cc=if this_unit.typ==Type::Ship{
+                        game_view.land.iter().find(|&&b| a == b).is_some()
+                    }else{
+                        game_view.land.iter().find(|&&b| a == b).is_none() ||
+                        game_view.forest.iter().find(|&&b| a == b).is_some()
+                    };
+                    if cc {
                         walls.add(a.sub(&this_unit.position));
                     }
                 }
@@ -442,7 +369,7 @@ mod partial_move {
     macro_rules! resolve_movement_impl {
         ($args:expr,$namey:ident, $($_await:tt)*) => {
             {
-                let (selected_unit,mesh,target_cell, doopa,mut game_view,mut func,is_extra):(GridCoord,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_,_)=$args;
+                let (selected_unit,typ,mesh,target_cell, doopa,mut game_view,mut func,is_extra):(GridCoord,Type,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_,_)=$args;
 
 
                 //let target_cell=path.get_end_coord(selected_unit);
@@ -466,7 +393,11 @@ mod partial_move {
                 }else{
                     let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
 
-                    game_view.land.push(target_cell);
+                    if typ==Type::Ship{
+                        game_view.land.push(target_cell);
+                    }else if typ==Type::Foot{
+                        game_view.forest.push(target_cell);
+                    }
                     (sigl,ExtraMove::FinishMoving)
                 }
 
@@ -478,15 +409,23 @@ mod partial_move {
     #[derive(Clone, Debug)]
     pub struct PartialMove {
         selected_unit: GridCoord,
+        typ: Type,
         mesh: MovementMesh,
         end: GridCoord,
         is_extra: bool,
     }
 
     impl PartialMove {
-        pub fn new(a: GridCoord, mesh: MovementMesh, end: GridCoord, is_extra: bool) -> Self {
+        pub fn new(
+            a: GridCoord,
+            typ: Type,
+            mesh: MovementMesh,
+            end: GridCoord,
+            is_extra: bool,
+        ) -> Self {
             PartialMove {
                 selected_unit: a,
+                typ,
                 mesh,
                 end,
                 is_extra,
@@ -502,6 +441,7 @@ mod partial_move {
             resolve_movement_impl!(
                 (
                     self.selected_unit,
+                    self.typ,
                     self.mesh,
                     self.end,
                     a,
@@ -519,7 +459,7 @@ mod partial_move {
             a: &mut Doopa<'_, '_>,
             func: impl FnMut(UnitData),
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
-            resolve_movement_impl!((self.selected_unit, self.mesh,self.end, a, game_view,func,self.is_extra),inner_execute_animate,.await)
+            resolve_movement_impl!((self.selected_unit,self.typ, self.mesh,self.end, a, game_view,func,self.is_extra),inner_execute_animate,.await)
         }
 
         pub fn execute<'b>(

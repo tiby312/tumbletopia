@@ -65,7 +65,7 @@ impl ComboContinueSelection {
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
-        let iii = moves::PartialMove::new(unit, mesh, target_cell, true);
+        let iii = moves::PartialMove::new(unit, self.unit.typ, mesh, target_cell, true);
 
         let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
 
@@ -87,7 +87,7 @@ impl ComboContinueSelection {
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
-        let iii = moves::PartialMove::new(unit, mesh, target_cell, true);
+        let iii = moves::PartialMove::new(unit, self.unit.typ, mesh, target_cell, true);
 
         let iii = iii.execute(game_view, |_| {});
 
@@ -125,7 +125,7 @@ impl RegularSelection {
         //let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
 
-        let iii = moves::PartialMove::new(unit, mesh, target_cell, false);
+        let iii = moves::PartialMove::new(unit, self.unit.typ, mesh, target_cell, false);
 
         let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
 
@@ -151,7 +151,7 @@ impl RegularSelection {
         //let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
 
-        let iii = moves::PartialMove::new(unit, mesh, target_cell, false);
+        let iii = moves::PartialMove::new(unit, self.unit.typ, mesh, target_cell, false);
 
         let iii = iii.execute(game_view, |_| {});
 
@@ -617,8 +617,17 @@ pub fn generate_unit_possible_moves_inner(
     let mut mesh = movement::MovementMesh::new(vec![]);
 
     let cond = |a: GridCoord| {
+        let cc = if typ == Type::Ship {
+            game.land.iter().find(|&&b| a == b).is_none()
+        } else if typ == Type::Foot {
+            game.land.iter().find(|&&b| a == b).is_some()
+                && game.forest.iter().find(|&&b| a == b).is_none()
+        } else {
+            unreachable!();
+        };
+
         let is_world_cell = game.world.filter().filter(&a).to_bool();
-        a != unit && is_world_cell && game.land.iter().find(|&&b| a == b).is_none()
+        a != unit && is_world_cell && cc
     };
     let cond2 = |a: GridCoord| {
         game.this_team.find_slow(&a).is_none() && game.that_team.find_slow(&a).is_none()
