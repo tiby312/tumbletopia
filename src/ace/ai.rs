@@ -343,11 +343,11 @@ fn absolute_evaluate(view: &GameState) -> Eval {
 // }
 
 pub fn we_in_check(view: GameView<'_>) -> bool {
-    let Some(king_pos) = view.this_team.units.iter().find(|a| a.typ == Type::Land) else {
+    let Some(king_pos) = view.this_team.units.iter().find(|a| a.typ == Type::Foot) else {
         return false;
     };
 
-    for a in view.this_team.units.iter().filter(|a| a.typ == Type::Land) {}
+    for a in view.this_team.units.iter().filter(|a| a.typ == Type::Foot) {}
 
     true
 }
@@ -977,7 +977,12 @@ pub fn execute_move_no_ani(
         moves::ActualMove::NormalMove(o) => {
             let unit = game.this_team.find_slow(&o.unit).unwrap();
 
-            let mesh = selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
+            let mesh = selection::generate_unit_possible_moves_inner(
+                &unit.position,
+                unit.typ,
+                &game,
+                None,
+            );
 
             let r = selection::RegularSelection::new(unit);
             let r = r
@@ -988,7 +993,12 @@ pub fn execute_move_no_ani(
         moves::ActualMove::ExtraMove(o, e) => {
             let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
-            let mesh = selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
+            let mesh = selection::generate_unit_possible_moves_inner(
+                &unit.position,
+                unit.typ,
+                &game,
+                None,
+            );
 
             let r = selection::RegularSelection::new(&unit);
             let r = r
@@ -1043,13 +1053,15 @@ pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<moves::
     let mut movs = Vec::new();
     for i in 0..state.view_mut(team).this_team.units.len() {
         let pos = state.view_mut(team).this_team.units[i].position;
-        let mesh = generate_unit_possible_moves_inner(&pos, &state.view_mut(team), None);
+        let typ = state.view_mut(team).this_team.units[i].typ;
+
+        let mesh = generate_unit_possible_moves_inner(&pos, typ, &state.view_mut(team), None);
         for mm in mesh.iter_mesh(pos) {
             //Temporarily move the player in the game world.
             state.view_mut(team).this_team.units[i].position = mm;
 
             let second_mesh =
-                generate_unit_possible_moves_inner(&mm, &state.view_mut(team), Some(mm));
+                generate_unit_possible_moves_inner(&mm, typ, &state.view_mut(team), Some(mm));
 
             for sm in second_mesh.iter_mesh(mm) {
                 // movs.push(OneMove {

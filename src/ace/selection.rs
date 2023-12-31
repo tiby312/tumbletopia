@@ -50,6 +50,7 @@ impl ComboContinueSelection {
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
         generate_unit_possible_moves_inner(
             &self.unit.position,
+            self.unit.typ,
             game,
             Some(self.extra.prev_move.unit),
         )
@@ -110,7 +111,7 @@ impl RegularSelection {
     }
 
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        generate_unit_possible_moves_inner(&self.unit.position, game, None)
+        generate_unit_possible_moves_inner(&self.unit.position, self.unit.typ, game, None)
     }
 
     pub async fn execute(
@@ -192,7 +193,7 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
     // } else {
     match unit.typ {
         Type::Ship { .. } => false,
-        Type::Land => true,
+        Type::Foot => true,
         Type::Archer => false,
         Type::Catapault => true,
         Type::Catapault => true,
@@ -608,6 +609,7 @@ pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter, Rese
 
 pub fn generate_unit_possible_moves_inner(
     unit: &GridCoord,
+    typ: Type,
     game: &GameViewMut,
     extra_attack_prev_coord: Option<GridCoord>,
 ) -> movement::MovementMesh {

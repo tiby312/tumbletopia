@@ -24,7 +24,7 @@ pub enum CellSelection {
 pub enum Type {
     #[default]
     Ship,
-    Land,
+    Foot,
     Archer,
     Catapault,
     Lancer,
@@ -38,7 +38,7 @@ impl Type {
         let a = self;
         match a {
             Type::Ship { .. } => 0,
-            Type::Land => 1,
+            Type::Foot => 1,
             Type::Archer => 2,
             Type::Catapault => 3,
             Type::Lancer => 4,

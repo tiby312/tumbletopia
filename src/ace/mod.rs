@@ -555,7 +555,8 @@ pub fn game_is_over(game: &mut GameState, team_index: ActiveTeam) -> Option<Game
     let game = game.view_mut(team_index);
 
     for unit in game.this_team.units.iter() {
-        let mesh = selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
+        let mesh =
+            selection::generate_unit_possible_moves_inner(&unit.position, unit.typ, &game, None);
         if mesh.iter_mesh(GridCoord([0; 2])).count() != 0 {
             return None;
         }
@@ -604,8 +605,12 @@ pub async fn main_logic<'a>(
                 moves::ActualMove::NormalMove(o) => {
                     let unit = game.this_team.find_slow(&o.unit).unwrap();
 
-                    let mesh =
-                        selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
+                    let mesh = selection::generate_unit_possible_moves_inner(
+                        &unit.position,
+                        unit.typ,
+                        &game,
+                        None,
+                    );
 
                     let r = selection::RegularSelection::new(unit);
                     let r = r
@@ -617,8 +622,12 @@ pub async fn main_logic<'a>(
                 moves::ActualMove::ExtraMove(o, e) => {
                     let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
-                    let mesh =
-                        selection::generate_unit_possible_moves_inner(&unit.position, &game, None);
+                    let mesh = selection::generate_unit_possible_moves_inner(
+                        &unit.position,
+                        unit.typ,
+                        &game,
+                        None,
+                    );
 
                     let r = selection::RegularSelection::new(&unit);
                     let r = r

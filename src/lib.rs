@@ -376,8 +376,9 @@ pub async fn worker_entry() {
         // ),
         //UnitData::new(GridCoord([-2, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Archer, HexDir { dir: 5 }),
-        UnitData::new(GridCoord([-3, 1]), Type::Ship),
-        UnitData::new(GridCoord([-1, 3]), Type::Ship),
+        UnitData::new(GridCoord([-4, 4]), Type::Foot),
+        UnitData::new(GridCoord([-4, 2]), Type::Ship),
+        UnitData::new(GridCoord([-2, 4]), Type::Ship),
     ];
 
     //player
@@ -393,8 +394,9 @@ pub async fn worker_entry() {
         //     Type::Spotter { clockwise: false },
         //     HexDir { dir: 2 }
         // ),
-        UnitData::new(GridCoord([1, -3]), Type::Ship),
-        UnitData::new(GridCoord([1, -4]), Type::Ship),
+        UnitData::new(GridCoord([4, -4]), Type::Foot),
+        UnitData::new(GridCoord([2, -4]), Type::Ship),
+        UnitData::new(GridCoord([4, -2]), Type::Ship),
         // UnitData::new(GridCoord([1, -2]), Type::Rook, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -3]), Type::Rook, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -3]), Type::Warrior, HexDir { dir: 2 }),
@@ -404,7 +406,7 @@ pub async fn worker_entry() {
     let mut ggame = GameState {
         dogs: Tribe { units: dogs },
         cats: Tribe { units: cats },
-        land: vec![],
+        land: vec![GridCoord([4, -4]), GridCoord([-4, 4])],
         forest: vec![],
         world: board::World::new(),
     };
