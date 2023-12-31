@@ -436,7 +436,7 @@ pub async fn worker_entry() {
 
     let cat = quick_load(CAT_GLB, RESIZE, None);
 
-    let _road = quick_load(ROAD_GLB, 1, None);
+    let road = quick_load(ROAD_GLB, 1, None);
 
     let water = quick_load(WATER_GLB, RESIZE, None);
 
@@ -695,6 +695,18 @@ pub async fn worker_entry() {
                     let mut v = draw_sys.view(m.as_ref());
 
                     grass.draw(&mut v);
+                }
+
+                for c in ggame.forest.iter() {
+                    let pos = grid_matrix.hex_axial_to_world(&c);
+
+                    //let pos = a.calc_pos();
+                    let t = matrix::translation(pos[0], pos[1], 5.0);
+                    let s = matrix::scale(1.0, 1.0, 1.0);
+                    let m = matrix.chain(t).chain(s).generate();
+                    let mut v = draw_sys.view(m.as_ref());
+
+                    road.draw(&mut v);
                 }
                 disable_depth(&ctx, || {
                     if let ace::ProcessedCommand::GetMouseInput(a) = &command {
