@@ -164,6 +164,7 @@ pub struct GameState {
     dogs: Tribe,
     cats: Tribe,
     land: Vec<GridCoord>,
+    forest: Vec<GridCoord>,
     world: board::World,
 }
 impl GameState {
@@ -203,6 +204,7 @@ impl GameState {
         match team_index {
             ActiveTeam::Cats => GameViewMut {
                 land: &mut self.land,
+                forest: &mut self.forest,
                 this_team: &mut self.cats,
                 that_team: &mut self.dogs,
                 world: &mut self.world,
@@ -210,6 +212,7 @@ impl GameState {
             },
             ActiveTeam::Dogs => GameViewMut {
                 land: &mut self.land,
+                forest: &mut self.forest,
                 this_team: &mut self.dogs,
                 that_team: &mut self.cats,
                 world: &mut self.world,
@@ -224,6 +227,7 @@ pub struct GameThing<'a> {
     this_team: Tribe,
     that_team: Tribe,
     land: Vec<GridCoord>,
+    forest: Vec<GridCoord>,
     world: &'a board::World,
     team: ActiveTeam,
 }
@@ -233,6 +237,7 @@ impl<'a> GameThing<'a> {
             this_team: self.that_team,
             that_team: self.this_team,
             land: self.land,
+            forest: self.forest,
             world: self.world,
             team: self.team.not(),
         }
@@ -240,6 +245,7 @@ impl<'a> GameThing<'a> {
     pub fn view(&mut self) -> GameViewMut<'_, 'a> {
         GameViewMut {
             land: &mut self.land,
+            forest: &mut self.forest,
             this_team: &mut self.this_team,
             that_team: &mut self.that_team,
             world: self.world,
@@ -276,6 +282,7 @@ pub struct GameViewMut<'a, 'b> {
     this_team: &'a mut Tribe,
     that_team: &'a mut Tribe,
     land: &'a mut Vec<GridCoord>,
+    forest: &'a mut Vec<GridCoord>,
     world: &'b board::World,
     team: ActiveTeam,
 }
@@ -306,6 +313,7 @@ impl<'a, 'b> GameViewMut<'a, 'b> {
     pub fn duplicate(&self) -> GameThing<'b> {
         GameThing {
             land: self.land.clone(),
+            forest: self.forest.clone(),
             this_team: self.this_team.clone(),
             that_team: self.that_team.clone(),
             world: self.world,
@@ -316,6 +324,7 @@ impl<'a, 'b> GameViewMut<'a, 'b> {
     pub fn not(&mut self) -> GameViewMut {
         GameViewMut {
             land: self.land,
+            forest: self.forest,
             this_team: self.that_team,
             that_team: self.this_team,
             world: self.world,
@@ -367,8 +376,8 @@ pub async fn worker_entry() {
         // ),
         //UnitData::new(GridCoord([-2, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Archer, HexDir { dir: 5 }),
-        UnitData::new(GridCoord([-3, 1]), Type::Warrior { doop: None }),
-        UnitData::new(GridCoord([-1, 3]), Type::Warrior { doop: None }),
+        UnitData::new(GridCoord([-3, 1]), Type::Ship),
+        UnitData::new(GridCoord([-1, 3]), Type::Ship),
     ];
 
     //player
@@ -384,8 +393,8 @@ pub async fn worker_entry() {
         //     Type::Spotter { clockwise: false },
         //     HexDir { dir: 2 }
         // ),
-        UnitData::new(GridCoord([1, -3]), Type::Warrior { doop: None }),
-        UnitData::new(GridCoord([1, -4]), Type::Warrior { doop: None }),
+        UnitData::new(GridCoord([1, -3]), Type::Ship),
+        UnitData::new(GridCoord([1, -4]), Type::Ship),
         // UnitData::new(GridCoord([1, -2]), Type::Rook, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -3]), Type::Rook, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -3]), Type::Warrior, HexDir { dir: 2 }),
@@ -396,6 +405,7 @@ pub async fn worker_entry() {
         dogs: Tribe { units: dogs },
         cats: Tribe { units: cats },
         land: vec![],
+        forest: vec![],
         world: board::World::new(),
     };
 

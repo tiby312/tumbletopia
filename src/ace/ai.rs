@@ -343,11 +343,11 @@ fn absolute_evaluate(view: &GameState) -> Eval {
 // }
 
 pub fn we_in_check(view: GameView<'_>) -> bool {
-    let Some(king_pos) = view.this_team.units.iter().find(|a| a.typ == Type::King) else {
+    let Some(king_pos) = view.this_team.units.iter().find(|a| a.typ == Type::Land) else {
         return false;
     };
 
-    for a in view.this_team.units.iter().filter(|a| a.typ == Type::King) {}
+    for a in view.this_team.units.iter().filter(|a| a.typ == Type::Land) {}
 
     true
 }

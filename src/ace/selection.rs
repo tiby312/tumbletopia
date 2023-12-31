@@ -191,8 +191,8 @@ pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
     //     true
     // } else {
     match unit.typ {
-        Type::Warrior { .. } => false,
-        Type::King => true,
+        Type::Ship { .. } => false,
+        Type::Land => true,
         Type::Archer => false,
         Type::Catapault => true,
         Type::Catapault => true,
@@ -617,14 +617,10 @@ pub fn generate_unit_possible_moves_inner(
     let cond = |a: GridCoord| {
         let is_world_cell = game.world.filter().filter(&a).to_bool();
         a != unit && is_world_cell && game.land.iter().find(|&&b| a == b).is_none()
-        //&& game.this_team.find_slow(&a).is_none()
-        //&& game.that_team.find_slow(&a).is_none()
     };
     let cond2 = |a: GridCoord| {
         game.this_team.find_slow(&a).is_none() && game.that_team.find_slow(&a).is_none()
     };
-
-    //TODO don't do this most of the time. ai doesnt care. used just for animation
 
     for (_, a) in unit.to_cube().ring(1) {
         let a = a.to_axial();

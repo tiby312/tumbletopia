@@ -22,11 +22,9 @@ pub enum CellSelection {
 
 #[derive(Hash, Default, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {
-    Warrior {
-        doop: Option<GridCoord>,
-    },
     #[default]
-    King,
+    Ship,
+    Land,
     Archer,
     Catapault,
     Lancer,
@@ -39,8 +37,8 @@ impl Type {
     pub fn type_index(&self) -> usize {
         let a = self;
         match a {
-            Type::Warrior { .. } => 0,
-            Type::King => 1,
+            Type::Ship { .. } => 0,
+            Type::Land => 1,
             Type::Archer => 2,
             Type::Catapault => 3,
             Type::Lancer => 4,

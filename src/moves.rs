@@ -217,41 +217,41 @@ mod inner_partial {
             // }
 
 
-                if let Type::Warrior{doop}=this_unit.typ{
-                    // if let Some(doop)=doop{
-                    // }else{
-                        if let Some(o)=game_view.this_team.find_slow_mut(&end){
-                            if let Type::Spotter{..}=o.typ{
-                                let o_position=o.position;
+                // if let Type::Warrior{doop}=this_unit.typ{
+                //     // if let Some(doop)=doop{
+                //     // }else{
+                //         if let Some(o)=game_view.this_team.find_slow_mut(&end){
+                //             if let Type::Spotter{..}=o.typ{
+                //                 let o_position=o.position;
 
-                                let this_unit = game_view
-                                    .this_team
-                                    .find_slow_mut(&start)
-                                    .unwrap();
-                                //We selected the current anchor, deselect
-                                if let Some(doop)=doop{
-                                    if o_position==doop{
+                //                 let this_unit = game_view
+                //                     .this_team
+                //                     .find_slow_mut(&start)
+                //                     .unwrap();
+                //                 //We selected the current anchor, deselect
+                //                 if let Some(doop)=doop{
+                //                     if o_position==doop{
 
-                                        this_unit.typ=Type::Warrior{doop:None};
-                                        return;
-                                    }
+                //                         this_unit.typ=Type::Warrior{doop:None};
+                //                         return;
+                //                     }
 
-                                }
-                                this_unit.typ=Type::Warrior{doop:Some(end)};
-                                // game_view.this_team.units.push(UnitData::new(
-                                //     end,
-                                //     Type::Spotter { clockwise: true },
-                                //     HexDir { dir: 2 }
-                                // ));
-                                return;
+                //                 }
+                //                 this_unit.typ=Type::Warrior{doop:Some(end)};
+                //                 // game_view.this_team.units.push(UnitData::new(
+                //                 //     end,
+                //                 //     Type::Spotter { clockwise: true },
+                //                 //     HexDir { dir: 2 }
+                //                 // ));
+                //                 return;
 
-                            }
-                        }
+                //             }
+                //         }
 
 
 
-                    // }
-                }
+                //     // }
+                // }
 
                 let this_unit = game_view
                 .this_team
@@ -283,27 +283,27 @@ mod inner_partial {
 
 
 
-                let mut steering=match this_unit.typ{
-                    Type::Warrior{..} | Type::King | Type::Spotter{..}=>{
-                        use crate::ace::selection::WARRIOR_STEERING;
+                // let mut steering=match this_unit.typ{
+                //     Type::Warrior{..} | Type::King | Type::Spotter{..}=>{
+                //         use crate::ace::selection::WARRIOR_STEERING;
 
-                        WARRIOR_STEERING.iter()
-                    },
-                    Type::Archer=>{
-                        use crate::ace::selection::ARCHER_STEERING;
-                        ARCHER_STEERING.iter()
-                    },
-                    Type::Catapault=>{
-                        use crate::ace::selection::CATAPAULT_STEERING;
-                        CATAPAULT_STEERING.iter()
-                    },
-                    Type::Lancer=>{
-                        use crate::ace::selection::LANCER_STEERING;
-                        LANCER_STEERING.iter()
-                    }
-                };
+                //         WARRIOR_STEERING.iter()
+                //     },
+                //     Type::Archer=>{
+                //         use crate::ace::selection::ARCHER_STEERING;
+                //         ARCHER_STEERING.iter()
+                //     },
+                //     Type::Catapault=>{
+                //         use crate::ace::selection::CATAPAULT_STEERING;
+                //         CATAPAULT_STEERING.iter()
+                //     },
+                //     Type::Lancer=>{
+                //         use crate::ace::selection::LANCER_STEERING;
+                //         LANCER_STEERING.iter()
+                //     }
+                // };
 
-                let offset=end.sub(&start);
+                // let offset=end.sub(&start);
 
 
                 //console_dbg!("foo",initial_pops,this_unit.position);
@@ -344,22 +344,22 @@ mod inner_partial {
                 // }
 
 
-                if let Some(g)=game_view.that_team.find_take(&end){
+                // if let Some(g)=game_view.that_team.find_take(&end){
 
-                    if let Type::Spotter{..}=g.typ{
-                        for a in game_view.that_team.units.iter_mut(){
-                            if let Type::Warrior{doop}=a.typ{
-                                if let Some(doop)=doop{
-                                    if doop==g.position{
-                                        a.typ=Type::Warrior{doop:None};
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    //console_dbg!(end);
-                    //TODO removed
-                }
+                //     if let Type::Spotter{..}=g.typ{
+                //         for a in game_view.that_team.units.iter_mut(){
+                //             if let Type::Warrior{doop}=a.typ{
+                //                 if let Some(doop)=doop{
+                //                     if doop==g.position{
+                //                         a.typ=Type::Warrior{doop:None};
+                //                     }
+                //                 }
+                //             }
+                //         }
+                //     }
+                //     //console_dbg!(end);
+                //     //TODO removed
+                // }
 
                 //game_view.land.push(start);
 
