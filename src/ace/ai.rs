@@ -218,51 +218,8 @@ fn is_closest_cat_or_dog(
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
-    // let cat_liberty_deficit = {
-    //     let mut t: i64 = 0;
-    //     for aa in view.cats.units.iter() {
-    //         let mut v = vec![];
-    //         let mut liberties = vec![];
-    //         let mut depth_counter = 0;
-    //         num_liberties(
-    //             aa.position,
-    //             &mut v,
-    //             &mut liberties,
-    //             &view,
-    //             0,
-    //             &mut depth_counter,
-    //         );
-    //         t += depth_counter as i64 - MAX_LIBERTY_DEPTH as i64;
-    //     }
-    //     //liberties.len() as i64
-    //     t
-    // };
-
-    // let dog_liberty_deficit = {
-    //     let mut t: i64 = 0;
-
-    //     for aa in view.dogs.units.iter() {
-    //         let mut v = vec![];
-    //         let mut liberties = vec![];
-    //         let mut depth_counter = 0;
-
-    //         num_liberties(
-    //             aa.position,
-    //             &mut v,
-    //             &mut liberties,
-    //             &view,
-    //             0,
-    //             &mut depth_counter,
-    //         );
-    //         t += depth_counter as i64 - MAX_LIBERTY_DEPTH as i64;
-    //     }
-    //     //liberties.len() as i64
-    //     t as i64
-    // };
 
     let mut points = 0;
-
-    //if MAX_LIBERTY_DEPTH*view.dogs.units.len()==dog_liberties as usize &&  MAX_LIBERTY_DEPTH*view.cats.units.len()==cat_liberties as usize{
 
     for a in view
         .world
@@ -299,85 +256,9 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             _ => {}
         }
     }
-
-    //}
-    //console_dbg!(cat_liberty_deficit,dog_liberty_deficit);
-    //console_dbg!(points);
-    // for a in view.dogs.units.iter() {
-    //     points -= count_spread(a.position, view) as i64;
-    // }
-
-    // for a in view.cats.units.iter() {
-    //     points += count_spread(a.position, view) as i64;
-    // }
-
-    // if cat_liberty_deficit == 0 {
-    //     return -MATE;
-    // } else if dog_liberties == 0 {
-    //     return MATE;
-    // }
-
-    //max cat and dog liberties is 5+5  * 5+5 =  100
-    //care about posititioning only when we are not in danger of being
-    //surrounded and there are not opportunities to surround.
-    points //+ cat_liberty_deficit * 50 - dog_liberty_deficit * 50
+    points
 }
 
-// fn count_spread(position: GridCoord, game: &GameState) -> usize {
-//     let mut mesh = crate::movement::MovementMesh::new(vec![]);
-
-//     let cond = |a: GridCoord| {
-//         //let is_world_cell = game.world.filter().filter(&a).to_bool();
-//         a != position && game.land.iter().find(|&&b| a == b).is_none()
-//         //&& game.this_team.find_slow(&a).is_none()
-//         //&& game.that_team.find_slow(&a).is_none()
-//     };
-
-//     for (_, a) in position.to_cube().ring(1) {
-//         let a = a.to_axial();
-
-//         if cond(a) {
-//             mesh.add_normal_cell(a.sub(&position));
-
-//             for (_, b) in a.to_cube().ring(1) {
-//                 let b = b.to_axial();
-//                 //TODO inefficient
-//                 if cond(b) {
-//                     mesh.add_normal_cell(b.sub(&position));
-
-//                     for (_, c) in b.to_cube().ring(1) {
-//                         let c = c.to_axial();
-//                         //TODO inefficient
-//                         if cond(c) {
-//                             mesh.add_normal_cell(c.sub(&position));
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     let k = mesh.iter_mesh(GridCoord([0; 2])).count();
-//     //assert!(k<=18,"{}",k);
-//     k
-// }
-
-// pub fn captures_possible(node: GameViewMut<'_, '_>) -> bool {
-//     let num_enemy = node.that_team.units.len();
-//     for a in for_all_moves(&node) {
-//         if a.game_after_move.that_team.units.len() < num_enemy {
-//             return true;
-//         }
-//     }
-
-//     let num_friendly = node.this_team.units.len();
-//     for a in for_all_moves(&node) {
-//         if a.game_after_move.this_team.units.len() < num_friendly {
-//             return true;
-//         }
-//     }
-
-//     false
-// }
 
 pub fn we_in_check(view: GameView<'_>) -> bool {
     let Some(king_pos) = view.this_team.units.iter().find(|a| a.typ == Type::Foot) else {
