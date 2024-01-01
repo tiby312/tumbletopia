@@ -436,7 +436,7 @@ pub async fn worker_entry() {
 
     let cat = quick_load(CAT_GLB, RESIZE, None);
 
-    let road = quick_load(ROAD_GLB, 1, None);
+    let mountain = quick_load(MOUNTAIN_GLB, 1, None);
 
     let water = quick_load(WATER_GLB, RESIZE, None);
 
@@ -701,12 +701,12 @@ pub async fn worker_entry() {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();
-                    let t = matrix::translation(pos[0], pos[1], 5.0);
+                    let t = matrix::translation(pos[0], pos[1], 0.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
                     let m = matrix.chain(t).chain(s).generate();
                     let mut v = draw_sys.view(m.as_ref());
 
-                    road.draw(&mut v);
+                    mountain.draw(&mut v);
                 }
                 disable_depth(&ctx, || {
                     if let ace::ProcessedCommand::GetMouseInput(a) = &command {
@@ -984,7 +984,9 @@ use crate::terrain::MoveCost;
 
 const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
-const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
+//const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
+const MOUNTAIN_GLB: &'static [u8] = include_bytes!("../assets/mountain.glb");
+
 const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
 
 const ARROW_GLB: &'static [u8] = include_bytes!("../assets/arrow.glb");
