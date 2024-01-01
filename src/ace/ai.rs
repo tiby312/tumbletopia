@@ -236,10 +236,10 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         let mut visited = vec![];
         match is_closest_cat_or_dog(a, &mut visited, view, 0, false) {
             ClosestRet::Cat => {
-                points += 1;
+                points += 2;
             }
             ClosestRet::Dog => {
-                points -= 1;
+                points -= 2;
             }
             _ => {}
         }
@@ -343,7 +343,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
     let mut results = Vec::new();
     let mut table = LeafTranspositionTable::new();
 
-    let max_depth = 2;
+    let max_depth = 4;
     let mut foo1 = MoveOrdering {
         a: std::collections::HashMap::new(),
     };
