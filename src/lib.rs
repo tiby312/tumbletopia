@@ -165,6 +165,7 @@ pub struct GameState {
     cats: Tribe,
     land: Vec<GridCoord>,
     forest: Vec<GridCoord>,
+    powerup: Vec<GridCoord>,
     world: board::World,
 }
 impl GameState {
@@ -408,6 +409,12 @@ pub async fn worker_entry() {
         cats: Tribe { units: cats },
         land: vec![GridCoord([4, -4]), GridCoord([-4, 4])],
         forest: vec![],
+        powerup: vec![
+            GridCoord([0, -3]),
+            GridCoord([3, 0]),
+            GridCoord([-3, 0]),
+            GridCoord([0, 3]),
+        ],
         world: board::World::new(),
     };
 
@@ -446,7 +453,7 @@ pub async fn worker_entry() {
 
     let attack_model = quick_load(ATTACK_GLB, 1, None);
 
-    let arrow_model = quick_load(ARROW_GLB, 1, None);
+    //let arrow_model = quick_load(ARROW_GLB, 1, None);
 
     let direction_model = quick_load(DIRECTION_GLB, 1, None);
 
@@ -674,6 +681,7 @@ pub async fn worker_entry() {
 
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
+                //TODO don't render where land is?
                 for c in ggame.world.iter_cells() {
                     let pos = grid_matrix.hex_axial_to_world(&c.to_axial());
 
@@ -685,6 +693,19 @@ pub async fn worker_entry() {
 
                     water.draw(&mut v);
                 }
+
+                for c in ggame.powerup.iter() {
+                    let pos = grid_matrix.hex_axial_to_world(&c);
+
+                    //let pos = a.calc_pos();
+                    let t = matrix::translation(pos[0], pos[1], -10.0);
+                    let s = matrix::scale(1.0, 1.0, 1.0);
+                    let m = matrix.chain(t).chain(s).generate();
+                    let mut v = draw_sys.view(m.as_ref());
+
+                    attack_model.draw(&mut v);
+                }
+
                 for c in ggame.land.iter() {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
