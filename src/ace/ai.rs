@@ -119,6 +119,9 @@ enum ClosestRet {
     None,
 }
 
+//TODO
+fn is_accesible_by_land_and_sea() {}
+
 fn is_closest_cat_or_dog(
     point: GridCoord,
     visited: &mut Vec<GridCoord>,
@@ -140,6 +143,7 @@ fn is_closest_cat_or_dog(
 
     if is_land {
         if !game.land.contains(&point) {
+            //assert!(!game.forest.contains(&point));
             return ClosestRet::None;
         }
 
@@ -152,35 +156,31 @@ fn is_closest_cat_or_dog(
         }
     }
 
-    let (k, j) = if is_land {
-        let k = game
-            .dogs
-            .units
-            .iter()
-            .filter(|a| a.typ == Type::Foot)
-            .find(|a| a.position == point);
-        let j = game
-            .cats
-            .units
-            .iter()
-            .filter(|a| a.typ == Type::Foot)
-            .find(|a| a.position == point);
-        (k, j)
-    } else {
-        let k = game
-            .dogs
-            .units
-            .iter()
-            .filter(|a| a.typ == Type::Ship)
-            .find(|a| a.position == point);
-        let j = game
-            .cats
-            .units
-            .iter()
-            .filter(|a| a.typ == Type::Ship)
-            .find(|a| a.position == point);
-        (k, j)
-    };
+    let k = game
+        .dogs
+        .units
+        .iter()
+        .filter(|a| {
+            if is_land {
+                a.typ == Type::Foot
+            } else {
+                a.typ == Type::Ship
+            }
+        })
+        .find(|a| a.position == point);
+
+    let j = game
+        .cats
+        .units
+        .iter()
+        .filter(|a| {
+            if is_land {
+                a.typ == Type::Foot
+            } else {
+                a.typ == Type::Ship
+            }
+        })
+        .find(|a| a.position == point);
 
     visited.push(point);
 
@@ -193,19 +193,26 @@ fn is_closest_cat_or_dog(
 
     //find closest unit.
 
-    let target = game
-        .dogs
-        .units
-        .iter()
-        .chain(game.cats.units.iter())
-        .min_by_key(|x| x.position.to_cube().dist(&point.to_cube()))
-        .unwrap();
+    // let target = game
+    //     .dogs
+    //     .units
+    //     .iter()
+    //     .chain(game.cats.units.iter())
+    //     .filter(|a| {
+    //         if is_land {
+    //             a.typ == Type::Foot
+    //         } else {
+    //             a.typ == Type::Ship
+    //         }
+    //     })
+    //     .min_by_key(|x| x.position.to_cube().dist(&point.to_cube()))
+    //     .unwrap();
 
-    //TODO look at these in a better order.
-    let mut children: Vec<_> = point.to_cube().ring(1).map(|(_, b)| b.to_axial()).collect();
-    children.sort_unstable_by_key(|a| a.to_cube().dist(&target.position.to_cube()));
+    // //TODO look at these in a better order.
+    // let mut children: Vec<_> = point.to_cube().ring(1).map(|(_, b)| b.to_axial()).collect();
+    // children.sort_unstable_by_key(|a| a.to_cube().dist(&target.position.to_cube()));
 
-    for b in children {
+    for b in point.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
         match is_closest_cat_or_dog(b, visited, game, depth + 1, is_land) {
             ClosestRet::Dog => return ClosestRet::Dog,
             ClosestRet::Cat => return ClosestRet::Cat,
@@ -218,7 +225,6 @@ fn is_closest_cat_or_dog(
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
-
     let mut points = 0;
 
     for a in view
@@ -239,14 +245,9 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         }
     }
 
-    for a in view
-        .world
-        .iter_cells()
-        .map(|x| x.to_axial())
-        .filter(|x| view.land.contains(x) && !view.forest.contains(x))
-    {
+    for a in view.land.iter().filter(|x| !view.forest.contains(x)) {
         let mut visited = vec![];
-        match is_closest_cat_or_dog(a, &mut visited, view, 0, true) {
+        match is_closest_cat_or_dog(*a, &mut visited, view, 0, true) {
             ClosestRet::Cat => {
                 points += 1;
             }
@@ -258,7 +259,6 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     }
     points
 }
-
 
 pub fn we_in_check(view: GameView<'_>) -> bool {
     let Some(king_pos) = view.this_team.units.iter().find(|a| a.typ == Type::Foot) else {
@@ -343,7 +343,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
     let mut results = Vec::new();
     let mut table = LeafTranspositionTable::new();
 
-    let max_depth = 4;
+    let max_depth = 2;
     let mut foo1 = MoveOrdering {
         a: std::collections::HashMap::new(),
     };
@@ -942,6 +942,7 @@ pub fn execute_move_no_ani(
     }
 }
 
+//TODO this has duplicated logic
 pub fn apply_move(mo: moves::ActualMove, state: &mut GameState, team: ActiveTeam) {
     let moves::ActualMove::ExtraMove(
         moves::PartialMoveSigl {
@@ -957,13 +958,15 @@ pub fn apply_move(mo: moves::ActualMove, state: &mut GameState, team: ActiveTeam
         unreachable!()
     };
 
-    state
-        .view_mut(team)
-        .this_team
-        .find_slow_mut(&pos)
-        .unwrap()
-        .position = mm;
-    state.land.push(sm);
+    let pp = state.view_mut(team).this_team.find_slow_mut(&pos).unwrap();
+
+    pp.position = mm;
+
+    if pp.typ == Type::Ship {
+        state.land.push(sm);
+    } else if pp.typ == Type::Foot {
+        state.forest.push(sm);
+    }
 }
 
 //TODO use this!!!
