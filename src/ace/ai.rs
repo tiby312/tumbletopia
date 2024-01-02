@@ -122,6 +122,115 @@ enum ClosestRet {
 //TODO
 fn is_accesible_by_land_and_sea() {}
 
+fn dog_or_cat_closest(point: GridCoord, game: &GameState, is_land: bool) -> ClosestRet {
+    let check_terrain = |point| {
+        if !game.world.filter().filter(&point).to_bool() {
+            return false;
+        }
+
+        if is_land {
+            if !game.land.contains(&point) {
+                //assert!(!game.forest.contains(&point));
+                return false;
+            }
+
+            if game.forest.contains(&point) {
+                return false;
+            }
+        } else {
+            if game.land.contains(&point) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    let closest_cat = bfs_find(point, |point| {
+        if !check_terrain(point) {
+            return false;
+        }
+
+        game.cats
+            .units
+            .iter()
+            .filter(|a| {
+                if is_land {
+                    a.typ == Type::Foot
+                } else {
+                    a.typ == Type::Ship
+                }
+            })
+            .find(|a| a.position == point)
+            .is_some()
+    });
+
+    let closest_dog = bfs_find(point, |point| {
+        if !check_terrain(point) {
+            return false;
+        }
+
+        game.dogs
+            .units
+            .iter()
+            .filter(|a| {
+                if is_land {
+                    a.typ == Type::Foot
+                } else {
+                    a.typ == Type::Ship
+                }
+            })
+            .find(|a| a.position == point)
+            .is_some()
+    });
+
+    //console_dbg!(closest_dog,closest_cat);
+
+    match (closest_dog, closest_cat) {
+        (None, None) => ClosestRet::None,
+        (Some(x), None) => ClosestRet::Dog,
+        (None, Some(x)) => ClosestRet::Cat,
+        (Some(a), Some(b)) => {
+            if a < b {
+                ClosestRet::Dog
+            } else if a > b {
+                ClosestRet::Cat
+            } else {
+                ClosestRet::None
+            }
+        }
+    }
+}
+
+fn bfs_find(point: GridCoord, mut func: impl FnMut(GridCoord) -> bool) -> Option<usize> {
+    let mut visited = vec![];
+    use std::collections::VecDeque;
+    let mut queue = VecDeque::new();
+
+    queue.push_back((point, 0));
+
+    while let Some((p, depth)) = queue.pop_front() {
+        if depth > 10 {
+            break;
+        }
+
+        if visited.contains(&p) {
+            continue;
+        }
+
+        visited.push(p);
+
+        if !func(p) {
+            for p in p.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
+                queue.push_back((p, depth + 1));
+            }
+        } else {
+            return Some(depth);
+        }
+    }
+
+    None
+}
+
 fn is_closest_cat_or_dog(
     point: GridCoord,
     visited: &mut Vec<GridCoord>,
@@ -234,8 +343,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         .map(|x| x.to_axial())
         .filter(|x| !view.land.contains(x))
     {
-        let mut visited = vec![];
-        match is_closest_cat_or_dog(a, &mut visited, view, 0, false) {
+        match dog_or_cat_closest(a, view, false) {
             ClosestRet::Cat => {
                 points_land += 1;
             }
@@ -249,8 +357,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     let mut points = 0;
 
     for a in view.land.iter().filter(|x| !view.forest.contains(x)) {
-        let mut visited = vec![];
-        match is_closest_cat_or_dog(*a, &mut visited, view, 0, true) {
+        match dog_or_cat_closest(*a, view, true) {
             ClosestRet::Cat => {
                 points += 1;
             }
