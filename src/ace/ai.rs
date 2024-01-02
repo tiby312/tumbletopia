@@ -145,12 +145,13 @@ fn dog_or_cat_closest(point: GridCoord, game: &GameState, is_land: bool) -> Clos
         return true;
     };
 
-    let closest_cat = bfs_find(point, |point| {
+    let closest_something = bfs_find(point, |point| {
         if !check_terrain(point) {
             return false;
         }
 
-        game.cats
+        let a = game
+            .cats
             .units
             .iter()
             .filter(|a| {
@@ -161,15 +162,10 @@ fn dog_or_cat_closest(point: GridCoord, game: &GameState, is_land: bool) -> Clos
                 }
             })
             .find(|a| a.position == point)
-            .is_some()
-    });
+            .is_some();
 
-    let closest_dog = bfs_find(point, |point| {
-        if !check_terrain(point) {
-            return false;
-        }
-
-        game.dogs
+        let b = game
+            .dogs
             .units
             .iter()
             .filter(|a| {
@@ -180,28 +176,74 @@ fn dog_or_cat_closest(point: GridCoord, game: &GameState, is_land: bool) -> Clos
                 }
             })
             .find(|a| a.position == point)
-            .is_some()
+            .is_some();
+
+        a || b
     });
 
-    //console_dbg!(closest_dog,closest_cat);
+    let mut cat_found = false;
+    let mut dog_found = false;
+    if let Some((_, closest_something)) = closest_something {
+        for point in closest_something {
+            if cat_found && dog_found {
+                break;
+            }
+            if !cat_found {
+                let a = game
+                    .cats
+                    .units
+                    .iter()
+                    .filter(|a| {
+                        if is_land {
+                            a.typ == Type::Foot
+                        } else {
+                            a.typ == Type::Ship
+                        }
+                    })
+                    .find(|a| a.position == point)
+                    .is_some();
 
-    match (closest_dog, closest_cat) {
-        (None, None) => ClosestRet::None,
-        (Some(x), None) => ClosestRet::Dog,
-        (None, Some(x)) => ClosestRet::Cat,
-        (Some(a), Some(b)) => {
-            if a < b {
-                ClosestRet::Dog
-            } else if a > b {
-                ClosestRet::Cat
-            } else {
-                ClosestRet::None
+                if a {
+                    cat_found = true;
+                }
+            }
+
+            if !dog_found {
+                let b = game
+                    .dogs
+                    .units
+                    .iter()
+                    .filter(|a| {
+                        if is_land {
+                            a.typ == Type::Foot
+                        } else {
+                            a.typ == Type::Ship
+                        }
+                    })
+                    .find(|a| a.position == point)
+                    .is_some();
+
+                if b {
+                    dog_found = true;
+                }
             }
         }
     }
+
+    //console_dbg!(closest_dog,closest_cat);
+
+    match (cat_found, dog_found) {
+        (false, false) => ClosestRet::None,
+        (false, true) => ClosestRet::Dog,
+        (true, false) => ClosestRet::Cat,
+        (true, true) => ClosestRet::None,
+    }
 }
 
-fn bfs_find(point: GridCoord, mut func: impl FnMut(GridCoord) -> bool) -> Option<usize> {
+fn bfs_find(
+    point: GridCoord,
+    mut func: impl FnMut(GridCoord) -> bool,
+) -> Option<(usize, Vec<GridCoord>)> {
     let mut visited = vec![];
     use std::collections::VecDeque;
     let mut queue = VecDeque::new();
@@ -224,7 +266,16 @@ fn bfs_find(point: GridCoord, mut func: impl FnMut(GridCoord) -> bool) -> Option
                 queue.push_back((p, depth + 1));
             }
         } else {
-            return Some(depth);
+            let mut k = vec![p];
+            while let Some((z, d)) = queue.pop_front() {
+                if d == depth {
+                    k.push(z);
+                } else {
+                    break;
+                }
+            }
+
+            return Some((depth, k));
         }
     }
 
