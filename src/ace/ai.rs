@@ -193,26 +193,27 @@ fn is_closest_cat_or_dog(
 
     //find closest unit.
 
-    // let target = game
-    //     .dogs
-    //     .units
-    //     .iter()
-    //     .chain(game.cats.units.iter())
-    //     .filter(|a| {
-    //         if is_land {
-    //             a.typ == Type::Foot
-    //         } else {
-    //             a.typ == Type::Ship
-    //         }
-    //     })
-    //     .min_by_key(|x| x.position.to_cube().dist(&point.to_cube()))
-    //     .unwrap();
+    let target = game
+        .dogs
+        .units
+        .iter()
+        .chain(game.cats.units.iter())
+        .filter(|a| {
+            if is_land {
+                a.typ == Type::Foot
+            } else {
+                a.typ == Type::Ship
+            }
+        })
+        .min_by_key(|x| x.position.to_cube().dist(&point.to_cube()))
+        .unwrap();
 
     // //TODO look at these in a better order.
-    // let mut children: Vec<_> = point.to_cube().ring(1).map(|(_, b)| b.to_axial()).collect();
-    // children.sort_unstable_by_key(|a| a.to_cube().dist(&target.position.to_cube()));
+    let mut children: Vec<_> = point.to_cube().ring(1).map(|(_, b)| b.to_axial()).collect();
+    children.sort_unstable_by_key(|a| a.to_cube().dist(&target.position.to_cube()));
 
-    for b in point.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
+    //TODO use bfs instead???
+    for b in children {
         match is_closest_cat_or_dog(b, visited, game, depth + 1, is_land) {
             ClosestRet::Dog => return ClosestRet::Dog,
             ClosestRet::Cat => return ClosestRet::Cat,
@@ -225,7 +226,7 @@ fn is_closest_cat_or_dog(
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
-    let mut points = 0;
+    let mut points_land = 0;
 
     for a in view
         .world
@@ -236,14 +237,16 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         let mut visited = vec![];
         match is_closest_cat_or_dog(a, &mut visited, view, 0, false) {
             ClosestRet::Cat => {
-                points += 2;
+                points_land += 1;
             }
             ClosestRet::Dog => {
-                points -= 2;
+                points_land -= 1;
             }
             _ => {}
         }
     }
+
+    let mut points = 0;
 
     for a in view.land.iter().filter(|x| !view.forest.contains(x)) {
         let mut visited = vec![];
@@ -257,7 +260,8 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             _ => {}
         }
     }
-    points
+
+    points_land / 4 + points
 }
 
 pub fn we_in_check(view: GameView<'_>) -> bool {
