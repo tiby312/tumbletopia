@@ -240,6 +240,138 @@ fn dog_or_cat_closest(point: GridCoord, game: &GameState, is_land: bool) -> Clos
     }
 }
 
+use std::collections::VecDeque;
+
+struct OnePoint {
+    team: ActiveTeam,
+    point: GridCoord,
+    depth: usize,
+}
+
+struct Territory {
+    num_dog_controlled: i64,
+    num_cat_controlled: i64,
+}
+
+fn dog_or_cat_closest2(game: &GameState, is_land: bool) -> Territory {
+    let check_terrain = |point| {
+        if !game.world.filter().filter(&point).to_bool() {
+            return false;
+        }
+
+        if is_land {
+            if !game.land.contains(&point) {
+                //assert!(!game.forest.contains(&point));
+                return false;
+            }
+
+            if game.forest.contains(&point) {
+                return false;
+            }
+        } else {
+            if game.land.contains(&point) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    let mut visited = vec![];
+
+    let mut dogs_to_consider = Vec::new();
+    let mut cats_to_consider = Vec::new();
+
+    for point in game
+        .dogs
+        .units
+        .iter()
+        .filter(|a| {
+            if is_land {
+                a.typ == Type::Foot
+            } else {
+                a.typ == Type::Ship
+            }
+        })
+        .map(|a| a.position)
+    {
+        dogs_to_consider.push(point);
+    }
+
+    for point in game
+        .cats
+        .units
+        .iter()
+        .filter(|a| {
+            if is_land {
+                a.typ == Type::Foot
+            } else {
+                a.typ == Type::Ship
+            }
+        })
+        .map(|a| a.position)
+    {
+        cats_to_consider.push(point)
+    }
+
+    let mut num_dog_controlled = 0;
+    let mut num_cat_controlled = 0;
+    for _ in 0..10 {
+        let mut next_dog_points = vec![];
+        let mut next_cat_points = vec![];
+
+        for d in dogs_to_consider.drain(..) {
+            for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
+                if check_terrain(p) {
+                    if !visited.contains(&p) {
+                        //TODO no need to store depth in these???
+                        next_dog_points.push(p);
+                    }
+                }
+            }
+        }
+
+        for d in cats_to_consider.drain(..) {
+            for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
+                if check_terrain(p) {
+                    if !visited.contains(&p) {
+                        //TODO no need to store depth in these???
+                        next_cat_points.push(p);
+                    }
+                }
+            }
+        }
+
+        //remove duplicate territory contested by teamates.
+        next_cat_points.dedup();
+        next_dog_points.dedup();
+
+        //if a territory is contested by both sides, just remove it from both sides.
+        next_cat_points.retain(|a| {
+            if let Some((k, _)) = next_dog_points.iter().enumerate().find(|(_, b)| *b == a) {
+                let _ = next_dog_points.remove(k);
+                false
+            } else {
+                true
+            }
+        });
+
+        for a in next_cat_points.iter().chain(next_dog_points.iter()) {
+            visited.push(*a);
+        }
+
+        num_dog_controlled += next_dog_points.len() as i64;
+        num_cat_controlled += next_cat_points.len() as i64;
+        //console_dbg!(num_cat_controlled,num_dog_controlled);
+        dogs_to_consider.append(&mut next_dog_points);
+        cats_to_consider.append(&mut next_cat_points);
+    }
+
+    Territory {
+        num_dog_controlled,
+        num_cat_controlled,
+    }
+}
+
 fn bfs_find(
     point: GridCoord,
     mut func: impl FnMut(GridCoord) -> bool,
@@ -386,40 +518,45 @@ fn is_closest_cat_or_dog(
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
-    let mut points_land = 0;
+    //     let mut points_land = 0;
 
-    for a in view
-        .world
-        .iter_cells()
-        .map(|x| x.to_axial())
-        .filter(|x| !view.land.contains(x))
-    {
-        match dog_or_cat_closest(a, view, false) {
-            ClosestRet::Cat => {
-                points_land += 1;
-            }
-            ClosestRet::Dog => {
-                points_land -= 1;
-            }
-            _ => {}
-        }
-    }
+    //     for a in view
+    //         .world
+    //         .iter_cells()
+    //         .map(|x| x.to_axial())
+    //         .filter(|x| !view.land.contains(x))
+    //     {
+    //         match dog_or_cat_closest(a, view, false) {
+    //             ClosestRet::Cat => {
+    //                 points_land += 1;
+    //             }
+    //             ClosestRet::Dog => {
+    //                 points_land -= 1;
+    //             }
+    //             _ => {}
+    //         }
+    //     }
 
-    let mut points = 0;
+    //     let mut points = 0;
 
-    for a in view.land.iter().filter(|x| !view.forest.contains(x)) {
-        match dog_or_cat_closest(*a, view, true) {
-            ClosestRet::Cat => {
-                points += 1;
-            }
-            ClosestRet::Dog => {
-                points -= 1;
-            }
-            _ => {}
-        }
-    }
+    //     for a in view.land.iter().filter(|x| !view.forest.contains(x)) {
+    //         match dog_or_cat_closest(*a, view, true) {
+    //             ClosestRet::Cat => {
+    //                 points += 1;
+    //             }
+    //             ClosestRet::Dog => {
+    //                 points -= 1;
+    //             }
+    //             _ => {}
+    //         }
+    //     }
 
-    points_land / 4 + points
+    //     points_land / 4 + points
+
+    let water = dog_or_cat_closest2(view, false);
+    let land = dog_or_cat_closest2(view, true);
+    water.num_cat_controlled - water.num_dog_controlled + land.num_cat_controlled
+        - land.num_dog_controlled
 }
 
 pub fn we_in_check(view: GameView<'_>) -> bool {

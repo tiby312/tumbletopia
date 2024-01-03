@@ -564,7 +564,7 @@ pub fn game_is_over(game: &mut GameState, team_index: ActiveTeam) -> Option<Game
 
     //console_dbg!("This team won:", team_index);
     if team_index == ActiveTeam::Cats {
-        return Some(GameOver::DogWon);
+        return Some(GameOver::CatWon);
     } else {
         return Some(GameOver::DogWon);
     }
