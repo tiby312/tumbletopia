@@ -555,8 +555,8 @@ fn absolute_evaluate(view: &GameState) -> Eval {
 
     let water = dog_or_cat_closest2(view, false);
     let land = dog_or_cat_closest2(view, true);
-    water.num_cat_controlled - water.num_dog_controlled + land.num_cat_controlled
-        - land.num_dog_controlled
+    water.num_cat_controlled - water.num_dog_controlled + (land.num_cat_controlled
+        - land.num_dog_controlled)/2
 }
 
 pub fn we_in_check(view: GameView<'_>) -> bool {
