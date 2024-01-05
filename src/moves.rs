@@ -322,6 +322,37 @@ pub mod partial_move {
         movs
     }
 
+    #[derive(Debug, Copy, Clone)]
+    pub enum GameOver {
+        CatWon,
+        DogWon,
+        Tie,
+    }
+
+    pub fn game_is_over(game: &mut GameState, team_index: ActiveTeam) -> Option<GameOver> {
+        let game = game.view_mut(team_index);
+
+        for unit in game.this_team.units.iter() {
+            //TODO instead check iterator of all moves is empty???
+            let mesh = moves::partial_move::generate_unit_possible_moves_inner(
+                &unit.position,
+                unit.typ,
+                &game,
+                false,
+            );
+            if mesh.iter_mesh(GridCoord([0; 2])).count() != 0 {
+                return None;
+            }
+        }
+
+        //console_dbg!("This team won:", team_index);
+        if team_index == ActiveTeam::Cats {
+            return Some(GameOver::DogWon);
+        } else {
+            return Some(GameOver::CatWon);
+        }
+    }
+
     #[derive(Clone, Debug)]
     pub struct PartialMove {
         pub selected_unit: GridCoord,

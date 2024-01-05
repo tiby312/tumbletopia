@@ -172,16 +172,6 @@ fn absolute_evaluate(view: &GameState) -> Eval {
         + (land.num_cat_controlled - land.num_dog_controlled) / 2
 }
 
-pub fn we_in_check(view: GameView<'_>) -> bool {
-    let Some(king_pos) = view.this_team.units.iter().find(|a| a.typ == Type::Foot) else {
-        return false;
-    };
-
-    for a in view.this_team.units.iter().filter(|a| a.typ == Type::Foot) {}
-
-    true
-}
-
 //TODO use bump allocator!!!!!
 //TODO just store best move? not gamestate?
 pub struct MoveOrdering {
@@ -397,7 +387,9 @@ impl<'a> AlphaBeta<'a> {
         //let the_move = cand.the_move.clone();
         let mut gg = game_after_move.clone();
 
-        let ret = if depth == 0 || game_is_over(&mut game_after_move, team).is_some() {
+        let ret = if depth == 0
+            || moves::partial_move::game_is_over(&mut game_after_move, team).is_some()
+        {
             //console_dbg!(game_is_over(cand.game_after_move.view(team)));
 
             self.calls.add_eval();
