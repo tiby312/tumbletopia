@@ -869,7 +869,7 @@ impl<'a> AlphaBeta<'a> {
                                            //console_dbg!(ext,depth);
 
                 let mut gg = gg2.clone();
-                apply_move(cand, &mut gg, team);
+                execute_move_no_ani(&mut gg, team, cand);
 
                 ssself.path.push(cand.clone());
                 let eval = ssself.alpha_beta(gg, ab, team.not(), new_depth, ext);
@@ -930,6 +930,7 @@ impl abab_simple::MoveFinder for MyMoveFinder {
 
     fn apply_move(&mut self, game: &mut Self::T, a: Self::Mo) {
         let mut mm = MoveLog::new();
+        todo!();
     }
 
     fn generate_finder(
@@ -1242,31 +1243,31 @@ pub fn execute_move_no_ani(
 }
 
 //TODO this has duplicated logic
-pub fn apply_move(mo: moves::ActualMove, state: &mut GameState, team: ActiveTeam) {
-    let moves::ActualMove::ExtraMove(
-        moves::PartialMoveSigl {
-            unit: pos,
-            moveto: mm,
-        },
-        moves::PartialMoveSigl {
-            unit: _,
-            moveto: sm,
-        },
-    ) = mo
-    else {
-        unreachable!()
-    };
+// pub fn apply_move(mo: moves::ActualMove, state: &mut GameState, team: ActiveTeam) {
+//     let moves::ActualMove::ExtraMove(
+//         moves::PartialMoveSigl {
+//             unit: pos,
+//             moveto: mm,
+//         },
+//         moves::PartialMoveSigl {
+//             unit: _,
+//             moveto: sm,
+//         },
+//     ) = mo
+//     else {
+//         unreachable!()
+//     };
 
-    let pp = state.view_mut(team).this_team.find_slow_mut(&pos).unwrap();
+//     let pp = state.view_mut(team).this_team.find_slow_mut(&pos).unwrap();
 
-    pp.position = mm;
+//     pp.position = mm;
 
-    if pp.typ == Type::Ship {
-        state.land.push(sm);
-    } else if pp.typ == Type::Foot {
-        state.forest.push(sm);
-    }
-}
+//     if pp.typ == Type::Ship {
+//         state.land.push(sm);
+//     } else if pp.typ == Type::Foot {
+//         state.forest.push(sm);
+//     }
+// }
 
 //TODO use this!!!
 pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<moves::ActualMove> {

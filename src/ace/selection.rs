@@ -75,8 +75,6 @@ impl ComboContinueSelection {
 
         let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
 
-        //TODO add this!
-
         move_log.push(moves::ActualMove::ExtraMove(
             self.extra.prev_move.clone(),
             iii.0,
@@ -201,27 +199,6 @@ impl MoveLog {
     // pub fn add_movement(&mut self, a: moves::MovementSigl) {}
 }
 
-pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
-    // let restricted_movement = if let Some(_) = unit
-    //     .position
-    //     .to_cube()
-    //     .ring(1)
-    //     .map(|s| game.that_team.find_slow(&s.to_axial()).is_some())
-    //     .find(|a| *a)
-    // {
-    //     true
-    // } else {
-    match unit.typ {
-        Type::Ship { .. } => false,
-        Type::Foot => true,
-        Type::Archer => false,
-        Type::Catapault => true,
-        Type::Catapault => true,
-        _ => todo!(),
-    }
-    // };
-    // restricted_movement
-}
 #[derive(Copy, Clone, Debug)]
 pub enum Steering {
     Left,
