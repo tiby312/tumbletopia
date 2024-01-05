@@ -401,178 +401,13 @@ pub async fn reselect_loop(
             }
         }
     }
-    // match selection {
-    //     selection::SelectionType::Normal(n) => {
-    //         match n
-    //             .execute(target_cell, ccA.clone(), &mut relative_game_view, doop)
-    //             .await
-    //             .unwrap()
-    //         {
-    //             Some(n) => {
-    //                 let c = n.coord();
-    //                 *extra_attack = Some(n);
-    //                 return LoopRes::Select(selected_unit.with(c).with_team(team_index));
-    //             }
-    //             None => {
-    //                 //Finish this players turn.
-    //                 return LoopRes::EndTurn;
-    //             }
-    //         }
-    //     }
-    //     selection::SelectionType::Extra(e) => {
-    //         e.execute(target_cell, ccA.clone(), &mut relative_game_view, doop)
-    //             .await
-    //             .unwrap();
-    //         return LoopRes::EndTurn;
-    //     }
-    // }
-
-    // if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
-    //     let iii = moves::Invade::new(selected_unit.warrior, path);
-
-    //     let iii = iii
-    //         .execute_with_animation(&mut relative_game_view, doop, |_| {})
-    //         .await;
-
-    //     if let Some(e) = extra_attack.take() {
-    //         game_history.push(moves::ActualMove::ExtraMove(e.prev_move().clone(), iii));
-    //     } else {
-    //         game_history.push(moves::ActualMove::Invade(iii));
-    //     }
-
-    //     //Finish this players turn.
-    //     return LoopRes::EndTurn;
-    // } else {
-    //     //If we are moving to an empty square.
-
-    //     let pm = moves::PartialMove::new(selected_unit.warrior, path);
-    //     let jjj = pm
-    //         .clone()
-    //         .execute_with_animation(&mut relative_game_view, doop, |_| {})
-    //         .await;
-
-    //     match jjj {
-    //         (sigl, moves::ExtraMove::ExtraMove { pos }) => {
-    //             *extra_attack = Some(selection::PossibleExtra::new(sigl, pos));
-    //             return LoopRes::Select(selected_unit.with(pos).with_team(team_index));
-    //         }
-    //         (sigl, moves::ExtraMove::FinishMoving) => {
-    //             game_history.push(moves::ActualMove::NormalMove(sigl));
-    //             //console_dbg!();
-    //             //Finish this players turn.
-    //             return LoopRes::EndTurn;
-    //         }
-    //     }
-    // }
 }
-
-// pub struct Selector<'a,'b>{
-//     game:&'a mut GameView<'b>
-// }
-
-// impl<'a,'b> Selector<'a,'b>{
-//     pub fn iter_selections(&mut self)->impl Iterator<Item=selection::PossibleMovesNormal>{
-
-//     }
-// }
-
-// #[derive(Debug)]
-// pub struct ParseErr;
-// pub async fn replay<'a>(
-//     command_sender: Sender<GameWrap<'a, Command>>,
-//     response_recv: Receiver<GameWrapResponse<'a, Response>>,
-//     game: &'a mut Game,
-// ) -> Result<(), ParseErr> {
-//     let mut doop = WorkerManager {
-//         game: game as *mut _,
-//         sender: command_sender,
-//         receiver: response_recv,
-//     };
-
-//     //let s="N-1:1:0:-1,N2:-1:0:0,N-1:2:-1:0,N2:-2:2:-1,E-1:0:0:-1:0:-1:1:-1,I0:0:-2:2,S,N-2:2:-3:3,S,S,S,";
-//     let s = "N-1:1:-1:-1,N2:-1:0:0,N-1:2:0:2,I0:0:-2:2,FB";
-//     let mut k = moves::from_foo(s).map_err(|_| ParseErr)?.into_iter();
-
-//     for team in ActiveTeam::Cats.iter() {
-//         let Some(n)=k.next() else{
-//             break;
-//         };
-//         console_dbg!(&n);
-//         let mut game_view = game.view_mut(team);
-//         match n {
-//             moves::ActualMove::Invade(i) => {
-//                 let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
-
-//                 let path = selection::PossibleMovesNormal::new(un)
-//                     .get_path_from_move(i.moveto, &game_view)
-//                     .map_err(|_| ParseErr)?;
-
-//                 moves::Invade::new(i.unit, path)
-//                     .execute_with_animation(&mut game_view, &mut doop, |_| {})
-//                     .await;
-//             }
-//             moves::ActualMove::NormalMove(i) => {
-//                 let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
-
-//                 let path = selection::PossibleMovesNormal::new(un)
-//                     .get_path_from_move(i.moveto, &game_view)
-//                     .map_err(|_| ParseErr)?;
-
-//                 moves::PartialMove::new(i.unit, path)
-//                     .execute_with_animation(&mut game_view, &mut doop, |_| {})
-//                     .await;
-//             }
-//             moves::ActualMove::ExtraMove(i, j) => {
-//                 let un = game_view.this_team.find_slow(&i.unit).ok_or(ParseErr)?;
-//                 let path = selection::PossibleMovesNormal::new(un)
-//                     .get_path_from_move(i.moveto, &game_view)
-//                     .map_err(|_| ParseErr)?;
-//                 let k = moves::PartialMove::new(i.unit, path)
-//                     .execute_with_animation(&mut game_view, &mut doop, |_| {})
-//                     .await;
-
-//                 let moves::ExtraMove::ExtraMove{pos}=k.1 else{
-//                     return Err(ParseErr);
-//                 };
-
-//                 let sel = selection::PossibleExtra::new(k.0, pos);
-
-//                 let un = game_view.this_team.find_slow(&j.unit).ok_or(ParseErr)?;
-//                 let path = sel
-//                     .select(un)
-//                     .get_path_from_move(j.moveto, &game_view)
-//                     .map_err(|_| ParseErr)?;
-
-//                 moves::Invade::new(j.unit, path)
-//                     .execute_with_animation(&mut game_view, &mut doop, |_| {})
-//                     .await;
-//             }
-//             moves::ActualMove::SkipTurn => {}
-//             moves::ActualMove::GameEnd(g) => match g {
-//                 moves::GameEnding::Win(win_team) => {
-//                     if win_team == team {
-//                         console_dbg!("This team won=", win_team);
-//                     } else {
-//                         return Err(ParseErr);
-//                     }
-//                 }
-//                 moves::GameEnding::Draw => {
-//                     console_dbg!("It was a draw!");
-//                 }
-//             },
-//         }
-//     }
-//     Ok(())
-// }
 
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
     game: &'a mut GameState,
 ) {
-    //replay(command_sender, response_recv, game).await.unwrap();
-    //return;
-    //todo!();
     let mut game_history = selection::MoveLog::new();
 
     let mut doop = WorkerManager {
@@ -706,23 +541,7 @@ pub async fn main_logic<'a>(
             }
         }
     }
-    //TODO
-    // let mut s = String::new();
-    // moves::to_foo(&game_history, &mut s).unwrap();
-    // console_dbg!(s);
 }
-
-// pub struct GameState {}
-// pub struct Engine {}
-// impl Engine {
-//     fn play_move(&mut self, a: Move) {}
-//     fn get_state(&self) -> &GameState {
-//         todo!()
-//     }
-//     fn get_valid_moves(&self, a: GridCoord) -> impl Iterator<Item = Move> {
-//         std::iter::empty()
-//     }
-// }
 
 //TODO use this!
 #[derive(Copy, Clone)]
@@ -737,32 +556,3 @@ pub enum Move {
         to: GridCoord,
     },
 }
-
-// impl<'a> GameViewMut<'a> {
-//     pub fn get_path_from_move(
-//         &self,
-//         target_cell: GridCoord,
-//         unit: &UnitData,
-//         extra_attack: &Option<(moves::PartialMove, GridCoord)>,
-//     ) -> movement::Path {
-//         //Reconstruct possible paths with path information this time.
-//         let ss = generate_unit_possible_moves_inner(&unit, self, extra_attack, movement::WithPath);
-
-//         let path = ss
-//             .moves
-//             .iter()
-//             .find(|a| a.target == target_cell)
-//             .map(|a| &a.path)
-//             .unwrap();
-
-//         *path
-//     }
-
-//     pub fn get_unit_possible_moves(
-//         &self,
-//         unit: &UnitData,
-//         extra_attack: &Option<(moves::PartialMove, GridCoord)>,
-//     ) -> movement::PossibleMoves2<()> {
-//         generate_unit_possible_moves_inner(unit, self, extra_attack, NoPath)
-//     }
-// }
