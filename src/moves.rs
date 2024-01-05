@@ -257,11 +257,13 @@ pub mod partial_move {
             };
 
             let is_world_cell = game.world.filter().filter(&a).to_bool();
-            a != unit && is_world_cell && cc
+            a != unit
+                && is_world_cell
+                && cc
+                && game.this_team.find_slow(&a).is_none()
+                && game.that_team.find_slow(&a).is_none()
         };
-        let cond2 = |a: GridCoord| {
-            game.this_team.find_slow(&a).is_none() && game.that_team.find_slow(&a).is_none()
-        };
+        let cond2 = |a: GridCoord| true;
 
         for (_, a) in unit.to_cube().ring(1) {
             let a = a.to_axial();
