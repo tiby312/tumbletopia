@@ -390,20 +390,17 @@ pub async fn reselect_loop(
                 end: target_cell,
                 is_extra: false,
             };
+            let c = target_cell;
+            let mut kk = unit.clone();
+            kk.position = target_cell;
 
             let iii = iii
                 .execute_with_animation(&mut relative_game_view, doop, ccA.clone())
                 .await;
 
-            match iii {
-                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-                    let c = unit.position;
-                    *extra_attack = Some(selection::PossibleExtra::new(sigl, unit.clone()));
-                    return LoopRes::Select(selected_unit.with(c).with_team(team_index));
-                }
-                (_, moves::ExtraMove::FinishMoving) => {
-                    unreachable!();
-                }
+            {
+                *extra_attack = Some(selection::PossibleExtra::new(iii, kk));
+                return LoopRes::Select(selected_unit.with(c).with_team(team_index));
             }
         }
     }

@@ -359,11 +359,23 @@ pub mod partial_move {
         pub is_extra: bool,
     }
 
+    // trait AMove{
+    //     type Res;
+    // }
+    // pub struct Normal;
+    // impl AMove for Normal{
+    //     type Res=PartialMoveSigl;
+    // }
+
+    // pub async fn move_animation<T:AMove>()->T::Res{
+
+    // }
+    // pub fn move_no_animation<T:AMove>()->T::Res{
+
+    // }
+
     impl PartialMove {
-        pub fn execute<'b>(
-            self,
-            game_view: &'b mut GameViewMut<'_, '_>,
-        ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
+        pub fn execute<'b>(self, game_view: &'b mut GameViewMut<'_, '_>) -> PartialMoveSigl {
             let is_extra = self.is_extra;
             let selected_unit = self.selected_unit;
             let target_cell = self.end;
@@ -375,7 +387,7 @@ pub mod partial_move {
 
                 let sigl = apply_normal_move(this_unit, target_cell);
 
-                (sigl, ExtraMove::ExtraMove { unit: this_unit })
+                sigl
             } else {
                 let sigl = apply_extra_move(
                     selected_unit,
@@ -385,7 +397,7 @@ pub mod partial_move {
                     game_view.forest,
                 );
 
-                (sigl, ExtraMove::FinishMoving)
+                sigl
             }
         }
         pub async fn execute_with_animation<'b>(
@@ -393,7 +405,7 @@ pub mod partial_move {
             game_view: &'b mut GameViewMut<'_, '_>,
             data: &mut ace::WorkerManager<'_>,
             mesh: MovementMesh,
-        ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
+        ) -> PartialMoveSigl {
             let is_extra = self.is_extra;
             let selected_unit = self.selected_unit;
             let target_cell = self.end;
@@ -418,7 +430,7 @@ pub mod partial_move {
 
                 let sigl = apply_normal_move(this_unit, target_cell);
 
-                (sigl, ExtraMove::ExtraMove { unit: this_unit })
+                sigl
             } else {
                 let sigl = apply_extra_move(
                     selected_unit,
@@ -428,7 +440,7 @@ pub mod partial_move {
                     game_view.forest,
                 );
 
-                (sigl, ExtraMove::FinishMoving)
+                sigl
             }
         }
     }

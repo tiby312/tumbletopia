@@ -814,7 +814,7 @@ pub fn execute_move_no_ani(
 
             let iii = iii.execute(&mut game);
 
-            assert_eq!(iii.0.moveto, e.unit);
+            assert_eq!(iii.moveto, e.unit);
 
             let selected_unit = e.unit;
             let target_cell = e.moveto;
