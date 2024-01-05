@@ -245,7 +245,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
     let mut results = Vec::new();
     let mut table = LeafTranspositionTable::new();
 
-    let max_depth = 4;
+    let max_depth = 6;
     let mut foo1 = MoveOrdering {
         a: std::collections::HashMap::new(),
     };

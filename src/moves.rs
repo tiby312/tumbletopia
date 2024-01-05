@@ -228,25 +228,25 @@ pub mod partial_move {
         //let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
         sigl
     }
-    fn apply_extra_move(
-        unit: GridCoord,
-        typ: Type,
-        target_cell: GridCoord,
-        land: &mut Vec<GridCoord>,
-        forest: &mut Vec<GridCoord>,
-    ) -> PartialMoveSigl {
-        let sigl = PartialMoveSigl {
-            unit,
-            moveto: target_cell,
-        };
+    // fn apply_extra_move(
+    //     unit: GridCoord,
+    //     typ: Type,
+    //     target_cell: GridCoord,
+    //     land: &mut Vec<GridCoord>,
+    //     forest: &mut Vec<GridCoord>,
+    // ) -> PartialMoveSigl {
+    //     let sigl = PartialMoveSigl {
+    //         unit,
+    //         moveto: target_cell,
+    //     };
 
-        if typ == Type::Ship {
-            land.push(target_cell);
-        } else if typ == Type::Foot {
-            forest.push(target_cell);
-        }
-        sigl
-    }
+    //     if typ == Type::Ship {
+    //         land.push(target_cell);
+    //     } else if typ == Type::Foot {
+    //         forest.push(target_cell);
+    //     }
+    //     sigl
+    // }
 
     pub fn generate_unit_possible_moves_inner(
         unit: &GridCoord,
@@ -254,6 +254,7 @@ pub mod partial_move {
         game: &GameViewMut,
         extra: bool,
     ) -> movement::MovementMesh {
+        assert!(!extra);
         let unit = *unit;
         let mut mesh = movement::MovementMesh::new();
 
@@ -322,6 +323,23 @@ pub mod partial_move {
                     },
                 ));
 
+
+                //revert it back.
+                //TODO put this in own function
+                let unit=&mut state.view_mut(team).this_team.units[i];
+                let is_ship=if unit.typ==Type::Ship{
+                    true
+                }else{
+                    false
+                };
+                if is_ship{
+                    state.land.pop();
+                }else{
+                    state.forest.pop();
+                }
+                state.view_mut(team).this_team.units[i].position = pos;
+
+
                 // let second_mesh =
                 //     generate_unit_possible_moves_inner(&mm, typ, &state.view_mut(team), true);
 
@@ -339,8 +357,6 @@ pub mod partial_move {
                 //     ))
                 // }
             }
-            //revert it back.
-            state.view_mut(team).this_team.units[i].position = pos;
         }
         movs
     }
@@ -411,15 +427,16 @@ pub mod partial_move {
 
                 sigl
             } else {
-                let sigl = apply_extra_move(
-                    selected_unit,
-                    typ,
-                    target_cell,
-                    game_view.land,
-                    game_view.forest,
-                );
+                unreachable!();
+                // let sigl = apply_extra_move(
+                //     selected_unit,
+                //     typ,
+                //     target_cell,
+                //     game_view.land,
+                //     game_view.forest,
+                // );
 
-                sigl
+                // sigl
             }
         }
         async fn execute_with_animation<'b>(
@@ -455,15 +472,16 @@ pub mod partial_move {
 
                 sigl
             } else {
-                let sigl = apply_extra_move(
-                    selected_unit,
-                    typ,
-                    target_cell,
-                    game_view.land,
-                    game_view.forest,
-                );
+                unreachable!();
+                // let sigl = apply_extra_move(
+                //     selected_unit,
+                //     typ,
+                //     target_cell,
+                //     game_view.land,
+                //     game_view.forest,
+                // );
 
-                sigl
+                // sigl
             }
         }
     }
