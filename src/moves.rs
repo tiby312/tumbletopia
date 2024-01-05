@@ -317,9 +317,10 @@ pub mod partial_move {
                         },
                     ))
                 }
+
+                //revert it back.
+                state.view_mut(team).this_team.units[i].position = pos;
             }
-            //revert it back.
-            state.view_mut(team).this_team.units[i].position = pos;
         }
         movs
     }
