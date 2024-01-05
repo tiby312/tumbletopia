@@ -1,16 +1,10 @@
-use crate::movement::{HexDir, MovementMesh};
+use crate::movement::HexDir;
 
 use super::*;
-
-// pub enum SelectionType {
-//     Normal(selection::RegularSelection),
-//     Extra(selection::ComboContinueSelection),
-// }
 
 #[derive(Clone)]
 pub struct PossibleExtra {
     prev_move: moves::PartialMoveSigl,
-    //prev_coord: GridCoord,
     prev_coord: UnitData,
 }
 impl PossibleExtra {
@@ -20,12 +14,7 @@ impl PossibleExtra {
             prev_coord,
         }
     }
-    // pub fn select(&self) -> ComboContinueSelection {
-    //     ComboContinueSelection {
-    //         extra: self.clone(),
-    //         unit: self.prev_coord.clone(),
-    //     }
-    // }
+
     pub fn prev_move(&self) -> &moves::PartialMoveSigl {
         &self.prev_move
     }
@@ -33,139 +22,6 @@ impl PossibleExtra {
         self.prev_coord.position
     }
 }
-
-// #[derive(Clone)]
-// pub struct ComboContinueSelection {
-//     extra: PossibleExtra,
-//     unit: UnitData,
-// }
-// #[derive(Debug)]
-// pub struct NoPathErr;
-// impl ComboContinueSelection {
-//     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-//         moves::partial_move::generate_unit_possible_moves_inner(
-//             &self.unit.position,
-//             self.unit.typ,
-//             game,
-//             true,
-//         )
-//     }
-//     pub async fn execute(
-//         &self,
-//         target_cell: GridCoord,
-//         mesh: movement::MovementMesh,
-//         game_view: &mut GameViewMut<'_, '_>,
-//         doop: &mut ace::WorkerManager<'_>,
-//     ) -> Result<(), NoPathErr> {
-//         let unit = self.unit.position;
-
-//         let iii = moves::PartialMove {
-//             selected_unit: unit,
-//             typ: self.unit.typ,
-//             end: target_cell,
-//             is_extra: true,
-//         };
-
-//         let _ = iii.execute_with_animation(game_view, doop, mesh).await;
-
-//         Ok(())
-//     }
-//     pub fn execute_no_animation(
-//         &self,
-//         target_cell: GridCoord,
-//         game_view: &mut GameViewMut<'_, '_>,
-//     ) -> Result<(), NoPathErr> {
-//         let unit = self.unit.position;
-
-//         let iii = moves::PartialMove {
-//             selected_unit: unit,
-//             typ: self.unit.typ,
-//             end: target_cell,
-//             is_extra: true,
-//         };
-
-//         let _ = iii.execute(game_view);
-
-//         Ok(())
-//     }
-// }
-
-// #[derive(Clone)]
-// pub struct RegularSelection {
-//     pub unit: UnitData,
-// }
-
-// impl RegularSelection {
-//     pub fn new(a: &UnitData) -> Self {
-//         RegularSelection { unit: a.clone() }
-//     }
-
-//     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-//         moves::partial_move::generate_unit_possible_moves_inner(
-//             &self.unit.position,
-//             self.unit.typ,
-//             game,
-//             false,
-//         )
-//     }
-
-//     pub async fn execute(
-//         &self,
-//         target_cell: GridCoord,
-//         mesh: movement::MovementMesh,
-//         game_view: &mut GameViewMut<'_, '_>,
-//         doop: &mut ace::WorkerManager<'_>,
-//     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
-//         let unit = self.unit.position;
-
-//         let iii = moves::PartialMove {
-//             selected_unit: unit,
-//             typ: self.unit.typ,
-//             end: target_cell,
-//             is_extra: false,
-//         };
-
-//         let iii = iii.execute_with_animation(game_view, doop, mesh).await;
-
-//         Ok(match iii {
-//             (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-//                 Some(selection::PossibleExtra::new(sigl, unit.clone()))
-//             }
-//             (sigl, moves::ExtraMove::FinishMoving) => {
-//                 unreachable!();
-//                 //move_log.push(moves::ActualMove::NormalMove(sigl));
-//                 None
-//             }
-//         })
-//     }
-//     pub fn execute_no_animation(
-//         &self,
-//         target_cell: GridCoord,
-//         game_view: &mut GameViewMut<'_, '_>,
-//     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
-//         let unit = self.unit.position;
-
-//         let iii = moves::PartialMove {
-//             selected_unit: unit,
-//             typ: self.unit.typ,
-//             end: target_cell,
-//             is_extra: false,
-//         };
-
-//         let iii = iii.execute(game_view);
-
-//         Ok(match iii {
-//             (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-//                 Some(selection::PossibleExtra::new(sigl, unit.clone()))
-//             }
-//             (sigl, moves::ExtraMove::FinishMoving) => {
-//                 unreachable!();
-//                 //move_log.push(moves::ActualMove::NormalMove(sigl));
-//                 None
-//             }
-//         })
-//     }
-// }
 
 pub struct MoveLog {
     pub inner: Vec<moves::ActualMove>,

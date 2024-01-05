@@ -5,8 +5,7 @@ pub mod selection;
 use crate::{
     animation::Animation,
     grids::GridMatrix,
-    movement::{self, Filter, GridCoord, MoveUnit},
-    terrain::{self},
+    movement::{self, Filter, GridCoord},
     CellSelection, GameState, UnitData,
 };
 
@@ -251,7 +250,7 @@ pub async fn reselect_loop(
     team_index: ActiveTeam,
     extra_attack: &mut Option<selection::PossibleExtra>,
     selected_unit: SelectType,
-    game_history: &mut selection::MoveLog,
+    _game_history: &mut selection::MoveLog,
 ) -> LoopRes<SelectType> {
     console_dbg!(extra_attack.is_some());
     //At this point we know a friendly unit is currently selected.
@@ -288,7 +287,7 @@ pub async fn reselect_loop(
         true
     };
 
-    let ccA = moves::partial_move::generate_unit_possible_moves_inner(
+    let cca = moves::partial_move::generate_unit_possible_moves_inner(
         &unit.position,
         unit.typ,
         &relative_game_view,
@@ -296,7 +295,7 @@ pub async fn reselect_loop(
     );
 
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
-    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, ccA.clone());
+    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca.clone());
 
     let (cell, pototo) = doop.get_mouse_selection(cc, selected_unit.team, grey).await;
 
@@ -359,18 +358,6 @@ pub async fn reselect_loop(
     //At this point all re-selecting of units based off of the input has occured.
     //We definately want to act on the action the user took on the selected unit.
 
-    //Reconstruct path by creating all possible paths with path information this time.
-    //let path = relative_game_view.get_path_from_move(target_cell, &unit, extra_attack);
-
-    // let path = match selection {
-    //     selection::SelectionType::Normal(e) => e
-    //         .get_path_from_move(target_cell, &relative_game_view)
-    //         .unwrap(),
-    //     selection::SelectionType::Extra(e) => e
-    //         .get_path_from_move(target_cell, &relative_game_view)
-    //         .unwrap(),
-    // };
-
     {
         if let Some(e) = extra_attack {
             moves::partial_move::PartialMove {
@@ -379,7 +366,7 @@ pub async fn reselect_loop(
                 end: target_cell,
                 is_extra: true,
             }
-            .execute_with_animation(&mut relative_game_view, doop, ccA.clone())
+            .execute_with_animation(&mut relative_game_view, doop, cca.clone())
             .await;
 
             return LoopRes::EndTurn;
@@ -395,7 +382,7 @@ pub async fn reselect_loop(
             kk.position = target_cell;
 
             let iii = iii
-                .execute_with_animation(&mut relative_game_view, doop, ccA.clone())
+                .execute_with_animation(&mut relative_game_view, doop, cca.clone())
                 .await;
 
             {
