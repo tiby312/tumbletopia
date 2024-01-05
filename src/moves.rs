@@ -149,12 +149,6 @@ impl<'a, 'b> Doopa<'a, 'b> {
         W::unwrapme(aa.into_data())
     }
 }
-struct Doopa2;
-impl Doopa2 {
-    pub fn wait_animation<W: UnwrapMe>(&mut self, m: W, _: ActiveTeam) -> W::Item {
-        m.direct_unwrap()
-    }
-}
 
 use crate::movement::{movement_mesh::Mesh, MovementMesh};
 
@@ -249,8 +243,6 @@ mod partial_move {
         sigl
     }
 
-    //TODO the mesh is only needed for animation purposes.
-    //inefficient to calculate for ai
     #[derive(Clone, Debug)]
     pub struct PartialMove {
         pub selected_unit: GridCoord,
@@ -264,8 +256,6 @@ mod partial_move {
             self,
             game_view: &'b mut GameViewMut<'_, '_>,
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
-            let mut a = Doopa2;
-
             let is_extra = self.is_extra;
             let selected_unit = self.selected_unit;
             let target_cell = self.end;
@@ -296,12 +286,9 @@ mod partial_move {
             data: &mut ace::WorkerManager<'_>,
             mesh: MovementMesh,
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
-            let mut a = Doopa::new(data);
-
             let is_extra = self.is_extra;
             let selected_unit = self.selected_unit;
             let target_cell = self.end;
-            let doopa = &mut a;
             let typ = self.typ;
 
             if !is_extra {
@@ -317,7 +304,7 @@ mod partial_move {
                 );
 
                 let team = game_view.team;
-                let _ = doopa
+                let _ = Doopa::new(data)
                     .wait_animation(Movement::new(this_unit.clone(), mesh, walls, end), team)
                     .await;
 
@@ -392,30 +379,30 @@ impl UnwrapMe for Movement {
     }
 }
 
-struct Attack {
-    attacker: UnitData,
-    defender: UnitData,
-}
-impl Attack {
-    pub fn new(attacker: UnitData, defender: UnitData) -> Self {
-        Attack { attacker, defender }
-    }
-}
-impl UnwrapMe for Attack {
-    type Item = [UnitData; 2];
-    fn direct_unwrap(self) -> Self::Item {
-        [self.attacker, self.defender]
-    }
-    fn into_command(self) -> animation::AnimationCommand {
-        animation::AnimationCommand::Attack {
-            attacker: self.attacker,
-            defender: self.defender,
-        }
-    }
-    fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
-        let animation::AnimationCommand::Attack { attacker, defender } = a else {
-            unreachable!()
-        };
-        [attacker, defender]
-    }
-}
+// struct Attack {
+//     attacker: UnitData,
+//     defender: UnitData,
+// }
+// impl Attack {
+//     pub fn new(attacker: UnitData, defender: UnitData) -> Self {
+//         Attack { attacker, defender }
+//     }
+// }
+// impl UnwrapMe for Attack {
+//     type Item = [UnitData; 2];
+//     fn direct_unwrap(self) -> Self::Item {
+//         [self.attacker, self.defender]
+//     }
+//     fn into_command(self) -> animation::AnimationCommand {
+//         animation::AnimationCommand::Attack {
+//             attacker: self.attacker,
+//             defender: self.defender,
+//         }
+//     }
+//     fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
+//         let animation::AnimationCommand::Attack { attacker, defender } = a else {
+//             unreachable!()
+//         };
+//         [attacker, defender]
+//     }
+// }
