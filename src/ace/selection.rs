@@ -2,7 +2,7 @@ use duckduckgeo::dists::grid::Grid;
 
 use crate::movement::{
     movement_mesh::{SwingMove, SwingMoveRay},
-    ComputeMovesRes, HexDir, MovementMesh,
+    HexDir, MovementMesh,
 };
 
 use super::*;

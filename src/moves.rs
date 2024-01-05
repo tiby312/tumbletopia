@@ -244,7 +244,7 @@ pub mod partial_move {
         extra: bool,
     ) -> movement::MovementMesh {
         let unit = *unit;
-        let mut mesh = movement::MovementMesh::new(vec![]);
+        let mut mesh = movement::MovementMesh::new();
 
         let cond = |a: GridCoord| {
             let cc = if typ == Type::Ship {
@@ -333,7 +333,6 @@ pub mod partial_move {
         let game = game.view_mut(team_index);
 
         for unit in game.this_team.units.iter() {
-            //TODO instead check iterator of all moves is empty???
             let mesh = moves::partial_move::generate_unit_possible_moves_inner(
                 &unit.position,
                 unit.typ,
@@ -345,7 +344,6 @@ pub mod partial_move {
             }
         }
 
-        //console_dbg!("This team won:", team_index);
         if team_index == ActiveTeam::Cats {
             return Some(GameOver::DogWon);
         } else {
