@@ -1,6 +1,4 @@
-use crate::{
-    ace::selection::generate_unit_possible_moves_inner, movement::MovementMesh, moves::ActualMove,
-};
+use crate::{movement::MovementMesh, moves::ActualMove};
 
 use super::{
     selection::{MoveLog, RegularSelection},
@@ -826,7 +824,7 @@ impl<'a> AlphaBeta<'a> {
             //     None
             // };
 
-            let mut moves = for_all_moves_fast(node.clone(), team);
+            let mut moves = moves::partial_move::for_all_moves_fast(node.clone(), team);
 
             //console_dbg!("FOOOO",moves.len());
             //console_dbg!(moves.iter().map(|x|&x.1.the_move).collect::<Vec<_>>());
@@ -1194,23 +1192,20 @@ pub fn execute_move_no_ani(
     match the_move {
         // moves::ActualMove::NormalMove(o) => {
         //     todo!();
-            
+
         // }
         moves::ActualMove::ExtraMove(o, e) => {
             let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
             let r = selection::RegularSelection::new(&unit);
-            let r = r
-                .execute_no_animation(o.moveto, &mut game)
-                .unwrap();
+            let r = r.execute_no_animation(o.moveto, &mut game).unwrap();
 
             let rr = r.unwrap();
 
             let rr = rr.select();
             //let mesh = rr.generate(&game);
 
-            rr.execute_no_animation(e.moveto, &mut game)
-                .unwrap();
+            rr.execute_no_animation(e.moveto, &mut game).unwrap();
         }
         moves::ActualMove::SkipTurn => {}
         moves::ActualMove::GameEnd(_) => todo!(),
@@ -1245,43 +1240,6 @@ pub fn execute_move_no_ani(
 // }
 
 //TODO use this!!!
-pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<moves::ActualMove> {
-    let mut movs = Vec::new();
-    for i in 0..state.view_mut(team).this_team.units.len() {
-        let pos = state.view_mut(team).this_team.units[i].position;
-        let typ = state.view_mut(team).this_team.units[i].typ;
-
-        let mesh = generate_unit_possible_moves_inner(&pos, typ, &state.view_mut(team), false);
-        for mm in mesh.iter_mesh(pos) {
-            //Temporarily move the player in the game world.
-            state.view_mut(team).this_team.units[i].position = mm;
-
-            let second_mesh =
-                generate_unit_possible_moves_inner(&mm, typ, &state.view_mut(team), true);
-
-            for sm in second_mesh.iter_mesh(mm) {
-                // movs.push(OneMove {
-                //     start: pos,
-                //     end: mm,
-                //     hex: mm.dir_to(&sm),
-                // })
-                movs.push(moves::ActualMove::ExtraMove(
-                    moves::PartialMoveSigl {
-                        unit: pos,
-                        moveto: mm,
-                    },
-                    moves::PartialMoveSigl {
-                        unit: mm,
-                        moveto: sm,
-                    },
-                ))
-            }
-        }
-        //revert it back.
-        state.view_mut(team).this_team.units[i].position = pos;
-    }
-    movs
-}
 
 // pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
 //     let mut sss = state.clone();

@@ -183,7 +183,9 @@ impl PartialMoveSigl {
 }
 
 pub use partial_move::PartialMove;
-mod partial_move {
+pub mod partial_move {
+    use crate::movement::Filter;
+
     use super::*;
 
     fn calculate_walls(
@@ -241,6 +243,91 @@ mod partial_move {
             forest.push(target_cell);
         }
         sigl
+    }
+
+    pub fn generate_unit_possible_moves_inner(
+        unit: &GridCoord,
+        typ: Type,
+        game: &GameViewMut,
+        extra: bool,
+    ) -> movement::MovementMesh {
+        let unit = *unit;
+        let mut mesh = movement::MovementMesh::new(vec![]);
+
+        let cond = |a: GridCoord| {
+            let cc = if typ == Type::Ship {
+                game.land.iter().find(|&&b| a == b).is_none()
+            } else if typ == Type::Foot {
+                game.land.iter().find(|&&b| a == b).is_some()
+                    && game.forest.iter().find(|&&b| a == b).is_none()
+            } else {
+                unreachable!();
+            };
+
+            let is_world_cell = game.world.filter().filter(&a).to_bool();
+            a != unit && is_world_cell && cc
+        };
+        let cond2 = |a: GridCoord| {
+            game.this_team.find_slow(&a).is_none() && game.that_team.find_slow(&a).is_none()
+        };
+
+        for (_, a) in unit.to_cube().ring(1) {
+            let a = a.to_axial();
+
+            if cond(a) {
+                if cond2(a) {
+                    mesh.add_normal_cell(a.sub(&unit));
+                }
+                if !extra {
+                    for (_, b) in a.to_cube().ring(1) {
+                        let b = b.to_axial();
+                        //TODO inefficient
+                        if cond(b) {
+                            if cond2(b) {
+                                mesh.add_normal_cell(b.sub(&unit));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        mesh
+    }
+
+    pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<moves::ActualMove> {
+        let mut movs = Vec::new();
+        for i in 0..state.view_mut(team).this_team.units.len() {
+            let pos = state.view_mut(team).this_team.units[i].position;
+            let typ = state.view_mut(team).this_team.units[i].typ;
+
+            let mesh = generate_unit_possible_moves_inner(&pos, typ, &state.view_mut(team), false);
+            for mm in mesh.iter_mesh(pos) {
+                //Temporarily move the player in the game world.
+                //We do this so that the mesh generated for extra is accurate.
+                apply_normal_move(&mut state.view_mut(team).this_team.units[i], mm);
+
+                let second_mesh =
+                    generate_unit_possible_moves_inner(&mm, typ, &state.view_mut(team), true);
+
+                for sm in second_mesh.iter_mesh(mm) {
+                    //Don't both applying the extra move. just generate the sigl.
+                    movs.push(moves::ActualMove::ExtraMove(
+                        moves::PartialMoveSigl {
+                            unit: pos,
+                            moveto: mm,
+                        },
+                        moves::PartialMoveSigl {
+                            unit: mm,
+                            moveto: sm,
+                        },
+                    ))
+                }
+            }
+            //revert it back.
+            state.view_mut(team).this_team.units[i].position = pos;
+        }
+        movs
     }
 
     #[derive(Clone, Debug)]

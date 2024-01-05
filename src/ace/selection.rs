@@ -48,14 +48,19 @@ pub struct ComboContinueSelection {
 pub struct NoPathErr;
 impl ComboContinueSelection {
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        generate_unit_possible_moves_inner(&self.unit.position, self.unit.typ, game, true)
+        moves::partial_move::generate_unit_possible_moves_inner(
+            &self.unit.position,
+            self.unit.typ,
+            game,
+            true,
+        )
     }
     pub async fn execute(
         &self,
         target_cell: GridCoord,
         mesh: movement::MovementMesh,
         game_view: &mut GameViewMut<'_, '_>,
-        doop: &mut ace::WorkerManager<'_>
+        doop: &mut ace::WorkerManager<'_>,
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
@@ -73,7 +78,7 @@ impl ComboContinueSelection {
     pub fn execute_no_animation(
         &self,
         target_cell: GridCoord,
-        game_view: &mut GameViewMut<'_, '_>
+        game_view: &mut GameViewMut<'_, '_>,
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
@@ -101,7 +106,12 @@ impl RegularSelection {
     }
 
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        generate_unit_possible_moves_inner(&self.unit.position, self.unit.typ, game, false)
+        moves::partial_move::generate_unit_possible_moves_inner(
+            &self.unit.position,
+            self.unit.typ,
+            game,
+            false,
+        )
     }
 
     pub async fn execute(
@@ -580,53 +590,3 @@ pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter, Rese
         ),
     ]
 };
-
-pub fn generate_unit_possible_moves_inner(
-    unit: &GridCoord,
-    typ: Type,
-    game: &GameViewMut,
-    extra: bool,
-) -> movement::MovementMesh {
-    let unit = *unit;
-    let mut mesh = movement::MovementMesh::new(vec![]);
-
-    let cond = |a: GridCoord| {
-        let cc = if typ == Type::Ship {
-            game.land.iter().find(|&&b| a == b).is_none()
-        } else if typ == Type::Foot {
-            game.land.iter().find(|&&b| a == b).is_some()
-                && game.forest.iter().find(|&&b| a == b).is_none()
-        } else {
-            unreachable!();
-        };
-
-        let is_world_cell = game.world.filter().filter(&a).to_bool();
-        a != unit && is_world_cell && cc
-    };
-    let cond2 = |a: GridCoord| {
-        game.this_team.find_slow(&a).is_none() && game.that_team.find_slow(&a).is_none()
-    };
-
-    for (_, a) in unit.to_cube().ring(1) {
-        let a = a.to_axial();
-
-        if cond(a) {
-            if cond2(a) {
-                mesh.add_normal_cell(a.sub(&unit));
-            }
-            if !extra {
-                for (_, b) in a.to_cube().ring(1) {
-                    let b = b.to_axial();
-                    //TODO inefficient
-                    if cond(b) {
-                        if cond2(b) {
-                            mesh.add_normal_cell(b.sub(&unit));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    mesh
-}
