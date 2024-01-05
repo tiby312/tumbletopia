@@ -217,6 +217,18 @@ mod partial_move {
         walls
     }
 
+    fn apply_normal_move(this_unit: &mut UnitData, target_cell: GridCoord) -> PartialMoveSigl {
+        let orig = this_unit.position;
+        this_unit.position = target_cell;
+
+        let sigl = PartialMoveSigl {
+            unit: orig,
+            moveto: target_cell,
+        };
+
+        //let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
+        sigl
+    }
     fn apply_extra_move(
         unit: GridCoord,
         typ: Type,
@@ -258,13 +270,11 @@ mod partial_move {
                         .wait_animation(Movement::new(this_unit.clone(),mesh,walls,end), team)
                         $($_await)*;
 
-                    this_unit.position=end;
 
+                    let unit=game_view.this_team.find_slow_mut(&start).unwrap();
 
+                    let sigl=apply_normal_move(unit,target_cell);
 
-                    let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
-
-                    let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
                     (sigl,ExtraMove::ExtraMove{unit})
                 }
                 else

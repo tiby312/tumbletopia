@@ -815,6 +815,7 @@ pub async fn worker_entry() {
                 }
 
                 {
+                    //TODO loop instead
                     let cat_draw =
                         WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow, &direction_model);
                     let dog_draw =
