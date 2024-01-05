@@ -66,12 +66,7 @@ impl ComboContinueSelection {
             is_extra: true,
         };
 
-        let iii = iii.execute_with_animation(game_view, doop, mesh).await;
-
-        // move_log.push(moves::ActualMove::ExtraMove(
-        //     self.extra.prev_move.clone(),
-        //     iii.0,
-        // ));
+        let _ = iii.execute_with_animation(game_view, doop, mesh).await;
 
         Ok(())
     }
@@ -89,12 +84,7 @@ impl ComboContinueSelection {
             is_extra: true,
         };
 
-        let iii = iii.execute(game_view);
-
-        // move_log.push(moves::ActualMove::ExtraMove(
-        //     self.extra.prev_move.clone(),
-        //     iii.0,
-        // ));
+        let _ = iii.execute(game_view);
 
         Ok(())
     }
@@ -137,6 +127,7 @@ impl RegularSelection {
                 Some(selection::PossibleExtra::new(sigl, unit.clone()))
             }
             (sigl, moves::ExtraMove::FinishMoving) => {
+                unreachable!();
                 //move_log.push(moves::ActualMove::NormalMove(sigl));
                 None
             }
@@ -163,6 +154,7 @@ impl RegularSelection {
                 Some(selection::PossibleExtra::new(sigl, unit.clone()))
             }
             (sigl, moves::ExtraMove::FinishMoving) => {
+                unreachable!();
                 //move_log.push(moves::ActualMove::NormalMove(sigl));
                 None
             }
