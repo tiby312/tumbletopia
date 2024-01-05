@@ -55,8 +55,7 @@ impl ComboContinueSelection {
         target_cell: GridCoord,
         mesh: movement::MovementMesh,
         game_view: &mut GameViewMut<'_, '_>,
-        doop: &mut ace::WorkerManager<'_>,
-        move_log: &mut MoveLog,
+        doop: &mut ace::WorkerManager<'_>
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
@@ -69,18 +68,17 @@ impl ComboContinueSelection {
 
         let iii = iii.execute_with_animation(game_view, doop, mesh).await;
 
-        move_log.push(moves::ActualMove::ExtraMove(
-            self.extra.prev_move.clone(),
-            iii.0,
-        ));
+        // move_log.push(moves::ActualMove::ExtraMove(
+        //     self.extra.prev_move.clone(),
+        //     iii.0,
+        // ));
 
         Ok(())
     }
     pub fn execute_no_animation(
         &self,
         target_cell: GridCoord,
-        game_view: &mut GameViewMut<'_, '_>,
-        move_log: &mut MoveLog,
+        game_view: &mut GameViewMut<'_, '_>
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
@@ -93,10 +91,10 @@ impl ComboContinueSelection {
 
         let iii = iii.execute(game_view);
 
-        move_log.push(moves::ActualMove::ExtraMove(
-            self.extra.prev_move.clone(),
-            iii.0,
-        ));
+        // move_log.push(moves::ActualMove::ExtraMove(
+        //     self.extra.prev_move.clone(),
+        //     iii.0,
+        // ));
 
         Ok(())
     }
@@ -122,7 +120,6 @@ impl RegularSelection {
         mesh: movement::MovementMesh,
         game_view: &mut GameViewMut<'_, '_>,
         doop: &mut ace::WorkerManager<'_>,
-        move_log: &mut MoveLog,
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
         let unit = self.unit.position;
 
@@ -140,7 +137,7 @@ impl RegularSelection {
                 Some(selection::PossibleExtra::new(sigl, unit.clone()))
             }
             (sigl, moves::ExtraMove::FinishMoving) => {
-                move_log.push(moves::ActualMove::NormalMove(sigl));
+                //move_log.push(moves::ActualMove::NormalMove(sigl));
                 None
             }
         })
@@ -149,7 +146,6 @@ impl RegularSelection {
         &self,
         target_cell: GridCoord,
         game_view: &mut GameViewMut<'_, '_>,
-        move_log: &mut MoveLog,
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
         let unit = self.unit.position;
 
@@ -167,7 +163,7 @@ impl RegularSelection {
                 Some(selection::PossibleExtra::new(sigl, unit.clone()))
             }
             (sigl, moves::ExtraMove::FinishMoving) => {
-                move_log.push(moves::ActualMove::NormalMove(sigl));
+                //move_log.push(moves::ActualMove::NormalMove(sigl));
                 None
             }
         })

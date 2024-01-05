@@ -376,7 +376,6 @@ pub async fn reselect_loop(
                     ccA.clone(),
                     &mut relative_game_view,
                     doop,
-                    game_history,
                 )
                 .await
                 .unwrap()
@@ -398,7 +397,6 @@ pub async fn reselect_loop(
                 ccA.clone(),
                 &mut relative_game_view,
                 doop,
-                game_history,
             )
             .await
             .unwrap();

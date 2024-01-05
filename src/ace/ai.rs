@@ -1189,38 +1189,19 @@ pub fn execute_move_no_ani(
     the_move: moves::ActualMove,
 ) {
     let mut game = state.view_mut(team_index);
-    let mut game_history = MoveLog::new();
+    //let mut game_history = MoveLog::new();
 
     match the_move {
-        moves::ActualMove::NormalMove(o) => {
-            let unit = game.this_team.find_slow(&o.unit).unwrap();
-
-            // let mesh = selection::generate_unit_possible_moves_inner(
-            //     &unit.position,
-            //     unit.typ,
-            //     &game,
-            //     false,
-            // );
-
-            let r = selection::RegularSelection::new(unit);
-            let r = r
-                .execute_no_animation(o.moveto, &mut game, &mut game_history)
-                .unwrap();
-            assert!(r.is_none());
-        }
+        // moves::ActualMove::NormalMove(o) => {
+        //     todo!();
+            
+        // }
         moves::ActualMove::ExtraMove(o, e) => {
             let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
-            // let mesh = selection::generate_unit_possible_moves_inner(
-            //     &unit.position,
-            //     unit.typ,
-            //     &game,
-            //     true,
-            // );
-
             let r = selection::RegularSelection::new(&unit);
             let r = r
-                .execute_no_animation(o.moveto, &mut game, &mut game_history)
+                .execute_no_animation(o.moveto, &mut game)
                 .unwrap();
 
             let rr = r.unwrap();
@@ -1228,7 +1209,7 @@ pub fn execute_move_no_ani(
             let rr = rr.select();
             //let mesh = rr.generate(&game);
 
-            rr.execute_no_animation(e.moveto, &mut game, &mut game_history)
+            rr.execute_no_animation(e.moveto, &mut game)
                 .unwrap();
         }
         moves::ActualMove::SkipTurn => {}

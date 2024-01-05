@@ -10,7 +10,6 @@ pub struct AMove {
 
 #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
 pub enum ActualMove {
-    NormalMove(PartialMoveSigl),
     ExtraMove(PartialMoveSigl, PartialMoveSigl),
     SkipTurn,
     GameEnd(GameEnding),
@@ -43,7 +42,8 @@ pub fn from_foo(input: &str) -> Result<Vec<ActualMove>, std::fmt::Error> {
 
                     let unit = GridCoord([foo()?, foo()?]);
                     let moveto = GridCoord([foo()?, foo()?]);
-                    Ok(ActualMove::NormalMove(PartialMoveSigl { unit, moveto }))
+                    todo!();
+                    //Ok(ActualMove::NormalMove(PartialMoveSigl { unit, moveto }))
                 }
                 'E' => {
                     let s = s.as_str();
@@ -103,11 +103,11 @@ pub fn to_foo(a: &[ActualMove], mut f: impl std::fmt::Write) -> std::fmt::Result
             //     let b = i.moveto.0;
             //     write!(f, "I{}:{}:{}:{},", a[0], a[1], b[0], b[1])?;
             // }
-            ActualMove::NormalMove(i) => {
-                let a = i.unit.0;
-                let b = i.moveto.0;
-                write!(f, "N{}:{}:{}:{},", a[0], a[1], b[0], b[1])?;
-            }
+            // ActualMove::NormalMove(i) => {
+            //     let a = i.unit.0;
+            //     let b = i.moveto.0;
+            //     write!(f, "N{}:{}:{}:{},", a[0], a[1], b[0], b[1])?;
+            // }
             ActualMove::ExtraMove(i, j) => {
                 let a = i.unit.0;
                 let b = i.moveto.0;
