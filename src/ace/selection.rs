@@ -48,12 +48,7 @@ pub struct ComboContinueSelection {
 pub struct NoPathErr;
 impl ComboContinueSelection {
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        generate_unit_possible_moves_inner(
-            &self.unit.position,
-            self.unit.typ,
-            game,
-            Some(self.extra.prev_move.unit),
-        )
+        generate_unit_possible_moves_inner(&self.unit.position, self.unit.typ, game, true)
     }
     pub async fn execute(
         &self,
@@ -121,7 +116,7 @@ impl RegularSelection {
     }
 
     pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        generate_unit_possible_moves_inner(&self.unit.position, self.unit.typ, game, None)
+        generate_unit_possible_moves_inner(&self.unit.position, self.unit.typ, game, false)
     }
 
     pub async fn execute(
@@ -608,7 +603,7 @@ pub fn generate_unit_possible_moves_inner(
     unit: &GridCoord,
     typ: Type,
     game: &GameViewMut,
-    extra_attack_prev_coord: Option<GridCoord>,
+    extra: bool,
 ) -> movement::MovementMesh {
     let unit = *unit;
     let mut mesh = movement::MovementMesh::new(vec![]);
@@ -637,7 +632,7 @@ pub fn generate_unit_possible_moves_inner(
             if cond2(a) {
                 mesh.add_normal_cell(a.sub(&unit));
             }
-            if extra_attack_prev_coord.is_none() {
+            if !extra {
                 for (_, b) in a.to_cube().ring(1) {
                     let b = b.to_axial();
                     //TODO inefficient

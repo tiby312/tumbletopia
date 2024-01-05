@@ -1199,7 +1199,7 @@ pub fn execute_move_no_ani(
                 &unit.position,
                 unit.typ,
                 &game,
-                None,
+                false,
             );
 
             let r = selection::RegularSelection::new(unit);
@@ -1215,19 +1215,13 @@ pub fn execute_move_no_ani(
                 &unit.position,
                 unit.typ,
                 &game,
-                None,
+                true,
             );
 
             let r = selection::RegularSelection::new(&unit);
             let r = r
                 .execute_no_animation(o.moveto, mesh, &mut game, &mut game_history)
                 .unwrap();
-            //console_dbg!("WOOO");
-
-            //let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
-
-            // let mesh =
-            //     selection::generate_unit_possible_moves_inner(&unit, &game, Some(e.unit));
 
             let rr = r.unwrap();
 
@@ -1276,13 +1270,13 @@ pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<moves::
         let pos = state.view_mut(team).this_team.units[i].position;
         let typ = state.view_mut(team).this_team.units[i].typ;
 
-        let mesh = generate_unit_possible_moves_inner(&pos, typ, &state.view_mut(team), None);
+        let mesh = generate_unit_possible_moves_inner(&pos, typ, &state.view_mut(team), false);
         for mm in mesh.iter_mesh(pos) {
             //Temporarily move the player in the game world.
             state.view_mut(team).this_team.units[i].position = mm;
 
             let second_mesh =
-                generate_unit_possible_moves_inner(&mm, typ, &state.view_mut(team), Some(mm));
+                generate_unit_possible_moves_inner(&mm, typ, &state.view_mut(team), true);
 
             for sm in second_mesh.iter_mesh(mm) {
                 // movs.push(OneMove {

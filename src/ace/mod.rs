@@ -556,7 +556,7 @@ pub fn game_is_over(game: &mut GameState, team_index: ActiveTeam) -> Option<Game
 
     for unit in game.this_team.units.iter() {
         let mesh =
-            selection::generate_unit_possible_moves_inner(&unit.position, unit.typ, &game, None);
+            selection::generate_unit_possible_moves_inner(&unit.position, unit.typ, &game, false);
         if mesh.iter_mesh(GridCoord([0; 2])).count() != 0 {
             return None;
         }
@@ -599,60 +599,61 @@ pub async fn main_logic<'a>(
             //if false {
             let the_move = ai::iterative_deepening(game, team_index);
 
-            let mut game = game.view_mut(team_index);
+            ai::execute_move_no_ani(game, team_index, the_move);
+            //let mut game = game.view_mut(team_index);
 
-            match the_move {
-                moves::ActualMove::NormalMove(o) => {
-                    let unit = game.this_team.find_slow(&o.unit).unwrap();
+            // match the_move {
+            //     moves::ActualMove::NormalMove(o) => {
+            //         let unit = game.this_team.find_slow(&o.unit).unwrap();
 
-                    let mesh = selection::generate_unit_possible_moves_inner(
-                        &unit.position,
-                        unit.typ,
-                        &game,
-                        None,
-                    );
+            //         let mesh = selection::generate_unit_possible_moves_inner(
+            //             &unit.position,
+            //             unit.typ,
+            //             &game,
+            //             false,
+            //         );
 
-                    let r = selection::RegularSelection::new(unit);
-                    let r = r
-                        .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
-                        .await
-                        .unwrap();
-                    assert!(r.is_none());
-                }
-                moves::ActualMove::ExtraMove(o, e) => {
-                    let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
+            //         let r = selection::RegularSelection::new(unit);
+            //         let r = r
+            //             .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
+            //             .await
+            //             .unwrap();
+            //         assert!(r.is_none());
+            //     }
+            //     moves::ActualMove::ExtraMove(o, e) => {
+            //         let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
-                    let mesh = selection::generate_unit_possible_moves_inner(
-                        &unit.position,
-                        unit.typ,
-                        &game,
-                        None,
-                    );
+            //         let mesh = selection::generate_unit_possible_moves_inner(
+            //             &unit.position,
+            //             unit.typ,
+            //             &game,
+            //             true,
+            //         );
 
-                    let r = selection::RegularSelection::new(&unit);
-                    let r = r
-                        .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
-                        .await
-                        .unwrap();
-                    //console_dbg!("WOOO");
+            //         let r = selection::RegularSelection::new(&unit);
+            //         let r = r
+            //             .execute(o.moveto, mesh, &mut game, &mut doop, &mut game_history)
+            //             .await
+            //             .unwrap();
+            //         //console_dbg!("WOOO");
 
-                    //let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
+            //         //let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
-                    // let mesh =
-                    //     selection::generate_unit_possible_moves_inner(&unit, &game, Some(e.unit));
+            //         // let mesh =
+            //         //     selection::generate_unit_possible_moves_inner(&unit, &game, Some(e.unit));
 
-                    let rr = r.unwrap();
+            //         let rr = r.unwrap();
 
-                    let rr = rr.select();
-                    let mesh = rr.generate(&game);
+            //         let rr = rr.select();
+            //         let mesh = rr.generate(&game);
 
-                    rr.execute(e.moveto, mesh, &mut game, &mut doop, &mut game_history)
-                        .await
-                        .unwrap();
-                }
-                moves::ActualMove::SkipTurn => {}
-                moves::ActualMove::GameEnd(_) => todo!(),
-            }
+            //         rr.execute(e.moveto, mesh, &mut game, &mut doop, &mut game_history)
+            //             .await
+            //             .unwrap();
+            //     }
+            //     moves::ActualMove::SkipTurn => {}
+            //     moves::ActualMove::GameEnd(_) => todo!(),
+            // }
 
             continue;
         }
