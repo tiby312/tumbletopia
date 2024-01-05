@@ -412,7 +412,7 @@ impl<'a> AlphaBeta<'a> {
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
             let pvariation = pvariation.map(|x| {
-                execute_move_no_ani(&mut gg, team, x.clone());
+                moves::partial_move::execute_move_no_ani(&mut gg, team, x.clone());
                 PossibleMove {
                     the_move: x,
                     game_after_move: gg,
@@ -474,7 +474,7 @@ impl<'a> AlphaBeta<'a> {
                                            //console_dbg!(ext,depth);
 
                 let mut gg = gg2.clone();
-                execute_move_no_ani(&mut gg, team, cand);
+                moves::partial_move::execute_move_no_ani(&mut gg, team, cand);
 
                 ssself.path.push(cand.clone());
                 let eval = ssself.alpha_beta(gg, ab, team.not(), new_depth, ext);
@@ -787,50 +787,6 @@ pub struct PossibleMove {
 //         }
 //     }
 // }
-
-pub fn execute_move_no_ani(
-    state: &mut GameState,
-    team_index: ActiveTeam,
-    the_move: moves::ActualMove,
-) {
-    let mut game = state.view_mut(team_index);
-    //let mut game_history = MoveLog::new();
-
-    match the_move {
-        // moves::ActualMove::NormalMove(o) => {
-        //     todo!();
-
-        // }
-        moves::ActualMove::ExtraMove(o, e) => {
-            let target_cell = o.moveto;
-            let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
-
-            let iii = moves::PartialMove {
-                selected_unit: unit.position,
-                typ: unit.typ,
-                end: target_cell,
-                is_extra: false,
-            };
-
-            let iii = moves::partial_move::execute_move(iii, &mut game);
-
-            assert_eq!(iii.moveto, e.unit);
-
-            let selected_unit = e.unit;
-            let target_cell = e.moveto;
-
-            let iii = moves::partial_move::PartialMove {
-                selected_unit,
-                typ: unit.typ,
-                end: target_cell,
-                is_extra: true,
-            };
-            moves::partial_move::execute_move(iii, &mut game);
-        }
-        moves::ActualMove::SkipTurn => {}
-        moves::ActualMove::GameEnd(_) => todo!(),
-    }
-}
 
 //TODO this has duplicated logic
 // pub fn apply_move(mo: moves::ActualMove, state: &mut GameState, team: ActiveTeam) {

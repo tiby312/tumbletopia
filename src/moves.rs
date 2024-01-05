@@ -353,6 +353,102 @@ pub mod partial_move {
         }
     }
 
+    use crate::ace::WorkerManager;
+    pub async fn execute_move_ani(
+        state: &mut GameState,
+        team_index: ActiveTeam,
+        the_move: moves::ActualMove,
+        doop: &mut WorkerManager<'_>,
+    ) {
+        let mut game = state.view_mut(team_index);
+        //let mut game_history = MoveLog::new();
+
+        match the_move {
+            // moves::ActualMove::NormalMove(o) => {
+            //     todo!();
+
+            // }
+            moves::ActualMove::ExtraMove(o, e) => {
+                let target_cell = o.moveto;
+                let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
+                let typ = unit.typ;
+                let mesh =
+                    generate_unit_possible_moves_inner(&unit.position, unit.typ, &game, false);
+
+                let iii = moves::PartialMove {
+                    selected_unit: unit.position,
+                    typ: unit.typ,
+                    end: target_cell,
+                    is_extra: false,
+                };
+
+                let iii =
+                    moves::partial_move::execute_move_animated(iii, &mut game, doop, mesh).await;
+
+                assert_eq!(iii.moveto, e.unit);
+
+                let selected_unit = e.unit;
+                let target_cell = e.moveto;
+
+                let mesh = generate_unit_possible_moves_inner(&selected_unit, typ, &game, true);
+
+                let iii = moves::partial_move::PartialMove {
+                    selected_unit,
+                    typ: unit.typ,
+                    end: target_cell,
+                    is_extra: true,
+                };
+                moves::partial_move::execute_move_animated(iii, &mut game, doop, mesh).await;
+            }
+            moves::ActualMove::SkipTurn => {}
+            moves::ActualMove::GameEnd(_) => todo!(),
+        }
+    }
+
+    pub fn execute_move_no_ani(
+        state: &mut GameState,
+        team_index: ActiveTeam,
+        the_move: moves::ActualMove,
+    ) {
+        let mut game = state.view_mut(team_index);
+        //let mut game_history = MoveLog::new();
+
+        match the_move {
+            // moves::ActualMove::NormalMove(o) => {
+            //     todo!();
+
+            // }
+            moves::ActualMove::ExtraMove(o, e) => {
+                let target_cell = o.moveto;
+                let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
+
+                let iii = moves::PartialMove {
+                    selected_unit: unit.position,
+                    typ: unit.typ,
+                    end: target_cell,
+                    is_extra: false,
+                };
+
+                let iii = moves::partial_move::execute_move(iii, &mut game);
+
+                assert_eq!(iii.moveto, e.unit);
+
+                let selected_unit = e.unit;
+                let target_cell = e.moveto;
+
+                let iii = moves::partial_move::PartialMove {
+                    selected_unit,
+                    typ: unit.typ,
+                    end: target_cell,
+                    is_extra: true,
+                };
+                moves::partial_move::execute_move(iii, &mut game);
+            }
+            moves::ActualMove::SkipTurn => {}
+            moves::ActualMove::GameEnd(_) => todo!(),
+        }
+    }
+
     pub fn execute_move(a: PartialMove, game_view: &mut GameViewMut) -> PartialMoveSigl {
         a.execute(game_view)
     }
