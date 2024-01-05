@@ -217,31 +217,50 @@ mod partial_move {
         walls
     }
 
+    fn apply_extra_move(
+        unit: GridCoord,
+        typ: Type,
+        target_cell: GridCoord,
+        land: &mut Vec<GridCoord>,
+        forest: &mut Vec<GridCoord>,
+    ) -> PartialMoveSigl {
+        let sigl = PartialMoveSigl {
+            unit,
+            moveto: target_cell,
+        };
+
+        if typ == Type::Ship {
+            land.push(target_cell);
+        } else if typ == Type::Foot {
+            forest.push(target_cell);
+        }
+        sigl
+    }
     macro_rules! resolve_movement_impl {
         ($args:expr,$namey:ident, $($_await:tt)*) => {
             {
-                let (selected_unit,typ,mesh,target_cell, doopa,mut game_view,mut func,is_extra):(GridCoord,Type,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_,_)=$args;
+                let (selected_unit,typ,mesh,target_cell, doopa,game_view,func,is_extra):(GridCoord,Type,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_,_)=$args;
 
                 if !is_extra{
-                    {
 
-                        let start=selected_unit;
-                        let end=target_cell;
-                        let this_unit = game_view
-                            .this_team
-                            .find_slow_mut(&start)
-                            .unwrap();
 
-                        let walls=calculate_walls(this_unit.position,this_unit.typ,game_view.land,game_view.forest);
+                    let start=selected_unit;
+                    let end=target_cell;
+                    let this_unit = game_view
+                        .this_team
+                        .find_slow_mut(&start)
+                        .unwrap();
 
-                        let team=game_view.team;
-                        let _ = doopa
-                            .wait_animation(Movement::new(this_unit.clone(),mesh,walls,end), team)
-                            $($_await)*;
+                    let walls=calculate_walls(this_unit.position,this_unit.typ,game_view.land,game_view.forest);
 
-                        this_unit.position=end;
+                    let team=game_view.team;
+                    let _ = doopa
+                        .wait_animation(Movement::new(this_unit.clone(),mesh,walls,end), team)
+                        $($_await)*;
 
-                    }
+                    this_unit.position=end;
+
+
 
                     let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
 
@@ -250,13 +269,8 @@ mod partial_move {
                 }
                 else
                 {
-                    let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
+                    let sigl=apply_extra_move(selected_unit,typ,target_cell,game_view.land,game_view.forest);
 
-                    if typ==Type::Ship{
-                        game_view.land.push(target_cell);
-                    }else if typ==Type::Foot{
-                        game_view.forest.push(target_cell);
-                    }
                     (sigl,ExtraMove::FinishMoving)
                 }
             }
