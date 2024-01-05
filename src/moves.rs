@@ -270,12 +270,9 @@ mod partial_move {
                         .wait_animation(Movement::new(this_unit.clone(),mesh,walls,end), team)
                         $($_await)*;
 
+                    let sigl=apply_normal_move(this_unit,target_cell);
 
-                    let unit=game_view.this_team.find_slow_mut(&start).unwrap();
-
-                    let sigl=apply_normal_move(unit,target_cell);
-
-                    (sigl,ExtraMove::ExtraMove{unit})
+                    (sigl,ExtraMove::ExtraMove{unit:this_unit})
                 }
                 else
                 {
