@@ -814,18 +814,18 @@ pub fn execute_move_no_ani(
 
             let iii = moves::partial_move::execute_move(iii, &mut game);
 
-            assert_eq!(iii.moveto, e.unit);
+            // assert_eq!(iii.moveto, e.unit);
 
-            let selected_unit = e.unit;
-            let target_cell = e.moveto;
+            // let selected_unit = e.unit;
+            // let target_cell = e.moveto;
 
-            let iii = moves::partial_move::PartialMove {
-                selected_unit,
-                typ: unit.typ,
-                end: target_cell,
-                is_extra: true,
-            };
-            moves::partial_move::execute_move(iii, &mut game);
+            // let iii = moves::partial_move::PartialMove {
+            //     selected_unit,
+            //     typ: unit.typ,
+            //     end: target_cell,
+            //     is_extra: true,
+            // };
+            // moves::partial_move::execute_move(iii, &mut game);
         }
         moves::ActualMove::SkipTurn => {}
         moves::ActualMove::GameEnd(_) => todo!(),

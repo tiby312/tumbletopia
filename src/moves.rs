@@ -205,8 +205,19 @@ pub mod partial_move {
         walls
     }
 
-    fn apply_normal_move(this_unit: &mut UnitData, target_cell: GridCoord) -> PartialMoveSigl {
+    fn apply_normal_move(
+        this_unit: &mut UnitData,
+        target_cell: GridCoord,
+        land: &mut Vec<GridCoord>,
+        forest: &mut Vec<GridCoord>,
+    ) -> PartialMoveSigl {
         let orig = this_unit.position;
+        if this_unit.typ == Type::Ship {
+            land.push(orig);
+        } else if this_unit.typ == Type::Foot {
+            forest.push(orig);
+        }
+
         this_unit.position = target_cell;
 
         let sigl = PartialMoveSigl {
@@ -297,24 +308,36 @@ pub mod partial_move {
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
-                apply_normal_move(&mut state.view_mut(team).this_team.units[i], mm);
+                let mut j = state.view_mut(team);
+                apply_normal_move(&mut j.this_team.units[i], mm, &mut j.land, &mut j.forest);
 
-                let second_mesh =
-                    generate_unit_possible_moves_inner(&mm, typ, &state.view_mut(team), true);
+                movs.push(moves::ActualMove::ExtraMove(
+                    moves::PartialMoveSigl {
+                        unit: pos,
+                        moveto: mm,
+                    },
+                    moves::PartialMoveSigl {
+                        unit: pos,
+                        moveto: mm,
+                    },
+                ));
 
-                for sm in second_mesh.iter_mesh(mm) {
-                    //Don't both applying the extra move. just generate the sigl.
-                    movs.push(moves::ActualMove::ExtraMove(
-                        moves::PartialMoveSigl {
-                            unit: pos,
-                            moveto: mm,
-                        },
-                        moves::PartialMoveSigl {
-                            unit: mm,
-                            moveto: sm,
-                        },
-                    ))
-                }
+                // let second_mesh =
+                //     generate_unit_possible_moves_inner(&mm, typ, &state.view_mut(team), true);
+
+                // for sm in second_mesh.iter_mesh(mm) {
+                //     //Don't both applying the extra move. just generate the sigl.
+                //     movs.push(moves::ActualMove::ExtraMove(
+                //         moves::PartialMoveSigl {
+                //             unit: pos,
+                //             moveto: mm,
+                //         },
+                //         moves::PartialMoveSigl {
+                //             unit: mm,
+                //             moveto: sm,
+                //         },
+                //     ))
+                // }
             }
             //revert it back.
             state.view_mut(team).this_team.units[i].position = pos;
@@ -383,7 +406,8 @@ pub mod partial_move {
                 let start = selected_unit;
                 let this_unit = game_view.this_team.find_slow_mut(&start).unwrap();
 
-                let sigl = apply_normal_move(this_unit, target_cell);
+                let sigl =
+                    apply_normal_move(this_unit, target_cell, game_view.land, game_view.forest);
 
                 sigl
             } else {
@@ -426,7 +450,8 @@ pub mod partial_move {
                     .wait_animation(Movement::new(this_unit.clone(), mesh, walls, end), team)
                     .await;
 
-                let sigl = apply_normal_move(this_unit, target_cell);
+                let sigl =
+                    apply_normal_move(this_unit, target_cell, game_view.land, game_view.forest);
 
                 sigl
             } else {

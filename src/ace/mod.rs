@@ -396,8 +396,9 @@ pub async fn reselect_loop(
             .await;
 
             {
-                *extra_attack = Some(selection::PossibleExtra::new(iii, kk));
-                return LoopRes::Select(selected_unit.with(c).with_team(team_index));
+                // *extra_attack = Some(selection::PossibleExtra::new(iii, kk));
+                // return LoopRes::Select(selected_unit.with(c).with_team(team_index));
+                return LoopRes::EndTurn;
             }
         }
     }
