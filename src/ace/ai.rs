@@ -1195,40 +1195,40 @@ pub fn execute_move_no_ani(
         moves::ActualMove::NormalMove(o) => {
             let unit = game.this_team.find_slow(&o.unit).unwrap();
 
-            let mesh = selection::generate_unit_possible_moves_inner(
-                &unit.position,
-                unit.typ,
-                &game,
-                false,
-            );
+            // let mesh = selection::generate_unit_possible_moves_inner(
+            //     &unit.position,
+            //     unit.typ,
+            //     &game,
+            //     false,
+            // );
 
             let r = selection::RegularSelection::new(unit);
             let r = r
-                .execute_no_animation(o.moveto, mesh, &mut game, &mut game_history)
+                .execute_no_animation(o.moveto, &mut game, &mut game_history)
                 .unwrap();
             assert!(r.is_none());
         }
         moves::ActualMove::ExtraMove(o, e) => {
             let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
-            let mesh = selection::generate_unit_possible_moves_inner(
-                &unit.position,
-                unit.typ,
-                &game,
-                true,
-            );
+            // let mesh = selection::generate_unit_possible_moves_inner(
+            //     &unit.position,
+            //     unit.typ,
+            //     &game,
+            //     true,
+            // );
 
             let r = selection::RegularSelection::new(&unit);
             let r = r
-                .execute_no_animation(o.moveto, mesh, &mut game, &mut game_history)
+                .execute_no_animation(o.moveto, &mut game, &mut game_history)
                 .unwrap();
 
             let rr = r.unwrap();
 
             let rr = rr.select();
-            let mesh = rr.generate(&game);
+            //let mesh = rr.generate(&game);
 
-            rr.execute_no_animation(e.moveto, mesh, &mut game, &mut game_history)
+            rr.execute_no_animation(e.moveto, &mut game, &mut game_history)
                 .unwrap();
         }
         moves::ActualMove::SkipTurn => {}

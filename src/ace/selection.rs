@@ -63,12 +63,11 @@ impl ComboContinueSelection {
         let iii = moves::PartialMove {
             selected_unit: unit,
             typ: self.unit.typ,
-            mesh,
             end: target_cell,
             is_extra: true,
         };
 
-        let iii = iii.execute_with_animation(game_view, doop).await;
+        let iii = iii.execute_with_animation(game_view, doop, mesh).await;
 
         move_log.push(moves::ActualMove::ExtraMove(
             self.extra.prev_move.clone(),
@@ -80,7 +79,6 @@ impl ComboContinueSelection {
     pub fn execute_no_animation(
         &self,
         target_cell: GridCoord,
-        mesh: movement::MovementMesh,
         game_view: &mut GameViewMut<'_, '_>,
         move_log: &mut MoveLog,
     ) -> Result<(), NoPathErr> {
@@ -89,7 +87,6 @@ impl ComboContinueSelection {
         let iii = moves::PartialMove {
             selected_unit: unit,
             typ: self.unit.typ,
-            mesh,
             end: target_cell,
             is_extra: true,
         };
@@ -132,12 +129,11 @@ impl RegularSelection {
         let iii = moves::PartialMove {
             selected_unit: unit,
             typ: self.unit.typ,
-            mesh,
             end: target_cell,
             is_extra: false,
         };
 
-        let iii = iii.execute_with_animation(game_view, doop).await;
+        let iii = iii.execute_with_animation(game_view, doop, mesh).await;
 
         Ok(match iii {
             (sigl, moves::ExtraMove::ExtraMove { unit }) => {
@@ -152,7 +148,6 @@ impl RegularSelection {
     pub fn execute_no_animation(
         &self,
         target_cell: GridCoord,
-        mesh: movement::MovementMesh,
         game_view: &mut GameViewMut<'_, '_>,
         move_log: &mut MoveLog,
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
@@ -161,7 +156,6 @@ impl RegularSelection {
         let iii = moves::PartialMove {
             selected_unit: unit,
             typ: self.unit.typ,
-            mesh,
             end: target_cell,
             is_extra: false,
         };

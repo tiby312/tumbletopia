@@ -255,7 +255,6 @@ mod partial_move {
     pub struct PartialMove {
         pub selected_unit: GridCoord,
         pub typ: Type,
-        pub mesh: MovementMesh,
         pub end: GridCoord,
         pub is_extra: bool,
     }
@@ -263,32 +262,18 @@ mod partial_move {
     impl PartialMove {
         pub fn execute<'b>(
             self,
-            game_view: &'b mut GameViewMut<'_, '_>
+            game_view: &'b mut GameViewMut<'_, '_>,
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
             let mut a = Doopa2;
 
             let is_extra = self.is_extra;
             let selected_unit = self.selected_unit;
             let target_cell = self.end;
-            let mesh = self.mesh;
-            let doopa = &mut a;
             let typ = self.typ;
 
             if !is_extra {
                 let start = selected_unit;
-                let end = target_cell;
                 let this_unit = game_view.this_team.find_slow_mut(&start).unwrap();
-
-                let walls = calculate_walls(
-                    this_unit.position,
-                    this_unit.typ,
-                    game_view.land,
-                    game_view.forest,
-                );
-
-                let team = game_view.team;
-                let _ =
-                    doopa.wait_animation(Movement::new(this_unit.clone(), mesh, walls, end), team);
 
                 let sigl = apply_normal_move(this_unit, target_cell);
 
@@ -308,17 +293,16 @@ mod partial_move {
         pub async fn execute_with_animation<'b>(
             self,
             game_view: &'b mut GameViewMut<'_, '_>,
-            data: &mut ace::WorkerManager<'_>
+            data: &mut ace::WorkerManager<'_>,
+            mesh: MovementMesh,
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
             let mut a = Doopa::new(data);
 
             let is_extra = self.is_extra;
             let selected_unit = self.selected_unit;
             let target_cell = self.end;
-            let mesh = self.mesh;
             let doopa = &mut a;
             let typ = self.typ;
-            //let (selected_unit,typ,mesh,target_cell, doopa,game_view,func,is_extra):(GridCoord,Type,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_,_)=$args;
 
             if !is_extra {
                 let start = selected_unit;
