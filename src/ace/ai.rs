@@ -802,17 +802,30 @@ pub fn execute_move_no_ani(
 
         // }
         moves::ActualMove::ExtraMove(o, e) => {
+            let target_cell = o.moveto;
             let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
 
-            let r = selection::RegularSelection::new(&unit);
-            let r = r.execute_no_animation(o.moveto, &mut game).unwrap();
+            let iii = moves::PartialMove {
+                selected_unit: unit.position,
+                typ: unit.typ,
+                end: target_cell,
+                is_extra: false,
+            };
 
-            let rr = r.unwrap();
+            let iii = iii.execute(&mut game);
 
-            let rr = rr.select();
-            //let mesh = rr.generate(&game);
+            assert_eq!(iii.0.moveto, e.unit);
 
-            rr.execute_no_animation(e.moveto, &mut game).unwrap();
+            let selected_unit = e.unit;
+            let target_cell = e.moveto;
+
+            moves::partial_move::PartialMove {
+                selected_unit,
+                typ: unit.typ,
+                end: target_cell,
+                is_extra: true,
+            }
+            .execute(&mut game);
         }
         moves::ActualMove::SkipTurn => {}
         moves::ActualMove::GameEnd(_) => todo!(),

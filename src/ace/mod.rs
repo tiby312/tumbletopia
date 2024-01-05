@@ -265,15 +265,15 @@ pub async fn reselect_loop(
         .find_slow(&unwrapped_selected_unit)
         .unwrap();
 
-    let selection = if let Some(e) = extra_attack {
-        if e.coord() == unwrapped_selected_unit {
-            selection::SelectionType::Extra(e.select())
-        } else {
-            selection::SelectionType::Normal(selection::RegularSelection::new(unit))
-        }
-    } else {
-        selection::SelectionType::Normal(selection::RegularSelection::new(unit))
-    };
+    // let selection = if let Some(e) = extra_attack {
+    //     if e.coord() == unwrapped_selected_unit {
+    //         selection::SelectionType::Extra(e.select())
+    //     } else {
+    //         selection::SelectionType::Normal(selection::RegularSelection::new(unit))
+    //     }
+    // } else {
+    //     selection::SelectionType::Normal(selection::RegularSelection::new(unit))
+    // };
 
     let grey = if selected_unit.team == team_index {
         //If we are in the middle of a extra attack move, make sure
@@ -288,10 +288,13 @@ pub async fn reselect_loop(
         true
     };
 
-    let ccA = match &selection {
-        selection::SelectionType::Normal(e) => e.generate(&relative_game_view),
-        selection::SelectionType::Extra(e) => e.generate(&relative_game_view),
-    };
+    let ccA = moves::partial_move::generate_unit_possible_moves_inner(
+        &unit.position,
+        unit.typ,
+        &relative_game_view,
+        extra_attack.is_some(),
+    );
+
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
     let cc = CellSelection::MoveSelection(unwrapped_selected_unit, ccA.clone());
 
@@ -368,31 +371,67 @@ pub async fn reselect_loop(
     //         .unwrap(),
     // };
 
-    match selection {
-        selection::SelectionType::Normal(n) => {
-            match n
-                .execute(target_cell, ccA.clone(), &mut relative_game_view, doop)
-                .await
-                .unwrap()
-            {
-                Some(n) => {
-                    let c = n.coord();
-                    *extra_attack = Some(n);
+    {
+        if let Some(e) = extra_attack {
+            moves::partial_move::PartialMove {
+                selected_unit: e.coord(),
+                typ: unit.typ,
+                end: target_cell,
+                is_extra: true,
+            }
+            .execute_with_animation(&mut relative_game_view, doop, ccA.clone())
+            .await;
+
+            return LoopRes::EndTurn;
+        } else {
+            let iii = moves::PartialMove {
+                selected_unit: unit.position,
+                typ: unit.typ,
+                end: target_cell,
+                is_extra: false,
+            };
+
+            let iii = iii
+                .execute_with_animation(&mut relative_game_view, doop, ccA.clone())
+                .await;
+
+            match iii {
+                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
+                    let c = unit.position;
+                    *extra_attack = Some(selection::PossibleExtra::new(sigl, unit.clone()));
                     return LoopRes::Select(selected_unit.with(c).with_team(team_index));
                 }
-                None => {
-                    //Finish this players turn.
-                    return LoopRes::EndTurn;
+                (_, moves::ExtraMove::FinishMoving) => {
+                    unreachable!();
                 }
             }
         }
-        selection::SelectionType::Extra(e) => {
-            e.execute(target_cell, ccA.clone(), &mut relative_game_view, doop)
-                .await
-                .unwrap();
-            return LoopRes::EndTurn;
-        }
     }
+    // match selection {
+    //     selection::SelectionType::Normal(n) => {
+    //         match n
+    //             .execute(target_cell, ccA.clone(), &mut relative_game_view, doop)
+    //             .await
+    //             .unwrap()
+    //         {
+    //             Some(n) => {
+    //                 let c = n.coord();
+    //                 *extra_attack = Some(n);
+    //                 return LoopRes::Select(selected_unit.with(c).with_team(team_index));
+    //             }
+    //             None => {
+    //                 //Finish this players turn.
+    //                 return LoopRes::EndTurn;
+    //             }
+    //         }
+    //     }
+    //     selection::SelectionType::Extra(e) => {
+    //         e.execute(target_cell, ccA.clone(), &mut relative_game_view, doop)
+    //             .await
+    //             .unwrap();
+    //         return LoopRes::EndTurn;
+    //     }
+    // }
 
     // if let Some(_) = relative_game_view.that_team.find_slow_mut(&target_cell) {
     //     let iii = moves::Invade::new(selected_unit.warrior, path);
