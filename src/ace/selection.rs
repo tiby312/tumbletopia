@@ -65,7 +65,13 @@ impl ComboContinueSelection {
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
-        let iii = moves::PartialMove::new(unit, self.unit.typ, mesh, target_cell, true);
+        let iii = moves::PartialMove {
+            selected_unit: unit,
+            typ: self.unit.typ,
+            mesh,
+            end: target_cell,
+            is_extra: true,
+        };
 
         let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
 
@@ -87,7 +93,13 @@ impl ComboContinueSelection {
     ) -> Result<(), NoPathErr> {
         let unit = self.unit.position;
 
-        let iii = moves::PartialMove::new(unit, self.unit.typ, mesh, target_cell, true);
+        let iii = moves::PartialMove {
+            selected_unit: unit,
+            typ: self.unit.typ,
+            mesh,
+            end: target_cell,
+            is_extra: true,
+        };
 
         let iii = iii.execute(game_view, |_| {});
 
@@ -122,14 +134,17 @@ impl RegularSelection {
         doop: &mut ace::WorkerManager<'_>,
         move_log: &mut MoveLog,
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
-        //let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
 
-        let iii = moves::PartialMove::new(unit, self.unit.typ, mesh, target_cell, false);
+        let iii = moves::PartialMove {
+            selected_unit: unit,
+            typ: self.unit.typ,
+            mesh,
+            end: target_cell,
+            is_extra: false,
+        };
 
         let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
-
-        //move_log.push(moves::ActualMove::NormalMove(iii));
 
         Ok(match iii {
             (sigl, moves::ExtraMove::ExtraMove { unit }) => {
@@ -148,10 +163,15 @@ impl RegularSelection {
         game_view: &mut GameViewMut<'_, '_>,
         move_log: &mut MoveLog,
     ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
-        //let path = self.get_path_from_move(target_cell, game_view)?;
         let unit = self.unit.position;
 
-        let iii = moves::PartialMove::new(unit, self.unit.typ, mesh, target_cell, false);
+        let iii = moves::PartialMove {
+            selected_unit: unit,
+            typ: self.unit.typ,
+            mesh,
+            end: target_cell,
+            is_extra: false,
+        };
 
         let iii = iii.execute(game_view, |_| {});
 
