@@ -351,6 +351,19 @@ pub mod partial_move {
         }
     }
 
+    pub fn execute_move(a: PartialMove, game_view: &mut GameViewMut) -> PartialMoveSigl {
+        a.execute(game_view)
+    }
+
+    pub async fn execute_move_animated(
+        a: PartialMove,
+        game_view: &mut GameViewMut<'_, '_>,
+        data: &mut ace::WorkerManager<'_>,
+        mesh: MovementMesh,
+    ) -> PartialMoveSigl {
+        a.execute_with_animation(game_view, data, mesh).await
+    }
+
     #[derive(Clone, Debug)]
     pub struct PartialMove {
         pub selected_unit: GridCoord,
@@ -359,23 +372,8 @@ pub mod partial_move {
         pub is_extra: bool,
     }
 
-    // trait AMove{
-    //     type Res;
-    // }
-    // pub struct Normal;
-    // impl AMove for Normal{
-    //     type Res=PartialMoveSigl;
-    // }
-
-    // pub async fn move_animation<T:AMove>()->T::Res{
-
-    // }
-    // pub fn move_no_animation<T:AMove>()->T::Res{
-
-    // }
-
     impl PartialMove {
-        pub fn execute<'b>(self, game_view: &'b mut GameViewMut<'_, '_>) -> PartialMoveSigl {
+        fn execute<'b>(self, game_view: &'b mut GameViewMut<'_, '_>) -> PartialMoveSigl {
             let is_extra = self.is_extra;
             let selected_unit = self.selected_unit;
             let target_cell = self.end;
@@ -400,7 +398,7 @@ pub mod partial_move {
                 sigl
             }
         }
-        pub async fn execute_with_animation<'b>(
+        async fn execute_with_animation<'b>(
             self,
             game_view: &'b mut GameViewMut<'_, '_>,
             data: &mut ace::WorkerManager<'_>,

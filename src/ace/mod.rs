@@ -360,13 +360,19 @@ pub async fn reselect_loop(
 
     {
         if let Some(e) = extra_attack {
-            moves::partial_move::PartialMove {
+            let iii = moves::partial_move::PartialMove {
                 selected_unit: e.coord(),
                 typ: unit.typ,
                 end: target_cell,
                 is_extra: true,
-            }
-            .execute_with_animation(&mut relative_game_view, doop, cca.clone())
+            };
+
+            moves::partial_move::execute_move_animated(
+                iii,
+                &mut relative_game_view,
+                doop,
+                cca.clone(),
+            )
             .await;
 
             return LoopRes::EndTurn;
@@ -381,9 +387,13 @@ pub async fn reselect_loop(
             let mut kk = unit.clone();
             kk.position = target_cell;
 
-            let iii = iii
-                .execute_with_animation(&mut relative_game_view, doop, cca.clone())
-                .await;
+            let iii = moves::partial_move::execute_move_animated(
+                iii,
+                &mut relative_game_view,
+                doop,
+                cca.clone(),
+            )
+            .await;
 
             {
                 *extra_attack = Some(selection::PossibleExtra::new(iii, kk));
