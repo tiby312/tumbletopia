@@ -248,41 +248,6 @@ mod partial_move {
         }
         sigl
     }
-    macro_rules! resolve_movement_impl {
-        ($args:expr,$namey:ident, $($_await:tt)*) => {
-            {
-                let (selected_unit,typ,mesh,target_cell, doopa,game_view,func,is_extra):(GridCoord,Type,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_,_)=$args;
-
-                if !is_extra{
-
-
-                    let start=selected_unit;
-                    let end=target_cell;
-                    let this_unit = game_view
-                        .this_team
-                        .find_slow_mut(&start)
-                        .unwrap();
-
-                    let walls=calculate_walls(this_unit.position,this_unit.typ,game_view.land,game_view.forest);
-
-                    let team=game_view.team;
-                    let _ = doopa
-                        .wait_animation(Movement::new(this_unit.clone(),mesh,walls,end), team)
-                        $($_await)*;
-
-                    let sigl=apply_normal_move(this_unit,target_cell);
-
-                    (sigl,ExtraMove::ExtraMove{unit:this_unit})
-                }
-                else
-                {
-                    let sigl=apply_extra_move(selected_unit,typ,target_cell,game_view.land,game_view.forest);
-
-                    (sigl,ExtraMove::FinishMoving)
-                }
-            }
-        }
-    }
 
     //TODO the mesh is only needed for animation purposes.
     //inefficient to calculate for ai
@@ -298,32 +263,94 @@ mod partial_move {
     impl PartialMove {
         pub fn execute<'b>(
             self,
-            game_view: &'b mut GameViewMut<'_, '_>,
-            func: impl FnMut(UnitData),
+            game_view: &'b mut GameViewMut<'_, '_>
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
             let mut a = Doopa2;
-            resolve_movement_impl!(
-                (
-                    self.selected_unit,
-                    self.typ,
-                    self.mesh,
-                    self.end,
-                    &mut a,
-                    game_view,
-                    func,
-                    self.is_extra
-                ),
-                inner_execute_no_animate,
-            )
+
+            let is_extra = self.is_extra;
+            let selected_unit = self.selected_unit;
+            let target_cell = self.end;
+            let mesh = self.mesh;
+            let doopa = &mut a;
+            let typ = self.typ;
+
+            if !is_extra {
+                let start = selected_unit;
+                let end = target_cell;
+                let this_unit = game_view.this_team.find_slow_mut(&start).unwrap();
+
+                let walls = calculate_walls(
+                    this_unit.position,
+                    this_unit.typ,
+                    game_view.land,
+                    game_view.forest,
+                );
+
+                let team = game_view.team;
+                let _ =
+                    doopa.wait_animation(Movement::new(this_unit.clone(), mesh, walls, end), team);
+
+                let sigl = apply_normal_move(this_unit, target_cell);
+
+                (sigl, ExtraMove::ExtraMove { unit: this_unit })
+            } else {
+                let sigl = apply_extra_move(
+                    selected_unit,
+                    typ,
+                    target_cell,
+                    game_view.land,
+                    game_view.forest,
+                );
+
+                (sigl, ExtraMove::FinishMoving)
+            }
         }
         pub async fn execute_with_animation<'b>(
             self,
             game_view: &'b mut GameViewMut<'_, '_>,
-            data: &mut ace::WorkerManager<'_>,
-            func: impl FnMut(UnitData),
+            data: &mut ace::WorkerManager<'_>
         ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
             let mut a = Doopa::new(data);
-            resolve_movement_impl!((self.selected_unit,self.typ, self.mesh,self.end, &mut a, game_view,func,self.is_extra),inner_execute_animate,.await)
+
+            let is_extra = self.is_extra;
+            let selected_unit = self.selected_unit;
+            let target_cell = self.end;
+            let mesh = self.mesh;
+            let doopa = &mut a;
+            let typ = self.typ;
+            //let (selected_unit,typ,mesh,target_cell, doopa,game_view,func,is_extra):(GridCoord,Type,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_,_)=$args;
+
+            if !is_extra {
+                let start = selected_unit;
+                let end = target_cell;
+                let this_unit = game_view.this_team.find_slow_mut(&start).unwrap();
+
+                let walls = calculate_walls(
+                    this_unit.position,
+                    this_unit.typ,
+                    game_view.land,
+                    game_view.forest,
+                );
+
+                let team = game_view.team;
+                let _ = doopa
+                    .wait_animation(Movement::new(this_unit.clone(), mesh, walls, end), team)
+                    .await;
+
+                let sigl = apply_normal_move(this_unit, target_cell);
+
+                (sigl, ExtraMove::ExtraMove { unit: this_unit })
+            } else {
+                let sigl = apply_extra_move(
+                    selected_unit,
+                    typ,
+                    target_cell,
+                    game_view.land,
+                    game_view.forest,
+                );
+
+                (sigl, ExtraMove::FinishMoving)
+            }
         }
     }
 }
