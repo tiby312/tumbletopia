@@ -192,6 +192,31 @@ pub use partial_move::PartialMove;
 mod partial_move {
     use super::*;
 
+    fn calculate_walls(
+        position: GridCoord,
+        typ: Type,
+        land: &[GridCoord],
+        forest: &[GridCoord],
+    ) -> Mesh {
+        let mut walls = Mesh::new();
+
+        for a in position.to_cube().range(2) {
+            let a = a.to_axial();
+            //TODO this is duplicated logic in selection function???
+            let cc = if typ == Type::Ship {
+                land.iter().find(|&&b| a == b).is_some()
+            } else {
+                land.iter().find(|&&b| a == b).is_none()
+                    || forest.iter().find(|&&b| a == b).is_some()
+            };
+            if cc {
+                walls.add(a.sub(&position));
+            }
+        }
+
+        walls
+    }
+
     macro_rules! resolve_movement_impl {
         ($args:expr,$namey:ident, $($_await:tt)*) => {
             {
@@ -207,21 +232,7 @@ mod partial_move {
                             .find_slow_mut(&start)
                             .unwrap();
 
-                        let mut walls=Mesh::new();
-
-                        for a in this_unit.position.to_cube().range(2) {
-                            let a = a.to_axial();
-                            //TODO this is duplicated logic in selection function???
-                            let cc=if this_unit.typ==Type::Ship{
-                                game_view.land.iter().find(|&&b| a == b).is_some()
-                            }else{
-                                game_view.land.iter().find(|&&b| a == b).is_none() ||
-                                game_view.forest.iter().find(|&&b| a == b).is_some()
-                            };
-                            if cc {
-                                walls.add(a.sub(&this_unit.position));
-                            }
-                        }
+                        let walls=calculate_walls(this_unit.position,this_unit.typ,game_view.land,game_view.forest);
 
                         let team=game_view.team;
                         let _ = doopa
@@ -252,7 +263,8 @@ mod partial_move {
         }
     }
 
-    //TODO pass movement mesh as reference not clone
+    //TODO the mesh is only needed for animation purposes.
+    //inefficient to calculate for ai
     #[derive(Clone, Debug)]
     pub struct PartialMove {
         pub selected_unit: GridCoord,
