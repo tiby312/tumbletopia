@@ -9,68 +9,35 @@ struct Territory {
     num_cat_controlled: i64,
 }
 
-fn dog_or_cat_closest2(game: &GameState, is_land: bool) -> Territory {
-    let check_terrain = |point| {
-        if !game.world.filter().filter(&point).to_bool() {
-            return false;
-        }
-
-        if is_land {
-            if !game.land.contains(&point) {
-                //assert!(!game.forest.contains(&point));
-                return false;
-            }
-
-            if game.forest.contains(&point) {
-                return false;
-            }
-        } else {
-            if game.land.contains(&point) {
-                return false;
-            }
-        }
-        return true;
-    };
-
+fn dog_or_cat_closest2(
+    game: &GameState,
+    unit_filter: impl Fn(&UnitData) -> bool,
+    mut check_terrain: impl FnMut(&GameState, GridCoord) -> bool,
+) -> Territory {
     let mut visited = vec![];
 
     let mut dogs_to_consider = Vec::new();
     let mut cats_to_consider = Vec::new();
 
-    let dog_iter=game
-    .dogs
-    .units
-    .iter()
-    .filter(|a| {
-        if is_land {
-            a.typ == Type::Foot
-        } else {
-            a.typ == Type::Ship
-        }
-    })
-    .map(|a| a.position);
+    let dog_iter = game
+        .dogs
+        .units
+        .iter()
+        .filter(|a| unit_filter(a))
+        .map(|a| a.position);
 
-    let cat_iter=game
-    .cats
-    .units
-    .iter()
-    .filter(|a| {
-        if is_land {
-            a.typ == Type::Foot
-        } else {
-            a.typ == Type::Ship
-        }
-    })
-    .map(|a| a.position);
+    let cat_iter = game
+        .cats
+        .units
+        .iter()
+        .filter(|a| unit_filter(a))
+        .map(|a| a.position);
 
-
-    for point in dog_iter.clone()
-    {
+    for point in dog_iter {
         dogs_to_consider.push(point);
     }
 
-    for point in cat_iter.clone()
-    {
+    for point in cat_iter {
         cats_to_consider.push(point)
     }
 
@@ -82,7 +49,7 @@ fn dog_or_cat_closest2(game: &GameState, is_land: bool) -> Territory {
 
         for d in dogs_to_consider.drain(..) {
             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
-                if check_terrain(p) {
+                if check_terrain(game, p) {
                     if !visited.contains(&p) {
                         //TODO no need to store depth in these???
                         next_dog_points.push(p);
@@ -93,7 +60,7 @@ fn dog_or_cat_closest2(game: &GameState, is_land: bool) -> Territory {
 
         for d in cats_to_consider.drain(..) {
             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
-                if check_terrain(p) {
+                if check_terrain(game, p) {
                     if !visited.contains(&p) {
                         //TODO no need to store depth in these???
                         next_cat_points.push(p);
@@ -116,17 +83,6 @@ fn dog_or_cat_closest2(game: &GameState, is_land: bool) -> Territory {
             }
         });
 
-        //If a unit is ontop of a territory, remove it as well.
-        //pointless??
-        // next_cat_points.retain(|a|{
-        //     cat_iter.clone().find(|b|b==a).is_none() && dog_iter.clone().find(|b|b==a).is_none()
-        // });
-        // next_dog_points.retain(|a|{
-        //     cat_iter.clone().find(|b|b==a).is_none() && dog_iter.clone().find(|b|b==a).is_none()
-        // });
-
-
-
         for a in next_cat_points.iter().chain(next_dog_points.iter()) {
             visited.push(*a);
         }
@@ -144,15 +100,252 @@ fn dog_or_cat_closest2(game: &GameState, is_land: bool) -> Territory {
     }
 }
 
+// fn dog_or_cat_closest_land(game: &GameState) -> Territory {
+//     let check_terrain_water=|point|{
+//         if !game.world.filter().filter(&point).to_bool() {
+//             return false;
+//         }
+
+//         if game.land.contains(&point) {
+//             return false;
+//         }
+
+//         return true;
+//     };
+
+//     let check_terrain_land = |point| {
+//         if !game.world.filter().filter(&point).to_bool() {
+//             return false;
+//         }
+
+//         //actually continue off past land!!
+//         // if !game.land.contains(&point) {
+//         //     //assert!(!game.forest.contains(&point));
+//         //     return false;
+//         // }
+
+//         if game.forest.contains(&point) {
+//             return false;
+//         }
+
+//         return true;
+//     };
+
+//     let mut visited = vec![];
+//     let mut land_visited = vec![];
+
+//     let land_dog_iter=game
+//     .dogs
+//     .units
+//     .iter()
+//     .filter(|a| {
+//             a.typ == Type::Foot
+//     })
+//     .map(|a| a.position);
+
+//     let water_dog_iter=game
+//     .dogs
+//     .units
+//     .iter()
+//     .filter(|a| {
+//             a.typ == Type::Ship
+//     })
+//     .map(|a| a.position);
+
+//     let land_cat_iter=game
+//     .cats
+//     .units
+//     .iter()
+//     .filter(|a| {
+
+//             a.typ == Type::Foot
+
+//     })
+//     .map(|a| a.position);
+
+//     let water_cat_iter=game
+//     .cats
+//     .units
+//     .iter()
+//     .filter(|a| {
+
+//             a.typ == Type::Ship
+
+//     })
+//     .map(|a| a.position);
+
+//     let mut land_dogs_to_consider = Vec::new();
+//     let mut water_dogs_to_consider = Vec::new();
+
+//     let mut land_cats_to_consider = Vec::new();
+//     let mut water_cats_to_consider = Vec::new();
+
+//     for point in land_dog_iter.clone()
+//     {
+//         land_dogs_to_consider.push(point);
+//     }
+
+//     for point in water_dog_iter.clone()
+//     {
+//         water_dogs_to_consider.push(point);
+//     }
+//     for point in land_cat_iter.clone()
+//     {
+//         land_cats_to_consider.push(point)
+//     }
+
+//     for point in water_cat_iter.clone()
+//     {
+//         water_cats_to_consider.push(point)
+//     }
+
+//     let mut num_land_dog_controlled = 0;
+//     let mut num_land_cat_controlled = 0;
+//     let mut num_water_dog_controlled = 0;
+//     let mut num_water_cat_controlled = 0;
+
+//     for _ in 0..10 {
+//         let mut next_water_dog_points = vec![];
+//         let mut next_water_cat_points = vec![];
+
+//         let mut next_land_dog_points = vec![];
+//         let mut next_land_cat_points = vec![];
+
+//         //first handle water.
+//         for d in water_dogs_to_consider.drain(..) {
+//             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
+//                 if check_terrain_water(p) {
+//                     if !visited.contains(&p) {
+//                         //TODO no need to store depth in these???
+//                         next_water_dog_points.push(p);
+//                     }
+//                 }
+//             }
+//         }
+
+//         for d in water_cats_to_consider.drain(..) {
+//             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
+//                 if check_terrain_water(p) {
+//                     if !visited.contains(&p) {
+//                         //TODO no need to store depth in these???
+//                         next_water_cat_points.push(p);
+//                     }
+//                 }
+//             }
+//         }
+
+//         //next land
+
+//         for d in land_dogs_to_consider.drain(..) {
+//             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
+//                 if check_terrain_land(p) {
+//                     if !land_visited.contains(&p) {
+//                         //TODO no need to store depth in these???
+//                         next_land_dog_points.push(p);
+//                     }
+//                 }
+//             }
+//         }
+
+//         for d in land_cats_to_consider.drain(..) {
+//             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
+//                 if check_terrain_land(p) {
+//                     if !land_visited.contains(&p) {
+//                         //TODO no need to store depth in these???
+//                         next_land_cat_points.push(p);
+//                     }
+//                 }
+//             }
+//         }
+
+//         //remove duplicate territory contested by teamates.
+//         next_water_cat_points.dedup();
+//         next_water_dog_points.dedup();
+//         next_land_cat_points.dedup();
+//         next_land_dog_points.dedup();
+
+//         //if a territory is contested by both sides, just remove it from both sides.
+//         next_water_cat_points.retain(|a| {
+//             if let Some((k, _)) = next_water_dog_points.iter().enumerate().find(|(_, b)| *b == a) {
+//                 let _ = next_water_dog_points.remove(k);
+//                 false
+//             } else {
+//                 true
+//             }
+//         });
+
+//         //if a territory is contested by both sides, just remove it from both sides.
+//         next_land_cat_points.retain(|a| {
+//             if let Some((k, _)) = next_land_dog_points.iter().enumerate().find(|(_, b)| *b == a) {
+//                 let _ = next_land_dog_points.remove(k);
+//                 false
+//             } else {
+//                 true
+//             }
+//         });
+
+//         next_land_cat_points.retain(|a| {
+//             if let Some((k, _)) = next_land_dog_points.iter().enumerate().find(|(_, b)| *b == a) {
+//                 let _ = next_land_dog_points.remove(k);
+//                 false
+//             } else {
+//                 true
+//             }
+//         });
+
+//         for a in next_water_cat_points.iter().chain(next_water_dog_points.iter()) {
+//             visited.push(*a);
+//         }
+
+//         num_water_dog_controlled += next_water_dog_points.len() as i64;
+//         num_water_cat_controlled += next_water_cat_points.len() as i64;
+//         //console_dbg!(num_cat_controlled,num_dog_controlled);
+//         water_dogs_to_consider.append(&mut next_water_dog_points);
+//         water_cats_to_consider.append(&mut next_water_cat_points);
+//     }
+
+//     Territory {
+//         num_dog_controlled,
+//         num_cat_controlled,
+//     }
+// }
+
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
-
     //if ships have access to friendly controlled terrain that should be a bonus.
 
+    let water = dog_or_cat_closest2(
+        view,
+        |unit| unit.typ == Type::Ship,
+        |game, point| {
+            if !game.world.filter().filter(&point).to_bool() {
+                return false;
+            }
+            if game.land.contains(&point) {
+                return false;
+            }
+            true
+        },
+    );
+    let land = dog_or_cat_closest2(
+        view,
+        |unit| unit.typ == Type::Foot,
+        |game, point| {
+            if !game.world.filter().filter(&point).to_bool() {
+                return false;
+            }
+            if !game.land.contains(&point) {
+                //assert!(!game.forest.contains(&point));
+                return false;
+            }
 
-    let water = dog_or_cat_closest2(view, false);
-    let land = dog_or_cat_closest2(view, true);
+            if game.forest.contains(&point) {
+                return false;
+            }
+            true
+        },
+    );
     water.num_cat_controlled - water.num_dog_controlled
         + (land.num_cat_controlled - land.num_dog_controlled)
 }

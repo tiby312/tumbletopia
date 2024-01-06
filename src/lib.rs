@@ -415,7 +415,7 @@ pub async fn worker_entry() {
         //     GridCoord([-3, 0]),
         //     GridCoord([0, 3]),
         // ],
-        powerup:vec!(),
+        powerup: vec![],
         world: board::World::new(),
     };
 
