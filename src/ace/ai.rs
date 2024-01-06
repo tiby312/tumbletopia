@@ -52,8 +52,6 @@ fn dog_or_cat_closest2(
             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
                 if check_terrain(game, p) {
                     if !dog_visited.contains(&p) && !cat_visited.contains(&p) {
-                        //assert!();
-                        //TODO no need to store depth in these???
                         next_dog_points.push(p);
                     }
                 }
@@ -63,9 +61,8 @@ fn dog_or_cat_closest2(
         for d in cats_to_consider.drain(..) {
             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
                 if check_terrain(game, p) {
+                    //TODO why is dog visited required???
                     if !cat_visited.contains(&p) && !dog_visited.contains(&p) {
-                        //assert!();
-                        //TODO no need to store depth in these???
                         next_cat_points.push(p);
                     }
                 }
@@ -78,7 +75,7 @@ fn dog_or_cat_closest2(
 
         //if a territory is contested by both sides, just remove it from both sides.
         crate::util::remove_common(&mut next_dog_points, &mut next_cat_points);
-
+        
         next_cat_points.retain(|a| !cat_iter.contains(a));
         next_dog_points.retain(|a| !dog_iter.contains(a));
 
