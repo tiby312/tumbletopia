@@ -5,8 +5,8 @@ pub type Eval = i64; //(f64);
 const MATE: i64 = 1_000_000;
 
 struct Territory {
-    num_dog_controlled: i64,
-    num_cat_controlled: i64,
+    dog_visited: Vec<GridCoord>,
+    cat_visited: Vec<GridCoord>,
 }
 
 fn dog_or_cat_closest2(
@@ -14,7 +14,8 @@ fn dog_or_cat_closest2(
     unit_filter: impl Fn(&UnitData) -> bool,
     mut check_terrain: impl FnMut(&GameState, GridCoord) -> bool,
 ) -> Territory {
-    let mut visited = vec![];
+    let mut cat_visited = vec![];
+    let mut dog_visited = vec![];
 
     let mut dogs_to_consider = Vec::new();
     let mut cats_to_consider = Vec::new();
@@ -41,8 +42,6 @@ fn dog_or_cat_closest2(
         cats_to_consider.push(point)
     }
 
-    let mut num_dog_controlled = 0;
-    let mut num_cat_controlled = 0;
     for _ in 0..10 {
         let mut next_dog_points = vec![];
         let mut next_cat_points = vec![];
@@ -50,7 +49,7 @@ fn dog_or_cat_closest2(
         for d in dogs_to_consider.drain(..) {
             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
                 if check_terrain(game, p) {
-                    if !visited.contains(&p) {
+                    if !dog_visited.contains(&p) && !cat_visited.contains(&p) {
                         //TODO no need to store depth in these???
                         next_dog_points.push(p);
                     }
@@ -61,7 +60,7 @@ fn dog_or_cat_closest2(
         for d in cats_to_consider.drain(..) {
             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
                 if check_terrain(game, p) {
-                    if !visited.contains(&p) {
+                    if !cat_visited.contains(&p) && !dog_visited.contains(&p) {
                         //TODO no need to store depth in these???
                         next_cat_points.push(p);
                     }
@@ -83,20 +82,17 @@ fn dog_or_cat_closest2(
             }
         });
 
-        for a in next_cat_points.iter().chain(next_dog_points.iter()) {
-            visited.push(*a);
-        }
+        cat_visited.extend_from_slice(&next_cat_points);
+        dog_visited.extend_from_slice(&next_dog_points);
 
-        num_dog_controlled += next_dog_points.len() as i64;
-        num_cat_controlled += next_cat_points.len() as i64;
         //console_dbg!(num_cat_controlled,num_dog_controlled);
         dogs_to_consider.append(&mut next_dog_points);
         cats_to_consider.append(&mut next_cat_points);
     }
 
     Territory {
-        num_dog_controlled,
-        num_cat_controlled,
+        dog_visited,
+        cat_visited,
     }
 }
 
@@ -346,8 +342,8 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             true
         },
     );
-    water.num_cat_controlled - water.num_dog_controlled
-        + (land.num_cat_controlled - land.num_dog_controlled)
+    water.cat_visited.len() as i64 - water.dog_visited.len() as i64
+        + (land.cat_visited.len() as i64 - land.dog_visited.len() as i64)
 }
 
 //TODO use bump allocator!!!!!
