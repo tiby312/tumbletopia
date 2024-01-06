@@ -38,13 +38,15 @@ fn dog_or_cat_closest2(
 
     for &point in dog_iter.iter() {
         dogs_to_consider.push(point);
+        dog_visited.push(point);
     }
 
     for &point in cat_iter.iter() {
-        cats_to_consider.push(point)
+        cats_to_consider.push(point);
+        cat_visited.push(point);
     }
 
-    for _ in 0..10 {
+    for depth in 0..10 {
         let mut next_dog_points = vec![];
         let mut next_cat_points = vec![];
 
@@ -52,6 +54,7 @@ fn dog_or_cat_closest2(
             for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
                 if check_terrain(game, p) {
                     if !dog_visited.contains(&p) && !cat_visited.contains(&p) {
+                        //assert!(!cat_visited.contains(&p),"depth={:?} also={:?}",depth,(dog_visited.len(),cat_visited.len()));
                         next_dog_points.push(p);
                     }
                 }
@@ -74,10 +77,10 @@ fn dog_or_cat_closest2(
         next_dog_points.dedup();
 
         //if a territory is contested by both sides, just remove it from both sides.
-        crate::util::remove_common(&mut next_dog_points, &mut next_cat_points);
-        
-        next_cat_points.retain(|a| !cat_iter.contains(a));
-        next_dog_points.retain(|a| !dog_iter.contains(a));
+        //crate::util::remove_common(&mut next_dog_points, &mut next_cat_points);
+
+        // next_cat_points.retain(|a| !cat_iter.contains(a));
+        // next_dog_points.retain(|a| !dog_iter.contains(a));
 
         cat_visited.extend_from_slice(&next_cat_points);
         dog_visited.extend_from_slice(&next_dog_points);

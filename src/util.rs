@@ -1,4 +1,3 @@
-
 pub fn remove_common<T: Ord>(a: &mut Vec<T>, b: &mut Vec<T>) {
     use std::collections::BTreeSet;
 
