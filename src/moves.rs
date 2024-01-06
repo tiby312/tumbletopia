@@ -305,7 +305,7 @@ pub mod partial_move {
                     generate_unit_possible_moves_inner(&mm, typ, &state.view_mut(team), true);
 
                 for sm in second_mesh.iter_mesh(mm) {
-                    //Don't both applying the extra move. just generate the sigl.
+                    //Don't bother applying the extra move. just generate the sigl.
                     movs.push(moves::ActualMove::ExtraMove(
                         moves::PartialMoveSigl {
                             unit: pos,

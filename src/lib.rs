@@ -409,12 +409,13 @@ pub async fn worker_entry() {
         cats: Tribe { units: cats },
         land: vec![GridCoord([4, -4]), GridCoord([-4, 4])],
         forest: vec![],
-        powerup: vec![
-            GridCoord([0, -3]),
-            GridCoord([3, 0]),
-            GridCoord([-3, 0]),
-            GridCoord([0, 3]),
-        ],
+        // powerup: vec![
+        //     GridCoord([0, -3]),
+        //     GridCoord([3, 0]),
+        //     GridCoord([-3, 0]),
+        //     GridCoord([0, 3]),
+        // ],
+        powerup:vec!(),
         world: board::World::new(),
     };
 

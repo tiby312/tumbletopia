@@ -37,34 +37,39 @@ fn dog_or_cat_closest2(game: &GameState, is_land: bool) -> Territory {
     let mut dogs_to_consider = Vec::new();
     let mut cats_to_consider = Vec::new();
 
-    for point in game
-        .dogs
-        .units
-        .iter()
-        .filter(|a| {
-            if is_land {
-                a.typ == Type::Foot
-            } else {
-                a.typ == Type::Ship
-            }
-        })
-        .map(|a| a.position)
+    let dog_iter=game
+    .dogs
+    .units
+    .iter()
+    .filter(|a| {
+        if is_land {
+            a.typ == Type::Foot
+        } else {
+            a.typ == Type::Ship
+        }
+    })
+    .map(|a| a.position);
+
+    let cat_iter=game
+    .cats
+    .units
+    .iter()
+    .filter(|a| {
+        if is_land {
+            a.typ == Type::Foot
+        } else {
+            a.typ == Type::Ship
+        }
+    })
+    .map(|a| a.position);
+
+
+    for point in dog_iter.clone()
     {
         dogs_to_consider.push(point);
     }
 
-    for point in game
-        .cats
-        .units
-        .iter()
-        .filter(|a| {
-            if is_land {
-                a.typ == Type::Foot
-            } else {
-                a.typ == Type::Ship
-            }
-        })
-        .map(|a| a.position)
+    for point in cat_iter.clone()
     {
         cats_to_consider.push(point)
     }
@@ -110,6 +115,17 @@ fn dog_or_cat_closest2(game: &GameState, is_land: bool) -> Territory {
                 true
             }
         });
+
+        //If a unit is ontop of a territory, remove it as well.
+        //pointless??
+        // next_cat_points.retain(|a|{
+        //     cat_iter.clone().find(|b|b==a).is_none() && dog_iter.clone().find(|b|b==a).is_none()
+        // });
+        // next_dog_points.retain(|a|{
+        //     cat_iter.clone().find(|b|b==a).is_none() && dog_iter.clone().find(|b|b==a).is_none()
+        // });
+
+
 
         for a in next_cat_points.iter().chain(next_dog_points.iter()) {
             visited.push(*a);
