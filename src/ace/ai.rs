@@ -131,45 +131,14 @@ fn dog_or_cat_closest2(game: &GameState, is_land: bool) -> Territory {
 //cats maximizing
 //dogs minimizing
 fn absolute_evaluate(view: &GameState) -> Eval {
-    //     let mut points_land = 0;
 
-    //     for a in view
-    //         .world
-    //         .iter_cells()
-    //         .map(|x| x.to_axial())
-    //         .filter(|x| !view.land.contains(x))
-    //     {
-    //         match dog_or_cat_closest(a, view, false) {
-    //             ClosestRet::Cat => {
-    //                 points_land += 1;
-    //             }
-    //             ClosestRet::Dog => {
-    //                 points_land -= 1;
-    //             }
-    //             _ => {}
-    //         }
-    //     }
+    //if ships have access to friendly controlled terrain that should be a bonus.
 
-    //     let mut points = 0;
-
-    //     for a in view.land.iter().filter(|x| !view.forest.contains(x)) {
-    //         match dog_or_cat_closest(*a, view, true) {
-    //             ClosestRet::Cat => {
-    //                 points += 1;
-    //             }
-    //             ClosestRet::Dog => {
-    //                 points -= 1;
-    //             }
-    //             _ => {}
-    //         }
-    //     }
-
-    //     points_land / 4 + points
 
     let water = dog_or_cat_closest2(view, false);
     let land = dog_or_cat_closest2(view, true);
     water.num_cat_controlled - water.num_dog_controlled
-        + (land.num_cat_controlled - land.num_dog_controlled) / 2
+        + (land.num_cat_controlled - land.num_dog_controlled)
 }
 
 //TODO use bump allocator!!!!!
