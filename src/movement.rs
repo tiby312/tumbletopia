@@ -54,7 +54,7 @@ impl HexDir {
     }
 }
 
-#[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
