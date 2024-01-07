@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use super::{selection::MoveLog, *};
 
 pub type Eval = i64; //(f64);
@@ -5,8 +7,8 @@ pub type Eval = i64; //(f64);
 const MATE: i64 = 1_000_000;
 
 struct Territory {
-    dog_visited: Vec<GridCoord>,
-    cat_visited: Vec<GridCoord>,
+    dog_visited: BTreeSet<GridCoord>,
+    cat_visited: BTreeSet<GridCoord>,
 }
 
 fn dog_or_cat_closest2(
@@ -14,8 +16,8 @@ fn dog_or_cat_closest2(
     unit_filter: impl Fn(&UnitData) -> bool,
     mut check_terrain: impl FnMut(&GameState, GridCoord) -> bool,
 ) -> Territory {
-    let mut cat_visited = vec![];
-    let mut dog_visited = vec![];
+    let mut cat_visited = BTreeSet::new();
+    let mut dog_visited = BTreeSet::new();
 
     let mut dogs_to_consider = Vec::new();
     let mut cats_to_consider = Vec::new();
@@ -38,12 +40,12 @@ fn dog_or_cat_closest2(
 
     for &point in dog_iter.iter() {
         dogs_to_consider.push(point);
-        dog_visited.push(point);
+        dog_visited.insert(point);
     }
 
     for &point in cat_iter.iter() {
         cats_to_consider.push(point);
-        cat_visited.push(point);
+        cat_visited.insert(point);
     }
 
     for depth in 0..10 {
@@ -82,8 +84,8 @@ fn dog_or_cat_closest2(
         // next_cat_points.retain(|a| !cat_iter.contains(a));
         // next_dog_points.retain(|a| !dog_iter.contains(a));
 
-        cat_visited.extend_from_slice(&next_cat_points);
-        dog_visited.extend_from_slice(&next_dog_points);
+        cat_visited.extend(next_cat_points.iter().copied());
+        dog_visited.extend(next_dog_points.iter().copied());
 
         //console_dbg!(num_cat_controlled,num_dog_controlled);
         dogs_to_consider.append(&mut next_dog_points);
