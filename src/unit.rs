@@ -59,6 +59,14 @@ impl Type {
     // }
 }
 
+impl std::ops::Deref for Tribe {
+    type Target = [UnitData];
+
+    fn deref(&self) -> &Self::Target {
+        &self.units
+    }
+}
+
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Tribe {
     pub units: smallvec::SmallVec<[UnitData; 6]>,

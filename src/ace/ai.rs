@@ -11,10 +11,14 @@ struct Territory {
     cat_visited: BTreeSet<GridCoord>,
 }
 
+fn around(point: GridCoord) -> impl Iterator<Item = GridCoord> {
+    point.to_cube().ring(1).map(|(_, b)| b.to_axial())
+}
+
 fn dog_or_cat_closest2(
     game: &GameState,
     unit_filter: impl Fn(&UnitData) -> bool,
-    mut check_terrain: impl FnMut(&GameState, GridCoord) -> bool,
+    mut check_terrain: impl FnMut(&GameState, GridCoord, GridCoord) -> bool,
 ) -> Territory {
     let mut cat_visited = BTreeSet::new();
     let mut dog_visited = BTreeSet::new();
@@ -24,7 +28,6 @@ fn dog_or_cat_closest2(
 
     let dog_iter: Vec<_> = game
         .dogs
-        .units
         .iter()
         .filter(|a| unit_filter(a))
         .map(|a| a.position)
@@ -32,7 +35,6 @@ fn dog_or_cat_closest2(
 
     let cat_iter: Vec<_> = game
         .cats
-        .units
         .iter()
         .filter(|a| unit_filter(a))
         .map(|a| a.position)
@@ -48,15 +50,14 @@ fn dog_or_cat_closest2(
         cat_visited.insert(point);
     }
 
-    for depth in 0..10 {
+    for _ in 0..10 {
         let mut next_dog_points = vec![];
         let mut next_cat_points = vec![];
 
         for d in dogs_to_consider.drain(..) {
-            for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
-                if check_terrain(game, p) {
+            for p in around(d) {
+                if check_terrain(game, d, p) {
                     if !dog_visited.contains(&p) && !cat_visited.contains(&p) {
-                        //assert!(!cat_visited.contains(&p),"depth={:?} also={:?}",depth,(dog_visited.len(),cat_visited.len()));
                         next_dog_points.push(p);
                     }
                 }
@@ -64,9 +65,8 @@ fn dog_or_cat_closest2(
         }
 
         for d in cats_to_consider.drain(..) {
-            for p in d.to_cube().ring(1).map(|(_, b)| b.to_axial()) {
-                if check_terrain(game, p) {
-                    //TODO why is dog visited required???
+            for p in around(d) {
+                if check_terrain(game, d, p) {
                     if !cat_visited.contains(&p) && !dog_visited.contains(&p) {
                         next_cat_points.push(p);
                     }
@@ -89,7 +89,7 @@ fn dog_or_cat_closest2(
         dogs_to_consider.append(&mut next_dog_points);
         cats_to_consider.append(&mut next_cat_points);
     }
-
+    assert_eq!(dog_visited.intersection(&cat_visited).count(), 0);
     Territory {
         dog_visited,
         cat_visited,
@@ -98,13 +98,13 @@ fn dog_or_cat_closest2(
 
 //cats maximizing
 //dogs minimizing
-fn absolute_evaluate(view: &GameState) -> Eval {
+pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
     //if ships have access to friendly controlled terrain that should be a bonus.
 
     let water = dog_or_cat_closest2(
         view,
         |unit| unit.typ == Type::Ship,
-        |game, point| {
+        |game, _, point| {
             if !game.world.filter().filter(&point).to_bool() {
                 return false;
             }
@@ -117,7 +117,7 @@ fn absolute_evaluate(view: &GameState) -> Eval {
     let land = dog_or_cat_closest2(
         view,
         |unit| unit.typ == Type::Foot,
-        |game, point| {
+        |game, _, point| {
             if !game.world.filter().filter(&point).to_bool() {
                 return false;
             }
@@ -132,8 +132,43 @@ fn absolute_evaluate(view: &GameState) -> Eval {
             true
         },
     );
+
+    // let potential_land=dog_or_cat_closest2(
+    //     view,
+    //     |unit| unit.typ == Type::Foot,
+    //     |game,orig, point| {
+    //         if !game.world.filter().filter(&point).to_bool() {
+    //             return false;
+    //         }
+
+    //         //do not allow going from water to land.
+    //         if !game.land.contains(&orig){
+    //             if game.land.contains(&point){
+    //                 return false;
+    //             }
+    //         }
+    //         // if !game.land.contains(&point) {
+    //         //     //assert!(!game.forest.contains(&point));
+    //         //     return false;
+    //         // }
+
+    //         if game.forest.contains(&point) {
+    //             return false;
+    //         }
+    //         true
+    //     },
+    // );
+
+    // let cc1:Vec<_>=potential_land.dog_visited.intersection(&water.dog_visited).collect();
+    // let cc:Vec<_>=potential_land.cat_visited.intersection(&water.cat_visited).collect();
+    // let dog_potential=cc1.len();
+    // let cat_potential=cc.len();
+    // if debug{
+    //     console_dbg!(dog_potential,cat_potential,cc1,cc);
+    // }
     water.cat_visited.len() as i64 - water.dog_visited.len() as i64
         + (land.cat_visited.len() as i64 - land.dog_visited.len() as i64)
+    // +(cat_potential as i64 - dog_potential as i64)
 }
 
 //TODO use bump allocator!!!!!
@@ -197,7 +232,7 @@ impl LeafTranspositionTable {
         if let Some(&eval) = self.lookup_leaf(&node) {
             eval
         } else {
-            let eval = absolute_evaluate(&node);
+            let eval = absolute_evaluate(&node, false);
             self.consider_leaf(node.clone(), eval);
             eval
         }
@@ -486,7 +521,7 @@ impl abab_simple::MoveFinder for MyMoveFinder {
     type Finder = std::vec::IntoIter<PossibleMove>;
 
     fn eval(&mut self, game: &Self::T) -> Self::EE {
-        absolute_evaluate(game)
+        absolute_evaluate(game, false)
     }
 
     fn min_eval(&self) -> Self::EE {

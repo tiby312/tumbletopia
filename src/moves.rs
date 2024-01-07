@@ -183,8 +183,8 @@ pub mod partial_move {
     fn calculate_walls(
         position: GridCoord,
         typ: Type,
-        land: &[GridCoord],
-        forest: &[GridCoord],
+        land: &BTreeSet<GridCoord>,
+        forest: &BTreeSet<GridCoord>,
     ) -> Mesh {
         let mut walls = Mesh::new();
 
@@ -221,8 +221,8 @@ pub mod partial_move {
         unit: GridCoord,
         typ: Type,
         target_cell: GridCoord,
-        land: &mut Vec<GridCoord>,
-        forest: &mut Vec<GridCoord>,
+        land: &mut BTreeSet<GridCoord>,
+        forest: &mut BTreeSet<GridCoord>,
     ) -> PartialMoveSigl {
         let sigl = PartialMoveSigl {
             unit,
@@ -230,9 +230,9 @@ pub mod partial_move {
         };
 
         if typ == Type::Ship {
-            land.push(target_cell);
+            land.insert(target_cell);
         } else if typ == Type::Foot {
-            forest.push(target_cell);
+            forest.insert(target_cell);
         }
         sigl
     }

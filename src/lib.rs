@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 //use ace::AnimationOptions;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use gloo::console::console;
@@ -163,9 +165,9 @@ pub struct GameStateRelative {
 pub struct GameState {
     dogs: Tribe,
     cats: Tribe,
-    land: Vec<GridCoord>,
-    forest: Vec<GridCoord>,
-    powerup: Vec<GridCoord>,
+    land: BTreeSet<GridCoord>,
+    forest: BTreeSet<GridCoord>,
+    powerup: BTreeSet<GridCoord>,
     world: board::World,
 }
 impl GameState {
@@ -227,8 +229,8 @@ impl GameState {
 pub struct GameThing<'a> {
     this_team: Tribe,
     that_team: Tribe,
-    land: Vec<GridCoord>,
-    forest: Vec<GridCoord>,
+    land: BTreeSet<GridCoord>,
+    forest: BTreeSet<GridCoord>,
     world: &'a board::World,
     team: ActiveTeam,
 }
@@ -282,8 +284,8 @@ pub struct AbsoluteGameView<'a, 'b> {
 pub struct GameViewMut<'a, 'b> {
     this_team: &'a mut Tribe,
     that_team: &'a mut Tribe,
-    land: &'a mut Vec<GridCoord>,
-    forest: &'a mut Vec<GridCoord>,
+    land: &'a mut BTreeSet<GridCoord>,
+    forest: &'a mut BTreeSet<GridCoord>,
     world: &'b board::World,
     team: ActiveTeam,
 }
@@ -407,15 +409,15 @@ pub async fn worker_entry() {
     let mut ggame = GameState {
         dogs: Tribe { units: dogs },
         cats: Tribe { units: cats },
-        land: vec![GridCoord([4, -4]), GridCoord([-4, 4])],
-        forest: vec![],
+        land: BTreeSet::from_iter([GridCoord([4, -4]), GridCoord([-4, 4])]),
+        forest: BTreeSet::from_iter([]),
         // powerup: vec![
         //     GridCoord([0, -3]),
         //     GridCoord([3, 0]),
         //     GridCoord([-3, 0]),
         //     GridCoord([0, 3]),
         // ],
-        powerup: vec![],
+        powerup: BTreeSet::from_iter([]),
         world: board::World::new(),
     };
 

@@ -431,6 +431,8 @@ pub async fn main_logic<'a>(
 
             moves::partial_move::execute_move_ani(game, team_index, the_move, &mut doop).await;
 
+            console_dbg!(ai::absolute_evaluate(game, true));
+
             continue;
         }
 
