@@ -79,10 +79,8 @@ fn dog_or_cat_closest2(
         next_dog_points.dedup();
 
         //if a territory is contested by both sides, just remove it from both sides.
-        //crate::util::remove_common(&mut next_dog_points, &mut next_cat_points);
-
-        // next_cat_points.retain(|a| !cat_iter.contains(a));
-        // next_dog_points.retain(|a| !dog_iter.contains(a));
+        //TODO pointless???
+        crate::util::remove_common(&mut next_dog_points, &mut next_cat_points);
 
         cat_visited.extend(next_cat_points.iter().copied());
         dog_visited.extend(next_dog_points.iter().copied());
