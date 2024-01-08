@@ -15,6 +15,102 @@ fn around(point: GridCoord) -> impl Iterator<Item = GridCoord> {
     point.to_cube().ring(1).map(|(_, b)| b.to_axial())
 }
 
+
+
+struct ExpandingBorders{
+    territory:BTreeSet<GridCoord>,
+}
+
+impl ExpandingBorders{
+    pub fn new(a:Vec<GridCoord>)->Self{
+        Self { territory: BTreeSet::from_iter(a) }
+    }
+    pub fn expand(&mut self,mut func:impl FnMut(&GridCoord,&GridCoord)->bool){
+        let mut next=vec!();
+        for b in &self.territory{
+            for p in around(*b){
+                if !self.territory.contains(&p){
+                    if func(b,&p){
+                        next.push(p);
+                    }
+                }
+            }
+        }
+
+        for n in next{
+            if !self.territory.contains(&n){
+                self.territory.insert(n);
+            }
+        }
+        //self.territory.dedup();
+
+
+    }
+
+    pub fn remove_conflicts_with(&mut self,other:&mut ExpandingBorders){
+        
+        let a:Vec<_>=self.territory.intersection(&other.territory).copied().collect();
+
+        for a in a{
+            self.territory.remove(&a);
+            other.territory.remove(&a);
+        }
+
+        
+
+    }
+    pub fn len(&self)->usize{
+        self.territory.len()
+    }
+
+}
+
+
+pub struct Territory2{
+    dog_visited:ExpandingBorders,
+    cat_visited:ExpandingBorders,
+}
+fn dog_or_cat_closest_floop(
+    game: &GameState,
+    unit_filter: impl Fn(&UnitData) -> bool,
+    mut check_terrain: impl FnMut(&GameState, GridCoord, GridCoord) -> bool,
+) -> Territory2 {
+    
+    let dog_iter: Vec<_> = game
+        .dogs
+        .iter()
+        .filter(|a| unit_filter(a))
+        .map(|a| a.position)
+        .collect();
+
+    let cat_iter: Vec<_> = game
+        .cats
+        .iter()
+        .filter(|a| unit_filter(a))
+        .map(|a| a.position)
+        .collect();
+
+    let mut dog_territory=ExpandingBorders::new(dog_iter);
+    let mut cat_territory=ExpandingBorders::new(cat_iter);
+
+    for _ in 0..10 {
+        dog_territory.expand(|orig,p|{
+            check_terrain(game,*orig,*p)
+        });
+        cat_territory.expand(|orig,p|{
+            check_terrain(game,*orig,*p)
+        });
+
+        dog_territory.remove_conflicts_with(&mut cat_territory);
+        
+        
+    }
+    
+    Territory2 {
+        dog_visited:dog_territory,
+        cat_visited:cat_territory,
+    }
+}
 fn dog_or_cat_closest2(
     game: &GameState,
     unit_filter: impl Fn(&UnitData) -> bool,
@@ -101,7 +197,7 @@ fn dog_or_cat_closest2(
 pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
     //if ships have access to friendly controlled terrain that should be a bonus.
 
-    let water = dog_or_cat_closest2(
+    let water = dog_or_cat_closest_floop(
         view,
         |unit| unit.typ == Type::Ship,
         |game, _, point| {
@@ -114,7 +210,7 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
             true
         },
     );
-    let land = dog_or_cat_closest2(
+    let land = dog_or_cat_closest_floop(
         view,
         |unit| unit.typ == Type::Foot,
         |game, _, point| {
@@ -133,9 +229,10 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
         },
     );
 
+    //console_dbg!(water.dog_visited.len(),water.cat_visited.len());
     // let potential_land=dog_or_cat_closest2(
     //     view,
-    //     |unit| unit.typ == Type::Foot,
+    //     |unit| true,
     //     |game,orig, point| {
     //         if !game.world.filter().filter(&point).to_bool() {
     //             return false;

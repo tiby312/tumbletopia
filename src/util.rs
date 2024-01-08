@@ -7,16 +7,16 @@ pub fn remove_common<T: Ord>(a: &mut Vec<T>, b: &mut Vec<T>) {
 
     b.extend(k.into_iter());
 
-    // next_cat_points.retain(|a| {
-    //     if let Some((k, _)) = next_dog_points.iter().enumerate().find(|(_, b)| *b == a) {
-    //         let _ = next_dog_points.remove(k);
-    //         false
-    //     } else {
-    //         true
-    //     }
-    // });
 }
+use std::collections::BTreeSet;
 
+pub fn remove_common_set<T: Ord>(a: &mut BTreeSet<T>, k: &mut BTreeSet<T>) {
+    
+    
+    a.retain(|j| !k.remove(j));
+
+
+}
 // pub struct AATexture<'a> {
 //     ctx: WebGl2RenderingContext,
 //     color_rend_buffer: web_sys::WebGlRenderbuffer,
