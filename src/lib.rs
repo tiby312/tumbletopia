@@ -380,7 +380,7 @@ pub async fn worker_entry() {
         //UnitData::new(GridCoord([-2, 1]), Type::Archer, HexDir { dir: 5 }),
         // UnitData::new(GridCoord([-3, 1]), Type::Archer, HexDir { dir: 5 }),
         UnitData::new(GridCoord([-4, 4]), Type::Foot),
-        UnitData::new(GridCoord([-4, 2]), Type::Ship),
+        //UnitData::new(GridCoord([-4, 2]), Type::Ship),
         UnitData::new(GridCoord([-2, 4]), Type::Ship),
     ];
 
@@ -398,7 +398,7 @@ pub async fn worker_entry() {
         //     HexDir { dir: 2 }
         // ),
         UnitData::new(GridCoord([4, -4]), Type::Foot),
-        UnitData::new(GridCoord([2, -4]), Type::Ship),
+        //UnitData::new(GridCoord([2, -4]), Type::Ship),
         UnitData::new(GridCoord([4, -2]), Type::Ship),
         // UnitData::new(GridCoord([1, -2]), Type::Rook, HexDir { dir: 2 }),
         // UnitData::new(GridCoord([1, -3]), Type::Rook, HexDir { dir: 2 }),
