@@ -25,6 +25,7 @@ impl ExpandingBorderRes {
 }
 struct ExpandingBorders<F> {
     territory: BTreeSet<GridCoord>,
+    archived: BTreeSet<GridCoord>,
     func: F,
 }
 
@@ -35,6 +36,7 @@ where
     pub fn new(a: Vec<GridCoord>, func: F) -> Self {
         Self {
             territory: BTreeSet::from_iter(a),
+            archived: BTreeSet::new(),
             func,
         }
     }
@@ -58,7 +60,11 @@ where
         //self.territory.dedup();
     }
 
-    pub fn remove_conflicts_with<K>(&mut self, other: &mut ExpandingBorders<K>) {
+    pub fn remove_conflicts_with<K>(
+        &mut self,
+        other: &mut ExpandingBorders<K>,
+        nomans: &mut NoMans,
+    ) {
         let a: Vec<_> = self
             .territory
             .intersection(&other.territory)
@@ -68,33 +74,47 @@ where
         for a in a {
             self.territory.remove(&a);
             other.territory.remove(&a);
+            nomans.territory.insert(a);
         }
     }
-    pub fn finish(self) -> ExpandingBorderRes {
+    pub fn finish(mut self) -> ExpandingBorderRes {
+        //console_dbg!(self.archived.len(),self.territory.len());
+        self.territory.extend(self.archived);
+
         ExpandingBorderRes {
             territory: self.territory,
         }
     }
-    // pub fn archive(&mut self,nomans:&NoMans){
-    //     let archived=vec!();
-    //     for b in &self.territory{
-    //         for p in around(*b){
-    //             let mut used_cell={
-    //                 archived.contains(p) ||
-    //                 self.territory.contains(p) ||
-    //                 nomans.territory.contains(p) ||
-    //                 func()
-    //             }
-    //             if !self.territory.contains(&p){
-    //                 if nomans.territory.contains(&p)
-    //             }
-    //         }
-    //     }
+    pub fn update_archive(&mut self, nomans: &NoMans) {
+        let mut todo = vec![];
+        for b in &self.territory {
+            let mut all_used = true;
+            for p in around(*b) {
+                let used_cell = {
+                    self.archived.contains(&p)
+                        || self.territory.contains(&p)
+                        || nomans.territory.contains(&p)
+                        || (self.func)(b, &p)
+                };
 
-    // }
+                all_used &= used_cell;
+            }
+            if all_used {
+                todo.push(*b);
+            }
+        }
+
+        //console_dbg!("FOOOO=",todo.len());
+        for a in todo {
+            self.territory.remove(&a);
+            self.archived.insert(a);
+        }
+    }
 }
 
-struct NoMans {}
+struct NoMans {
+    territory: BTreeSet<GridCoord>,
+}
 
 pub struct Territory2 {
     dog_visited: ExpandingBorderRes,
@@ -124,11 +144,17 @@ fn dog_or_cat_closest_floop(
     let mut cat_territory =
         ExpandingBorders::new(cat_iter, |orig, p| check_terrain(game, *orig, *p));
 
+    let mut nomans = NoMans {
+        territory: BTreeSet::new(),
+    };
     for _ in 0..10 {
         dog_territory.expand();
         cat_territory.expand();
 
-        dog_territory.remove_conflicts_with(&mut cat_territory);
+        dog_territory.remove_conflicts_with(&mut cat_territory, &mut nomans);
+
+        dog_territory.update_archive(&nomans);
+        cat_territory.update_archive(&nomans);
     }
 
     Territory2 {
