@@ -15,22 +15,35 @@ fn around(point: GridCoord) -> impl Iterator<Item = GridCoord> {
     point.to_cube().ring(1).map(|(_, b)| b.to_axial())
 }
 
-struct ExpandingBorders {
+struct ExpandingBorderRes {
     territory: BTreeSet<GridCoord>,
 }
+impl ExpandingBorderRes {
+    pub fn len(&self) -> usize {
+        self.territory.len()
+    }
+}
+struct ExpandingBorders<F> {
+    territory: BTreeSet<GridCoord>,
+    func: F,
+}
 
-impl ExpandingBorders {
-    pub fn new(a: Vec<GridCoord>) -> Self {
+impl<F> ExpandingBorders<F>
+where
+    F: Fn(&GridCoord, &GridCoord) -> bool,
+{
+    pub fn new(a: Vec<GridCoord>, func: F) -> Self {
         Self {
             territory: BTreeSet::from_iter(a),
+            func,
         }
     }
-    pub fn expand(&mut self, mut func: impl FnMut(&GridCoord, &GridCoord) -> bool) {
+    pub fn expand(&mut self) {
         let mut next = vec![];
         for b in &self.territory {
             for p in around(*b) {
                 if !self.territory.contains(&p) {
-                    if func(b, &p) {
+                    if (self.func)(b, &p) {
                         next.push(p);
                     }
                 }
@@ -45,7 +58,7 @@ impl ExpandingBorders {
         //self.territory.dedup();
     }
 
-    pub fn remove_conflicts_with(&mut self, other: &mut ExpandingBorders) {
+    pub fn remove_conflicts_with<K>(&mut self, other: &mut ExpandingBorders<K>) {
         let a: Vec<_> = self
             .territory
             .intersection(&other.territory)
@@ -55,6 +68,11 @@ impl ExpandingBorders {
         for a in a {
             self.territory.remove(&a);
             other.territory.remove(&a);
+        }
+    }
+    pub fn finish(self) -> ExpandingBorderRes {
+        ExpandingBorderRes {
+            territory: self.territory,
         }
     }
     // pub fn archive(&mut self,nomans:&NoMans){
@@ -74,21 +92,18 @@ impl ExpandingBorders {
     //     }
 
     // }
-    pub fn len(&self) -> usize {
-        self.territory.len()
-    }
 }
 
 struct NoMans {}
 
 pub struct Territory2 {
-    dog_visited: ExpandingBorders,
-    cat_visited: ExpandingBorders,
+    dog_visited: ExpandingBorderRes,
+    cat_visited: ExpandingBorderRes,
 }
 fn dog_or_cat_closest_floop(
     game: &GameState,
     unit_filter: impl Fn(&UnitData) -> bool,
-    mut check_terrain: impl FnMut(&GameState, GridCoord, GridCoord) -> bool,
+    mut check_terrain: impl Fn(&GameState, GridCoord, GridCoord) -> bool,
 ) -> Territory2 {
     let dog_iter: Vec<_> = game
         .dogs
@@ -104,19 +119,21 @@ fn dog_or_cat_closest_floop(
         .map(|a| a.position)
         .collect();
 
-    let mut dog_territory = ExpandingBorders::new(dog_iter);
-    let mut cat_territory = ExpandingBorders::new(cat_iter);
+    let mut dog_territory =
+        ExpandingBorders::new(dog_iter, |orig, p| check_terrain(game, *orig, *p));
+    let mut cat_territory =
+        ExpandingBorders::new(cat_iter, |orig, p| check_terrain(game, *orig, *p));
 
     for _ in 0..10 {
-        dog_territory.expand(|orig, p| check_terrain(game, *orig, *p));
-        cat_territory.expand(|orig, p| check_terrain(game, *orig, *p));
+        dog_territory.expand();
+        cat_territory.expand();
 
         dog_territory.remove_conflicts_with(&mut cat_territory);
     }
 
     Territory2 {
-        dog_visited: dog_territory,
-        cat_visited: cat_territory,
+        dog_visited: dog_territory.finish(),
+        cat_visited: cat_territory.finish(),
     }
 }
 fn dog_or_cat_closest2(
