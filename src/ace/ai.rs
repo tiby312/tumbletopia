@@ -15,67 +15,81 @@ fn around(point: GridCoord) -> impl Iterator<Item = GridCoord> {
     point.to_cube().ring(1).map(|(_, b)| b.to_axial())
 }
 
-
-
-struct ExpandingBorders{
-    territory:BTreeSet<GridCoord>,
+struct ExpandingBorders {
+    territory: BTreeSet<GridCoord>,
 }
 
-impl ExpandingBorders{
-    pub fn new(a:Vec<GridCoord>)->Self{
-        Self { territory: BTreeSet::from_iter(a) }
+impl ExpandingBorders {
+    pub fn new(a: Vec<GridCoord>) -> Self {
+        Self {
+            territory: BTreeSet::from_iter(a),
+        }
     }
-    pub fn expand(&mut self,mut func:impl FnMut(&GridCoord,&GridCoord)->bool){
-        let mut next=vec!();
-        for b in &self.territory{
-            for p in around(*b){
-                if !self.territory.contains(&p){
-                    if func(b,&p){
+    pub fn expand(&mut self, mut func: impl FnMut(&GridCoord, &GridCoord) -> bool) {
+        let mut next = vec![];
+        for b in &self.territory {
+            for p in around(*b) {
+                if !self.territory.contains(&p) {
+                    if func(b, &p) {
                         next.push(p);
                     }
                 }
             }
         }
 
-        for n in next{
-            if !self.territory.contains(&n){
+        for n in next {
+            if !self.territory.contains(&n) {
                 self.territory.insert(n);
             }
         }
         //self.territory.dedup();
-
-
     }
 
-    pub fn remove_conflicts_with(&mut self,other:&mut ExpandingBorders){
-        
-        let a:Vec<_>=self.territory.intersection(&other.territory).copied().collect();
+    pub fn remove_conflicts_with(&mut self, other: &mut ExpandingBorders) {
+        let a: Vec<_> = self
+            .territory
+            .intersection(&other.territory)
+            .copied()
+            .collect();
 
-        for a in a{
+        for a in a {
             self.territory.remove(&a);
             other.territory.remove(&a);
         }
-
-        
-
     }
-    pub fn len(&self)->usize{
+    // pub fn archive(&mut self,nomans:&NoMans){
+    //     let archived=vec!();
+    //     for b in &self.territory{
+    //         for p in around(*b){
+    //             let mut used_cell={
+    //                 archived.contains(p) ||
+    //                 self.territory.contains(p) ||
+    //                 nomans.territory.contains(p) ||
+    //                 func()
+    //             }
+    //             if !self.territory.contains(&p){
+    //                 if nomans.territory.contains(&p)
+    //             }
+    //         }
+    //     }
+
+    // }
+    pub fn len(&self) -> usize {
         self.territory.len()
     }
-
 }
 
+struct NoMans {}
 
-pub struct Territory2{
-    dog_visited:ExpandingBorders,
-    cat_visited:ExpandingBorders,
+pub struct Territory2 {
+    dog_visited: ExpandingBorders,
+    cat_visited: ExpandingBorders,
 }
 fn dog_or_cat_closest_floop(
     game: &GameState,
     unit_filter: impl Fn(&UnitData) -> bool,
     mut check_terrain: impl FnMut(&GameState, GridCoord, GridCoord) -> bool,
 ) -> Territory2 {
-    
     let dog_iter: Vec<_> = game
         .dogs
         .iter()
@@ -90,25 +104,19 @@ fn dog_or_cat_closest_floop(
         .map(|a| a.position)
         .collect();
 
-    let mut dog_territory=ExpandingBorders::new(dog_iter);
-    let mut cat_territory=ExpandingBorders::new(cat_iter);
+    let mut dog_territory = ExpandingBorders::new(dog_iter);
+    let mut cat_territory = ExpandingBorders::new(cat_iter);
 
     for _ in 0..10 {
-        dog_territory.expand(|orig,p|{
-            check_terrain(game,*orig,*p)
-        });
-        cat_territory.expand(|orig,p|{
-            check_terrain(game,*orig,*p)
-        });
+        dog_territory.expand(|orig, p| check_terrain(game, *orig, *p));
+        cat_territory.expand(|orig, p| check_terrain(game, *orig, *p));
 
         dog_territory.remove_conflicts_with(&mut cat_territory);
-        
-        
     }
-    
+
     Territory2 {
-        dog_visited:dog_territory,
-        cat_visited:cat_territory,
+        dog_visited: dog_territory,
+        cat_visited: cat_territory,
     }
 }
 fn dog_or_cat_closest2(
