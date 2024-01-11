@@ -344,7 +344,7 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
 
     let cats = cat_ships.iter_mesh(GridCoord([0; 2])).count();
     let dogs = dog_ships.iter_mesh(GridCoord([0; 2])).count();
-    
+
     cats as i64 - dogs as i64
 }
 
@@ -363,14 +363,16 @@ fn doop(game: &GameState, mut dogs: &mut BitField, mut cats: &mut BitField, mut 
 
     let mut nomans = BitField::new();
 
+    let mut contested = BitField::new();
     for _ in 0..5 {
         expand_mesh(&mut dogs);
         expand_mesh(&mut cats);
-        
+
         dogs.intersect_with(&allowed_cells);
         cats.intersect_with(&allowed_cells);
-        
-        let mut contested = dogs.clone();
+
+        contested.clear();
+        contested.union_with(dogs);
         contested.intersect_with(cats);
         nomans.union_with(&contested);
 
