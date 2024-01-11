@@ -342,9 +342,9 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
 
     doop(view, &mut dog_ships, &mut cat_ships, &land);
 
-    let cats = cat_ships.iter_mesh(GridCoord([0; 2])).count();
-    let dogs = dog_ships.iter_mesh(GridCoord([0; 2])).count();
-
+    let cats = cat_ships.inner.count_ones(..);
+    let dogs = dog_ships.inner.count_ones(..);
+    
     cats as i64 - dogs as i64
 }
 
