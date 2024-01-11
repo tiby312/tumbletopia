@@ -1,4 +1,9 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+
+use crate::{
+    board::world_mesh_iter,
+    movement::{bitfield::BitField, movement_mesh::Mesh},
+};
 
 use super::{selection::MoveLog, *};
 
@@ -245,7 +250,7 @@ fn dog_or_cat_closest2(
 
 //cats maximizing
 //dogs minimizing
-pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
+pub fn absolute_evaluate_old(view: &GameState, debug: bool) -> Eval {
     //if ships have access to friendly controlled terrain that should be a bonus.
 
     let water = dog_or_cat_closest_floop(
@@ -317,6 +322,72 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
     water.cat_visited.len() as i64 - water.dog_visited.len() as i64
         + (land.cat_visited.len() as i64 - land.dog_visited.len() as i64)
     // +(cat_potential as i64 - dog_potential as i64)
+}
+
+pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
+    let land = world_mesh_iter(view.land.iter().copied());
+
+    let mut cat_ships = BitField::from_iter(
+        view.cats
+            .iter()
+            .filter(|a| a.typ == Type::Ship)
+            .map(|a| a.position),
+    );
+    let mut dog_ships = BitField::from_iter(
+        view.dogs
+            .iter()
+            .filter(|a| a.typ == Type::Ship)
+            .map(|a| a.position),
+    );
+
+    doop(view, &mut dog_ships, &mut cat_ships, &land);
+
+    let cats = cat_ships.iter_mesh(GridCoord([0; 2])).count();
+    let dogs = dog_ships.iter_mesh(GridCoord([0; 2])).count();
+    //console_dbg!(cats,dogs);
+    cats as i64 - dogs as i64
+}
+
+fn doop(game: &GameState, mut dogs: &mut BitField, mut cats: &mut BitField, mut walls: &BitField) {
+    fn expand_mesh(mesh: &mut BitField) {
+        let copy = mesh.clone();
+        for a in copy.iter_mesh(GridCoord([0; 2])) {
+            //console_dbg!("gg",a);
+            for b in around(a) {
+                mesh.add(b);
+            }
+        }
+    }
+
+    let mut allowed_cells = walls.clone();
+    allowed_cells.toggle_range(..);
+
+    let mut nomans = BitField::new();
+
+    for _ in 0..5 {
+        //console_dbg!("a");
+
+        expand_mesh(&mut dogs);
+        //console_dbg!("b");
+
+        expand_mesh(&mut cats);
+        //console_dbg!("c");
+
+        dogs.intersect_with(&allowed_cells);
+        //console_dbg!("d");
+
+        cats.intersect_with(&allowed_cells);
+        //console_dbg!("e");
+
+        let mut contested = dogs.clone();
+        contested.intersect_with(cats);
+        nomans.union_with(&contested);
+
+        contested.toggle_range(..);
+
+        dogs.intersect_with(&contested);
+        cats.intersect_with(&contested);
+    }
 }
 
 //TODO use bump allocator!!!!!

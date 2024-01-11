@@ -459,12 +459,19 @@ pub mod movement_mesh {
 
     #[derive(PartialEq, Eq, Debug, Clone)]
     pub struct Mesh {
-        inner: u128,
+        pub inner: u128,
     }
 
     impl Mesh {
         pub fn new() -> Mesh {
             Mesh { inner: 0 }
+        }
+        pub fn from_iter(it: impl Iterator<Item = GridCoord>) -> Mesh {
+            let mut m = Mesh::new();
+            for a in it {
+                m.add(a);
+            }
+            m
         }
         fn validate_rel(a: GridCoord) {
             let x = a.0[0];
@@ -509,6 +516,7 @@ pub mod movement_mesh {
             mesh_moves //.chain(skip_moves)
         }
     }
+
     use super::GridCoord;
 
     #[derive(PartialEq, Eq, Debug, Clone)]
@@ -618,4 +626,115 @@ pub mod movement_mesh {
     // fn conv_inv(ind: usize) -> GridCoord {
     //     GridCoord(TABLE[ind])
     // }
+}
+
+pub mod bitfield {
+    use std::ops::{Deref, DerefMut};
+
+    use super::GridCoord;
+
+    #[test]
+    fn bitfield() {
+        let mut m = BitField::new();
+
+        for k in -16..16 {
+            dbg!("handling=k", k);
+            m.add(GridCoord([k, k]));
+
+            assert!(m.is_set(GridCoord([k, k])), "boo={}", k);
+        }
+    }
+
+    use fixedbitset::FixedBitSet;
+    #[derive(Clone)]
+    pub struct BitField {
+        pub inner: FixedBitSet,
+    }
+
+    impl Deref for BitField {
+        type Target = FixedBitSet;
+        fn deref(&self) -> &FixedBitSet {
+            &self.inner
+        }
+    }
+
+    impl DerefMut for BitField {
+        fn deref_mut(&mut self) -> &mut FixedBitSet {
+            &mut self.inner
+        }
+    }
+    impl BitField {
+        pub fn new() -> Self {
+            BitField {
+                inner: FixedBitSet::with_capacity(1024),
+            }
+        }
+        pub fn from_iter(a: impl Iterator<Item = GridCoord>) -> Self {
+            let mut k = BitField::new();
+            for a in a {
+                k.add(a);
+            }
+            k
+        }
+
+        pub fn add(&mut self, a: GridCoord) {
+            let x = a.0[0];
+            let y = a.0[1];
+            assert!(x <= 16 && x >= -16 && y <= 16 && y >= -16, "val={:?}", a);
+
+            let ind = conv(a);
+            self.inner.set(ind, true);
+
+            //self.inner|=(1<<ind);
+        }
+
+        pub fn is_set(&self, a: GridCoord) -> bool {
+            let ind = conv(a);
+
+            self.inner[ind]
+        }
+        pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> + '_ {
+            let inner = &self.inner;
+
+            //let skip_moves = self.swing_moves(point);
+
+            // TABLE
+            //     .iter()
+            //     .enumerate()
+            //     .filter(move |(x, _)| inner & (1 << x) != 0)
+            //     .map(move |(_, x)| point.add(GridCoord(*x)))
+            // let mesh_moves = (0..4usize).flat_map(|i|(0..64).map(move |l|(i,l)))
+            //     .filter(move |&(x,y)| inner[x] & (1 << y) != 0)
+            //     .map(move |(_,a)| {
+            //         let x = a / 8;
+            //         let y = a % 8;
+            //         point.add(GridCoord([x, y]))
+            //     });
+
+            //mesh_moves //.chain(skip_moves)
+            self.inner.ones().map(move |a| {
+                let x = a / 32;
+                let y = a % 32;
+                point.add(GridCoord([x as i16 - 16, y as i16 - 16]))
+            })
+        }
+    }
+    fn conv(a: GridCoord) -> usize {
+        let [x, y] = a.0;
+        //     let ind=x/7+y%7;
+        //     // -3 -2 -1 0 1 2 3
+        //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
+        // ind as usize
+        let k = ((x + 16) * 32 + (y + 16)) as usize;
+
+        //dbg!(a,k);
+        k
+
+        // TABLE
+        //     .iter()
+        //     .enumerate()
+        //     .find(|(_, x)| **x == a.0)
+        //     .expect("Could not find the coord in table")
+        //     .0
+    }
 }

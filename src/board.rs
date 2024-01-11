@@ -1,4 +1,4 @@
-use crate::movement::FilterRes;
+use crate::movement::{bitfield::BitField, movement_mesh::Mesh, FilterRes};
 
 use super::*;
 
@@ -17,6 +17,20 @@ impl movement::Filter for GridFilter {
 
 pub fn water_border() -> impl Iterator<Item = hex::Cube> + Clone {
     hex::Cube::new(0, 0).ring(5).map(|(_, a)| a)
+}
+
+pub fn world_mesh() -> BitField {
+    let mut m = BitField::from_iter(world().map(|a| a.to_axial()));
+    m.inner.toggle_range(..);
+    m
+}
+pub fn world_mesh_iter(a: impl Iterator<Item = GridCoord>) -> BitField {
+    let mut m = world_mesh();
+
+    for k in a {
+        m.add(k);
+    }
+    m
 }
 
 fn world() -> impl Iterator<Item = hex::Cube> {
