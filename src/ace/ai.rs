@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    board::world_mesh_iter,
+    board::{world_bitfield, world_mesh_iter},
     movement::{bitfield::BitField, movement_mesh::Mesh},
 };
 
@@ -325,7 +325,11 @@ pub fn absolute_evaluate_old(view: &GameState, debug: bool) -> Eval {
 }
 
 pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
-    let land = world_mesh_iter(view.land.iter().copied());
+    let mut water = BitField::from_iter(view.land.iter().copied());
+    water.toggle_range(..);
+
+    let mut allowed = world_bitfield();
+    allowed.intersect_with(&water);
 
     let mut cat_ships = BitField::from_iter(
         view.cats
@@ -340,17 +344,36 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
             .map(|a| a.position),
     );
 
-    doop(view, &mut dog_ships, &mut cat_ships, &land);
+    // let mut cat_foot = BitField::from_iter(
+    //     view.cats
+    //         .iter()
+    //         .filter(|a| a.typ == Type::Foot)
+    //         .map(|a| a.position),
+    // );
+    // let mut dog_foot = BitField::from_iter(
+    //     view.dogs
+    //         .iter()
+    //         .filter(|a| a.typ == Type::Foot)
+    //         .map(|a| a.position),
+    // );
 
-    let cats = cat_ships.inner.count_ones(..);
-    let dogs = dog_ships.inner.count_ones(..);
+    doop(view, &mut dog_ships, &mut cat_ships, &allowed);
+
+    let cats = cat_ships.count_ones(..);
+    let dogs = dog_ships.count_ones(..);
+
+    //doop(view, &mut dog_foot, &mut cat_foot, &land);
 
     cats as i64 - dogs as i64
 }
 
-fn doop(game: &GameState, mut dogs: &mut BitField, mut cats: &mut BitField, mut walls: &BitField) {
-    fn expand_mesh(mesh: &mut BitField,workspace:&mut BitField) {
-        
+fn doop(
+    game: &GameState,
+    mut dogs: &mut BitField,
+    mut cats: &mut BitField,
+    mut allowed_cells: &BitField,
+) {
+    fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
         workspace.clear();
         workspace.union_with(mesh);
 
@@ -361,15 +384,12 @@ fn doop(game: &GameState, mut dogs: &mut BitField, mut cats: &mut BitField, mut 
         }
     }
 
-    let mut allowed_cells = walls.clone();
-    allowed_cells.toggle_range(..);
-
     let mut nomans = BitField::new();
-    let mut w=BitField::new();
+    let mut w = BitField::new();
     let mut contested = BitField::new();
     for _ in 0..5 {
-        expand_mesh(&mut dogs,&mut w);
-        expand_mesh(&mut cats,&mut w);
+        expand_mesh(&mut dogs, &mut w);
+        expand_mesh(&mut cats, &mut w);
 
         dogs.intersect_with(&allowed_cells);
         cats.intersect_with(&allowed_cells);

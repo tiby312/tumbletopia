@@ -24,6 +24,11 @@ pub fn world_mesh() -> BitField {
     m.inner.toggle_range(..);
     m
 }
+
+pub fn world_bitfield() -> BitField {
+    let mut m = BitField::from_iter(world().map(|a| a.to_axial()));
+    m
+}
 pub fn world_mesh_iter(a: impl Iterator<Item = GridCoord>) -> BitField {
     let mut m = world_mesh();
 
