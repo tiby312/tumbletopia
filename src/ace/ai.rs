@@ -325,11 +325,25 @@ pub fn absolute_evaluate_old(view: &GameState, debug: bool) -> Eval {
 }
 
 pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
-    let mut water = BitField::from_iter(view.land.iter().copied());
-    water.toggle_range(..);
+    let water = {
+        let mut t = BitField::from_iter(view.land.iter().copied());
+        t.toggle_range(..);
+        t
+    };
 
-    let mut allowed = world_bitfield();
-    allowed.intersect_with(&water);
+    let grass = {
+        let mut land = BitField::from_iter(view.land.iter().copied());
+        let mut t = BitField::from_iter(view.forest.iter().copied());
+        t.toggle_range(..);
+        land.intersect_with(&t);
+        land
+    };
+
+    let allowed = {
+        let mut t = world_bitfield();
+        t.intersect_with(&water);
+        t
+    };
 
     let mut cat_ships = BitField::from_iter(
         view.cats
@@ -344,27 +358,26 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
             .map(|a| a.position),
     );
 
-    // let mut cat_foot = BitField::from_iter(
-    //     view.cats
-    //         .iter()
-    //         .filter(|a| a.typ == Type::Foot)
-    //         .map(|a| a.position),
-    // );
-    // let mut dog_foot = BitField::from_iter(
-    //     view.dogs
-    //         .iter()
-    //         .filter(|a| a.typ == Type::Foot)
-    //         .map(|a| a.position),
-    // );
+    let mut cat_foot = BitField::from_iter(
+        view.cats
+            .iter()
+            .filter(|a| a.typ == Type::Foot)
+            .map(|a| a.position),
+    );
+    let mut dog_foot = BitField::from_iter(
+        view.dogs
+            .iter()
+            .filter(|a| a.typ == Type::Foot)
+            .map(|a| a.position),
+    );
 
     doop(view, &mut dog_ships, &mut cat_ships, &allowed);
 
-    let cats = cat_ships.count_ones(..);
-    let dogs = dog_ships.count_ones(..);
+    doop(view, &mut dog_foot, &mut cat_foot, &grass);
 
-    //doop(view, &mut dog_foot, &mut cat_foot, &land);
-
-    cats as i64 - dogs as i64
+    let s = cat_ships.count_ones(..) as i64 - dog_ships.count_ones(..) as i64;
+    let r = cat_foot.count_ones(..) as i64 - dog_foot.count_ones(..) as i64;
+    s + r
 }
 
 fn doop(
