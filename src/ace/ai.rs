@@ -64,21 +64,16 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
             .map(|a| a.position),
     );
 
-    doop(view, &mut dog_ships, &mut cat_ships, &allowed);
+    doop(&mut dog_ships, &mut cat_ships, &allowed);
 
-    doop(view, &mut dog_foot, &mut cat_foot, &grass);
+    doop(&mut dog_foot, &mut cat_foot, &grass);
 
     let s = cat_ships.count_ones(..) as i64 - dog_ships.count_ones(..) as i64;
     let r = cat_foot.count_ones(..) as i64 - dog_foot.count_ones(..) as i64;
     s + r
 }
 
-fn doop(
-    game: &GameState,
-    mut dogs: &mut BitField,
-    mut cats: &mut BitField,
-    mut allowed_cells: &BitField,
-) {
+fn doop(mut dogs: &mut BitField, mut cats: &mut BitField, allowed_cells: &BitField) {
     fn around(point: GridCoord) -> impl Iterator<Item = GridCoord> {
         point.to_cube().ring(1).map(|(_, b)| b.to_axial())
     }
