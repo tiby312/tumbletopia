@@ -198,11 +198,18 @@ pub struct Environment {
     world: board::World,
 }
 
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+
+pub struct MyWorld {
+    w: BitField,
+}
+
 //Additionally removes need to special case animation.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
     factions: Factions,
     env: Environment,
+    world: &'static MyWorld,
 }
 
 #[wasm_bindgen]
@@ -229,25 +236,9 @@ pub async fn worker_entry() {
 
     ctx.setup_alpha();
 
-    //TODO delete
-    //let gg = grids::GridMatrix::new();
-
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
-        //UnitData::new(GridCoord([-4, 4]), Type::King, HexDir { dir: 5 }),
-        // UnitData::new(
-        //     GridCoord([2, -1]),
-        //     Type::Spotter { clockwise: true },
-        //     HexDir { dir: 2 }
-        // ),
-        // UnitData::new(
-        //     GridCoord([-3, -1]),
-        //     Type::Spotter { clockwise: false },
-        //     HexDir { dir: 2 }
-        // ),
-        //UnitData::new(GridCoord([-2, 1]), Type::Archer, HexDir { dir: 5 }),
-        // UnitData::new(GridCoord([-3, 1]), Type::Archer, HexDir { dir: 5 }),
         UnitData::new(GridCoord([-3, 3]), Type::Foot),
         UnitData::new(GridCoord([-3, 2]), Type::Ship),
         UnitData::new(GridCoord([-2, 3]), Type::Ship),
@@ -255,25 +246,12 @@ pub async fn worker_entry() {
 
     //player
     let dogs = smallvec::smallvec![
-        //UnitData::new(GridCoord([4, -4]), Type::King, HexDir { dir: 2 }),
-        // UnitData::new(
-        //     GridCoord([1, -2]),
-        //     Type::Spotter { clockwise: true },
-        //     HexDir { dir: 2 }
-        // ),
-        // UnitData::new(
-        //     GridCoord([2, -2]),
-        //     Type::Spotter { clockwise: false },
-        //     HexDir { dir: 2 }
-        // ),
         UnitData::new(GridCoord([3, -3]), Type::Foot),
         UnitData::new(GridCoord([2, -3]), Type::Ship),
         UnitData::new(GridCoord([3, -2]), Type::Ship),
-        // UnitData::new(GridCoord([1, -2]), Type::Rook, HexDir { dir: 2 }),
-        // UnitData::new(GridCoord([1, -3]), Type::Rook, HexDir { dir: 2 }),
-        // UnitData::new(GridCoord([1, -3]), Type::Warrior, HexDir { dir: 2 }),
-        // UnitData::new(GridCoord([3, -1]), Type::Warrior, HexDir { dir: 2 }),
     ];
+
+    let world = Box::leak(Box::new(MyWorld { w: BitField::new() }));
 
     let mut ggame = GameState {
         factions: Factions {
@@ -283,15 +261,10 @@ pub async fn worker_entry() {
         env: Environment {
             land: BitField::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
             forest: BitField::from_iter([]),
-            // powerup: vec![
-            //     GridCoord([0, -3]),
-            //     GridCoord([3, 0]),
-            //     GridCoord([-3, 0]),
-            //     GridCoord([0, 3]),
-            // ],
             powerup: BitField::from_iter([]),
             world: board::World::new(),
         },
+        world,
     };
 
     let _roads = terrain::TerrainCollection {
