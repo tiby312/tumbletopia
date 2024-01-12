@@ -371,8 +371,8 @@ pub async fn worker_entry() {
                                 .this_team
                                 .units
                                 .iter()
-                                .cloned()
                                 .filter(|a| a.position != unit.position)
+                                .cloned()
                                 .collect();
                             let b: Vec<_> = ggame
                                 .factions
@@ -391,8 +391,8 @@ pub async fn worker_entry() {
                                 .this_team
                                 .units
                                 .iter()
-                                .cloned()
                                 .filter(|k| k.position != attacker.position)
+                                .cloned()
                                 .collect();
                             let b = ggame
                                 .factions
@@ -400,8 +400,8 @@ pub async fn worker_entry() {
                                 .that_team
                                 .units
                                 .iter()
-                                .cloned()
                                 .filter(|k| k.position != defender.position)
+                                .cloned()
                                 .collect();
                             (a, b)
                         }
