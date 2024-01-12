@@ -646,7 +646,8 @@ pub mod bitfield {
     }
 
     use fixedbitset::FixedBitSet;
-    #[derive(Clone)]
+
+    #[derive(Clone, Debug, Hash, Eq, PartialEq)]
     pub struct BitField {
         pub inner: FixedBitSet,
     }
@@ -669,7 +670,7 @@ pub mod bitfield {
                 inner: FixedBitSet::with_capacity(1024),
             }
         }
-        pub fn from_iter(a: impl Iterator<Item = GridCoord>) -> Self {
+        pub fn from_iter(a: impl IntoIterator<Item = GridCoord>) -> Self {
             let mut k = BitField::new();
             for a in a {
                 k.add(a);

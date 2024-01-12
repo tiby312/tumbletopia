@@ -8,6 +8,7 @@ use gloo::console::console_dbg;
 use futures::{SinkExt, StreamExt};
 use gloo::console::log;
 use model::matrix::{self, MyMatrix};
+use movement::bitfield::BitField;
 use movement::GridCoord;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d::{self, ShaderSystem};
@@ -153,13 +154,6 @@ impl<'a> WarriorDraw<'a> {
 
 type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
 
-pub struct GameStateRelative {
-    this_team: Tribe,
-    that_team: Tribe,
-    world: board::World,
-    team: ActiveTeam,
-}
-
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Factions {
     pub dogs: Tribe,
@@ -195,11 +189,12 @@ pub struct FactionRelative<T> {
     pub this_team: T,
     pub that_team: T,
 }
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Environment {
-    land: BTreeSet<GridCoord>,
-    forest: BTreeSet<GridCoord>,
-    powerup: BTreeSet<GridCoord>,
+    land: BitField,
+    forest: BitField,
+    powerup: BitField,
     world: board::World,
 }
 
@@ -286,15 +281,15 @@ pub async fn worker_entry() {
             cats: Tribe { units: cats },
         },
         env: Environment {
-            land: BTreeSet::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
-            forest: BTreeSet::from_iter([]),
+            land: BitField::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
+            forest: BitField::from_iter([]),
             // powerup: vec![
             //     GridCoord([0, -3]),
             //     GridCoord([3, 0]),
             //     GridCoord([-3, 0]),
             //     GridCoord([0, 3]),
             // ],
-            powerup: BTreeSet::from_iter([]),
+            powerup: BitField::from_iter([]),
             world: board::World::new(),
         },
     };
@@ -602,7 +597,7 @@ pub async fn worker_entry() {
                     water.draw(&mut v);
                 }
 
-                for c in ggame.env.powerup.iter() {
+                for c in ggame.env.powerup.iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();
@@ -614,7 +609,7 @@ pub async fn worker_entry() {
                     attack_model.draw(&mut v);
                 }
 
-                for c in ggame.env.land.iter() {
+                for c in ggame.env.land.iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();
@@ -626,7 +621,7 @@ pub async fn worker_entry() {
                     grass.draw(&mut v);
                 }
 
-                for c in ggame.env.forest.iter() {
+                for c in ggame.env.forest.iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();

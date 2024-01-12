@@ -180,22 +180,16 @@ pub mod partial_move {
 
     use super::*;
 
-    fn calculate_walls(
-        position: GridCoord,
-        typ: Type,
-        land: &BTreeSet<GridCoord>,
-        forest: &BTreeSet<GridCoord>,
-    ) -> Mesh {
+    fn calculate_walls(position: GridCoord, typ: Type, land: &BitField, forest: &BitField) -> Mesh {
         let mut walls = Mesh::new();
 
         for a in position.to_cube().range(2) {
             let a = a.to_axial();
             //TODO this is duplicated logic in selection function???
             let cc = if typ == Type::Ship {
-                land.iter().find(|&&b| a == b).is_some()
+                land.is_set(a)
             } else {
-                land.iter().find(|&&b| a == b).is_none()
-                    || forest.iter().find(|&&b| a == b).is_some()
+                !land.is_set(a) && forest.is_set(a)
             };
             if cc {
                 walls.add(a.sub(&position));
@@ -221,8 +215,8 @@ pub mod partial_move {
         unit: GridCoord,
         typ: Type,
         target_cell: GridCoord,
-        land: &mut BTreeSet<GridCoord>,
-        forest: &mut BTreeSet<GridCoord>,
+        land: &mut BitField,
+        forest: &mut BitField,
     ) -> PartialMoveSigl {
         let sigl = PartialMoveSigl {
             unit,
@@ -230,9 +224,9 @@ pub mod partial_move {
         };
 
         if typ == Type::Ship {
-            land.insert(target_cell);
+            land.add(target_cell);
         } else if typ == Type::Foot {
-            forest.insert(target_cell);
+            forest.add(target_cell);
         }
         sigl
     }
@@ -249,10 +243,23 @@ pub mod partial_move {
 
         let cond = |a: GridCoord| {
             let cc = if typ == Type::Ship {
-                game.env.land.iter().find(|&&b| a == b).is_none()
+                game.env
+                    .land
+                    .iter_mesh(GridCoord([0; 2]))
+                    .find(|&b| a == b)
+                    .is_none()
             } else if typ == Type::Foot {
-                game.env.land.iter().find(|&&b| a == b).is_some()
-                    && game.env.forest.iter().find(|&&b| a == b).is_none()
+                game.env
+                    .land
+                    .iter_mesh(GridCoord([0; 2]))
+                    .find(|&b| a == b)
+                    .is_some()
+                    && game
+                        .env
+                        .forest
+                        .iter_mesh(GridCoord([0; 2]))
+                        .find(|&b| a == b)
+                        .is_none()
             } else {
                 unreachable!();
             };

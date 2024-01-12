@@ -15,14 +15,14 @@ const MATE: i64 = 1_000_000;
 //dogs minimizing
 pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
     let water = {
-        let mut t = BitField::from_iter(view.env.land.iter().copied());
+        let mut t = BitField::from_iter(view.env.land.iter_mesh(GridCoord([0; 2])));
         t.toggle_range(..);
         t
     };
 
     let grass = {
-        let mut land = BitField::from_iter(view.env.land.iter().copied());
-        let mut t = BitField::from_iter(view.env.forest.iter().copied());
+        let mut land = BitField::from_iter(view.env.land.iter_mesh(GridCoord([0; 2])));
+        let mut t = BitField::from_iter(view.env.forest.iter_mesh(GridCoord([0; 2])));
         t.toggle_range(..);
         land.intersect_with(&t);
         land
