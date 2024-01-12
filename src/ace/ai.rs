@@ -11,20 +11,18 @@ pub type Eval = i64; //(f64);
 
 const MATE: i64 = 1_000_000;
 
-
-
 //cats maximizing
 //dogs minimizing
 pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
     let water = {
-        let mut t = BitField::from_iter(view.land.iter().copied());
+        let mut t = BitField::from_iter(view.env.land.iter().copied());
         t.toggle_range(..);
         t
     };
 
     let grass = {
-        let mut land = BitField::from_iter(view.land.iter().copied());
-        let mut t = BitField::from_iter(view.forest.iter().copied());
+        let mut land = BitField::from_iter(view.env.land.iter().copied());
+        let mut t = BitField::from_iter(view.env.forest.iter().copied());
         t.toggle_range(..);
         land.intersect_with(&t);
         land
@@ -37,26 +35,30 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
     };
 
     let mut cat_ships = BitField::from_iter(
-        view.cats
+        view.factions
+            .cats
             .iter()
             .filter(|a| a.typ == Type::Ship)
             .map(|a| a.position),
     );
     let mut dog_ships = BitField::from_iter(
-        view.dogs
+        view.factions
+            .dogs
             .iter()
             .filter(|a| a.typ == Type::Ship)
             .map(|a| a.position),
     );
 
     let mut cat_foot = BitField::from_iter(
-        view.cats
+        view.factions
+            .cats
             .iter()
             .filter(|a| a.typ == Type::Foot)
             .map(|a| a.position),
     );
     let mut dog_foot = BitField::from_iter(
-        view.dogs
+        view.factions
+            .dogs
             .iter()
             .filter(|a| a.typ == Type::Foot)
             .map(|a| a.position),
@@ -80,7 +82,7 @@ fn doop(
     fn around(point: GridCoord) -> impl Iterator<Item = GridCoord> {
         point.to_cube().ring(1).map(|(_, b)| b.to_axial())
     }
-    
+
     fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
         workspace.clear();
         workspace.union_with(mesh);

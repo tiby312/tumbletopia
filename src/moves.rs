@@ -240,7 +240,8 @@ pub mod partial_move {
     pub fn generate_unit_possible_moves_inner(
         unit: &GridCoord,
         typ: Type,
-        game: &GameViewMut,
+        game: &GameState,
+        team: ActiveTeam,
         extra: bool,
     ) -> movement::MovementMesh {
         let unit = *unit;
@@ -248,20 +249,30 @@ pub mod partial_move {
 
         let cond = |a: GridCoord| {
             let cc = if typ == Type::Ship {
-                game.land.iter().find(|&&b| a == b).is_none()
+                game.env.land.iter().find(|&&b| a == b).is_none()
             } else if typ == Type::Foot {
-                game.land.iter().find(|&&b| a == b).is_some()
-                    && game.forest.iter().find(|&&b| a == b).is_none()
+                game.env.land.iter().find(|&&b| a == b).is_some()
+                    && game.env.forest.iter().find(|&&b| a == b).is_none()
             } else {
                 unreachable!();
             };
 
-            let is_world_cell = game.world.filter().filter(&a).to_bool();
+            let is_world_cell = game.env.world.filter().filter(&a).to_bool();
             a != unit
                 && is_world_cell
                 && cc
-                && game.this_team.find_slow(&a).is_none()
-                && game.that_team.find_slow(&a).is_none()
+                && game
+                    .factions
+                    .relative(team)
+                    .this_team
+                    .find_slow(&a)
+                    .is_none()
+                && game
+                    .factions
+                    .relative(team)
+                    .that_team
+                    .find_slow(&a)
+                    .is_none()
         };
         let cond2 = |a: GridCoord| true;
 
@@ -291,18 +302,20 @@ pub mod partial_move {
 
     pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<moves::ActualMove> {
         let mut movs = Vec::new();
-        for i in 0..state.view_mut(team).this_team.units.len() {
-            let pos = state.view_mut(team).this_team.units[i].position;
-            let typ = state.view_mut(team).this_team.units[i].typ;
+        for i in 0..state.factions.relative(team).this_team.units.len() {
+            let pos = state.factions.relative_mut(team).this_team.units[i].position;
+            let typ = state.factions.relative_mut(team).this_team.units[i].typ;
 
-            let mesh = generate_unit_possible_moves_inner(&pos, typ, &state.view_mut(team), false);
+            let mesh = generate_unit_possible_moves_inner(&pos, typ, &state, team, false);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
-                apply_normal_move(&mut state.view_mut(team).this_team.units[i], mm);
+                apply_normal_move(
+                    &mut state.factions.relative_mut(team).this_team.units[i],
+                    mm,
+                );
 
-                let second_mesh =
-                    generate_unit_possible_moves_inner(&mm, typ, &state.view_mut(team), true);
+                let second_mesh = generate_unit_possible_moves_inner(&mm, typ, &state, team, true);
 
                 for sm in second_mesh.iter_mesh(mm) {
                     //Don't bother applying the extra move. just generate the sigl.
@@ -319,7 +332,7 @@ pub mod partial_move {
                 }
 
                 //revert it back.
-                state.view_mut(team).this_team.units[i].position = pos;
+                state.factions.relative_mut(team).this_team.units[i].position = pos;
             }
         }
         movs
@@ -333,13 +346,14 @@ pub mod partial_move {
     }
 
     pub fn game_is_over(game: &mut GameState, team_index: ActiveTeam) -> Option<GameOver> {
-        let game = game.view_mut(team_index);
+        //let game = game.view_mut(team_index);
 
-        for unit in game.this_team.units.iter() {
+        for unit in game.factions.relative(team_index).this_team.units.iter() {
             let mesh = moves::partial_move::generate_unit_possible_moves_inner(
                 &unit.position,
                 unit.typ,
-                &game,
+                game,
+                team_index,
                 false,
             );
             if mesh.iter_mesh(GridCoord([0; 2])).count() != 0 {
@@ -361,7 +375,7 @@ pub mod partial_move {
         the_move: moves::ActualMove,
         doop: &mut WorkerManager<'_>,
     ) {
-        let mut game = state.view_mut(team_index);
+        //let mut game = state.view_mut(team_index);
         //let mut game_history = MoveLog::new();
 
         match the_move {
@@ -371,10 +385,21 @@ pub mod partial_move {
             // }
             moves::ActualMove::ExtraMove(o, e) => {
                 let target_cell = o.moveto;
-                let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
+                let unit = state
+                    .factions
+                    .relative(team_index)
+                    .this_team
+                    .find_slow(&o.unit)
+                    .unwrap()
+                    .clone();
                 let typ = unit.typ;
-                let mesh =
-                    generate_unit_possible_moves_inner(&unit.position, unit.typ, &game, false);
+                let mesh = generate_unit_possible_moves_inner(
+                    &unit.position,
+                    unit.typ,
+                    &state,
+                    team_index,
+                    false,
+                );
 
                 let iii = moves::PartialMove {
                     selected_unit: unit.position,
@@ -384,14 +409,21 @@ pub mod partial_move {
                 };
 
                 let iii =
-                    moves::partial_move::execute_move_animated(iii, &mut game, doop, mesh).await;
+                    moves::partial_move::execute_move_animated(iii, state, team_index, doop, mesh)
+                        .await;
 
                 assert_eq!(iii.moveto, e.unit);
 
                 let selected_unit = e.unit;
                 let target_cell = e.moveto;
 
-                let mesh = generate_unit_possible_moves_inner(&selected_unit, typ, &game, true);
+                let mesh = generate_unit_possible_moves_inner(
+                    &selected_unit,
+                    typ,
+                    state,
+                    team_index,
+                    true,
+                );
 
                 let iii = moves::partial_move::PartialMove {
                     selected_unit,
@@ -399,7 +431,8 @@ pub mod partial_move {
                     end: target_cell,
                     is_extra: true,
                 };
-                moves::partial_move::execute_move_animated(iii, &mut game, doop, mesh).await;
+                moves::partial_move::execute_move_animated(iii, state, team_index, doop, mesh)
+                    .await;
             }
             moves::ActualMove::SkipTurn => {}
             moves::ActualMove::GameEnd(_) => todo!(),
@@ -411,7 +444,7 @@ pub mod partial_move {
         team_index: ActiveTeam,
         the_move: moves::ActualMove,
     ) {
-        let mut game = state.view_mut(team_index);
+        //let mut game = state.view_mut(team_index);
         //let mut game_history = MoveLog::new();
 
         match the_move {
@@ -421,7 +454,13 @@ pub mod partial_move {
             // }
             moves::ActualMove::ExtraMove(o, e) => {
                 let target_cell = o.moveto;
-                let unit = game.this_team.find_slow(&o.unit).unwrap().clone();
+                let unit = state
+                    .factions
+                    .relative(team_index)
+                    .this_team
+                    .find_slow(&o.unit)
+                    .unwrap()
+                    .clone();
 
                 let iii = moves::PartialMove {
                     selected_unit: unit.position,
@@ -430,7 +469,7 @@ pub mod partial_move {
                     is_extra: false,
                 };
 
-                let iii = moves::partial_move::execute_move(iii, &mut game);
+                let iii = moves::partial_move::execute_move(iii, state, team_index);
 
                 assert_eq!(iii.moveto, e.unit);
 
@@ -443,24 +482,30 @@ pub mod partial_move {
                     end: target_cell,
                     is_extra: true,
                 };
-                moves::partial_move::execute_move(iii, &mut game);
+                moves::partial_move::execute_move(iii, state, team_index);
             }
             moves::ActualMove::SkipTurn => {}
             moves::ActualMove::GameEnd(_) => todo!(),
         }
     }
 
-    pub fn execute_move(a: PartialMove, game_view: &mut GameViewMut) -> PartialMoveSigl {
-        a.execute(game_view)
+    pub fn execute_move(
+        a: PartialMove,
+        game_view: &mut GameState,
+        team: ActiveTeam,
+    ) -> PartialMoveSigl {
+        a.execute(game_view, team)
     }
 
     pub async fn execute_move_animated(
         a: PartialMove,
-        game_view: &mut GameViewMut<'_, '_>,
+        game_view: &mut GameState,
+        team_index: ActiveTeam,
         data: &mut ace::WorkerManager<'_>,
         mesh: MovementMesh,
     ) -> PartialMoveSigl {
-        a.execute_with_animation(game_view, data, mesh).await
+        a.execute_with_animation(game_view, team_index, data, mesh)
+            .await
     }
 
     #[derive(Clone, Debug)]
@@ -472,7 +517,7 @@ pub mod partial_move {
     }
 
     impl PartialMove {
-        fn execute<'b>(self, game_view: &'b mut GameViewMut<'_, '_>) -> PartialMoveSigl {
+        fn execute<'b>(self, game_view: &'b mut GameState, team: ActiveTeam) -> PartialMoveSigl {
             let is_extra = self.is_extra;
             let selected_unit = self.selected_unit;
             let target_cell = self.end;
@@ -480,7 +525,12 @@ pub mod partial_move {
 
             if !is_extra {
                 let start = selected_unit;
-                let this_unit = game_view.this_team.find_slow_mut(&start).unwrap();
+                let this_unit = game_view
+                    .factions
+                    .relative_mut(team)
+                    .this_team
+                    .find_slow_mut(&start)
+                    .unwrap();
 
                 let sigl = apply_normal_move(this_unit, target_cell);
 
@@ -490,8 +540,8 @@ pub mod partial_move {
                     selected_unit,
                     typ,
                     target_cell,
-                    game_view.land,
-                    game_view.forest,
+                    &mut game_view.env.land,
+                    &mut game_view.env.forest,
                 );
 
                 sigl
@@ -499,7 +549,8 @@ pub mod partial_move {
         }
         async fn execute_with_animation<'b>(
             self,
-            game_view: &'b mut GameViewMut<'_, '_>,
+            game_view: &'b mut GameState,
+            team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
             mesh: MovementMesh,
         ) -> PartialMoveSigl {
@@ -511,16 +562,20 @@ pub mod partial_move {
             if !is_extra {
                 let start = selected_unit;
                 let end = target_cell;
-                let this_unit = game_view.this_team.find_slow_mut(&start).unwrap();
+                let this_unit = game_view
+                    .factions
+                    .relative_mut(team)
+                    .this_team
+                    .find_slow_mut(&start)
+                    .unwrap();
 
                 let walls = calculate_walls(
                     this_unit.position,
                     this_unit.typ,
-                    game_view.land,
-                    game_view.forest,
+                    &mut game_view.env.land,
+                    &mut game_view.env.forest,
                 );
 
-                let team = game_view.team;
                 let _ = Doopa::new(data)
                     .wait_animation(Movement::new(this_unit.clone(), mesh, walls, end), team)
                     .await;
@@ -533,8 +588,8 @@ pub mod partial_move {
                     selected_unit,
                     typ,
                     target_cell,
-                    game_view.land,
-                    game_view.forest,
+                    &mut game_view.env.land,
+                    &mut game_view.env.forest,
                 );
 
                 sigl

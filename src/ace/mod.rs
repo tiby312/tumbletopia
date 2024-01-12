@@ -255,11 +255,13 @@ pub async fn reselect_loop(
     console_dbg!(extra_attack.is_some());
     //At this point we know a friendly unit is currently selected.
 
-    let mut relative_game_view = game.view_mut(selected_unit.team);
+    //let mut relative_game_view = game.view_mut(selected_unit.team);
 
     let unwrapped_selected_unit = selected_unit.warrior;
 
-    let unit = relative_game_view
+    let unit = game
+        .factions
+        .relative(selected_unit.team)
         .this_team
         .find_slow(&unwrapped_selected_unit)
         .unwrap();
@@ -290,7 +292,8 @@ pub async fn reselect_loop(
     let cca = moves::partial_move::generate_unit_possible_moves_inner(
         &unit.position,
         unit.typ,
-        &relative_game_view,
+        game,
+        selected_unit.team,
         extra_attack.is_some(),
     );
 
@@ -321,7 +324,12 @@ pub async fn reselect_loop(
     let contains = movement::contains_coord(ss.iter_mesh(unwrapped_selected_unit), target_cell);
 
     //If we select a friendly unit quick swap
-    if let Some(target) = relative_game_view.this_team.find_slow(&target_cell) {
+    if let Some(target) = game
+        .factions
+        .relative(selected_unit.team)
+        .this_team
+        .find_slow(&target_cell)
+    {
         if !contains {
             //it should be impossible for a unit to move onto a friendly
             //assert!(!contains);
@@ -330,7 +338,12 @@ pub async fn reselect_loop(
     }
 
     //If we select an enemy unit quick swap
-    if let Some(target) = relative_game_view.that_team.find_slow(&target_cell) {
+    if let Some(target) = game
+        .factions
+        .relative(selected_unit.team)
+        .that_team
+        .find_slow(&target_cell)
+    {
         if selected_unit.team != team_index || !contains {
             //If we select an enemy unit thats outside of our units range.
             return LoopRes::Select(selected_unit.with(target.position).not());
@@ -369,7 +382,8 @@ pub async fn reselect_loop(
 
             moves::partial_move::execute_move_animated(
                 iii,
-                &mut relative_game_view,
+                game,
+                selected_unit.team,
                 doop,
                 cca.clone(),
             )
@@ -389,7 +403,8 @@ pub async fn reselect_loop(
 
             let iii = moves::partial_move::execute_move_animated(
                 iii,
-                &mut relative_game_view,
+                game,
+                selected_unit.team,
                 doop,
                 cca.clone(),
             )
@@ -451,15 +466,25 @@ pub async fn main_logic<'a>(
                         break 'select_loop;
                     }
                 };
-                let game = game.view_mut(team_index);
+                //let game = game.view_mut(team_index);
 
-                if let Some(unit) = game.this_team.find_slow(&cell) {
+                if let Some(unit) = game
+                    .factions
+                    .relative(team_index)
+                    .this_team
+                    .find_slow(&cell)
+                {
                     break SelectType {
                         warrior: unit.position,
                         team: team_index,
                     };
                 }
-                if let Some(unit) = game.that_team.find_slow(&cell) {
+                if let Some(unit) = game
+                    .factions
+                    .relative(team_index)
+                    .that_team
+                    .find_slow(&cell)
+                {
                     break SelectType {
                         warrior: unit.position,
                         team: team_index.not(),

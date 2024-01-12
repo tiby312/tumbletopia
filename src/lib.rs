@@ -160,180 +160,54 @@ pub struct GameStateRelative {
     team: ActiveTeam,
 }
 
-//Additionally removes need to special case animation.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct GameState {
-    dogs: Tribe,
-    cats: Tribe,
+pub struct Factions {
+    pub dogs: Tribe,
+    pub cats: Tribe,
+}
+impl Factions {
+    fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
+        match team {
+            ActiveTeam::Cats => FactionRelative {
+                this_team: &mut self.cats,
+                that_team: &mut self.dogs,
+            },
+            ActiveTeam::Dogs => FactionRelative {
+                this_team: &mut self.dogs,
+                that_team: &mut self.cats,
+            },
+        }
+    }
+    fn relative(&self, team: ActiveTeam) -> FactionRelative<&Tribe> {
+        match team {
+            ActiveTeam::Cats => FactionRelative {
+                this_team: &self.cats,
+                that_team: &self.dogs,
+            },
+            ActiveTeam::Dogs => FactionRelative {
+                this_team: &self.dogs,
+                that_team: &self.cats,
+            },
+        }
+    }
+}
+pub struct FactionRelative<T> {
+    pub this_team: T,
+    pub that_team: T,
+}
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct Environment {
     land: BTreeSet<GridCoord>,
     forest: BTreeSet<GridCoord>,
     powerup: BTreeSet<GridCoord>,
     world: board::World,
 }
-impl GameState {
-    fn into_view(self, team_index: ActiveTeam) -> GameStateRelative {
-        match team_index {
-            ActiveTeam::Cats => GameStateRelative {
-                this_team: self.cats,
-                that_team: self.dogs,
-                world: self.world,
-                team: ActiveTeam::Cats,
-            },
-            ActiveTeam::Dogs => GameStateRelative {
-                this_team: self.dogs,
-                that_team: self.cats,
-                world: self.world,
-                team: ActiveTeam::Dogs,
-            },
-        }
-    }
-    fn view(&self, team_index: ActiveTeam) -> GameView {
-        match team_index {
-            ActiveTeam::Cats => GameView {
-                this_team: &self.cats,
-                that_team: &self.dogs,
-                world: &self.world,
-                team: ActiveTeam::Cats,
-            },
-            ActiveTeam::Dogs => GameView {
-                this_team: &self.dogs,
-                that_team: &self.cats,
-                world: &self.world,
-                team: ActiveTeam::Dogs,
-            },
-        }
-    }
-    fn view_mut(&mut self, team_index: ActiveTeam) -> GameViewMut {
-        match team_index {
-            ActiveTeam::Cats => GameViewMut {
-                land: &mut self.land,
-                forest: &mut self.forest,
-                this_team: &mut self.cats,
-                that_team: &mut self.dogs,
-                world: &mut self.world,
-                team: ActiveTeam::Cats,
-            },
-            ActiveTeam::Dogs => GameViewMut {
-                land: &mut self.land,
-                forest: &mut self.forest,
-                this_team: &mut self.dogs,
-                that_team: &mut self.cats,
-                world: &mut self.world,
-                team: ActiveTeam::Dogs,
-            },
-        }
-    }
-}
 
-#[derive(Eq, PartialEq, Clone, Hash)]
-pub struct GameThing<'a> {
-    this_team: Tribe,
-    that_team: Tribe,
-    land: BTreeSet<GridCoord>,
-    forest: BTreeSet<GridCoord>,
-    world: &'a board::World,
-    team: ActiveTeam,
-}
-impl<'a> GameThing<'a> {
-    pub fn not(self) -> GameThing<'a> {
-        GameThing {
-            this_team: self.that_team,
-            that_team: self.this_team,
-            land: self.land,
-            forest: self.forest,
-            world: self.world,
-            team: self.team.not(),
-        }
-    }
-    pub fn view(&mut self) -> GameViewMut<'_, 'a> {
-        GameViewMut {
-            land: &mut self.land,
-            forest: &mut self.forest,
-            this_team: &mut self.this_team,
-            that_team: &mut self.that_team,
-            world: self.world,
-            team: self.team,
-        }
-    }
-}
-pub struct GameView<'a> {
-    this_team: &'a Tribe,
-    that_team: &'a Tribe,
-    world: &'a board::World,
-    team: ActiveTeam,
-}
-impl<'a> GameView<'a> {
-    pub fn not(&self) -> GameView {
-        GameView {
-            this_team: self.that_team,
-            that_team: self.this_team,
-            world: self.world,
-            team: self.team.not(),
-        }
-    }
-}
-
-#[derive(Hash, Eq, PartialEq)]
-pub struct AbsoluteGameView<'a, 'b> {
-    cats: &'a Tribe,
-    dogs: &'a Tribe,
-    world: &'b board::World,
-}
-
-//TODO make this deref to GameVIew const version
-pub struct GameViewMut<'a, 'b> {
-    this_team: &'a mut Tribe,
-    that_team: &'a mut Tribe,
-    land: &'a mut BTreeSet<GridCoord>,
-    forest: &'a mut BTreeSet<GridCoord>,
-    world: &'b board::World,
-    team: ActiveTeam,
-}
-impl<'a, 'b> GameViewMut<'a, 'b> {
-    pub fn into_const(&self) -> GameView<'_> {
-        GameView {
-            this_team: self.this_team,
-            that_team: self.that_team,
-            world: self.world,
-            team: self.team,
-        }
-    }
-    pub fn absolute(&self) -> AbsoluteGameView<'_, 'b> {
-        if self.team == ActiveTeam::Cats {
-            AbsoluteGameView {
-                cats: self.this_team,
-                dogs: self.that_team,
-                world: self.world,
-            }
-        } else {
-            AbsoluteGameView {
-                cats: self.that_team,
-                dogs: self.this_team,
-                world: self.world,
-            }
-        }
-    }
-    pub fn duplicate(&self) -> GameThing<'b> {
-        GameThing {
-            land: self.land.clone(),
-            forest: self.forest.clone(),
-            this_team: self.this_team.clone(),
-            that_team: self.that_team.clone(),
-            world: self.world,
-            team: self.team,
-        }
-    }
-
-    pub fn not(&mut self) -> GameViewMut {
-        GameViewMut {
-            land: self.land,
-            forest: self.forest,
-            this_team: self.that_team,
-            that_team: self.this_team,
-            world: self.world,
-            team: self.team.not(),
-        }
-    }
+//Additionally removes need to special case animation.
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct GameState {
+    factions: Factions,
+    env: Environment,
 }
 
 #[wasm_bindgen]
@@ -407,18 +281,22 @@ pub async fn worker_entry() {
     ];
 
     let mut ggame = GameState {
-        dogs: Tribe { units: dogs },
-        cats: Tribe { units: cats },
-        land: BTreeSet::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
-        forest: BTreeSet::from_iter([]),
-        // powerup: vec![
-        //     GridCoord([0, -3]),
-        //     GridCoord([3, 0]),
-        //     GridCoord([-3, 0]),
-        //     GridCoord([0, 3]),
-        // ],
-        powerup: BTreeSet::from_iter([]),
-        world: board::World::new(),
+        factions: Factions {
+            dogs: Tribe { units: dogs },
+            cats: Tribe { units: cats },
+        },
+        env: Environment {
+            land: BTreeSet::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
+            forest: BTreeSet::from_iter([]),
+            // powerup: vec![
+            //     GridCoord([0, -3]),
+            //     GridCoord([3, 0]),
+            //     GridCoord([-3, 0]),
+            //     GridCoord([0, 3]),
+            // ],
+            powerup: BTreeSet::from_iter([]),
+            world: board::World::new(),
+        },
     };
 
     let _roads = terrain::TerrainCollection {
@@ -486,31 +364,44 @@ pub async fn worker_entry() {
         }) = command_recv.next().await
         {
             let mut command = command.process(&grid_matrix);
-            let game_view = ggame.view(team);
+            //let game_view = ggame.view(team);
 
             let (cat_for_draw, dog_for_draw) = {
                 let (this, that) = if let ace::ProcessedCommand::Animate(a) = &command {
                     match a.data() {
                         animation::AnimationCommand::Movement { unit, .. } => {
-                            let a: Vec<_> = game_view
+                            let a: Vec<_> = ggame
+                                .factions
+                                .relative(team)
                                 .this_team
                                 .units
                                 .iter()
                                 .cloned()
                                 .filter(|a| a.position != unit.position)
                                 .collect();
-                            let b: Vec<_> = game_view.that_team.units.iter().cloned().collect();
+                            let b: Vec<_> = ggame
+                                .factions
+                                .relative(team)
+                                .that_team
+                                .units
+                                .iter()
+                                .cloned()
+                                .collect();
                             (a, b)
                         }
                         animation::AnimationCommand::Attack { attacker, defender } => {
-                            let a = game_view
+                            let a = ggame
+                                .factions
+                                .relative(team)
                                 .this_team
                                 .units
                                 .iter()
                                 .cloned()
                                 .filter(|k| k.position != attacker.position)
                                 .collect();
-                            let b = game_view
+                            let b = ggame
+                                .factions
+                                .relative(team)
                                 .that_team
                                 .units
                                 .iter()
@@ -521,8 +412,22 @@ pub async fn worker_entry() {
                         }
                     }
                 } else {
-                    let a = game_view.this_team.units.iter().cloned().collect();
-                    let b = game_view.that_team.units.iter().cloned().collect();
+                    let a = ggame
+                        .factions
+                        .relative(team)
+                        .this_team
+                        .units
+                        .iter()
+                        .cloned()
+                        .collect();
+                    let b = ggame
+                        .factions
+                        .relative(team)
+                        .that_team
+                        .units
+                        .iter()
+                        .cloned()
+                        .collect();
                     (a, b)
                 };
 
@@ -685,7 +590,7 @@ pub async fn worker_entry() {
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
                 //TODO don't render where land is?
-                for c in ggame.world.iter_cells() {
+                for c in ggame.env.world.iter_cells() {
                     let pos = grid_matrix.hex_axial_to_world(&c.to_axial());
 
                     //let pos = a.calc_pos();
@@ -697,7 +602,7 @@ pub async fn worker_entry() {
                     water.draw(&mut v);
                 }
 
-                for c in ggame.powerup.iter() {
+                for c in ggame.env.powerup.iter() {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();
@@ -709,7 +614,7 @@ pub async fn worker_entry() {
                     attack_model.draw(&mut v);
                 }
 
-                for c in ggame.land.iter() {
+                for c in ggame.env.land.iter() {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();
@@ -721,7 +626,7 @@ pub async fn worker_entry() {
                     grass.draw(&mut v);
                 }
 
-                for c in ggame.forest.iter() {
+                for c in ggame.env.forest.iter() {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();
