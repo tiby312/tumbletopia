@@ -1,11 +1,6 @@
 use super::*;
 
-#[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
-pub enum ActualMove {
-    ExtraMove(PartialMoveSigl, PartialMoveSigl),
-    SkipTurn,
-    GameEnd(GameEnding),
-}
+pub use partial_move::ActualMove;
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
 pub enum GameEnding {
@@ -307,6 +302,124 @@ pub mod partial_move {
 
         mesh
     }
+    #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
+    pub enum ActualMove {
+        ExtraMove(PartialMoveSigl, PartialMoveSigl),
+        SkipTurn,
+        GameEnd(GameEnding),
+    }
+    impl ActualMove {
+        pub async fn execute_move_ani(
+            self,
+            state: &mut GameState,
+            team_index: ActiveTeam,
+            doop: &mut WorkerManager<'_>,
+        ) {
+            //let mut game = state.view_mut(team_index);
+            //let mut game_history = MoveLog::new();
+
+            match self {
+                // moves::ActualMove::NormalMove(o) => {
+                //     todo!();
+
+                // }
+                moves::ActualMove::ExtraMove(o, e) => {
+                    let target_cell = o.moveto;
+                    let unit = state
+                        .factions
+                        .relative(team_index)
+                        .this_team
+                        .find_slow(&o.unit)
+                        .unwrap()
+                        .clone();
+                    let typ = unit.typ;
+                    let mesh = generate_unit_possible_moves_inner(
+                        &unit.position,
+                        unit.typ,
+                        &state,
+                        team_index,
+                        false,
+                    );
+
+                    let iii = moves::PartialMove {
+                        selected_unit: unit.position,
+                        typ: unit.typ,
+                        end: target_cell,
+                        is_extra: false,
+                    };
+
+                    let iii = moves::partial_move::execute_move_animated(
+                        iii, state, team_index, doop, mesh,
+                    )
+                    .await;
+
+                    assert_eq!(iii.moveto, e.unit);
+
+                    let selected_unit = e.unit;
+                    let target_cell = e.moveto;
+
+                    let mesh = generate_unit_possible_moves_inner(
+                        &selected_unit,
+                        typ,
+                        state,
+                        team_index,
+                        true,
+                    );
+
+                    let iii = moves::partial_move::PartialMove {
+                        selected_unit,
+                        typ: unit.typ,
+                        end: target_cell,
+                        is_extra: true,
+                    };
+                    moves::partial_move::execute_move_animated(iii, state, team_index, doop, mesh)
+                        .await;
+                }
+                ActualMove::SkipTurn => {}
+                ActualMove::GameEnd(_) => todo!(),
+            }
+        }
+
+        pub fn execute_move_no_ani(self, state: &mut GameState, team_index: ActiveTeam) {
+            match self {
+                moves::ActualMove::ExtraMove(o, e) => {
+                    let target_cell = o.moveto;
+                    let unit = state
+                        .factions
+                        .relative(team_index)
+                        .this_team
+                        .find_slow(&o.unit)
+                        .unwrap()
+                        .clone();
+
+                    let iii = moves::PartialMove {
+                        selected_unit: unit.position,
+                        typ: unit.typ,
+                        end: target_cell,
+                        is_extra: false,
+                    };
+
+                    let iii = moves::partial_move::execute_move(iii, state, team_index);
+
+                    assert_eq!(iii.moveto, e.unit);
+
+                    let selected_unit = e.unit;
+                    let target_cell = e.moveto;
+
+                    let iii = moves::partial_move::PartialMove {
+                        selected_unit,
+                        typ: unit.typ,
+                        end: target_cell,
+                        is_extra: true,
+                    };
+                    moves::partial_move::execute_move(iii, state, team_index);
+                }
+                _ => {
+                    unreachable!()
+                }
+            }
+        }
+    }
 
     pub fn for_all_moves_fast(
         mut state: &mut GameState,
@@ -380,121 +493,8 @@ pub mod partial_move {
     }
 
     use crate::ace::WorkerManager;
-    pub async fn execute_move_ani(
-        state: &mut GameState,
-        team_index: ActiveTeam,
-        the_move: moves::ActualMove,
-        doop: &mut WorkerManager<'_>,
-    ) {
-        //let mut game = state.view_mut(team_index);
-        //let mut game_history = MoveLog::new();
 
-        match the_move {
-            // moves::ActualMove::NormalMove(o) => {
-            //     todo!();
-
-            // }
-            moves::ActualMove::ExtraMove(o, e) => {
-                let target_cell = o.moveto;
-                let unit = state
-                    .factions
-                    .relative(team_index)
-                    .this_team
-                    .find_slow(&o.unit)
-                    .unwrap()
-                    .clone();
-                let typ = unit.typ;
-                let mesh = generate_unit_possible_moves_inner(
-                    &unit.position,
-                    unit.typ,
-                    &state,
-                    team_index,
-                    false,
-                );
-
-                let iii = moves::PartialMove {
-                    selected_unit: unit.position,
-                    typ: unit.typ,
-                    end: target_cell,
-                    is_extra: false,
-                };
-
-                let iii =
-                    moves::partial_move::execute_move_animated(iii, state, team_index, doop, mesh)
-                        .await;
-
-                assert_eq!(iii.moveto, e.unit);
-
-                let selected_unit = e.unit;
-                let target_cell = e.moveto;
-
-                let mesh = generate_unit_possible_moves_inner(
-                    &selected_unit,
-                    typ,
-                    state,
-                    team_index,
-                    true,
-                );
-
-                let iii = moves::partial_move::PartialMove {
-                    selected_unit,
-                    typ: unit.typ,
-                    end: target_cell,
-                    is_extra: true,
-                };
-                moves::partial_move::execute_move_animated(iii, state, team_index, doop, mesh)
-                    .await;
-            }
-            moves::ActualMove::SkipTurn => {}
-            moves::ActualMove::GameEnd(_) => todo!(),
-        }
-    }
-
-    pub fn execute_move_no_ani(
-        state: &mut GameState,
-        team_index: ActiveTeam,
-        the_move: moves::ActualMove,
-    ) {
-        match the_move {
-            moves::ActualMove::ExtraMove(o, e) => {
-                let target_cell = o.moveto;
-                let unit = state
-                    .factions
-                    .relative(team_index)
-                    .this_team
-                    .find_slow(&o.unit)
-                    .unwrap()
-                    .clone();
-
-                let iii = moves::PartialMove {
-                    selected_unit: unit.position,
-                    typ: unit.typ,
-                    end: target_cell,
-                    is_extra: false,
-                };
-
-                let iii = moves::partial_move::execute_move(iii, state, team_index);
-
-                assert_eq!(iii.moveto, e.unit);
-
-                let selected_unit = e.unit;
-                let target_cell = e.moveto;
-
-                let iii = moves::partial_move::PartialMove {
-                    selected_unit,
-                    typ: unit.typ,
-                    end: target_cell,
-                    is_extra: true,
-                };
-                moves::partial_move::execute_move(iii, state, team_index);
-            }
-            _ => {
-                unreachable!()
-            }
-        }
-    }
-
-    pub fn execute_move(
+    fn execute_move(
         a: PartialMove,
         game_view: &mut GameState,
         team: ActiveTeam,
@@ -502,6 +502,7 @@ pub mod partial_move {
         a.execute(game_view, team)
     }
 
+    //TODO used by user to move part at a time before they select again.
     pub async fn execute_move_animated(
         a: PartialMove,
         game_view: &mut GameState,

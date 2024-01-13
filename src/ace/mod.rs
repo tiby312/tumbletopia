@@ -444,7 +444,7 @@ pub async fn main_logic<'a>(
             //if false {
             let the_move = ai::iterative_deepening(game, team_index);
 
-            moves::partial_move::execute_move_ani(game, team_index, the_move, &mut doop).await;
+            the_move.execute_move_ani(game, team_index, &mut doop).await;
 
             console_dbg!(ai::absolute_evaluate(game, true));
 

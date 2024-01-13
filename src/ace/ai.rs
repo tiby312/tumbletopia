@@ -348,7 +348,7 @@ impl<'a> AlphaBeta<'a> {
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
             let pvariation = pvariation.map(|x| {
-                moves::partial_move::execute_move_no_ani(&mut gg, team, x.clone());
+                x.clone().execute_move_no_ani(&mut gg, team);
                 PossibleMove {
                     the_move: x,
                     game_after_move: gg,
@@ -410,7 +410,7 @@ impl<'a> AlphaBeta<'a> {
                                            //console_dbg!(ext,depth);
 
                 let mut gg = gg2.clone();
-                moves::partial_move::execute_move_no_ani(&mut gg, team, cand);
+                cand.execute_move_no_ani(&mut gg, team);
 
                 ssself.path.push(cand.clone());
                 let eval = ssself.alpha_beta(gg, ab, team.not(), new_depth, ext);
@@ -475,7 +475,7 @@ impl abab_simple::MoveFinder for MyMoveFinder {
         } else {
             ActiveTeam::Dogs
         };
-        moves::partial_move::execute_move_no_ani(game, team, a);
+        a.execute_move_no_ani(game, team);
     }
     fn unapply_move(&mut self, game: &mut Self::T, maximizer: bool, a: Self::Mo) {
         let mut mm = MoveLog::new();
