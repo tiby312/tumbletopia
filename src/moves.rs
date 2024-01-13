@@ -162,14 +162,14 @@ pub mod partial_move {
 
         let cond = |a: GridCoord| {
             let cc = if typ == Type::Ship {
-                !game.env.land.is_set(a)
+                !game.env.land.is_coord_set(a)
             } else if typ == Type::Foot {
-                game.env.land.is_set(a) && !game.env.forest.is_set(a)
+                game.env.land.is_coord_set(a) && !game.env.forest.is_coord_set(a)
             } else {
                 unreachable!();
             };
 
-            let is_world_cell = game.world.get_game_cells().is_set(a);
+            let is_world_cell = game.world.get_game_cells().is_coord_set(a);
 
             a != unit
                 && is_world_cell
@@ -317,6 +317,34 @@ pub mod partial_move {
                 }
             }
         }
+        pub fn execute_undo(self, state: &mut GameState, team_index: ActiveTeam) {
+            match self {
+                moves::ActualMove::CombinedMove(o, e) => {
+                    let k = state
+                        .factions
+                        .relative_mut(team_index)
+                        .this_team
+                        .find_slow_mut(&o.moveto)
+                        .unwrap();
+
+                    match k.typ {
+                        Type::Ship => {
+                            assert!(state.env.land.is_coord_set(e.moveto));
+                            state.env.land.set_coord(e.moveto, false);
+                        }
+                        Type::Foot => {
+                            assert!(state.env.forest.is_coord_set(e.moveto));
+                            state.env.forest.set_coord(e.moveto, false);
+                        }
+                        _ => {
+                            unreachable!()
+                        }
+                    }
+
+                    k.position = o.unit;
+                }
+            }
+        }
     }
 
     impl GameState {
@@ -393,9 +421,9 @@ pub mod partial_move {
             env: &mut Environment,
         ) -> PartialMoveSigl {
             if typ == Type::Ship {
-                env.land.add(target_cell);
+                env.land.set_coord(target_cell, true);
             } else if typ == Type::Foot {
-                env.forest.add(target_cell);
+                env.forest.set_coord(target_cell, true);
             }
 
             PartialMoveSigl {
@@ -429,9 +457,9 @@ pub mod partial_move {
                         let a = a.to_axial();
                         //TODO this is duplicated logic in selection function???
                         let cc = if typ == Type::Ship {
-                            env.land.is_set(a)
+                            env.land.is_coord_set(a)
                         } else {
-                            !env.land.is_set(a) && env.forest.is_set(a)
+                            !env.land.is_coord_set(a) && env.forest.is_coord_set(a)
                         };
                         if cc {
                             walls.add(a.sub(&position));

@@ -639,9 +639,9 @@ pub mod bitfield {
 
         for k in -16..16 {
             dbg!("handling=k", k);
-            m.add(GridCoord([k, k]));
+            m.set_coord(GridCoord([k, k]), true);
 
-            assert!(m.is_set(GridCoord([k, k])), "boo={}", k);
+            assert!(m.is_coord_set(GridCoord([k, k])), "boo={}", k);
         }
     }
 
@@ -673,23 +673,21 @@ pub mod bitfield {
         pub fn from_iter(a: impl IntoIterator<Item = GridCoord>) -> Self {
             let mut k = BitField::new();
             for a in a {
-                k.add(a);
+                k.set_coord(a, true);
             }
             k
         }
 
-        pub fn add(&mut self, a: GridCoord) {
+        pub fn set_coord(&mut self, a: GridCoord, val: bool) {
             let x = a.0[0];
             let y = a.0[1];
             assert!(x <= 16 && x >= -16 && y <= 16 && y >= -16, "val={:?}", a);
 
             let ind = conv(a);
-            self.inner.set(ind, true);
-
-            //self.inner|=(1<<ind);
+            self.inner.set(ind, val);
         }
 
-        pub fn is_set(&self, a: GridCoord) -> bool {
+        pub fn is_coord_set(&self, a: GridCoord) -> bool {
             let ind = conv(a);
 
             self.inner[ind]

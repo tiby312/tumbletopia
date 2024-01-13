@@ -77,7 +77,7 @@ fn doop(mut dogs: &mut BitField, mut cats: &mut BitField, allowed_cells: &BitFie
 
         for a in workspace.iter_mesh(GridCoord([0; 2])) {
             for b in around(a) {
-                mesh.add(b);
+                mesh.set_coord(b, true);
             }
         }
     }
