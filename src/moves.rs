@@ -139,34 +139,10 @@ impl<'a, 'b> Doopa<'a, 'b> {
 
 use crate::movement::{movement_mesh::Mesh, MovementMesh};
 
-pub enum ExtraMove<T> {
-    ExtraMove { unit: T },
-    FinishMoving,
-}
-
-#[derive(Debug, Clone)]
-pub struct InvadeSigl {
-    pub unit: GridCoord,
-    pub moveto: GridCoord,
-}
-
-#[derive(Debug, Clone)]
-pub struct MovementSigl {
-    pub unit: GridCoord,
-    pub moveto: GridCoord,
-}
 #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
 pub struct PartialMoveSigl {
     pub unit: GridCoord,
     pub moveto: GridCoord,
-}
-impl PartialMoveSigl {
-    pub fn to_movement(&self) -> MovementSigl {
-        MovementSigl {
-            unit: self.unit,
-            moveto: self.moveto,
-        }
-    }
 }
 
 pub use partial_move::PartialMove;
@@ -176,25 +152,6 @@ pub mod partial_move {
     use crate::movement::Filter;
 
     use super::*;
-
-    fn calculate_walls(position: GridCoord, typ: Type, env: &Environment) -> Mesh {
-        let mut walls = Mesh::new();
-
-        for a in position.to_cube().range(2) {
-            let a = a.to_axial();
-            //TODO this is duplicated logic in selection function???
-            let cc = if typ == Type::Ship {
-                env.land.is_set(a)
-            } else {
-                !env.land.is_set(a) && env.forest.is_set(a)
-            };
-            if cc {
-                walls.add(a.sub(&position));
-            }
-        }
-
-        walls
-    }
 
     pub fn generate_unit_possible_moves_inner(
         unit: &GridCoord,
@@ -285,14 +242,7 @@ pub mod partial_move {
             team_index: ActiveTeam,
             doop: &mut WorkerManager<'_>,
         ) {
-            //let mut game = state.view_mut(team_index);
-            //let mut game_history = MoveLog::new();
-
             match self {
-                // moves::ActualMove::NormalMove(o) => {
-                //     todo!();
-
-                // }
                 moves::ActualMove::ExtraMove(o, e) => {
                     let target_cell = o.moveto;
                     let unit = state
@@ -351,13 +301,6 @@ pub mod partial_move {
                         is_extra: true,
                         env: &mut state.env,
                     };
-
-                    // let iii = moves::partial_move::PartialMove {
-                    //     selected_unit,
-                    //     typ: unit.typ,
-                    //     end: target_cell,
-                    //     is_extra: true,
-                    // };
                     iii.execute_with_animation(team_index, doop, mesh).await;
                 }
                 ActualMove::SkipTurn => {}
@@ -387,7 +330,6 @@ pub mod partial_move {
 
                     assert_eq!(iii.moveto, e.unit);
 
-                    let selected_unit = e.unit;
                     let target_cell = e.moveto;
 
                     let iii = moves::PartialMove {
@@ -511,6 +453,24 @@ pub mod partial_move {
                 data: &mut ace::WorkerManager<'_>,
                 mesh: MovementMesh,
             ) -> PartialMoveSigl {
+                fn calculate_walls(position: GridCoord, typ: Type, env: &Environment) -> Mesh {
+                    let mut walls = Mesh::new();
+
+                    for a in position.to_cube().range(2) {
+                        let a = a.to_axial();
+                        //TODO this is duplicated logic in selection function???
+                        let cc = if typ == Type::Ship {
+                            env.land.is_set(a)
+                        } else {
+                            !env.land.is_set(a) && env.forest.is_set(a)
+                        };
+                        if cc {
+                            walls.add(a.sub(&position));
+                        }
+                    }
+
+                    walls
+                }
                 if !self.is_extra {
                     let walls =
                         calculate_walls(self.this_unit.position, self.this_unit.typ, &mut self.env);
