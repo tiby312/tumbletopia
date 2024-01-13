@@ -473,7 +473,10 @@ impl abab_simple::MoveFinder for MyMoveFinder {
         let mut mm = MoveLog::new();
         todo!();
     }
-
+    fn unapply_move(&mut self, game: &mut Self::T, a: Self::Mo) {
+        let mut mm = MoveLog::new();
+        todo!();
+    }
     fn generate_finder(
         &mut self,
         state: &Self::T,
@@ -507,6 +510,7 @@ mod abab_simple {
         fn max_eval(&self) -> Self::EE;
 
         fn apply_move(&mut self, game: &mut Self::T, a: Self::Mo);
+        fn unapply_move(&mut self, game: &mut Self::T, a: Self::Mo);
 
         fn generate_finder(
             &mut self,
@@ -520,10 +524,10 @@ mod abab_simple {
     pub fn alpha_beta<X: MoveFinder>(
         data: X,
         depth: usize,
-        game_state: X::T,
+        mut game_state: X::T,
         maximizer: bool,
     ) -> (X::EE, Vec<X::Mo>) {
-        ABAB::new(data).alpha_beta(depth, game_state, maximizer)
+        ABAB::new(data).alpha_beta(depth, &mut game_state, maximizer)
     }
     use super::*;
     #[derive(Clone)]
@@ -546,7 +550,7 @@ mod abab_simple {
         pub fn alpha_beta(
             &mut self,
             depth: usize,
-            game_state: X::T,
+            game_state: &mut X::T,
             maximizer: bool,
         ) -> (X::EE, Vec<X::Mo>) {
             if depth == 0 {
@@ -561,11 +565,12 @@ mod abab_simple {
                         .data
                         .generate_finder(&game_state, &self.path, maximizer);
                     while let Some(mo) = self.data.select_move(&mut gs) {
-                        let mut ga = game_state.clone();
-                        self.data.apply_move(&mut ga, mo);
+                        //let mut ga = game_state.clone();
+                        self.data.apply_move(game_state, mo);
                         self.path.push(mo);
-                        let (eval, move_list) = self.alpha_beta(depth - 1, ga, !maximizer);
+                        let (eval, move_list) = self.alpha_beta(depth - 1, game_state, !maximizer);
                         self.path.pop();
+                        self.data.unapply_move(game_state, mo);
 
                         if eval > value {
                             value = eval;
@@ -590,11 +595,11 @@ mod abab_simple {
                         .data
                         .generate_finder(&game_state, &self.path, maximizer);
                     while let Some(mo) = self.data.select_move(&mut gs) {
-                        let mut ga = game_state.clone();
-                        self.data.apply_move(&mut ga, mo);
+                        self.data.apply_move(game_state, mo);
                         self.path.push(mo);
-                        let (eval, move_list) = self.alpha_beta(depth - 1, ga, !maximizer);
+                        let (eval, move_list) = self.alpha_beta(depth - 1, game_state, !maximizer);
                         self.path.pop();
+                        self.data.apply_move(game_state, mo);
 
                         if eval > value {
                             value = eval;

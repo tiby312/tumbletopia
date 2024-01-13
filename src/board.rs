@@ -29,7 +29,6 @@ impl MyWorld {
     }
 }
 
-
 fn world() -> impl Iterator<Item = hex::Cube> {
     hex::Cube::new(0, 0).range(3)
 }
