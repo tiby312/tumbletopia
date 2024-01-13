@@ -472,8 +472,12 @@ impl abab_simple::MoveFinder for MyMoveFinder {
         a.execute_move_no_ani(game, team);
     }
     fn unapply_move(&mut self, game: &mut Self::T, maximizer: bool, a: Self::Mo) {
-        let mut mm = MoveLog::new();
-        todo!();
+        let team = if maximizer {
+            ActiveTeam::Cats
+        } else {
+            ActiveTeam::Dogs
+        };
+        a.execute_undo(game, team);
     }
     fn generate_finder(
         &mut self,

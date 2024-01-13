@@ -1,8 +1,5 @@
-use std::collections::BTreeSet;
-
 //use ace::AnimationOptions;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
-use gloo::console::console;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -249,7 +246,7 @@ pub async fn worker_entry() {
     let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
 
     let mut draw_sys = ctx.shader_system();
-    let mut counter: f32 = 0.0;
+
     //TODO get rid of this somehow.
     //these values are incorrect.
     //they are set correctly after resize is called on startup.
@@ -898,10 +895,8 @@ fn string_to_coords<'a>(st: &str) -> model::ModelData {
 use web_sys::WebGl2RenderingContext;
 
 use crate::ace::{ActiveTeam, MousePrompt, Pototo};
-use crate::movement::HexDir;
 //use crate::gameplay::GameStepper;
 use crate::movement::MoveUnit;
-use crate::terrain::MoveCost;
 
 const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
@@ -954,14 +949,14 @@ impl<'a> NumberTextManager<'a> {
     }
 }
 
-fn rotate_by_dir(dir: HexDir, spacing: f32) -> impl MyMatrix {
-    use matrix::Inverse;
-    let mm = ((dir.dir + 1) % 6) as f32 / 6.0;
+// fn rotate_by_dir(dir: HexDir, spacing: f32) -> impl MyMatrix {
+//     use matrix::Inverse;
+//     let mm = ((dir.dir + 1) % 6) as f32 / 6.0;
 
-    let zrot = matrix::z_rotation(-mm * (std::f32::consts::TAU));
-    let tt = matrix::translation(-spacing / 2.0, -spacing / 2.0, 0.0);
-    let tt2 = tt.clone().inverse();
+//     let zrot = matrix::z_rotation(-mm * (std::f32::consts::TAU));
+//     let tt = matrix::translation(-spacing / 2.0, -spacing / 2.0, 0.0);
+//     let tt2 = tt.clone().inverse();
 
-    let r = tt2.chain(zrot).chain(tt);
-    r
-}
+//     let r = tt2.chain(zrot).chain(tt);
+//     r
+// }
