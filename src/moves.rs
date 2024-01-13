@@ -549,30 +549,3 @@ impl UnwrapMe for Movement {
     }
 }
 
-// struct Attack {
-//     attacker: UnitData,
-//     defender: UnitData,
-// }
-// impl Attack {
-//     pub fn new(attacker: UnitData, defender: UnitData) -> Self {
-//         Attack { attacker, defender }
-//     }
-// }
-// impl UnwrapMe for Attack {
-//     type Item = [UnitData; 2];
-//     fn direct_unwrap(self) -> Self::Item {
-//         [self.attacker, self.defender]
-//     }
-//     fn into_command(self) -> animation::AnimationCommand {
-//         animation::AnimationCommand::Attack {
-//             attacker: self.attacker,
-//             defender: self.defender,
-//         }
-//     }
-//     fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
-//         let animation::AnimationCommand::Attack { attacker, defender } = a else {
-//             unreachable!()
-//         };
-//         [attacker, defender]
-//     }
-// }
