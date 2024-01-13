@@ -308,7 +308,7 @@ pub mod partial_move {
         mesh
     }
 
-    pub fn for_all_moves_fast(mut state: GameState, team: ActiveTeam) -> Vec<moves::ActualMove> {
+    pub fn for_all_moves_fast(mut state: &mut GameState, team: ActiveTeam) -> Vec<moves::ActualMove> {
         let mut movs = Vec::new();
         for i in 0..state.factions.relative(team).this_team.units.len() {
             let pos = state.factions.relative_mut(team).this_team.units[i].position;

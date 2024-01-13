@@ -343,7 +343,7 @@ impl<'a> AlphaBeta<'a> {
         } else {
             let gg2 = game_after_move.clone();
 
-            let node = game_after_move;
+            let mut node = game_after_move;
 
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
@@ -367,7 +367,7 @@ impl<'a> AlphaBeta<'a> {
             //     None
             // };
 
-            let mut moves = moves::partial_move::for_all_moves_fast(node.clone(), team);
+            let mut moves = moves::partial_move::for_all_moves_fast(&mut node, team);
 
             //console_dbg!("FOOOO",moves.len());
             //console_dbg!(moves.iter().map(|x|&x.1.the_move).collect::<Vec<_>>());
@@ -524,11 +524,10 @@ mod abab_simple {
     pub fn alpha_beta<X: MoveFinder>(
         data: X,
         depth: usize,
-        mut game_state: X::T,
+        mut game_state: &mut X::T,
         maximizer: bool,
-    ) -> (X::EE, Vec<X::Mo>,X::T) {
-        let (a,b)=ABAB::new(data).alpha_beta(depth, &mut game_state, maximizer);
-        (a,b,game_state)
+    ) -> (X::EE, Vec<X::Mo>) {
+        ABAB::new(data).alpha_beta(depth, game_state, maximizer)
     }
     use super::*;
     #[derive(Clone)]
