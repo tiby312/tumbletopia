@@ -493,7 +493,7 @@ pub mod partial_move {
             sigl
         }
         impl PartialMove<'_> {
-            pub fn execute(self, team: ActiveTeam) -> PartialMoveSigl {
+            pub fn execute(self, _team: ActiveTeam) -> PartialMoveSigl {
                 if !self.is_extra {
                     apply_normal_move(self.this_unit, self.target)
                 } else {
