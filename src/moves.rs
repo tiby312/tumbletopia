@@ -308,7 +308,10 @@ pub mod partial_move {
         mesh
     }
 
-    pub fn for_all_moves_fast(mut state: &mut GameState, team: ActiveTeam) -> Vec<moves::ActualMove> {
+    pub fn for_all_moves_fast(
+        mut state: &mut GameState,
+        team: ActiveTeam,
+    ) -> Vec<moves::ActualMove> {
         let mut movs = Vec::new();
         for i in 0..state.factions.relative(team).this_team.units.len() {
             let pos = state.factions.relative_mut(team).this_team.units[i].position;
@@ -452,14 +455,7 @@ pub mod partial_move {
         team_index: ActiveTeam,
         the_move: moves::ActualMove,
     ) {
-        //let mut game = state.view_mut(team_index);
-        //let mut game_history = MoveLog::new();
-
         match the_move {
-            // moves::ActualMove::NormalMove(o) => {
-            //     todo!();
-
-            // }
             moves::ActualMove::ExtraMove(o, e) => {
                 let target_cell = o.moveto;
                 let unit = state
@@ -492,8 +488,9 @@ pub mod partial_move {
                 };
                 moves::partial_move::execute_move(iii, state, team_index);
             }
-            moves::ActualMove::SkipTurn => {}
-            moves::ActualMove::GameEnd(_) => todo!(),
+            _ => {
+                unreachable!()
+            }
         }
     }
 
