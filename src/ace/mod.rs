@@ -380,14 +380,8 @@ pub async fn reselect_loop(
                 is_extra: true,
             };
 
-            moves::partial_move::execute_move_animated(
-                iii,
-                game,
-                selected_unit.team,
-                doop,
-                cca.clone(),
-            )
-            .await;
+            iii.execute_with_animation(game, selected_unit.team, doop, cca.clone())
+                .await;
 
             return LoopRes::EndTurn;
         } else {
@@ -401,14 +395,9 @@ pub async fn reselect_loop(
             let mut kk = unit.clone();
             kk.position = target_cell;
 
-            let iii = moves::partial_move::execute_move_animated(
-                iii,
-                game,
-                selected_unit.team,
-                doop,
-                cca.clone(),
-            )
-            .await;
+            let iii = iii
+                .execute_with_animation(game, selected_unit.team, doop, cca.clone())
+                .await;
 
             {
                 *extra_attack = Some(selection::PossibleExtra::new(iii, kk));

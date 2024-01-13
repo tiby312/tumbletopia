@@ -348,10 +348,9 @@ pub mod partial_move {
                         is_extra: false,
                     };
 
-                    let iii = moves::partial_move::execute_move_animated(
-                        iii, state, team_index, doop, mesh,
-                    )
-                    .await;
+                    let iii = iii
+                        .execute_with_animation(state, team_index, doop, mesh)
+                        .await;
 
                     assert_eq!(iii.moveto, e.unit);
 
@@ -372,7 +371,7 @@ pub mod partial_move {
                         end: target_cell,
                         is_extra: true,
                     };
-                    moves::partial_move::execute_move_animated(iii, state, team_index, doop, mesh)
+                    iii.execute_with_animation(state, team_index, doop, mesh)
                         .await;
                 }
                 ActualMove::SkipTurn => {}
@@ -399,7 +398,7 @@ pub mod partial_move {
                         is_extra: false,
                     };
 
-                    let iii = moves::partial_move::execute_move(iii, state, team_index);
+                    let iii = iii.execute(state, team_index);
 
                     assert_eq!(iii.moveto, e.unit);
 
@@ -412,7 +411,7 @@ pub mod partial_move {
                         end: target_cell,
                         is_extra: true,
                     };
-                    moves::partial_move::execute_move(iii, state, team_index);
+                    iii.execute(state, team_index);
                 }
                 _ => {
                     unreachable!()
@@ -494,26 +493,6 @@ pub mod partial_move {
 
     use crate::ace::WorkerManager;
 
-    fn execute_move(
-        a: PartialMove,
-        game_view: &mut GameState,
-        team: ActiveTeam,
-    ) -> PartialMoveSigl {
-        a.execute(game_view, team)
-    }
-
-    //TODO used by user to move part at a time before they select again.
-    pub async fn execute_move_animated(
-        a: PartialMove,
-        game_view: &mut GameState,
-        team_index: ActiveTeam,
-        data: &mut ace::WorkerManager<'_>,
-        mesh: MovementMesh,
-    ) -> PartialMoveSigl {
-        a.execute_with_animation(game_view, team_index, data, mesh)
-            .await
-    }
-
     #[derive(Clone, Debug)]
     pub struct PartialMove {
         pub selected_unit: GridCoord,
@@ -523,7 +502,27 @@ pub mod partial_move {
     }
 
     impl PartialMove {
-        fn execute<'b>(self, game_view: &'b mut GameState, team: ActiveTeam) -> PartialMoveSigl {
+        // fn execute_move(
+        //     self,
+        //     game_view: &mut GameState,
+        //     team: ActiveTeam,
+        // ) -> PartialMoveSigl {
+        //     self.execute(game_view, team)
+        // }
+
+        // //TODO used by user to move part at a time before they select again.
+        // pub async fn execute_move_animated(
+        //     self,
+        //     game_view: &mut GameState,
+        //     team_index: ActiveTeam,
+        //     data: &mut ace::WorkerManager<'_>,
+        //     mesh: MovementMesh,
+        // ) -> PartialMoveSigl {
+        //     self.execute_with_animation(game_view, team_index, data, mesh)
+        //         .await
+        // }
+
+        pub fn execute(self, game_view: &mut GameState, team: ActiveTeam) -> PartialMoveSigl {
             let is_extra = self.is_extra;
             let selected_unit = self.selected_unit;
             let target_cell = self.end;
@@ -553,9 +552,9 @@ pub mod partial_move {
                 sigl
             }
         }
-        async fn execute_with_animation<'b>(
+        pub async fn execute_with_animation(
             self,
-            game_view: &'b mut GameState,
+            game_view: &mut GameState,
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
             mesh: MovementMesh,
