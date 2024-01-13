@@ -420,45 +420,47 @@ pub mod partial_move {
         }
     }
 
-    pub fn for_all_moves_fast(
-        mut state: &mut GameState,
-        team: ActiveTeam,
-    ) -> Vec<moves::ActualMove> {
-        let mut movs = Vec::new();
-        for i in 0..state.factions.relative(team).this_team.units.len() {
-            let pos = state.factions.relative_mut(team).this_team.units[i].position;
-            let typ = state.factions.relative_mut(team).this_team.units[i].typ;
+    impl GameState {
+        pub fn for_all_moves_fast(&mut self, team: ActiveTeam) -> Vec<moves::ActualMove> {
+            let state = self;
+            let mut movs = Vec::new();
+            for i in 0..state.factions.relative(team).this_team.units.len() {
+                let pos = state.factions.relative_mut(team).this_team.units[i].position;
+                let typ = state.factions.relative_mut(team).this_team.units[i].typ;
 
-            let mesh = generate_unit_possible_moves_inner(&pos, typ, &state, team, false);
-            for mm in mesh.iter_mesh(pos) {
-                //Temporarily move the player in the game world.
-                //We do this so that the mesh generated for extra is accurate.
-                apply_normal_move(
-                    &mut state.factions.relative_mut(team).this_team.units[i],
-                    mm,
-                );
+                let mesh = generate_unit_possible_moves_inner(&pos, typ, &state, team, false);
+                for mm in mesh.iter_mesh(pos) {
+                    //Temporarily move the player in the game world.
+                    //We do this so that the mesh generated for extra is accurate.
+                    apply_normal_move(
+                        &mut state.factions.relative_mut(team).this_team.units[i],
+                        mm,
+                    );
+                    
 
-                let second_mesh = generate_unit_possible_moves_inner(&mm, typ, &state, team, true);
+                    let second_mesh =
+                        generate_unit_possible_moves_inner(&mm, typ, &state, team, true);
 
-                for sm in second_mesh.iter_mesh(mm) {
-                    //Don't bother applying the extra move. just generate the sigl.
-                    movs.push(moves::ActualMove::ExtraMove(
-                        moves::PartialMoveSigl {
-                            unit: pos,
-                            moveto: mm,
-                        },
-                        moves::PartialMoveSigl {
-                            unit: mm,
-                            moveto: sm,
-                        },
-                    ))
+                    for sm in second_mesh.iter_mesh(mm) {
+                        //Don't bother applying the extra move. just generate the sigl.
+                        movs.push(moves::ActualMove::ExtraMove(
+                            moves::PartialMoveSigl {
+                                unit: pos,
+                                moveto: mm,
+                            },
+                            moves::PartialMoveSigl {
+                                unit: mm,
+                                moveto: sm,
+                            },
+                        ))
+                    }
+
+                    //revert it back.
+                    state.factions.relative_mut(team).this_team.units[i].position = pos;
                 }
-
-                //revert it back.
-                state.factions.relative_mut(team).this_team.units[i].position = pos;
             }
+            movs
         }
-        movs
     }
 
     use crate::ace::WorkerManager;

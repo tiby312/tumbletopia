@@ -365,7 +365,7 @@ impl<'a> AlphaBeta<'a> {
             //     None
             // };
 
-            let mut moves = moves::partial_move::for_all_moves_fast(&mut node, team);
+            let mut moves = node.for_all_moves_fast(team);
 
             //console_dbg!("FOOOO",moves.len());
             //console_dbg!(moves.iter().map(|x|&x.1.the_move).collect::<Vec<_>>());
