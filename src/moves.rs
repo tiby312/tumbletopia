@@ -502,26 +502,6 @@ pub mod partial_move {
     }
 
     impl PartialMove {
-        // fn execute_move(
-        //     self,
-        //     game_view: &mut GameState,
-        //     team: ActiveTeam,
-        // ) -> PartialMoveSigl {
-        //     self.execute(game_view, team)
-        // }
-
-        // //TODO used by user to move part at a time before they select again.
-        // pub async fn execute_move_animated(
-        //     self,
-        //     game_view: &mut GameState,
-        //     team_index: ActiveTeam,
-        //     data: &mut ace::WorkerManager<'_>,
-        //     mesh: MovementMesh,
-        // ) -> PartialMoveSigl {
-        //     self.execute_with_animation(game_view, team_index, data, mesh)
-        //         .await
-        // }
-
         pub fn execute(self, game_view: &mut GameState, team: ActiveTeam) -> PartialMoveSigl {
             let is_extra = self.is_extra;
             let selected_unit = self.selected_unit;
