@@ -99,7 +99,7 @@ impl GridCoord {
         hex::Cube([a[0], a[1], -a[0] - a[1]])
     }
     pub fn advance_by(self, m: HexDir, val: usize) -> GridCoord {
-        (0..val).fold(self, |acc, o| acc.advance(m))
+        (0..val).fold(self, |acc, _| acc.advance(m))
     }
     pub const fn advance(self, m: HexDir) -> GridCoord {
         self.add(m.to_relative())
@@ -695,24 +695,6 @@ pub mod bitfield {
             self.inner[ind]
         }
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> + '_ {
-            let inner = &self.inner;
-
-            //let skip_moves = self.swing_moves(point);
-
-            // TABLE
-            //     .iter()
-            //     .enumerate()
-            //     .filter(move |(x, _)| inner & (1 << x) != 0)
-            //     .map(move |(_, x)| point.add(GridCoord(*x)))
-            // let mesh_moves = (0..4usize).flat_map(|i|(0..64).map(move |l|(i,l)))
-            //     .filter(move |&(x,y)| inner[x] & (1 << y) != 0)
-            //     .map(move |(_,a)| {
-            //         let x = a / 8;
-            //         let y = a % 8;
-            //         point.add(GridCoord([x, y]))
-            //     });
-
-            //mesh_moves //.chain(skip_moves)
             self.inner.ones().map(move |a| {
                 let x = a / 32;
                 let y = a % 32;
@@ -722,20 +704,6 @@ pub mod bitfield {
     }
     fn conv(a: GridCoord) -> usize {
         let [x, y] = a.0;
-        //     let ind=x/7+y%7;
-        //     // -3 -2 -1 0 1 2 3
-        //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
-        // ind as usize
-        let k = ((x + 16) * 32 + (y + 16)) as usize;
-
-        //dbg!(a,k);
-        k
-
-        // TABLE
-        //     .iter()
-        //     .enumerate()
-        //     .find(|(_, x)| **x == a.0)
-        //     .expect("Could not find the coord in table")
-        //     .0
+        ((x + 16) * 32 + (y + 16)) as usize
     }
 }

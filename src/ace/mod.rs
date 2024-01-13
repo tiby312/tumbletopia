@@ -5,7 +5,7 @@ pub mod selection;
 use crate::{
     animation::Animation,
     grids::GridMatrix,
-    movement::{self, Filter, GridCoord},
+    movement::{self, GridCoord},
     CellSelection, GameState, UnitData,
 };
 

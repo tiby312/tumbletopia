@@ -1,6 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
-
-use crate::movement::{bitfield::BitField, movement_mesh::Mesh};
+use crate::movement::bitfield::BitField;
 
 use super::{selection::MoveLog, *};
 
@@ -10,22 +8,13 @@ const MATE: i64 = 1_000_000;
 
 //cats maximizing
 //dogs minimizing
-pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
-    let water = {
-        let mut t = BitField::from_iter(view.env.land.iter_mesh(GridCoord([0; 2])));
-        t.toggle_range(..);
-        t
-    };
-
-    let grass = {
-        let mut land = BitField::from_iter(view.env.land.iter_mesh(GridCoord([0; 2])));
-        let mut t = BitField::from_iter(view.env.forest.iter_mesh(GridCoord([0; 2])));
-        t.toggle_range(..);
-        land.intersect_with(&t);
-        land
-    };
-
-    let allowed = {
+pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
+    let ship_allowed = {
+        let water = {
+            let mut t = view.env.land.clone();
+            t.toggle_range(..);
+            t
+        };
         let mut t = view.world.get_game_cells().clone();
         t.intersect_with(&water);
         t
@@ -46,6 +35,15 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
             .map(|a| a.position),
     );
 
+    doop(&mut dog_ships, &mut cat_ships, &ship_allowed);
+
+    let foot_grass = {
+        let mut land = view.env.land.clone();
+        let mut t = view.env.forest.clone();
+        t.toggle_range(..);
+        land.intersect_with(&t);
+        land
+    };
     let mut cat_foot = BitField::from_iter(
         view.factions
             .cats
@@ -61,9 +59,7 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
             .map(|a| a.position),
     );
 
-    doop(&mut dog_ships, &mut cat_ships, &allowed);
-
-    doop(&mut dog_foot, &mut cat_foot, &grass);
+    doop(&mut dog_foot, &mut cat_foot, &foot_grass);
 
     let s = cat_ships.count_ones(..) as i64 - dog_ships.count_ones(..) as i64;
     let r = cat_foot.count_ones(..) as i64 - dog_foot.count_ones(..) as i64;

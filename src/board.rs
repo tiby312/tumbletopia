@@ -1,4 +1,4 @@
-use crate::movement::{bitfield::BitField, movement_mesh::Mesh, FilterRes};
+use crate::movement::{bitfield::BitField, FilterRes};
 
 use super::*;
 
