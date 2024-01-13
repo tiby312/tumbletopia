@@ -21,7 +21,7 @@ pub struct MyWorld {
 }
 impl MyWorld {
     pub fn new() -> MyWorld {
-        let mut w = BitField::from_iter(world().map(|a| a.to_axial()));
+        let w = BitField::from_iter(world().map(|a| a.to_axial()));
         MyWorld { w }
     }
     pub fn get_game_cells(&self) -> &BitField {
@@ -29,55 +29,7 @@ impl MyWorld {
     }
 }
 
-// pub fn water_border() -> impl Iterator<Item = hex::Cube> + Clone {
-//     hex::Cube::new(0, 0).ring(5).map(|(_, a)| a)
-// }
-
-// pub fn world_mesh() -> BitField {
-//     let mut m = BitField::from_iter(world().map(|a| a.to_axial()));
-//     m.inner.toggle_range(..);
-//     m
-// }
-
-// pub fn world_bitfield() -> BitField {
-//     let mut m = BitField::from_iter(world().map(|a| a.to_axial()));
-//     m
-// }
-// pub fn world_mesh_iter(a: impl Iterator<Item = GridCoord>) -> BitField {
-//     let mut m = world_mesh();
-
-//     for k in a {
-//         m.add(k);
-//     }
-//     m
-// }
 
 fn world() -> impl Iterator<Item = hex::Cube> {
-    // let dim=8;
-
-    // let og = hex::Cube::new(dim-1, -(dim-1));
-    // (0..dim)
-    //     .flat_map(move |i| (0..dim).map(move |j| (i, j)))
-    //     .map(move |(x, y)| {
-    //         let a = hex::Cube::new(x, y);
-    //         let a = a.0;
-    //         og.add(hex::Cube([-a[0], -a[2], -a[1]]))
-    //     })
-
     hex::Cube::new(0, 0).range(3)
 }
-
-// #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-// pub struct World {}
-// impl World {
-//     pub fn new() -> Self {
-//         World {}
-//     }
-//     pub fn filter(&self) -> GridFilter {
-//         GridFilter {}
-//     }
-//     //This is world
-//     pub fn iter_cells(&self) -> impl Iterator<Item = hex::Cube> {
-//         world()
-//     }
-// }
