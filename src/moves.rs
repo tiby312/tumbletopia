@@ -196,37 +196,6 @@ pub mod partial_move {
         walls
     }
 
-    fn apply_normal_move(this_unit: &mut UnitData, target_cell: GridCoord) -> PartialMoveSigl {
-        let orig = this_unit.position;
-        this_unit.position = target_cell;
-
-        let sigl = PartialMoveSigl {
-            unit: orig,
-            moveto: target_cell,
-        };
-
-        //let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
-        sigl
-    }
-    fn apply_extra_move(
-        unit: GridCoord,
-        typ: Type,
-        target_cell: GridCoord,
-        env: &mut Environment,
-    ) -> PartialMoveSigl {
-        let sigl = PartialMoveSigl {
-            unit,
-            moveto: target_cell,
-        };
-
-        if typ == Type::Ship {
-            env.land.add(target_cell);
-        } else if typ == Type::Foot {
-            env.forest.add(target_cell);
-        }
-        sigl
-    }
-
     pub fn generate_unit_possible_moves_inner(
         unit: &GridCoord,
         typ: Type,
@@ -449,10 +418,13 @@ pub mod partial_move {
                 for mm in mesh.iter_mesh(pos) {
                     //Temporarily move the player in the game world.
                     //We do this so that the mesh generated for extra is accurate.
-                    apply_normal_move(
-                        &mut state.factions.relative_mut(team).this_team.units[i],
-                        mm,
-                    );
+                    let ii = PartialMove {
+                        this_unit: &mut state.factions.relative_mut(team).this_team.units[i],
+                        env: &mut state.env,
+                        target: mm,
+                        is_extra: false,
+                    };
+                    ii.execute(team);
 
                     let second_mesh =
                         generate_unit_possible_moves_inner(&mm, typ, &state, team, true);
@@ -481,85 +453,88 @@ pub mod partial_move {
 
     use crate::ace::WorkerManager;
 
-    #[derive(Debug)]
-    pub struct PartialMove<'a> {
-        pub this_unit: &'a mut UnitData,
-        pub env: &'a mut Environment,
-        pub target: GridCoord,
-        pub is_extra: bool,
-    }
-
-    // #[derive(Clone, Debug)]
-    // pub struct PartialMove {
-    //     pub selected_unit: GridCoord,
-    //     pub typ: Type,
-    //     pub end: GridCoord,
-    //     pub is_extra: bool,
-    // }
-
-    impl PartialMove<'_> {
-        pub fn execute(self, team: ActiveTeam) -> PartialMoveSigl {
-            if !self.is_extra {
-                let sigl = apply_normal_move(self.this_unit, self.target);
-                sigl
-            } else {
-                let sigl = apply_extra_move(
-                    self.this_unit.position,
-                    self.this_unit.typ,
-                    self.target,
-                    self.env,
-                );
-
-                sigl
-            }
+    pub use partial::PartialMove;
+    pub mod partial {
+        use super::*;
+        #[derive(Debug)]
+        pub struct PartialMove<'a> {
+            pub this_unit: &'a mut UnitData,
+            pub env: &'a mut Environment,
+            pub target: GridCoord,
+            pub is_extra: bool,
         }
-        pub async fn execute_with_animation(
-            mut self,
-            team: ActiveTeam,
-            data: &mut ace::WorkerManager<'_>,
-            mesh: MovementMesh,
+
+        fn apply_normal_move(this_unit: &mut UnitData, target_cell: GridCoord) -> PartialMoveSigl {
+            let orig = this_unit.position;
+            this_unit.position = target_cell;
+
+            let sigl = PartialMoveSigl {
+                unit: orig,
+                moveto: target_cell,
+            };
+            sigl
+        }
+        fn apply_extra_move(
+            unit: GridCoord,
+            typ: Type,
+            target_cell: GridCoord,
+            env: &mut Environment,
         ) -> PartialMoveSigl {
-            // let is_extra = self.is_extra;
-            // let selected_unit = self.selected_unit;
-            // let target_cell = self.end;
-            // let typ = self.typ;
+            let sigl = PartialMoveSigl {
+                unit,
+                moveto: target_cell,
+            };
 
-            if !self.is_extra {
-                // let start = selected_unit;
-                // let end = target_cell;
-                // let this_unit = game_view
-                //     .factions
-                //     .relative_mut(team)
-                //     .this_team
-                //     .find_slow_mut(&start)
-                //     .unwrap();
-
-                let walls = calculate_walls(
-                    self.this_unit.position,
-                    self.this_unit.typ,
-                    &mut self.env.land,
-                    &mut self.env.forest,
-                );
-
-                let _ = Doopa::new(data)
-                    .wait_animation(
-                        Movement::new(self.this_unit.clone(), mesh, walls, self.target),
-                        team,
+            if typ == Type::Ship {
+                env.land.add(target_cell);
+            } else if typ == Type::Foot {
+                env.forest.add(target_cell);
+            }
+            sigl
+        }
+        impl PartialMove<'_> {
+            pub fn execute(self, team: ActiveTeam) -> PartialMoveSigl {
+                if !self.is_extra {
+                    apply_normal_move(self.this_unit, self.target)
+                } else {
+                    apply_extra_move(
+                        self.this_unit.position,
+                        self.this_unit.typ,
+                        self.target,
+                        self.env,
                     )
-                    .await;
+                }
+            }
+            pub async fn execute_with_animation(
+                mut self,
+                team: ActiveTeam,
+                data: &mut ace::WorkerManager<'_>,
+                mesh: MovementMesh,
+            ) -> PartialMoveSigl {
+                if !self.is_extra {
+                    let walls = calculate_walls(
+                        self.this_unit.position,
+                        self.this_unit.typ,
+                        &mut self.env.land,
+                        &mut self.env.forest,
+                    );
 
-                let sigl = apply_normal_move(self.this_unit, self.target);
+                    let _ = Doopa::new(data)
+                        .wait_animation(
+                            Movement::new(self.this_unit.clone(), mesh, walls, self.target),
+                            team,
+                        )
+                        .await;
 
-                sigl
-            } else {
-                let sigl = apply_extra_move(
-                    self.this_unit.position,
-                    self.this_unit.typ,
-                    self.target,
-                    &mut self.env,
-                );
-
-                sigl
+                    apply_normal_move(self.this_unit, self.target)
+                } else {
+                    apply_extra_move(
+                        self.this_unit.position,
+                        self.this_unit.typ,
+                        self.target,
+                        &mut self.env,
+                    )
+                }
             }
         }
     }
