@@ -195,13 +195,6 @@ pub struct Environment {
     land: BitField,
     forest: BitField,
     powerup: BitField,
-    world: board::World,
-}
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-
-pub struct MyWorld {
-    w: BitField,
 }
 
 //Additionally removes need to special case animation.
@@ -209,7 +202,7 @@ pub struct MyWorld {
 pub struct GameState {
     factions: Factions,
     env: Environment,
-    world: &'static MyWorld,
+    world: &'static board::MyWorld,
 }
 
 #[wasm_bindgen]
@@ -251,7 +244,7 @@ pub async fn worker_entry() {
         UnitData::new(GridCoord([3, -2]), Type::Ship),
     ];
 
-    let world = Box::leak(Box::new(MyWorld { w: BitField::new() }));
+    let world = Box::leak(Box::new(board::MyWorld::new()));
 
     let mut ggame = GameState {
         factions: Factions {
@@ -262,7 +255,6 @@ pub async fn worker_entry() {
             land: BitField::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
             forest: BitField::from_iter([]),
             powerup: BitField::from_iter([]),
-            world: board::World::new(),
         },
         world,
     };
@@ -558,8 +550,8 @@ pub async fn worker_entry() {
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
                 //TODO don't render where land is?
-                for c in ggame.env.world.iter_cells() {
-                    let pos = grid_matrix.hex_axial_to_world(&c.to_axial());
+                for c in ggame.world.get_game_cells().iter_mesh(GridCoord([0; 2])) {
+                    let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();
                     let t = matrix::translation(pos[0], pos[1], -10.0);

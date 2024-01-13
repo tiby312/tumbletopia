@@ -1,9 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{
-    board::{world_bitfield, world_mesh_iter},
-    movement::{bitfield::BitField, movement_mesh::Mesh},
-};
+use crate::movement::{bitfield::BitField, movement_mesh::Mesh};
 
 use super::{selection::MoveLog, *};
 
@@ -29,7 +26,7 @@ pub fn absolute_evaluate(view: &GameState, debug: bool) -> Eval {
     };
 
     let allowed = {
-        let mut t = world_bitfield();
+        let mut t = view.world.get_game_cells().clone();
         t.intersect_with(&water);
         t
     };

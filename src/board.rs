@@ -15,28 +15,42 @@ impl movement::Filter for GridFilter {
     }
 }
 
-pub fn water_border() -> impl Iterator<Item = hex::Cube> + Clone {
-    hex::Cube::new(0, 0).ring(5).map(|(_, a)| a)
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct MyWorld {
+    w: BitField,
 }
-
-pub fn world_mesh() -> BitField {
-    let mut m = BitField::from_iter(world().map(|a| a.to_axial()));
-    m.inner.toggle_range(..);
-    m
-}
-
-pub fn world_bitfield() -> BitField {
-    let mut m = BitField::from_iter(world().map(|a| a.to_axial()));
-    m
-}
-pub fn world_mesh_iter(a: impl Iterator<Item = GridCoord>) -> BitField {
-    let mut m = world_mesh();
-
-    for k in a {
-        m.add(k);
+impl MyWorld {
+    pub fn new() -> MyWorld {
+        let mut w = BitField::from_iter(world().map(|a| a.to_axial()));
+        MyWorld { w }
     }
-    m
+    pub fn get_game_cells(&self) -> &BitField {
+        &self.w
+    }
 }
+
+// pub fn water_border() -> impl Iterator<Item = hex::Cube> + Clone {
+//     hex::Cube::new(0, 0).ring(5).map(|(_, a)| a)
+// }
+
+// pub fn world_mesh() -> BitField {
+//     let mut m = BitField::from_iter(world().map(|a| a.to_axial()));
+//     m.inner.toggle_range(..);
+//     m
+// }
+
+// pub fn world_bitfield() -> BitField {
+//     let mut m = BitField::from_iter(world().map(|a| a.to_axial()));
+//     m
+// }
+// pub fn world_mesh_iter(a: impl Iterator<Item = GridCoord>) -> BitField {
+//     let mut m = world_mesh();
+
+//     for k in a {
+//         m.add(k);
+//     }
+//     m
+// }
 
 fn world() -> impl Iterator<Item = hex::Cube> {
     // let dim=8;
@@ -53,17 +67,17 @@ fn world() -> impl Iterator<Item = hex::Cube> {
     hex::Cube::new(0, 0).range(3)
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub struct World {}
-impl World {
-    pub fn new() -> Self {
-        World {}
-    }
-    pub fn filter(&self) -> GridFilter {
-        GridFilter {}
-    }
-    //This is world
-    pub fn iter_cells(&self) -> impl Iterator<Item = hex::Cube> {
-        world()
-    }
-}
+// #[derive(Clone, PartialEq, Eq, Hash, Debug)]
+// pub struct World {}
+// impl World {
+//     pub fn new() -> Self {
+//         World {}
+//     }
+//     pub fn filter(&self) -> GridFilter {
+//         GridFilter {}
+//     }
+//     //This is world
+//     pub fn iter_cells(&self) -> impl Iterator<Item = hex::Cube> {
+//         world()
+//     }
+// }

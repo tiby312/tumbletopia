@@ -264,7 +264,8 @@ pub mod partial_move {
                 unreachable!();
             };
 
-            let is_world_cell = game.env.world.filter().filter(&a).to_bool();
+            let is_world_cell = game.world.get_game_cells().is_set(a);
+
             a != unit
                 && is_world_cell
                 && cc
