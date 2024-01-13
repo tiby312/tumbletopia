@@ -177,16 +177,16 @@ pub mod partial_move {
 
     use super::*;
 
-    fn calculate_walls(position: GridCoord, typ: Type, land: &BitField, forest: &BitField) -> Mesh {
+    fn calculate_walls(position: GridCoord, typ: Type, env: &Environment) -> Mesh {
         let mut walls = Mesh::new();
 
         for a in position.to_cube().range(2) {
             let a = a.to_axial();
             //TODO this is duplicated logic in selection function???
             let cc = if typ == Type::Ship {
-                land.is_set(a)
+                env.land.is_set(a)
             } else {
-                !land.is_set(a) && forest.is_set(a)
+                !env.land.is_set(a) && env.forest.is_set(a)
             };
             if cc {
                 walls.add(a.sub(&position));
@@ -512,12 +512,8 @@ pub mod partial_move {
                 mesh: MovementMesh,
             ) -> PartialMoveSigl {
                 if !self.is_extra {
-                    let walls = calculate_walls(
-                        self.this_unit.position,
-                        self.this_unit.typ,
-                        &mut self.env.land,
-                        &mut self.env.forest,
-                    );
+                    let walls =
+                        calculate_walls(self.this_unit.position, self.this_unit.typ, &mut self.env);
 
                     let _ = Doopa::new(data)
                         .wait_animation(
