@@ -461,36 +461,6 @@ pub mod partial_move {
         movs
     }
 
-    #[derive(Debug, Copy, Clone)]
-    pub enum GameOver {
-        CatWon,
-        DogWon,
-        Tie,
-    }
-
-    pub fn game_is_over(game: &mut GameState, team_index: ActiveTeam) -> Option<GameOver> {
-        //let game = game.view_mut(team_index);
-
-        for unit in game.factions.relative(team_index).this_team.units.iter() {
-            let mesh = moves::partial_move::generate_unit_possible_moves_inner(
-                &unit.position,
-                unit.typ,
-                game,
-                team_index,
-                false,
-            );
-            if mesh.iter_mesh(GridCoord([0; 2])).count() != 0 {
-                return None;
-            }
-        }
-
-        if team_index == ActiveTeam::Cats {
-            return Some(GameOver::DogWon);
-        } else {
-            return Some(GameOver::CatWon);
-        }
-    }
-
     use crate::ace::WorkerManager;
 
     #[derive(Clone, Debug)]

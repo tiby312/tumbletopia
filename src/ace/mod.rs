@@ -422,7 +422,7 @@ pub async fn main_logic<'a>(
 
     //Loop over each team!
     'game_loop: for team_index in ActiveTeam::Dogs.iter() {
-        if let Some(g) = moves::partial_move::game_is_over(game, team_index) {
+        if let Some(g) = game.game_is_over(team_index) {
             console_dbg!("Game over=", g);
             break 'game_loop;
         }

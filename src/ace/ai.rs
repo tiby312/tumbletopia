@@ -323,9 +323,7 @@ impl<'a> AlphaBeta<'a> {
         //let the_move = cand.the_move.clone();
         let mut gg = game_after_move.clone();
 
-        let ret = if depth == 0
-            || moves::partial_move::game_is_over(&mut game_after_move, team).is_some()
-        {
+        let ret = if depth == 0 || game_after_move.game_is_over(team).is_some() {
             //console_dbg!(game_is_over(cand.game_after_move.view(team)));
 
             self.calls.add_eval();

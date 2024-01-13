@@ -205,6 +205,37 @@ pub struct GameState {
     world: &'static board::MyWorld,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum GameOver {
+    CatWon,
+    DogWon,
+    Tie,
+}
+
+impl GameState {
+    pub fn game_is_over(&mut self, team_index: ActiveTeam) -> Option<GameOver> {
+        //let game = game.view_mut(team_index);
+
+        for unit in self.factions.relative(team_index).this_team.units.iter() {
+            let mesh = moves::partial_move::generate_unit_possible_moves_inner(
+                &unit.position,
+                unit.typ,
+                self,
+                team_index,
+                false,
+            );
+            if mesh.iter_mesh(GridCoord([0; 2])).count() != 0 {
+                return None;
+            }
+        }
+
+        if team_index == ActiveTeam::Cats {
+            return Some(GameOver::DogWon);
+        } else {
+            return Some(GameOver::CatWon);
+        }
+    }
+}
 #[wasm_bindgen]
 pub async fn worker_entry() {
     console_error_panic_hook::set_once();
