@@ -501,7 +501,7 @@ mod abab_simple {
 
     pub trait MoveFinder {
         type EE: PartialOrd + Ord + Copy;
-        type T: Clone;
+        type T;
         type Mo: Copy;
         type Finder;
         fn eval(&mut self, game: &Self::T) -> Self::EE;
@@ -526,8 +526,9 @@ mod abab_simple {
         depth: usize,
         mut game_state: X::T,
         maximizer: bool,
-    ) -> (X::EE, Vec<X::Mo>) {
-        ABAB::new(data).alpha_beta(depth, &mut game_state, maximizer)
+    ) -> (X::EE, Vec<X::Mo>,X::T) {
+        let (a,b)=ABAB::new(data).alpha_beta(depth, &mut game_state, maximizer);
+        (a,b,game_state)
     }
     use super::*;
     #[derive(Clone)]
