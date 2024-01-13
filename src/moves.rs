@@ -147,9 +147,6 @@ pub struct PartialMoveSigl {
 
 pub use partial_move::PartialMove;
 pub mod partial_move {
-    use duckduckgeo::dists::grid::Grid;
-
-    use crate::movement::Filter;
 
     use super::*;
 
@@ -165,23 +162,9 @@ pub mod partial_move {
 
         let cond = |a: GridCoord| {
             let cc = if typ == Type::Ship {
-                game.env
-                    .land
-                    .iter_mesh(GridCoord([0; 2]))
-                    .find(|&b| a == b)
-                    .is_none()
+                !game.env.land.is_set(a)
             } else if typ == Type::Foot {
-                game.env
-                    .land
-                    .iter_mesh(GridCoord([0; 2]))
-                    .find(|&b| a == b)
-                    .is_some()
-                    && game
-                        .env
-                        .forest
-                        .iter_mesh(GridCoord([0; 2]))
-                        .find(|&b| a == b)
-                        .is_none()
+                game.env.land.is_set(a) && !game.env.forest.is_set(a)
             } else {
                 unreachable!();
             };
@@ -204,23 +187,18 @@ pub mod partial_move {
                     .find_slow(&a)
                     .is_none()
         };
-        let cond2 = |a: GridCoord| true;
 
         for (_, a) in unit.to_cube().ring(1) {
             let a = a.to_axial();
 
             if cond(a) {
-                if cond2(a) {
-                    mesh.add_normal_cell(a.sub(&unit));
-                }
+                mesh.add_normal_cell(a.sub(&unit));
+
                 if !extra {
                     for (_, b) in a.to_cube().ring(1) {
                         let b = b.to_axial();
-                        //TODO inefficient
                         if cond(b) {
-                            if cond2(b) {
-                                mesh.add_normal_cell(b.sub(&unit));
-                            }
+                            mesh.add_normal_cell(b.sub(&unit));
                         }
                     }
                 }
@@ -410,11 +388,10 @@ pub mod partial_move {
             let orig = this_unit.position;
             this_unit.position = target_cell;
 
-            let sigl = PartialMoveSigl {
+            PartialMoveSigl {
                 unit: orig,
                 moveto: target_cell,
-            };
-            sigl
+            }
         }
         fn apply_extra_move(
             unit: GridCoord,
@@ -422,17 +399,16 @@ pub mod partial_move {
             target_cell: GridCoord,
             env: &mut Environment,
         ) -> PartialMoveSigl {
-            let sigl = PartialMoveSigl {
-                unit,
-                moveto: target_cell,
-            };
-
             if typ == Type::Ship {
                 env.land.add(target_cell);
             } else if typ == Type::Foot {
                 env.forest.add(target_cell);
             }
-            sigl
+
+            PartialMoveSigl {
+                unit,
+                moveto: target_cell,
+            }
         }
         impl PartialMove<'_> {
             pub fn execute(self, _team: ActiveTeam) -> PartialMoveSigl {
@@ -548,4 +524,3 @@ impl UnwrapMe for Movement {
         unit
     }
 }
-
