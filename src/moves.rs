@@ -123,19 +123,19 @@ pub enum GameEnding {
 //     Ok(())
 // }
 
-struct Doopa<'a, 'b> {
-    data: &'a mut ace::WorkerManager<'b>,
-}
-impl<'a, 'b> Doopa<'a, 'b> {
-    pub fn new(data: &'a mut ace::WorkerManager<'b>) -> Self {
-        Doopa { data }
-    }
-    pub async fn wait_animation<W: UnwrapMe>(&mut self, m: W, team: ActiveTeam) -> W::Item {
-        let an = m.into_command();
-        let aa = self.data.wait_animation(an, team).await;
-        W::unwrapme(aa.into_data())
-    }
-}
+// struct Doopa<'a, 'b> {
+//     data: &'a mut ace::WorkerManager<'b>,
+// }
+// impl<'a, 'b> Doopa<'a, 'b> {
+//     pub fn new(data: &'a mut ace::WorkerManager<'b>) -> Self {
+//         Doopa { data }
+//     }
+//     pub async fn wait_animation<W: UnwrapMe>(&mut self, m: W, team: ActiveTeam) -> W::Item {
+//         let an = m.into_command();
+//         let aa = self.data.wait_animation(an, team).await;
+//         W::unwrapme(aa.into_data())
+//     }
+// }
 
 use crate::movement::{movement_mesh::Mesh, MovementMesh};
 
@@ -472,12 +472,10 @@ pub mod partial_move {
                     let walls =
                         calculate_walls(self.this_unit.position, self.this_unit.typ, &mut self.env);
 
-                    let _ = Doopa::new(data)
-                        .wait_animation(
-                            Movement::new(self.this_unit.clone(), mesh, walls, self.target),
-                            team,
-                        )
-                        .await;
+                    let an = Movement::new(self.this_unit.clone(), mesh, walls, self.target)
+                        .into_command();
+                    let aa = data.wait_animation(an, team).await;
+                    let _ = Movement::unwrapme(aa.into_data());
 
                     apply_normal_move(self.this_unit, self.target)
                 } else {
