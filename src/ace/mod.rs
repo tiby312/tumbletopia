@@ -373,30 +373,45 @@ pub async fn reselect_loop(
 
     {
         if let Some(e) = extra_attack {
+            let this_unit = game
+                .factions
+                .relative_mut(selected_unit.team)
+                .this_team
+                .find_slow_mut(&e.coord())
+                .unwrap();
+
             let iii = moves::partial_move::PartialMove {
-                selected_unit: e.coord(),
-                typ: unit.typ,
-                end: target_cell,
+                this_unit,
+                target: target_cell,
                 is_extra: true,
+                env: &mut game.env,
             };
 
-            iii.execute_with_animation(game, selected_unit.team, doop, cca.clone())
+            iii.execute_with_animation(selected_unit.team, doop, cca.clone())
                 .await;
 
             return LoopRes::EndTurn;
         } else {
-            let iii = moves::PartialMove {
-                selected_unit: unit.position,
-                typ: unit.typ,
-                end: target_cell,
-                is_extra: false,
-            };
+            let p = unit.position;
+            let this_unit = game
+                .factions
+                .relative_mut(selected_unit.team)
+                .this_team
+                .find_slow_mut(&p)
+                .unwrap();
+
             let c = target_cell;
-            let mut kk = unit.clone();
+            let mut kk = this_unit.clone();
             kk.position = target_cell;
 
+            let iii = moves::partial_move::PartialMove {
+                this_unit,
+                target: target_cell,
+                is_extra: false,
+                env: &mut game.env,
+            };
             let iii = iii
-                .execute_with_animation(game, selected_unit.team, doop, cca.clone())
+                .execute_with_animation(selected_unit.team, doop, cca.clone())
                 .await;
 
             {

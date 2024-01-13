@@ -171,6 +171,8 @@ impl PartialMoveSigl {
 
 pub use partial_move::PartialMove;
 pub mod partial_move {
+    use duckduckgeo::dists::grid::Grid;
+
     use crate::movement::Filter;
 
     use super::*;
@@ -210,8 +212,7 @@ pub mod partial_move {
         unit: GridCoord,
         typ: Type,
         target_cell: GridCoord,
-        land: &mut BitField,
-        forest: &mut BitField,
+        env: &mut Environment,
     ) -> PartialMoveSigl {
         let sigl = PartialMoveSigl {
             unit,
@@ -219,9 +220,9 @@ pub mod partial_move {
         };
 
         if typ == Type::Ship {
-            land.add(target_cell);
+            env.land.add(target_cell);
         } else if typ == Type::Foot {
-            forest.add(target_cell);
+            env.forest.add(target_cell);
         }
         sigl
     }
@@ -330,8 +331,7 @@ pub mod partial_move {
                         .relative(team_index)
                         .this_team
                         .find_slow(&o.unit)
-                        .unwrap()
-                        .clone();
+                        .unwrap();
                     let typ = unit.typ;
                     let mesh = generate_unit_possible_moves_inner(
                         &unit.position,
@@ -341,16 +341,21 @@ pub mod partial_move {
                         false,
                     );
 
+                    let unit = state
+                        .factions
+                        .relative_mut(team_index)
+                        .this_team
+                        .find_slow_mut(&o.unit)
+                        .unwrap();
+
                     let iii = moves::PartialMove {
-                        selected_unit: unit.position,
-                        typ: unit.typ,
-                        end: target_cell,
+                        this_unit: unit,
+                        target: target_cell,
                         is_extra: false,
+                        env: &mut state.env,
                     };
 
-                    let iii = iii
-                        .execute_with_animation(state, team_index, doop, mesh)
-                        .await;
+                    let iii = iii.execute_with_animation(team_index, doop, mesh).await;
 
                     assert_eq!(iii.moveto, e.unit);
 
@@ -365,14 +370,26 @@ pub mod partial_move {
                         true,
                     );
 
-                    let iii = moves::partial_move::PartialMove {
-                        selected_unit,
-                        typ: unit.typ,
-                        end: target_cell,
+                    let unit = state
+                        .factions
+                        .relative_mut(team_index)
+                        .this_team
+                        .find_slow_mut(&e.unit)
+                        .unwrap();
+                    let iii = moves::PartialMove {
+                        this_unit: unit,
+                        target: target_cell,
                         is_extra: true,
+                        env: &mut state.env,
                     };
-                    iii.execute_with_animation(state, team_index, doop, mesh)
-                        .await;
+
+                    // let iii = moves::partial_move::PartialMove {
+                    //     selected_unit,
+                    //     typ: unit.typ,
+                    //     end: target_cell,
+                    //     is_extra: true,
+                    // };
+                    iii.execute_with_animation(team_index, doop, mesh).await;
                 }
                 ActualMove::SkipTurn => {}
                 ActualMove::GameEnd(_) => todo!(),
@@ -385,33 +402,33 @@ pub mod partial_move {
                     let target_cell = o.moveto;
                     let unit = state
                         .factions
-                        .relative(team_index)
+                        .relative_mut(team_index)
                         .this_team
-                        .find_slow(&o.unit)
-                        .unwrap()
-                        .clone();
+                        .find_slow_mut(&o.unit)
+                        .unwrap();
 
                     let iii = moves::PartialMove {
-                        selected_unit: unit.position,
-                        typ: unit.typ,
-                        end: target_cell,
+                        this_unit: unit,
+                        target: target_cell,
                         is_extra: false,
+                        env: &mut state.env,
                     };
 
-                    let iii = iii.execute(state, team_index);
+                    let iii = iii.execute(team_index);
 
                     assert_eq!(iii.moveto, e.unit);
 
                     let selected_unit = e.unit;
                     let target_cell = e.moveto;
 
-                    let iii = moves::partial_move::PartialMove {
-                        selected_unit,
-                        typ: unit.typ,
-                        end: target_cell,
+                    let iii = moves::PartialMove {
+                        this_unit: unit,
+                        target: target_cell,
                         is_extra: true,
+                        env: &mut state.env,
                     };
-                    iii.execute(state, team_index);
+
+                    iii.execute(team_index);
                 }
                 _ => {
                     unreachable!()
@@ -436,7 +453,6 @@ pub mod partial_move {
                         &mut state.factions.relative_mut(team).this_team.units[i],
                         mm,
                     );
-                    
 
                     let second_mesh =
                         generate_unit_possible_moves_inner(&mm, typ, &state, team, true);
@@ -465,88 +481,82 @@ pub mod partial_move {
 
     use crate::ace::WorkerManager;
 
-    #[derive(Clone, Debug)]
-    pub struct PartialMove {
-        pub selected_unit: GridCoord,
-        pub typ: Type,
-        pub end: GridCoord,
+    #[derive(Debug)]
+    pub struct PartialMove<'a> {
+        pub this_unit: &'a mut UnitData,
+        pub env: &'a mut Environment,
+        pub target: GridCoord,
         pub is_extra: bool,
     }
 
-    impl PartialMove {
-        pub fn execute(self, game_view: &mut GameState, team: ActiveTeam) -> PartialMoveSigl {
-            let is_extra = self.is_extra;
-            let selected_unit = self.selected_unit;
-            let target_cell = self.end;
-            let typ = self.typ;
+    // #[derive(Clone, Debug)]
+    // pub struct PartialMove {
+    //     pub selected_unit: GridCoord,
+    //     pub typ: Type,
+    //     pub end: GridCoord,
+    //     pub is_extra: bool,
+    // }
 
-            if !is_extra {
-                let start = selected_unit;
-                let this_unit = game_view
-                    .factions
-                    .relative_mut(team)
-                    .this_team
-                    .find_slow_mut(&start)
-                    .unwrap();
-
-                let sigl = apply_normal_move(this_unit, target_cell);
-
+    impl PartialMove<'_> {
+        pub fn execute(self, team: ActiveTeam) -> PartialMoveSigl {
+            if !self.is_extra {
+                let sigl = apply_normal_move(self.this_unit, self.target);
                 sigl
             } else {
                 let sigl = apply_extra_move(
-                    selected_unit,
-                    typ,
-                    target_cell,
-                    &mut game_view.env.land,
-                    &mut game_view.env.forest,
+                    self.this_unit.position,
+                    self.this_unit.typ,
+                    self.target,
+                    self.env,
                 );
 
                 sigl
             }
         }
         pub async fn execute_with_animation(
-            self,
-            game_view: &mut GameState,
+            mut self,
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
             mesh: MovementMesh,
         ) -> PartialMoveSigl {
-            let is_extra = self.is_extra;
-            let selected_unit = self.selected_unit;
-            let target_cell = self.end;
-            let typ = self.typ;
+            // let is_extra = self.is_extra;
+            // let selected_unit = self.selected_unit;
+            // let target_cell = self.end;
+            // let typ = self.typ;
 
-            if !is_extra {
-                let start = selected_unit;
-                let end = target_cell;
-                let this_unit = game_view
-                    .factions
-                    .relative_mut(team)
-                    .this_team
-                    .find_slow_mut(&start)
-                    .unwrap();
+            if !self.is_extra {
+                // let start = selected_unit;
+                // let end = target_cell;
+                // let this_unit = game_view
+                //     .factions
+                //     .relative_mut(team)
+                //     .this_team
+                //     .find_slow_mut(&start)
+                //     .unwrap();
 
                 let walls = calculate_walls(
-                    this_unit.position,
-                    this_unit.typ,
-                    &mut game_view.env.land,
-                    &mut game_view.env.forest,
+                    self.this_unit.position,
+                    self.this_unit.typ,
+                    &mut self.env.land,
+                    &mut self.env.forest,
                 );
 
                 let _ = Doopa::new(data)
-                    .wait_animation(Movement::new(this_unit.clone(), mesh, walls, end), team)
+                    .wait_animation(
+                        Movement::new(self.this_unit.clone(), mesh, walls, self.target),
+                        team,
+                    )
                     .await;
 
-                let sigl = apply_normal_move(this_unit, target_cell);
+                let sigl = apply_normal_move(self.this_unit, self.target);
 
                 sigl
             } else {
                 let sigl = apply_extra_move(
-                    selected_unit,
-                    typ,
-                    target_cell,
-                    &mut game_view.env.land,
-                    &mut game_view.env.forest,
+                    self.this_unit.position,
+                    self.this_unit.typ,
+                    self.target,
+                    &mut self.env,
                 );
 
                 sigl
