@@ -214,10 +214,9 @@ impl GameState {
         //let game = game.view_mut(team_index);
 
         for unit in self.factions.relative(team_index).this_team.units.iter() {
-            let mesh = moves::generate_unit_possible_moves_inner(
+            let mesh = self.generate_unit_possible_moves_inner(
                 &unit.position,
                 unit.typ,
-                self,
                 team_index,
                 false,
             );

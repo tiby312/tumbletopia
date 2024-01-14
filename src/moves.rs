@@ -8,62 +8,65 @@ pub struct PartialMoveSigl {
     pub moveto: GridCoord,
 }
 
-pub fn generate_unit_possible_moves_inner(
-    unit: &GridCoord,
-    typ: Type,
-    game: &GameState,
-    team: ActiveTeam,
-    extra: bool,
-) -> movement::MovementMesh {
-    let unit = *unit;
-    let mut mesh = movement::MovementMesh::new();
+impl GameState {
+    pub fn generate_unit_possible_moves_inner(
+        &self,
+        unit: &GridCoord,
+        typ: Type,
+        team: ActiveTeam,
+        extra: bool,
+    ) -> movement::MovementMesh {
+        let game = self;
+        let unit = *unit;
+        let mut mesh = movement::MovementMesh::new();
 
-    let cond = |a: GridCoord| {
-        let cc = if typ == Type::Ship {
-            !game.env.land.is_coord_set(a)
-        } else if typ == Type::Foot {
-            game.env.land.is_coord_set(a) && !game.env.forest.is_coord_set(a)
-        } else {
-            unreachable!();
+        let cond = |a: GridCoord| {
+            let cc = if typ == Type::Ship {
+                !game.env.land.is_coord_set(a)
+            } else if typ == Type::Foot {
+                game.env.land.is_coord_set(a) && !game.env.forest.is_coord_set(a)
+            } else {
+                unreachable!();
+            };
+
+            let is_world_cell = game.world.get_game_cells().is_coord_set(a);
+
+            a != unit
+                && is_world_cell
+                && cc
+                && game
+                    .factions
+                    .relative(team)
+                    .this_team
+                    .find_slow(&a)
+                    .is_none()
+                && game
+                    .factions
+                    .relative(team)
+                    .that_team
+                    .find_slow(&a)
+                    .is_none()
         };
 
-        let is_world_cell = game.world.get_game_cells().is_coord_set(a);
+        for (_, a) in unit.to_cube().ring(1) {
+            let a = a.to_axial();
 
-        a != unit
-            && is_world_cell
-            && cc
-            && game
-                .factions
-                .relative(team)
-                .this_team
-                .find_slow(&a)
-                .is_none()
-            && game
-                .factions
-                .relative(team)
-                .that_team
-                .find_slow(&a)
-                .is_none()
-    };
+            if cond(a) {
+                mesh.add_normal_cell(a.sub(&unit));
 
-    for (_, a) in unit.to_cube().ring(1) {
-        let a = a.to_axial();
-
-        if cond(a) {
-            mesh.add_normal_cell(a.sub(&unit));
-
-            if !extra {
-                for (_, b) in a.to_cube().ring(1) {
-                    let b = b.to_axial();
-                    if cond(b) {
-                        mesh.add_normal_cell(b.sub(&unit));
+                if !extra {
+                    for (_, b) in a.to_cube().ring(1) {
+                        let b = b.to_axial();
+                        if cond(b) {
+                            mesh.add_normal_cell(b.sub(&unit));
+                        }
                     }
                 }
             }
         }
-    }
 
-    mesh
+        mesh
+    }
 }
 #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
 pub enum ActualMove {
@@ -86,10 +89,9 @@ impl ActualMove {
                     .find_slow(&o.unit)
                     .unwrap();
                 let typ = unit.typ;
-                let mesh = generate_unit_possible_moves_inner(
+                let mesh = state.generate_unit_possible_moves_inner(
                     &unit.position,
                     unit.typ,
-                    &state,
                     team_index,
                     false,
                 );
@@ -115,13 +117,8 @@ impl ActualMove {
                 let selected_unit = e.unit;
                 let target_cell = e.moveto;
 
-                let mesh = generate_unit_possible_moves_inner(
-                    &selected_unit,
-                    typ,
-                    state,
-                    team_index,
-                    true,
-                );
+                let mesh =
+                    state.generate_unit_possible_moves_inner(&selected_unit, typ, team_index, true);
 
                 let unit = state
                     .factions
@@ -213,7 +210,7 @@ impl GameState {
             let pos = state.factions.relative_mut(team).this_team.units[i].position;
             let typ = state.factions.relative_mut(team).this_team.units[i].typ;
 
-            let mesh = generate_unit_possible_moves_inner(&pos, typ, &state, team, false);
+            let mesh = state.generate_unit_possible_moves_inner(&pos, typ, team, false);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
@@ -225,7 +222,7 @@ impl GameState {
                 };
                 ii.execute(team);
 
-                let second_mesh = generate_unit_possible_moves_inner(&mm, typ, &state, team, true);
+                let second_mesh = state.generate_unit_possible_moves_inner(&mm, typ, team, true);
 
                 for sm in second_mesh.iter_mesh(mm) {
                     //Don't bother applying the extra move. just generate the sigl.
