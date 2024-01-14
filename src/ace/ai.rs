@@ -2,8 +2,7 @@ use crate::movement::bitfield::BitField;
 
 use super::*;
 
-pub type Eval = i64; //(f64);
-
+pub type Eval = i64;
 const MATE: i64 = 1_000_000;
 
 //cats maximizing
@@ -118,7 +117,6 @@ fn doop(mut dogs: &mut BitField, mut cats: &mut BitField, allowed_cells: &BitFie
 }
 
 //TODO use bump allocator!!!!!
-//TODO just store best move? not gamestate?
 pub struct MoveOrdering {
     a: std::collections::HashMap<Vec<moves::ActualMove>, moves::ActualMove>,
 }
@@ -279,68 +277,66 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        let ret = if depth == 0 || game_after_move.game_is_over().is_some() {
+        let mut moves = game_after_move.for_all_moves_fast(team);
+
+        if depth == 0 || moves.is_empty() {
             self.calls.add_eval();
-            absolute_evaluate(&game_after_move, false)
-        } else {
-            let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
+            return absolute_evaluate(&game_after_move, false);
+        }
 
-            let mut moves = game_after_move.for_all_moves_fast(team);
+        let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
-            let mut num_sorted = 0;
-            if let Some(p) = pvariation {
-                let f = moves.iter().enumerate().find(|(_, x)| **x == p).unwrap();
-                let swap_ind = f.0;
-                moves.swap(0, swap_ind);
+        let mut num_sorted = 0;
+        if let Some(p) = pvariation {
+            let f = moves.iter().enumerate().find(|(_, x)| **x == p).unwrap();
+            let swap_ind = f.0;
+            moves.swap(0, swap_ind);
+            num_sorted += 1;
+        }
+
+        for a in self.killer_moves.get(depth) {
+            if let Some((x, _)) = moves[num_sorted..]
+                .iter()
+                .enumerate()
+                .find(|(_, x)| *x == a)
+            {
+                moves.swap(x, num_sorted);
                 num_sorted += 1;
             }
+        }
 
-            for a in self.killer_moves.get(depth) {
-                if let Some((x, _)) = moves[num_sorted..]
-                    .iter()
-                    .enumerate()
-                    .find(|(_, x)| *x == a)
-                {
-                    moves.swap(x, num_sorted);
-                    num_sorted += 1;
-                }
-            }
+        let foo = |ssself: &mut AlphaBeta, cand: moves::ActualMove, ab| {
+            let new_depth = depth - 1;
 
-            let foo = |ssself: &mut AlphaBeta, cand: moves::ActualMove, ab| {
-                let new_depth = depth - 1;
+            cand.execute_move_no_ani(game_after_move, team);
+            ssself.path.push(cand);
+            let eval = ssself.alpha_beta(game_after_move, ab, team.not(), new_depth, ext);
 
-                cand.execute_move_no_ani(game_after_move, team);
-                ssself.path.push(cand);
-                let eval = ssself.alpha_beta(game_after_move, ab, team.not(), new_depth, ext);
+            let mov = ssself.path.pop().unwrap();
+            mov.execute_undo(game_after_move, team);
 
-                let mov = ssself.path.pop().unwrap();
-                mov.execute_undo(game_after_move, team);
-
-                EvalRet { eval, mov }
-            };
-
-            if team == ActiveTeam::Cats {
-                if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
-                    ss.killer_moves.consider(depth, m);
-                }) {
-                    self.prev_cache.update(&self.path, &ret.mov);
-                    ret.eval
-                } else {
-                    Eval::MIN
-                }
-            } else {
-                if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
-                    ss.killer_moves.consider(depth, m);
-                }) {
-                    self.prev_cache.update(&self.path, &ret.mov);
-                    ret.eval
-                } else {
-                    Eval::MAX
-                }
-            }
+            EvalRet { eval, mov }
         };
-        //console_dbg!("alpha beta ret=",ret,depth);
-        ret
+
+        if team == ActiveTeam::Cats {
+            if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
+                ss.killer_moves.consider(depth, m);
+            }) {
+                self.prev_cache.update(&self.path, &ret.mov);
+                ret.eval
+            } else {
+                Eval::MIN
+            }
+        } else {
+            if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
+                ss.killer_moves.consider(depth, m);
+            }) {
+                self.prev_cache.update(&self.path, &ret.mov);
+                ret.eval
+            } else {
+                Eval::MAX
+            }
+        }
     }
 }
 
