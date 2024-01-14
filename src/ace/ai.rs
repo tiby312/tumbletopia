@@ -435,7 +435,7 @@ impl abab_simple::MoveFinder for MyMoveFinder {
     type EE = Eval;
     type T = GameState;
     type Mo = moves::ActualMove;
-    type Finder = std::vec::IntoIter<PossibleMove>;
+    type Finder = std::vec::IntoIter<moves::ActualMove>;
 
     fn eval(&mut self, game: &Self::T) -> Self::EE {
         absolute_evaluate(game, false)
@@ -482,7 +482,7 @@ impl abab_simple::MoveFinder for MyMoveFinder {
     }
 
     fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo> {
-        finder.next().map(|x| x.the_move)
+        finder.next().map(|x| x)
     }
 }
 mod abab_simple {
@@ -693,12 +693,12 @@ mod abab {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct PossibleMove {
-    pub the_move: moves::ActualMove,
-    //pub mesh: MovementMesh,
-    pub game_after_move: GameState,
-}
+// #[derive(Debug, PartialEq, Eq, Clone)]
+// pub struct PossibleMove {
+//     pub the_move: moves::ActualMove,
+//     //pub mesh: MovementMesh,
+//     pub game_after_move: GameState,
+// }
 
 //TODO pass readonly
 
