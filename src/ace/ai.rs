@@ -1,6 +1,6 @@
 use crate::movement::bitfield::BitField;
 
-use super::{selection::MoveLog, *};
+use super::*;
 
 pub type Eval = i64; //(f64);
 
@@ -196,7 +196,10 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
             killer_moves: &mut k,
             max_ext: 0,
         };
-        let res = aaaa.alpha_beta(&mut game.clone(), ABAB::new(), team, depth, 0);
+
+        let mut kk = game.clone();
+        let res = aaaa.alpha_beta(&mut kk, ABAB::new(), team, depth, 0);
+        assert_eq!(&kk, game);
 
         let mov = foo1.a.get(&[] as &[_]).cloned().unwrap();
         let res = EvalRet { mov, eval: res };
@@ -309,58 +312,21 @@ pub struct EvalRet<T> {
 impl<'a> AlphaBeta<'a> {
     pub fn alpha_beta(
         &mut self,
-        mut game_after_move: &mut GameState,
+        game_after_move: &mut GameState,
         ab: ABAB,
         team: ActiveTeam,
         depth: usize,
         ext: usize,
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
-        //let the_move = cand.the_move.clone();
-        //let mut gg = game_after_move.clone();
 
         let ret = if depth == 0 || game_after_move.game_is_over(team).is_some() {
             self.calls.add_eval();
             absolute_evaluate(&game_after_move, false)
         } else {
-            let gg2 = game_after_move.clone();
-
-            //let mut node = game_after_move;
-
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
-            // let pvariation = pvariation.map(|x| {
-            //     //x.clone().execute_move_no_ani(&mut gg, team);
-            //     PossibleMove {
-            //         the_move: x,
-            //         game_after_move: gg,
-            //     }
-            // });
-
-            // let it = reorder_front(
-            //     pvariation,
-            //     ,
-            // );
-
-            // let enemy_king_pos=if let Some(enemy_king)=cand.game_after_move.view(team).that_team.units.iter().find(|x|x.typ==Type::Para){
-            //     let pos=enemy_king.position;
-            //     Some(pos)
-            // }else{
-            //     None
-            // };
-
             let mut moves = game_after_move.for_all_moves_fast(team);
-
-            //console_dbg!("FOOOO",moves.len());
-            //console_dbg!(moves.iter().map(|x|&x.1.the_move).collect::<Vec<_>>());
-
-            let num_checky = moves.iter().count();
-            //console_dbg!(num_checky);
-            // if is_check(&moves[0].1.game_after_move) {
-            //     moves[0].0 = true;
-            // }
-
-            //console_dbg!(moves.len());
 
             let mut num_sorted = 0;
             if let Some(p) = pvariation {
@@ -383,42 +349,32 @@ impl<'a> AlphaBeta<'a> {
 
             let foo = |ssself: &mut AlphaBeta, cand: moves::ActualMove, ab| {
                 let cc = cand.clone();
-                let new_depth = depth - 1; //.saturating_sub(inhibit);
-                                           //assert!(new_depth<6);
-                                           //console_dbg!(ext,depth);
+                let new_depth = depth - 1;
 
-                //let mut gg = gg2.clone();
                 cand.execute_move_no_ani(game_after_move, team);
-
                 ssself.path.push(cand.clone());
                 let eval = ssself.alpha_beta(game_after_move, ab, team.not(), new_depth, ext);
 
                 cand.execute_undo(game_after_move, team);
-                let k = ssself.path.pop().unwrap();
+                let _ = ssself.path.pop().unwrap();
 
-                //console_dbg!("inner eval=",eval);
                 EvalRet { eval, mov: cc }
             };
 
             if team == ActiveTeam::Cats {
-                //console_dbg!("maxing");
                 if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
                     ss.killer_moves.consider(depth, m);
                 }) {
-                    //console_dbg!("FOUND",ret.eval);
-
                     self.prev_cache.update(&self.path, &ret.mov);
                     ret.eval
                 } else {
                     Eval::MIN
                 }
             } else {
-                //console_dbg!("mining");
                 if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
                     ss.killer_moves.consider(depth, m);
                 }) {
                     self.prev_cache.update(&self.path, &ret.mov);
-                    //console_dbg!("FOUND",ret.eval);
                     ret.eval
                 } else {
                     Eval::MAX
@@ -627,7 +583,7 @@ mod abab {
         pub fn minner<P, T: Clone>(
             mut self,
             it: impl IntoIterator<Item = T>,
-            mut payload: &mut P,
+            payload: &mut P,
             mut func: impl FnMut(&mut P, T, Self) -> EvalRet<T>,
             mut func2: impl FnMut(&mut P, T, Self),
         ) -> Option<EvalRet<T>> {
