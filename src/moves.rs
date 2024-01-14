@@ -13,7 +13,7 @@ impl GameState {
         &self,
         unit: &GridCoord,
         team: ActiveTeam,
-        extra: bool,
+        extra: Option<PartialMoveSigl>,
     ) -> movement::MovementMesh {
         let game = self;
         let unit = *unit;
@@ -53,7 +53,7 @@ impl GameState {
             if cond(a, 0) {
                 mesh.add_normal_cell(a.sub(&unit));
 
-                if !extra {
+                if extra.is_none() {
                     for (_, b) in a.to_cube().ring(1) {
                         let b = b.to_axial();
                         if cond(b, 1) {
@@ -88,7 +88,7 @@ impl ActualMove {
                     .find_slow(&o.unit)
                     .unwrap();
                 let mesh =
-                    state.generate_unit_possible_moves_inner(&unit.position, team_index, false);
+                    state.generate_unit_possible_moves_inner(&unit.position, team_index, None);
 
                 let unit = state
                     .factions
@@ -112,7 +112,7 @@ impl ActualMove {
                 let target_cell = e.moveto;
 
                 let mesh =
-                    state.generate_unit_possible_moves_inner(&selected_unit, team_index, true);
+                    state.generate_unit_possible_moves_inner(&selected_unit, team_index, Some(iii));
 
                 let unit = state
                     .factions
@@ -199,7 +199,7 @@ impl GameState {
         for i in 0..state.factions.relative(team).this_team.units.len() {
             let pos = state.factions.relative_mut(team).this_team.units[i].position;
 
-            let mesh = state.generate_unit_possible_moves_inner(&pos, team, false);
+            let mesh = state.generate_unit_possible_moves_inner(&pos, team, None);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
@@ -209,9 +209,9 @@ impl GameState {
                     target: mm,
                     is_extra: None,
                 };
-                ii.execute(team);
+                let il = ii.execute(team);
 
-                let second_mesh = state.generate_unit_possible_moves_inner(&mm, team, true);
+                let second_mesh = state.generate_unit_possible_moves_inner(&mm, team, Some(il));
 
                 for sm in second_mesh.iter_mesh(mm) {
                     //Don't bother applying the extra move. just generate the sigl.

@@ -292,7 +292,7 @@ pub async fn reselect_loop(
     let cca = game.generate_unit_possible_moves_inner(
         &unit.position,
         selected_unit.team,
-        extra_attack.is_some(),
+        extra_attack.clone().map(|a| a.prev_move),
     );
 
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
