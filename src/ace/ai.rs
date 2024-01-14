@@ -329,13 +329,13 @@ impl<'a> AlphaBeta<'a> {
 
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
-            let pvariation = pvariation.map(|x| {
-                x.clone().execute_move_no_ani(&mut gg, team);
-                PossibleMove {
-                    the_move: x,
-                    game_after_move: gg,
-                }
-            });
+            // let pvariation = pvariation.map(|x| {
+            //     //x.clone().execute_move_no_ani(&mut gg, team);
+            //     PossibleMove {
+            //         the_move: x,
+            //         game_after_move: gg,
+            //     }
+            // });
 
             // let it = reorder_front(
             //     pvariation,
@@ -364,11 +364,7 @@ impl<'a> AlphaBeta<'a> {
 
             let mut num_sorted = 0;
             if let Some(p) = pvariation {
-                let f = moves
-                    .iter()
-                    .enumerate()
-                    .find(|(_, x)| **x == p.the_move)
-                    .unwrap();
+                let f = moves.iter().enumerate().find(|(_, x)| **x == p).unwrap();
                 let swap_ind = f.0;
                 moves.swap(0, swap_ind);
                 num_sorted += 1;
@@ -396,6 +392,8 @@ impl<'a> AlphaBeta<'a> {
 
                 ssself.path.push(cand.clone());
                 let eval = ssself.alpha_beta(gg, ab, team.not(), new_depth, ext);
+
+                //cand.execute_undo(&mut gg, team);
                 let k = ssself.path.pop().unwrap();
 
                 //console_dbg!("inner eval=",eval);
