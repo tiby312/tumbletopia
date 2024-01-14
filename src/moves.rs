@@ -67,13 +67,13 @@ impl GameState {
         mesh
     }
 }
-#[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(Hash, PartialEq, Eq, Debug, Clone)]
 pub enum ActualMove {
     CombinedMove(PartialMoveSigl, PartialMoveSigl),
 }
 impl ActualMove {
     pub async fn execute_move_ani(
-        self,
+        &self,
         state: &mut GameState,
         team_index: ActiveTeam,
         doop: &mut WorkerManager<'_>,
@@ -131,7 +131,7 @@ impl ActualMove {
         }
     }
 
-    pub fn execute_move_no_ani(self, state: &mut GameState, team_index: ActiveTeam) {
+    pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
         match self {
             moves::ActualMove::CombinedMove(o, e) => {
                 let target_cell = o.moveto;
@@ -166,7 +166,7 @@ impl ActualMove {
             }
         }
     }
-    pub fn execute_undo(self, state: &mut GameState, team_index: ActiveTeam) {
+    pub fn execute_undo(&self, state: &mut GameState, team_index: ActiveTeam) {
         match self {
             moves::ActualMove::CombinedMove(o, e) => {
                 let k = state

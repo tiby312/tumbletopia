@@ -520,7 +520,7 @@ mod abab_simple {
     pub trait MoveFinder {
         type EE: PartialOrd + Ord + Copy;
         type T;
-        type Mo: Copy;
+        type Mo: Clone;
         type Finder;
         fn eval(&mut self, game: &Self::T) -> Self::EE;
 
@@ -584,17 +584,17 @@ mod abab_simple {
                         .generate_finder(&game_state, &self.path, maximizer);
                     while let Some(mo) = self.data.select_move(&mut gs) {
                         //let mut ga = game_state.clone();
-                        self.data.apply_move(game_state, maximizer, mo);
-                        self.path.push(mo);
-                        let (eval, move_list) = self.alpha_beta(depth - 1, game_state, !maximizer);
-                        self.path.pop();
-                        self.data.unapply_move(game_state, maximizer, mo);
+                        // self.data.apply_move(game_state, maximizer, mo);
+                        // self.path.push(mo);
+                        // let (eval, move_list) = self.alpha_beta(depth - 1, game_state, !maximizer);
+                        // self.path.pop();
+                        // self.data.unapply_move(game_state, maximizer, mo);
 
-                        if eval > value {
-                            value = eval;
-                            ll = move_list;
-                            best_move = Some(mo);
-                        }
+                        // if eval > value {
+                        //     value = eval;
+                        //     ll = move_list;
+                        //     best_move = Some(mo);
+                        // }
 
                         if value > self.beta {
                             break;
@@ -613,17 +613,17 @@ mod abab_simple {
                         .data
                         .generate_finder(&game_state, &self.path, maximizer);
                     while let Some(mo) = self.data.select_move(&mut gs) {
-                        self.data.apply_move(game_state, maximizer, mo);
-                        self.path.push(mo);
-                        let (eval, move_list) = self.alpha_beta(depth - 1, game_state, !maximizer);
-                        self.path.pop();
-                        self.data.apply_move(game_state, maximizer, mo);
+                        // self.data.apply_move(game_state, maximizer, mo);
+                        // self.path.push(mo);
+                        // let (eval, move_list) = self.alpha_beta(depth - 1, game_state, !maximizer);
+                        // self.path.pop();
+                        // self.data.apply_move(game_state, maximizer, mo);
 
-                        if eval > value {
-                            value = eval;
-                            ll = move_list;
-                            best_move = Some(mo);
-                        }
+                        // if eval > value {
+                        //     value = eval;
+                        //     ll = move_list;
+                        //     best_move = Some(mo);
+                        // }
 
                         if value < self.alpha {
                             break;
