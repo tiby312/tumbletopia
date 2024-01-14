@@ -289,7 +289,7 @@ pub async fn reselect_loop(
         true
     };
 
-    let cca = moves::partial_move::generate_unit_possible_moves_inner(
+    let cca = moves::generate_unit_possible_moves_inner(
         &unit.position,
         unit.typ,
         game,
@@ -380,7 +380,7 @@ pub async fn reselect_loop(
                 .find_slow_mut(&e.coord())
                 .unwrap();
 
-            let iii = moves::partial_move::PartialMove {
+            let iii = moves::PartialMove {
                 this_unit,
                 target: target_cell,
                 is_extra: true,
@@ -404,7 +404,7 @@ pub async fn reselect_loop(
             let mut kk = this_unit.clone();
             kk.position = target_cell;
 
-            let iii = moves::partial_move::PartialMove {
+            let iii = moves::PartialMove {
                 this_unit,
                 target: target_cell,
                 is_extra: false,
