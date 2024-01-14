@@ -277,12 +277,22 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        let mut moves = game_after_move.for_all_moves_fast(team);
+        let foo = if depth == 0 {
+            None
+        } else {
+            let moves = game_after_move.for_all_moves_fast(team);
 
-        if depth == 0 || moves.is_empty() {
+            if !moves.is_empty() {
+                Some(moves)
+            } else {
+                None
+            }
+        };
+
+        let Some(mut moves) = foo else {
             self.calls.add_eval();
             return absolute_evaluate(&game_after_move, false);
-        }
+        };
 
         let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
