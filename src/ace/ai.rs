@@ -307,17 +307,16 @@ impl<'a> AlphaBeta<'a> {
             }
 
             let foo = |ssself: &mut AlphaBeta, cand: moves::ActualMove, ab| {
-                let cc = cand.clone();
                 let new_depth = depth - 1;
 
                 cand.execute_move_no_ani(game_after_move, team);
-                ssself.path.push(cand.clone());
+                ssself.path.push(cand);
                 let eval = ssself.alpha_beta(game_after_move, ab, team.not(), new_depth, ext);
 
-                cand.execute_undo(game_after_move, team);
-                let _ = ssself.path.pop().unwrap();
+                let mov = ssself.path.pop().unwrap();
+                mov.execute_undo(game_after_move, team);
 
-                EvalRet { eval, mov: cc }
+                EvalRet { eval, mov }
             };
 
             if team == ActiveTeam::Cats {
