@@ -5,12 +5,11 @@ use super::*;
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Default)]
 pub struct UnitData {
     pub position: GridCoord,
-    pub typ: Type,
 }
 
 impl UnitData {
-    pub fn new(position: GridCoord, typ: Type) -> Self {
-        UnitData { position, typ }
+    pub fn new(position: GridCoord) -> Self {
+        UnitData { position }
     }
 }
 
@@ -25,12 +24,6 @@ pub enum Type {
     #[default]
     Ship,
     Foot,
-    Archer,
-    Catapault,
-    Lancer,
-    Spotter {
-        clockwise: bool,
-    },
 }
 
 impl Type {
@@ -39,24 +32,8 @@ impl Type {
         match a {
             Type::Ship { .. } => 0,
             Type::Foot => 1,
-            Type::Archer => 2,
-            Type::Catapault => 3,
-            Type::Lancer => 4,
-            Type::Spotter { .. } => 5,
         }
     }
-
-    // pub fn type_index_inverse(a: usize) -> Type {
-    //     match a {
-    //         0 => Type::Warrior,
-    //         1 => Type::King,
-    //         2 => Type::Archer,
-    //         3 => Type::Catapault,
-    //         4 => Type::Lancer,
-    //         5 => Type::Spotter,
-    //         _ => unreachable!(),
-    //     }
-    // }
 }
 
 impl std::ops::Deref for Tribe {
@@ -102,9 +79,9 @@ impl Tribe {
         UnitCollectionFilter { a: &self.units }
     }
 
-    pub fn filter_type(&self, ty: Type) -> UnitCollectionFilterType<UnitData> {
-        UnitCollectionFilterType { a: &self.units, ty }
-    }
+    // pub fn filter_type(&self, ty: Type) -> UnitCollectionFilterType<UnitData> {
+    //     UnitCollectionFilterType { a: &self.units, ty }
+    // }
 }
 
 pub struct Rest<'a, T> {
@@ -166,20 +143,21 @@ impl<'a> movement::Filter for SingleFilter<'a> {
     }
 }
 
-pub struct UnitCollectionFilterType<'a, T> {
-    a: &'a [T],
-    ty: Type,
-}
-impl<'a> movement::Filter for UnitCollectionFilterType<'a, UnitData> {
-    fn filter(&self, b: &GridCoord) -> FilterRes {
-        FilterRes::from_bool(
-            self.a
-                .iter()
-                .find(|a| a.position == *b && a.typ == self.ty)
-                .is_some(),
-        )
-    }
-}
+// pub struct UnitCollectionFilterType<'a, T> {
+//     a: &'a [T],
+//     ty: Type,
+// }
+
+// impl<'a> movement::Filter for UnitCollectionFilterType<'a, UnitData> {
+//     fn filter(&self, b: &GridCoord) -> FilterRes {
+//         FilterRes::from_bool(
+//             self.a
+//                 .iter()
+//                 .find(|a| a.position == *b && a.typ == self.ty)
+//                 .is_some(),
+//         )
+//     }
+// }
 
 pub struct UnitCollectionFilter<'a, T> {
     a: &'a [T],

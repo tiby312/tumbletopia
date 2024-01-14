@@ -37,15 +37,15 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         view.factions
             .cats
             .iter()
-            .filter(|a| a.typ == Type::Ship)
-            .map(|a| a.position),
+            .map(|a| a.position)
+            .filter(|&a| !view.env.land.is_coord_set(a)),
     );
     let mut dog_ships = BitField::from_iter(
         view.factions
             .dogs
             .iter()
-            .filter(|a| a.typ == Type::Ship)
-            .map(|a| a.position),
+            .map(|a| a.position)
+            .filter(|&a| !view.env.land.is_coord_set(a)),
     );
 
     doop(&mut dog_ships, &mut cat_ships, &ship_allowed);
@@ -61,15 +61,15 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         view.factions
             .cats
             .iter()
-            .filter(|a| a.typ == Type::Foot)
-            .map(|a| a.position),
+            .map(|a| a.position)
+            .filter(|&a| view.env.land.is_coord_set(a)),
     );
     let mut dog_foot = BitField::from_iter(
         view.factions
             .dogs
             .iter()
-            .filter(|a| a.typ == Type::Foot)
-            .map(|a| a.position),
+            .map(|a| a.position)
+            .filter(|&a| view.env.land.is_coord_set(a)),
     );
 
     doop(&mut dog_foot, &mut cat_foot, &foot_grass);

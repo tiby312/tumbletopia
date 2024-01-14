@@ -65,7 +65,7 @@ impl<'a> WarriorDraw<'a> {
     fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
         //let grey = self.typ == Type::Para;
         //TODO don't loop in this function!!!
-        for cc in self.col.iter().filter(|a| a.typ != Type::Archer) {
+        for cc in self.col.iter() {
             let pos = gg.hex_axial_to_world(&cc.position);
 
             // let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
@@ -102,12 +102,7 @@ impl<'a> WarriorDraw<'a> {
         draw_sys: &mut ShaderSystem,
         matrix: &Matrix4<f32>,
     ) {
-        for a in self
-            .col
-            .iter()
-            .filter(|a| a.typ != Type::Archer)
-            .map(|a| &a.position)
-        {
+        for a in self.col.iter().map(|a| &a.position) {
             let pos: [f32; 2] = gg.hex_axial_to_world(a).into();
             let t = matrix::translation(pos[0], pos[1], 1.0);
 
@@ -127,7 +122,7 @@ impl<'a> WarriorDraw<'a> {
         draw_sys: &mut ShaderSystem,
     ) {
         //draw text
-        for ccat in self.col.iter().filter(|a| a.typ != Type::Archer) {
+        for ccat in self.col.iter() {
             let pos: [f32; 2] = gg.hex_axial_to_world(&ccat.position).into();
 
             let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
@@ -140,7 +135,7 @@ impl<'a> WarriorDraw<'a> {
             let s = matrix::scale(5.0, 5.0, 5.0);
             let m = new_proj.chain(s).generate();
 
-            let nn = health_numbers.get_number(ccat.typ.type_index() as i8);
+            let nn = health_numbers.get_number(0);
             let mut v = draw_sys.view(m.as_ref());
             nn.draw_ext(&mut v, false, false, true, false);
 
@@ -215,7 +210,6 @@ impl GameState {
             for unit in self.factions.dogs.units.iter() {
                 let mesh = self.generate_unit_possible_moves_inner(
                     &unit.position,
-                    unit.typ,
                     ActiveTeam::Dogs,
                     false,
                 );
@@ -232,7 +226,6 @@ impl GameState {
             for unit in self.factions.cats.units.iter() {
                 let mesh = self.generate_unit_possible_moves_inner(
                     &unit.position,
-                    unit.typ,
                     ActiveTeam::Cats,
                     false,
                 );
@@ -278,16 +271,16 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
-        UnitData::new(GridCoord([-3, 3]), Type::Foot),
-        UnitData::new(GridCoord([-3, 2]), Type::Ship),
-        UnitData::new(GridCoord([-2, 3]), Type::Ship),
+        UnitData::new(GridCoord([-3, 3])),
+        UnitData::new(GridCoord([-3, 2])),
+        UnitData::new(GridCoord([-2, 3])),
     ];
 
     //player
     let dogs = smallvec::smallvec![
-        UnitData::new(GridCoord([3, -3]), Type::Foot),
-        UnitData::new(GridCoord([2, -3]), Type::Ship),
-        UnitData::new(GridCoord([3, -2]), Type::Ship),
+        UnitData::new(GridCoord([3, -3])),
+        UnitData::new(GridCoord([2, -3])),
+        UnitData::new(GridCoord([3, -2])),
     ];
 
     let world = Box::leak(Box::new(board::MyWorld::new()));

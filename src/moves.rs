@@ -12,7 +12,6 @@ impl GameState {
     pub fn generate_unit_possible_moves_inner(
         &self,
         unit: &GridCoord,
-        typ: Type,
         team: ActiveTeam,
         extra: bool,
     ) -> movement::MovementMesh {
@@ -20,13 +19,13 @@ impl GameState {
         let unit = *unit;
         let mut mesh = movement::MovementMesh::new();
 
+        let is_ship = !game.env.land.is_coord_set(unit);
+
         let cond = |a: GridCoord| {
-            let cc = if typ == Type::Ship {
+            let cc = if is_ship {
                 !game.env.land.is_coord_set(a)
-            } else if typ == Type::Foot {
-                game.env.land.is_coord_set(a) && !game.env.forest.is_coord_set(a)
             } else {
-                unreachable!();
+                game.env.land.is_coord_set(a) && !game.env.forest.is_coord_set(a)
             };
 
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
@@ -88,13 +87,8 @@ impl ActualMove {
                     .this_team
                     .find_slow(&o.unit)
                     .unwrap();
-                let typ = unit.typ;
-                let mesh = state.generate_unit_possible_moves_inner(
-                    &unit.position,
-                    unit.typ,
-                    team_index,
-                    false,
-                );
+                let mesh =
+                    state.generate_unit_possible_moves_inner(&unit.position, team_index, false);
 
                 let unit = state
                     .factions
@@ -118,7 +112,7 @@ impl ActualMove {
                 let target_cell = e.moveto;
 
                 let mesh =
-                    state.generate_unit_possible_moves_inner(&selected_unit, typ, team_index, true);
+                    state.generate_unit_possible_moves_inner(&selected_unit, team_index, true);
 
                 let unit = state
                     .factions
@@ -182,18 +176,14 @@ impl ActualMove {
                     .find_slow_mut(&o.moveto)
                     .unwrap();
 
-                match k.typ {
-                    Type::Ship => {
-                        assert!(state.env.land.is_coord_set(e.moveto));
-                        state.env.land.set_coord(e.moveto, false);
-                    }
-                    Type::Foot => {
-                        assert!(state.env.forest.is_coord_set(e.moveto));
-                        state.env.forest.set_coord(e.moveto, false);
-                    }
-                    _ => {
-                        unreachable!()
-                    }
+                let is_ship = !state.env.land.is_coord_set(k.position);
+
+                if is_ship {
+                    assert!(state.env.land.is_coord_set(e.moveto));
+                    state.env.land.set_coord(e.moveto, false);
+                } else {
+                    assert!(state.env.forest.is_coord_set(e.moveto));
+                    state.env.forest.set_coord(e.moveto, false);
                 }
 
                 k.position = o.unit;
@@ -208,9 +198,8 @@ impl GameState {
         let mut movs = Vec::new();
         for i in 0..state.factions.relative(team).this_team.units.len() {
             let pos = state.factions.relative_mut(team).this_team.units[i].position;
-            let typ = state.factions.relative_mut(team).this_team.units[i].typ;
 
-            let mesh = state.generate_unit_possible_moves_inner(&pos, typ, team, false);
+            let mesh = state.generate_unit_possible_moves_inner(&pos, team, false);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
@@ -222,7 +211,7 @@ impl GameState {
                 };
                 ii.execute(team);
 
-                let second_mesh = state.generate_unit_possible_moves_inner(&mm, typ, team, true);
+                let second_mesh = state.generate_unit_possible_moves_inner(&mm, team, true);
 
                 for sm in second_mesh.iter_mesh(mm) {
                     //Don't bother applying the extra move. just generate the sigl.
@@ -270,13 +259,14 @@ pub mod partial {
     }
     fn apply_extra_move(
         unit: GridCoord,
-        typ: Type,
         target_cell: GridCoord,
         env: &mut Environment,
     ) -> PartialMoveSigl {
-        if typ == Type::Ship {
+        let is_ship = !env.land.is_coord_set(unit);
+
+        if is_ship {
             env.land.set_coord(target_cell, true);
-        } else if typ == Type::Foot {
+        } else {
             env.forest.set_coord(target_cell, true);
         }
 
@@ -290,12 +280,7 @@ pub mod partial {
             if !self.is_extra {
                 apply_normal_move(self.this_unit, self.target)
             } else {
-                apply_extra_move(
-                    self.this_unit.position,
-                    self.this_unit.typ,
-                    self.target,
-                    self.env,
-                )
+                apply_extra_move(self.this_unit.position, self.target, self.env)
             }
         }
         pub async fn execute_with_animation(
@@ -304,13 +289,15 @@ pub mod partial {
             data: &mut ace::WorkerManager<'_>,
             mesh: MovementMesh,
         ) -> PartialMoveSigl {
-            fn calculate_walls(position: GridCoord, typ: Type, env: &Environment) -> Mesh {
+            fn calculate_walls(position: GridCoord, env: &Environment) -> Mesh {
                 let mut walls = Mesh::new();
+
+                let is_ship = !env.land.is_coord_set(position);
 
                 for a in position.to_cube().range(2) {
                     let a = a.to_axial();
                     //TODO this is duplicated logic in selection function???
-                    let cc = if typ == Type::Ship {
+                    let cc = if is_ship {
                         env.land.is_coord_set(a)
                     } else {
                         !env.land.is_coord_set(a) && env.forest.is_coord_set(a)
@@ -323,8 +310,7 @@ pub mod partial {
                 walls
             }
             if !self.is_extra {
-                let walls =
-                    calculate_walls(self.this_unit.position, self.this_unit.typ, &mut self.env);
+                let walls = calculate_walls(self.this_unit.position, &mut self.env);
 
                 let _ = data
                     .wait_animation(
@@ -340,12 +326,7 @@ pub mod partial {
 
                 apply_normal_move(self.this_unit, self.target)
             } else {
-                apply_extra_move(
-                    self.this_unit.position,
-                    self.this_unit.typ,
-                    self.target,
-                    &mut self.env,
-                )
+                apply_extra_move(self.this_unit.position, self.target, &mut self.env)
             }
         }
     }
