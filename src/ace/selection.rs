@@ -4,8 +4,8 @@ use super::*;
 
 #[derive(Clone)]
 pub struct PossibleExtra {
-    prev_move: moves::PartialMoveSigl,
-    prev_coord: UnitData,
+    pub prev_move: moves::PartialMoveSigl,
+    pub prev_coord: UnitData,
 }
 impl PossibleExtra {
     pub fn new(prev_move: moves::PartialMoveSigl, prev_coord: UnitData) -> Self {
@@ -15,9 +15,9 @@ impl PossibleExtra {
         }
     }
 
-    pub fn prev_move(&self) -> &moves::PartialMoveSigl {
-        &self.prev_move
-    }
+    // pub fn prev_move(&self) -> &moves::PartialMoveSigl {
+    //     &self.prev_move
+    // }
     pub fn coord(&self) -> GridCoord {
         self.prev_coord.position
     }

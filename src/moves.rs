@@ -100,7 +100,7 @@ impl ActualMove {
                 let iii = moves::PartialMove {
                     this_unit: unit,
                     target: target_cell,
-                    is_extra: false,
+                    is_extra: None,
                     env: &mut state.env,
                 };
 
@@ -123,7 +123,7 @@ impl ActualMove {
                 let iii = moves::PartialMove {
                     this_unit: unit,
                     target: target_cell,
-                    is_extra: true,
+                    is_extra: Some(iii),
                     env: &mut state.env,
                 };
                 iii.execute_with_animation(team_index, doop, mesh).await;
@@ -145,7 +145,7 @@ impl ActualMove {
                 let iii = moves::PartialMove {
                     this_unit: unit,
                     target: target_cell,
-                    is_extra: false,
+                    is_extra: None,
                     env: &mut state.env,
                 };
 
@@ -158,7 +158,7 @@ impl ActualMove {
                 let iii = moves::PartialMove {
                     this_unit: unit,
                     target: target_cell,
-                    is_extra: true,
+                    is_extra: Some(iii),
                     env: &mut state.env,
                 };
 
@@ -207,7 +207,7 @@ impl GameState {
                     this_unit: &mut state.factions.relative_mut(team).this_team.units[i],
                     env: &mut state.env,
                     target: mm,
-                    is_extra: false,
+                    is_extra: None,
                 };
                 ii.execute(team);
 
@@ -245,7 +245,7 @@ pub mod partial {
         pub this_unit: &'a mut UnitData,
         pub env: &'a mut Environment,
         pub target: GridCoord,
-        pub is_extra: bool,
+        pub is_extra: Option<PartialMoveSigl>,
     }
 
     fn apply_normal_move(this_unit: &mut UnitData, target_cell: GridCoord) -> PartialMoveSigl {
@@ -277,7 +277,7 @@ pub mod partial {
     }
     impl PartialMove<'_> {
         pub fn execute(self, _team: ActiveTeam) -> PartialMoveSigl {
-            if !self.is_extra {
+            if self.is_extra.is_none() {
                 apply_normal_move(self.this_unit, self.target)
             } else {
                 apply_extra_move(self.this_unit.position, self.target, self.env)
@@ -309,7 +309,7 @@ pub mod partial {
 
                 walls
             }
-            if !self.is_extra {
+            if self.is_extra.is_none() {
                 let walls = calculate_walls(self.this_unit.position, &mut self.env);
 
                 let _ = data

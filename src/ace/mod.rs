@@ -381,7 +381,7 @@ pub async fn reselect_loop(
             let iii = moves::PartialMove {
                 this_unit,
                 target: target_cell,
-                is_extra: true,
+                is_extra: Some(e.prev_move),
                 env: &mut game.env,
             };
 
@@ -405,7 +405,7 @@ pub async fn reselect_loop(
             let iii = moves::PartialMove {
                 this_unit,
                 target: target_cell,
-                is_extra: false,
+                is_extra: None,
                 env: &mut game.env,
             };
             let iii = iii
