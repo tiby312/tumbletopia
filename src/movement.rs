@@ -607,6 +607,9 @@ pub mod movement_mesh {
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             self.inner.iter_mesh(point)
         }
+        pub fn is_empty(&self) -> bool {
+            self.inner.inner == 0
+        }
     }
     fn conv(a: GridCoord) -> usize {
         let [x, y] = a.0;

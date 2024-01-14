@@ -9,6 +9,17 @@ const MATE: i64 = 1_000_000;
 //cats maximizing
 //dogs minimizing
 pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
+    match view.game_is_over() {
+        Some(GameOver::CatWon) => {
+            return MATE;
+        }
+        Some(GameOver::DogWon) => {
+            return -MATE;
+        }
+        Some(GameOver::Tie) => {}
+        None => {}
+    }
+
     let ship_allowed = {
         let water = {
             let mut t = view.env.land.clone();
@@ -134,48 +145,9 @@ impl MoveOrdering {
     }
 }
 
-// pub struct LeafTranspositionTable {
-//     a: std::collections::HashMap<GameState, Eval>,
-//     saves: usize,
-// }
-
-// impl LeafTranspositionTable {
-//     pub fn new() -> Self {
-//         LeafTranspositionTable {
-//             a: std::collections::HashMap::new(),
-//             saves: 0,
-//         }
-//     }
-//     fn lookup_leaf(&mut self, a: &GameState) -> Option<&Eval> {
-//         if let Some(a) = self.a.get(a) {
-//             self.saves += 1;
-//             Some(a)
-//         } else {
-//             None
-//         }
-//     }
-//     fn consider_leaf(&mut self, game: GameState, eval: Eval) {
-//         if let Some(v) = self.a.get_mut(&game) {
-//             *v = eval;
-//         } else {
-//             let _ = self.a.insert(game, eval);
-//         }
-//     }
-//     pub fn lookup_leaf_all(&mut self, node: &GameState) -> Eval {
-//         if let Some(&eval) = self.lookup_leaf(&node) {
-//             eval
-//         } else {
-//             let eval = absolute_evaluate(&node, false);
-//             self.consider_leaf(node.clone(), eval);
-//             eval
-//         }
-//     }
-// }
-
 pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::ActualMove {
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
-    //let mut table = LeafTranspositionTable::new();
 
     let max_depth = 4;
     let mut foo1 = MoveOrdering {
@@ -204,19 +176,6 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         let mov = foo1.a.get(&[] as &[_]).cloned().unwrap();
         let res = EvalRet { mov, eval: res };
 
-        // let res = ai::alpha_beta(
-        //     game,
-        //     team,
-        //     depth,
-        //     false,
-        //     f64::NEG_INFINITY,
-        //     f64::INFINITY,
-        //     &mut table,
-        //     &mut foo1,
-        //     &mut count,
-        //     &mut vec![],
-        // );
-
         let eval = res.eval;
         console_dbg!(eval);
 
@@ -228,8 +187,6 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         }
     }
 
-    // console_dbg!(table.saves);
-    // console_dbg!(table.a.len());
     console_dbg!(count);
     console_dbg!(&results);
 
@@ -320,7 +277,7 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        let ret = if depth == 0 || game_after_move.game_is_over(team).is_some() {
+        let ret = if depth == 0 || game_after_move.game_is_over().is_some() {
             self.calls.add_eval();
             absolute_evaluate(&game_after_move, false)
         } else {
@@ -386,62 +343,178 @@ impl<'a> AlphaBeta<'a> {
     }
 }
 
-pub struct MyMoveFinder {}
-impl abab_simple::MoveFinder for MyMoveFinder {
-    type EE = Eval;
-    type T = GameState;
-    type Mo = moves::ActualMove;
-    type Finder = std::vec::IntoIter<moves::ActualMove>;
+// #[derive(Debug, PartialEq, Eq, Clone)]
+// pub struct PossibleMove {
+//     pub the_move: moves::ActualMove,
+//     //pub mesh: MovementMesh,
+//     pub game_after_move: GameState,
+// }
 
-    fn eval(&mut self, game: &Self::T) -> Self::EE {
-        absolute_evaluate(game, false)
-    }
+//TODO pass readonly
 
-    fn min_eval(&self) -> Self::EE {
-        Eval::MIN
-    }
+// pub struct PossibleMoveWithMesh {
+//     pub the_move: moves::ActualMove,
+//     //pub mesh: MovementMesh,
+//     pub game_after_move: GameState,
+//     pub mesh: MovementMesh,
+// }
+// impl PossibleMoveWithMesh {
+//     pub fn into(self) -> PossibleMove {
+//         PossibleMove {
+//             the_move: self.the_move,
+//             game_after_move: self.game_after_move,
+//         }
+//     }
+// }
 
-    fn max_eval(&self) -> Self::EE {
-        Eval::MAX
-    }
+//TODO this has duplicated logic
+// pub fn apply_move(mo: moves::ActualMove, state: &mut GameState, team: ActiveTeam) {
+//     let moves::ActualMove::ExtraMove(
+//         moves::PartialMoveSigl {
+//             unit: pos,
+//             moveto: mm,
+//         },
+//         moves::PartialMoveSigl {
+//             unit: _,
+//             moveto: sm,
+//         },
+//     ) = mo
+//     else {
+//         unreachable!()
+//     };
 
-    fn apply_move(&mut self, game: &mut Self::T, maximizer: bool, a: Self::Mo) {
-        let team = if maximizer {
-            ActiveTeam::Cats
-        } else {
-            ActiveTeam::Dogs
-        };
-        a.execute_move_no_ani(game, team);
-    }
-    fn unapply_move(&mut self, game: &mut Self::T, maximizer: bool, a: Self::Mo) {
-        let team = if maximizer {
-            ActiveTeam::Cats
-        } else {
-            ActiveTeam::Dogs
-        };
-        a.execute_undo(game, team);
-    }
-    fn generate_finder(
-        &mut self,
-        state: &Self::T,
-        path: &[Self::Mo],
-        maximizer: bool,
-    ) -> Self::Finder {
-        let team = if maximizer {
-            ActiveTeam::Cats
-        } else {
-            ActiveTeam::Dogs
-        };
-        todo!();
-        //let k: Vec<_> = for_all_moves(state.clone(), team).collect();
-        //k.into_iter()
-    }
+//     let pp = state.view_mut(team).this_team.find_slow_mut(&pos).unwrap();
 
-    fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo> {
-        finder.next().map(|x| x)
-    }
-}
+//     pp.position = mm;
+
+//     if pp.typ == Type::Ship {
+//         state.land.push(sm);
+//     } else if pp.typ == Type::Foot {
+//         state.forest.push(sm);
+//     }
+// }
+
+//TODO use this!!!
+
+// pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
+//     let mut sss = state.clone();
+//     let ss = state.clone();
+//     ss.into_view(team)
+//         .this_team
+//         .units
+//         .into_iter()
+//         .map(|a| RegularSelection { unit: a.clone() })
+//         .flat_map(move |a| {
+//             let mesh = a.generate(&sss.view_mut(team));
+//             mesh.iter_mesh(a.unit.position)
+//                 .map(move |f| (a.clone(), mesh.clone(), f))
+//         })
+//         .flat_map(move |(s, mesh, m)| {
+//             let mut v = state.clone();
+//             let mut mm = MoveLog::new();
+
+//             let first = if let Some(l) = s
+//                 .execute_no_animation(m, mesh, &mut v.view_mut(team), &mut mm)
+//                 .unwrap()
+//             {
+//                 //console_dbg!("YOOOOOOO");
+//                 let cll = l.select();
+
+//                 //let mut kk = v.view().duplicate();
+//                 let mut kk = v.clone();
+//                 let mesh2 = cll.generate(&mut kk.view_mut(team));
+//                 Some(mesh2.iter_mesh(l.coord()).map(move |m| {
+//                     let mut klkl = kk.clone();
+//                     let mut mm2 = MoveLog::new();
+
+//                     let mut vfv = klkl.view_mut(team);
+//                     cll.execute_no_animation(m, mesh2.clone(), &mut vfv, &mut mm2)
+//                         .unwrap();
+
+//                     PossibleMove {
+//                         game_after_move: klkl,
+//                         //mesh: mesh2,
+//                         the_move: mm2.inner[0].clone(),
+//                     }
+//                 }))
+//             } else {
+//                 None
+//             };
+
+//             let second = if first.is_none() {
+//                 //console_dbg!("NEVER HAPPEN");
+//                 Some([PossibleMove {
+//                     game_after_move: v,
+//                     //mesh,
+//                     the_move: mm.inner[0].clone(),
+//                 }])
+//             } else {
+//                 None
+//             };
+
+//             let f1 = first.into_iter().flatten();
+//             let f2 = second.into_iter().flatten();
+//             f1.chain(f2)
+//         })
+//     //.chain([foo].into_iter())
+// }
+
 mod abab_simple {
+    pub struct MyMoveFinder {}
+    impl abab_simple::MoveFinder for MyMoveFinder {
+        type EE = Eval;
+        type T = GameState;
+        type Mo = moves::ActualMove;
+        type Finder = std::vec::IntoIter<moves::ActualMove>;
+
+        fn eval(&mut self, game: &Self::T) -> Self::EE {
+            absolute_evaluate(game, false)
+        }
+
+        fn min_eval(&self) -> Self::EE {
+            Eval::MIN
+        }
+
+        fn max_eval(&self) -> Self::EE {
+            Eval::MAX
+        }
+
+        fn apply_move(&mut self, game: &mut Self::T, maximizer: bool, a: Self::Mo) {
+            let team = if maximizer {
+                ActiveTeam::Cats
+            } else {
+                ActiveTeam::Dogs
+            };
+            a.execute_move_no_ani(game, team);
+        }
+        fn unapply_move(&mut self, game: &mut Self::T, maximizer: bool, a: Self::Mo) {
+            let team = if maximizer {
+                ActiveTeam::Cats
+            } else {
+                ActiveTeam::Dogs
+            };
+            a.execute_undo(game, team);
+        }
+        fn generate_finder(
+            &mut self,
+            state: &Self::T,
+            path: &[Self::Mo],
+            maximizer: bool,
+        ) -> Self::Finder {
+            let team = if maximizer {
+                ActiveTeam::Cats
+            } else {
+                ActiveTeam::Dogs
+            };
+            todo!();
+            //let k: Vec<_> = for_all_moves(state.clone(), team).collect();
+            //k.into_iter()
+        }
+
+        fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo> {
+            finder.next().map(|x| x)
+        }
+    }
 
     pub trait MoveFinder {
         type EE: PartialOrd + Ord + Copy;
@@ -648,119 +721,3 @@ mod abab {
         }
     }
 }
-
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub struct PossibleMove {
-//     pub the_move: moves::ActualMove,
-//     //pub mesh: MovementMesh,
-//     pub game_after_move: GameState,
-// }
-
-//TODO pass readonly
-
-// pub struct PossibleMoveWithMesh {
-//     pub the_move: moves::ActualMove,
-//     //pub mesh: MovementMesh,
-//     pub game_after_move: GameState,
-//     pub mesh: MovementMesh,
-// }
-// impl PossibleMoveWithMesh {
-//     pub fn into(self) -> PossibleMove {
-//         PossibleMove {
-//             the_move: self.the_move,
-//             game_after_move: self.game_after_move,
-//         }
-//     }
-// }
-
-//TODO this has duplicated logic
-// pub fn apply_move(mo: moves::ActualMove, state: &mut GameState, team: ActiveTeam) {
-//     let moves::ActualMove::ExtraMove(
-//         moves::PartialMoveSigl {
-//             unit: pos,
-//             moveto: mm,
-//         },
-//         moves::PartialMoveSigl {
-//             unit: _,
-//             moveto: sm,
-//         },
-//     ) = mo
-//     else {
-//         unreachable!()
-//     };
-
-//     let pp = state.view_mut(team).this_team.find_slow_mut(&pos).unwrap();
-
-//     pp.position = mm;
-
-//     if pp.typ == Type::Ship {
-//         state.land.push(sm);
-//     } else if pp.typ == Type::Foot {
-//         state.forest.push(sm);
-//     }
-// }
-
-//TODO use this!!!
-
-// pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
-//     let mut sss = state.clone();
-//     let ss = state.clone();
-//     ss.into_view(team)
-//         .this_team
-//         .units
-//         .into_iter()
-//         .map(|a| RegularSelection { unit: a.clone() })
-//         .flat_map(move |a| {
-//             let mesh = a.generate(&sss.view_mut(team));
-//             mesh.iter_mesh(a.unit.position)
-//                 .map(move |f| (a.clone(), mesh.clone(), f))
-//         })
-//         .flat_map(move |(s, mesh, m)| {
-//             let mut v = state.clone();
-//             let mut mm = MoveLog::new();
-
-//             let first = if let Some(l) = s
-//                 .execute_no_animation(m, mesh, &mut v.view_mut(team), &mut mm)
-//                 .unwrap()
-//             {
-//                 //console_dbg!("YOOOOOOO");
-//                 let cll = l.select();
-
-//                 //let mut kk = v.view().duplicate();
-//                 let mut kk = v.clone();
-//                 let mesh2 = cll.generate(&mut kk.view_mut(team));
-//                 Some(mesh2.iter_mesh(l.coord()).map(move |m| {
-//                     let mut klkl = kk.clone();
-//                     let mut mm2 = MoveLog::new();
-
-//                     let mut vfv = klkl.view_mut(team);
-//                     cll.execute_no_animation(m, mesh2.clone(), &mut vfv, &mut mm2)
-//                         .unwrap();
-
-//                     PossibleMove {
-//                         game_after_move: klkl,
-//                         //mesh: mesh2,
-//                         the_move: mm2.inner[0].clone(),
-//                     }
-//                 }))
-//             } else {
-//                 None
-//             };
-
-//             let second = if first.is_none() {
-//                 //console_dbg!("NEVER HAPPEN");
-//                 Some([PossibleMove {
-//                     game_after_move: v,
-//                     //mesh,
-//                     the_move: mm.inner[0].clone(),
-//                 }])
-//             } else {
-//                 None
-//             };
-
-//             let f1 = first.into_iter().flatten();
-//             let f2 = second.into_iter().flatten();
-//             f1.chain(f2)
-//         })
-//     //.chain([foo].into_iter())
-// }

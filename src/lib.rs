@@ -210,25 +210,44 @@ pub enum GameOver {
 }
 
 impl GameState {
-    pub fn game_is_over(&mut self, team_index: ActiveTeam) -> Option<GameOver> {
-        //let game = game.view_mut(team_index);
-
-        for unit in self.factions.relative(team_index).this_team.units.iter() {
-            let mesh = self.generate_unit_possible_moves_inner(
-                &unit.position,
-                unit.typ,
-                team_index,
-                false,
-            );
-            if mesh.iter_mesh(GridCoord([0; 2])).count() != 0 {
-                return None;
+    pub fn game_is_over(&self) -> Option<GameOver> {
+        let dog_stuck = 'foo: {
+            for unit in self.factions.dogs.units.iter() {
+                let mesh = self.generate_unit_possible_moves_inner(
+                    &unit.position,
+                    unit.typ,
+                    ActiveTeam::Dogs,
+                    false,
+                );
+                if !mesh.is_empty() {
+                    break 'foo false;
+                }
             }
-        }
+            true
+        };
 
-        if team_index == ActiveTeam::Cats {
-            return Some(GameOver::DogWon);
-        } else {
-            return Some(GameOver::CatWon);
+        //dog can't move.
+
+        let cat_stuck = 'foo: {
+            for unit in self.factions.cats.units.iter() {
+                let mesh = self.generate_unit_possible_moves_inner(
+                    &unit.position,
+                    unit.typ,
+                    ActiveTeam::Cats,
+                    false,
+                );
+                if !mesh.is_empty() {
+                    break 'foo false;
+                }
+            }
+            true
+        };
+        //cats can't move.
+
+        match (dog_stuck, cat_stuck) {
+            (true, true) | (false, false) => None,
+            (true, false) => Some(GameOver::CatWon),
+            (false, true) => Some(GameOver::DogWon),
         }
     }
 }
