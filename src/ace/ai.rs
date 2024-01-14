@@ -294,11 +294,9 @@ impl<'a> AlphaBeta<'a> {
             return absolute_evaluate(&game_after_move, false);
         };
 
-        let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
-
         let mut num_sorted = 0;
-        if let Some(p) = pvariation {
-            let f = moves.iter().enumerate().find(|(_, x)| **x == p).unwrap();
+        if let Some(p) = self.prev_cache.get_best_prev_move(self.path) {
+            let f = moves.iter().enumerate().find(|(_, x)| **x == *p).unwrap();
             let swap_ind = f.0;
             moves.swap(0, swap_ind);
             num_sorted += 1;
