@@ -134,48 +134,48 @@ impl MoveOrdering {
     }
 }
 
-pub struct LeafTranspositionTable {
-    a: std::collections::HashMap<GameState, Eval>,
-    saves: usize,
-}
+// pub struct LeafTranspositionTable {
+//     a: std::collections::HashMap<GameState, Eval>,
+//     saves: usize,
+// }
 
-impl LeafTranspositionTable {
-    pub fn new() -> Self {
-        LeafTranspositionTable {
-            a: std::collections::HashMap::new(),
-            saves: 0,
-        }
-    }
-    fn lookup_leaf(&mut self, a: &GameState) -> Option<&Eval> {
-        if let Some(a) = self.a.get(a) {
-            self.saves += 1;
-            Some(a)
-        } else {
-            None
-        }
-    }
-    fn consider_leaf(&mut self, game: GameState, eval: Eval) {
-        if let Some(v) = self.a.get_mut(&game) {
-            *v = eval;
-        } else {
-            let _ = self.a.insert(game, eval);
-        }
-    }
-    pub fn lookup_leaf_all(&mut self, node: &GameState) -> Eval {
-        if let Some(&eval) = self.lookup_leaf(&node) {
-            eval
-        } else {
-            let eval = absolute_evaluate(&node, false);
-            self.consider_leaf(node.clone(), eval);
-            eval
-        }
-    }
-}
+// impl LeafTranspositionTable {
+//     pub fn new() -> Self {
+//         LeafTranspositionTable {
+//             a: std::collections::HashMap::new(),
+//             saves: 0,
+//         }
+//     }
+//     fn lookup_leaf(&mut self, a: &GameState) -> Option<&Eval> {
+//         if let Some(a) = self.a.get(a) {
+//             self.saves += 1;
+//             Some(a)
+//         } else {
+//             None
+//         }
+//     }
+//     fn consider_leaf(&mut self, game: GameState, eval: Eval) {
+//         if let Some(v) = self.a.get_mut(&game) {
+//             *v = eval;
+//         } else {
+//             let _ = self.a.insert(game, eval);
+//         }
+//     }
+//     pub fn lookup_leaf_all(&mut self, node: &GameState) -> Eval {
+//         if let Some(&eval) = self.lookup_leaf(&node) {
+//             eval
+//         } else {
+//             let eval = absolute_evaluate(&node, false);
+//             self.consider_leaf(node.clone(), eval);
+//             eval
+//         }
+//     }
+// }
 
 pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::ActualMove {
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
-    let mut table = LeafTranspositionTable::new();
+    //let mut table = LeafTranspositionTable::new();
 
     let max_depth = 4;
     let mut foo1 = MoveOrdering {
@@ -189,7 +189,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
         let mut k = KillerMoves::new(max_depth);
 
         let mut aaaa = ai::AlphaBeta {
-            table: &mut table,
+            //table: &mut table,
             prev_cache: &mut foo1,
             calls: &mut count,
             path: &mut vec![],
@@ -265,7 +265,7 @@ impl Counter {
 }
 
 pub struct AlphaBeta<'a> {
-    table: &'a mut LeafTranspositionTable,
+    //table: &'a mut LeafTranspositionTable,
     prev_cache: &'a mut MoveOrdering,
     calls: &'a mut Counter,
     path: &'a mut Vec<moves::ActualMove>,
@@ -320,20 +320,8 @@ impl<'a> AlphaBeta<'a> {
         let mut gg = game_after_move.clone();
 
         let ret = if depth == 0 || game_after_move.game_is_over(team).is_some() {
-            //console_dbg!(game_is_over(cand.game_after_move.view(team)));
-
             self.calls.add_eval();
-            let e = self.table.lookup_leaf_all(&game_after_move);
-
-            // if self.prev_cache.a.get(self.path).is_none(){
-            //     self.prev_cache.update(&self.path, &cand.the_move);
-            // }
-            //console_dbg!("FOOO",e);
-            e
-
-            // let (m, eval) = self.quiensense_search(cand, ab, team, 3);
-
-            // eval
+            absolute_evaluate(&game_after_move, false)
         } else {
             let gg2 = game_after_move.clone();
 
