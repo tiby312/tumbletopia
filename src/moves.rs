@@ -21,9 +21,9 @@ impl GameState {
 
         let is_ship = !game.env.land.is_coord_set(unit);
 
-        let cond = |a: GridCoord| {
+        let cond = |a: GridCoord,depth:usize| {
             let cc = if is_ship {
-                !game.env.land.is_coord_set(a)
+                !game.env.land.is_coord_set(a) //|| (depth==0 && !extra)
             } else {
                 game.env.land.is_coord_set(a) && !game.env.forest.is_coord_set(a)
             };
@@ -50,13 +50,13 @@ impl GameState {
         for (_, a) in unit.to_cube().ring(1) {
             let a = a.to_axial();
 
-            if cond(a) {
+            if cond(a,0) {
                 mesh.add_normal_cell(a.sub(&unit));
 
                 if !extra {
                     for (_, b) in a.to_cube().ring(1) {
                         let b = b.to_axial();
-                        if cond(b) {
+                        if cond(b,1) {
                             mesh.add_normal_cell(b.sub(&unit));
                         }
                     }
