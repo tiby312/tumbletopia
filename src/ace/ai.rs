@@ -196,7 +196,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
             killer_moves: &mut k,
             max_ext: 0,
         };
-        let res = aaaa.alpha_beta(game.clone(), ABAB::new(), team, depth, 0);
+        let res = aaaa.alpha_beta(&mut game.clone(), ABAB::new(), team, depth, 0);
 
         let mov = foo1.a.get(&[] as &[_]).cloned().unwrap();
         let res = EvalRet { mov, eval: res };
@@ -309,7 +309,7 @@ pub struct EvalRet<T> {
 impl<'a> AlphaBeta<'a> {
     pub fn alpha_beta(
         &mut self,
-        mut game_after_move: GameState,
+        mut game_after_move: &mut GameState,
         ab: ABAB,
         team: ActiveTeam,
         depth: usize,
@@ -317,7 +317,7 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
         //let the_move = cand.the_move.clone();
-        let mut gg = game_after_move.clone();
+        //let mut gg = game_after_move.clone();
 
         let ret = if depth == 0 || game_after_move.game_is_over(team).is_some() {
             self.calls.add_eval();
@@ -325,7 +325,7 @@ impl<'a> AlphaBeta<'a> {
         } else {
             let gg2 = game_after_move.clone();
 
-            let mut node = game_after_move;
+            //let mut node = game_after_move;
 
             let pvariation = self.prev_cache.get_best_prev_move(self.path).cloned();
 
@@ -349,7 +349,7 @@ impl<'a> AlphaBeta<'a> {
             //     None
             // };
 
-            let mut moves = node.for_all_moves_fast(team);
+            let mut moves = game_after_move.for_all_moves_fast(team);
 
             //console_dbg!("FOOOO",moves.len());
             //console_dbg!(moves.iter().map(|x|&x.1.the_move).collect::<Vec<_>>());
@@ -387,13 +387,13 @@ impl<'a> AlphaBeta<'a> {
                                            //assert!(new_depth<6);
                                            //console_dbg!(ext,depth);
 
-                let mut gg = gg2.clone();
-                cand.execute_move_no_ani(&mut gg, team);
+                //let mut gg = gg2.clone();
+                cand.execute_move_no_ani(game_after_move, team);
 
                 ssself.path.push(cand.clone());
-                let eval = ssself.alpha_beta(gg, ab, team.not(), new_depth, ext);
+                let eval = ssself.alpha_beta(game_after_move, ab, team.not(), new_depth, ext);
 
-                //cand.execute_undo(&mut gg, team);
+                cand.execute_undo(game_after_move, team);
                 let k = ssself.path.pop().unwrap();
 
                 //console_dbg!("inner eval=",eval);
