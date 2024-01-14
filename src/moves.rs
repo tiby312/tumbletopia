@@ -472,10 +472,17 @@ pub mod partial_move {
                     let walls =
                         calculate_walls(self.this_unit.position, self.this_unit.typ, &mut self.env);
 
-                    let an = Movement::new(self.this_unit.clone(), mesh, walls, self.target)
-                        .into_command();
-                    let aa = data.wait_animation(an, team).await;
-                    let _ = Movement::unwrapme(aa.into_data());
+                    let _ = data
+                        .wait_animation(
+                            animation::AnimationCommand::Movement {
+                                unit: self.this_unit.clone(),
+                                mesh,
+                                walls,
+                                end: self.target,
+                            },
+                            team,
+                        )
+                        .await;
 
                     apply_normal_move(self.this_unit, self.target)
                 } else {
@@ -488,58 +495,5 @@ pub mod partial_move {
                 }
             }
         }
-    }
-}
-
-trait UnwrapMe {
-    type Item;
-
-    fn direct_unwrap(self) -> Self::Item;
-    fn into_command(self) -> animation::AnimationCommand;
-    fn unwrapme(a: animation::AnimationCommand) -> Self::Item;
-}
-struct Movement {
-    start: UnitData,
-    mesh: MovementMesh,
-    walls: Mesh,
-    end: GridCoord,
-}
-impl Movement {
-    pub fn new(start: UnitData, mesh: MovementMesh, walls: Mesh, end: GridCoord) -> Self {
-        Movement {
-            start,
-            mesh,
-            walls,
-            end,
-        }
-    }
-}
-impl UnwrapMe for Movement {
-    type Item = UnitData;
-
-    fn direct_unwrap(mut self) -> Self::Item {
-        // let last_dir = self
-        //     .mesh
-        //     .path(self.end.sub(&self.start.position))
-        //     .last()
-        //     .unwrap();
-
-        //TODO is this right????
-        self.start.position = self.end;
-        self.start
-    }
-    fn into_command(self) -> animation::AnimationCommand {
-        animation::AnimationCommand::Movement {
-            unit: self.start,
-            mesh: self.mesh,
-            walls: self.walls,
-            end: self.end,
-        }
-    }
-    fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
-        let animation::AnimationCommand::Movement { unit, .. } = a else {
-            unreachable!()
-        };
-        unit
     }
 }
