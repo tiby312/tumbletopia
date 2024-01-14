@@ -9,16 +9,18 @@ const MATE: i64 = 1_000_000;
 //cats maximizing
 //dogs minimizing
 pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
-    match view.game_is_over() {
-        Some(GameOver::CatWon) => {
-            return MATE;
-        }
-        Some(GameOver::DogWon) => {
-            return -MATE;
-        }
-        Some(GameOver::Tie) => {}
-        None => {}
-    }
+    // Doesnt seem that important that the AI knows exactly when it is winning.
+    // (There doesnt seem to be many tactical combinations near the end of the game).
+    // match view.game_is_over() {
+    //     Some(GameOver::CatWon) => {
+    //         return MATE;
+    //     }
+    //     Some(GameOver::DogWon) => {
+    //         return -MATE;
+    //     }
+    //     Some(GameOver::Tie) => {}
+    //     None => {}
+    // }
 
     let ship_allowed = {
         let water = {
