@@ -19,11 +19,15 @@ impl GameState {
         let unit = *unit;
         let mut mesh = movement::MovementMesh::new();
 
-        let is_ship = !game.env.land.is_coord_set(unit);
+        let is_ship = if let Some(e) = extra {
+            !game.env.land.is_coord_set(e.unit)
+        } else {
+            !game.env.land.is_coord_set(unit)
+        };
 
-        let cond = |a: GridCoord, depth: usize| {
+        let cond = |a: GridCoord, extra: Option<PartialMoveSigl>, depth: usize| {
             let cc = if is_ship {
-                !game.env.land.is_coord_set(a) //|| (depth==0 && !extra)
+                !game.env.land.is_coord_set(a)
             } else {
                 game.env.land.is_coord_set(a) && !game.env.forest.is_coord_set(a)
             };
@@ -47,18 +51,52 @@ impl GameState {
                     .is_none()
         };
 
-        for (_, a) in unit.to_cube().ring(1) {
-            let a = a.to_axial();
+        if let Some(extra) = extra {
+            let transition_to_land = {
+                !game.env.land.is_coord_set(extra.unit) && game.env.land.is_coord_set(extra.moveto)
+            };
 
-            if cond(a, 0) {
-                mesh.add_normal_cell(a.sub(&unit));
+            if transition_to_land {
+                mesh.add_normal_cell(extra.unit.sub(&unit));
+            } else {
+                for (_, a) in unit.to_cube().ring(1) {
+                    let a = a.to_axial();
+                    if cond(a, Some(extra), 0) {
+                        mesh.add_normal_cell(a.sub(&unit));
+                    }
+                }
+            }
+        } else {
+            for (_, a) in unit.to_cube().ring(1) {
+                let a = a.to_axial();
 
-                if extra.is_none() {
+                if cond(a, None, 0) {
+                    mesh.add_normal_cell(a.sub(&unit));
+
                     for (_, b) in a.to_cube().ring(1) {
                         let b = b.to_axial();
-                        if cond(b, 1) {
+                        if cond(b, None, 1) {
                             mesh.add_normal_cell(b.sub(&unit));
                         }
+                    }
+                } else {
+                    if game.env.land.is_coord_set(a)
+                        && !game.env.forest.is_coord_set(a)
+                        && is_ship
+                        && game
+                            .factions
+                            .relative(team)
+                            .this_team
+                            .find_slow(&a)
+                            .is_none()
+                        && game
+                            .factions
+                            .relative(team)
+                            .that_team
+                            .find_slow(&a)
+                            .is_none()
+                    {
+                        mesh.add_normal_cell(a.sub(&unit));
                     }
                 }
             }
@@ -176,7 +214,26 @@ impl ActualMove {
                     .find_slow_mut(&o.moveto)
                     .unwrap();
 
-                let is_ship = !state.env.land.is_coord_set(k.position);
+                let la = state.env.land.is_coord_set(e.moveto);
+                let fr = state.env.forest.is_coord_set(e.moveto);
+                let is_ship = match (la, fr) {
+                    (true, false) => true,
+                    (true, true) => false,
+                    (false, true) => unreachable!(),
+                    (false, false) => unreachable!(),
+                };
+
+                // let is_ship=if
+                // if e.moveto==o.unit{
+                //     state.env.land.is_coord_set(o.moveto)
+                // }else{
+                //     !state.env.land.is_coord_set(o.unit)
+                // };
+
+                // let is_ship = !state.env.land.is_coord_set(o.unit)
+                //     || (state.env.land.is_coord_set(o.unit) && e.moveto == o.unit);
+
+                //let is_ship = !state.env.land.is_coord_set(k.position);
 
                 if is_ship {
                     assert!(state.env.land.is_coord_set(e.moveto));
@@ -260,9 +317,10 @@ pub mod partial {
     fn apply_extra_move(
         unit: GridCoord,
         target_cell: GridCoord,
+        original: GridCoord,
         env: &mut Environment,
     ) -> PartialMoveSigl {
-        let is_ship = !env.land.is_coord_set(unit);
+        let is_ship = !env.land.is_coord_set(original);
 
         if is_ship {
             env.land.set_coord(target_cell, true);
@@ -275,12 +333,13 @@ pub mod partial {
             moveto: target_cell,
         }
     }
+
     impl PartialMove<'_> {
         pub fn execute(self, _team: ActiveTeam) -> PartialMoveSigl {
-            if self.is_extra.is_none() {
-                apply_normal_move(self.this_unit, self.target)
+            if let Some(extra) = self.is_extra {
+                apply_extra_move(self.this_unit.position, self.target, extra.unit, self.env)
             } else {
-                apply_extra_move(self.this_unit.position, self.target, self.env)
+                apply_normal_move(self.this_unit, self.target)
             }
         }
         pub async fn execute_with_animation(
@@ -309,7 +368,14 @@ pub mod partial {
 
                 walls
             }
-            if self.is_extra.is_none() {
+            if let Some(extra) = self.is_extra {
+                apply_extra_move(
+                    self.this_unit.position,
+                    self.target,
+                    extra.unit,
+                    &mut self.env,
+                )
+            } else {
                 let walls = calculate_walls(self.this_unit.position, &mut self.env);
 
                 let _ = data
@@ -325,8 +391,6 @@ pub mod partial {
                     .await;
 
                 apply_normal_move(self.this_unit, self.target)
-            } else {
-                apply_extra_move(self.this_unit.position, self.target, &mut self.env)
             }
         }
     }

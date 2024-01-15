@@ -285,7 +285,8 @@ pub async fn worker_entry() {
             cats: Tribe { units: cats },
         },
         env: Environment {
-            land: BitField::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
+            //land: BitField::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
+            land: BitField::from_iter([]),
             forest: BitField::from_iter([]),
             powerup: BitField::from_iter([]),
         },
