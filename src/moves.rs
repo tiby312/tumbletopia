@@ -359,7 +359,7 @@ pub mod partial {
                     let cc = if is_ship {
                         env.land.is_coord_set(a)
                     } else {
-                        !env.land.is_coord_set(a) && env.forest.is_coord_set(a)
+                        !env.land.is_coord_set(a) || env.forest.is_coord_set(a)
                     };
                     if cc {
                         walls.add(a.sub(&position));
@@ -376,7 +376,7 @@ pub mod partial {
                     &mut self.env,
                 )
             } else {
-                let walls = calculate_walls(self.this_unit.position, &mut self.env);
+                let walls = calculate_walls(self.this_unit.position, &self.env);
 
                 let _ = data
                     .wait_animation(

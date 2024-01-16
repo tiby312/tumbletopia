@@ -558,13 +558,27 @@ pub mod movement_mesh {
                         .filter(|x| x.dist(&a.to_cube()) == 1);
                     let first = k.next().unwrap().to_axial();
                     let second = k.next().unwrap().to_axial();
-                    if self.is_set(first) || !walls.is_set(first) {
+
+                    if
+                    /*self.is_set(first)||*/
+                    !walls.is_set(first) {
                         Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
                     } else {
-                        //TODO this is not true teamates jumping over each other.
-                        //assert!(self.is_set(second));
                         Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
                     }
+
+                    // else if !walls.is_set(first){
+                    //     panic!("its hapening");
+                    //     Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
+                    // }else{
+                    //     Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
+                    // }
+                    // if  || !walls.is_set(first) {
+
+                    // } else {
+                    //     //TODO this is not true teamates jumping over each other.
+                    //     //assert!(self.is_set(second));
+                    // }
                 } else {
                     None
                 };
