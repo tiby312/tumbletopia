@@ -270,7 +270,7 @@ impl<'a> AlphaBeta<'a> {
     pub fn alpha_beta(
         &mut self,
         game_after_move: &mut GameState,
-        ab: ABAB,
+        mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
         ext: usize,
@@ -336,6 +336,33 @@ impl<'a> AlphaBeta<'a> {
                 Eval::MIN
             }
         } else {
+            // let mut kk=ab.minner_iter();
+            // for cand in moves{
+            //     let new_depth = depth - 1;
+
+            //     cand.execute_move_no_ani(game_after_move, team);
+            //     self.path.push(cand);
+            //     let eval = self.alpha_beta(game_after_move, ab, team.not(), new_depth, ext);
+
+            //     let mov = self.path.pop().unwrap();
+            //     mov.execute_undo(game_after_move, team);
+
+            //     let er=EvalRet { eval, mov };
+
+            //     let ret=match kk.consider(er){
+            //         abab::Res::Finished(ret) => ret,
+            //         abab::Res::FinishedFoundCand(ret) => {
+            //             self.killer_moves.consider(depth, ret);
+            //             self.prev_cache.update(&self.path, &ret.mov);
+            //             ret
+            //         },
+            //         abab::Res::NotFinished => continue;,
+            //     };
+
+            //     ret.finish()
+
+            // }
+
             if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
                 ss.killer_moves.consider(depth, m);
             }) {
@@ -650,11 +677,61 @@ mod abab {
         alpha: Eval,
         beta: Eval,
     }
+
+    pub struct MinnerIterFinisher<'a, T> {
+        a: &'a mut ABAB,
+        t: EvalRet<T>,
+    }
+    pub struct MinnerIter<'a, T> {
+        value: i64,
+        a: &'a mut ABAB,
+        mm: Option<T>,
+        keep_going: bool,
+    }
+    pub enum Res<T> {
+        Finished,
+        FinishedFoundCand(T),
+        NotFinished,
+    }
+    impl<'a, T: Clone> MinnerIter<'a, T> {
+        pub fn consider(&mut self, t: EvalRet<T>) -> Res<EvalRet<T>> {
+            let mut found_something = false;
+            if !self.keep_going {
+                return Res::Finished;
+            }
+            self.value = self.value.min(t.eval);
+            //TODO don't set if equal, instead
+            if self.value == t.eval {
+                self.mm = Some(t.mov.clone());
+            }
+            if t.eval < self.a.alpha {
+                self.keep_going = false;
+                found_something = true;
+            }
+            self.a.beta = self.a.beta.min(self.value);
+            if found_something {
+                return Res::FinishedFoundCand(t);
+            }
+            if !self.keep_going {
+                return Res::Finished;
+            }
+            Res::NotFinished
+        }
+    }
+
     impl ABAB {
         pub fn new() -> Self {
             ABAB {
                 alpha: Eval::MIN,
                 beta: Eval::MAX,
+            }
+        }
+        pub fn minner_iter<T: Clone>(&mut self) -> MinnerIter<T> {
+            MinnerIter {
+                value: i64::MAX,
+                a: self,
+                mm: None,
+                keep_going: true,
             }
         }
 
