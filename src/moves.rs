@@ -105,6 +105,9 @@ impl GameState {
         mesh
     }
 }
+
+//TODO this has a value duplicated. Cant be more space efficient.
+//would help alot since this object is used alot in minmax.
 #[derive(Hash, PartialEq, Eq, Debug, Clone)]
 pub enum ActualMove {
     CombinedMove(PartialMoveSigl, PartialMoveSigl),

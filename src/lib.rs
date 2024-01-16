@@ -266,15 +266,15 @@ pub async fn worker_entry() {
 
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([-3, 3])),
-        UnitData::new(GridCoord([-3, 2])),
-        UnitData::new(GridCoord([-2, 3])),
+        UnitData::new(GridCoord([0, -3])),
+        UnitData::new(GridCoord([3, 0])),
     ];
 
     //player
     let dogs = smallvec::smallvec![
         UnitData::new(GridCoord([3, -3])),
-        UnitData::new(GridCoord([2, -3])),
-        UnitData::new(GridCoord([3, -2])),
+        UnitData::new(GridCoord([-3, 0])),
+        UnitData::new(GridCoord([0, 3])),
     ];
 
     let world = Box::leak(Box::new(board::MyWorld::new()));
