@@ -526,14 +526,15 @@ mod abab {
         pub fn consider(&mut self, t: &T, eval: Eval) -> (bool, bool) {
             let mut found_something = false;
 
-            if self.maximizing {
-                self.value = self.value.max(eval);
+            //TODO should be less than or equal instead maybe?
+            let mmm = if self.maximizing {
+                eval > self.value
             } else {
-                self.value = self.value.min(eval);
-            }
-            //TODO don't set if equal, instead
-            if self.value == eval {
+                eval < self.value
+            };
+            if mmm {
                 self.mm = Some(t.clone());
+                self.value = eval;
             }
 
             let cond = if self.maximizing {
