@@ -326,52 +326,54 @@ impl<'a> AlphaBeta<'a> {
             EvalRet { eval, mov }
         };
 
-        if team == ActiveTeam::Cats {
-            if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
-                ss.killer_moves.consider(depth, m);
-            }) {
-                self.prev_cache.update(&self.path, &ret.mov);
-                ret.eval
-            } else {
-                Eval::MIN
+        // if team == ActiveTeam::Cats {
+        //     if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
+        //         ss.killer_moves.consider(depth, m);
+        //     }) {
+        //         self.prev_cache.update(&self.path, &ret.mov);
+        //         ret.eval
+        //     } else {
+        //         Eval::MIN
+        //     }
+        // } else {
+        let mut kk = ab.ab_iter(team == ActiveTeam::Cats);
+        for cand in moves {
+            let new_depth = depth - 1;
+
+            cand.execute_move_no_ani(game_after_move, team);
+            self.path.push(cand);
+            let eval =
+                self.alpha_beta(game_after_move, kk.get_new_ab(), team.not(), new_depth, ext);
+
+            let mov = self.path.pop().unwrap();
+            mov.execute_undo(game_after_move, team);
+
+            let kk = kk.consider(&mov, eval);
+
+            if kk.1 {
+                self.killer_moves.consider(depth, mov);
             }
-        } else {
-            // let mut kk=ab.minner_iter();
-            // for cand in moves{
-            //     let new_depth = depth - 1;
-
-            //     cand.execute_move_no_ani(game_after_move, team);
-            //     self.path.push(cand);
-            //     let eval = self.alpha_beta(game_after_move, ab, team.not(), new_depth, ext);
-
-            //     let mov = self.path.pop().unwrap();
-            //     mov.execute_undo(game_after_move, team);
-
-            //     let er=EvalRet { eval, mov };
-
-            //     let ret=match kk.consider(er){
-            //         abab::Res::Finished(ret) => ret,
-            //         abab::Res::FinishedFoundCand(ret) => {
-            //             self.killer_moves.consider(depth, ret);
-            //             self.prev_cache.update(&self.path, &ret.mov);
-            //             ret
-            //         },
-            //         abab::Res::NotFinished => continue;,
-            //     };
-
-            //     ret.finish()
-
-            // }
-
-            if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
-                ss.killer_moves.consider(depth, m);
-            }) {
-                self.prev_cache.update(&self.path, &ret.mov);
-                ret.eval
-            } else {
-                Eval::MAX
+            if !kk.0 {
+                break;
             }
         }
+
+        let k = kk.finish();
+        if let Some(kk) = k.1 {
+            self.prev_cache.update(&self.path, &kk);
+        }
+
+        k.0
+
+        // if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
+        //     ss.killer_moves.consider(depth, m);
+        // }) {
+        //     self.prev_cache.update(&self.path, &ret.mov);
+        //     ret.eval
+        // } else {
+        //     Eval::MAX
+        // }
+        //}
     }
 }
 
@@ -491,184 +493,6 @@ impl<'a> AlphaBeta<'a> {
 //     //.chain([foo].into_iter())
 // }
 
-mod abab_simple {
-    pub struct MyMoveFinder {}
-    impl abab_simple::MoveFinder for MyMoveFinder {
-        type EE = Eval;
-        type T = GameState;
-        type Mo = moves::ActualMove;
-        type Finder = std::vec::IntoIter<moves::ActualMove>;
-
-        fn eval(&mut self, game: &Self::T) -> Self::EE {
-            absolute_evaluate(game, false)
-        }
-
-        fn min_eval(&self) -> Self::EE {
-            Eval::MIN
-        }
-
-        fn max_eval(&self) -> Self::EE {
-            Eval::MAX
-        }
-
-        fn apply_move(&mut self, game: &mut Self::T, maximizer: bool, a: Self::Mo) {
-            let team = if maximizer {
-                ActiveTeam::Cats
-            } else {
-                ActiveTeam::Dogs
-            };
-            a.execute_move_no_ani(game, team);
-        }
-        fn unapply_move(&mut self, game: &mut Self::T, maximizer: bool, a: Self::Mo) {
-            let team = if maximizer {
-                ActiveTeam::Cats
-            } else {
-                ActiveTeam::Dogs
-            };
-            a.execute_undo(game, team);
-        }
-        fn generate_finder(
-            &mut self,
-            state: &Self::T,
-            path: &[Self::Mo],
-            maximizer: bool,
-        ) -> Self::Finder {
-            let team = if maximizer {
-                ActiveTeam::Cats
-            } else {
-                ActiveTeam::Dogs
-            };
-            todo!();
-            //let k: Vec<_> = for_all_moves(state.clone(), team).collect();
-            //k.into_iter()
-        }
-
-        fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo> {
-            finder.next().map(|x| x)
-        }
-    }
-
-    pub trait MoveFinder {
-        type EE: PartialOrd + Ord + Copy;
-        type T;
-        type Mo: Clone;
-        type Finder;
-        fn eval(&mut self, game: &Self::T) -> Self::EE;
-
-        fn min_eval(&self) -> Self::EE;
-        fn max_eval(&self) -> Self::EE;
-
-        fn apply_move(&mut self, game: &mut Self::T, maximizer: bool, a: Self::Mo);
-        fn unapply_move(&mut self, game: &mut Self::T, maximizer: bool, a: Self::Mo);
-
-        fn generate_finder(
-            &mut self,
-            state: &Self::T,
-            path: &[Self::Mo],
-            maximizer: bool,
-        ) -> Self::Finder;
-        fn select_move(&mut self, finder: &mut Self::Finder) -> Option<Self::Mo>;
-    }
-
-    pub fn alpha_beta<X: MoveFinder>(
-        data: X,
-        depth: usize,
-        mut game_state: &mut X::T,
-        maximizer: bool,
-    ) -> (X::EE, Vec<X::Mo>) {
-        ABAB::new(data).alpha_beta(depth, game_state, maximizer)
-    }
-    use super::*;
-    #[derive(Clone)]
-    struct ABAB<X, Y, Z> {
-        alpha: Z,
-        beta: Z,
-        data: X,
-        path: Vec<Y>,
-    }
-    impl<X: MoveFinder> ABAB<X, X::Mo, X::EE> {
-        pub fn new(data: X) -> Self {
-            ABAB {
-                alpha: data.min_eval(),
-                beta: data.max_eval(),
-                data,
-                path: vec![],
-            }
-        }
-
-        pub fn alpha_beta(
-            &mut self,
-            depth: usize,
-            game_state: &mut X::T,
-            maximizer: bool,
-        ) -> (X::EE, Vec<X::Mo>) {
-            if depth == 0 {
-                (self.data.eval(&game_state), vec![])
-            } else {
-                if maximizer {
-                    let mut value = self.data.min_eval();
-                    let mut ll = vec![];
-                    let mut best_move = None;
-
-                    let mut gs = self
-                        .data
-                        .generate_finder(&game_state, &self.path, maximizer);
-                    while let Some(mo) = self.data.select_move(&mut gs) {
-                        //let mut ga = game_state.clone();
-                        // self.data.apply_move(game_state, maximizer, mo);
-                        // self.path.push(mo);
-                        // let (eval, move_list) = self.alpha_beta(depth - 1, game_state, !maximizer);
-                        // self.path.pop();
-                        // self.data.unapply_move(game_state, maximizer, mo);
-
-                        // if eval > value {
-                        //     value = eval;
-                        //     ll = move_list;
-                        //     best_move = Some(mo);
-                        // }
-
-                        if value > self.beta {
-                            break;
-                        }
-                        self.alpha = self.alpha.max(value);
-                    }
-
-                    ll.push(best_move.unwrap());
-                    (value, ll)
-                } else {
-                    let mut value = self.data.max_eval();
-                    let mut ll = vec![];
-                    let mut best_move = None;
-
-                    let mut gs = self
-                        .data
-                        .generate_finder(&game_state, &self.path, maximizer);
-                    while let Some(mo) = self.data.select_move(&mut gs) {
-                        // self.data.apply_move(game_state, maximizer, mo);
-                        // self.path.push(mo);
-                        // let (eval, move_list) = self.alpha_beta(depth - 1, game_state, !maximizer);
-                        // self.path.pop();
-                        // self.data.apply_move(game_state, maximizer, mo);
-
-                        // if eval > value {
-                        //     value = eval;
-                        //     ll = move_list;
-                        //     best_move = Some(mo);
-                        // }
-
-                        if value < self.alpha {
-                            break;
-                        }
-                        self.beta = self.beta.min(value);
-                    }
-
-                    ll.push(best_move.unwrap());
-                    (value, ll)
-                }
-            }
-        }
-    }
-}
 use abab::ABAB;
 mod abab {
     use super::*;
@@ -678,44 +502,58 @@ mod abab {
         beta: Eval,
     }
 
-    pub struct MinnerIterFinisher<'a, T> {
-        a: &'a mut ABAB,
-        t: EvalRet<T>,
+    pub enum Res<T> {
+        Finished(T),
+        FinishedFoundCand(T),
+        NotFinished,
     }
-    pub struct MinnerIter<'a, T> {
+
+    pub struct ABIter<'a, T> {
         value: i64,
         a: &'a mut ABAB,
         mm: Option<T>,
         keep_going: bool,
+        maximizing: bool,
     }
-    pub enum Res<T> {
-        Finished,
-        FinishedFoundCand(T),
-        NotFinished,
-    }
-    impl<'a, T: Clone> MinnerIter<'a, T> {
-        pub fn consider(&mut self, t: EvalRet<T>) -> Res<EvalRet<T>> {
+
+    impl<'a, T: Clone> ABIter<'a, T> {
+        pub fn finish(self) -> (Eval, Option<T>) {
+            (self.value, self.mm)
+        }
+        pub fn get_new_ab(&self) -> ABAB {
+            self.a.clone()
+        }
+        pub fn consider(&mut self, t: &T, eval: Eval) -> (bool, bool) {
             let mut found_something = false;
-            if !self.keep_going {
-                return Res::Finished;
+
+            if self.maximizing {
+                self.value = self.value.max(eval);
+            } else {
+                self.value = self.value.min(eval);
             }
-            self.value = self.value.min(t.eval);
             //TODO don't set if equal, instead
-            if self.value == t.eval {
-                self.mm = Some(t.mov.clone());
+            if self.value == eval {
+                self.mm = Some(t.clone());
             }
-            if t.eval < self.a.alpha {
+
+            let cond = if self.maximizing {
+                eval > self.a.beta
+            } else {
+                eval < self.a.alpha
+            };
+
+            if cond {
                 self.keep_going = false;
                 found_something = true;
             }
-            self.a.beta = self.a.beta.min(self.value);
-            if found_something {
-                return Res::FinishedFoundCand(t);
+
+            if self.maximizing {
+                self.a.alpha = self.a.alpha.max(self.value);
+            } else {
+                self.a.beta = self.a.beta.min(self.value);
             }
-            if !self.keep_going {
-                return Res::Finished;
-            }
-            Res::NotFinished
+
+            (self.keep_going, found_something)
         }
     }
 
@@ -726,79 +564,14 @@ mod abab {
                 beta: Eval::MAX,
             }
         }
-        pub fn minner_iter<T: Clone>(&mut self) -> MinnerIter<T> {
-            MinnerIter {
-                value: i64::MAX,
+        pub fn ab_iter<T: Clone>(&mut self, maximizing: bool) -> ABIter<T> {
+            let value = if maximizing { i64::MIN } else { i64::MAX };
+            ABIter {
+                value,
                 a: self,
                 mm: None,
                 keep_going: true,
-            }
-        }
-
-        pub fn minner<P, T: Clone>(
-            mut self,
-            it: impl IntoIterator<Item = T>,
-            payload: &mut P,
-            mut func: impl FnMut(&mut P, T, Self) -> EvalRet<T>,
-            mut func2: impl FnMut(&mut P, T, Self),
-        ) -> Option<EvalRet<T>> {
-            let mut mm: Option<T> = None;
-
-            let mut value = i64::MAX;
-            for cand in it {
-                let t = func(payload, cand.clone(), self.clone());
-
-                value = value.min(t.eval);
-                if value == t.eval {
-                    mm = Some(cand.clone());
-                }
-                if t.eval < self.alpha {
-                    func2(payload, cand, self.clone());
-                    break;
-                }
-                self.beta = self.beta.min(value)
-            }
-
-            if let Some(mm) = mm {
-                Some(EvalRet {
-                    mov: mm,
-                    eval: value,
-                })
-            } else {
-                None
-            }
-        }
-        pub fn maxxer<P, T: Clone>(
-            mut self,
-            it: impl IntoIterator<Item = T>,
-            mut payload: &mut P,
-            mut func: impl FnMut(&mut P, T, Self) -> EvalRet<T>,
-            mut func2: impl FnMut(&mut P, T, Self),
-        ) -> Option<EvalRet<T>> {
-            let mut mm: Option<T> = None;
-
-            let mut value = i64::MIN;
-            for cand in it {
-                let t = func(&mut payload, cand.clone(), self.clone());
-
-                value = value.max(t.eval);
-                if value == t.eval {
-                    mm = Some(cand.clone());
-                }
-                if t.eval > self.beta {
-                    func2(&mut payload, cand, self.clone());
-                    break;
-                }
-                self.alpha = self.alpha.max(value)
-            }
-
-            if let Some(mm) = mm {
-                Some(EvalRet {
-                    mov: mm,
-                    eval: value,
-                })
-            } else {
-                None
+                maximizing,
             }
         }
     }
