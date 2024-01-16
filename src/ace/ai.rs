@@ -313,29 +313,6 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
-        let foo = |ssself: &mut AlphaBeta, cand: moves::ActualMove, ab| {
-            let new_depth = depth - 1;
-
-            cand.execute_move_no_ani(game_after_move, team);
-            ssself.path.push(cand);
-            let eval = ssself.alpha_beta(game_after_move, ab, team.not(), new_depth, ext);
-
-            let mov = ssself.path.pop().unwrap();
-            mov.execute_undo(game_after_move, team);
-
-            EvalRet { eval, mov }
-        };
-
-        // if team == ActiveTeam::Cats {
-        //     if let Some(ret) = ab.maxxer(moves, self, foo, |ss, m, _| {
-        //         ss.killer_moves.consider(depth, m);
-        //     }) {
-        //         self.prev_cache.update(&self.path, &ret.mov);
-        //         ret.eval
-        //     } else {
-        //         Eval::MIN
-        //     }
-        // } else {
         let mut kk = ab.ab_iter(team == ActiveTeam::Cats);
         for cand in moves {
             let new_depth = depth - 1;
@@ -348,150 +325,23 @@ impl<'a> AlphaBeta<'a> {
             let mov = self.path.pop().unwrap();
             mov.execute_undo(game_after_move, team);
 
-            let kk = kk.consider(&mov, eval);
+            let (keep_going, consider_good_move) = kk.consider(&mov, eval);
 
-            if kk.1 {
+            if consider_good_move {
                 self.killer_moves.consider(depth, mov);
             }
-            if !kk.0 {
+            if !keep_going {
                 break;
             }
         }
 
-        let k = kk.finish();
-        if let Some(kk) = k.1 {
+        let (eval, m) = kk.finish();
+        if let Some(kk) = m {
             self.prev_cache.update(&self.path, &kk);
         }
-
-        k.0
-
-        // if let Some(ret) = ab.minner(moves, self, foo, |ss, m, _| {
-        //     ss.killer_moves.consider(depth, m);
-        // }) {
-        //     self.prev_cache.update(&self.path, &ret.mov);
-        //     ret.eval
-        // } else {
-        //     Eval::MAX
-        // }
-        //}
+        eval
     }
 }
-
-// #[derive(Debug, PartialEq, Eq, Clone)]
-// pub struct PossibleMove {
-//     pub the_move: moves::ActualMove,
-//     //pub mesh: MovementMesh,
-//     pub game_after_move: GameState,
-// }
-
-//TODO pass readonly
-
-// pub struct PossibleMoveWithMesh {
-//     pub the_move: moves::ActualMove,
-//     //pub mesh: MovementMesh,
-//     pub game_after_move: GameState,
-//     pub mesh: MovementMesh,
-// }
-// impl PossibleMoveWithMesh {
-//     pub fn into(self) -> PossibleMove {
-//         PossibleMove {
-//             the_move: self.the_move,
-//             game_after_move: self.game_after_move,
-//         }
-//     }
-// }
-
-//TODO this has duplicated logic
-// pub fn apply_move(mo: moves::ActualMove, state: &mut GameState, team: ActiveTeam) {
-//     let moves::ActualMove::ExtraMove(
-//         moves::PartialMoveSigl {
-//             unit: pos,
-//             moveto: mm,
-//         },
-//         moves::PartialMoveSigl {
-//             unit: _,
-//             moveto: sm,
-//         },
-//     ) = mo
-//     else {
-//         unreachable!()
-//     };
-
-//     let pp = state.view_mut(team).this_team.find_slow_mut(&pos).unwrap();
-
-//     pp.position = mm;
-
-//     if pp.typ == Type::Ship {
-//         state.land.push(sm);
-//     } else if pp.typ == Type::Foot {
-//         state.forest.push(sm);
-//     }
-// }
-
-//TODO use this!!!
-
-// pub fn for_all_moves(state: GameState, team: ActiveTeam) -> impl Iterator<Item = PossibleMove> {
-//     let mut sss = state.clone();
-//     let ss = state.clone();
-//     ss.into_view(team)
-//         .this_team
-//         .units
-//         .into_iter()
-//         .map(|a| RegularSelection { unit: a.clone() })
-//         .flat_map(move |a| {
-//             let mesh = a.generate(&sss.view_mut(team));
-//             mesh.iter_mesh(a.unit.position)
-//                 .map(move |f| (a.clone(), mesh.clone(), f))
-//         })
-//         .flat_map(move |(s, mesh, m)| {
-//             let mut v = state.clone();
-//             let mut mm = MoveLog::new();
-
-//             let first = if let Some(l) = s
-//                 .execute_no_animation(m, mesh, &mut v.view_mut(team), &mut mm)
-//                 .unwrap()
-//             {
-//                 //console_dbg!("YOOOOOOO");
-//                 let cll = l.select();
-
-//                 //let mut kk = v.view().duplicate();
-//                 let mut kk = v.clone();
-//                 let mesh2 = cll.generate(&mut kk.view_mut(team));
-//                 Some(mesh2.iter_mesh(l.coord()).map(move |m| {
-//                     let mut klkl = kk.clone();
-//                     let mut mm2 = MoveLog::new();
-
-//                     let mut vfv = klkl.view_mut(team);
-//                     cll.execute_no_animation(m, mesh2.clone(), &mut vfv, &mut mm2)
-//                         .unwrap();
-
-//                     PossibleMove {
-//                         game_after_move: klkl,
-//                         //mesh: mesh2,
-//                         the_move: mm2.inner[0].clone(),
-//                     }
-//                 }))
-//             } else {
-//                 None
-//             };
-
-//             let second = if first.is_none() {
-//                 //console_dbg!("NEVER HAPPEN");
-//                 Some([PossibleMove {
-//                     game_after_move: v,
-//                     //mesh,
-//                     the_move: mm.inner[0].clone(),
-//                 }])
-//             } else {
-//                 None
-//             };
-
-//             let f1 = first.into_iter().flatten();
-//             let f2 = second.into_iter().flatten();
-//             f1.chain(f2)
-//         })
-//     //.chain([foo].into_iter())
-// }
 
 use abab::ABAB;
 mod abab {
@@ -500,12 +350,6 @@ mod abab {
     pub struct ABAB {
         alpha: Eval,
         beta: Eval,
-    }
-
-    pub enum Res<T> {
-        Finished(T),
-        FinishedFoundCand(T),
-        NotFinished,
     }
 
     pub struct ABIter<'a, T> {
