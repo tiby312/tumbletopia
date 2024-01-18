@@ -13,13 +13,13 @@ impl GameState {
         &self,
         unit: &GridCoord,
         team: ActiveTeam,
-        extra: Option<PartialMoveSigl>,
+        last_move: Option<PartialMoveSigl>,
     ) -> movement::MovementMesh {
         let game = self;
         let unit = *unit;
         let mut mesh = movement::MovementMesh::new();
 
-        let is_ship = if let Some(e) = extra {
+        let is_ship = if let Some(e) = last_move {
             !game.env.land.is_coord_set(e.unit)
         } else {
             !game.env.land.is_coord_set(unit)
@@ -51,17 +51,23 @@ impl GameState {
                     .is_none()
         };
 
-        if let Some(extra) = extra {
+        if let Some(last_move) = last_move {
             let transition_to_land = {
-                !game.env.land.is_coord_set(extra.unit) && game.env.land.is_coord_set(extra.moveto)
+                !game.env.land.is_coord_set(last_move.unit)
+                    && game.env.land.is_coord_set(last_move.moveto)
             };
 
-            if transition_to_land {
-                mesh.add_normal_cell(extra.unit.sub(&unit));
+            let transition_to_water = {
+                game.env.land.is_coord_set(last_move.unit)
+                    && !game.env.land.is_coord_set(last_move.moveto)
+            };
+
+            if transition_to_land || transition_to_water {
+                mesh.add_normal_cell(last_move.unit.sub(&unit));
             } else {
                 for (_, a) in unit.to_cube().ring(1) {
                     let a = a.to_axial();
-                    if cond(a, Some(extra), 0) {
+                    if cond(a, Some(last_move), 0) {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
                 }
@@ -73,14 +79,16 @@ impl GameState {
                 if cond(a, None, 0) {
                     mesh.add_normal_cell(a.sub(&unit));
 
-                    for (_, b) in a.to_cube().ring(1) {
-                        let b = b.to_axial();
-                        if cond(b, None, 1) {
-                            mesh.add_normal_cell(b.sub(&unit));
+                    if is_ship {
+                        for (_, b) in a.to_cube().ring(1) {
+                            let b = b.to_axial();
+                            if cond(b, None, 1) {
+                                mesh.add_normal_cell(b.sub(&unit));
+                            }
                         }
                     }
                 } else {
-                    if game.env.land.is_coord_set(a)
+                    let water_to_land = game.env.land.is_coord_set(a)
                         && !game.env.forest.is_coord_set(a)
                         && is_ship
                         && game
@@ -94,8 +102,25 @@ impl GameState {
                             .relative(team)
                             .that_team
                             .find_slow(&a)
+                            .is_none();
+
+                    let land_to_water = game.world.get_game_cells().is_coord_set(a)
+                        && !game.env.land.is_coord_set(a)
+                        && !is_ship
+                        && game
+                            .factions
+                            .relative(team)
+                            .this_team
+                            .find_slow(&a)
                             .is_none()
-                    {
+                        && game
+                            .factions
+                            .relative(team)
+                            .that_team
+                            .find_slow(&a)
+                            .is_none();
+
+                    if water_to_land || land_to_water {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
                 }
