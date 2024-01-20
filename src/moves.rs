@@ -26,17 +26,10 @@ impl GameState {
         };
 
         let cond = |a: GridCoord, extra: Option<PartialMoveSigl>, depth: usize| {
-            let cc = if is_ship {
-                !game.env.land.is_coord_set(a)
-            } else {
-                game.env.land.is_coord_set(a) && !game.env.forest.is_coord_set(a)
-            };
-
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
 
             a != unit
                 && is_world_cell
-                && cc
                 && game
                     .factions
                     .relative(team)
@@ -57,17 +50,26 @@ impl GameState {
                     && game.env.land.is_coord_set(last_move.moveto)
             };
 
-            let transition_to_water = {
-                game.env.land.is_coord_set(last_move.unit)
-                    && !game.env.land.is_coord_set(last_move.moveto)
-            };
+            // let transition_to_water = {
+            //     game.env.land.is_coord_set(last_move.unit)
+            //         && !game.env.land.is_coord_set(last_move.moveto)
+            // };
 
-            if transition_to_land || transition_to_water {
+            if transition_to_land
+            /*|| transition_to_water*/
+            {
                 mesh.add_normal_cell(last_move.unit.sub(&unit));
             } else {
                 for (_, a) in unit.to_cube().ring(1) {
                     let a = a.to_axial();
-                    if cond(a, Some(last_move), 0) {
+
+                    let j = if is_ship {
+                        !game.env.land.is_coord_set(a)
+                    } else {
+                        /*game.env.land.is_coord_set(a) &&*/
+                        !game.env.forest.is_coord_set(a)
+                    };
+                    if j && cond(a, Some(last_move), 0) {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
                 }
@@ -76,17 +78,28 @@ impl GameState {
             for (_, a) in unit.to_cube().ring(1) {
                 let a = a.to_axial();
 
-                if cond(a, None, 0) {
+                let j = if is_ship {
+                    !game.env.land.is_coord_set(a)
+                } else {
+                    game.env.land.is_coord_set(a) && !game.env.forest.is_coord_set(a)
+                };
+                if j && cond(a, None, 0) {
                     mesh.add_normal_cell(a.sub(&unit));
 
-                    if is_ship {
-                        for (_, b) in a.to_cube().ring(1) {
-                            let b = b.to_axial();
-                            if cond(b, None, 1) {
-                                mesh.add_normal_cell(b.sub(&unit));
-                            }
+                    //if is_ship {
+                    for (_, b) in a.to_cube().ring(1) {
+                        let b = b.to_axial();
+
+                        let j = if is_ship {
+                            !game.env.land.is_coord_set(b)
+                        } else {
+                            game.env.land.is_coord_set(b) && !game.env.forest.is_coord_set(b)
+                        };
+                        if j && cond(b, None, 1) {
+                            mesh.add_normal_cell(b.sub(&unit));
                         }
                     }
+                    //}
                 } else {
                     let water_to_land = game.env.land.is_coord_set(a)
                         && !game.env.forest.is_coord_set(a)
@@ -104,23 +117,25 @@ impl GameState {
                             .find_slow(&a)
                             .is_none();
 
-                    let land_to_water = game.world.get_game_cells().is_coord_set(a)
-                        && !game.env.land.is_coord_set(a)
-                        && !is_ship
-                        && game
-                            .factions
-                            .relative(team)
-                            .this_team
-                            .find_slow(&a)
-                            .is_none()
-                        && game
-                            .factions
-                            .relative(team)
-                            .that_team
-                            .find_slow(&a)
-                            .is_none();
+                    // let land_to_water = game.world.get_game_cells().is_coord_set(a)
+                    //     && !game.env.land.is_coord_set(a)
+                    //     && !is_ship
+                    //     && game
+                    //         .factions
+                    //         .relative(team)
+                    //         .this_team
+                    //         .find_slow(&a)
+                    //         .is_none()
+                    //     && game
+                    //         .factions
+                    //         .relative(team)
+                    //         .that_team
+                    //         .find_slow(&a)
+                    //         .is_none();
 
-                    if water_to_land || land_to_water {
+                    if water_to_land
+                    /*|| land_to_water*/
+                    {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
                 }
@@ -348,12 +363,19 @@ pub mod partial {
         original: GridCoord,
         env: &mut Environment,
     ) -> PartialMoveSigl {
-        let is_ship = !env.land.is_coord_set(original);
+        // let is_ship = !env.land.is_coord_set(original);
 
-        if is_ship {
+        // if is_ship {
+        //     env.land.set_coord(target_cell, true);
+        // } else {
+        //     env.forest.set_coord(target_cell, true);
+        // }
+        if !env.land.is_coord_set(target_cell) {
             env.land.set_coord(target_cell, true);
         } else {
-            env.forest.set_coord(target_cell, true);
+            if !env.forest.is_coord_set(target_cell) {
+                env.forest.set_coord(target_cell, true);
+            }
         }
 
         PartialMoveSigl {
