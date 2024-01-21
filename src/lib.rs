@@ -218,8 +218,12 @@ impl GameState {
     pub fn game_is_over(&self) -> Option<GameOver> {
         let dog_stuck = 'foo: {
             for unit in self.factions.dogs.units.iter() {
-                let mesh =
-                    self.generate_unit_possible_moves_inner(&unit.position, ActiveTeam::Dogs, None);
+                let mesh = self.generate_unit_possible_moves_inner(
+                    &unit.position,
+                    unit.typ,
+                    ActiveTeam::Dogs,
+                    None,
+                );
                 if !mesh.is_empty() {
                     break 'foo false;
                 }
@@ -231,8 +235,12 @@ impl GameState {
 
         let cat_stuck = 'foo: {
             for unit in self.factions.cats.units.iter() {
-                let mesh =
-                    self.generate_unit_possible_moves_inner(&unit.position, ActiveTeam::Cats, None);
+                let mesh = self.generate_unit_possible_moves_inner(
+                    &unit.position,
+                    unit.typ,
+                    ActiveTeam::Cats,
+                    None,
+                );
                 if !mesh.is_empty() {
                     break 'foo false;
                 }

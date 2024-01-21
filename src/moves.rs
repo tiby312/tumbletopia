@@ -12,6 +12,7 @@ impl GameState {
     pub fn generate_unit_possible_moves_inner(
         &self,
         unit: &GridCoord,
+        typ: Type,
         team: ActiveTeam,
         last_move: Option<PartialMoveSigl>,
     ) -> movement::MovementMesh {
@@ -101,8 +102,11 @@ impl GameState {
                     }
                     //}
                 } else {
-                    let water_to_land = game.env.land.is_coord_set(a)
-                        && !game.env.forest.is_coord_set(a)
+                    let water_to_land = if typ == Type::Grass {
+                        game.env.land.grass.is_coord_set(a)
+                    } else {
+                        game.env.land.snow.is_coord_set(a)
+                    } && !game.env.forest.is_coord_set(a)
                         && is_ship
                         && game
                             .factions
@@ -168,8 +172,12 @@ impl ActualMove {
                     .this_team
                     .find_slow(&o.unit)
                     .unwrap();
-                let mesh =
-                    state.generate_unit_possible_moves_inner(&unit.position, team_index, None);
+                let mesh = state.generate_unit_possible_moves_inner(
+                    &unit.position,
+                    unit.typ,
+                    team_index,
+                    None,
+                );
 
                 let unit = state
                     .factions
@@ -178,6 +186,7 @@ impl ActualMove {
                     .find_slow_mut(&o.unit)
                     .unwrap();
 
+                let ttt = unit.typ;
                 let iii = moves::PartialMove {
                     this_unit: unit,
                     target: target_cell,
@@ -192,8 +201,12 @@ impl ActualMove {
                 let selected_unit = e.unit;
                 let target_cell = e.moveto;
 
-                let mesh =
-                    state.generate_unit_possible_moves_inner(&selected_unit, team_index, Some(iii));
+                let mesh = state.generate_unit_possible_moves_inner(
+                    &selected_unit,
+                    ttt,
+                    team_index,
+                    Some(iii),
+                );
 
                 let unit = state
                     .factions
@@ -304,8 +317,9 @@ impl GameState {
         let mut movs = Vec::new();
         for i in 0..state.factions.relative(team).this_team.units.len() {
             let pos = state.factions.relative_mut(team).this_team.units[i].position;
+            let ttt = state.factions.relative_mut(team).this_team.units[i].typ;
 
-            let mesh = state.generate_unit_possible_moves_inner(&pos, team, None);
+            let mesh = state.generate_unit_possible_moves_inner(&pos, ttt, team, None);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
@@ -317,7 +331,8 @@ impl GameState {
                 };
                 let il = ii.execute(team);
 
-                let second_mesh = state.generate_unit_possible_moves_inner(&mm, team, Some(il));
+                let second_mesh =
+                    state.generate_unit_possible_moves_inner(&mm, ttt, team, Some(il));
 
                 for sm in second_mesh.iter_mesh(mm) {
                     //Don't bother applying the extra move. just generate the sigl.
