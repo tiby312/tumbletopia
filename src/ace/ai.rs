@@ -50,6 +50,44 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
 
     doop(&mut dog_ships, &mut cat_ships, &ship_allowed);
 
+    let mut grass_cat_ships = BitField::from_iter(
+        view.factions
+            .cats
+            .iter()
+            .filter(|a| a.typ == Type::Grass)
+            .map(|a| a.position)
+            .filter(|&a| !view.env.land.is_coord_set(a)),
+    );
+
+    let mut grass_dog_ships = BitField::from_iter(
+        view.factions
+            .dogs
+            .iter()
+            .filter(|a| a.typ == Type::Grass)
+            .map(|a| a.position)
+            .filter(|&a| !view.env.land.is_coord_set(a)),
+    );
+    doop(&mut grass_cat_ships, &mut grass_dog_ships, &ship_allowed);
+
+    let mut snow_cat_ships = BitField::from_iter(
+        view.factions
+            .cats
+            .iter()
+            .filter(|a| a.typ == Type::Snow)
+            .map(|a| a.position)
+            .filter(|&a| !view.env.land.is_coord_set(a)),
+    );
+
+    let mut snow_dog_ships = BitField::from_iter(
+        view.factions
+            .dogs
+            .iter()
+            .filter(|a| a.typ == Type::Snow)
+            .map(|a| a.position)
+            .filter(|&a| !view.env.land.is_coord_set(a)),
+    );
+    doop(&mut snow_cat_ships, &mut snow_dog_ships, &ship_allowed);
+
     let foot_grass = {
         let mut land = view.env.land.grass.clone();
         land.union_with(&view.env.land.snow);
@@ -77,7 +115,17 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
 
     let s = cat_ships.count_ones(..) as i64 - dog_ships.count_ones(..) as i64;
     let r = cat_foot.count_ones(..) as i64 - dog_foot.count_ones(..) as i64;
-    s + r
+
+    let x = grass_cat_ships.count_ones(..) as i64 - grass_dog_ships.count_ones(..) as i64;
+    let y = snow_cat_ships.count_ones(..) as i64 - snow_dog_ships.count_ones(..) as i64;
+
+    //let x=0;
+    //let y = cat_ship_grass.count_ones(..) as i64 - dog_ship_grass.count_ones(..) as i64;
+    if _debug {
+        //console_dbg!("SNOW VAL=",x);
+        //console_dbg!("GRASS VAL=",x);
+    }
+    s + r //+ x + y
 }
 
 fn doop(mut dogs: &mut BitField, mut cats: &mut BitField, allowed_cells: &BitField) {

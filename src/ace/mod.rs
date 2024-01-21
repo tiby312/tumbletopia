@@ -442,17 +442,16 @@ pub async fn main_logic<'a>(
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Cats {
-            //{
+        //if team_index == ActiveTeam::Cats {
+        {
             //if false {
             let the_move = ai::iterative_deepening(game, team_index);
 
             the_move.execute_move_ani(game, team_index, &mut doop).await;
 
-            console_dbg!(ai::absolute_evaluate(game, true));
-
             continue;
         }
+        console_dbg!(ai::absolute_evaluate(game, true));
 
         let mut extra_attack = None;
         //Keep allowing the user to select units
