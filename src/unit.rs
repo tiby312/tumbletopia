@@ -5,11 +5,12 @@ use super::*;
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Default)]
 pub struct UnitData {
     pub position: GridCoord,
+    pub typ: Type,
 }
 
 impl UnitData {
-    pub fn new(position: GridCoord) -> Self {
-        UnitData { position }
+    pub fn new(position: GridCoord, typ: Type) -> Self {
+        UnitData { position, typ }
     }
 }
 
@@ -22,16 +23,16 @@ pub enum CellSelection {
 #[derive(Hash, Default, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {
     #[default]
-    Ship,
-    Foot,
+    Grass,
+    Snow,
 }
 
 impl Type {
     pub fn type_index(&self) -> usize {
         let a = self;
         match a {
-            Type::Ship { .. } => 0,
-            Type::Foot => 1,
+            Type::Grass { .. } => 0,
+            Type::Snow => 1,
         }
     }
 }

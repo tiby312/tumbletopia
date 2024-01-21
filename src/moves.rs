@@ -280,7 +280,13 @@ impl ActualMove {
 
                 if is_ship {
                     assert!(state.env.land.is_coord_set(e.moveto));
-                    state.env.land.set_coord(e.moveto, false);
+                    if state.env.land.grass.is_coord_set(e.moveto) {
+                        state.env.land.grass.set_coord(e.moveto, false);
+                    } else {
+                        assert!(state.env.land.snow.is_coord_set(e.moveto));
+
+                        state.env.land.snow.set_coord(e.moveto, false);
+                    }
                 } else {
                     assert!(state.env.forest.is_coord_set(e.moveto));
                     state.env.forest.set_coord(e.moveto, false);
@@ -358,7 +364,7 @@ pub mod partial {
         }
     }
     fn apply_extra_move(
-        unit: GridCoord,
+        this_unit: &mut UnitData,
         target_cell: GridCoord,
         original: GridCoord,
         env: &mut Environment,
@@ -370,8 +376,12 @@ pub mod partial {
         // } else {
         //     env.forest.set_coord(target_cell, true);
         // }
+
         if !env.land.is_coord_set(target_cell) {
-            env.land.set_coord(target_cell, true);
+            match this_unit.typ {
+                Type::Grass => env.land.grass.set_coord(target_cell, true),
+                Type::Snow => env.land.snow.set_coord(target_cell, true),
+            }
         } else {
             if !env.forest.is_coord_set(target_cell) {
                 env.forest.set_coord(target_cell, true);
@@ -379,7 +389,7 @@ pub mod partial {
         }
 
         PartialMoveSigl {
-            unit,
+            unit: this_unit.position,
             moveto: target_cell,
         }
     }
@@ -387,7 +397,7 @@ pub mod partial {
     impl PartialMove<'_> {
         pub fn execute(self, _team: ActiveTeam) -> PartialMoveSigl {
             if let Some(extra) = self.is_extra {
-                apply_extra_move(self.this_unit.position, self.target, extra.unit, self.env)
+                apply_extra_move(self.this_unit, self.target, extra.unit, self.env)
             } else {
                 apply_normal_move(self.this_unit, self.target)
             }
@@ -419,12 +429,7 @@ pub mod partial {
                 walls
             }
             if let Some(extra) = self.is_extra {
-                apply_extra_move(
-                    self.this_unit.position,
-                    self.target,
-                    extra.unit,
-                    &mut self.env,
-                )
+                apply_extra_move(self.this_unit, self.target, extra.unit, &mut self.env)
             } else {
                 let walls = calculate_walls(self.this_unit.position, &self.env);
 

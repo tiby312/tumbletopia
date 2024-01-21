@@ -135,7 +135,7 @@ impl<'a> WarriorDraw<'a> {
             let s = matrix::scale(5.0, 5.0, 5.0);
             let m = new_proj.chain(s).generate();
 
-            let nn = health_numbers.get_number(0);
+            let nn = health_numbers.get_number(ccat.typ.type_index() as i8);
             let mut v = draw_sys.view(m.as_ref());
             nn.draw_ext(&mut v, false, false, true, false);
 
@@ -183,10 +183,20 @@ pub struct FactionRelative<T> {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct Land {
+    pub grass: BitField,
+    pub snow: BitField,
+}
+impl Land {
+    pub fn is_coord_set(&self, a: GridCoord) -> bool {
+        self.grass.is_coord_set(a) | self.snow.is_coord_set(a)
+    }
+}
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Environment {
-    land: BitField,
+    land: Land,
     forest: BitField,
-    powerup: BitField,
+    //powerup: BitField,
 }
 
 //Additionally removes need to special case animation.
@@ -265,16 +275,16 @@ pub async fn worker_entry() {
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
-        UnitData::new(GridCoord([-3, 3])),
-        UnitData::new(GridCoord([0, -3])),
-        UnitData::new(GridCoord([3, 0])),
+        UnitData::new(GridCoord([-3, 3]), Type::Grass),
+        UnitData::new(GridCoord([0, -3]), Type::Grass),
+        UnitData::new(GridCoord([3, 0]), Type::Snow),
     ];
 
     //player
     let dogs = smallvec::smallvec![
-        UnitData::new(GridCoord([3, -3])),
-        UnitData::new(GridCoord([-3, 0])),
-        UnitData::new(GridCoord([0, 3])),
+        UnitData::new(GridCoord([3, -3]), Type::Snow),
+        UnitData::new(GridCoord([-3, 0]), Type::Snow),
+        UnitData::new(GridCoord([0, 3]), Type::Grass),
     ];
 
     let world = Box::leak(Box::new(board::MyWorld::new()));
@@ -286,9 +296,12 @@ pub async fn worker_entry() {
         },
         env: Environment {
             //land: BitField::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
-            land: BitField::from_iter([]),
+            land: Land {
+                grass: BitField::from_iter([]),
+
+                snow: BitField::from_iter([]),
+            },
             forest: BitField::from_iter([]),
-            powerup: BitField::from_iter([]),
         },
         world,
     };
@@ -323,6 +336,7 @@ pub async fn worker_entry() {
     let water = quick_load(WATER_GLB, RESIZE, None);
 
     let grass = quick_load(GRASS_GLB, RESIZE, None);
+    let snow = quick_load(SNOW_GLB, RESIZE, None);
 
     let select_model = quick_load(SELECT_GLB, 1, None);
 
@@ -596,7 +610,7 @@ pub async fn worker_entry() {
                     water.draw(&mut v);
                 }
 
-                for c in ggame.env.powerup.iter_mesh(GridCoord([0; 2])) {
+                for c in ggame.env.land.snow.iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();
@@ -605,10 +619,10 @@ pub async fn worker_entry() {
                     let m = matrix.chain(t).chain(s).generate();
                     let mut v = draw_sys.view(m.as_ref());
 
-                    attack_model.draw(&mut v);
+                    snow.draw(&mut v);
                 }
 
-                for c in ggame.env.land.iter_mesh(GridCoord([0; 2])) {
+                for c in ggame.env.land.grass.iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();
@@ -922,6 +936,8 @@ const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
 const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
 
 const GRASS_GLB: &'static [u8] = include_bytes!("../assets/hex-grass.glb");
+const SNOW_GLB: &'static [u8] = include_bytes!("../assets/snow.glb");
+
 const WATER_GLB: &'static [u8] = include_bytes!("../assets/water.glb");
 
 const DIRECTION_GLB: &'static [u8] = include_bytes!("../assets/direction.glb");

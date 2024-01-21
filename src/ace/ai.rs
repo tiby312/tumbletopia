@@ -23,7 +23,8 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
 
     let ship_allowed = {
         let water = {
-            let mut t = view.env.land.clone();
+            let mut t = view.env.land.grass.clone();
+            t.union_with(&view.env.land.snow);
             t.toggle_range(..);
             t
         };
@@ -50,7 +51,8 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
     doop(&mut dog_ships, &mut cat_ships, &ship_allowed);
 
     let foot_grass = {
-        let mut land = view.env.land.clone();
+        let mut land = view.env.land.grass.clone();
+        land.union_with(&view.env.land.snow);
         let mut t = view.env.forest.clone();
         t.toggle_range(..);
         land.intersect_with(&t);
