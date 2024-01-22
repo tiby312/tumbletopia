@@ -48,16 +48,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
             .filter(|&a| !view.env.land.is_coord_set(a)),
     );
 
-    doop(&mut dog_ships, &mut cat_ships, &ship_allowed);
-
-    let foot_grass = {
-        let mut land = view.env.land.grass.clone();
-        land.union_with(&view.env.land.snow);
-        let mut t = view.env.forest.clone();
-        t.toggle_range(..);
-        land.intersect_with(&t);
-        land
-    };
+    doop(5, &mut dog_ships, &mut cat_ships, &ship_allowed);
 
     let foot_snow = {
         let mut land = view.env.land.snow.clone();
@@ -83,7 +74,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
             .filter(|&a| view.env.land.snow.is_coord_set(a)),
     );
 
-    doop(&mut dog_foot_snow, &mut cat_foot_snow, &foot_snow);
+    doop(5, &mut dog_foot_snow, &mut cat_foot_snow, &foot_snow);
 
     let foot_grass = {
         let mut land = view.env.land.grass.clone();
@@ -109,7 +100,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
             .filter(|&a| view.env.land.grass.is_coord_set(a)),
     );
 
-    doop(&mut dog_foot_grass, &mut cat_foot_grass, &foot_grass);
+    doop(5, &mut dog_foot_grass, &mut cat_foot_grass, &foot_grass);
 
     let s = cat_ships.count_ones(..) as i64 - dog_ships.count_ones(..) as i64;
     let r = cat_foot_snow.count_ones(..) as i64 - dog_foot_snow.count_ones(..) as i64;
@@ -124,7 +115,12 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
     s + r + t //+ x + y
 }
 
-fn doop(mut dogs: &mut BitField, mut cats: &mut BitField, allowed_cells: &BitField) {
+fn doop(
+    iteration: usize,
+    mut dogs: &mut BitField,
+    mut cats: &mut BitField,
+    allowed_cells: &BitField,
+) {
     fn around(point: GridCoord) -> impl Iterator<Item = GridCoord> {
         point.to_cube().ring(1).map(|(_, b)| b.to_axial())
     }
@@ -143,7 +139,7 @@ fn doop(mut dogs: &mut BitField, mut cats: &mut BitField, allowed_cells: &BitFie
     let mut nomans = BitField::new();
     let mut w = BitField::new();
     let mut contested = BitField::new();
-    for _ in 0..5 {
+    for _ in 0..iteration {
         expand_mesh(&mut dogs, &mut w);
         expand_mesh(&mut cats, &mut w);
 
