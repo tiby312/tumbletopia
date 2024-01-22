@@ -76,27 +76,29 @@ impl GameState {
                 }
             }
         } else {
+            let check_is_ship = |kk| {
+                if is_ship {
+                    !game.env.land.is_coord_set(kk)
+                } else {
+                    let k = match typ {
+                        Type::Grass => game.env.land.grass.is_coord_set(kk),
+                        Type::Snow => game.env.land.snow.is_coord_set(kk),
+                    };
+                    k && !game.env.forest.is_coord_set(kk)
+                }
+            };
+
             for (_, a) in unit.to_cube().ring(1) {
                 let a = a.to_axial();
 
-                let j = if is_ship {
-                    !game.env.land.is_coord_set(a)
-                } else {
-                    game.env.land.is_coord_set(a) && !game.env.forest.is_coord_set(a)
-                };
-                if j && cond(a, None, 0) {
+                if check_is_ship(a) && cond(a, None, 0) {
                     mesh.add_normal_cell(a.sub(&unit));
 
                     //if is_ship {
                     for (_, b) in a.to_cube().ring(1) {
                         let b = b.to_axial();
 
-                        let j = if is_ship {
-                            !game.env.land.is_coord_set(b)
-                        } else {
-                            game.env.land.is_coord_set(b) && !game.env.forest.is_coord_set(b)
-                        };
-                        if j && cond(b, None, 1) {
+                        if check_is_ship(b) && cond(b, None, 1) {
                             mesh.add_normal_cell(b.sub(&unit));
                         }
                     }
