@@ -451,7 +451,7 @@ pub async fn main_logic<'a>(
 
             continue;
         }
-        console_dbg!(ai::absolute_evaluate(game, true));
+        ai::absolute_evaluate(game, true);
 
         let mut extra_attack = None;
         //Keep allowing the user to select units
