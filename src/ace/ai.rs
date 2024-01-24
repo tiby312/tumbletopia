@@ -121,6 +121,10 @@ fn doop(
     mut cats: &mut BitField,
     allowed_cells: &BitField,
 ) {
+    if dogs.count_ones(..) == 0 && cats.count_ones(..) == 0 {
+        return;
+    }
+
     fn around(point: GridCoord) -> impl Iterator<Item = GridCoord> {
         point.to_cube().ring(1).map(|(_, b)| b.to_axial())
     }
@@ -139,10 +143,21 @@ fn doop(
     let mut nomans = BitField::new();
     let mut w = BitField::new();
     let mut contested = BitField::new();
-    for _ in 0..iteration {
-        expand_mesh(&mut dogs, &mut w);
-        expand_mesh(&mut cats, &mut w);
 
+    let mut cache = BitField::new();
+
+    for _i in 0..iteration {
+        cache.clear();
+        cache.union_with(dogs);
+        expand_mesh(&mut dogs, &mut w);
+        let dogs_changed = &cache != dogs;
+        cache.clear();
+        cache.union_with(cats);
+        expand_mesh(&mut cats, &mut w);
+        let cats_changed = &cache != cats;
+        if !dogs_changed && !cats_changed {
+            break;
+        }
         dogs.intersect_with(&allowed_cells);
         cats.intersect_with(&allowed_cells);
 
