@@ -239,7 +239,7 @@ impl SelectType {
 }
 
 pub enum LoopRes<T> {
-    EndTurn,
+    EndTurn(moves::ActualMove),
     Deselect,
     Select(T),
 }
@@ -250,7 +250,6 @@ pub async fn reselect_loop(
     team_index: ActiveTeam,
     extra_attack: &mut Option<selection::PossibleExtra>,
     selected_unit: SelectType,
-    _game_history: &mut selection::MoveLog,
 ) -> LoopRes<SelectType> {
     console_dbg!(extra_attack.is_some());
     //At this point we know a friendly unit is currently selected.
@@ -265,16 +264,6 @@ pub async fn reselect_loop(
         .this_team
         .find_slow(&unwrapped_selected_unit)
         .unwrap();
-
-    // let selection = if let Some(e) = extra_attack {
-    //     if e.coord() == unwrapped_selected_unit {
-    //         selection::SelectionType::Extra(e.select())
-    //     } else {
-    //         selection::SelectionType::Normal(selection::RegularSelection::new(unit))
-    //     }
-    // } else {
-    //     selection::SelectionType::Normal(selection::RegularSelection::new(unit))
-    // };
 
     let grey = if selected_unit.team == team_index {
         //If we are in the middle of a extra attack move, make sure
@@ -305,7 +294,8 @@ pub async fn reselect_loop(
         Pototo::Normal(t) => t,
         Pototo::EndTurn => {
             //End the turn. Ok because we are not int he middle of anything.
-            return LoopRes::EndTurn;
+            //return LoopRes::EndTurn;
+            unreachable!();
         }
     };
     let target_cell = mouse_world;
@@ -389,7 +379,11 @@ pub async fn reselect_loop(
             iii.execute_with_animation(selected_unit.team, doop, cca.clone())
                 .await;
 
-            return LoopRes::EndTurn;
+            return LoopRes::EndTurn(moves::ActualMove {
+                unit: e.prev_move.unit,
+                moveto: e.prev_move.moveto,
+                attackto: target_cell,
+            });
         } else {
             let p = unit.position;
             let this_unit = game
@@ -448,75 +442,81 @@ pub async fn main_logic<'a>(
             let the_move = ai::iterative_deepening(game, team_index);
 
             the_move.execute_move_ani(game, team_index, &mut doop).await;
-
+            game_history.push(the_move);
             continue;
         }
+
+        let m = handle_player(game, &mut doop, team_index).await;
+        game_history.push(m);
+
         ai::absolute_evaluate(game, true);
-
-        let mut extra_attack = None;
-        //Keep allowing the user to select units
-        'select_loop: loop {
-            //Loop until the user clicks on a selectable unit in their team.
-            let mut selected_unit = loop {
-                let data = doop.get_mouse_no_selection(team_index).await;
-                let cell = match data {
-                    Pototo::Normal(a) => a,
-                    Pototo::EndTurn => {
-                        log!("cant end turn!");
-                        //game_history.push(moves::ActualMove::SkipTurn);
-
-                        break 'select_loop;
-                    }
-                };
-                //let game = game.view_mut(team_index);
-
-                if let Some(unit) = game
-                    .factions
-                    .relative(team_index)
-                    .this_team
-                    .find_slow(&cell)
-                {
-                    break SelectType {
-                        warrior: unit.position,
-                        team: team_index,
-                    };
-                }
-                if let Some(unit) = game
-                    .factions
-                    .relative(team_index)
-                    .that_team
-                    .find_slow(&cell)
-                {
-                    break SelectType {
-                        warrior: unit.position,
-                        team: team_index.not(),
-                    };
-                }
-            };
-
-            //Keep showing the selected unit's options and keep handling the users selections
-            //Until the unit is deselected.
-            loop {
-                let a = match reselect_loop(
-                    &mut doop,
-                    game,
-                    team_index,
-                    &mut extra_attack,
-                    selected_unit,
-                    &mut game_history,
-                )
-                .await
-                {
-                    LoopRes::EndTurn => break 'select_loop,
-                    LoopRes::Deselect => break,
-                    LoopRes::Select(a) => a,
-                };
-                selected_unit = a;
-            }
-        }
     }
 }
 
+async fn handle_player(
+    game: &mut GameState,
+    doop: &mut WorkerManager<'_>,
+    team_index: ActiveTeam,
+) -> moves::ActualMove {
+    let mut extra_attack = None;
+    //Keep allowing the user to select units
+    loop {
+        //Loop until the user clicks on a selectable unit in their team.
+        let mut selected_unit = loop {
+            let data = doop.get_mouse_no_selection(team_index).await;
+            let cell = match data {
+                Pototo::Normal(a) => a,
+                Pototo::EndTurn => {
+                    log!("cant end turn!");
+                    //game_history.push(moves::ActualMove::SkipTurn);
+                    unreachable!();
+                    //break 'select_loop;
+                }
+            };
+            //let game = game.view_mut(team_index);
+
+            if let Some(unit) = game
+                .factions
+                .relative(team_index)
+                .this_team
+                .find_slow(&cell)
+            {
+                break SelectType {
+                    warrior: unit.position,
+                    team: team_index,
+                };
+            }
+            if let Some(unit) = game
+                .factions
+                .relative(team_index)
+                .that_team
+                .find_slow(&cell)
+            {
+                break SelectType {
+                    warrior: unit.position,
+                    team: team_index.not(),
+                };
+            }
+        };
+
+        //Keep showing the selected unit's options and keep handling the users selections
+        //Until the unit is deselected.
+        loop {
+            let a = match reselect_loop(doop, game, team_index, &mut extra_attack, selected_unit)
+                .await
+            {
+                LoopRes::EndTurn(m) => {
+                    return m;
+                    //game_history.push(m);
+                    //break 'select_loop;
+                }
+                LoopRes::Deselect => break,
+                LoopRes::Select(a) => a,
+            };
+            selected_unit = a;
+        }
+    }
+}
 //TODO use this!
 #[derive(Copy, Clone)]
 pub enum Move {
