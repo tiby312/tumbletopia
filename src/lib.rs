@@ -282,38 +282,6 @@ pub async fn worker_entry() {
 
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-    let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
-        UnitData::new(GridCoord([-3, 3]), Type::Grass),
-        UnitData::new(GridCoord([0, -3]), Type::Grass),
-        UnitData::new(GridCoord([3, 0]), Type::Snow),
-    ];
-
-    //player
-    let dogs = smallvec::smallvec![
-        UnitData::new(GridCoord([3, -3]), Type::Snow),
-        UnitData::new(GridCoord([-3, 0]), Type::Snow),
-        UnitData::new(GridCoord([0, 3]), Type::Grass),
-    ];
-
-    let world = Box::leak(Box::new(board::MyWorld::new()));
-
-    let mut ggame = GameState {
-        factions: Factions {
-            dogs: Tribe { units: dogs },
-            cats: Tribe { units: cats },
-        },
-        env: Environment {
-            //land: BitField::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
-            land: Land {
-                grass: BitField::from_iter([]),
-
-                snow: BitField::from_iter([]),
-            },
-            forest: BitField::from_iter([]),
-        },
-        world,
-    };
-
     let _roads = terrain::TerrainCollection {
         pos: vec![],
         func: |a: MoveUnit| MoveUnit(a.0 / 2),
@@ -368,7 +336,7 @@ pub async fn worker_entry() {
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
     let main_logic = async {
-        ace::main_logic(command_sender, response_recv, &mut ggame).await;
+        ace::main_logic(command_sender, response_recv).await;
     };
 
     let mut mouse_mouse = [0.0; 2];

@@ -120,7 +120,11 @@ pub struct WorkerManager<'a> {
     sender: Sender<GameWrap<'a, Command>>,
     receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
+
 impl<'a> WorkerManager<'a> {
+    pub fn set_game(&mut self, a: &mut GameState) {
+        self.game = a as *mut _;
+    }
     pub async fn wait_animation<'c>(
         &mut self,
         animation: animation::AnimationCommand,
@@ -418,8 +422,43 @@ pub async fn reselect_loop(
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
-    game: &'a mut GameState,
 ) {
+    let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
+        UnitData::new(GridCoord([-3, 3]), Type::Grass),
+        UnitData::new(GridCoord([0, -3]), Type::Grass),
+        UnitData::new(GridCoord([3, 0]), Type::Snow),
+    ];
+
+    //player
+    let dogs = smallvec::smallvec![
+        UnitData::new(GridCoord([3, -3]), Type::Snow),
+        UnitData::new(GridCoord([-3, 0]), Type::Snow),
+        UnitData::new(GridCoord([0, 3]), Type::Grass),
+    ];
+
+    let world = Box::leak(Box::new(board::MyWorld::new()));
+
+    let mut game = GameState {
+        factions: Factions {
+            dogs: Tribe { units: dogs },
+            cats: Tribe { units: cats },
+        },
+        env: Environment {
+            //land: BitField::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
+            land: Land {
+                grass: BitField::from_iter([]),
+
+                snow: BitField::from_iter([]),
+            },
+            forest: BitField::from_iter([]),
+        },
+        world,
+    };
+
+    let mut replay_game = game.clone();
+
+    let game = &mut game;
+
     let mut game_history = selection::MoveLog::new();
 
     let mut doop = WorkerManager {
@@ -450,6 +489,15 @@ pub async fn main_logic<'a>(
         game_history.push(m);
 
         ai::absolute_evaluate(game, true);
+    }
+
+    loop {
+        let mut kk = replay_game.clone();
+        doop.set_game(&mut kk);
+        for (team_index, m) in ActiveTeam::Dogs.iter().zip(game_history.inner.iter()) {
+            m.execute_move_ani(&mut kk, team_index, &mut doop).await;
+        }
+        assert!(kk.game_is_over().is_some());
     }
 }
 
