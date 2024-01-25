@@ -46,6 +46,8 @@ impl MoveLog {
         use byteorder::{BigEndian, ReadBytesExt};
         use std::io::Cursor;
         let mut rdr = Cursor::new(buffer);
+        let ver = rdr.read_u32::<BigEndian>().unwrap();
+        assert_eq!(ver, 0);
         let num = rdr.read_u32::<BigEndian>().unwrap();
 
         let mut ret = vec![];
@@ -72,6 +74,10 @@ impl MoveLog {
         use byteorder::{BigEndian, WriteBytesExt};
 
         let mut wtr = vec![];
+
+        let version = 0;
+        wtr.write_u32::<BigEndian>(version).unwrap();
+
         wtr.write_u32::<BigEndian>(o.len().try_into().unwrap())
             .unwrap();
 

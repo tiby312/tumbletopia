@@ -419,7 +419,7 @@ pub async fn reselect_loop(
     }
 }
 
-const SAMPLE_GAME:&str="AAAAEAAD//0AAv/+AAP//QAA//3///////4AAAAC//4AA//9AAL//gADAAAAAQABAAAAAgAD//0AAv/+AAP//f/9AAP//gAC//4AAf/9AAD////+AAD//f////8AAP/+//////////4AAP/9/////gAA//7/////AAD//gAA//3////+AAD//f/+AAL//wAC//8AAQAAAAP//gAD//0AA////////gAA//7////+AAP//QAD//4AA///AAL//gAD//8AAg==";
+const SAMPLE_GAME:&str="TY5RAsAgCEIpT7D7n9UYUm3Wx1MkCfB5EExMLhNM1lmaXM1UP3Sldr+qUFXd2K8Pzw4z26y8FOm++a3VnqmMUJJZmlPh/H92/7L5+V8=";
 
 fn game_init() -> GameState {
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
@@ -456,6 +456,21 @@ fn game_init() -> GameState {
     game
 }
 
+pub mod share {
+    use super::*;
+    pub fn load(s: &str) -> selection::MoveLog {
+        use base64::prelude::*;
+        let k = BASE64_STANDARD.decode(s).unwrap();
+        let k = miniz_oxide::inflate::decompress_to_vec(&k).unwrap();
+        selection::MoveLog::deserialize(k)
+    }
+    pub fn save(game_history: &selection::MoveLog) -> String {
+        use base64::prelude::*;
+        let k = game_history.serialize();
+        let k = miniz_oxide::deflate::compress_to_vec(&k, 6);
+        BASE64_STANDARD.encode(k)
+    }
+}
 pub async fn main_logic<'a>(
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
@@ -474,12 +489,10 @@ pub async fn main_logic<'a>(
         receiver: response_recv,
     };
 
-    {
-        let k = BASE64_STANDARD.decode(SAMPLE_GAME).unwrap();
-        let history = selection::MoveLog::deserialize(k);
-        history.replay(&mut doop).await;
-        return;
-    }
+    // {
+    //     share::load(SAMPLE_GAME).replay(&mut doop).await;
+    //     return;
+    // }
     //Loop over each team!
     'game_loop: for team_index in ActiveTeam::Dogs.iter() {
         if let Some(g) = game.game_is_over() {
@@ -504,13 +517,9 @@ pub async fn main_logic<'a>(
         ai::absolute_evaluate(game, true);
     }
 
-    use base64::prelude::*;
-    let k = game_history.serialize();
-    console_dbg!(BASE64_STANDARD.encode(k));
+    console_dbg!(share::save(&game_history));
 
     //assert_eq!(BASE64_STANDARD.encode(b"\xFF\xEC\x20\x55\0"), "/+wgVQA=");
-
-    loop {}
 }
 
 async fn handle_player(
