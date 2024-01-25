@@ -24,6 +24,8 @@ collision="*"
 cgmath="0.17"
 smallvec = "1.11.0"
 fixedbitset = "0.4.2"
+base64 = "0.21.7"
+byteorder = "1.5.0"
 
 [workspace]
 members = [

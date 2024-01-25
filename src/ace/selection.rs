@@ -33,8 +33,58 @@ impl MoveLog {
     pub fn push(&mut self, o: moves::ActualMove) {
         self.inner.push(o);
     }
-    // pub fn add_invade(&mut self, i: moves::InvadeSigl) {}
-    // pub fn add_movement(&mut self, a: moves::MovementSigl) {}
+
+    pub async fn replay(&self, doop: &mut WorkerManager<'_>) {
+        let mut kk = super::game_init();
+        doop.set_game(&mut kk);
+        for (team_index, m) in ActiveTeam::Dogs.iter().zip(self.inner.iter()) {
+            m.execute_move_ani(&mut kk, team_index, doop).await;
+        }
+        assert!(kk.game_is_over().is_some());
+    }
+    pub fn deserialize(buffer: Vec<u8>) -> MoveLog {
+        use byteorder::{BigEndian, ReadBytesExt};
+        use std::io::Cursor;
+        let mut rdr = Cursor::new(buffer);
+        let num = rdr.read_u32::<BigEndian>().unwrap();
+
+        let mut ret = vec![];
+        for _ in 0..num {
+            let vals = [
+                rdr.read_i16::<BigEndian>().unwrap(),
+                rdr.read_i16::<BigEndian>().unwrap(),
+                rdr.read_i16::<BigEndian>().unwrap(),
+                rdr.read_i16::<BigEndian>().unwrap(),
+                rdr.read_i16::<BigEndian>().unwrap(),
+                rdr.read_i16::<BigEndian>().unwrap(),
+            ];
+
+            ret.push(moves::ActualMove {
+                unit: GridCoord([vals[0], vals[1]]),
+                moveto: GridCoord([vals[2], vals[3]]),
+                attackto: GridCoord([vals[4], vals[5]]),
+            })
+        }
+        MoveLog { inner: ret }
+    }
+    pub fn serialize(&self) -> Vec<u8> {
+        let o = &self.inner;
+        use byteorder::{BigEndian, WriteBytesExt};
+
+        let mut wtr = vec![];
+        wtr.write_u32::<BigEndian>(o.len().try_into().unwrap())
+            .unwrap();
+
+        for a in o.iter() {
+            wtr.write_i16::<BigEndian>(a.unit.0[0]).unwrap();
+            wtr.write_i16::<BigEndian>(a.unit.0[1]).unwrap();
+            wtr.write_i16::<BigEndian>(a.moveto.0[0]).unwrap();
+            wtr.write_i16::<BigEndian>(a.moveto.0[1]).unwrap();
+            wtr.write_i16::<BigEndian>(a.attackto.0[0]).unwrap();
+            wtr.write_i16::<BigEndian>(a.attackto.0[1]).unwrap();
+        }
+        wtr
+    }
 }
 
 #[derive(Copy, Clone, Debug)]

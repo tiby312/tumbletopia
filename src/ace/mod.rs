@@ -419,10 +419,9 @@ pub async fn reselect_loop(
     }
 }
 
-pub async fn main_logic<'a>(
-    command_sender: Sender<GameWrap<'a, Command>>,
-    response_recv: Receiver<GameWrapResponse<'a, Response>>,
-) {
+const SAMPLE_GAME:&str="AAAAEAAD//0AAv/+AAP//QAA//3///////4AAAAC//4AA//9AAL//gADAAAAAQABAAAAAgAD//0AAv/+AAP//f/9AAP//gAC//4AAf/9AAD////+AAD//f////8AAP/+//////////4AAP/9/////gAA//7/////AAD//gAA//3////+AAD//f/+AAL//wAC//8AAQAAAAP//gAD//0AA////////gAA//7////+AAP//QAD//4AA///AAL//gAD//8AAg==";
+
+fn game_init() -> GameState {
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([-3, 3]), Type::Grass),
         UnitData::new(GridCoord([0, -3]), Type::Grass),
@@ -454,6 +453,14 @@ pub async fn main_logic<'a>(
         },
         world,
     };
+    game
+}
+
+pub async fn main_logic<'a>(
+    command_sender: Sender<GameWrap<'a, Command>>,
+    response_recv: Receiver<GameWrapResponse<'a, Response>>,
+) {
+    let mut game = game_init();
 
     let mut replay_game = game.clone();
 
@@ -467,6 +474,12 @@ pub async fn main_logic<'a>(
         receiver: response_recv,
     };
 
+    {
+        let k = BASE64_STANDARD.decode(SAMPLE_GAME).unwrap();
+        let history = selection::MoveLog::deserialize(k);
+        history.replay(&mut doop).await;
+        return;
+    }
     //Loop over each team!
     'game_loop: for team_index in ActiveTeam::Dogs.iter() {
         if let Some(g) = game.game_is_over() {
@@ -491,14 +504,13 @@ pub async fn main_logic<'a>(
         ai::absolute_evaluate(game, true);
     }
 
-    loop {
-        let mut kk = replay_game.clone();
-        doop.set_game(&mut kk);
-        for (team_index, m) in ActiveTeam::Dogs.iter().zip(game_history.inner.iter()) {
-            m.execute_move_ani(&mut kk, team_index, &mut doop).await;
-        }
-        assert!(kk.game_is_over().is_some());
-    }
+    use base64::prelude::*;
+    let k = game_history.serialize();
+    console_dbg!(BASE64_STANDARD.encode(k));
+
+    //assert_eq!(BASE64_STANDARD.encode(b"\xFF\xEC\x20\x55\0"), "/+wgVQA=");
+
+    loop {}
 }
 
 async fn handle_player(
