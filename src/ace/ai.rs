@@ -48,7 +48,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
             .filter(|&a| !view.env.land.is_coord_set(a)),
     );
 
-    doop(5, &mut dog_ships, &mut cat_ships, &ship_allowed);
+    doop(7, &mut dog_ships, &mut cat_ships, &ship_allowed);
 
     let foot_snow = {
         let mut land = view.env.land.snow.clone();
@@ -74,7 +74,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
             .filter(|&a| view.env.land.snow.is_coord_set(a)),
     );
 
-    doop(5, &mut dog_foot_snow, &mut cat_foot_snow, &foot_snow);
+    doop(7, &mut dog_foot_snow, &mut cat_foot_snow, &foot_snow);
 
     let foot_grass = {
         let mut land = view.env.land.grass.clone();
@@ -100,7 +100,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
             .filter(|&a| view.env.land.grass.is_coord_set(a)),
     );
 
-    doop(5, &mut dog_foot_grass, &mut cat_foot_grass, &foot_grass);
+    doop(7, &mut dog_foot_grass, &mut cat_foot_grass, &foot_grass);
 
     let s = cat_ships.count_ones(..) as i64 - dog_ships.count_ones(..) as i64;
     let r = cat_foot_snow.count_ones(..) as i64 - dog_foot_snow.count_ones(..) as i64;
@@ -174,10 +174,10 @@ fn doop(
 }
 
 //TODO use bump allocator!!!!!
-pub struct MoveOrdering {
+pub struct PrincipalVariation {
     a: std::collections::HashMap<Vec<moves::ActualMove>, moves::ActualMove>,
 }
-impl MoveOrdering {
+impl PrincipalVariation {
     pub fn get_best_prev_move(&self, path: &[moves::ActualMove]) -> Option<&moves::ActualMove> {
         self.a.get(path)
     }
@@ -207,7 +207,7 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
     let mut results = Vec::new();
 
     let max_depth = 4;
-    let mut foo1 = MoveOrdering {
+    let mut foo1 = PrincipalVariation {
         a: std::collections::HashMap::new(),
     };
     //TODO stop searching if we found a game ending move.
@@ -283,7 +283,7 @@ impl Counter {
 
 pub struct AlphaBeta<'a> {
     //table: &'a mut LeafTranspositionTable,
-    prev_cache: &'a mut MoveOrdering,
+    prev_cache: &'a mut PrincipalVariation,
     calls: &'a mut Counter,
     path: &'a mut Vec<moves::ActualMove>,
     killer_moves: &'a mut KillerMoves,
@@ -376,8 +376,13 @@ impl<'a> AlphaBeta<'a> {
 
             cand.execute_move_no_ani(game_after_move, team);
             self.path.push(cand);
-            let eval =
-                self.alpha_beta(game_after_move, kk.get_new_ab(), team.not(), new_depth, ext);
+            let eval = self.alpha_beta(
+                game_after_move,
+                kk.clone_ab_values(),
+                team.not(),
+                new_depth,
+                ext,
+            );
 
             let mov = self.path.pop().unwrap();
             mov.execute_undo(game_after_move, team);
@@ -421,7 +426,7 @@ mod abab {
         pub fn finish(self) -> (Eval, Option<T>) {
             (self.value, self.mm)
         }
-        pub fn get_new_ab(&self) -> ABAB {
+        pub fn clone_ab_values(&self) -> ABAB {
             self.a.clone()
         }
         pub fn consider(&mut self, t: &T, eval: Eval) -> (bool, bool) {

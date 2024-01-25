@@ -51,9 +51,7 @@ impl GameState {
                     && game.env.land.is_coord_set(last_move.moveto)
             };
 
-
-            if transition_to_land
-            {
+            if transition_to_land {
                 mesh.add_normal_cell(last_move.unit.sub(&unit));
             } else {
                 for (_, a) in unit.to_cube().ring(1) {
@@ -115,8 +113,7 @@ impl GameState {
                             .find_slow(&a)
                             .is_none();
 
-                    if water_to_land
-                    {
+                    if water_to_land {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
                 }
@@ -141,7 +138,6 @@ impl ActualMove {
         team_index: ActiveTeam,
         doop: &mut WorkerManager<'_>,
     ) {
-
         let unitt = self.unit;
         let moveto = self.moveto;
         let attackto = self.attackto;
@@ -192,7 +188,6 @@ impl ActualMove {
             env: &mut state.env,
         };
         iii.execute_with_animation(team_index, doop, mesh).await;
-
     }
 
     pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
@@ -217,7 +212,6 @@ impl ActualMove {
 
         let iii = iii.execute(team_index);
 
-        
         let target_cell = attackto;
 
         let iii = moves::PartialMove {
@@ -336,8 +330,6 @@ pub mod partial {
         original: GridCoord,
         env: &mut Environment,
     ) -> PartialMoveSigl {
-
-
         if !env.land.is_coord_set(target_cell) {
             match this_unit.typ {
                 Type::Grass => env.land.grass.set_coord(target_cell, true),
