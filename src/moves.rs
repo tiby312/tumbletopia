@@ -51,13 +51,8 @@ impl GameState {
                     && game.env.land.is_coord_set(last_move.moveto)
             };
 
-            // let transition_to_water = {
-            //     game.env.land.is_coord_set(last_move.unit)
-            //         && !game.env.land.is_coord_set(last_move.moveto)
-            // };
 
             if transition_to_land
-            /*|| transition_to_water*/
             {
                 mesh.add_normal_cell(last_move.unit.sub(&unit));
             } else {
@@ -67,7 +62,6 @@ impl GameState {
                     let j = if is_ship {
                         !game.env.land.is_coord_set(a)
                     } else {
-                        /*game.env.land.is_coord_set(a) &&*/
                         !game.env.forest.is_coord_set(a)
                     };
                     if j && cond(a, Some(last_move), 0) {
@@ -94,7 +88,6 @@ impl GameState {
                 if check_is_ship(a) && cond(a, None, 0) {
                     mesh.add_normal_cell(a.sub(&unit));
 
-                    //if is_ship {
                     for (_, b) in a.to_cube().ring(1) {
                         let b = b.to_axial();
 
@@ -102,7 +95,6 @@ impl GameState {
                             mesh.add_normal_cell(b.sub(&unit));
                         }
                     }
-                    //}
                 } else {
                     let water_to_land = if typ == Type::Grass {
                         game.env.land.grass.is_coord_set(a)
@@ -123,24 +115,7 @@ impl GameState {
                             .find_slow(&a)
                             .is_none();
 
-                    // let land_to_water = game.world.get_game_cells().is_coord_set(a)
-                    //     && !game.env.land.is_coord_set(a)
-                    //     && !is_ship
-                    //     && game
-                    //         .factions
-                    //         .relative(team)
-                    //         .this_team
-                    //         .find_slow(&a)
-                    //         .is_none()
-                    //     && game
-                    //         .factions
-                    //         .relative(team)
-                    //         .that_team
-                    //         .find_slow(&a)
-                    //         .is_none();
-
                     if water_to_land
-                    /*|| land_to_water*/
                     {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
@@ -152,12 +127,13 @@ impl GameState {
     }
 }
 
-//TODO this has a value duplicated. Cant be more space efficient.
-//would help alot since this object is used alot in minmax.
 #[derive(Hash, PartialEq, Eq, Debug, Clone)]
-pub enum ActualMove {
-    CombinedMove(PartialMoveSigl, PartialMoveSigl),
+pub struct ActualMove {
+    pub unit: GridCoord,
+    pub moveto: GridCoord,
+    pub attackto: GridCoord,
 }
+
 impl ActualMove {
     pub async fn execute_move_ani(
         &self,
@@ -165,151 +141,130 @@ impl ActualMove {
         team_index: ActiveTeam,
         doop: &mut WorkerManager<'_>,
     ) {
-        match self {
-            moves::ActualMove::CombinedMove(o, e) => {
-                let target_cell = o.moveto;
-                let unit = state
-                    .factions
-                    .relative(team_index)
-                    .this_team
-                    .find_slow(&o.unit)
-                    .unwrap();
-                let mesh = state.generate_unit_possible_moves_inner(
-                    &unit.position,
-                    unit.typ,
-                    team_index,
-                    None,
-                );
 
-                let unit = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&o.unit)
-                    .unwrap();
+        let unitt = self.unit;
+        let moveto = self.moveto;
+        let attackto = self.attackto;
 
-                let ttt = unit.typ;
-                let iii = moves::PartialMove {
-                    this_unit: unit,
-                    target: target_cell,
-                    is_extra: None,
-                    env: &mut state.env,
-                };
+        let target_cell = moveto;
+        let unit = state
+            .factions
+            .relative(team_index)
+            .this_team
+            .find_slow(&unitt)
+            .unwrap();
+        let mesh =
+            state.generate_unit_possible_moves_inner(&unit.position, unit.typ, team_index, None);
 
-                let iii = iii.execute_with_animation(team_index, doop, mesh).await;
+        let unit = state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .find_slow_mut(&unitt)
+            .unwrap();
 
-                assert_eq!(iii.moveto, e.unit);
+        let ttt = unit.typ;
+        let iii = moves::PartialMove {
+            this_unit: unit,
+            target: target_cell,
+            is_extra: None,
+            env: &mut state.env,
+        };
 
-                let selected_unit = e.unit;
-                let target_cell = e.moveto;
+        let iii = iii.execute_with_animation(team_index, doop, mesh).await;
 
-                let mesh = state.generate_unit_possible_moves_inner(
-                    &selected_unit,
-                    ttt,
-                    team_index,
-                    Some(iii),
-                );
+        let selected_unit = moveto;
+        let target_cell = attackto;
 
-                let unit = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&e.unit)
-                    .unwrap();
-                let iii = moves::PartialMove {
-                    this_unit: unit,
-                    target: target_cell,
-                    is_extra: Some(iii),
-                    env: &mut state.env,
-                };
-                iii.execute_with_animation(team_index, doop, mesh).await;
-            }
-        }
+        let mesh =
+            state.generate_unit_possible_moves_inner(&selected_unit, ttt, team_index, Some(iii));
+
+        let unit = state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .find_slow_mut(&moveto)
+            .unwrap();
+        let iii = moves::PartialMove {
+            this_unit: unit,
+            target: target_cell,
+            is_extra: Some(iii),
+            env: &mut state.env,
+        };
+        iii.execute_with_animation(team_index, doop, mesh).await;
+
     }
 
     pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
-        match self {
-            moves::ActualMove::CombinedMove(o, e) => {
-                let target_cell = o.moveto;
-                let unit = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&o.unit)
-                    .unwrap();
+        let unitt = self.unit;
+        let moveto = self.moveto;
+        let attackto = self.attackto;
 
-                let iii = moves::PartialMove {
-                    this_unit: unit,
-                    target: target_cell,
-                    is_extra: None,
-                    env: &mut state.env,
-                };
+        let target_cell = moveto;
+        let unit = state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .find_slow_mut(&unitt)
+            .unwrap();
 
-                let iii = iii.execute(team_index);
+        let iii = moves::PartialMove {
+            this_unit: unit,
+            target: target_cell,
+            is_extra: None,
+            env: &mut state.env,
+        };
 
-                assert_eq!(iii.moveto, e.unit);
+        let iii = iii.execute(team_index);
 
-                let target_cell = e.moveto;
+        
+        let target_cell = attackto;
 
-                let iii = moves::PartialMove {
-                    this_unit: unit,
-                    target: target_cell,
-                    is_extra: Some(iii),
-                    env: &mut state.env,
-                };
+        let iii = moves::PartialMove {
+            this_unit: unit,
+            target: target_cell,
+            is_extra: Some(iii),
+            env: &mut state.env,
+        };
 
-                iii.execute(team_index);
-            }
-        }
+        iii.execute(team_index);
     }
     pub fn execute_undo(&self, state: &mut GameState, team_index: ActiveTeam) {
-        match self {
-            moves::ActualMove::CombinedMove(o, e) => {
-                let k = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&o.moveto)
-                    .unwrap();
+        let unitt = self.unit;
+        let moveto = self.moveto;
+        let attackto = self.attackto;
 
-                let la = state.env.land.is_coord_set(e.moveto);
-                let fr = state.env.forest.is_coord_set(e.moveto);
-                let is_ship = match (la, fr) {
-                    (true, false) => true,
-                    (true, true) => false,
-                    (false, true) => unreachable!(),
-                    (false, false) => unreachable!(),
-                };
+        let k = state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .find_slow_mut(&moveto)
+            .unwrap();
 
-                // let is_ship=if
-                // if e.moveto==o.unit{
-                //     state.env.land.is_coord_set(o.moveto)
-                // }else{
-                //     !state.env.land.is_coord_set(o.unit)
-                // };
+        let la = state.env.land.is_coord_set(attackto);
+        let fr = state.env.forest.is_coord_set(attackto);
+        let is_ship = match (la, fr) {
+            (true, false) => true,
+            (true, true) => false,
+            (false, true) => unreachable!(),
+            (false, false) => unreachable!(),
+        };
 
-                // let is_ship = !state.env.land.is_coord_set(o.unit)
-                //     || (state.env.land.is_coord_set(o.unit) && e.moveto == o.unit);
+        if is_ship {
+            assert!(state.env.land.is_coord_set(attackto));
+            if state.env.land.grass.is_coord_set(attackto) {
+                state.env.land.grass.set_coord(attackto, false);
+            } else {
+                assert!(state.env.land.snow.is_coord_set(attackto));
 
-                //let is_ship = !state.env.land.is_coord_set(k.position);
-
-                if is_ship {
-                    assert!(state.env.land.is_coord_set(e.moveto));
-                    if state.env.land.grass.is_coord_set(e.moveto) {
-                        state.env.land.grass.set_coord(e.moveto, false);
-                    } else {
-                        assert!(state.env.land.snow.is_coord_set(e.moveto));
-
-                        state.env.land.snow.set_coord(e.moveto, false);
-                    }
-                } else {
-                    assert!(state.env.forest.is_coord_set(e.moveto));
-                    state.env.forest.set_coord(e.moveto, false);
-                }
-
-                k.position = o.unit;
+                state.env.land.snow.set_coord(attackto, false);
             }
+        } else {
+            assert!(state.env.forest.is_coord_set(attackto));
+            state.env.forest.set_coord(attackto, false);
         }
+
+        k.position = unitt;
     }
 }
 
@@ -338,16 +293,11 @@ impl GameState {
 
                 for sm in second_mesh.iter_mesh(mm) {
                     //Don't bother applying the extra move. just generate the sigl.
-                    movs.push(moves::ActualMove::CombinedMove(
-                        moves::PartialMoveSigl {
-                            unit: pos,
-                            moveto: mm,
-                        },
-                        moves::PartialMoveSigl {
-                            unit: mm,
-                            moveto: sm,
-                        },
-                    ))
+                    movs.push(moves::ActualMove {
+                        unit: pos,
+                        moveto: mm,
+                        attackto: sm,
+                    })
                 }
 
                 //revert it back.
@@ -386,13 +336,7 @@ pub mod partial {
         original: GridCoord,
         env: &mut Environment,
     ) -> PartialMoveSigl {
-        // let is_ship = !env.land.is_coord_set(original);
 
-        // if is_ship {
-        //     env.land.set_coord(target_cell, true);
-        // } else {
-        //     env.forest.set_coord(target_cell, true);
-        // }
 
         if !env.land.is_coord_set(target_cell) {
             match this_unit.typ {
