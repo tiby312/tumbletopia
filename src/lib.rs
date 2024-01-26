@@ -292,7 +292,7 @@ pub async fn worker_entry() {
 
     let grid_matrix = grids::GridMatrix::new();
 
-    let models = &generate_models(&grid_matrix, &ctx);
+    let models = &Models::new(&grid_matrix, &ctx);
 
     let drop_shadow = &models.drop_shadow;
 
@@ -898,104 +898,73 @@ pub struct Models<T> {
     direction: T,
 }
 
-fn generate_models(
-    grid_matrix: &grids::GridMatrix,
-    ctx: &WebGl2RenderingContext,
-) -> Models<Foo<TextureGpu, ModelGpu>> {
-    const ASSETS: &[(&'static str, &'static [u8], usize, Option<f64>)] = &[
-        (
-            "select_model",
-            include_bytes!("../assets/select_model.glb"),
-            1,
-            None,
-        ),
-        (
-            "drop_shadow",
-            include_bytes!("../assets/drop_shadow.glb"),
-            1,
-            Some(0.5),
-        ),
-        (
-            "mountain",
-            include_bytes!("../assets/mountain.glb"),
-            RESIZE,
-            None,
-        ),
-        ("attack", include_bytes!("../assets/attack.glb"), 1, None),
-        ("cat", include_bytes!("../assets/donut.glb"), RESIZE, None),
-        (
-            "dog",
-            include_bytes!("../assets/cat_final.glb"),
-            RESIZE,
-            None,
-        ),
-        (
-            "grass",
-            include_bytes!("../assets/hex-grass.glb"),
-            RESIZE,
-            None,
-        ),
-        ("snow", include_bytes!("../assets/snow.glb"), RESIZE, None),
-        ("water", include_bytes!("../assets/water.glb"), RESIZE, None),
-        (
-            "direction",
-            include_bytes!("../assets/direction.glb"),
-            1,
-            None,
-        ),
-    ];
-    let quick_load = |name, res, alpha| {
-        let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
+impl Models<Foo<TextureGpu, ModelGpu>> {
+    pub fn new(grid_matrix: &grids::GridMatrix, ctx: &WebGl2RenderingContext) -> Self {
+        const ASSETS: &[(&'static [u8], usize, Option<f64>)] = &[
+            (include_bytes!("../assets/select_model.glb"), 1, None),
+            (include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
+            (include_bytes!("../assets/mountain.glb"), RESIZE, None),
+            (include_bytes!("../assets/attack.glb"), 1, None),
+            (include_bytes!("../assets/donut.glb"), RESIZE, None),
+            (include_bytes!("../assets/cat_final.glb"), RESIZE, None),
+            (include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
+            (include_bytes!("../assets/snow.glb"), RESIZE, None),
+            (include_bytes!("../assets/water.glb"), RESIZE, None),
+            (include_bytes!("../assets/direction.glb"), 1, None),
+        ];
+        let quick_load = |name, res, alpha| {
+            let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
 
-        log!(format!("texture:{:?}", (t.width, t.height)));
-        model_parse::Foo {
-            texture: model_parse::TextureGpu::new(&ctx, &t),
-            model: model_parse::ModelGpu::new(&ctx, &data),
+            log!(format!("texture:{:?}", (t.width, t.height)));
+            model_parse::Foo {
+                texture: model_parse::TextureGpu::new(&ctx, &t),
+                model: model_parse::ModelGpu::new(&ctx, &data),
+            }
+        };
+
+        let qq = |num| {
+            let (b, c, d) = ASSETS[num];
+            quick_load(b, c, d)
+        };
+
+        Models {
+            select_model: qq(0),
+            drop_shadow: qq(1),
+            mountain: qq(2),
+            attack: qq(3),
+            cat: qq(4),
+            dog: qq(5),
+            grass: qq(6),
+            snow: qq(7),
+            water: qq(8),
+            direction: qq(9),
         }
-    };
-
-    let qq = |num| {
-        let (a, b, c, d) = ASSETS[num];
-        quick_load(b, c, d)
-    };
-
-    Models {
-        select_model: qq(0),
-        drop_shadow: qq(1),
-        mountain: qq(2),
-        attack: qq(3),
-        cat: qq(4),
-        dog: qq(5),
-        grass: qq(6),
-        snow: qq(7),
-        water: qq(8),
-        direction: qq(8),
     }
 }
 
-const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
-const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
-//const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
-const MOUNTAIN_GLB: &'static [u8] = include_bytes!("../assets/mountain.glb");
+// const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
+// const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
+// //const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
+// const MOUNTAIN_GLB: &'static [u8] = include_bytes!("../assets/mountain.glb");
 
-const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
+// const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
 
-//const ARROW_GLB: &'static [u8] = include_bytes!("../assets/arrow.glb");
+// //const ARROW_GLB: &'static [u8] = include_bytes!("../assets/arrow.glb");
 
-//const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
+// //const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
 
-// const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
-// const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
-// const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
-const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
-const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
+// // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
+// // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
+// // const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
+// const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
+// const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
 
-const GRASS_GLB: &'static [u8] = include_bytes!("../assets/hex-grass.glb");
-const SNOW_GLB: &'static [u8] = include_bytes!("../assets/snow.glb");
+// const GRASS_GLB: &'static [u8] = include_bytes!("../assets/hex-grass.glb");
+// const SNOW_GLB: &'static [u8] = include_bytes!("../assets/snow.glb");
 
-const WATER_GLB: &'static [u8] = include_bytes!("../assets/water.glb");
+// const WATER_GLB: &'static [u8] = include_bytes!("../assets/water.glb");
 
-const DIRECTION_GLB: &'static [u8] = include_bytes!("../assets/direction.glb");
+// const DIRECTION_GLB: &'static [u8] = include_bytes!("../assets/direction.glb");
 
 pub struct NumberTextManager<'a> {
     pub numbers: Vec<model_parse::ModelGpu>,
