@@ -291,36 +291,26 @@ pub async fn worker_entry() {
     let mut last_matrix = cgmath::Matrix4::identity();
 
     let grid_matrix = grids::GridMatrix::new();
-    let quick_load = |name, res, alpha| {
-        let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
 
-        log!(format!("texture:{:?}", (t.width, t.height)));
-        model_parse::Foo {
-            texture: model_parse::TextureGpu::new(&ctx, &t),
-            model: model_parse::ModelGpu::new(&ctx, &data),
-        }
-    };
+    let models = &generate_models(&grid_matrix, &ctx);
 
-    let drop_shadow = quick_load(DROP_SHADOW_GLB, 1, Some(0.5));
+    let drop_shadow = &models.drop_shadow;
 
-    let dog = quick_load(DOG_GLB, RESIZE, None);
+    let dog = &models.dog;
 
-    let cat = quick_load(CAT_GLB, RESIZE, None);
+    let cat = &models.cat;
 
-    let mountain = quick_load(MOUNTAIN_GLB, 1, None);
+    let mountain = &models.mountain;
 
-    let water = quick_load(WATER_GLB, RESIZE, None);
+    let water = &models.water;
+    let grass = &models.grass;
+    let snow = &models.snow;
+    let select_model = &models.select_model;
 
-    let grass = quick_load(GRASS_GLB, RESIZE, None);
-    let snow = quick_load(SNOW_GLB, RESIZE, None);
-
-    let select_model = quick_load(SELECT_GLB, 1, None);
-
-    let attack_model = quick_load(ATTACK_GLB, 1, None);
-
+    let attack_model = &models.attack;
     //let arrow_model = quick_load(ARROW_GLB, 1, None);
 
-    let direction_model = quick_load(DIRECTION_GLB, 1, None);
+    let direction_model = &models.direction;
 
     //let friendly_model = quick_load(FRIENDLY_GLB, 1, None);
 
@@ -891,8 +881,97 @@ fn string_to_coords<'a>(st: &str) -> model::ModelData {
 use web_sys::WebGl2RenderingContext;
 
 use crate::ace::{ActiveTeam, MousePrompt, Pototo};
+use crate::model_parse::{Foo, ModelGpu, TextureGpu};
 //use crate::gameplay::GameStepper;
 use crate::movement::MoveUnit;
+
+pub struct Models<T> {
+    select_model: T,
+    drop_shadow: T,
+    mountain: T,
+    attack: T,
+    cat: T,
+    dog: T,
+    grass: T,
+    snow: T,
+    water: T,
+    direction: T,
+}
+
+fn generate_models(
+    grid_matrix: &grids::GridMatrix,
+    ctx: &WebGl2RenderingContext,
+) -> Models<Foo<TextureGpu, ModelGpu>> {
+    const ASSETS: &[(&'static str, &'static [u8], usize, Option<f64>)] = &[
+        (
+            "select_model",
+            include_bytes!("../assets/select_model.glb"),
+            1,
+            None,
+        ),
+        (
+            "drop_shadow",
+            include_bytes!("../assets/drop_shadow.glb"),
+            1,
+            Some(0.5),
+        ),
+        (
+            "mountain",
+            include_bytes!("../assets/mountain.glb"),
+            RESIZE,
+            None,
+        ),
+        ("attack", include_bytes!("../assets/attack.glb"), 1, None),
+        ("cat", include_bytes!("../assets/donut.glb"), RESIZE, None),
+        (
+            "dog",
+            include_bytes!("../assets/cat_final.glb"),
+            RESIZE,
+            None,
+        ),
+        (
+            "grass",
+            include_bytes!("../assets/hex-grass.glb"),
+            RESIZE,
+            None,
+        ),
+        ("snow", include_bytes!("../assets/snow.glb"), RESIZE, None),
+        ("water", include_bytes!("../assets/water.glb"), RESIZE, None),
+        (
+            "direction",
+            include_bytes!("../assets/direction.glb"),
+            1,
+            None,
+        ),
+    ];
+    let quick_load = |name, res, alpha| {
+        let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
+
+        log!(format!("texture:{:?}", (t.width, t.height)));
+        model_parse::Foo {
+            texture: model_parse::TextureGpu::new(&ctx, &t),
+            model: model_parse::ModelGpu::new(&ctx, &data),
+        }
+    };
+
+    let qq = |num| {
+        let (a, b, c, d) = ASSETS[num];
+        quick_load(b, c, d)
+    };
+
+    Models {
+        select_model: qq(0),
+        drop_shadow: qq(1),
+        mountain: qq(2),
+        attack: qq(3),
+        cat: qq(4),
+        dog: qq(5),
+        grass: qq(6),
+        snow: qq(7),
+        water: qq(8),
+        direction: qq(8),
+    }
+}
 
 const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
 const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
@@ -901,7 +980,7 @@ const MOUNTAIN_GLB: &'static [u8] = include_bytes!("../assets/mountain.glb");
 
 const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
 
-const ARROW_GLB: &'static [u8] = include_bytes!("../assets/arrow.glb");
+//const ARROW_GLB: &'static [u8] = include_bytes!("../assets/arrow.glb");
 
 //const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
 
