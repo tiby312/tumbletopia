@@ -277,11 +277,8 @@ pub async fn worker_entry() {
         {
             let (game, r, w) = create_worker_render(&mut game);
 
-            // let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
-            // let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
-
-            //let main_logic = ace::main_logic(&mut game, command_sender, response_recv);
-            let main_logic = ace::replay(game, sample_game, w);
+            let main_logic = ace::main_logic(game, w);
+            //let main_logic = ace::replay(game, sample_game, w);
             let render_thread = doop(r, &e, &mut frame_timer);
 
             futures::join!(render_thread, main_logic);
@@ -300,7 +297,7 @@ fn create_worker_render(
 ) -> (&mut GameState, RenderManager, ace::WorkerManager) {
     let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
     let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
-    let mut doop = ace::WorkerManager {
+    let doop = ace::WorkerManager {
         game: game as *mut _,
         sender: command_sender,
         receiver: response_recv,
@@ -341,15 +338,11 @@ impl EngineStuff {
         }
     }
 }
+
 async fn doop<'c>(
-    mut rm: RenderManager<'_>,
+    rm: RenderManager<'_>,
     e: &EngineStuff,
-    // grid_matrix: &grids::GridMatrix,
-    // models: &Models<Foo<TextureGpu, ModelGpu>>,
-    // numm: &Numm,
-    // ctx: &mut CtxWrap,
     frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
-    // canvas: &mut OffscreenCanvas,
 ) {
     let mut response_sender = rm.response_sender;
     let mut command_recv = rm.command_recv;

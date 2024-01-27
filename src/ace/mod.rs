@@ -479,20 +479,11 @@ pub async fn replay<'a>(
         return;
     }
 }
-pub async fn main_logic<'a>(
-    game: &'a mut GameState,
-    command_sender: Sender<GameWrap<'a, Command>>,
-    response_recv: Receiver<GameWrapResponse<'a, Response>>,
-) {
+pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>) {
     let mut replay_game = game.clone();
 
     let mut game_history = selection::MoveLog::new();
 
-    let mut doop = WorkerManager {
-        game: game as *mut _,
-        sender: command_sender,
-        receiver: response_recv,
-    };
     // {
     //     share::load(SAMPLE_GAME).replay(&mut doop).await;
     //     return;
