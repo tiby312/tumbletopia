@@ -120,6 +120,7 @@ impl<'a> WarriorDraw<'a> {
         view_proj: &Matrix4<f32>,
         proj: &Matrix4<f32>,
         draw_sys: &mut ShaderSystem,
+        text_texture: &TextureGpu,
     ) {
         //draw text
         for ccat in self.col.iter() {
@@ -135,7 +136,7 @@ impl<'a> WarriorDraw<'a> {
             let s = matrix::scale(5.0, 5.0, 5.0);
             let m = new_proj.chain(s).generate();
 
-            let nn = health_numbers.get_number(ccat.typ.type_index() as i8);
+            let nn = health_numbers.get_number(ccat.typ.type_index() as i8, text_texture);
             let mut v = draw_sys.view(m.as_ref());
             nn.draw_ext(&mut v, false, false, true, false);
 
@@ -309,7 +310,7 @@ pub async fn worker_entry() {
         model_parse::TextureGpu::new(&ctx, &ascii_tex)
     };
 
-    let health_numbers = NumberTextManager::new(&ctx, &text_texture);
+    let health_numbers = NumberTextManager::new(&ctx);
 
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
@@ -707,6 +708,7 @@ pub async fn worker_entry() {
                             &view_proj,
                             &proj,
                             &mut draw_sys,
+                            &text_texture,
                         );
                         dog_draw.draw_health_text(
                             &grid_matrix,
@@ -714,6 +716,7 @@ pub async fn worker_entry() {
                             &view_proj,
                             &proj,
                             &mut draw_sys,
+                            &text_texture,
                         );
                     });
                 }
@@ -931,36 +934,11 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
     }
 }
 
-// const SELECT_GLB: &'static [u8] = include_bytes!("../assets/select_model.glb");
-// const DROP_SHADOW_GLB: &'static [u8] = include_bytes!("../assets/drop_shadow.glb");
-// //const ROAD_GLB: &'static [u8] = include_bytes!("../assets/road.glb");
-// const MOUNTAIN_GLB: &'static [u8] = include_bytes!("../assets/mountain.glb");
-
-// const ATTACK_GLB: &'static [u8] = include_bytes!("../assets/attack.glb");
-
-// //const ARROW_GLB: &'static [u8] = include_bytes!("../assets/arrow.glb");
-
-// //const FRIENDLY_GLB: &'static [u8] = include_bytes!("../assets/friendly-select.glb");
-
-// // const SHADED_GLB: &'static [u8] = include_bytes!("../assets/shaded.glb");
-// // const KEY_GLB: &'static [u8] = include_bytes!("../assets/key.glb");
-// // const PERSON_GLB: &'static [u8] = include_bytes!("../assets/person-v1.glb");
-// const CAT_GLB: &'static [u8] = include_bytes!("../assets/donut.glb");
-// const DOG_GLB: &'static [u8] = include_bytes!("../assets/cat_final.glb");
-
-// const GRASS_GLB: &'static [u8] = include_bytes!("../assets/hex-grass.glb");
-// const SNOW_GLB: &'static [u8] = include_bytes!("../assets/snow.glb");
-
-// const WATER_GLB: &'static [u8] = include_bytes!("../assets/water.glb");
-
-// const DIRECTION_GLB: &'static [u8] = include_bytes!("../assets/direction.glb");
-
-pub struct NumberTextManager<'a> {
+pub struct NumberTextManager {
     pub numbers: Vec<model_parse::ModelGpu>,
-    pub texture: &'a model_parse::TextureGpu,
 }
-impl<'a> NumberTextManager<'a> {
-    fn new(ctx: &WebGl2RenderingContext, texture: &'a model_parse::TextureGpu) -> Self {
+impl NumberTextManager {
+    fn new(ctx: &WebGl2RenderingContext) -> Self {
         let range = -10..=10;
         fn generate_number(number: i8, ctx: &WebGl2RenderingContext) -> model_parse::ModelGpu {
             let data = string_to_coords(&format!("{}", number));
@@ -968,17 +946,18 @@ impl<'a> NumberTextManager<'a> {
         }
 
         let numbers = range.into_iter().map(|i| generate_number(i, ctx)).collect();
-        Self { numbers, texture }
+        Self { numbers }
     }
 
-    pub fn get_number(
+    pub fn get_number<'b>(
         &self,
         num: i8,
-    ) -> model_parse::Foo<&model_parse::TextureGpu, &model_parse::ModelGpu> {
+        texture: &'b model_parse::TextureGpu,
+    ) -> model_parse::Foo<&'b model_parse::TextureGpu, &model_parse::ModelGpu> {
         let gpu = &self.numbers[(num + 10) as usize];
 
         model_parse::Foo {
-            texture: &self.texture,
+            texture,
             model: gpu,
         }
     }
