@@ -272,32 +272,30 @@ pub async fn worker_entry() {
     ctx.setup_alpha();
 
     let grid_matrix = grids::GridMatrix::new();
-
-    //TODO get rid of this somehow.
-    //these values are incorrect.
-    //they are set correctly after resize is called on startup.
     let models = &Models::new(&grid_matrix, &ctx);
     let numm = &Numm::new(&ctx);
 
     let mut game = ace::game_init();
 
-    let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
-    let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
+    {
+        let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
+        let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
-    let main_logic = ace::main_logic(&mut game, command_sender, response_recv);
+        let main_logic = ace::main_logic(&mut game, command_sender, response_recv);
 
-    let render_thread = doop(
-        response_sender,
-        command_recv,
-        &grid_matrix,
-        models,
-        numm,
-        &mut ctx,
-        &mut frame_timer,
-        &mut canvas,
-    );
+        let render_thread = doop(
+            response_sender,
+            command_recv,
+            &grid_matrix,
+            models,
+            numm,
+            &mut ctx,
+            &mut frame_timer,
+            &mut canvas,
+        );
 
-    futures::join!(render_thread, main_logic);
+        futures::join!(render_thread, main_logic);
+    }
 
     w.post_message(UiButton::NoUi);
 
