@@ -282,21 +282,18 @@ pub async fn worker_entry() {
     let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
     let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
-    let main_logic = async { ace::main_logic(command_sender, response_recv).await };
+    let main_logic = ace::main_logic(command_sender, response_recv);
 
-    let render_thread = async {
-        doop(
-            response_sender,
-            command_recv,
-            &grid_matrix,
-            models,
-            numm,
-            &mut ctx,
-            &mut frame_timer,
-            &mut canvas,
-        )
-        .await
-    };
+    let render_thread = doop(
+        response_sender,
+        command_recv,
+        &grid_matrix,
+        models,
+        numm,
+        &mut ctx,
+        &mut frame_timer,
+        &mut canvas,
+    );
 
     futures::join!(render_thread, main_logic);
 
