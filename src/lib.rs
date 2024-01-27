@@ -267,21 +267,19 @@ pub async fn worker_entry() {
     let (mut w, ss) = shogo::EngineWorker::new().await;
     let mut frame_timer = shogo::FrameTimer::new(60, ss);
 
-    let e = EngineStuff::new(w.canvas());
+    let render = EngineStuff::new(w.canvas());
 
     loop {
-        let mut game = ace::game_init();
-
         let sample_game = ace::share::load(ace::share::SAMPLE_GAME);
 
-        {
-            let (game, r, mut w) = create_worker_render(&mut game);
+        let mut game = ace::game_init();
 
-            let main_logic = sample_game.replay(game, &mut w);
-            let render_thread = r.doop(&e, &mut frame_timer);
+        let (game, r, mut w) = create_worker_render(&mut game);
 
-            futures::join!(render_thread, main_logic);
-        }
+        futures::join!(
+            sample_game.replay(game, &mut w),
+            render.handle_render_loop(r, &mut frame_timer)
+        );
     }
     w.post_message(UiButton::NoUi);
 
@@ -309,6 +307,10 @@ fn create_worker_render(
     )
 }
 
+struct RenderManager<'c> {
+    response_sender: futures::channel::mpsc::Sender<GameWrapResponse<'c, ace::Response>>,
+    command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<'c, ace::Command>>,
+}
 pub struct EngineStuff {
     grid_matrix: grids::GridMatrix,
     models: Models<Foo<TextureGpu, ModelGpu>>,
@@ -333,22 +335,16 @@ impl EngineStuff {
             canvas,
         }
     }
-}
 
-struct RenderManager<'c> {
-    response_sender: futures::channel::mpsc::Sender<GameWrapResponse<'c, ace::Response>>,
-    command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<'c, ace::Command>>,
-}
-impl<'c> RenderManager<'c> {
-    async fn doop(
-        self,
-        e: &EngineStuff,
+    async fn handle_render_loop(
+        &self,
+        rm: RenderManager<'_>,
         frame_timer: &mut shogo::FrameTimer<
             MEvent,
             futures::channel::mpsc::UnboundedReceiver<MEvent>,
         >,
     ) {
-        let rm = self;
+        let e = self;
         let mut response_sender = rm.response_sender;
         let mut command_recv = rm.command_recv;
         let ctx = &e.ctx;
