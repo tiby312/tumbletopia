@@ -279,10 +279,12 @@ pub async fn worker_entry() {
     let models = &Models::new(&grid_matrix, &ctx);
     let numm = &Numm::new(&ctx);
 
+    let mut game = ace::game_init();
+
     let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
     let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
-    let main_logic = ace::main_logic(command_sender, response_recv);
+    let main_logic = ace::main_logic(&mut game, command_sender, response_recv);
 
     let render_thread = doop(
         response_sender,

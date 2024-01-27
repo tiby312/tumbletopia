@@ -421,7 +421,7 @@ pub async fn reselect_loop(
 
 const SAMPLE_GAME:&str="TY5RAsAgCEIpT7D7n9UYUm3Wx1MkCfB5EExMLhNM1lmaXM1UP3Sldr+qUFXd2K8Pzw4z26y8FOm++a3VnqmMUJJZmlPh/H92/7L5+V8=";
 
-fn game_init() -> GameState {
+pub fn game_init() -> GameState {
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([-3, 3]), Type::Grass),
         UnitData::new(GridCoord([0, -3]), Type::Grass),
@@ -472,14 +472,11 @@ pub mod share {
     }
 }
 pub async fn main_logic<'a>(
+    game: &'a mut GameState,
     command_sender: Sender<GameWrap<'a, Command>>,
     response_recv: Receiver<GameWrapResponse<'a, Response>>,
 ) {
-    let mut game = game_init();
-
     let mut replay_game = game.clone();
-
-    let game = &mut game;
 
     let mut game_history = selection::MoveLog::new();
 
