@@ -293,6 +293,7 @@ pub async fn worker_entry() {
 
     let grid_matrix = grids::GridMatrix::new();
 
+    let numm = &Numm::new(&ctx);
     let models = &Models::new(&grid_matrix, &ctx);
     let drop_shadow = &models.drop_shadow;
     let dog = &models.dog;
@@ -303,14 +304,6 @@ pub async fn worker_entry() {
     let snow = &models.snow;
     let select_model = &models.select_model;
     let direction_model = &models.direction;
-
-    let text_texture = {
-        let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
-
-        model_parse::TextureGpu::new(&ctx, &ascii_tex)
-    };
-
-    let health_numbers = NumberTextManager::new(&ctx);
 
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
@@ -704,19 +697,19 @@ pub async fn worker_entry() {
                     disable_depth(&ctx, || {
                         cat_draw.draw_health_text(
                             &grid_matrix,
-                            &health_numbers,
+                            &numm.health_numbers,
                             &view_proj,
                             &proj,
                             &mut draw_sys,
-                            &text_texture,
+                            &numm.text_texture,
                         );
                         dog_draw.draw_health_text(
                             &grid_matrix,
-                            &health_numbers,
+                            &numm.health_numbers,
                             &view_proj,
                             &proj,
                             &mut draw_sys,
-                            &text_texture,
+                            &numm.text_texture,
                         );
                     });
                 }
@@ -930,6 +923,27 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             snow: qq(7),
             water: qq(8),
             direction: qq(9),
+        }
+    }
+}
+
+pub struct Numm {
+    text_texture: TextureGpu,
+    health_numbers: NumberTextManager,
+}
+impl Numm {
+    pub fn new(ctx: &WebGl2RenderingContext) -> Self {
+        let text_texture = {
+            let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
+
+            model_parse::TextureGpu::new(&ctx, &ascii_tex)
+        };
+
+        let health_numbers = NumberTextManager::new(&ctx);
+
+        Numm {
+            text_texture,
+            health_numbers,
         }
     }
 }
