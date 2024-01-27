@@ -277,7 +277,8 @@ pub async fn worker_entry() {
         let (game, mut r, mut w) = create_worker_render(&mut game);
 
         futures::join!(
-            sample_game.replay(&mut w, game),
+            //sample_game.replay(&mut w, game),
+            ace::main_logic(game, w),
             render.handle_render_loop(&mut r, &mut frame_timer)
         );
     }
@@ -534,6 +535,19 @@ impl EngineStuff {
                     scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
                 match &mut command {
+                    ace::ProcessedCommand::Popup(str) => {
+                        console_dbg!(str);
+                        //TODO paint ai thinking popup here
+
+                        
+                        response_sender.send(ace::GameWrapResponse {
+                            game: ggame,
+                            data: ace::Response::PopupFinish,
+                        })
+                        .await
+                        .unwrap();
+                        break 'outer;
+                    }
                     ace::ProcessedCommand::Animate(a) => {
                         if let Some(_) = a.animate_step() {
                         } else {

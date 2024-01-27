@@ -37,6 +37,7 @@ pub enum MousePrompt {
 pub enum ProcessedCommand {
     Animate(Animation<animation::AnimationCommand>),
     GetMouseInput(MousePrompt),
+    Popup(String),
     Nothing,
 }
 impl ProcessedCommand {
@@ -67,12 +68,14 @@ pub enum Command {
     Animate(animation::AnimationCommand),
     GetMouseInput(MousePrompt),
     Nothing,
+    Popup(String),
 }
 impl Command {
     pub fn process(self, grid: &GridMatrix) -> ProcessedCommand {
         use animation::AnimationCommand;
         use Command::*;
         match self {
+            Popup(s) => ProcessedCommand::Popup(s),
             Animate(a) => match a.clone() {
                 AnimationCommand::Movement {
                     unit,
@@ -108,6 +111,7 @@ pub enum Pototo<T> {
 pub enum Response {
     Mouse(MousePrompt, Pototo<GridCoord>), //TODO make grid coord
     AnimationFinish(Animation<animation::AnimationCommand>),
+    PopupFinish
 }
 
 use futures::{
@@ -175,6 +179,26 @@ impl<'a> WorkerManager<'a> {
         assert_eq!(grey2, grey);
 
         (selection, c)
+    }
+
+    async fn send_popup(&mut self, str: &str, team_index: ActiveTeam) {
+        let game = unsafe { &*self.game };
+
+        self.sender
+            .send(GameWrap {
+                game,
+                data: Command::Popup(str.into()),
+                team: team_index,
+            })
+            .await
+            .unwrap();
+
+        let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
+
+        let Response::PopupFinish = data else {
+            unreachable!();
+        };
+
     }
 
     async fn get_mouse<'c>(
@@ -498,12 +522,12 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
 
         //Add AIIIIII.
         if team_index == ActiveTeam::Cats {
-            //{
-            //if false {
+            doop.send_popup("AI Thinking", team_index).await;
             let the_move = ai::iterative_deepening(game, team_index);
-
+            doop.send_popup("", team_index).await;
             the_move.execute_move_ani(game, team_index, &mut doop).await;
             game_history.push(the_move);
+
             continue;
         }
 
