@@ -469,16 +469,16 @@ pub mod share {
     }
 }
 
-pub async fn replay<'a>(
-    game: &'a mut GameState,
-    game_history: selection::MoveLog,
-    mut doop: WorkerManager<'a>,
-) {
-    {
-        game_history.replay(game, &mut doop).await;
-        return;
-    }
-}
+// pub async fn replay<'a>(
+//     game: &'a mut GameState,
+//     game_history: selection::MoveLog,
+//     mut doop: WorkerManager<'a>,
+// ) {
+//     {
+//         game_history.replay(game, &mut doop).await;
+//         return;
+//     }
+// }
 pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>) {
     let mut replay_game = game.clone();
 
