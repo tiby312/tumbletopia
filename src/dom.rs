@@ -126,10 +126,11 @@ pub async fn main_entry() {
 
     log!("demo start");
 
-    let (canvas, button, endturn) = (
+    let (canvas, button, endturn, popup) = (
         utils::get_by_id_canvas("mycanvas"),
         utils::get_by_id_elem("mybutton"),
         utils::get_by_id_elem("endturn"),
+        utils::get_by_id_elem("popup"),
     );
 
     button.set_hidden(true);
@@ -201,15 +202,16 @@ pub async fn main_entry() {
         let hay: UiButton = response.next().await.unwrap_throw();
 
         match hay {
-            UiButton::ShowRoadUi => {
-                button.set_hidden(false);
-                button.set_text_content(Some("make a road?"));
+            UiButton::ShowPopup(text) => {
+                popup.set_hidden(false);
+                popup.set_text_content(Some(&text));
             }
-            UiButton::NoUi => {
-                button.set_text_content(Some(""));
+            UiButton::HidePopup => {
+                popup.set_text_content(Some(""));
+                popup.set_hidden(true);
             }
         }
-        log!(format!("main thread received={:?}", hay));
+        //log!(format!("main thread received={:?}", hay));
     }
     //log!("main thread is closing");
 }

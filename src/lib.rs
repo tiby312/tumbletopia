@@ -36,10 +36,10 @@ use unit::*;
 //pub mod logic;
 pub const RESIZE: usize = 10;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 enum UiButton {
-    ShowRoadUi,
-    NoUi,
+    ShowPopup(String),
+    HidePopup,
 }
 
 pub struct WarriorDraw<'a> {
@@ -264,10 +264,10 @@ pub async fn worker_entry() {
 
     console_dbg!("num tiles={}", hex::Cube::new(0, 0).range(4).count());
 
-    let (mut w, ss) = shogo::EngineWorker::new().await;
+    let (mut wr, ss) = shogo::EngineWorker::new().await;
     let mut frame_timer = shogo::FrameTimer::new(60, ss);
 
-    let render = EngineStuff::new(w.canvas());
+    let render = EngineStuff::new(wr.canvas());
 
     loop {
         let sample_game = ace::share::load(ace::share::SAMPLE_GAME);
@@ -279,10 +279,10 @@ pub async fn worker_entry() {
         futures::join!(
             //sample_game.replay(&mut w, game),
             ace::main_logic(game, w),
-            render.handle_render_loop(&mut r, &mut frame_timer)
+            render.handle_render_loop(&mut r, &mut frame_timer, &mut wr)
         );
     }
-    w.post_message(UiButton::NoUi);
+    //w.post_message(UiButton::NoUi);
 
     log!("Worker thread closin");
 }
@@ -344,6 +344,7 @@ impl EngineStuff {
             MEvent,
             futures::channel::mpsc::UnboundedReceiver<MEvent>,
         >,
+        engine_worker: &mut shogo::EngineWorker<MEvent, UiButton>,
     ) {
         let e = self;
         let response_sender = &mut rm.response_sender;
@@ -536,16 +537,21 @@ impl EngineStuff {
 
                 match &mut command {
                     ace::ProcessedCommand::Popup(str) => {
-                        console_dbg!(str);
+                        //console_dbg!(str);
                         //TODO paint ai thinking popup here
+                        if str.is_empty() {
+                            engine_worker.post_message(UiButton::HidePopup);
+                        } else {
+                            engine_worker.post_message(UiButton::ShowPopup(str.clone()));
+                        }
 
-                        
-                        response_sender.send(ace::GameWrapResponse {
-                            game: ggame,
-                            data: ace::Response::PopupFinish,
-                        })
-                        .await
-                        .unwrap();
+                        response_sender
+                            .send(ace::GameWrapResponse {
+                                game: ggame,
+                                data: ace::Response::PopupFinish,
+                            })
+                            .await
+                            .unwrap();
                         break 'outer;
                     }
                     ace::ProcessedCommand::Animate(a) => {

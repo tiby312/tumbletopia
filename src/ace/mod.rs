@@ -111,7 +111,7 @@ pub enum Pototo<T> {
 pub enum Response {
     Mouse(MousePrompt, Pototo<GridCoord>), //TODO make grid coord
     AnimationFinish(Animation<animation::AnimationCommand>),
-    PopupFinish
+    PopupFinish,
 }
 
 use futures::{
@@ -198,7 +198,6 @@ impl<'a> WorkerManager<'a> {
         let Response::PopupFinish = data else {
             unreachable!();
         };
-
     }
 
     async fn get_mouse<'c>(
