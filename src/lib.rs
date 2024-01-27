@@ -293,26 +293,15 @@ pub async fn worker_entry() {
     let grid_matrix = grids::GridMatrix::new();
 
     let models = &Models::new(&grid_matrix, &ctx);
-
     let drop_shadow = &models.drop_shadow;
-
     let dog = &models.dog;
-
     let cat = &models.cat;
-
     let mountain = &models.mountain;
-
     let water = &models.water;
     let grass = &models.grass;
     let snow = &models.snow;
     let select_model = &models.select_model;
-
-    let attack_model = &models.attack;
-    //let arrow_model = quick_load(ARROW_GLB, 1, None);
-
     let direction_model = &models.direction;
-
-    //let friendly_model = quick_load(FRIENDLY_GLB, 1, None);
 
     let text_texture = {
         let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
