@@ -267,13 +267,7 @@ pub async fn worker_entry() {
     let (mut w, ss) = shogo::EngineWorker::new().await;
     let mut frame_timer = shogo::FrameTimer::new(60, ss);
 
-    let mut canvas = w.canvas();
-    let mut ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
-    ctx.setup_alpha();
-
-    let grid_matrix = grids::GridMatrix::new();
-    let models = &Models::new(&grid_matrix, &ctx);
-    let numm = &Numm::new(&ctx);
+    let e = EngineStuff::new(w.canvas());
 
     let mut game = ace::game_init();
 
@@ -283,16 +277,7 @@ pub async fn worker_entry() {
 
         let main_logic = ace::main_logic(&mut game, command_sender, response_recv);
 
-        let render_thread = doop(
-            response_sender,
-            command_recv,
-            &grid_matrix,
-            models,
-            numm,
-            &mut ctx,
-            &mut frame_timer,
-            &mut canvas,
-        );
+        let render_thread = doop(response_sender, command_recv, &e, &mut frame_timer);
 
         futures::join!(render_thread, main_logic);
     }
@@ -302,16 +287,48 @@ pub async fn worker_entry() {
     log!("Worker thread closin");
 }
 
+pub struct EngineStuff {
+    grid_matrix: grids::GridMatrix,
+    models: Models<Foo<TextureGpu, ModelGpu>>,
+    numm: Numm,
+    ctx: CtxWrap,
+    canvas: OffscreenCanvas,
+}
+impl EngineStuff {
+    fn new(canvas: OffscreenCanvas) -> Self {
+        let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
+        ctx.setup_alpha();
+
+        let grid_matrix = grids::GridMatrix::new();
+        let models = Models::new(&grid_matrix, &ctx);
+        let numm = Numm::new(&ctx);
+
+        EngineStuff {
+            grid_matrix,
+            models,
+            numm,
+            ctx,
+            canvas,
+        }
+    }
+}
 async fn doop<'c>(
     mut response_sender: futures::channel::mpsc::Sender<GameWrapResponse<'c, ace::Response>>,
     mut command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<'c, ace::Command>>,
-    grid_matrix: &grids::GridMatrix,
-    models: &Models<Foo<TextureGpu, ModelGpu>>,
-    numm: &Numm,
-    ctx: &mut CtxWrap,
+    e: &EngineStuff,
+    // grid_matrix: &grids::GridMatrix,
+    // models: &Models<Foo<TextureGpu, ModelGpu>>,
+    // numm: &Numm,
+    // ctx: &mut CtxWrap,
     frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
-    canvas: &mut OffscreenCanvas,
+    // canvas: &mut OffscreenCanvas,
 ) {
+    let ctx = &e.ctx;
+    let canvas = &e.canvas;
+    let grid_matrix = &e.grid_matrix;
+    let models = &e.models;
+    let numm = &e.numm;
+
     let mut draw_sys = ctx.shader_system();
 
     let gl_width = canvas.width(); // as f32*1.6;
