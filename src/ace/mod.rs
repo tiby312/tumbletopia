@@ -116,15 +116,12 @@ use futures::{
 };
 
 pub struct WorkerManager<'a> {
-    game: *mut GameState,
-    sender: Sender<GameWrap<'a, Command>>,
-    receiver: Receiver<GameWrapResponse<'a, Response>>,
+    pub game: *mut GameState,
+    pub sender: Sender<GameWrap<'a, Command>>,
+    pub receiver: Receiver<GameWrapResponse<'a, Response>>,
 }
 
 impl<'a> WorkerManager<'a> {
-    pub fn set_game(&mut self, a: &mut GameState) {
-        self.game = a as *mut _;
-    }
     pub async fn wait_animation<'c>(
         &mut self,
         animation: animation::AnimationCommand,
@@ -419,8 +416,6 @@ pub async fn reselect_loop(
     }
 }
 
-const SAMPLE_GAME:&str="TY5RAsAgCEIpT7D7n9UYUm3Wx1MkCfB5EExMLhNM1lmaXM1UP3Sldr+qUFXd2K8Pzw4z26y8FOm++a3VnqmMUJJZmlPh/H92/7L5+V8=";
-
 pub fn game_init() -> GameState {
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([-3, 3]), Type::Grass),
@@ -457,6 +452,8 @@ pub fn game_init() -> GameState {
 }
 
 pub mod share {
+    pub const SAMPLE_GAME:&str="TY5RAsAgCEIpT7D7n9UYUm3Wx1MkCfB5EExMLhNM1lmaXM1UP3Sldr+qUFXd2K8Pzw4z26y8FOm++a3VnqmMUJJZmlPh/H92/7L5+V8=";
+
     use super::*;
     pub fn load(s: &str) -> selection::MoveLog {
         use base64::prelude::*;
@@ -469,6 +466,17 @@ pub mod share {
         let k = game_history.serialize();
         let k = miniz_oxide::deflate::compress_to_vec(&k, 6);
         BASE64_STANDARD.encode(k)
+    }
+}
+
+pub async fn replay<'a>(
+    game: &'a mut GameState,
+    game_history: selection::MoveLog,
+    mut doop: WorkerManager<'a>,
+) {
+    {
+        game_history.replay(game, &mut doop).await;
+        return;
     }
 }
 pub async fn main_logic<'a>(
@@ -485,11 +493,11 @@ pub async fn main_logic<'a>(
         sender: command_sender,
         receiver: response_recv,
     };
-
     // {
     //     share::load(SAMPLE_GAME).replay(&mut doop).await;
     //     return;
     // }
+
     //Loop over each team!
     'game_loop: for team_index in ActiveTeam::Dogs.iter() {
         if let Some(g) = game.game_is_over() {

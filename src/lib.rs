@@ -269,22 +269,51 @@ pub async fn worker_entry() {
 
     let e = EngineStuff::new(w.canvas());
 
-    let mut game = ace::game_init();
+    loop {
+        let mut game = ace::game_init();
 
-    {
-        let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
-        let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
+        let sample_game = ace::share::load(ace::share::SAMPLE_GAME);
 
-        let main_logic = ace::main_logic(&mut game, command_sender, response_recv);
+        {
+            let (game, r, w) = create_worker_render(&mut game);
 
-        let render_thread = doop(response_sender, command_recv, &e, &mut frame_timer);
+            // let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
+            // let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
-        futures::join!(render_thread, main_logic);
+            //let main_logic = ace::main_logic(&mut game, command_sender, response_recv);
+            let main_logic = ace::replay(game, sample_game, w);
+            let render_thread = doop(r, &e, &mut frame_timer);
+
+            futures::join!(render_thread, main_logic);
+        }
     }
-
     w.post_message(UiButton::NoUi);
 
     log!("Worker thread closin");
+}
+struct RenderManager<'c> {
+    response_sender: futures::channel::mpsc::Sender<GameWrapResponse<'c, ace::Response>>,
+    command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<'c, ace::Command>>,
+}
+fn create_worker_render(
+    game: &mut GameState,
+) -> (&mut GameState, RenderManager, ace::WorkerManager) {
+    let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
+    let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
+    let mut doop = ace::WorkerManager {
+        game: game as *mut _,
+        sender: command_sender,
+        receiver: response_recv,
+    };
+
+    (
+        game,
+        RenderManager {
+            response_sender,
+            command_recv,
+        },
+        doop,
+    )
 }
 
 pub struct EngineStuff {
@@ -313,8 +342,7 @@ impl EngineStuff {
     }
 }
 async fn doop<'c>(
-    mut response_sender: futures::channel::mpsc::Sender<GameWrapResponse<'c, ace::Response>>,
-    mut command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<'c, ace::Command>>,
+    mut rm: RenderManager<'_>,
     e: &EngineStuff,
     // grid_matrix: &grids::GridMatrix,
     // models: &Models<Foo<TextureGpu, ModelGpu>>,
@@ -323,6 +351,8 @@ async fn doop<'c>(
     frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
     // canvas: &mut OffscreenCanvas,
 ) {
+    let mut response_sender = rm.response_sender;
+    let mut command_recv = rm.command_recv;
     let ctx = &e.ctx;
     let canvas = &e.canvas;
     let grid_matrix = &e.grid_matrix;

@@ -34,11 +34,9 @@ impl MoveLog {
         self.inner.push(o);
     }
 
-    pub async fn replay(&self, doop: &mut WorkerManager<'_>) {
-        let mut kk = super::game_init();
-        doop.set_game(&mut kk);
+    pub async fn replay(&self, kk: &mut GameState, doop: &mut WorkerManager<'_>) {
         for (team_index, m) in ActiveTeam::Dogs.iter().zip(self.inner.iter()) {
-            m.execute_move_ani(&mut kk, team_index, doop).await;
+            m.execute_move_ani(kk, team_index, doop).await;
         }
         assert!(kk.game_is_over().is_some());
     }
