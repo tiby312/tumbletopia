@@ -274,11 +274,11 @@ pub async fn worker_entry() {
 
         let mut game = ace::game_init();
 
-        let (game, r, mut w) = create_worker_render(&mut game);
+        let (game, mut r, mut w) = create_worker_render(&mut game);
 
         futures::join!(
-            sample_game.replay(game, &mut w),
-            render.handle_render_loop(r, &mut frame_timer)
+            sample_game.replay(&mut w, game),
+            render.handle_render_loop(&mut r, &mut frame_timer)
         );
     }
     w.post_message(UiButton::NoUi);
@@ -338,15 +338,15 @@ impl EngineStuff {
 
     async fn handle_render_loop(
         &self,
-        rm: RenderManager<'_>,
+        rm: &mut RenderManager<'_>,
         frame_timer: &mut shogo::FrameTimer<
             MEvent,
             futures::channel::mpsc::UnboundedReceiver<MEvent>,
         >,
     ) {
         let e = self;
-        let mut response_sender = rm.response_sender;
-        let mut command_recv = rm.command_recv;
+        let response_sender = &mut rm.response_sender;
+        let command_recv = &mut rm.command_recv;
         let ctx = &e.ctx;
         let canvas = &e.canvas;
         let grid_matrix = &e.grid_matrix;

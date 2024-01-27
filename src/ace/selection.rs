@@ -34,7 +34,7 @@ impl MoveLog {
         self.inner.push(o);
     }
 
-    pub async fn replay(&self, kk: &mut GameState, doop: &mut WorkerManager<'_>) {
+    pub async fn replay(&self, doop: &mut WorkerManager<'_>, kk: &mut GameState) {
         for (team_index, m) in ActiveTeam::Dogs.iter().zip(self.inner.iter()) {
             m.execute_move_ani(kk, team_index, doop).await;
         }
