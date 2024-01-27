@@ -269,10 +269,15 @@ pub async fn worker_entry() {
 
     let mut canvas = w.canvas();
     let mut ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
+    ctx.setup_alpha();
+
+    let grid_matrix = grids::GridMatrix::new();
 
     //TODO get rid of this somehow.
     //these values are incorrect.
     //they are set correctly after resize is called on startup.
+    let models = &Models::new(&grid_matrix, &ctx);
+    let numm = &Numm::new(&ctx);
 
     let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
     let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
@@ -283,6 +288,9 @@ pub async fn worker_entry() {
         doop(
             response_sender,
             command_recv,
+            &grid_matrix,
+            models,
+            numm,
             &mut ctx,
             &mut frame_timer,
             &mut canvas,
@@ -300,6 +308,9 @@ pub async fn worker_entry() {
 async fn doop<'c>(
     mut response_sender: futures::channel::mpsc::Sender<GameWrapResponse<'c, ace::Response>>,
     mut command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<'c, ace::Command>>,
+    grid_matrix: &grids::GridMatrix,
+    models: &Models<Foo<TextureGpu, ModelGpu>>,
+    numm: &Numm,
     ctx: &mut CtxWrap,
     frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
     canvas: &mut OffscreenCanvas,
@@ -311,17 +322,11 @@ async fn doop<'c>(
     ctx.viewport(0, 0, gl_width as i32, gl_height as i32);
     let mut viewport = [canvas.width() as f32, canvas.height() as f32];
 
-    ctx.setup_alpha();
-
     let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
     use cgmath::SquareMatrix;
     let mut last_matrix = cgmath::Matrix4::identity();
 
-    let grid_matrix = grids::GridMatrix::new();
-
-    let numm = &Numm::new(&ctx);
-    let models = &Models::new(&grid_matrix, &ctx);
     let drop_shadow = &models.drop_shadow;
     let dog = &models.dog;
     let cat = &models.cat;
