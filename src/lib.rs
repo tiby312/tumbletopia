@@ -459,8 +459,21 @@ impl EngineStuff {
                     (that, this)
                 }
             };
+            let mut poking = false;
 
             'outer: loop {
+                if poking {
+                    console_dbg!("we poked!");
+                    //poking=false;
+                    response_sender
+                        .send(ace::GameWrapResponse {
+                            game: ggame,
+                            data: ace::Response::Ack,
+                        })
+                        .await
+                        .unwrap();
+                    break 'outer;
+                }
                 let mut on_select = false;
 
                 let res = frame_timer.next().await;
@@ -536,6 +549,9 @@ impl EngineStuff {
                     scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
 
                 match &mut command {
+                    ace::ProcessedCommand::Poke => {
+                        poking = true;
+                    }
                     ace::ProcessedCommand::Popup(str) => {
                         //console_dbg!(str);
                         //TODO paint ai thinking popup here
@@ -548,7 +564,7 @@ impl EngineStuff {
                         response_sender
                             .send(ace::GameWrapResponse {
                                 game: ggame,
-                                data: ace::Response::PopupFinish,
+                                data: ace::Response::Ack,
                             })
                             .await
                             .unwrap();

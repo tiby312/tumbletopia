@@ -38,6 +38,7 @@ pub enum ProcessedCommand {
     Animate(Animation<animation::AnimationCommand>),
     GetMouseInput(MousePrompt),
     Popup(String),
+    Poke,
     Nothing,
 }
 impl ProcessedCommand {
@@ -69,12 +70,14 @@ pub enum Command {
     GetMouseInput(MousePrompt),
     Nothing,
     Popup(String),
+    Poke,
 }
 impl Command {
     pub fn process(self, grid: &GridMatrix) -> ProcessedCommand {
         use animation::AnimationCommand;
         use Command::*;
         match self {
+            Poke => ProcessedCommand::Poke,
             Popup(s) => ProcessedCommand::Popup(s),
             Animate(a) => match a.clone() {
                 AnimationCommand::Movement {
@@ -111,7 +114,7 @@ pub enum Pototo<T> {
 pub enum Response {
     Mouse(MousePrompt, Pototo<GridCoord>), //TODO make grid coord
     AnimationFinish(Animation<animation::AnimationCommand>),
-    PopupFinish,
+    Ack,
 }
 
 use futures::{
@@ -181,6 +184,24 @@ impl<'a> WorkerManager<'a> {
         (selection, c)
     }
 
+    async fn poke(&mut self, team_index: ActiveTeam) {
+        let game = unsafe { &*self.game };
+
+        self.sender
+            .send(GameWrap {
+                game,
+                data: Command::Poke,
+                team: team_index,
+            })
+            .await
+            .unwrap();
+
+        let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
+
+        let Response::Ack = data else {
+            unreachable!();
+        };
+    }
     async fn send_popup(&mut self, str: &str, team_index: ActiveTeam) {
         let game = unsafe { &*self.game };
 
@@ -195,7 +216,7 @@ impl<'a> WorkerManager<'a> {
 
         let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
 
-        let Response::PopupFinish = data else {
+        let Response::Ack = data else {
             unreachable!();
         };
     }
@@ -522,7 +543,7 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         //Add AIIIIII.
         if team_index == ActiveTeam::Cats {
             doop.send_popup("AI Thinking", team_index).await;
-            let the_move = ai::iterative_deepening(game, team_index);
+            let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
             doop.send_popup("", team_index).await;
             the_move.execute_move_ani(game, team_index, &mut doop).await;
             game_history.push(the_move);

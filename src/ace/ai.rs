@@ -202,7 +202,11 @@ impl PrincipalVariation {
     }
 }
 
-pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::ActualMove {
+pub async fn iterative_deepening<'a>(
+    game: &GameState,
+    team: ActiveTeam,
+    doop: &mut WorkerManager<'a>,
+) -> moves::ActualMove {
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
@@ -242,6 +246,9 @@ pub fn iterative_deepening<'a>(game: &GameState, team: ActiveTeam) -> moves::Act
             console_dbg!("found a mate");
             break;
         }
+
+        doop.poke(team).await;
+
     }
 
     console_dbg!(count);
@@ -395,6 +402,7 @@ impl<'a> AlphaBeta<'a> {
             if !keep_going {
                 break;
             }
+            
         }
 
         let (eval, m) = kk.finish();
