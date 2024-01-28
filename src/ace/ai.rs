@@ -248,7 +248,6 @@ pub async fn iterative_deepening<'a>(
         }
 
         doop.poke(team).await;
-
     }
 
     console_dbg!(count);
@@ -402,7 +401,6 @@ impl<'a> AlphaBeta<'a> {
             if !keep_going {
                 break;
             }
-            
         }
 
         let (eval, m) = kk.finish();
