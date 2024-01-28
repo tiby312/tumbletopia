@@ -190,8 +190,17 @@ pub struct Land {
     pub snow: BitField,
 }
 impl Land {
+    pub fn set_coord_false(&mut self, a: GridCoord) {
+        if self.grass.is_coord_set(a) {
+            self.grass.set_coord(a, false);
+        } else if self.snow.is_coord_set(a) {
+            self.snow.set_coord(a, false);
+        } else {
+            panic!("Invalid coord");
+        }
+    }
     pub fn is_coord_set(&self, a: GridCoord) -> bool {
-        self.grass.is_coord_set(a) | self.snow.is_coord_set(a)
+        self.grass.is_coord_set(a) || self.snow.is_coord_set(a)
     }
 }
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]

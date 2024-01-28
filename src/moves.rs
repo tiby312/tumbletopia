@@ -58,7 +58,9 @@ impl GameState {
                     let a = a.to_axial();
 
                     let j = if is_ship {
-                        !game.env.land.is_coord_set(a)
+                        // !game.env.land.is_coord_set(a)
+                        //true
+                        !game.env.forest.is_coord_set(a)
                     } else {
                         !game.env.forest.is_coord_set(a)
                     };
@@ -235,28 +237,38 @@ impl ActualMove {
             .find_slow_mut(&moveto)
             .unwrap();
 
-        let la = state.env.land.is_coord_set(attackto);
-        let fr = state.env.forest.is_coord_set(attackto);
-        let is_ship = match (la, fr) {
-            (true, false) => true,
-            (true, true) => false,
-            (false, true) => unreachable!(),
-            (false, false) => unreachable!(),
-        };
+        //let la = state.env.land.is_coord_set(unitt);
+        let is_ship = !state.env.land.is_coord_set(unitt);
 
-        if is_ship {
-            assert!(state.env.land.is_coord_set(attackto));
-            if state.env.land.grass.is_coord_set(attackto) {
-                state.env.land.grass.set_coord(attackto, false);
-            } else {
-                assert!(state.env.land.snow.is_coord_set(attackto));
+        // let fr = state.env.forest.is_coord_set(unitt);
+        // let is_ship = match (la, fr) {
+        //     (true, false) => true,
+        //     (true, true) => false,
+        //     (false, true) => unreachable!(),
+        //     (false, false) => unreachable!(),
+        // };
 
-                state.env.land.snow.set_coord(attackto, false);
-            }
-        } else {
-            assert!(state.env.forest.is_coord_set(attackto));
+        if state.env.forest.is_coord_set(attackto) {
             state.env.forest.set_coord(attackto, false);
+        } else if state.env.land.is_coord_set(attackto) {
+            state.env.land.set_coord_false(attackto);
+        } else {
+            unreachable!();
         }
+
+        // if is_ship {
+        //     assert!(state.env.land.is_coord_set(attackto));
+        //     if state.env.land.grass.is_coord_set(attackto) {
+        //         state.env.land.grass.set_coord(attackto, false);
+        //     } else {
+        //         assert!(state.env.land.snow.is_coord_set(attackto));
+
+        //         state.env.land.snow.set_coord(attackto, false);
+        //     }
+        // } else {
+        //     //assert!(state.env.forest.is_coord_set(attackto));
+        //     state.env.forest.set_coord(attackto, false);
+        // }
 
         k.position = unitt;
     }
