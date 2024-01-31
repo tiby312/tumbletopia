@@ -281,6 +281,9 @@ impl EngineStuff {
         let direction_model = &models.direction;
 
         let mut mouse_mouse = [0.0; 2];
+
+        let mut mouse_world = [0.0; 2];
+
         // let render_thread = async {
         while let Some(ace::GameWrap {
             game: ggame,
@@ -288,9 +291,13 @@ impl EngineStuff {
             team,
         }) = command_recv.next().await
         {
-            //let mut command = command.process(&grid_matrix);
+            //First lets process the command. Break it down
+            //into pieces that this thread understands.
+            let mut get_mouse_input = None;
+            let mut animation = None;
+            let mut poking = 0;
 
-            let mut animation = match &command {
+            match &command {
                 ace::Command::Animate(a) => match a.clone() {
                     animation::AnimationCommand::Movement {
                         unit,
@@ -300,13 +307,35 @@ impl EngineStuff {
                     } => {
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
                         let aa = animation::Animation::new(it, a.clone());
-                        Some(aa)
+                        animation = Some(aa);
                     }
                     animation::AnimationCommand::Terrain { .. } => {
                         todo!()
                     }
                 },
-                _ => None,
+                ace::Command::GetMouseInput(kk) => {
+                    get_mouse_input = Some(kk);
+                }
+                ace::Command::Nothing => {}
+                ace::Command::Popup(str) => {
+                    if str.is_empty() {
+                        engine_worker.post_message(UiButton::HidePopup);
+                    } else {
+                        engine_worker.post_message(UiButton::ShowPopup(str.clone()));
+                    }
+
+                    response_sender
+                        .send(ace::GameWrapResponse {
+                            game: ggame,
+                            data: ace::Response::Ack,
+                        })
+                        .await
+                        .unwrap();
+                    continue;
+                }
+                ace::Command::Poke => {
+                    poking = 3;
+                }
             };
 
             //let game_view = ggame.view(team);
@@ -329,10 +358,8 @@ impl EngineStuff {
                 }
             }
 
-            let mut poking = false;
-
             'outer: loop {
-                if poking {
+                if poking == 1 {
                     console_dbg!("we poked!");
                     //poking=false;
                     response_sender
@@ -344,11 +371,13 @@ impl EngineStuff {
                         .unwrap();
                     break 'outer;
                 }
+                poking = 0.max(poking - 1);
+
                 let mut on_select = false;
+                let mut end_turn = false;
 
                 let res = frame_timer.next().await;
 
-                let mut end_turn = false;
                 for e in res {
                     match e {
                         MEvent::Resize {
@@ -418,6 +447,31 @@ impl EngineStuff {
                 let mouse_world =
                     scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
+                if let Some(kk) = &mut get_mouse_input {
+                    if end_turn {
+                        response_sender
+                            .send(ace::GameWrapResponse {
+                                game: ggame,
+                                data: ace::Response::Mouse(kk.clone(), Pototo::EndTurn),
+                            })
+                            .await
+                            .unwrap();
+                        break 'outer;
+                    } else if on_select {
+                        let mouse: GridCoord = grid_matrix.center_world_to_hex(mouse_world.into());
+                        log!(format!("pos:{:?}", mouse));
+
+                        response_sender
+                            .send(ace::GameWrapResponse {
+                                game: ggame,
+                                data: ace::Response::Mouse(kk.clone(), Pototo::Normal(mouse)),
+                            })
+                            .await
+                            .unwrap();
+                        break 'outer;
+                    }
+                }
+
                 if let Some(a) = &mut animation {
                     if let Some(_) = a.animate_step() {
                     } else {
@@ -431,54 +485,6 @@ impl EngineStuff {
                             .unwrap();
                         break 'outer;
                     }
-                }
-                match &command {
-                    ace::Command::Poke => {
-                        poking = true;
-                    }
-                    ace::Command::Popup(str) => {
-                        if str.is_empty() {
-                            engine_worker.post_message(UiButton::HidePopup);
-                        } else {
-                            engine_worker.post_message(UiButton::ShowPopup(str.clone()));
-                        }
-
-                        response_sender
-                            .send(ace::GameWrapResponse {
-                                game: ggame,
-                                data: ace::Response::Ack,
-                            })
-                            .await
-                            .unwrap();
-                        break 'outer;
-                    }
-                    ace::Command::Animate(a) => {}
-                    ace::Command::GetMouseInput(kk) => {
-                        if end_turn {
-                            response_sender
-                                .send(ace::GameWrapResponse {
-                                    game: ggame,
-                                    data: ace::Response::Mouse(kk.clone(), Pototo::EndTurn),
-                                })
-                                .await
-                                .unwrap();
-                            break 'outer;
-                        } else if on_select {
-                            let mouse: GridCoord =
-                                grid_matrix.center_world_to_hex(mouse_world.into());
-                            log!(format!("pos:{:?}", mouse));
-
-                            response_sender
-                                .send(ace::GameWrapResponse {
-                                    game: ggame,
-                                    data: ace::Response::Mouse(kk.clone(), Pototo::Normal(mouse)),
-                                })
-                                .await
-                                .unwrap();
-                            break 'outer;
-                        }
-                    }
-                    ace::Command::Nothing => {}
                 }
 
                 scroll_manager.step();
