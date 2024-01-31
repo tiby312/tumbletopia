@@ -494,13 +494,6 @@ impl EngineStuff {
 
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-                //TODO don't render where land is?
-                // for c in ggame.world.get_game_cells().iter_mesh(GridCoord::zero()) {
-                //     let pos = grid_matrix.hex_axial_to_world(&c);
-                //     let t = matrix::translation(pos.x, pos.y, -10.0);
-                //     let m = my_matrix.chain(t).generate();
-                //     draw_sys.view(&m).draw_a_thing(water);
-                // }
                 draw_something_grid(
                     ggame.world.get_game_cells().iter_mesh(GridCoord::zero()),
                     grid_matrix,
@@ -537,23 +530,23 @@ impl EngineStuff {
                         MousePrompt::Selection { selection, grey } => {
                             match selection {
                                 CellSelection::MoveSelection(point, mesh) => {
-                                    disable_depth(&ctx, || {
-                                        for a in mesh.iter_mesh(*point) {
-                                            let pos = grid_matrix.hex_axial_to_world(&a);
-                                            let t = matrix::translation(pos.x, pos.y, 0.0);
-                                            let m = my_matrix.chain(t).generate();
+                                    let _d = DepthDisabler::new(&ctx);
 
-                                            draw_sys.view(&m).draw_a_thing_ext(
-                                                select_model,
-                                                *grey,
-                                                false,
-                                                false,
-                                                false,
-                                            );
+                                    for a in mesh.iter_mesh(*point) {
+                                        let pos = grid_matrix.hex_axial_to_world(&a);
+                                        let t = matrix::translation(pos.x, pos.y, 0.0);
+                                        let m = my_matrix.chain(t).generate();
 
-                                            //select_model.draw(&mut v);
-                                        }
-                                    });
+                                        draw_sys.view(&m).draw_a_thing_ext(
+                                            select_model,
+                                            *grey,
+                                            false,
+                                            false,
+                                            false,
+                                        );
+
+                                        //select_model.draw(&mut v);
+                                    }
                                 }
                                 CellSelection::BuildSelection(_) => {}
                             }
@@ -562,58 +555,59 @@ impl EngineStuff {
                     };
                 }
 
-                disable_depth(&ctx, || {
-                    draw_something_grid(
-                        cat_for_draw
-                            .iter()
-                            .map(|x| x.position)
-                            .chain(dog_for_draw.iter().map(|x| x.position)),
-                        grid_matrix,
-                        &mut draw_sys,
-                        drop_shadow,
-                        &my_matrix,
-                        1.0,
-                    );
-                });
+                let d = DepthDisabler::new(&ctx);
 
-                {
-                    draw_something_grid(
-                        cat_for_draw.iter().map(|x| x.position),
-                        grid_matrix,
-                        &mut draw_sys,
-                        &cat,
-                        &my_matrix,
-                        0.0,
-                    );
+                draw_something_grid(
+                    cat_for_draw
+                        .iter()
+                        .map(|x| x.position)
+                        .chain(dog_for_draw.iter().map(|x| x.position)),
+                    grid_matrix,
+                    &mut draw_sys,
+                    drop_shadow,
+                    &my_matrix,
+                    1.0,
+                );
 
-                    draw_something_grid(
-                        dog_for_draw.iter().map(|x| x.position),
-                        grid_matrix,
-                        &mut draw_sys,
-                        &dog,
-                        &my_matrix,
-                        0.0,
-                    );
-                }
+                drop(d);
 
-                disable_depth(&ctx, || {
-                    draw_health_text(
-                        cat_for_draw
-                            .iter()
-                            .map(|x| (x.position, x.typ.type_index() as i8))
-                            .chain(
-                                dog_for_draw
-                                    .iter()
-                                    .map(|x| (x.position, x.typ.type_index() as i8)),
-                            ),
-                        &grid_matrix,
-                        &numm.health_numbers,
-                        &view_proj,
-                        &proj,
-                        &mut draw_sys,
-                        &numm.text_texture,
-                    );
-                });
+                draw_something_grid(
+                    cat_for_draw.iter().map(|x| x.position),
+                    grid_matrix,
+                    &mut draw_sys,
+                    &cat,
+                    &my_matrix,
+                    0.0,
+                );
+
+                draw_something_grid(
+                    dog_for_draw.iter().map(|x| x.position),
+                    grid_matrix,
+                    &mut draw_sys,
+                    &dog,
+                    &my_matrix,
+                    0.0,
+                );
+
+                let d = DepthDisabler::new(&ctx);
+
+                draw_health_text(
+                    cat_for_draw
+                        .iter()
+                        .map(|x| (x.position, x.typ.type_index() as i8))
+                        .chain(
+                            dog_for_draw
+                                .iter()
+                                .map(|x| (x.position, x.typ.type_index() as i8)),
+                        ),
+                    &grid_matrix,
+                    &numm.health_numbers,
+                    &view_proj,
+                    &proj,
+                    &mut draw_sys,
+                    &numm.text_texture,
+                );
+                drop(d);
 
                 if let ace::ProcessedCommand::Animate(a) = &command {
                     let this_draw = match team {
@@ -627,13 +621,14 @@ impl EngineStuff {
                         animation::AnimationCommand::Movement { unit, .. } => {
                             let a = (this_draw, unit);
 
-                            disable_depth(&ctx, || {
-                                let m = my_matrix
-                                    .chain(matrix::translation(pos.x, pos.y, 1.0))
-                                    .generate();
+                            let d = DepthDisabler::new(&ctx);
 
-                                draw_sys.view(&m).draw_a_thing(drop_shadow);
-                            });
+                            let m = my_matrix
+                                .chain(matrix::translation(pos.x, pos.y, 1.0))
+                                .generate();
+
+                            draw_sys.view(&m).draw_a_thing(drop_shadow);
+                            drop(d);
 
                             let m = my_matrix
                                 .chain(matrix::translation(pos.x, pos.y, 0.0))
@@ -701,6 +696,24 @@ fn draw_health_text(
         draw_sys
             .view(&m)
             .draw_a_thing_ext(&nn, false, false, true, false);
+    }
+}
+
+pub struct DepthDisabler<'a> {
+    ctx: &'a WebGl2RenderingContext,
+}
+impl<'a> Drop for DepthDisabler<'a> {
+    fn drop(&mut self) {
+        self.ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
+        self.ctx.enable(WebGl2RenderingContext::CULL_FACE);
+    }
+}
+impl<'a> DepthDisabler<'a> {
+    pub fn new(ctx: &'a WebGl2RenderingContext) -> DepthDisabler<'a> {
+        ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
+        ctx.disable(WebGl2RenderingContext::CULL_FACE);
+
+        DepthDisabler { ctx }
     }
 }
 
