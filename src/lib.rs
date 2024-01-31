@@ -288,14 +288,35 @@ impl EngineStuff {
             team,
         }) = command_recv.next().await
         {
-            let mut command = command.process(&grid_matrix);
+            //let mut command = command.process(&grid_matrix);
+
+            let mut animation = match &command {
+                ace::Command::Animate(a) => match a.clone() {
+                    animation::AnimationCommand::Movement {
+                        unit,
+                        mesh,
+                        walls,
+                        end,
+                    } => {
+                        let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
+                        let aa = animation::Animation::new(it, a.clone());
+                        Some(aa)
+                    }
+                    animation::AnimationCommand::Terrain { .. } => {
+                        todo!()
+                    }
+                },
+                _ => None,
+            };
+
             //let game_view = ggame.view(team);
 
             let (mut cat_for_draw, mut dog_for_draw) = (
                 ggame.factions.cats.units.clone().into_vec(),
                 ggame.factions.dogs.units.clone().into_vec(),
             );
-            if let ace::ProcessedCommand::Animate(a) = &command {
+
+            if let Some(a) = &animation {
                 match a.data() {
                     animation::AnimationCommand::Movement { unit, .. } => {
                         if team == ActiveTeam::Cats {
@@ -397,11 +418,25 @@ impl EngineStuff {
                 let mouse_world =
                     scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
-                match &mut command {
-                    ace::ProcessedCommand::Poke => {
+                if let Some(a) = &mut animation {
+                    if let Some(_) = a.animate_step() {
+                    } else {
+                        //let a = command.take_animation();
+                        response_sender
+                            .send(ace::GameWrapResponse {
+                                game: ggame,
+                                data: ace::Response::AnimationFinish(animation.take().unwrap()),
+                            })
+                            .await
+                            .unwrap();
+                        break 'outer;
+                    }
+                }
+                match &command {
+                    ace::Command::Poke => {
                         poking = true;
                     }
-                    ace::ProcessedCommand::Popup(str) => {
+                    ace::Command::Popup(str) => {
                         if str.is_empty() {
                             engine_worker.post_message(UiButton::HidePopup);
                         } else {
@@ -417,29 +452,13 @@ impl EngineStuff {
                             .unwrap();
                         break 'outer;
                     }
-                    ace::ProcessedCommand::Animate(a) => {
-                        if let Some(_) = a.animate_step() {
-                        } else {
-                            let a = command.take_animation();
-                            response_sender
-                                .send(ace::GameWrapResponse {
-                                    game: ggame,
-                                    data: ace::Response::AnimationFinish(a),
-                                })
-                                .await
-                                .unwrap();
-                            break 'outer;
-                        }
-                    }
-                    ace::ProcessedCommand::GetMouseInput(_) => {
+                    ace::Command::Animate(a) => {}
+                    ace::Command::GetMouseInput(kk) => {
                         if end_turn {
                             response_sender
                                 .send(ace::GameWrapResponse {
                                     game: ggame,
-                                    data: ace::Response::Mouse(
-                                        command.take_cell(),
-                                        Pototo::EndTurn,
-                                    ),
+                                    data: ace::Response::Mouse(kk.clone(), Pototo::EndTurn),
                                 })
                                 .await
                                 .unwrap();
@@ -452,17 +471,14 @@ impl EngineStuff {
                             response_sender
                                 .send(ace::GameWrapResponse {
                                     game: ggame,
-                                    data: ace::Response::Mouse(
-                                        command.take_cell(),
-                                        Pototo::Normal(mouse),
-                                    ),
+                                    data: ace::Response::Mouse(kk.clone(), Pototo::Normal(mouse)),
                                 })
                                 .await
                                 .unwrap();
                             break 'outer;
                         }
                     }
-                    ace::ProcessedCommand::Nothing => {}
+                    ace::Command::Nothing => {}
                 }
 
                 scroll_manager.step();
@@ -502,7 +518,7 @@ impl EngineStuff {
                     draw_sys.view(&m).draw_a_thing(mountain);
                 }
 
-                if let ace::ProcessedCommand::GetMouseInput(a) = &command {
+                if let ace::Command::GetMouseInput(a) = &command {
                     match a {
                         MousePrompt::Selection { selection, grey } => match selection {
                             CellSelection::MoveSelection(point, mesh) => {
@@ -582,7 +598,7 @@ impl EngineStuff {
                 );
                 drop(d);
 
-                if let ace::ProcessedCommand::Animate(a) = &command {
+                if let Some(a) = &animation {
                     let this_draw = match team {
                         ActiveTeam::Cats => &cat,
                         ActiveTeam::Dogs => &dog,

@@ -25,7 +25,7 @@ pub struct AnimationWrapper<K> {
     pub enu: animation::AnimationCommand,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MousePrompt {
     Selection {
         selection: CellSelection,
@@ -73,6 +73,16 @@ pub enum Command {
     Poke,
 }
 impl Command {
+    // pub fn take_cell(&mut self) -> MousePrompt {
+    //     let mut a = Command::Nothing;
+    //     std::mem::swap(self, &mut a);
+
+    //     let Command::GetMouseInput(a) = a else {
+    //         panic!();
+    //     };
+
+    //     a
+    // }
     pub fn process(self, grid: &GridMatrix) -> ProcessedCommand {
         use animation::AnimationCommand;
         use Command::*;
@@ -87,7 +97,6 @@ impl Command {
                     end,
                 } => {
                     let it = animation::movement(unit.position, mesh, walls, end, grid);
-                    //let aa = AnimationOptions::Movement(unit);
                     let aa = animation::Animation::new(it, a);
                     ProcessedCommand::Animate(aa)
                 }
