@@ -531,65 +531,36 @@ impl EngineStuff {
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(mountain);
                 }
-                disable_depth(&ctx, || {
-                    if let ace::ProcessedCommand::GetMouseInput(a) = &command {
-                        let (a, greyscale) = match a {
-                            MousePrompt::Selection { selection, grey } => (selection, grey),
-                            MousePrompt::None => return,
-                        };
 
-                        //if let Some(a) = testo.get_selection() {
-                        match a {
-                            CellSelection::MoveSelection(point, mesh) => {
-                                for a in mesh.iter_mesh(*point) {
-                                    let pos = grid_matrix.hex_axial_to_world(&a);
-                                    let t = matrix::translation(pos.x, pos.y, 0.0);
-                                    let m = my_matrix.chain(t).generate();
+                if let ace::ProcessedCommand::GetMouseInput(a) = &command {
+                    match a {
+                        MousePrompt::Selection { selection, grey } => {
+                            match selection {
+                                CellSelection::MoveSelection(point, mesh) => {
+                                    disable_depth(&ctx, || {
+                                        for a in mesh.iter_mesh(*point) {
+                                            let pos = grid_matrix.hex_axial_to_world(&a);
+                                            let t = matrix::translation(pos.x, pos.y, 0.0);
+                                            let m = my_matrix.chain(t).generate();
 
-                                    draw_sys.view(&m).draw_a_thing_ext(
-                                        select_model,
-                                        *greyscale,
-                                        false,
-                                        false,
-                                        false,
-                                    );
+                                            draw_sys.view(&m).draw_a_thing_ext(
+                                                select_model,
+                                                *grey,
+                                                false,
+                                                false,
+                                                false,
+                                            );
 
-                                    //select_model.draw(&mut v);
+                                            //select_model.draw(&mut v);
+                                        }
+                                    });
                                 }
-
-                                // for a in mesh.iter_attackable_normal(*point) {
-                                //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                                //     let t = matrix::translation(pos[0], pos[1], 0.0);
-
-                                //     let m = matrix.chain(t).generate();
-
-                                //     let mut v = draw_sys.view(m.as_ref());
-
-                                //     attack_model.draw_ext(&mut v, greyscale, false, false, false);
-
-                                //     //select_model.draw(&mut v);
-                                // }
-
-                                // counter += 0.02;
-                                // for (dir, a) in mesh.iter_swing_mesh(*point) {
-                                //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                                //     let t = matrix::translation(pos[0], pos[1], 0.0);
-
-                                //     let r = rotate_by_dir(dir, grid_matrix.spacing());
-
-                                //     let m = matrix.chain(t).chain(r).generate();
-
-                                //     let mut v = draw_sys.view(m.as_ref());
-
-                                //     arrow_model.draw_ext(&mut v, greyscale, false, false, false);
-
-                                //     //select_model.draw(&mut v);
-                                // }
+                                CellSelection::BuildSelection(_) => {}
                             }
-                            CellSelection::BuildSelection(_) => {}
                         }
-                    }
-                });
+                        MousePrompt::None => {}
+                    };
+                }
 
                 disable_depth(&ctx, || {
                     draw_something_grid(
