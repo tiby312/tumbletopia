@@ -504,28 +504,26 @@ impl EngineStuff {
 
                 if let ace::ProcessedCommand::GetMouseInput(a) = &command {
                     match a {
-                        MousePrompt::Selection { selection, grey } => {
-                            match selection {
-                                CellSelection::MoveSelection(point, mesh) => {
-                                    let _d = DepthDisabler::new(&ctx);
+                        MousePrompt::Selection { selection, grey } => match selection {
+                            CellSelection::MoveSelection(point, mesh) => {
+                                let _d = DepthDisabler::new(&ctx);
 
-                                    for a in mesh.iter_mesh(*point) {
-                                        let pos = grid_matrix.hex_axial_to_world(&a);
-                                        let t = matrix::translation(pos.x, pos.y, 0.0);
-                                        let m = my_matrix.chain(t).generate();
+                                for a in mesh.iter_mesh(*point) {
+                                    let pos = grid_matrix.hex_axial_to_world(&a);
+                                    let t = matrix::translation(pos.x, pos.y, 0.0);
+                                    let m = my_matrix.chain(t).generate();
 
-                                        draw_sys.view(&m).draw_a_thing_ext(
-                                            select_model,
-                                            *grey,
-                                            false,
-                                            false,
-                                            false,
-                                        );
-                                    }
+                                    draw_sys.view(&m).draw_a_thing_ext(
+                                        select_model,
+                                        *grey,
+                                        false,
+                                        false,
+                                        false,
+                                    );
                                 }
-                                CellSelection::BuildSelection(_) => {}
                             }
-                        }
+                            CellSelection::BuildSelection(_) => {}
+                        },
                         MousePrompt::None => {}
                     };
                 }

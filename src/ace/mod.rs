@@ -513,7 +513,6 @@ pub mod share {
 }
 
 pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>) {
-
     let mut game_history = selection::MoveLog::new();
 
     //Loop over each team!

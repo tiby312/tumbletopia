@@ -193,26 +193,26 @@ impl Cube {
         })
     }
 
-    pub fn cc_ring(&self, n: i16) -> impl DoubleEndedIterator<Item = (HexDir, Cube)> + Clone {
-        let mut hex = self.add(Cube::direction(Dir::Bottom).scale(n));
+    // pub fn cc_ring(&self, n: i16) -> impl DoubleEndedIterator<Item = (HexDir, Cube)> + Clone {
+    //     let mut hex = self.add(Cube::direction(Dir::Bottom).scale(n));
 
-        //TODO better way to do this?
-        //Do this so that we can reverse it.
-        let mut k = std::iter::repeat(())
-            .take(n as usize)
-            .collect::<Vec<_>>()
-            .into_iter();
+    //     //TODO better way to do this?
+    //     //Do this so that we can reverse it.
+    //     let k = std::iter::repeat(())
+    //         .take(n as usize)
+    //         .collect::<Vec<_>>()
+    //         .into_iter();
 
-        (0..6)
-            .rev()
-            .flat_map(move |i| k.clone().map(move |_| i))
-            .map(move |i| {
-                let h = hex;
-                hex = hex.neighbour(i.into());
+    //     (0..6)
+    //         .rev()
+    //         .flat_map(move |i| k.clone().map(move |_| i))
+    //         .map(move |i| {
+    //             let h = hex;
+    //             hex = hex.neighbour(i.into());
 
-                (HexDir { dir: i }, h)
-            })
-    }
+    //             (HexDir { dir: i }, h)
+    //         })
+    // }
 
     //clockwise
     pub fn ring(&self, n: i16) -> impl DoubleEndedIterator<Item = (HexDir, Cube)> + Clone {
@@ -220,7 +220,7 @@ impl Cube {
 
         //TODO better way to do this?
         //Do this so that we can reverse it.
-        let mut k = std::iter::repeat(())
+        let k = std::iter::repeat(())
             .take(n as usize)
             .collect::<Vec<_>>()
             .into_iter();

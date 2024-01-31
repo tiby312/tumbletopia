@@ -366,99 +366,99 @@ pub mod movement_mesh {
     //     [2, 0],
     // ];
 
-    #[derive(PartialEq, Eq, Debug, Clone)]
-    pub struct SwingMoveRay {
-        pub swing: SwingMove,
-        pub num_steps: usize,
-    }
+    // #[derive(PartialEq, Eq, Debug, Clone)]
+    // pub struct SwingMoveRay {
+    //     pub swing: SwingMove,
+    //     pub num_steps: usize,
+    // }
 
-    impl SwingMoveRay {
-        pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-            self.swing.iter_cells(point).take(self.num_steps)
-        }
-    }
+    // impl SwingMoveRay {
+    //     pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+    //         self.swing.iter_cells(point).take(self.num_steps)
+    //     }
+    // }
 
-    #[derive(PartialEq, Eq, Debug, Clone)]
-    pub struct SwingMove {
-        pub relative_anchor_point: GridCoord,
-        pub radius: i16,
-        pub clockwise: bool,
-    }
-    impl SwingMove {
-        pub fn iter_left(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-            // let f=match self.radius{
-            //     0=>0,
-            //     1=>3,
-            //     2=>6,
-            //     3=>9,
-            //     4=>12,
-            //     5=>12,
-            //     _=>12
-            // };
-            let f = 3 * self.radius as usize;
-            //radius 1-> 3 (or 4)
-            //radius 2-> 6 (or 7 including spot)
-            //radius 3-> 9 (or 10)
-            //radius 4-> 11 (or 12)
-            //radius 5-> 12 (or 13)
+    // #[derive(PartialEq, Eq, Debug, Clone)]
+    // pub struct SwingMove {
+    //     pub relative_anchor_point: GridCoord,
+    //     pub radius: i16,
+    //     pub clockwise: bool,
+    // }
+    // impl SwingMove {
+    //     pub fn iter_left(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+    //         // let f=match self.radius{
+    //         //     0=>0,
+    //         //     1=>3,
+    //         //     2=>6,
+    //         //     3=>9,
+    //         //     4=>12,
+    //         //     5=>12,
+    //         //     _=>12
+    //         // };
+    //         let f = 3 * self.radius as usize;
+    //         //radius 1-> 3 (or 4)
+    //         //radius 2-> 6 (or 7 including spot)
+    //         //radius 3-> 9 (or 10)
+    //         //radius 4-> 11 (or 12)
+    //         //radius 5-> 12 (or 13)
 
-            self.iter_cells_inner(point, f, true)
-        }
-        pub fn iter_right(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-            // let f=match self.radius{
-            //     0=>0,
-            //     1=>3,
-            //     2=>6,
-            //     3=>9,
-            //     4=>12,
-            //     5=>12,
-            //     _=>12
-            // };
-            let f = 3 * self.radius as usize;
-            self.iter_cells_inner(point, f, false)
-        }
+    //         self.iter_cells_inner(point, f, true)
+    //     }
+    //     pub fn iter_right(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+    //         // let f=match self.radius{
+    //         //     0=>0,
+    //         //     1=>3,
+    //         //     2=>6,
+    //         //     3=>9,
+    //         //     4=>12,
+    //         //     5=>12,
+    //         //     _=>12
+    //         // };
+    //         let f = 3 * self.radius as usize;
+    //         self.iter_cells_inner(point, f, false)
+    //     }
 
-        pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-            self.iter_cells_inner(point, 13, self.clockwise)
-        }
-        pub fn iter_cells_inner(
-            &self,
-            point: GridCoord,
-            num_cell: usize,
-            clockwise: bool,
-        ) -> impl Iterator<Item = (HexDir, GridCoord)> {
-            let radius = self.radius;
-            //let radius = 2;
-            //let num_cell = 8;
-            //let num_cell = 13;
+    //     pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+    //         self.iter_cells_inner(point, 13, self.clockwise)
+    //     }
+    //     pub fn iter_cells_inner(
+    //         &self,
+    //         point: GridCoord,
+    //         num_cell: usize,
+    //         clockwise: bool,
+    //     ) -> impl Iterator<Item = (HexDir, GridCoord)> {
+    //         let radius = self.radius;
+    //         //let radius = 2;
+    //         //let num_cell = 8;
+    //         //let num_cell = 13;
 
-            // let radius = 3;
-            // let num_cell = 32;
+    //         // let radius = 3;
+    //         // let num_cell = 32;
 
-            let i = self.relative_anchor_point.to_cube();
+    //         let i = self.relative_anchor_point.to_cube();
 
-            let i1 = if clockwise {
-                Some(i.ring(radius))
-            } else {
-                None
-            };
-            let i2 = if !clockwise {
-                Some(i.cc_ring(radius))
-            } else {
-                None
-            };
+    //         let i1 = if clockwise {
+    //             Some(i.ring(radius))
+    //         } else {
+    //             None
+    //         };
+    //         let i2 = if !clockwise {
+    //             Some(i.cc_ring(radius))
+    //         } else {
+    //             None
+    //         };
 
-            let i = i1.into_iter().flatten().chain(i2.into_iter().flatten());
+    //         let i = i1.into_iter().flatten().chain(i2.into_iter().flatten());
 
-            let i = i.map(|(d, a)| (d, a.to_axial()));
-            let ii = i.clone();
-            let i = i.chain(ii);
+    //         let i = i.map(|(d, a)| (d, a.to_axial()));
+    //         let ii = i.clone();
+    //         let i = i.chain(ii);
 
-            let iiii = i.skip_while(|(_, z)| *z != GridCoord([0; 2]));
+    //         let iiii = i.skip_while(|(_, z)| *z != GridCoord([0; 2]));
 
-            iiii.take(num_cell + 2).map(move |(d, z)| (d, point.add(z)))
-        }
-    }
+    //         iiii.take(num_cell + 2).map(move |(d, z)| (d, point.add(z)))
+    //     }
+    // }
 
     #[derive(PartialEq, Eq, Debug, Clone)]
     pub struct Mesh {
