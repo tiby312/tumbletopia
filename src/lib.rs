@@ -177,7 +177,7 @@ pub async fn worker_entry() {
 
         let mut game = ace::game_init();
 
-        let (game, mut r, mut w) = create_worker_render(&mut game);
+        let (game, mut r, w) = create_worker_render(&mut game);
 
         futures::join!(
             //sample_game.replay(&mut w, game),
@@ -278,13 +278,7 @@ impl EngineStuff {
         let grass = &models.grass;
         let snow = &models.snow;
         let select_model = &models.select_model;
-        let direction_model = &models.direction;
-
-        let mut mouse_mouse = [0.0; 2];
-
-        let mut mouse_world = [0.0; 2];
-
-        // let render_thread = async {
+        
         while let Some(ace::GameWrap {
             game: ggame,
             data: command,
@@ -355,7 +349,6 @@ impl EngineStuff {
             'outer: loop {
                 if poking == 1 {
                     console_dbg!("we poked!");
-                    //poking=false;
                     response_sender
                         .send(ace::GameWrapResponse {
                             game: ggame,
@@ -393,11 +386,9 @@ impl EngineStuff {
                             scroll_manager.on_touch_move(touches, &last_matrix, viewport);
                         }
                         MEvent::TouchDown { touches } => {
-                            //log!(format!("touch down:{:?}",touches));
                             scroll_manager.on_new_touch(touches);
                         }
                         MEvent::TouchEnd { touches } => {
-                            //log!(format!("touch end:{:?}",touches));
                             if let scroll::MouseUp::Select = scroll_manager.on_touch_up(&touches) {
                                 on_select = true;
                             }
@@ -412,7 +403,6 @@ impl EngineStuff {
                             }
                         }
                         MEvent::CanvasMouseMove { x, y } => {
-                            mouse_mouse = [*x, *y];
                             scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
                         }
                         MEvent::EndTurn => {
@@ -635,7 +625,6 @@ impl EngineStuff {
                 ctx.flush();
             }
         }
-        //};
     }
 }
 
