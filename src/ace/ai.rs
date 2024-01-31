@@ -133,7 +133,7 @@ fn doop(
         workspace.clear();
         workspace.union_with(mesh);
 
-        for a in workspace.iter_mesh(GridCoord([0; 2])) {
+        for a in workspace.iter_mesh(GridCoord::zero()) {
             for b in around(a) {
                 mesh.set_coord(b, true);
             }

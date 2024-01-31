@@ -58,6 +58,9 @@ impl HexDir {
 #[must_use]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
+    pub fn zero()->GridCoord{
+        GridCoord([0;2])
+    }
     pub fn dir_to(&self, other: &GridCoord) -> HexDir {
         let mut offset = other.sub(self);
 
