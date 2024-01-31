@@ -430,7 +430,10 @@ impl EngineStuff {
                         response_sender
                             .send(ace::GameWrapResponse {
                                 game: ggame,
-                                data: ace::Response::Mouse(kk.clone(), Pototo::EndTurn),
+                                data: ace::Response::Mouse(
+                                    get_mouse_input.take().unwrap(),
+                                    Pototo::EndTurn,
+                                ),
                             })
                             .await
                             .unwrap();
@@ -442,7 +445,10 @@ impl EngineStuff {
                         response_sender
                             .send(ace::GameWrapResponse {
                                 game: ggame,
-                                data: ace::Response::Mouse(kk.clone(), Pototo::Normal(mouse)),
+                                data: ace::Response::Mouse(
+                                    get_mouse_input.take().unwrap(),
+                                    Pototo::Normal(mouse),
+                                ),
                             })
                             .await
                             .unwrap();
