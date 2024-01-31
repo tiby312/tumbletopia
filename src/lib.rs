@@ -297,7 +297,7 @@ impl EngineStuff {
             let mut animation = None;
             let mut poking = 0;
 
-            match &command {
+            match command {
                 ace::Command::Animate(a) => match a.clone() {
                     animation::AnimationCommand::Movement {
                         unit,
@@ -524,7 +524,7 @@ impl EngineStuff {
                     draw_sys.view(&m).draw_a_thing(mountain);
                 }
 
-                if let ace::Command::GetMouseInput(a) = &command {
+                if let Some(a) = &get_mouse_input {
                     match a {
                         MousePrompt::Selection { selection, grey } => match selection {
                             CellSelection::MoveSelection(point, mesh) => {
