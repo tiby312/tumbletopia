@@ -335,6 +335,7 @@ impl EngineStuff {
                 }
             };
 
+            let mut animation_finished = false;
             'render_loop: loop {
                 if poking == 1 {
                     console_dbg!("we poked!");
@@ -348,6 +349,17 @@ impl EngineStuff {
                     break 'render_loop;
                 }
                 poking = 0.max(poking - 1);
+
+                if animation_finished {
+                    response_sender
+                        .send(ace::GameWrapResponse {
+                            game,
+                            data: ace::Response::AnimationFinish,
+                        })
+                        .await
+                        .unwrap();
+                    break 'render_loop;
+                }
 
                 let mut on_select = false;
                 let mut end_turn = false;
@@ -451,20 +463,19 @@ impl EngineStuff {
                     }
                 }
 
-                if let Some(a) = &mut animation {
-                    if let Some(_) = a.animate_step() {
-                    } else {
-                        //let a = command.take_animation();
-                        response_sender
-                            .send(ace::GameWrapResponse {
-                                game,
-                                data: ace::Response::AnimationFinish,
-                            })
-                            .await
-                            .unwrap();
-                        break 'render_loop;
-                    }
-                }
+                // if let Some(a) = &mut animation {
+                //     if let Some(_) = a.animate_step() {
+                //     } else {
+                //         response_sender
+                //             .send(ace::GameWrapResponse {
+                //                 game,
+                //                 data: ace::Response::AnimationFinish,
+                //             })
+                //             .await
+                //             .unwrap();
+                //         break 'render_loop;
+                //     }
+                // }
 
                 scroll_manager.step();
 
@@ -583,35 +594,37 @@ impl EngineStuff {
                 );
                 drop(d);
 
-                if let Some(a) = &animation {
+                if let Some(a) = &mut animation {
                     let this_draw = match team {
                         ActiveTeam::Cats => &cat,
                         ActiveTeam::Dogs => &dog,
                     };
 
-                    let (pos, ty) = a.calc_pos();
+                    if let Some(pos) = a.animate_step() {
+                        if let Some(unit) = a.data() {
+                            //This is a unit animation
+                            let a = (this_draw, unit);
 
-                    if let Some(unit) = ty {
-                        //This is a unit animation
-                        let a = (this_draw, unit);
+                            let d = DepthDisabler::new(&ctx);
 
-                        let d = DepthDisabler::new(&ctx);
+                            let m = my_matrix
+                                .chain(matrix::translation(pos.x, pos.y, 1.0))
+                                .generate();
 
-                        let m = my_matrix
-                            .chain(matrix::translation(pos.x, pos.y, 1.0))
-                            .generate();
+                            draw_sys.view(&m).draw_a_thing(drop_shadow);
+                            drop(d);
 
-                        draw_sys.view(&m).draw_a_thing(drop_shadow);
-                        drop(d);
+                            let m = my_matrix
+                                .chain(matrix::translation(pos.x, pos.y, 0.0))
+                                .chain(matrix::scale(1.0, 1.0, 1.0))
+                                .generate();
 
-                        let m = my_matrix
-                            .chain(matrix::translation(pos.x, pos.y, 0.0))
-                            .chain(matrix::scale(1.0, 1.0, 1.0))
-                            .generate();
-
-                        draw_sys.view(&m).draw_a_thing(*a.0);
+                            draw_sys.view(&m).draw_a_thing(*a.0);
+                        } else {
+                            //This is a terrain animation
+                        }
                     } else {
-                        //This is a terrain animation
+                        animation_finished = true;
                     }
                 }
 

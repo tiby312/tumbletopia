@@ -99,7 +99,6 @@ pub fn movement(
 pub struct Animation<T> {
     it: Box<dyn Iterator<Item = Vector2<f32>>>,
     data: T,
-    last: Option<Vector2<f32>>,
 }
 use std::fmt;
 impl<T> fmt::Debug for Animation<T> {
@@ -112,13 +111,11 @@ impl<T> Animation<T> {
         Self {
             it: Box::new(it),
             data,
-            last: None,
         }
     }
-    pub fn animate_step(&mut self) -> Option<()> {
+    pub fn animate_step(&mut self) -> Option<cgmath::Vector2<f32>> {
         if let Some(x) = self.it.next() {
-            self.last = Some(x);
-            Some(())
+            Some(x.into())
         } else {
             None
         }
@@ -129,8 +126,5 @@ impl<T> Animation<T> {
     }
     pub fn into_data(self) -> T {
         self.data
-    }
-    pub fn calc_pos(&self) -> (cgmath::Vector2<f32>, &T) {
-        (self.last.unwrap().into(), &self.data)
     }
 }
