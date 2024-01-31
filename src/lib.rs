@@ -539,9 +539,8 @@ impl EngineStuff {
                         match a {
                             CellSelection::MoveSelection(point, mesh) => {
                                 for a in mesh.iter_mesh(*point) {
-                                    let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                                    let t = matrix::translation(pos[0], pos[1], 0.0);
-
+                                    let pos = grid_matrix.hex_axial_to_world(&a);
+                                    let t = matrix::translation(pos.x, pos.y, 0.0);
                                     let m = my_matrix.chain(t).generate();
 
                                     draw_sys.view(&m).draw_a_thing_ext(
