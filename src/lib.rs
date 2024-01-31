@@ -277,12 +277,7 @@ impl EngineStuff {
         let snow = &models.snow;
         let select_model = &models.select_model;
 
-        while let Some(ace::GameWrap {
-            game: ggame,
-            data: command,
-            team,
-        }) = command_recv.next().await
-        {
+        while let Some(ace::GameWrap { game, data, team }) = command_recv.next().await {
             //First lets process the command. Break it down
             //into pieces that this thread understands.
             let mut get_mouse_input = None;
@@ -290,10 +285,10 @@ impl EngineStuff {
             let mut poking = 0;
 
             let (mut cat_for_draw, mut dog_for_draw) = (
-                ggame.factions.cats.units.clone().into_vec(),
-                ggame.factions.dogs.units.clone().into_vec(),
+                game.factions.cats.units.clone().into_vec(),
+                game.factions.dogs.units.clone().into_vec(),
             );
-            match command {
+            match data {
                 ace::Command::Animate(ak) => match ak {
                     animation::AnimationCommand::Movement {
                         unit,
@@ -328,7 +323,7 @@ impl EngineStuff {
 
                     response_sender
                         .send(ace::GameWrapResponse {
-                            game: ggame,
+                            game,
                             data: ace::Response::Ack,
                         })
                         .await
@@ -340,17 +335,17 @@ impl EngineStuff {
                 }
             };
 
-            'outer: loop {
+            'render_loop: loop {
                 if poking == 1 {
                     console_dbg!("we poked!");
                     response_sender
                         .send(ace::GameWrapResponse {
-                            game: ggame,
+                            game,
                             data: ace::Response::Ack,
                         })
                         .await
                         .unwrap();
-                    break 'outer;
+                    break 'render_loop;
                 }
                 poking = 0.max(poking - 1);
 
@@ -406,7 +401,7 @@ impl EngineStuff {
                             scroll_manager.on_mouse_down([*x, *y]);
                         }
                         MEvent::ButtonClick => {}
-                        MEvent::ShutdownClick => break 'outer,
+                        MEvent::ShutdownClick => break 'render_loop,
                     }
                 }
 
@@ -425,11 +420,11 @@ impl EngineStuff {
                 let mouse_world =
                     scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
-                if let Some(kk) = &mut get_mouse_input {
+                if let Some(_) = &mut get_mouse_input {
                     if end_turn {
                         response_sender
                             .send(ace::GameWrapResponse {
-                                game: ggame,
+                                game,
                                 data: ace::Response::Mouse(
                                     get_mouse_input.take().unwrap(),
                                     Pototo::EndTurn,
@@ -437,14 +432,14 @@ impl EngineStuff {
                             })
                             .await
                             .unwrap();
-                        break 'outer;
+                        break 'render_loop;
                     } else if on_select {
                         let mouse: GridCoord = grid_matrix.center_world_to_hex(mouse_world.into());
                         log!(format!("pos:{:?}", mouse));
 
                         response_sender
                             .send(ace::GameWrapResponse {
-                                game: ggame,
+                                game,
                                 data: ace::Response::Mouse(
                                     get_mouse_input.take().unwrap(),
                                     Pototo::Normal(mouse),
@@ -452,7 +447,7 @@ impl EngineStuff {
                             })
                             .await
                             .unwrap();
-                        break 'outer;
+                        break 'render_loop;
                     }
                 }
 
@@ -462,18 +457,18 @@ impl EngineStuff {
                         //let a = command.take_animation();
                         response_sender
                             .send(ace::GameWrapResponse {
-                                game: ggame,
+                                game,
                                 data: ace::Response::AnimationFinish,
                             })
                             .await
                             .unwrap();
-                        break 'outer;
+                        break 'render_loop;
                     }
                 }
 
                 scroll_manager.step();
 
-                let ggame = &ggame;
+                let ggame = &game;
 
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
