@@ -497,9 +497,7 @@ impl EngineStuff {
                 //TODO don't render where land is?
                 for c in ggame.world.get_game_cells().iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
-
-                    //let pos = a.calc_pos();
-                    let t = matrix::translation(pos[0], pos[1], -10.0);
+                    let t = matrix::translation(pos.x, pos.y, -10.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
                     let m = my_matrix.chain(t).chain(s).generate();
                     draw_sys.view(&m).draw_a_thing(water);
@@ -507,9 +505,7 @@ impl EngineStuff {
 
                 for c in ggame.env.land.snow.iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
-
-                    //let pos = a.calc_pos();
-                    let t = matrix::translation(pos[0], pos[1], -10.0);
+                    let t = matrix::translation(pos.x, pos.y, -10.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
                     let m = my_matrix.chain(t).chain(s).generate();
                     draw_sys.view(&m).draw_a_thing(snow);
@@ -517,9 +513,7 @@ impl EngineStuff {
 
                 for c in ggame.env.land.grass.iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
-
-                    //let pos = a.calc_pos();
-                    let t = matrix::translation(pos[0], pos[1], -10.0);
+                    let t = matrix::translation(pos.x, pos.y, -10.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
                     let m = my_matrix.chain(t).chain(s).generate();
                     draw_sys.view(&m).draw_a_thing(grass);
@@ -529,7 +523,7 @@ impl EngineStuff {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     //let pos = a.calc_pos();
-                    let t = matrix::translation(pos[0], pos[1], 0.0);
+                    let t = matrix::translation(pos.x, pos.y, 0.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
                     let m = my_matrix.chain(t).chain(s).generate();
                     draw_sys.view(&m).draw_a_thing(mountain);
@@ -694,8 +688,8 @@ fn draw_something_grid(
     height: f32,
 ) {
     for a in f.into_iter() {
-        let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-        let t = matrix::translation(pos[0], pos[1], height);
+        let pos = grid_matrix.hex_axial_to_world(&a);
+        let t = matrix::translation(pos.x, pos.y, height);
         let m = matrix.chain(t).generate();
         draw_sys.view(&m).draw_a_thing(texture);
     }
@@ -712,9 +706,9 @@ fn draw_health_text(
 ) {
     //draw text
     for (ccat, ii) in f {
-        let pos: [f32; 2] = gg.hex_axial_to_world(&ccat).into();
+        let pos= gg.hex_axial_to_world(&ccat);
 
-        let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
+        let t = matrix::translation(pos.x, pos.y + 20.0, 20.0);
 
         let jj = view_proj.chain(t).generate();
         let jj: &[f32; 16] = jj.as_ref();
@@ -725,11 +719,10 @@ fn draw_health_text(
         let m = new_proj.chain(s).generate();
 
         let nn = health_numbers.get_number(ii, text_texture);
-        let mut v = draw_sys
+        draw_sys
             .view(&m)
             .draw_a_thing_ext(&nn, false, false, true, false);
 
-        //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
     }
 }
 
