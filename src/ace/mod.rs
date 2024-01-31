@@ -91,11 +91,12 @@ impl Command {
                     let aa = animation::Animation::new(it, a);
                     ProcessedCommand::Animate(aa)
                 }
-                AnimationCommand::Attack { attacker, defender } => {
-                    let it = animation::attack(attacker.position, defender.position, grid);
-                    //let aa = AnimationOptions::Attack([attacker, defender]);
-                    let aa = animation::Animation::new(it, a);
-                    ProcessedCommand::Animate(aa)
+                AnimationCommand::Terrain { .. } => {
+                    todo!()
+                    // let it = animation::attack(attacker.position, defender.position, grid);
+                    // //let aa = AnimationOptions::Attack([attacker, defender]);
+                    // let aa = animation::Animation::new(it, a);
+                    // ProcessedCommand::Animate(aa)
                 }
             },
             GetMouseInput(a) => ProcessedCommand::GetMouseInput(a),

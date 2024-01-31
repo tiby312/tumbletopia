@@ -52,10 +52,17 @@ pub enum AnimationCommand {
         walls: movement::movement_mesh::Mesh,
         end: GridCoord,
     },
-    Attack {
-        attacker: UnitData,
-        defender: UnitData,
+    Terrain {
+        pos: GridCoord,
+        terrain_type: TerrainType,
     },
+}
+
+#[derive(Debug, Clone)]
+enum TerrainType {
+    Snow,
+    Grass,
+    Mountain,
 }
 
 pub fn movement(

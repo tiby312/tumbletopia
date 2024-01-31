@@ -397,77 +397,24 @@ impl EngineStuff {
             let mut command = command.process(&grid_matrix);
             //let game_view = ggame.view(team);
 
-            let (cat_for_draw, dog_for_draw) = {
-                let (this, that) = if let ace::ProcessedCommand::Animate(a) = &command {
-                    match a.data() {
-                        animation::AnimationCommand::Movement { unit, .. } => {
-                            let a: Vec<_> = ggame
-                                .factions
-                                .relative(team)
-                                .this_team
-                                .units
-                                .iter()
-                                .filter(|a| a.position != unit.position)
-                                .cloned()
-                                .collect();
-                            let b: Vec<_> = ggame
-                                .factions
-                                .relative(team)
-                                .that_team
-                                .units
-                                .iter()
-                                .cloned()
-                                .collect();
-                            (a, b)
-                        }
-                        animation::AnimationCommand::Attack { attacker, defender } => {
-                            let a = ggame
-                                .factions
-                                .relative(team)
-                                .this_team
-                                .units
-                                .iter()
-                                .filter(|k| k.position != attacker.position)
-                                .cloned()
-                                .collect();
-                            let b = ggame
-                                .factions
-                                .relative(team)
-                                .that_team
-                                .units
-                                .iter()
-                                .filter(|k| k.position != defender.position)
-                                .cloned()
-                                .collect();
-                            (a, b)
+
+            let (mut cat_for_draw, mut dog_for_draw) = (
+                ggame.factions.cats.units.clone().into_vec(),
+                ggame.factions.dogs.units.clone().into_vec(),
+            );
+            if let ace::ProcessedCommand::Animate(a) = &command {
+                match a.data() {
+                    animation::AnimationCommand::Movement { unit, .. } => {
+                        if team == ActiveTeam::Cats {
+                            cat_for_draw.retain(|k| k.position != unit.position);
+                        } else {
+                            dog_for_draw.retain(|k| k.position != unit.position);
                         }
                     }
-                } else {
-                    let a = ggame
-                        .factions
-                        .relative(team)
-                        .this_team
-                        .units
-                        .iter()
-                        .cloned()
-                        .collect();
-                    let b = ggame
-                        .factions
-                        .relative(team)
-                        .that_team
-                        .units
-                        .iter()
-                        .cloned()
-                        .collect();
-                    (a, b)
-                };
-
-                if team == ActiveTeam::Cats {
-                    (this, that)
-                } else {
-                    (that, this)
+                    animation::AnimationCommand::Terrain { .. } => {}
                 }
-            };
+            }
+
             let mut poking = false;
 
             'outer: loop {
@@ -823,56 +770,36 @@ impl EngineStuff {
                 }
 
                 if let ace::ProcessedCommand::Animate(a) = &command {
-                    let (this_draw, that_draw) = match team {
-                        ActiveTeam::Cats => (&cat, &dog),
-                        ActiveTeam::Dogs => (&dog, &cat),
+                    let this_draw = match team {
+                        ActiveTeam::Cats => &cat,
+                        ActiveTeam::Dogs => &dog,
                     };
 
                     let (pos, ty) = a.calc_pos();
 
-                    let (a, b) = match ty {
+                    match ty {
                         animation::AnimationCommand::Movement { unit, .. } => {
-                            ((this_draw, unit), None)
+                            let a = (this_draw, unit);
+
+                            disable_depth(&ctx, || {
+                                let t = matrix::translation(pos[0], pos[1], 1.0);
+
+                                let m = matrix.chain(t).generate();
+
+                                let mut v = draw_sys.view(m.as_ref());
+                                drop_shadow.draw(&mut v);
+                            });
+
+                            let t = matrix::translation(pos[0], pos[1], 0.0);
+                            let s = matrix::scale(1.0, 1.0, 1.0);
+                            let m = matrix.chain(t).chain(s).generate();
+                            let mut v = draw_sys.view(m.as_ref());
+                            a.0.draw(&mut v);
                         }
-                        animation::AnimationCommand::Attack { attacker, defender } => {
-                            ((this_draw, attacker), Some((that_draw, defender)))
+                        animation::AnimationCommand::Terrain { .. } => {
+                            unreachable!()
                         }
                     };
-
-                    disable_depth(&ctx, || {
-                        let t = matrix::translation(pos[0], pos[1], 1.0);
-
-                        let m = matrix.chain(t).generate();
-
-                        let mut v = draw_sys.view(m.as_ref());
-                        drop_shadow.draw(&mut v);
-
-                        if let Some((_, b)) = b {
-                            let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&b.position).into();
-                            let t = matrix::translation(pos[0], pos[1], 1.0);
-
-                            let m = matrix.chain(t).generate();
-
-                            let mut v = draw_sys.view(m.as_ref());
-                            drop_shadow.draw(&mut v);
-                        }
-                    });
-
-                    let t = matrix::translation(pos[0], pos[1], 0.0);
-                    let s = matrix::scale(1.0, 1.0, 1.0);
-                    let m = matrix.chain(t).chain(s).generate();
-                    let mut v = draw_sys.view(m.as_ref());
-                    a.0.draw(&mut v);
-
-                    if let Some((a, b)) = b {
-                        let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&b.position).into();
-
-                        let t = matrix::translation(pos[0], pos[1], 0.0);
-                        let s = matrix::scale(1.0, 1.0, 1.0);
-                        let m = matrix.chain(t).chain(s).generate();
-                        let mut v = draw_sys.view(m.as_ref());
-                        a.draw(&mut v);
-                    }
                 }
 
                 ctx.flush();
