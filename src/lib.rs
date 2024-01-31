@@ -260,8 +260,8 @@ impl EngineStuff {
 
         let mut draw_sys = ctx.shader_system();
 
-        let gl_width = canvas.width(); // as f32*1.6;
-        let gl_height = canvas.height(); // as f32*1.6;
+        let gl_width = canvas.width();
+        let gl_height = canvas.height();
         ctx.viewport(0, 0, gl_width as i32, gl_height as i32);
         let mut viewport = [canvas.width() as f32, canvas.height() as f32];
 
