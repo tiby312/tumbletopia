@@ -397,7 +397,6 @@ impl EngineStuff {
             let mut command = command.process(&grid_matrix);
             //let game_view = ggame.view(team);
 
-
             let (mut cat_for_draw, mut dog_for_draw) = (
                 ggame.factions.cats.units.clone().into_vec(),
                 ggame.factions.dogs.units.clone().into_vec(),
@@ -703,71 +702,60 @@ impl EngineStuff {
                             CellSelection::BuildSelection(_) => {}
                         }
                     }
+                });
 
-                    //for a in a.iter_coords() {
-
-                    //select_model.draw(&mut v);
-                    //}
+                disable_depth(&ctx, || {
+                    draw_something_grid(
+                        cat_for_draw
+                            .iter()
+                            .map(|x| x.position)
+                            .chain(dog_for_draw.iter().map(|x| x.position)),
+                        grid_matrix,
+                        &mut draw_sys,
+                        drop_shadow,
+                        &matrix,
+                        1.0,
+                    );
                 });
 
                 {
-                    let cat_draw =
-                        WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow, &direction_model);
-                    let dog_draw =
-                        WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow, &direction_model);
+                    draw_something_grid(
+                        cat_for_draw.iter().map(|x| x.position),
+                        grid_matrix,
+                        &mut draw_sys,
+                        &cat,
+                        &matrix,
+                        0.0,
+                    );
 
-                    disable_depth(&ctx, || {
-                        //draw dropshadow
-                        cat_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
-                        dog_draw.draw_shadow(&grid_matrix, &mut draw_sys, &matrix);
-
-                        //TODO finish this!!!!
-                        // if let ace::Command::Animate(a) = &command {
-                        //     let (pos,ty) = a.calc_pos();
-                        //     let t = matrix::translation(pos[0], pos[1], 1.0);
-
-                        //     let m = matrix.chain(t).generate();
-
-                        //     let mut v = draw_sys.view(m.as_ref());
-                        //     drop_shadow.draw(&mut v);
-                        // }
-                    });
+                    draw_something_grid(
+                        dog_for_draw.iter().map(|x| x.position),
+                        grid_matrix,
+                        &mut draw_sys,
+                        &dog,
+                        &matrix,
+                        0.0,
+                    );
                 }
 
-                {
-                    //TODO loop instead
-                    let cat_draw =
-                        WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow, &direction_model);
-                    let dog_draw =
-                        WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow, &direction_model);
-                    cat_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
-                    dog_draw.draw(&grid_matrix, &mut draw_sys, &matrix);
-                }
-
-                {
-                    let cat_draw =
-                        WarriorDraw::new(&cat_for_draw, &cat, &drop_shadow, &direction_model);
-                    let dog_draw =
-                        WarriorDraw::new(&dog_for_draw, &dog, &drop_shadow, &direction_model);
-                    disable_depth(&ctx, || {
-                        cat_draw.draw_health_text(
-                            &grid_matrix,
-                            &numm.health_numbers,
-                            &view_proj,
-                            &proj,
-                            &mut draw_sys,
-                            &numm.text_texture,
-                        );
-                        dog_draw.draw_health_text(
-                            &grid_matrix,
-                            &numm.health_numbers,
-                            &view_proj,
-                            &proj,
-                            &mut draw_sys,
-                            &numm.text_texture,
-                        );
-                    });
-                }
+                disable_depth(&ctx, || {
+                    draw_health_text(
+                        cat_for_draw
+                            .iter()
+                            .map(|x| (x.position, x.typ.type_index() as i8))
+                            .chain(
+                                dog_for_draw
+                                    .iter()
+                                    .map(|x| (x.position, x.typ.type_index() as i8)),
+                            ),
+                        &grid_matrix,
+                        &numm.health_numbers,
+                        &view_proj,
+                        &proj,
+                        &mut draw_sys,
+                        &numm.text_texture,
+                    );
+                });
 
                 if let ace::ProcessedCommand::Animate(a) = &command {
                     let this_draw = match team {
@@ -806,6 +794,53 @@ impl EngineStuff {
             }
         }
         //};
+    }
+}
+fn draw_something_grid(
+    f: impl IntoIterator<Item = GridCoord>,
+    grid_matrix: &grids::GridMatrix,
+    draw_sys: &mut ShaderSystem,
+    texture: &Foo<TextureGpu, ModelGpu>,
+    matrix: &Matrix4<f32>,
+    height: f32,
+) {
+    for a in f.into_iter() {
+        let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+        let t = matrix::translation(pos[0], pos[1], height);
+        let m = matrix.chain(t).generate();
+        let mut v = draw_sys.view(m.as_ref());
+        texture.draw(&mut v);
+    }
+}
+fn draw_health_text(
+    f: impl IntoIterator<Item = (GridCoord, i8)>,
+
+    gg: &grids::GridMatrix,
+    health_numbers: &NumberTextManager,
+    view_proj: &Matrix4<f32>,
+    proj: &Matrix4<f32>,
+    draw_sys: &mut ShaderSystem,
+    text_texture: &TextureGpu,
+) {
+    //draw text
+    for (ccat, ii) in f {
+        let pos: [f32; 2] = gg.hex_axial_to_world(&ccat).into();
+
+        let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
+
+        let jj = view_proj.chain(t).generate();
+        let jj: &[f32; 16] = jj.as_ref();
+        let tt = matrix::translation(jj[12], jj[13], jj[14]);
+        let new_proj = proj.clone().chain(tt);
+
+        let s = matrix::scale(5.0, 5.0, 5.0);
+        let m = new_proj.chain(s).generate();
+
+        let nn = health_numbers.get_number(ii, text_texture);
+        let mut v = draw_sys.view(m.as_ref());
+        nn.draw_ext(&mut v, false, false, true, false);
+
+        //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
     }
 }
 
