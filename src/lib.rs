@@ -297,6 +297,10 @@ impl EngineStuff {
             let mut animation = None;
             let mut poking = 0;
 
+            let (mut cat_for_draw, mut dog_for_draw) = (
+                ggame.factions.cats.units.clone().into_vec(),
+                ggame.factions.dogs.units.clone().into_vec(),
+            );
             match command {
                 ace::Command::Animate(a) => match a.clone() {
                     animation::AnimationCommand::Movement {
@@ -307,6 +311,16 @@ impl EngineStuff {
                     } => {
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
                         let aa = animation::Animation::new(it, a.clone());
+                        match aa.data() {
+                            animation::AnimationCommand::Movement { unit, .. } => {
+                                if team == ActiveTeam::Cats {
+                                    cat_for_draw.retain(|k| k.position != unit.position);
+                                } else {
+                                    dog_for_draw.retain(|k| k.position != unit.position);
+                                }
+                            }
+                            animation::AnimationCommand::Terrain { .. } => {}
+                        }
                         animation = Some(aa);
                     }
                     animation::AnimationCommand::Terrain { .. } => {
@@ -337,26 +351,6 @@ impl EngineStuff {
                     poking = 3;
                 }
             };
-
-            //let game_view = ggame.view(team);
-
-            let (mut cat_for_draw, mut dog_for_draw) = (
-                ggame.factions.cats.units.clone().into_vec(),
-                ggame.factions.dogs.units.clone().into_vec(),
-            );
-
-            if let Some(a) = &animation {
-                match a.data() {
-                    animation::AnimationCommand::Movement { unit, .. } => {
-                        if team == ActiveTeam::Cats {
-                            cat_for_draw.retain(|k| k.position != unit.position);
-                        } else {
-                            dog_for_draw.retain(|k| k.position != unit.position);
-                        }
-                    }
-                    animation::AnimationCommand::Terrain { .. } => {}
-                }
-            }
 
             'outer: loop {
                 if poking == 1 {
