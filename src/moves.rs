@@ -26,7 +26,7 @@ impl GameState {
             !game.env.land.is_coord_set(unit)
         };
 
-        let cond = |a: GridCoord, extra: Option<PartialMoveSigl>, depth: usize| {
+        let cond = |a: GridCoord, _extra: Option<PartialMoveSigl>, _depth: usize| {
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
 
             a != unit
@@ -237,17 +237,6 @@ impl ActualMove {
             .find_slow_mut(&moveto)
             .unwrap();
 
-        //let la = state.env.land.is_coord_set(unitt);
-        let is_ship = !state.env.land.is_coord_set(unitt);
-
-        // let fr = state.env.forest.is_coord_set(unitt);
-        // let is_ship = match (la, fr) {
-        //     (true, false) => true,
-        //     (true, true) => false,
-        //     (false, true) => unreachable!(),
-        //     (false, false) => unreachable!(),
-        // };
-
         if state.env.forest.is_coord_set(attackto) {
             state.env.forest.set_coord(attackto, false);
         } else if state.env.land.is_coord_set(attackto) {
@@ -255,20 +244,6 @@ impl ActualMove {
         } else {
             unreachable!();
         }
-
-        // if is_ship {
-        //     assert!(state.env.land.is_coord_set(attackto));
-        //     if state.env.land.grass.is_coord_set(attackto) {
-        //         state.env.land.grass.set_coord(attackto, false);
-        //     } else {
-        //         assert!(state.env.land.snow.is_coord_set(attackto));
-
-        //         state.env.land.snow.set_coord(attackto, false);
-        //     }
-        // } else {
-        //     //assert!(state.env.forest.is_coord_set(attackto));
-        //     state.env.forest.set_coord(attackto, false);
-        // }
 
         k.position = unitt;
     }
@@ -339,7 +314,7 @@ pub mod partial {
     fn apply_extra_move(
         this_unit: &mut UnitData,
         target_cell: GridCoord,
-        original: GridCoord,
+        _original: GridCoord,
         env: &mut Environment,
     ) -> PartialMoveSigl {
         if !env.land.is_coord_set(target_cell) {

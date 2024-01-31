@@ -477,13 +477,12 @@ pub fn game_init() -> GameState {
 
     let world = Box::leak(Box::new(board::MyWorld::new()));
 
-    let mut game = GameState {
+    GameState {
         factions: Factions {
             dogs: Tribe { units: dogs },
             cats: Tribe { units: cats },
         },
         env: Environment {
-            //land: BitField::from_iter([GridCoord([3, -3]), GridCoord([-3, 3])]),
             land: Land {
                 grass: BitField::from_iter([]),
 
@@ -492,8 +491,7 @@ pub fn game_init() -> GameState {
             forest: BitField::from_iter([]),
         },
         world,
-    };
-    game
+    }
 }
 
 pub mod share {
@@ -514,25 +512,9 @@ pub mod share {
     }
 }
 
-// pub async fn replay<'a>(
-//     game: &'a mut GameState,
-//     game_history: selection::MoveLog,
-//     mut doop: WorkerManager<'a>,
-// ) {
-//     {
-//         game_history.replay(game, &mut doop).await;
-//         return;
-//     }
-// }
 pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>) {
-    let mut replay_game = game.clone();
 
     let mut game_history = selection::MoveLog::new();
-
-    // {
-    //     share::load(SAMPLE_GAME).replay(&mut doop).await;
-    //     return;
-    // }
 
     //Loop over each team!
     'game_loop: for team_index in ActiveTeam::Dogs.iter() {
