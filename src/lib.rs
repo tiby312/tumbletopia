@@ -294,22 +294,20 @@ impl EngineStuff {
                 ggame.factions.dogs.units.clone().into_vec(),
             );
             match command {
-                //TODO remove clone somehow
-                ace::Command::Animate(ak) => match ak.clone() {
+                ace::Command::Animate(ak) => match ak {
                     animation::AnimationCommand::Movement {
                         unit,
                         mesh,
                         walls,
                         end,
                     } => {
-                        let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
-                        let aa = animation::Animation::new(it, ak);
-
                         if team == ActiveTeam::Cats {
                             cat_for_draw.retain(|k| k.position != unit.position);
                         } else {
                             dog_for_draw.retain(|k| k.position != unit.position);
                         }
+                        let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
+                        let aa = animation::Animation::new(it, Some(unit));
 
                         animation = Some(aa);
                     }
@@ -592,30 +590,28 @@ impl EngineStuff {
 
                     let (pos, ty) = a.calc_pos();
 
-                    match ty {
-                        animation::AnimationCommand::Movement { unit, .. } => {
-                            let a = (this_draw, unit);
+                    if let Some(unit) = ty {
+                        //This is a unit animation
+                        let a = (this_draw, unit);
 
-                            let d = DepthDisabler::new(&ctx);
+                        let d = DepthDisabler::new(&ctx);
 
-                            let m = my_matrix
-                                .chain(matrix::translation(pos.x, pos.y, 1.0))
-                                .generate();
+                        let m = my_matrix
+                            .chain(matrix::translation(pos.x, pos.y, 1.0))
+                            .generate();
 
-                            draw_sys.view(&m).draw_a_thing(drop_shadow);
-                            drop(d);
+                        draw_sys.view(&m).draw_a_thing(drop_shadow);
+                        drop(d);
 
-                            let m = my_matrix
-                                .chain(matrix::translation(pos.x, pos.y, 0.0))
-                                .chain(matrix::scale(1.0, 1.0, 1.0))
-                                .generate();
+                        let m = my_matrix
+                            .chain(matrix::translation(pos.x, pos.y, 0.0))
+                            .chain(matrix::scale(1.0, 1.0, 1.0))
+                            .generate();
 
-                            draw_sys.view(&m).draw_a_thing(*a.0);
-                        }
-                        animation::AnimationCommand::Terrain { .. } => {
-                            unreachable!()
-                        }
-                    };
+                        draw_sys.view(&m).draw_a_thing(*a.0);
+                    } else {
+                        //This is a terrain animation
+                    }
                 }
 
                 ctx.flush();
