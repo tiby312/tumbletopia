@@ -42,112 +42,6 @@ enum UiButton {
     HidePopup,
 }
 
-pub struct WarriorDraw<'a> {
-    model: &'a MyModel,
-    drop_shadow: &'a MyModel,
-    direction: &'a MyModel,
-    col: &'a [UnitData],
-}
-
-impl<'a> WarriorDraw<'a> {
-    fn new(
-        col: &'a [UnitData],
-        model: &'a MyModel,
-        drop_shadow: &'a MyModel,
-        direction: &'a MyModel,
-    ) -> Self {
-        Self {
-            model,
-            drop_shadow,
-            col,
-            direction,
-        }
-    }
-    fn draw(&self, gg: &grids::GridMatrix, draw_sys: &mut ShaderSystem, matrix: &Matrix4<f32>) {
-        //let grey = self.typ == Type::Para;
-        //TODO don't loop in this function!!!
-        for cc in self.col.iter() {
-            let pos = gg.hex_axial_to_world(&cc.position);
-
-            // let pos: [f32; 2] = gg.to_world_topleft(cc.position.0.into()).into();
-
-            let t = matrix::translation(pos[0], pos[1], 0.0);
-            //let s = matrix::scale(1.0, 1.0, 1.0);
-
-            //let r=rotate_by_dir(cc.direction,gg.spacing());
-
-            let m = matrix.chain(t.clone()).generate();
-            let mut v = draw_sys.view(m.as_ref());
-
-            self.model.draw_ext(
-                &mut v, false, /*  !cc.selectable(game)  */
-                false, false, true,
-            );
-
-            let m = matrix
-                .chain(t)
-                //.chain(rotate_by_dir(cc.direction, gg.spacing()))
-                .generate();
-            let mut v = draw_sys.view(m.as_ref());
-
-            // self.direction.draw_ext(
-            //     &mut v, false, /*  !cc.selectable(game)  */
-            //     false, false, true,
-            // );
-        }
-    }
-
-    fn draw_shadow(
-        &self,
-        gg: &grids::GridMatrix,
-        draw_sys: &mut ShaderSystem,
-        matrix: &Matrix4<f32>,
-    ) {
-        for a in self.col.iter().map(|a| &a.position) {
-            let pos: [f32; 2] = gg.hex_axial_to_world(a).into();
-            let t = matrix::translation(pos[0], pos[1], 1.0);
-
-            let m = matrix.chain(t).generate();
-
-            let mut v = draw_sys.view(m.as_ref());
-            self.drop_shadow.draw(&mut v);
-        }
-    }
-
-    fn draw_health_text(
-        &self,
-        gg: &grids::GridMatrix,
-        health_numbers: &NumberTextManager,
-        view_proj: &Matrix4<f32>,
-        proj: &Matrix4<f32>,
-        draw_sys: &mut ShaderSystem,
-        text_texture: &TextureGpu,
-    ) {
-        //draw text
-        for ccat in self.col.iter() {
-            let pos: [f32; 2] = gg.hex_axial_to_world(&ccat.position).into();
-
-            let t = matrix::translation(pos[0], pos[1] + 20.0, 20.0);
-
-            let jj = view_proj.chain(t).generate();
-            let jj: &[f32; 16] = jj.as_ref();
-            let tt = matrix::translation(jj[12], jj[13], jj[14]);
-            let new_proj = proj.clone().chain(tt);
-
-            let s = matrix::scale(5.0, 5.0, 5.0);
-            let m = new_proj.chain(s).generate();
-
-            let nn = health_numbers.get_number(ccat.typ.type_index() as i8, text_texture);
-            let mut v = draw_sys.view(m.as_ref());
-            nn.draw_ext(&mut v, false, false, true, false);
-
-            //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
-        }
-    }
-}
-
-type MyModel = model_parse::Foo<model_parse::TextureGpu, model_parse::ModelGpu>;
-
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Factions {
     pub dogs: Tribe,
@@ -495,13 +389,13 @@ impl EngineStuff {
                     scroll_manager.rot(),
                 );
 
-                let matrix = proj.chain(view_proj).generate();
+                let my_matrix = proj.chain(view_proj).generate();
 
-                last_matrix = matrix;
+                last_matrix = my_matrix;
 
                 //TODO don't compute every frame?.
                 let mouse_world =
-                    scroll::mouse_to_world(scroll_manager.cursor_canvas(), &matrix, viewport);
+                    scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
                 match &mut command {
                     ace::ProcessedCommand::Poke => {
@@ -607,10 +501,8 @@ impl EngineStuff {
                     //let pos = a.calc_pos();
                     let t = matrix::translation(pos[0], pos[1], -10.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
-                    let m = matrix.chain(t).chain(s).generate();
-                    let mut v = draw_sys.view(m.as_ref());
-
-                    water.draw(&mut v);
+                    let m = my_matrix.chain(t).chain(s).generate();
+                    draw_sys.view(&m).draw_a_thing(water);
                 }
 
                 for c in ggame.env.land.snow.iter_mesh(GridCoord([0; 2])) {
@@ -619,10 +511,8 @@ impl EngineStuff {
                     //let pos = a.calc_pos();
                     let t = matrix::translation(pos[0], pos[1], -10.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
-                    let m = matrix.chain(t).chain(s).generate();
-                    let mut v = draw_sys.view(m.as_ref());
-
-                    snow.draw(&mut v);
+                    let m = my_matrix.chain(t).chain(s).generate();
+                    draw_sys.view(&m).draw_a_thing(snow);
                 }
 
                 for c in ggame.env.land.grass.iter_mesh(GridCoord([0; 2])) {
@@ -631,10 +521,8 @@ impl EngineStuff {
                     //let pos = a.calc_pos();
                     let t = matrix::translation(pos[0], pos[1], -10.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
-                    let m = matrix.chain(t).chain(s).generate();
-                    let mut v = draw_sys.view(m.as_ref());
-
-                    grass.draw(&mut v);
+                    let m = my_matrix.chain(t).chain(s).generate();
+                    draw_sys.view(&m).draw_a_thing(grass);
                 }
 
                 for c in ggame.env.forest.iter_mesh(GridCoord([0; 2])) {
@@ -643,10 +531,8 @@ impl EngineStuff {
                     //let pos = a.calc_pos();
                     let t = matrix::translation(pos[0], pos[1], 0.0);
                     let s = matrix::scale(1.0, 1.0, 1.0);
-                    let m = matrix.chain(t).chain(s).generate();
-                    let mut v = draw_sys.view(m.as_ref());
-
-                    mountain.draw(&mut v);
+                    let m = my_matrix.chain(t).chain(s).generate();
+                    draw_sys.view(&m).draw_a_thing(mountain);
                 }
                 disable_depth(&ctx, || {
                     if let ace::ProcessedCommand::GetMouseInput(a) = &command {
@@ -662,11 +548,15 @@ impl EngineStuff {
                                     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
                                     let t = matrix::translation(pos[0], pos[1], 0.0);
 
-                                    let m = matrix.chain(t).generate();
+                                    let m = my_matrix.chain(t).generate();
 
-                                    let mut v = draw_sys.view(m.as_ref());
-
-                                    select_model.draw_ext(&mut v, *greyscale, false, false, false);
+                                    draw_sys.view(&m).draw_a_thing_ext(
+                                        select_model,
+                                        *greyscale,
+                                        false,
+                                        false,
+                                        false,
+                                    );
 
                                     //select_model.draw(&mut v);
                                 }
@@ -713,7 +603,7 @@ impl EngineStuff {
                         grid_matrix,
                         &mut draw_sys,
                         drop_shadow,
-                        &matrix,
+                        &my_matrix,
                         1.0,
                     );
                 });
@@ -724,7 +614,7 @@ impl EngineStuff {
                         grid_matrix,
                         &mut draw_sys,
                         &cat,
-                        &matrix,
+                        &my_matrix,
                         0.0,
                     );
 
@@ -733,7 +623,7 @@ impl EngineStuff {
                         grid_matrix,
                         &mut draw_sys,
                         &dog,
-                        &matrix,
+                        &my_matrix,
                         0.0,
                     );
                 }
@@ -772,17 +662,15 @@ impl EngineStuff {
                             disable_depth(&ctx, || {
                                 let t = matrix::translation(pos[0], pos[1], 1.0);
 
-                                let m = matrix.chain(t).generate();
+                                let m = my_matrix.chain(t).generate();
 
-                                let mut v = draw_sys.view(m.as_ref());
-                                drop_shadow.draw(&mut v);
+                                draw_sys.view(&m).draw_a_thing(drop_shadow);
                             });
 
                             let t = matrix::translation(pos[0], pos[1], 0.0);
                             let s = matrix::scale(1.0, 1.0, 1.0);
-                            let m = matrix.chain(t).chain(s).generate();
-                            let mut v = draw_sys.view(m.as_ref());
-                            a.0.draw(&mut v);
+                            let m = my_matrix.chain(t).chain(s).generate();
+                            draw_sys.view(&m).draw_a_thing(*a.0);
                         }
                         animation::AnimationCommand::Terrain { .. } => {
                             unreachable!()
@@ -796,6 +684,7 @@ impl EngineStuff {
         //};
     }
 }
+
 fn draw_something_grid(
     f: impl IntoIterator<Item = GridCoord>,
     grid_matrix: &grids::GridMatrix,
@@ -808,8 +697,7 @@ fn draw_something_grid(
         let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
         let t = matrix::translation(pos[0], pos[1], height);
         let m = matrix.chain(t).generate();
-        let mut v = draw_sys.view(m.as_ref());
-        texture.draw(&mut v);
+        draw_sys.view(&m).draw_a_thing(texture);
     }
 }
 fn draw_health_text(
@@ -837,8 +725,9 @@ fn draw_health_text(
         let m = new_proj.chain(s).generate();
 
         let nn = health_numbers.get_number(ii, text_texture);
-        let mut v = draw_sys.view(m.as_ref());
-        nn.draw_ext(&mut v, false, false, true, false);
+        let mut v = draw_sys
+            .view(&m)
+            .draw_a_thing_ext(&nn, false, false, true, false);
 
         //nn.draw(ccat.health,&ctx,&text_texture,&mut draw_sys,&m);
     }

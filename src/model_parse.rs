@@ -18,8 +18,8 @@ pub struct Foo<A, B> {
     pub texture: A,
     pub model: B,
 }
-impl<A: Borrow<TextureGpu>, B: Borrow<ModelGpu>> Foo<A, B> {
-    pub fn draw(&self, view: &mut simple2d::View) {
+impl<A: Borrow<TextureGpu>, B: Borrow<ModelGpu>> simple2d::Drawable for Foo<A, B> {
+    fn draw(&self, view: &mut simple2d::View) {
         let model = self.model.borrow();
         let tex = self.texture.borrow();
         view.draw(
@@ -35,7 +35,7 @@ impl<A: Borrow<TextureGpu>, B: Borrow<ModelGpu>> Foo<A, B> {
             true,
         );
     }
-    pub fn draw_ext(
+    fn draw_ext(
         &self,
         view: &mut simple2d::View,
         grayscale: bool,
