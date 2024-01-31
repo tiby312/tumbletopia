@@ -492,40 +492,35 @@ impl EngineStuff {
                 //TODO move drawing to a function?
                 let ggame = &ggame;
 
-                ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
+                ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);   
 
                 //TODO don't render where land is?
                 for c in ggame.world.get_game_cells().iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, -10.0);
-                    let s = matrix::scale(1.0, 1.0, 1.0);
-                    let m = my_matrix.chain(t).chain(s).generate();
+                    let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(water);
                 }
 
                 for c in ggame.env.land.snow.iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, -10.0);
-                    let s = matrix::scale(1.0, 1.0, 1.0);
-                    let m = my_matrix.chain(t).chain(s).generate();
+                    let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(snow);
                 }
 
                 for c in ggame.env.land.grass.iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, -10.0);
-                    let s = matrix::scale(1.0, 1.0, 1.0);
-                    let m = my_matrix.chain(t).chain(s).generate();
+                    let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(grass);
                 }
 
                 for c in ggame.env.forest.iter_mesh(GridCoord([0; 2])) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
-                    //let pos = a.calc_pos();
                     let t = matrix::translation(pos.x, pos.y, 0.0);
-                    let s = matrix::scale(1.0, 1.0, 1.0);
-                    let m = my_matrix.chain(t).chain(s).generate();
+                    let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(mountain);
                 }
                 disable_depth(&ctx, || {
