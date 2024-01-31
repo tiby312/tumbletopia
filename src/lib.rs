@@ -653,16 +653,18 @@ impl EngineStuff {
                             let a = (this_draw, unit);
 
                             disable_depth(&ctx, || {
-                                let t = matrix::translation(pos[0], pos[1], 1.0);
-
-                                let m = my_matrix.chain(t).generate();
+                                let m = my_matrix
+                                    .chain(matrix::translation(pos.x, pos.y, 1.0))
+                                    .generate();
 
                                 draw_sys.view(&m).draw_a_thing(drop_shadow);
                             });
 
-                            let t = matrix::translation(pos[0], pos[1], 0.0);
-                            let s = matrix::scale(1.0, 1.0, 1.0);
-                            let m = my_matrix.chain(t).chain(s).generate();
+                            let m = my_matrix
+                                .chain(matrix::translation(pos.x, pos.y, 0.0))
+                                .chain(matrix::scale(1.0, 1.0, 1.0))
+                                .generate();
+
                             draw_sys.view(&m).draw_a_thing(*a.0);
                         }
                         animation::AnimationCommand::Terrain { .. } => {
@@ -688,8 +690,9 @@ fn draw_something_grid(
 ) {
     for a in f.into_iter() {
         let pos = grid_matrix.hex_axial_to_world(&a);
-        let t = matrix::translation(pos.x, pos.y, height);
-        let m = matrix.chain(t).generate();
+
+        let m = model::mauga!(matrix, matrix::translation(pos.x, pos.y, height));
+
         draw_sys.view(&m).draw_a_thing(texture);
     }
 }
@@ -705,7 +708,7 @@ fn draw_health_text(
 ) {
     //draw text
     for (ccat, ii) in f {
-        let pos= gg.hex_axial_to_world(&ccat);
+        let pos = gg.hex_axial_to_world(&ccat);
 
         let t = matrix::translation(pos.x, pos.y + 20.0, 20.0);
 
@@ -721,7 +724,6 @@ fn draw_health_text(
         draw_sys
             .view(&m)
             .draw_a_thing_ext(&nn, false, false, true, false);
-
     }
 }
 

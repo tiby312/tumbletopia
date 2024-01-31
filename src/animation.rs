@@ -130,7 +130,7 @@ impl<T> Animation<T> {
     pub fn into_data(self) -> T {
         self.data
     }
-    pub fn calc_pos(&self) -> ([f32; 2], &T) {
+    pub fn calc_pos(&self) -> (cgmath::Vector2<f32>, &T) {
         (self.last.unwrap().into(), &self.data)
     }
 }
