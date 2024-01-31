@@ -126,7 +126,7 @@ impl GameState {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone,PartialOrd,Ord)]
+#[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 pub struct ActualMove {
     pub unit: GridCoord,
     pub moveto: GridCoord,
