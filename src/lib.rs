@@ -402,8 +402,6 @@ impl EngineStuff {
                         poking = true;
                     }
                     ace::ProcessedCommand::Popup(str) => {
-                        //console_dbg!(str);
-                        //TODO paint ai thinking popup here
                         if str.is_empty() {
                             engine_worker.post_message(UiButton::HidePopup);
                         } else {
@@ -467,29 +465,8 @@ impl EngineStuff {
                     ace::ProcessedCommand::Nothing => {}
                 }
 
-                // {
-                //     //Advance state machine.
-                //     let mouse = on_select.then_some(mouse_world);
-                //     let [this_team, that_team] =
-                //         state::team_view([&mut ggame.cats, &mut ggame.dogs], ggame.team);
-
-                //     let mut jj = state::Stuff {
-                //         team: &mut ggame.team,
-                //         this_team,
-                //         that_team,
-                //         grid_matrix: &ggame.grid_matrix,
-                //         mouse,
-                //         end_turn,
-                //     };
-                //     testo.step(&mut jj);
-                // }
-
                 scroll_manager.step();
 
-                use matrix::*;
-
-                //Drawing below doesnt need mutable reference.
-                //TODO move drawing to a function?
                 let ggame = &ggame;
 
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
@@ -544,8 +521,6 @@ impl EngineStuff {
                                             false,
                                             false,
                                         );
-
-                                        //select_model.draw(&mut v);
                                     }
                                 }
                                 CellSelection::BuildSelection(_) => {}
@@ -715,16 +690,6 @@ impl<'a> DepthDisabler<'a> {
 
         DepthDisabler { ctx }
     }
-}
-
-fn disable_depth(ctx: &WebGl2RenderingContext, func: impl FnOnce()) {
-    ctx.disable(WebGl2RenderingContext::DEPTH_TEST);
-    ctx.disable(WebGl2RenderingContext::CULL_FACE);
-
-    func();
-
-    ctx.enable(WebGl2RenderingContext::DEPTH_TEST);
-    ctx.enable(WebGl2RenderingContext::CULL_FACE);
 }
 
 //TODO just use reference???
