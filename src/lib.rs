@@ -180,12 +180,10 @@ pub async fn worker_entry() {
         let (game, mut r, w) = create_worker_render(&mut game);
 
         futures::join!(
-            //sample_game.replay(&mut w, game),
             ace::main_logic(game, w),
             render.handle_render_loop(&mut r, &mut frame_timer, &mut wr)
         );
     }
-    //w.post_message(UiButton::NoUi);
 
     log!("Worker thread closin");
 }
@@ -278,7 +276,7 @@ impl EngineStuff {
         let grass = &models.grass;
         let snow = &models.snow;
         let select_model = &models.select_model;
-        
+
         while let Some(ace::GameWrap {
             game: ggame,
             data: command,
@@ -296,7 +294,8 @@ impl EngineStuff {
                 ggame.factions.dogs.units.clone().into_vec(),
             );
             match command {
-                ace::Command::Animate(a) => match a.clone() {
+                //TODO remove clone somehow
+                ace::Command::Animate(ak) => match ak.clone() {
                     animation::AnimationCommand::Movement {
                         unit,
                         mesh,
@@ -304,17 +303,14 @@ impl EngineStuff {
                         end,
                     } => {
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
-                        let aa = animation::Animation::new(it, a.clone());
-                        match aa.data() {
-                            animation::AnimationCommand::Movement { unit, .. } => {
-                                if team == ActiveTeam::Cats {
-                                    cat_for_draw.retain(|k| k.position != unit.position);
-                                } else {
-                                    dog_for_draw.retain(|k| k.position != unit.position);
-                                }
-                            }
-                            animation::AnimationCommand::Terrain { .. } => {}
+                        let aa = animation::Animation::new(it, ak);
+
+                        if team == ActiveTeam::Cats {
+                            cat_for_draw.retain(|k| k.position != unit.position);
+                        } else {
+                            dog_for_draw.retain(|k| k.position != unit.position);
                         }
+
                         animation = Some(aa);
                     }
                     animation::AnimationCommand::Terrain { .. } => {
@@ -329,7 +325,7 @@ impl EngineStuff {
                     if str.is_empty() {
                         engine_worker.post_message(UiButton::HidePopup);
                     } else {
-                        engine_worker.post_message(UiButton::ShowPopup(str.clone()));
+                        engine_worker.post_message(UiButton::ShowPopup(str));
                     }
 
                     response_sender
@@ -463,7 +459,7 @@ impl EngineStuff {
                         response_sender
                             .send(ace::GameWrapResponse {
                                 game: ggame,
-                                data: ace::Response::AnimationFinish(animation.take().unwrap()),
+                                data: ace::Response::AnimationFinish,
                             })
                             .await
                             .unwrap();

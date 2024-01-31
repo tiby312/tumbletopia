@@ -34,36 +34,6 @@ pub enum MousePrompt {
     None,
 }
 
-pub enum ProcessedCommand {
-    Animate(Animation<animation::AnimationCommand>),
-    GetMouseInput(MousePrompt),
-    Popup(String),
-    Poke,
-    Nothing,
-}
-impl ProcessedCommand {
-    pub fn take_animation(&mut self) -> Animation<animation::AnimationCommand> {
-        let mut a = ProcessedCommand::Nothing;
-        std::mem::swap(self, &mut a);
-
-        let ProcessedCommand::Animate(a) = a else {
-            panic!();
-        };
-
-        a
-    }
-
-    pub fn take_cell(&mut self) -> MousePrompt {
-        let mut a = ProcessedCommand::Nothing;
-        std::mem::swap(self, &mut a);
-
-        let ProcessedCommand::GetMouseInput(a) = a else {
-            panic!();
-        };
-
-        a
-    }
-}
 #[derive(Debug)]
 pub enum Command {
     Animate(animation::AnimationCommand),
@@ -71,47 +41,6 @@ pub enum Command {
     Nothing,
     Popup(String),
     Poke,
-}
-impl Command {
-    // pub fn take_cell(&mut self) -> MousePrompt {
-    //     let mut a = Command::Nothing;
-    //     std::mem::swap(self, &mut a);
-
-    //     let Command::GetMouseInput(a) = a else {
-    //         panic!();
-    //     };
-
-    //     a
-    // }
-    pub fn process(self, grid: &GridMatrix) -> ProcessedCommand {
-        use animation::AnimationCommand;
-        use Command::*;
-        match self {
-            Poke => ProcessedCommand::Poke,
-            Popup(s) => ProcessedCommand::Popup(s),
-            Animate(a) => match a.clone() {
-                AnimationCommand::Movement {
-                    unit,
-                    mesh,
-                    walls,
-                    end,
-                } => {
-                    let it = animation::movement(unit.position, mesh, walls, end, grid);
-                    let aa = animation::Animation::new(it, a);
-                    ProcessedCommand::Animate(aa)
-                }
-                AnimationCommand::Terrain { .. } => {
-                    todo!()
-                    // let it = animation::attack(attacker.position, defender.position, grid);
-                    // //let aa = AnimationOptions::Attack([attacker, defender]);
-                    // let aa = animation::Animation::new(it, a);
-                    // ProcessedCommand::Animate(aa)
-                }
-            },
-            GetMouseInput(a) => ProcessedCommand::GetMouseInput(a),
-            Nothing => ProcessedCommand::Nothing,
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -123,7 +52,7 @@ pub enum Pototo<T> {
 #[derive(Debug)]
 pub enum Response {
     Mouse(MousePrompt, Pototo<GridCoord>), //TODO make grid coord
-    AnimationFinish(Animation<animation::AnimationCommand>),
+    AnimationFinish,
     Ack,
 }
 
@@ -143,7 +72,7 @@ impl<'a> WorkerManager<'a> {
         &mut self,
         animation: animation::AnimationCommand,
         team_index: ActiveTeam,
-    ) -> Animation<animation::AnimationCommand> {
+    ) {
         let game = unsafe { &*self.game };
         self.sender
             .send(GameWrap {
@@ -155,11 +84,9 @@ impl<'a> WorkerManager<'a> {
             .unwrap();
 
         let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
-        let Response::AnimationFinish(o) = data else {
+        let Response::AnimationFinish = data else {
             unreachable!();
         };
-
-        o
     }
 
     async fn get_mouse_no_selection<'c>(&mut self, team_index: ActiveTeam) -> Pototo<GridCoord> {
