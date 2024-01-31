@@ -495,12 +495,20 @@ impl EngineStuff {
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
                 //TODO don't render where land is?
-                for c in ggame.world.get_game_cells().iter_mesh(GridCoord::zero()) {
-                    let pos = grid_matrix.hex_axial_to_world(&c);
-                    let t = matrix::translation(pos.x, pos.y, -10.0);
-                    let m = my_matrix.chain(t).generate();
-                    draw_sys.view(&m).draw_a_thing(water);
-                }
+                // for c in ggame.world.get_game_cells().iter_mesh(GridCoord::zero()) {
+                //     let pos = grid_matrix.hex_axial_to_world(&c);
+                //     let t = matrix::translation(pos.x, pos.y, -10.0);
+                //     let m = my_matrix.chain(t).generate();
+                //     draw_sys.view(&m).draw_a_thing(water);
+                // }
+                draw_something_grid(
+                    ggame.world.get_game_cells().iter_mesh(GridCoord::zero()),
+                    grid_matrix,
+                    &mut draw_sys,
+                    &water,
+                    &my_matrix,
+                    -10.0,
+                );
 
                 for c in ggame.env.land.snow.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
@@ -523,17 +531,16 @@ impl EngineStuff {
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(mountain);
                 }
+                disable_depth(&ctx, || {
+                    if let ace::ProcessedCommand::GetMouseInput(a) = &command {
+                        let (a, greyscale) = match a {
+                            MousePrompt::Selection { selection, grey } => (selection, grey),
+                            MousePrompt::None => return,
+                        };
 
-                if let ace::ProcessedCommand::GetMouseInput(a) = &command {
-                    let (a, greyscale) = match a {
-                        MousePrompt::Selection { selection, grey } => (selection, grey),
-                        MousePrompt::None => return,
-                    };
-
-                    //if let Some(a) = testo.get_selection() {
-                    match a {
-                        CellSelection::MoveSelection(point, mesh) => {
-                            disable_depth(&ctx, || {
+                        //if let Some(a) = testo.get_selection() {
+                        match a {
+                            CellSelection::MoveSelection(point, mesh) => {
                                 for a in mesh.iter_mesh(*point) {
                                     let pos = grid_matrix.hex_axial_to_world(&a);
                                     let t = matrix::translation(pos.x, pos.y, 0.0);
@@ -549,39 +556,40 @@ impl EngineStuff {
 
                                     //select_model.draw(&mut v);
                                 }
-                            });
-                            // for a in mesh.iter_attackable_normal(*point) {
-                            //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                            //     let t = matrix::translation(pos[0], pos[1], 0.0);
 
-                            //     let m = matrix.chain(t).generate();
+                                // for a in mesh.iter_attackable_normal(*point) {
+                                //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                                //     let t = matrix::translation(pos[0], pos[1], 0.0);
 
-                            //     let mut v = draw_sys.view(m.as_ref());
+                                //     let m = matrix.chain(t).generate();
 
-                            //     attack_model.draw_ext(&mut v, greyscale, false, false, false);
+                                //     let mut v = draw_sys.view(m.as_ref());
 
-                            //     //select_model.draw(&mut v);
-                            // }
+                                //     attack_model.draw_ext(&mut v, greyscale, false, false, false);
 
-                            // counter += 0.02;
-                            // for (dir, a) in mesh.iter_swing_mesh(*point) {
-                            //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
-                            //     let t = matrix::translation(pos[0], pos[1], 0.0);
+                                //     //select_model.draw(&mut v);
+                                // }
 
-                            //     let r = rotate_by_dir(dir, grid_matrix.spacing());
+                                // counter += 0.02;
+                                // for (dir, a) in mesh.iter_swing_mesh(*point) {
+                                //     let pos: [f32; 2] = grid_matrix.hex_axial_to_world(&a).into();
+                                //     let t = matrix::translation(pos[0], pos[1], 0.0);
 
-                            //     let m = matrix.chain(t).chain(r).generate();
+                                //     let r = rotate_by_dir(dir, grid_matrix.spacing());
 
-                            //     let mut v = draw_sys.view(m.as_ref());
+                                //     let m = matrix.chain(t).chain(r).generate();
 
-                            //     arrow_model.draw_ext(&mut v, greyscale, false, false, false);
+                                //     let mut v = draw_sys.view(m.as_ref());
 
-                            //     //select_model.draw(&mut v);
-                            // }
+                                //     arrow_model.draw_ext(&mut v, greyscale, false, false, false);
+
+                                //     //select_model.draw(&mut v);
+                                // }
+                            }
+                            CellSelection::BuildSelection(_) => {}
                         }
-                        CellSelection::BuildSelection(_) => {}
                     }
-                }
+                });
 
                 disable_depth(&ctx, || {
                     draw_something_grid(
