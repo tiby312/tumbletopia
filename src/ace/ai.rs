@@ -175,7 +175,7 @@ fn doop(
 
 //TODO use bump allocator!!!!!
 pub struct PrincipalVariation {
-    a: std::collections::HashMap<Vec<moves::ActualMove>, moves::ActualMove>,
+    a: std::collections::BTreeMap<Vec<moves::ActualMove>, moves::ActualMove>,
 }
 impl PrincipalVariation {
     pub fn get_best_prev_move(&self, path: &[moves::ActualMove]) -> Option<&moves::ActualMove> {
@@ -212,7 +212,7 @@ pub async fn iterative_deepening<'a>(
 
     let max_depth = 4;
     let mut foo1 = PrincipalVariation {
-        a: std::collections::HashMap::new(),
+        a: std::collections::BTreeMap::new(),
     };
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_depth {
