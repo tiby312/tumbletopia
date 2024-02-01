@@ -43,24 +43,6 @@ pub fn next<Z: Zoo>() -> Next<Z> {
     Next(Z::create())
 }
 
-// pub struct Before<F,G>{
-//     func:F,
-//     g:G
-// }
-// impl<Z: Zoo,G:GameStepper<Z>,F:FnOnce(&mut Z::G<'_>)> GameStepper<Z> for Before<F,G> {
-//     type Result = G::Result;
-//     type Int = G::Int;
-//     fn step(&mut self, a: &mut Z::G<'_>) -> Stage<Self::Int> {
-//         self.g.step(a)
-//     }
-//     fn consume(self, s: &mut Z::G<'_>, a: Self::Int) -> Self::Result {
-//         (self.func)(s);
-//         self.g.consume(s,a)
-//     }
-// }
-// pub fn before<Z:Zoo,A:FnOnce(&mut Z::G<'_>),G:GameStepper<Z>>(func:A,g:G)->Before<A,G>{
-//     Before { func, g }
-// }
 
 #[derive(Copy, Clone)]
 pub struct Next<Z>(Z);
@@ -75,28 +57,6 @@ impl<Z: Zoo> GameStepper<Z> for Next<Z> {
     }
 }
 
-//TODO implement and use!
-// pub struct And<A,B,C,D>{
-//     a:A,
-//     b:B,
-//     foo:Either<C,D>
-// }
-// impl<Z: Zoo, A: GameStepper<Z>, B: GameStepper<Z>> GameStepper<Z> for And<A, B,A::Int,B::Int> {
-//     type Result=(A::Result,B::Result);
-//     type Int=(A::Int,B::Int);
-
-//     fn step(&mut self, game: &mut Z::G<'_>) -> Stage<Self::Int> {
-//         match self.a.step(game){
-//             Stage::Stay=>{},
-//             Stage::NextStage(e)=>{self.foo=Either::A(e)};
-//         }
-//     }
-
-//     fn consume(self, game: &mut Z::G<'_>, i: Self::Int) -> Self::Result {
-//         todo!()
-//     }
-
-// }
 
 pub struct Or<A, B> {
     a: A,

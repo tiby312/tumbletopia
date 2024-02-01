@@ -50,7 +50,7 @@ pub enum Pototo<T> {
 
 #[derive(Debug)]
 pub enum Response {
-    Mouse(MousePrompt, Pototo<GridCoord>), //TODO make grid coord
+    Mouse(MousePrompt, Pototo<GridCoord>),
     AnimationFinish,
     Ack,
 }
@@ -541,17 +541,4 @@ async fn handle_player(
             selected_unit = a;
         }
     }
-}
-//TODO use this!
-#[derive(Copy, Clone)]
-pub enum Move {
-    Warrior {
-        from: GridCoord,
-        to: GridCoord,
-        extra: Option<GridCoord>,
-    },
-    King {
-        from: GridCoord,
-        to: GridCoord,
-    },
 }
