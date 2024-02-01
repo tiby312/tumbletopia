@@ -303,15 +303,12 @@ impl EngineStuff {
                             dog_for_draw.retain(|k| k.position != unit.position);
                         }
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
-                        let aa = animation::Animation::new(it, unit);
-
-                        unit_animation = Some((Vector2::new(0.0, 0.0), aa));
+                        
+                        unit_animation = Some((Vector2::new(0.0, 0.0), it,unit));
                     }
                     animation::AnimationCommand::Terrain { pos, terrain_type } => {
-                        //let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
                         let it = animation::terrain_create();
-                        let aa = animation::Animation::new(it, (pos, terrain_type));
-                        terrain_animation = Some((0.0, aa));
+                        terrain_animation = Some((0.0, it,pos,terrain_type));
                     }
                 },
                 ace::Command::GetMouseInput(kk) => {
@@ -455,11 +452,10 @@ impl EngineStuff {
                     }
                 }
 
-                if let Some((z, a)) = &mut terrain_animation {
-                    if let Some(zpos) = a.animate_step() {
+                if let Some((z, a,_,_)) = &mut terrain_animation {
+                    if let Some(zpos) = a.next() {
                         *z = zpos;
                     } else {
-                        terrain_animation = None;
                         response_sender
                             .send(ace::GameWrapResponse {
                                 game,
@@ -470,11 +466,10 @@ impl EngineStuff {
                         break 'render_loop;
                     }
                 }
-                if let Some((lpos, a)) = &mut unit_animation {
-                    if let Some(pos) = a.animate_step() {
+                if let Some((lpos, a,_)) = &mut unit_animation {
+                    if let Some(pos) = a.next() {
                         *lpos = pos;
                     } else {
-                        unit_animation = None;
                         response_sender
                             .send(ace::GameWrapResponse {
                                 game,
@@ -526,9 +521,8 @@ impl EngineStuff {
                     draw_sys.view(&m).draw_a_thing(mountain);
                 }
 
-                if let Some((zpos, a)) = &mut terrain_animation {
-                    let (gpos, k) = a.data();
-
+                if let Some((zpos, a,gpos,k)) = &mut terrain_animation {
+                    
                     let texture = match k {
                         animation::TerrainType::Snow => snow,
                         animation::TerrainType::Grass => grass,
@@ -610,13 +604,12 @@ impl EngineStuff {
                     0.0,
                 );
 
-                if let Some((pos, a)) = &mut unit_animation {
+                if let Some((pos, a,unit)) = &mut unit_animation {
                     let this_draw = match team {
                         ActiveTeam::Cats => &cat,
                         ActiveTeam::Dogs => &dog,
                     };
 
-                    let unit = a.data();
                     //This is a unit animation
                     let a = (this_draw, unit);
 

@@ -103,33 +103,3 @@ pub fn movement(
         .map(move |val| old + dir * val)
     })
 }
-
-pub struct Animation<T, I> {
-    it: I,
-    data: T,
-}
-use std::fmt;
-impl<T, I> fmt::Debug for Animation<T, I> {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Ok(())
-    }
-}
-impl<T, I: Iterator> Animation<T, I> {
-    pub fn new(it: I, data: T) -> Self {
-        Self { it, data }
-    }
-    pub fn animate_step(&mut self) -> Option<I::Item> {
-        if let Some(x) = self.it.next() {
-            Some(x)
-        } else {
-            None
-        }
-    }
-
-    pub fn data(&self) -> &T {
-        &self.data
-    }
-    pub fn into_data(self) -> T {
-        self.data
-    }
-}
