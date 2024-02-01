@@ -29,7 +29,7 @@ fn what() {
 
 //TODO use this
 #[derive(Copy, Clone, Default, Hash, Debug, PartialEq, Eq)]
-pub enum Dir {
+pub enum HDir {
     #[default]
     BottomRight = 0,
     Bottom = 1,
@@ -38,9 +38,39 @@ pub enum Dir {
     Top = 4,
     TopRight = 5,
 }
-impl From<u8> for Dir {
+impl HDir {
+    pub fn all() -> impl Iterator<Item = HDir> {
+        (0..6).map(|dir| HDir::from(dir))
+    }
+    pub fn rotate60_right(&self) -> HDir {
+        // 0->4
+        // 1->5
+        // 2->0
+        // 3->1
+        // 4->2
+        // 5->3
+
+        HDir::from((*self as u8 + 1) % 6)
+    }
+
+    pub fn rotate60_left(&self) -> HDir {
+        // 0->2
+        // 1->3
+        // 2->4
+        // 3->5
+        // 4->0
+        // 5->1
+
+        HDir::from((*self as u8 + 5) % 6)
+    }
+
+    pub const fn to_relative(&self) -> GridCoord {
+        Cube(OFFSETS[*self as usize]).to_axial()
+    }
+}
+impl From<u8> for HDir {
     fn from(value: u8) -> Self {
-        use Dir::*;
+        use HDir::*;
         match value {
             0 => BottomRight,
             1 => Bottom,
@@ -151,10 +181,10 @@ impl Cube {
         GridCoord([self.0[0], self.0[1]])
     }
 
-    pub fn neighbour(&self, dir: Dir) -> Cube {
+    pub fn neighbour(&self, dir: HDir) -> Cube {
         self.add(Cube::direction(dir))
     }
-    pub fn direction(dir: Dir) -> Cube {
+    pub fn direction(dir: HDir) -> Cube {
         Cube(OFFSETS[dir as usize])
     }
     pub fn add(mut self, other: Cube) -> Cube {
@@ -189,7 +219,7 @@ impl Cube {
 
     //clockwise
     pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> + Clone {
-        let mut hex = self.add(Cube::direction(Dir::Top).scale(n));
+        let mut hex = self.add(Cube::direction(HDir::Top).scale(n));
 
         let k = std::iter::repeat(()).take(n as usize);
 

@@ -1,19 +1,22 @@
+use crate::hex::HDir;
+
 pub use self::movement_mesh::MovementMesh;
 
 use super::*;
 
-pub trait MoveStrategy {
-    type It: IntoIterator<Item = HexDir>;
-    fn adjacent() -> Self::It;
-}
-pub struct WarriorMovement;
-impl MoveStrategy for WarriorMovement {
-    type It = std::array::IntoIter<HexDir, 6>;
-    fn adjacent() -> Self::It {
-        [0, 1, 2, 3, 4, 5].map(|dir| HexDir { dir }).into_iter()
-    }
-}
+// pub trait MoveStrategy {
+//     type It: IntoIterator<Item = HexDir>;
+//     fn adjacent() -> Self::It;
+// }
+// pub struct WarriorMovement;
+// impl MoveStrategy for WarriorMovement {
+//     type It = std::array::IntoIter<HexDir, 6>;
+//     fn adjacent() -> Self::It {
+//         [0, 1, 2, 3, 4, 5].map(|dir| HexDir { dir }).into_iter()
+//     }
+// }
 
+#[deprecated]
 #[derive(Copy, Hash, Clone, Debug, Eq, PartialEq, Default)]
 pub struct HexDir {
     pub dir: u8,
@@ -61,7 +64,7 @@ impl GridCoord {
     pub fn zero() -> GridCoord {
         GridCoord([0; 2])
     }
-    pub fn dir_to(&self, other: &GridCoord) -> HexDir {
+    pub fn dir_to(&self, other: &GridCoord) -> HDir {
         let mut offset = other.sub(self);
 
         offset.0[0] = offset.0[0].clamp(-1, 1);
@@ -75,7 +78,7 @@ impl GridCoord {
             .iter()
             .enumerate()
             .find(|(_, x)| **x == offset.0)
-            .map(|(i, _)| HexDir { dir: i as u8 })
+            .map(|(i, _)| HDir::from(i as u8))
             .unwrap()
     }
     pub fn dir_to2(&self, other: &GridCoord) -> HexDir {
@@ -283,8 +286,8 @@ pub fn contains_coord<I: Iterator<Item = GridCoord>>(mut it: I, b: GridCoord) ->
 
 pub mod movement_mesh {
 
-    pub fn explore_outward_two() -> impl Iterator<Item = (HexDir, [HexDir; 3])> {
-        HexDir::all().map(move |dir| {
+    pub fn explore_outward_two() -> impl Iterator<Item = (HDir, [HDir; 3])> {
+        HDir::all().map(move |dir| {
             let straight = dir;
             let left = dir.rotate60_left();
             let right = dir.rotate60_right();
@@ -292,7 +295,7 @@ pub mod movement_mesh {
         })
     }
 
-    use crate::movement::HexDir;
+    use crate::hex::HDir;
     #[test]
     fn test_path() {
         let k1 = GridCoord([1, -1]);
@@ -302,7 +305,7 @@ pub mod movement_mesh {
         mesh.add_normal_cell(k1);
         mesh.add_normal_cell(k2);
 
-        let res: Vec<_> = mesh.path(GridCoord([1, -2]), &Mesh::new()).collect();
+        let res: Vec<HDir> = mesh.path(GridCoord([1, -2]), &Mesh::new()).collect();
         dbg!(res);
         panic!();
     }
@@ -541,7 +544,7 @@ pub mod movement_mesh {
             MovementMesh { inner: Mesh::new() }
         }
 
-        pub fn path(&self, a: GridCoord, walls: &Mesh) -> impl Iterator<Item = HexDir> {
+        pub fn path(&self, a: GridCoord, walls: &Mesh) -> impl Iterator<Item = HDir> {
             let mesh_iter = {
                 validate_rel(a);
                 let x = a.0[0];
