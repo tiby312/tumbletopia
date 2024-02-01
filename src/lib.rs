@@ -600,25 +600,6 @@ impl EngineStuff {
                     0.0,
                 );
 
-                let d = DepthDisabler::new(&ctx);
-
-                draw_health_text(
-                    cat_for_draw
-                        .iter()
-                        .map(|x| (x.position, x.typ.type_index() as i8))
-                        .chain(
-                            dog_for_draw
-                                .iter()
-                                .map(|x| (x.position, x.typ.type_index() as i8)),
-                        ),
-                    &grid_matrix,
-                    &numm.health_numbers,
-                    &view_proj,
-                    &proj,
-                    &mut draw_sys,
-                    &numm.text_texture,
-                );
-                drop(d);
 
                 if let Some((pos, a)) = &mut unit_animation {
                     let this_draw = match team {
@@ -646,6 +627,27 @@ impl EngineStuff {
 
                     draw_sys.view(&m).draw_a_thing(*a.0);
                 }
+                
+                let d = DepthDisabler::new(&ctx);
+
+                draw_health_text(
+                    cat_for_draw
+                        .iter()
+                        .map(|x| (x.position, x.typ.type_index() as i8))
+                        .chain(
+                            dog_for_draw
+                                .iter()
+                                .map(|x| (x.position, x.typ.type_index() as i8)),
+                        ),
+                    &grid_matrix,
+                    &numm.health_numbers,
+                    &view_proj,
+                    &proj,
+                    &mut draw_sys,
+                    &numm.text_texture,
+                );
+                drop(d);
+
 
                 ctx.flush();
             }
