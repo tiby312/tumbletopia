@@ -95,27 +95,26 @@ pub fn movement(
     })
 }
 
-//TODO replace box with existental type
-pub struct Animation<T> {
-    it: Box<dyn Iterator<Item = Vector2<f32>>>,
+pub struct Animation<T,I> {
+    it: I,
     data: T,
 }
 use std::fmt;
-impl<T> fmt::Debug for Animation<T> {
+impl<T,I> fmt::Debug for Animation<T,I> {
     fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         Ok(())
     }
 }
-impl<T> Animation<T> {
-    pub fn new(it: impl Iterator<Item = Vector2<f32>> + 'static, data: T) -> Self {
+impl<T,I:Iterator> Animation<T,I> {
+    pub fn new(it: I, data: T) -> Self {
         Self {
-            it: Box::new(it),
+            it,
             data,
         }
     }
-    pub fn animate_step(&mut self) -> Option<cgmath::Vector2<f32>> {
+    pub fn animate_step(&mut self) -> Option<I::Item> {
         if let Some(x) = self.it.next() {
-            Some(x.into())
+            Some(x)
         } else {
             None
         }

@@ -281,7 +281,7 @@ impl EngineStuff {
             //First lets process the command. Break it down
             //into pieces that this thread understands.
             let mut get_mouse_input = None;
-            let mut animation = None;
+            let mut unit_animation = None;
             let mut poking = 0;
 
             let (mut cat_for_draw, mut dog_for_draw) = (
@@ -302,9 +302,9 @@ impl EngineStuff {
                             dog_for_draw.retain(|k| k.position != unit.position);
                         }
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
-                        let aa = animation::Animation::new(it, Some(unit));
+                        let aa = animation::Animation::new(it, unit);
 
-                        animation = Some(aa);
+                        unit_animation = Some(aa);
                     }
                     animation::AnimationCommand::Terrain { .. } => {
                         todo!()
@@ -580,14 +580,14 @@ impl EngineStuff {
                 );
                 drop(d);
 
-                if let Some(a) = &mut animation {
+                if let Some(a) = &mut unit_animation {
                     let this_draw = match team {
                         ActiveTeam::Cats => &cat,
                         ActiveTeam::Dogs => &dog,
                     };
 
                     if let Some(pos) = a.animate_step() {
-                        if let Some(unit) = a.data() {
+                        let unit= a.data();
                             //This is a unit animation
                             let a = (this_draw, unit);
 
@@ -606,9 +606,7 @@ impl EngineStuff {
                                 .generate();
 
                             draw_sys.view(&m).draw_a_thing(*a.0);
-                        } else {
-                            //This is a terrain animation
-                        }
+                        
                     } else {
                         animation_finished = true;
                     }
