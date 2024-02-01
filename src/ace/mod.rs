@@ -3,7 +3,6 @@ use super::*;
 mod ai;
 pub mod selection;
 use crate::{
-    grids::GridMatrix,
     movement::{self, GridCoord},
     CellSelection, GameState, UnitData,
 };
