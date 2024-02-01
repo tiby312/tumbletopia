@@ -63,12 +63,6 @@ pub(crate) const SQRT_3: f32 = 1.73205080757;
 pub const HEX_PROJ_FLAT: cgmath::Matrix2<f32> =
     cgmath::Matrix2::new(3.0 / 2.0, SQRT_3 / 2.0, 0.0, SQRT_3);
 
-// #[test]
-// fn hex_range_test(){
-//     let k=Cube::new(0,0).range(6).count();
-//     panic!("{}",k);
-// }
-
 //q r s
 #[derive(Copy, Clone, Debug)]
 pub struct Cube(pub [i16; 3]);
@@ -193,37 +187,11 @@ impl Cube {
         })
     }
 
-    // pub fn cc_ring(&self, n: i16) -> impl DoubleEndedIterator<Item = (HexDir, Cube)> + Clone {
-    //     let mut hex = self.add(Cube::direction(Dir::Bottom).scale(n));
-
-    //     //TODO better way to do this?
-    //     //Do this so that we can reverse it.
-    //     let k = std::iter::repeat(())
-    //         .take(n as usize)
-    //         .collect::<Vec<_>>()
-    //         .into_iter();
-
-    //     (0..6)
-    //         .rev()
-    //         .flat_map(move |i| k.clone().map(move |_| i))
-    //         .map(move |i| {
-    //             let h = hex;
-    //             hex = hex.neighbour(i.into());
-
-    //             (HexDir { dir: i }, h)
-    //         })
-    // }
-
     //clockwise
-    pub fn ring(&self, n: i16) -> impl DoubleEndedIterator<Item = (HexDir, Cube)> + Clone {
+    pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> + Clone {
         let mut hex = self.add(Cube::direction(Dir::Top).scale(n));
 
-        //TODO better way to do this?
-        //Do this so that we can reverse it.
-        let k = std::iter::repeat(())
-            .take(n as usize)
-            .collect::<Vec<_>>()
-            .into_iter();
+        let k = std::iter::repeat(()).take(n as usize);
 
         (0..6)
             .flat_map(move |i| k.clone().map(move |_| i))
@@ -231,7 +199,7 @@ impl Cube {
                 let h = hex;
                 hex = hex.neighbour(i.into());
 
-                (HexDir { dir: i }, h)
+                h
             })
     }
 
@@ -252,15 +220,17 @@ impl Cube {
 
     //TODO implement using ring??
     pub fn neighbours(&self) -> impl Iterator<Item = Cube> + Clone {
-        let k = self.clone();
-        OFFSETS.iter().map(move |a| {
-            k.add(Cube(*a))
-            // let mut a = a.clone();
-            // for (a, b) in a.iter_mut().zip(k.iter()) {
-            //     *a += b;
-            // }
-            // Cube(a)
-        })
+        self.ring(1)
+
+        // let k = self.clone();
+        // OFFSETS.iter().map(move |a| {
+        //     k.add(Cube(*a))
+        //     // let mut a = a.clone();
+        //     // for (a, b) in a.iter_mut().zip(k.iter()) {
+        //     //     *a += b;
+        //     // }
+        //     // Cube(a)
+        // })
     }
 
     pub fn dist(&self, other: &Cube) -> i16 {

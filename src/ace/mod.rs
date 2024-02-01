@@ -469,7 +469,7 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         }
 
         let m = handle_player(game, &mut doop, team_index).await;
-        
+
         game_history.push(m);
 
         ai::absolute_evaluate(game, true);

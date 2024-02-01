@@ -1,7 +1,6 @@
-use crate::movement::{bitfield::BitField};
+use crate::movement::bitfield::BitField;
 
 use super::*;
-
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct MyWorld {

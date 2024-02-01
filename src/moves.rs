@@ -54,7 +54,7 @@ impl GameState {
             if transition_to_land {
                 mesh.add_normal_cell(last_move.unit.sub(&unit));
             } else {
-                for (_, a) in unit.to_cube().ring(1) {
+                for a in unit.to_cube().ring(1) {
                     let a = a.to_axial();
 
                     let j = if is_ship {
@@ -82,13 +82,13 @@ impl GameState {
                 }
             };
 
-            for (_, a) in unit.to_cube().ring(1) {
+            for a in unit.to_cube().ring(1) {
                 let a = a.to_axial();
 
                 if check_is_ship(a) && cond(a, None, 0) {
                     mesh.add_normal_cell(a.sub(&unit));
 
-                    for (_, b) in a.to_cube().ring(1) {
+                    for b in a.to_cube().ring(1) {
                         let b = b.to_axial();
 
                         if check_is_ship(b) && cond(b, None, 1) {

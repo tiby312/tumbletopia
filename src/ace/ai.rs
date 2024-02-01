@@ -126,7 +126,7 @@ fn doop(
     }
 
     fn around(point: GridCoord) -> impl Iterator<Item = GridCoord> {
-        point.to_cube().ring(1).map(|(_, b)| b.to_axial())
+        point.to_cube().ring(1).map(|b| b.to_axial())
     }
 
     fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
