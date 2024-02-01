@@ -370,11 +370,24 @@ pub mod partial {
                 walls
             }
             if let Some(extra) = self.is_extra {
+                let terrain_type = if !self.env.land.is_coord_set(self.target) {
+                    match self.this_unit.typ {
+                        Type::Grass => animation::TerrainType::Grass,
+                        Type::Snow => animation::TerrainType::Snow,
+                    }
+                } else {
+                    if !self.env.forest.is_coord_set(self.target) {
+                        animation::TerrainType::Mountain
+                    } else {
+                        unreachable!()
+                    }
+                };
+
                 let _ = data
                     .wait_animation(
                         animation::AnimationCommand::Terrain {
                             pos: self.target,
-                            terrain_type: animation::TerrainType::Grass,
+                            terrain_type,
                         },
                         team,
                     )

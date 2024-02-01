@@ -501,16 +501,19 @@ impl EngineStuff {
                     -10.0,
                 );
 
+                pub const LAND_OFFSET: f32 = -10.0;
+                pub const MOUNTAIN_OFFSET: f32 = 0.0;
+
                 for c in ggame.env.land.snow.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
-                    let t = matrix::translation(pos.x, pos.y, -10.0);
+                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(snow);
                 }
 
                 for c in ggame.env.land.grass.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
-                    let t = matrix::translation(pos.x, pos.y, -10.0);
+                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(grass);
                 }
@@ -518,7 +521,7 @@ impl EngineStuff {
                 for c in ggame.env.forest.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
-                    let t = matrix::translation(pos.x, pos.y, 0.0);
+                    let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(mountain);
                 }
@@ -531,11 +534,18 @@ impl EngineStuff {
                         animation::TerrainType::Grass => grass,
                         animation::TerrainType::Mountain => mountain,
                     };
+
+                    let diff = match k {
+                        animation::TerrainType::Snow => LAND_OFFSET,
+                        animation::TerrainType::Grass => LAND_OFFSET,
+                        animation::TerrainType::Mountain => MOUNTAIN_OFFSET,
+                    };
+
                     let gpos = *gpos;
 
                     let pos = grid_matrix.hex_axial_to_world(&gpos);
 
-                    let t = matrix::translation(pos.x, pos.y, *zpos);
+                    let t = matrix::translation(pos.x, pos.y, diff + *zpos);
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(texture);
                 }
@@ -600,7 +610,6 @@ impl EngineStuff {
                     0.0,
                 );
 
-
                 if let Some((pos, a)) = &mut unit_animation {
                     let this_draw = match team {
                         ActiveTeam::Cats => &cat,
@@ -627,7 +636,7 @@ impl EngineStuff {
 
                     draw_sys.view(&m).draw_a_thing(*a.0);
                 }
-                
+
                 let d = DepthDisabler::new(&ctx);
 
                 draw_health_text(
@@ -647,7 +656,6 @@ impl EngineStuff {
                     &numm.text_texture,
                 );
                 drop(d);
-
 
                 ctx.flush();
             }
