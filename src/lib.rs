@@ -417,7 +417,6 @@ impl EngineStuff {
 
                 last_matrix = my_matrix;
 
-                //TODO don't compute every frame?.
                 let mouse_world =
                     scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
@@ -723,76 +722,6 @@ impl<'a> DepthDisabler<'a> {
     }
 }
 
-//TODO just use reference???
-fn string_to_coords<'a>(st: &str) -> model::ModelData {
-    let num_rows = 16;
-    let num_columns = 16;
-
-    let mut tex_coords = vec![];
-    let mut counter = 0.0;
-    let dd = 20.0;
-    let mut positions = vec![];
-
-    let mut inds = vec![];
-    for (_, a) in st.chars().enumerate() {
-        let ascii = a as u8;
-        let index = (ascii - 0/*32*/) as u16;
-
-        //log!(format!("aaaa:{:?}",index));
-        let x = (index % num_rows) as f32 / num_rows as f32;
-        let y = (index / num_rows) as f32 / num_columns as f32;
-
-        let x1 = x;
-        let x2 = x1 + 1.0 / num_rows as f32;
-
-        let y1 = y;
-        let y2 = y + 1.0 / num_columns as f32;
-
-        let a = [[x1, y1], [x2, y1], [x1, y2], [x2, y2]];
-
-        tex_coords.extend(a);
-
-        let iii = [0u16, 1, 2, 2, 1, 3].map(|a| positions.len() as u16 + a);
-
-        let xx1 = counter;
-        let xx2 = counter + dd;
-        let yy1 = dd;
-        let yy2 = 0.0;
-
-        let zz = 0.0;
-        let y = [
-            [xx1, yy1, zz],
-            [xx2, yy1, zz],
-            [xx1, yy2, zz],
-            [xx2, yy2, zz],
-        ];
-
-        positions.extend(y);
-
-        inds.extend(iii);
-
-        assert!(ascii >= 32);
-        counter += dd;
-    }
-
-    let normals = positions.iter().map(|_| [0.0, 0.0, 1.0]).collect();
-
-    let cc = 1.0 / dd;
-    let mm = matrix::scale(cc, cc, cc).generate();
-
-    let positions = positions
-        .into_iter()
-        .map(|a| mm.transform_point(a.into()).into())
-        .collect();
-
-    model::ModelData {
-        positions,
-        tex_coords,
-        indices: Some(inds),
-        normals,
-        matrix: mm,
-    }
-}
 
 use web_sys::{OffscreenCanvas, WebGl2RenderingContext};
 
@@ -907,15 +836,71 @@ impl NumberTextManager {
         }
     }
 }
+fn string_to_coords<'a>(st: &str) -> model::ModelData {
+    let num_rows = 16;
+    let num_columns = 16;
 
-// fn rotate_by_dir(dir: HexDir, spacing: f32) -> impl MyMatrix {
-//     use matrix::Inverse;
-//     let mm = ((dir.dir + 1) % 6) as f32 / 6.0;
+    let mut tex_coords = vec![];
+    let mut counter = 0.0;
+    let dd = 20.0;
+    let mut positions = vec![];
 
-//     let zrot = matrix::z_rotation(-mm * (std::f32::consts::TAU));
-//     let tt = matrix::translation(-spacing / 2.0, -spacing / 2.0, 0.0);
-//     let tt2 = tt.clone().inverse();
+    let mut inds = vec![];
+    for (_, a) in st.chars().enumerate() {
+        let ascii = a as u8;
+        let index = (ascii - 0/*32*/) as u16;
 
-//     let r = tt2.chain(zrot).chain(tt);
-//     r
-// }
+        let x = (index % num_rows) as f32 / num_rows as f32;
+        let y = (index / num_rows) as f32 / num_columns as f32;
+
+        let x1 = x;
+        let x2 = x1 + 1.0 / num_rows as f32;
+
+        let y1 = y;
+        let y2 = y + 1.0 / num_columns as f32;
+
+        let a = [[x1, y1], [x2, y1], [x1, y2], [x2, y2]];
+
+        tex_coords.extend(a);
+
+        let iii = [0u16, 1, 2, 2, 1, 3].map(|a| positions.len() as u16 + a);
+
+        let xx1 = counter;
+        let xx2 = counter + dd;
+        let yy1 = dd;
+        let yy2 = 0.0;
+
+        let zz = 0.0;
+        let y = [
+            [xx1, yy1, zz],
+            [xx2, yy1, zz],
+            [xx1, yy2, zz],
+            [xx2, yy2, zz],
+        ];
+
+        positions.extend(y);
+
+        inds.extend(iii);
+
+        assert!(ascii >= 32);
+        counter += dd;
+    }
+
+    let normals = positions.iter().map(|_| [0.0, 0.0, 1.0]).collect();
+
+    let cc = 1.0 / dd;
+    let mm = matrix::scale(cc, cc, cc).generate();
+
+    let positions = positions
+        .into_iter()
+        .map(|a| mm.transform_point(a.into()).into())
+        .collect();
+
+    model::ModelData {
+        positions,
+        tex_coords,
+        indices: Some(inds),
+        normals,
+        matrix: mm,
+    }
+}
