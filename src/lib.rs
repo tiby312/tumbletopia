@@ -463,20 +463,6 @@ impl EngineStuff {
                     }
                 }
 
-                // if let Some(a) = &mut animation {
-                //     if let Some(_) = a.animate_step() {
-                //     } else {
-                //         response_sender
-                //             .send(ace::GameWrapResponse {
-                //                 game,
-                //                 data: ace::Response::AnimationFinish,
-                //             })
-                //             .await
-                //             .unwrap();
-                //         break 'render_loop;
-                //     }
-                // }
-
                 scroll_manager.step();
 
                 let ggame = &game;
