@@ -520,7 +520,7 @@ impl EngineStuff {
                     draw_sys.view(&m).draw_a_thing(mountain);
                 }
 
-                if let Some((zpos, a, gpos, k)) = &mut terrain_animation {
+                if let Some((zpos, _, gpos, k)) = &terrain_animation {
                     let texture = match k {
                         animation::TerrainType::Snow => snow,
                         animation::TerrainType::Grass => grass,
@@ -602,7 +602,7 @@ impl EngineStuff {
                     0.0,
                 );
 
-                if let Some((pos, a, unit)) = &mut unit_animation {
+                if let Some((pos, _, unit)) = &unit_animation {
                     let this_draw = match team {
                         ActiveTeam::Cats => &cat,
                         ActiveTeam::Dogs => &dog,
