@@ -22,7 +22,6 @@ pub mod model_parse;
 pub mod movement;
 pub mod projection;
 pub mod scroll;
-pub mod terrain;
 pub mod util;
 use dom::MEvent;
 use projection::*;
