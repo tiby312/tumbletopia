@@ -4,59 +4,6 @@ pub use self::movement_mesh::MovementMesh;
 
 use super::*;
 
-// pub trait MoveStrategy {
-//     type It: IntoIterator<Item = HexDir>;
-//     fn adjacent() -> Self::It;
-// }
-// pub struct WarriorMovement;
-// impl MoveStrategy for WarriorMovement {
-//     type It = std::array::IntoIter<HexDir, 6>;
-//     fn adjacent() -> Self::It {
-//         [0, 1, 2, 3, 4, 5].map(|dir| HexDir { dir }).into_iter()
-//     }
-// }
-
-#[deprecated]
-#[derive(Copy, Hash, Clone, Debug, Eq, PartialEq, Default)]
-pub struct HexDir {
-    pub dir: u8,
-}
-
-impl HexDir {
-    pub fn all() -> impl Iterator<Item = HexDir> {
-        (0..6).map(|dir| HexDir { dir })
-    }
-    pub const fn rotate60_right(&self) -> HexDir {
-        // 0->4
-        // 1->5
-        // 2->0
-        // 3->1
-        // 4->2
-        // 5->3
-
-        HexDir {
-            dir: (self.dir + 1) % 6,
-        }
-    }
-
-    pub const fn rotate60_left(&self) -> HexDir {
-        // 0->2
-        // 1->3
-        // 2->4
-        // 3->5
-        // 4->0
-        // 5->1
-
-        HexDir {
-            dir: (self.dir + 5) % 6,
-        }
-    }
-
-    pub const fn to_relative(&self) -> GridCoord {
-        hex::Cube(hex::OFFSETS[self.dir as usize]).to_axial()
-    }
-}
-
 #[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
 pub struct GridCoord(pub [i16; 2]);
@@ -81,33 +28,12 @@ impl GridCoord {
             .map(|(i, _)| HDir::from(i as u8))
             .unwrap()
     }
-    pub fn dir_to2(&self, other: &GridCoord) -> HexDir {
-        let mut offset = other.sub(self);
-
-        offset.0[0] = offset.0[0].clamp(-1, 1);
-        offset.0[1] = offset.0[1].clamp(-1, 1);
-
-        // assert!(offset.0[0].abs() <= 1);
-        // assert!(offset.0[1].abs() <= 1);
-        let offset = offset.to_cube();
-
-        hex::OFFSETS
-            .iter()
-            .rev()
-            .enumerate()
-            .find(|(_, x)| **x == offset.0)
-            .map(|(i, _)| HexDir { dir: i as u8 })
-            .unwrap()
-            .rotate60_right()
-    }
     pub fn to_cube(self) -> hex::Cube {
         let a = self.0;
         hex::Cube([a[0], a[1], -a[0] - a[1]])
     }
-    pub fn advance_by(self, m: HexDir, val: usize) -> GridCoord {
-        (0..val).fold(self, |acc, _| acc.advance(m))
-    }
-    pub const fn advance(self, m: HexDir) -> GridCoord {
+
+    pub fn advance(self, m: HDir) -> GridCoord {
         self.add(m.to_relative())
     }
     pub fn sub(mut self, o: &GridCoord) -> Self {
@@ -341,128 +267,6 @@ pub mod movement_mesh {
         )
     }
 
-    // fn generate_range(n: i16) -> impl Iterator<Item = GridCoord> {
-    //     (-n..n + 1).flat_map(move |q| {
-    //         ((-n).max(-q - n)..n.min(-q + n) + 1).map(move |r| GridCoord([q, r]))
-    //     })
-    // }
-
-    // const TABLE: [[i16; 2]; 19] = [
-    //     [-2, 0],
-    //     [-2, 1],
-    //     [-2, 2],
-    //     [-1, -1],
-    //     [-1, 0],
-    //     [-1, 1],
-    //     [-1, 2],
-    //     [0, -2],
-    //     [0, -1],
-    //     [0, 0],
-    //     [0, 1],
-    //     [0, 2],
-    //     [1, -2],
-    //     [1, -1],
-    //     [1, 0],
-    //     [1, 1],
-    //     [2, -2],
-    //     [2, -1],
-    //     [2, 0],
-    // ];
-
-    // #[derive(PartialEq, Eq, Debug, Clone)]
-    // pub struct SwingMoveRay {
-    //     pub swing: SwingMove,
-    //     pub num_steps: usize,
-    // }
-
-    // impl SwingMoveRay {
-    //     pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-    //         self.swing.iter_cells(point).take(self.num_steps)
-    //     }
-    // }
-
-    // #[derive(PartialEq, Eq, Debug, Clone)]
-    // pub struct SwingMove {
-    //     pub relative_anchor_point: GridCoord,
-    //     pub radius: i16,
-    //     pub clockwise: bool,
-    // }
-    // impl SwingMove {
-    //     pub fn iter_left(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-    //         // let f=match self.radius{
-    //         //     0=>0,
-    //         //     1=>3,
-    //         //     2=>6,
-    //         //     3=>9,
-    //         //     4=>12,
-    //         //     5=>12,
-    //         //     _=>12
-    //         // };
-    //         let f = 3 * self.radius as usize;
-    //         //radius 1-> 3 (or 4)
-    //         //radius 2-> 6 (or 7 including spot)
-    //         //radius 3-> 9 (or 10)
-    //         //radius 4-> 11 (or 12)
-    //         //radius 5-> 12 (or 13)
-
-    //         self.iter_cells_inner(point, f, true)
-    //     }
-    //     pub fn iter_right(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-    //         // let f=match self.radius{
-    //         //     0=>0,
-    //         //     1=>3,
-    //         //     2=>6,
-    //         //     3=>9,
-    //         //     4=>12,
-    //         //     5=>12,
-    //         //     _=>12
-    //         // };
-    //         let f = 3 * self.radius as usize;
-    //         self.iter_cells_inner(point, f, false)
-    //     }
-
-    //     pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
-    //         self.iter_cells_inner(point, 13, self.clockwise)
-    //     }
-    //     pub fn iter_cells_inner(
-    //         &self,
-    //         point: GridCoord,
-    //         num_cell: usize,
-    //         clockwise: bool,
-    //     ) -> impl Iterator<Item = (HexDir, GridCoord)> {
-    //         let radius = self.radius;
-    //         //let radius = 2;
-    //         //let num_cell = 8;
-    //         //let num_cell = 13;
-
-    //         // let radius = 3;
-    //         // let num_cell = 32;
-
-    //         let i = self.relative_anchor_point.to_cube();
-
-    //         let i1 = if clockwise {
-    //             Some(i.ring(radius))
-    //         } else {
-    //             None
-    //         };
-    //         let i2 = if !clockwise {
-    //             Some(i.cc_ring(radius))
-    //         } else {
-    //             None
-    //         };
-
-    //         let i = i1.into_iter().flatten().chain(i2.into_iter().flatten());
-
-    //         let i = i.map(|(d, a)| (d, a.to_axial()));
-    //         let ii = i.clone();
-    //         let i = i.chain(ii);
-
-    //         let iiii = i.skip_while(|(_, z)| *z != GridCoord([0; 2]));
-
-    //         iiii.take(num_cell + 2).map(move |(d, z)| (d, point.add(z)))
-    //     }
-    // }
-
     #[derive(PartialEq, Eq, Debug, Clone)]
     pub struct Mesh {
         pub inner: u128,
@@ -646,9 +450,6 @@ pub mod movement_mesh {
         //     .expect("Could not find the coord in table")
         //     .0
     }
-    // fn conv_inv(ind: usize) -> GridCoord {
-    //     GridCoord(TABLE[ind])
-    // }
 }
 
 pub mod bitfield {

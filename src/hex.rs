@@ -1,4 +1,4 @@
-use crate::movement::{Filter, FilterRes, GridCoord, HexDir};
+use crate::movement::{Filter, FilterRes, GridCoord};
 
 // pub const OFFSETS: [[i16; 3]; 6] = [
 //     [0, 1, -1],
@@ -134,9 +134,9 @@ impl Cube {
         Cube::new(-r, -s)
     }
 
-    pub fn rotate(self, dir: HexDir) -> Cube {
+    pub fn rotate(self, dir: HDir) -> Cube {
         let k = self;
-        match dir.dir {
+        match dir as u8 {
             0 => k,
             1 => k.rotate_60_right(),
             2 => k.rotate_60_right().rotate_60_right(),
