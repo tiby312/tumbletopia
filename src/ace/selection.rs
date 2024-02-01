@@ -1,17 +1,11 @@
-use crate::movement::MovementMesh;
+use crate::movement::HexDir;
 
 use super::*;
 
-pub enum SelectionType {
-    Normal(selection::RegularSelection),
-    Extra(selection::ComboContinueSelection),
-}
-
 #[derive(Clone)]
 pub struct PossibleExtra {
-    prev_move: moves::PartialMoveSigl,
-    //prev_coord: GridCoord,
-    prev_coord: UnitData,
+    pub prev_move: moves::PartialMoveSigl,
+    pub prev_coord: UnitData,
 }
 impl PossibleExtra {
     pub fn new(prev_move: moves::PartialMoveSigl, prev_coord: UnitData) -> Self {
@@ -20,248 +14,12 @@ impl PossibleExtra {
             prev_coord,
         }
     }
-    pub fn select(&self) -> ComboContinueSelection {
-        ComboContinueSelection {
-            extra: self.clone(),
-            unit: self.prev_coord.clone(),
-        }
-    }
-    pub fn prev_move(&self) -> &moves::PartialMoveSigl {
-        &self.prev_move
-    }
+
+    // pub fn prev_move(&self) -> &moves::PartialMoveSigl {
+    //     &self.prev_move
+    // }
     pub fn coord(&self) -> GridCoord {
         self.prev_coord.position
-    }
-}
-
-#[derive(Clone)]
-pub struct ComboContinueSelection {
-    extra: PossibleExtra,
-    unit: UnitData,
-}
-#[derive(Debug)]
-pub struct NoPathErr;
-impl ComboContinueSelection {
-    pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        // self.extra
-        // .prev_move
-        // .unit
-        // .to_cube()
-        // .dist(&self.extra.prev_move.moveto.to_cube())
-        // let foo = if self.extra.prev_coord == self.unit {
-        //     Some(2)
-        // } else {
-        //     None
-        // };
-
-        generate_unit_possible_moves_inner(&self.unit, game, Some(self.extra.prev_move.unit))
-    }
-    pub async fn execute(
-        &self,
-        target_cell: GridCoord,
-        mesh: movement::MovementMesh,
-        game_view: &mut GameViewMut<'_, '_>,
-        doop: &mut ace::WorkerManager<'_>,
-        move_log: &mut MoveLog,
-    ) -> Result<(), NoPathErr> {
-        let unit = self.unit.position;
-
-        if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, mesh, target_cell);
-
-            let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
-            move_log.push(moves::ActualMove::ExtraMove(
-                self.extra.prev_move.clone(),
-                iii,
-            ));
-        } else {
-            let pm = moves::PartialMove::new(unit, mesh, target_cell);
-            let jjj = pm
-                .clone()
-                .execute_with_animation(game_view, doop, |_| {})
-                .await;
-
-            let jjj = match jjj {
-                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-                    //move_log.push(moves::ActualMove::NormalMove(sigl));
-                    move_log.push(moves::ActualMove::ExtraMove(
-                        self.extra.prev_move.clone(),
-                        sigl,
-                    ));
-                    Some(unit.position)
-                    //Some(selection::PossibleExtra::new(sigl, unit.clone()))
-                }
-                (sigl, moves::ExtraMove::FinishMoving) => {
-                    //move_log.push(moves::ActualMove::NormalMove(sigl));
-                    move_log.push(moves::ActualMove::ExtraMove(
-                        self.extra.prev_move.clone(),
-                        sigl,
-                    ));
-
-                    None
-                }
-            };
-
-            if let Some(a) = jjj {
-                let _ = game_view.this_team.find_take(&a);
-            }
-        };
-
-        Ok(())
-    }
-    pub fn execute_no_animation(
-        &self,
-        target_cell: GridCoord,
-        mesh: movement::MovementMesh,
-        game_view: &mut GameViewMut<'_, '_>,
-        move_log: &mut MoveLog,
-    ) -> Result<(), NoPathErr> {
-        let unit = self.unit.position;
-
-        if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, mesh, target_cell);
-
-            let iii = iii.execute(game_view, |_| {});
-            move_log.push(moves::ActualMove::ExtraMove(
-                self.extra.prev_move.clone(),
-                iii,
-            ));
-        } else {
-            let pm = moves::PartialMove::new(unit, mesh, target_cell);
-            let jjj = pm.clone().execute(game_view, |_| {});
-            let jjj = match jjj {
-                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-                    //move_log.push(moves::ActualMove::NormalMove(sigl));
-                    move_log.push(moves::ActualMove::ExtraMove(
-                        self.extra.prev_move.clone(),
-                        sigl,
-                    ));
-                    Some(unit.position)
-                    //Some(selection::PossibleExtra::new(sigl, unit.clone()))
-                }
-                (sigl, moves::ExtraMove::FinishMoving) => {
-                    move_log.push(moves::ActualMove::ExtraMove(
-                        self.extra.prev_move.clone(),
-                        sigl,
-                    ));
-
-                    //move_log.push(moves::ActualMove::NormalMove(sigl));
-
-                    None
-                }
-            };
-
-            if let Some(a) = jjj {
-                let _ = game_view.this_team.find_take(&a);
-            }
-        };
-
-        Ok(())
-    }
-}
-
-#[derive(Clone)]
-pub struct RegularSelection {
-    pub unit: UnitData,
-}
-
-impl RegularSelection {
-    pub fn new(a: &UnitData) -> Self {
-        RegularSelection { unit: a.clone() }
-    }
-    // fn get_path_from_move(
-    //     &self,
-    //     target_cell: GridCoord,
-    //     game: &GameViewMut,
-    // ) -> Result<movement::Path, NoPathErr> {
-    //     //Reconstruct possible paths with path information this time.
-    //     let ss = generate_unit_possible_moves_inner(&self.unit, game, &None);
-
-    //     let path_iter = ss.path(target_cell.sub(&self.unit.position));
-
-    //     //TODO return iterator instead?
-    //     let mut p = movement::Path::new();
-    //     for a in path_iter {
-    //         p.add(a);
-    //     }
-    //     Ok(p)
-    // }
-    pub fn generate(&self, game: &GameViewMut) -> movement::MovementMesh {
-        generate_unit_possible_moves_inner(&self.unit, game, None)
-    }
-
-    pub async fn execute(
-        &self,
-        target_cell: GridCoord,
-        mesh: movement::MovementMesh,
-        game_view: &mut GameViewMut<'_, '_>,
-        doop: &mut ace::WorkerManager<'_>,
-        move_log: &mut MoveLog,
-    ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
-        //let path = self.get_path_from_move(target_cell, game_view)?;
-        let unit = self.unit.position;
-
-        let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, mesh, target_cell);
-
-            let iii = iii.execute_with_animation(game_view, doop, |_| {}).await;
-
-            move_log.push(moves::ActualMove::NormalMove(iii));
-
-            None
-        } else {
-            let pm = moves::PartialMove::new(unit, mesh, target_cell);
-            let jjj = pm
-                .clone()
-                .execute_with_animation(game_view, doop, |_| {})
-                .await;
-
-            match jjj {
-                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-                    Some(selection::PossibleExtra::new(sigl, unit.clone()))
-                }
-                (sigl, moves::ExtraMove::FinishMoving) => {
-                    move_log.push(moves::ActualMove::NormalMove(sigl));
-                    None
-                }
-            }
-        };
-
-        Ok(e)
-    }
-    pub fn execute_no_animation(
-        &self,
-        target_cell: GridCoord,
-        mesh: movement::MovementMesh,
-        game_view: &mut GameViewMut<'_, '_>,
-        move_log: &mut MoveLog,
-    ) -> Result<Option<selection::PossibleExtra>, NoPathErr> {
-        //let path = self.get_path_from_move(target_cell, game_view)?;
-        let unit = self.unit.position;
-
-        let e = if let Some(_) = game_view.that_team.find_slow_mut(&target_cell) {
-            let iii = moves::Invade::new(unit, mesh, target_cell);
-
-            let iii = iii.execute(game_view, |_| {});
-
-            move_log.push(moves::ActualMove::NormalMove(iii));
-            None
-        } else {
-            let pm = moves::PartialMove::new(unit, mesh, target_cell);
-            let jjj = pm.clone().execute(game_view, |_| {});
-
-            match jjj {
-                (sigl, moves::ExtraMove::ExtraMove { unit }) => {
-                    Some(selection::PossibleExtra::new(sigl, unit.clone()))
-                }
-                (sigl, moves::ExtraMove::FinishMoving) => {
-                    move_log.push(moves::ActualMove::NormalMove(sigl));
-                    None
-                }
-            }
-        };
-
-        Ok(e)
     }
 }
 
@@ -275,101 +33,465 @@ impl MoveLog {
     pub fn push(&mut self, o: moves::ActualMove) {
         self.inner.push(o);
     }
-    // pub fn add_invade(&mut self, i: moves::InvadeSigl) {}
-    // pub fn add_movement(&mut self, a: moves::MovementSigl) {}
-}
 
-pub fn has_restricted_movement(unit: &UnitData, game: &GameView) -> bool {
-    let restricted_movement = if let Some(_) = unit
-        .position
-        .to_cube()
-        .ring(1)
-        .map(|s| game.that_team.find_slow(&s.to_axial()).is_some())
-        .find(|a| *a)
-    {
-        true
-    } else {
-        match unit.typ {
-            Type::Warrior => false,
-            Type::Para => true,
-            _ => todo!(),
+    pub async fn replay(&self, doop: &mut WorkerManager<'_>, kk: &mut GameState) {
+        for (team_index, m) in ActiveTeam::Dogs.iter().zip(self.inner.iter()) {
+            m.execute_move_ani(kk, team_index, doop).await;
         }
-    };
-    restricted_movement
-}
-pub fn generate_unit_possible_moves_inner(
-    unit: &UnitData,
-    game: &GameViewMut,
-    extra_attack_prev_coord: Option<GridCoord>,
-) -> movement::MovementMesh {
-    // If there is an enemy near by restrict movement.
+        assert!(kk.game_is_over().is_some());
+    }
+    pub fn deserialize(buffer: Vec<u8>) -> MoveLog {
+        use byteorder::{BigEndian, ReadBytesExt};
+        use std::io::Cursor;
+        let mut rdr = Cursor::new(buffer);
+        let ver = rdr.read_u32::<BigEndian>().unwrap();
+        assert_eq!(ver, 0);
+        let num = rdr.read_u32::<BigEndian>().unwrap();
 
-    let restricted_movement = has_restricted_movement(unit, &game.into_const());
+        let mut ret = vec![];
+        for _ in 0..num {
+            let vals = [
+                rdr.read_i16::<BigEndian>().unwrap(),
+                rdr.read_i16::<BigEndian>().unwrap(),
+                rdr.read_i16::<BigEndian>().unwrap(),
+                rdr.read_i16::<BigEndian>().unwrap(),
+                rdr.read_i16::<BigEndian>().unwrap(),
+                rdr.read_i16::<BigEndian>().unwrap(),
+            ];
 
-    let mm = if let Some(extra_attack_prev_coord) = extra_attack_prev_coord {
-        let mut m = MovementMesh::new();
-
-        let f = game
-            .world
-            .filter()
-            .and(
-                game.that_team
-                    .filter_type(Type::Warrior)
-                    .and(game.that_team.filter())
-                    .not(),
-            )
-            .and(game.this_team.filter().not());
-
-        let dir = unit.position.sub(&extra_attack_prev_coord).to_cube();
-        let start = unit.position.to_cube();
-
-        let positions = (0..4).map(|a| (0..a).fold(start, |acc, _| acc.add(dir)));
-        //console_dbg!(dir, start, positions);
-
-        for a in positions {
-            let a = a.to_axial();
-            if let movement::FilterRes::Accept = f.filter(&a) {
-                m.add(a.sub(&unit.position));
-            }
+            ret.push(moves::ActualMove {
+                unit: GridCoord([vals[0], vals[1]]),
+                moveto: GridCoord([vals[2], vals[3]]),
+                attackto: GridCoord([vals[4], vals[5]]),
+            })
         }
-        m
+        MoveLog { inner: ret }
+    }
+    pub fn serialize(&self) -> Vec<u8> {
+        let o = &self.inner;
+        use byteorder::{BigEndian, WriteBytesExt};
 
-        // movement::compute_moves2(
-        //     unit.position,
-        //     &game.world.filter().and(game.that_team.filter()),
-        //     &movement::NoFilter,
-        //     restricted_movement,
-        //     false,
-        // )
-        // movement::compute_moves(
-        //     &movement::WarriorMovement,
-        //     ,
-        //     &movement::NoFilter,
-        //     &terrain::Grass,
-        //     unit.position,
-        //     MoveUnit(1),
-        //     false,
-        //     ph,
-        // )
-    } else {
-        movement::compute_moves2(
-            unit.position,
-            &game
-                .world
-                .filter()
-                .and(
-                    game.that_team
-                        .filter_type(Type::Warrior)
-                        .and(game.that_team.filter())
-                        .not(),
-                )
-                .and(game.this_team.filter().not()),
-            &game.this_team.filter().or(movement::AcceptCoords::new(
-                board::water_border().map(|x| x.to_axial()),
-            )),
-            restricted_movement,
-            true,
-        )
-    };
-    mm
+        let mut wtr = vec![];
+
+        let version = 0;
+        wtr.write_u32::<BigEndian>(version).unwrap();
+
+        wtr.write_u32::<BigEndian>(o.len().try_into().unwrap())
+            .unwrap();
+
+        for a in o.iter() {
+            wtr.write_i16::<BigEndian>(a.unit.0[0]).unwrap();
+            wtr.write_i16::<BigEndian>(a.unit.0[1]).unwrap();
+            wtr.write_i16::<BigEndian>(a.moveto.0[0]).unwrap();
+            wtr.write_i16::<BigEndian>(a.moveto.0[1]).unwrap();
+            wtr.write_i16::<BigEndian>(a.attackto.0[0]).unwrap();
+            wtr.write_i16::<BigEndian>(a.attackto.0[1]).unwrap();
+        }
+        wtr
+    }
 }
+
+#[derive(Copy, Clone, Debug)]
+pub enum Steering {
+    Left,
+    Right,
+    LeftLeft,
+    RightRight,
+    None,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Attackable {
+    Yes,
+    No,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum StopsIter {
+    Yes,
+    No,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum ResetIter {
+    Yes,
+    No,
+}
+
+pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 6] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 1 });
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 2 });
+
+    let f4 = GridCoord([0, 0]).advance(HexDir { dir: 3 });
+    let f5 = GridCoord([0, 0]).advance(HexDir { dir: 4 });
+    let f6 = GridCoord([0, 0]).advance(HexDir { dir: 5 });
+
+    [
+        (
+            f1,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f4,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f5,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f6,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+    ]
+};
+
+pub const WARRIOR_STEERING_ATTACKABLE: [(GridCoord, Steering, Attackable, StopsIter, ResetIter);
+    6] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 1 });
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 2 });
+
+    let f4 = GridCoord([0, 0]).advance(HexDir { dir: 3 });
+    let f5 = GridCoord([0, 0]).advance(HexDir { dir: 4 });
+    let f6 = GridCoord([0, 0]).advance(HexDir { dir: 5 });
+
+    [
+        (
+            f1,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f4,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f5,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f6,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+    ]
+};
+
+pub const WARRIOR_STEERING_OLD2: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 6] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+
+    let f4 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left().rotate60_left());
+    let f5 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right().rotate60_right());
+    let f6 = GridCoord([0, 0]).advance(
+        HexDir { dir: 0 }
+            .rotate60_right()
+            .rotate60_right()
+            .rotate60_right(),
+    );
+
+    [
+        (
+            f1,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f4,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f5,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f6,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+    ]
+};
+
+pub const WARRIOR_STEERING_OLD: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 3] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    [
+        (
+            f1,
+            Steering::Left,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::Right,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+    ]
+};
+
+pub const LANCER_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 5] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+
+    let f4 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right().rotate60_right());
+    let f4 = f2.add(f4);
+
+    let f5 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left().rotate60_left());
+    let f5 = f1.add(f5);
+
+    [
+        (
+            f1,
+            Steering::Left,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f5,
+            Steering::LeftLeft,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::Right,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::Yes,
+        ),
+        (
+            f4,
+            Steering::RightRight,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::Yes,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::Yes,
+        ),
+    ]
+};
+pub const ARCHER_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 4] = {
+    let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left());
+    let f2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right());
+
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    let f4 = GridCoord([0, 0])
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 });
+
+    [
+        (
+            f1,
+            Steering::Left,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f2,
+            Steering::Right,
+            Attackable::Yes,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::No,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+        (
+            f4,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+    ]
+};
+
+// pub const LANCER_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 4] = {
+//     let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+//     let f2 = f1.advance(HexDir { dir: 0 }.rotate60_left());
+//     let f3 = f1.advance(HexDir { dir: 0 }.rotate60_right());
+
+//     [
+//         (
+//             f1,
+//             Steering::None,
+//             Attackable::Yes,
+//             StopsIter::Yes,
+//             ResetIter::No,
+//         ),
+//         (
+//             f2,
+//             Steering::Left,
+//             Attackable::Yes,
+//             StopsIter::Yes,
+//             ResetIter::No,
+//         ),
+//         (
+//             f1,
+//             Steering::None,
+//             Attackable::Yes,
+//             StopsIter::Yes,
+//             ResetIter::Yes,
+//         ),
+//         (
+//             f3,
+//             Steering::Right,
+//             Attackable::Yes,
+//             StopsIter::Yes,
+//             ResetIter::No,
+//         ),
+//     ]
+// };
+
+pub const CATAPAULT_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 5] = {
+    let ff1 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_left().rotate60_left());
+    let ff2 = GridCoord([0, 0]).advance(HexDir { dir: 0 }.rotate60_right().rotate60_right());
+    let f3 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
+    let f4 = GridCoord([0, 0])
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 });
+    let f5 = GridCoord([0, 0])
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 })
+        .advance(HexDir { dir: 0 });
+
+    [
+        (
+            ff1,
+            Steering::Right,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            ff2,
+            Steering::Left,
+            Attackable::No,
+            StopsIter::No,
+            ResetIter::No,
+        ),
+        (
+            f3,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+        (
+            f4,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+        (
+            f5,
+            Steering::None,
+            Attackable::Yes,
+            StopsIter::Yes,
+            ResetIter::No,
+        ),
+    ]
+};

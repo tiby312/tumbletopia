@@ -1,50 +1,21 @@
-use crate::movement::FilterRes;
+use crate::movement::bitfield::BitField;
 
 use super::*;
 
-pub struct GridFilter {}
-impl movement::Filter for GridFilter {
-    fn filter(&self, a: &GridCoord) -> FilterRes {
-        //TODO inefficient. look at the hex coord website
-        FilterRes::from_bool(world().find(|b| b.to_axial() == *a).is_some())
-
-        // let x = a.0[0];
-        // let y = a.0[1];
-
-        // x >= 0 && y >= 0 && x < self.grid_width && y < self.grid_width
-    }
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct MyWorld {
+    w: BitField,
 }
-
-pub fn water_border() -> impl Iterator<Item = hex::Cube> + Clone {
-    hex::Cube::new(0, 0).ring(5)
+impl MyWorld {
+    pub fn new() -> MyWorld {
+        let w = BitField::from_iter(world().map(|a| a.to_axial()));
+        MyWorld { w }
+    }
+    pub fn get_game_cells(&self) -> &BitField {
+        &self.w
+    }
 }
 
 fn world() -> impl Iterator<Item = hex::Cube> {
-    // let dim=8;
-
-    // let og = hex::Cube::new(dim-1, -(dim-1));
-    // (0..dim)
-    //     .flat_map(move |i| (0..dim).map(move |j| (i, j)))
-    //     .map(move |(x, y)| {
-    //         let a = hex::Cube::new(x, y);
-    //         let a = a.0;
-    //         og.add(hex::Cube([-a[0], -a[2], -a[1]]))
-    //     })
-
-    hex::Cube::new(0, 0).range(4)
-}
-
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub struct World {}
-impl World {
-    pub fn new() -> Self {
-        World {}
-    }
-    pub fn filter(&self) -> GridFilter {
-        GridFilter {}
-    }
-    //This is world
-    pub fn iter_cells(&self) -> impl Iterator<Item = hex::Cube> {
-        world()
-    }
+    hex::Cube::new(0, 0).range(3)
 }

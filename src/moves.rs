@@ -1,612 +1,415 @@
 use super::*;
 
-//TODO use this.
-//signifies a move as well as the context in which the move can be played.
-pub struct AMove {
-    a: ActualMove,
-    game_state: &'static GameState,
-    selection: movement::MovementMesh,
-}
+use crate::movement::{movement_mesh::Mesh, MovementMesh};
 
-#[derive(Hash, PartialEq, Eq, Debug, Clone)]
-pub enum ActualMove {
-    NormalMove(PartialMoveSigl),
-    ExtraMove(PartialMoveSigl, PartialMoveSigl),
-    SkipTurn,
-    GameEnd(GameEnding),
-}
-
-#[derive(Hash, Eq, PartialEq, Debug, Clone)]
-pub enum GameEnding {
-    Win(ActiveTeam),
-    Draw,
-}
-
-pub fn from_foo(input: &str) -> Result<Vec<ActualMove>, std::fmt::Error> {
-    input
-        .split(",")
-        .filter(|a| *a != "")
-        .map(|a| {
-            dbg!(&a);
-            let mut s = a.chars();
-
-            match s.next().ok_or(std::fmt::Error)? {
-                'N' => {
-                    let s = s.as_str();
-                    let mut k = s.split(":").map(|a| a.parse::<i16>());
-
-                    let mut foo = || {
-                        k.next()
-                            .ok_or(std::fmt::Error)?
-                            .map_err(|_| std::fmt::Error)
-                    };
-
-                    let unit = GridCoord([foo()?, foo()?]);
-                    let moveto = GridCoord([foo()?, foo()?]);
-                    Ok(ActualMove::NormalMove(PartialMoveSigl { unit, moveto }))
-                }
-                'E' => {
-                    let s = s.as_str();
-                    let mut k = s.split(":").map(|a| a.parse::<i16>());
-                    let mut foo = || {
-                        k.next()
-                            .ok_or(std::fmt::Error)?
-                            .map_err(|_| std::fmt::Error)
-                    };
-                    let unit = GridCoord([foo()?, foo()?]);
-                    let moveto = GridCoord([foo()?, foo()?]);
-
-                    let unit2 = GridCoord([foo()?, foo()?]);
-                    let moveto2 = GridCoord([foo()?, foo()?]);
-                    Ok(ActualMove::ExtraMove(
-                        PartialMoveSigl { unit, moveto },
-                        PartialMoveSigl {
-                            unit: unit2,
-                            moveto: moveto2,
-                        },
-                    ))
-                }
-                // 'I' => {
-                //     let s = s.as_str();
-                //     let mut k = s.split(":").map(|a| a.parse::<i16>());
-                //     let mut foo = || {
-                //         k.next()
-                //             .ok_or(std::fmt::Error)?
-                //             .map_err(|_| std::fmt::Error)
-                //     };
-
-                //     let unit = GridCoord([foo()?, foo()?]);
-                //     let moveto = GridCoord([foo()?, foo()?]);
-                //     Ok(ActualMove::Invade(InvadeSigl { unit, moveto }))
-                // }
-                'S' => Ok(ActualMove::SkipTurn),
-                'F' => {
-                    let c = s.next().ok_or(std::fmt::Error)?;
-                    Ok(ActualMove::GameEnd(match c {
-                        'W' => GameEnding::Win(ActiveTeam::Cats),
-                        'B' => GameEnding::Win(ActiveTeam::Dogs),
-                        'D' => GameEnding::Draw,
-                        _ => return Err(std::fmt::Error),
-                    }))
-                }
-                _ => Err(std::fmt::Error),
-            }
-        })
-        .collect()
-}
-
-pub fn to_foo(a: &[ActualMove], mut f: impl std::fmt::Write) -> std::fmt::Result {
-    for a in a.iter() {
-        match a {
-            // ActualMove::Invade(i) => {
-            //     let a = i.unit.0;
-            //     let b = i.moveto.0;
-            //     write!(f, "I{}:{}:{}:{},", a[0], a[1], b[0], b[1])?;
-            // }
-            ActualMove::NormalMove(i) => {
-                let a = i.unit.0;
-                let b = i.moveto.0;
-                write!(f, "N{}:{}:{}:{},", a[0], a[1], b[0], b[1])?;
-            }
-            ActualMove::ExtraMove(i, j) => {
-                let a = i.unit.0;
-                let b = i.moveto.0;
-                let c = j.unit.0;
-                let d = j.moveto.0;
-                write!(
-                    f,
-                    "E{}:{}:{}:{}:{}:{}:{}:{},",
-                    a[0], a[1], b[0], b[1], c[0], c[1], d[0], d[1]
-                )?;
-            }
-            ActualMove::SkipTurn => {
-                write!(f, "S,")?;
-            }
-            ActualMove::GameEnd(g) => {
-                let w = match g {
-                    GameEnding::Win(ActiveTeam::Cats) => "W",
-                    GameEnding::Win(ActiveTeam::Dogs) => "B",
-                    GameEnding::Draw => "D",
-                };
-
-                write!(f, "F{}", w)?;
-            }
-        }
-    }
-    Ok(())
-}
-
-struct Doopa<'a, 'b> {
-    data: &'a mut ace::WorkerManager<'b>,
-}
-impl<'a, 'b> Doopa<'a, 'b> {
-    pub fn new(data: &'a mut ace::WorkerManager<'b>) -> Self {
-        Doopa { data }
-    }
-    pub async fn wait_animation<W: UnwrapMe>(&mut self, m: W, team: ActiveTeam) -> W::Item {
-        let an = m.into_command();
-        let aa = self.data.wait_animation(an, team).await;
-        W::unwrapme(aa.into_data())
-    }
-}
-struct Doopa2;
-impl Doopa2 {
-    pub fn wait_animation<W: UnwrapMe>(&mut self, m: W, _: ActiveTeam) -> W::Item {
-        m.direct_unwrap()
-    }
-}
-
-use crate::movement::MovementMesh;
-
-pub enum ExtraMove<T> {
-    ExtraMove { unit: T },
-    FinishMoving,
-}
-
-use inner_partial::InnerPartialMove;
-mod inner_partial {
-
-    //https://users.rust-lang.org/t/macro-to-dry-sync-and-async-code/67556
-    macro_rules! resolve_inner_movement_impl {
-        ($args:expr, $($_await:tt)*) => {
-            {
-                let (start,mesh,end,doopa,game_view):(GridCoord,MovementMesh,_,_,&mut GameViewMut<'_,'_>)=$args;
-
-                let this_unit = game_view
-                .this_team
-                .find_slow_mut(&start)
-                .unwrap();
-
-                let team=game_view.team;
-                let _ = doopa
-                    .wait_animation(Movement::new(this_unit.clone(),mesh,end), team)
-                    $($_await)*;
-
-                //this_unit.position= path.get_end_coord(this_unit.position);
-                this_unit.position=end;
-
-            }
-        }
-    }
-
-    use crate::movement::MovementMesh;
-
-    use super::*;
-    pub struct InnerPartialMove {
-        u: GridCoord,
-        mesh: MovementMesh,
-        target_cell: GridCoord,
-    }
-    impl InnerPartialMove {
-        pub fn new(a: GridCoord, mesh: MovementMesh, target_cell: GridCoord) -> Self {
-            InnerPartialMove {
-                u: a,
-                mesh,
-                target_cell,
-            }
-        }
-        pub(super) fn inner_execute_no_animate(
-            self,
-            game_view: &mut GameViewMut<'_, '_>,
-            a: &mut Doopa2,
-        ) {
-            resolve_inner_movement_impl!((self.u, self.mesh, self.target_cell, a, game_view),)
-        }
-
-        pub(super) async fn inner_execute_animate(
-            self,
-            game_view: &mut GameViewMut<'_, '_>,
-            a: &mut Doopa<'_, '_>,
-        ) {
-            resolve_inner_movement_impl!((self.u,self.mesh,self.target_cell,a,game_view),.await)
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct InvadeSigl {
-    pub unit: GridCoord,
-    pub moveto: GridCoord,
-}
-
-#[derive(Debug, Clone)]
-pub struct MovementSigl {
-    pub unit: GridCoord,
-    pub moveto: GridCoord,
-}
-#[derive(Hash, PartialEq, Eq, Debug, Clone)]
+#[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
 pub struct PartialMoveSigl {
     pub unit: GridCoord,
     pub moveto: GridCoord,
 }
-impl PartialMoveSigl {
-    pub fn to_movement(&self) -> MovementSigl {
-        MovementSigl {
-            unit: self.unit,
-            moveto: self.moveto,
-        }
-    }
-}
 
-pub use partial_move::PartialMove;
-mod partial_move {
-    use super::*;
+impl GameState {
+    pub fn generate_unit_possible_moves_inner(
+        &self,
+        unit: &GridCoord,
+        typ: Type,
+        team: ActiveTeam,
+        last_move: Option<PartialMoveSigl>,
+    ) -> movement::MovementMesh {
+        let game = self;
+        let unit = *unit;
+        let mut mesh = movement::MovementMesh::new();
 
-    macro_rules! resolve_movement_impl {
-        ($args:expr,$namey:ident, $($_await:tt)*) => {
-            {
-                let (selected_unit,mesh,target_cell, doopa,mut game_view,mut func):(GridCoord,MovementMesh,GridCoord,_,&mut GameViewMut<'_,'_>,_)=$args;
+        let is_ship = if let Some(e) = last_move {
+            !game.env.land.is_coord_set(e.unit)
+        } else {
+            !game.env.land.is_coord_set(unit)
+        };
 
+        let cond = |a: GridCoord, _extra: Option<PartialMoveSigl>, _depth: usize| {
+            let is_world_cell = game.world.get_game_cells().is_coord_set(a);
 
-                //let target_cell=path.get_end_coord(selected_unit);
+            a != unit
+                && is_world_cell
+                && game
+                    .factions
+                    .relative(team)
+                    .this_team
+                    .find_slow(&a)
+                    .is_none()
+                && game
+                    .factions
+                    .relative(team)
+                    .that_team
+                    .find_slow(&a)
+                    .is_none()
+        };
 
+        if let Some(last_move) = last_move {
+            let transition_to_land = {
+                !game.env.land.is_coord_set(last_move.unit)
+                    && game.env.land.is_coord_set(last_move.moveto)
+            };
 
-                InnerPartialMove::new(selected_unit,mesh,target_cell).$namey(&mut game_view,doopa)$($_await)*;
+            if transition_to_land {
+                mesh.add_normal_cell(last_move.unit.sub(&unit));
+            } else {
+                for a in unit.to_cube().ring(1) {
+                    let a = a.to_axial();
 
-
-
-
-                let k=HandleSurround::new(target_cell).$namey(&mut game_view, doopa)$($_await)*;
-
-
-                let sigl=PartialMoveSigl{unit:selected_unit,moveto:target_cell};
-
-
-                if let Some(k) = k {
-
-                    //let p=ace::selection::PossibleExtra::new(sigl.clone(),unit.clone());
-
-                    //let mesh=p.select().generate(game_view);
-
-                    // if mesh.iter_mesh(target_cell).count()==0{
-                    //     let _ = game_view.this_team.find_take(&target_cell);
-                    //     (sigl,ExtraMove::FinishMoving)
-                    // }else{
-                    //     let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
-
-                    //     (sigl,ExtraMove::ExtraMove{unit})
-                    // }
-                    //let mesh=ace::selection::generate_unit_possible_moves_inner(&unit, game_view, Some(2));
-                    if sigl.unit.to_cube().dist(&sigl.moveto.to_cube())==1{
-                        let unit=game_view.this_team.find_slow_mut(&target_cell).unwrap();
-
-                        (sigl,ExtraMove::ExtraMove{unit})
-                    }else{
-                        let _ =game_view.this_team.find_take(&target_cell).unwrap();
-                        (sigl,ExtraMove::FinishMoving)
+                    let j = if is_ship {
+                        // !game.env.land.is_coord_set(a)
+                        //true
+                        !game.env.forest.is_coord_set(a)
+                    } else {
+                        !game.env.forest.is_coord_set(a)
+                    };
+                    if j && cond(a, Some(last_move), 0) {
+                        mesh.add_normal_cell(a.sub(&unit));
                     }
-
-
-                    //(sigl,ExtraMove::ExtraMove{unit})
+                }
+            }
+        } else {
+            let check_is_ship = |kk| {
+                if is_ship {
+                    !game.env.land.is_coord_set(kk)
                 } else {
+                    let k = match typ {
+                        Type::Grass => game.env.land.grass.is_coord_set(kk),
+                        Type::Snow => game.env.land.snow.is_coord_set(kk),
+                    };
+                    k && !game.env.forest.is_coord_set(kk)
+                }
+            };
 
-                    for n in target_cell.to_cube().neighbours() {
-                        if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(), doopa)$($_await)*{
-                            func(game_view.that_team.find_take(&f).unwrap());
+            for a in unit.to_cube().ring(1) {
+                let a = a.to_axial();
+
+                if check_is_ship(a) && cond(a, None, 0) {
+                    mesh.add_normal_cell(a.sub(&unit));
+
+                    for b in a.to_cube().ring(1) {
+                        let b = b.to_axial();
+
+                        if check_is_ship(b) && cond(b, None, 1) {
+                            mesh.add_normal_cell(b.sub(&unit));
                         }
                     }
+                } else {
+                    let water_to_land = if typ == Type::Grass {
+                        game.env.land.grass.is_coord_set(a)
+                    } else {
+                        game.env.land.snow.is_coord_set(a)
+                    } && !game.env.forest.is_coord_set(a)
+                        && is_ship
+                        && game
+                            .factions
+                            .relative(team)
+                            .this_team
+                            .find_slow(&a)
+                            .is_none()
+                        && game
+                            .factions
+                            .relative(team)
+                            .that_team
+                            .find_slow(&a)
+                            .is_none();
 
-                    //Finish this players turn.
-                    (sigl,ExtraMove::FinishMoving)
+                    if water_to_land {
+                        mesh.add_normal_cell(a.sub(&unit));
+                    }
                 }
             }
         }
-    }
 
-    #[derive(Clone, Debug)]
-    pub struct PartialMove {
-        selected_unit: GridCoord,
-        mesh: MovementMesh,
-        end: GridCoord,
-    }
-
-    impl PartialMove {
-        pub fn new(a: GridCoord, mesh: MovementMesh, end: GridCoord) -> Self {
-            PartialMove {
-                selected_unit: a,
-                mesh,
-                end,
-            }
-        }
-
-        pub(super) fn inner_execute_no_animate<'b>(
-            self,
-            game_view: &'b mut GameViewMut,
-            a: &mut Doopa2,
-            func: impl FnMut(UnitData),
-        ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
-            resolve_movement_impl!(
-                (self.selected_unit, self.mesh, self.end, a, game_view, func),
-                inner_execute_no_animate,
-            )
-        }
-
-        pub(super) async fn inner_execute_animate<'b>(
-            self,
-            game_view: &'b mut GameViewMut<'_, '_>,
-            a: &mut Doopa<'_, '_>,
-            func: impl FnMut(UnitData),
-        ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
-            resolve_movement_impl!((self.selected_unit, self.mesh,self.end, a, game_view,func),inner_execute_animate,.await)
-        }
-
-        pub fn execute<'b>(
-            self,
-            game_view: &'b mut GameViewMut<'_, '_>,
-            func: impl FnMut(UnitData),
-        ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
-            self.inner_execute_no_animate(game_view, &mut Doopa2, func)
-        }
-        pub async fn execute_with_animation<'b>(
-            self,
-            game_view: &'b mut GameViewMut<'_, '_>,
-            data: &mut ace::WorkerManager<'_>,
-            func: impl FnMut(UnitData),
-        ) -> (PartialMoveSigl, ExtraMove<&'b mut UnitData>) {
-            self.inner_execute_animate(game_view, &mut Doopa::new(data), func)
-                .await
-        }
+        mesh
     }
 }
 
-pub use invade::Invade;
-mod invade {
-    use super::*;
+#[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
+pub struct ActualMove {
+    pub unit: GridCoord,
+    pub moveto: GridCoord,
+    pub attackto: GridCoord,
+}
 
-    macro_rules! resolve_invade_impl {
-        ($args:expr,$namey:ident, $($_await:tt)*) => {
-            {
-                let (selected_unit,mesh,target_coord,game_view,doopa,mut func):(GridCoord,movement::MovementMesh,GridCoord,&mut GameViewMut<'_,'_>,_,_)=$args;
+impl ActualMove {
+    pub async fn execute_move_ani(
+        &self,
+        state: &mut GameState,
+        team_index: ActiveTeam,
+        doop: &mut WorkerManager<'_>,
+    ) {
+        let unitt = self.unit;
+        let moveto = self.moveto;
+        let attackto = self.attackto;
 
+        let target_cell = moveto;
+        let unit = state
+            .factions
+            .relative(team_index)
+            .this_team
+            .find_slow(&unitt)
+            .unwrap();
+        let mesh =
+            state.generate_unit_possible_moves_inner(&unit.position, unit.typ, team_index, None);
 
-                //let target_coord=path.get_end_coord(selected_unit);
+        let unit = state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .find_slow_mut(&unitt)
+            .unwrap();
 
+        let ttt = unit.typ;
+        let iii = moves::PartialMove {
+            this_unit: unit,
+            target: target_cell,
+            is_extra: None,
+            env: &mut state.env,
+        };
 
+        let iii = iii.execute_with_animation(team_index, doop, mesh).await;
 
-                InnerPartialMove::new(selected_unit,mesh,target_coord).$namey(game_view,doopa)$($_await)*;
+        let selected_unit = moveto;
+        let target_cell = attackto;
 
-                func(game_view.that_team.find_take(&target_coord).unwrap());
+        let mesh =
+            state.generate_unit_possible_moves_inner(&selected_unit, ttt, team_index, Some(iii));
 
+        let unit = state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .find_slow_mut(&moveto)
+            .unwrap();
+        let iii = moves::PartialMove {
+            this_unit: unit,
+            target: target_cell,
+            is_extra: Some(iii),
+            env: &mut state.env,
+        };
+        iii.execute_with_animation(team_index, doop, mesh).await;
+    }
 
+    pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
+        let unitt = self.unit;
+        let moveto = self.moveto;
+        let attackto = self.attackto;
 
-                if let Some(f)=HandleSurround::new(target_coord).$namey(game_view,doopa)$($_await)*{
-                    func(game_view.this_team.find_take(&f).unwrap());
+        let target_cell = moveto;
+        let unit = state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .find_slow_mut(&unitt)
+            .unwrap();
+
+        let iii = moves::PartialMove {
+            this_unit: unit,
+            target: target_cell,
+            is_extra: None,
+            env: &mut state.env,
+        };
+
+        let iii = iii.execute(team_index);
+
+        let target_cell = attackto;
+
+        let iii = moves::PartialMove {
+            this_unit: unit,
+            target: target_cell,
+            is_extra: Some(iii),
+            env: &mut state.env,
+        };
+
+        iii.execute(team_index);
+    }
+    pub fn execute_undo(&self, state: &mut GameState, team_index: ActiveTeam) {
+        let unitt = self.unit;
+        let moveto = self.moveto;
+        let attackto = self.attackto;
+
+        let k = state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .find_slow_mut(&moveto)
+            .unwrap();
+
+        if state.env.forest.is_coord_set(attackto) {
+            state.env.forest.set_coord(attackto, false);
+        } else if state.env.land.is_coord_set(attackto) {
+            state.env.land.set_coord_false(attackto);
+        } else {
+            unreachable!();
+        }
+
+        k.position = unitt;
+    }
+}
+
+impl GameState {
+    pub fn for_all_moves_fast(&mut self, team: ActiveTeam) -> Vec<moves::ActualMove> {
+        let state = self;
+        let mut movs = Vec::new();
+        for i in 0..state.factions.relative(team).this_team.units.len() {
+            let pos = state.factions.relative_mut(team).this_team.units[i].position;
+            let ttt = state.factions.relative_mut(team).this_team.units[i].typ;
+
+            let mesh = state.generate_unit_possible_moves_inner(&pos, ttt, team, None);
+            for mm in mesh.iter_mesh(pos) {
+                //Temporarily move the player in the game world.
+                //We do this so that the mesh generated for extra is accurate.
+                let ii = PartialMove {
+                    this_unit: &mut state.factions.relative_mut(team).this_team.units[i],
+                    env: &mut state.env,
+                    target: mm,
+                    is_extra: None,
+                };
+                let il = ii.execute(team);
+
+                let second_mesh =
+                    state.generate_unit_possible_moves_inner(&mm, ttt, team, Some(il));
+
+                for sm in second_mesh.iter_mesh(mm) {
+                    //Don't bother applying the extra move. just generate the sigl.
+                    movs.push(moves::ActualMove {
+                        unit: pos,
+                        moveto: mm,
+                        attackto: sm,
+                    })
                 }
-                for n in target_coord.to_cube().neighbours() {
-                    if let Some(f)=HandleSurround::new(n.to_axial()).$namey(&mut game_view.not(),doopa)$($_await)*{
-                        func(game_view.that_team.find_take(&f).unwrap());
+
+                //revert it back.
+                state.factions.relative_mut(team).this_team.units[i].position = pos;
+            }
+        }
+        movs
+    }
+}
+
+use crate::ace::WorkerManager;
+
+pub use partial::PartialMove;
+pub mod partial {
+    use super::*;
+    #[derive(Debug)]
+    pub struct PartialMove<'a> {
+        pub this_unit: &'a mut UnitData,
+        pub env: &'a mut Environment,
+        pub target: GridCoord,
+        pub is_extra: Option<PartialMoveSigl>,
+    }
+
+    fn apply_normal_move(this_unit: &mut UnitData, target_cell: GridCoord) -> PartialMoveSigl {
+        let orig = this_unit.position;
+        this_unit.position = target_cell;
+
+        PartialMoveSigl {
+            unit: orig,
+            moveto: target_cell,
+        }
+    }
+
+    fn apply_extra_move(
+        this_unit: &mut UnitData,
+        target_cell: GridCoord,
+        _original: GridCoord,
+        env: &mut Environment,
+    ) -> PartialMoveSigl {
+        if !env.land.is_coord_set(target_cell) {
+            match this_unit.typ {
+                Type::Grass => env.land.grass.set_coord(target_cell, true),
+                Type::Snow => env.land.snow.set_coord(target_cell, true),
+            }
+        } else {
+            if !env.forest.is_coord_set(target_cell) {
+                env.forest.set_coord(target_cell, true);
+            }
+        }
+
+        PartialMoveSigl {
+            unit: this_unit.position,
+            moveto: target_cell,
+        }
+    }
+
+    impl PartialMove<'_> {
+        pub fn execute(self, _team: ActiveTeam) -> PartialMoveSigl {
+            if let Some(extra) = self.is_extra {
+                apply_extra_move(self.this_unit, self.target, extra.unit, self.env)
+            } else {
+                apply_normal_move(self.this_unit, self.target)
+            }
+        }
+        pub async fn execute_with_animation(
+            mut self,
+            team: ActiveTeam,
+            data: &mut ace::WorkerManager<'_>,
+            mesh: MovementMesh,
+        ) -> PartialMoveSigl {
+            fn calculate_walls(position: GridCoord, env: &Environment) -> Mesh {
+                let mut walls = Mesh::new();
+
+                let is_ship = !env.land.is_coord_set(position);
+
+                for a in position.to_cube().range(2) {
+                    let a = a.to_axial();
+                    //TODO this is duplicated logic in selection function???
+                    let cc = if is_ship {
+                        env.land.is_coord_set(a)
+                    } else {
+                        !env.land.is_coord_set(a) || env.forest.is_coord_set(a)
+                    };
+                    if cc {
+                        walls.add(a.sub(&position));
                     }
                 }
 
-                PartialMoveSigl{
-                    unit:selected_unit,
-                    moveto:target_coord
-                }
-
-
-
+                walls
             }
-        }
-    }
+            if let Some(extra) = self.is_extra {
+                let terrain_type = if !self.env.land.is_coord_set(self.target) {
+                    match self.this_unit.typ {
+                        Type::Grass => animation::TerrainType::Grass,
+                        Type::Snow => animation::TerrainType::Snow,
+                    }
+                } else {
+                    if !self.env.forest.is_coord_set(self.target) {
+                        animation::TerrainType::Mountain
+                    } else {
+                        unreachable!()
+                    }
+                };
 
-    #[derive(Clone, Debug)]
-    pub struct Invade {
-        selected_unit: GridCoord,
-        mesh: movement::MovementMesh,
-        target_cell: GridCoord,
-    }
-
-    impl Invade {
-        pub fn new(
-            selected_unit: GridCoord,
-            mesh: movement::MovementMesh,
-            target_cell: GridCoord,
-        ) -> Self {
-            Invade {
-                selected_unit,
-                mesh,
-                target_cell,
-            }
-        }
-        pub(super) fn inner_execute_no_animate(
-            self,
-            game_view: &mut GameViewMut<'_, '_>,
-            a: &mut Doopa2,
-            func: impl FnMut(UnitData),
-        ) -> PartialMoveSigl {
-            resolve_invade_impl!(
-                (
-                    self.selected_unit,
-                    self.mesh,
-                    self.target_cell,
-                    game_view,
-                    a,
-                    func
-                ),
-                inner_execute_no_animate,
-            )
-        }
-
-        pub(super) async fn inner_execute_animate(
-            self,
-            game_view: &mut GameViewMut<'_, '_>,
-            a: &mut Doopa<'_, '_>,
-            func: impl FnMut(UnitData),
-        ) -> PartialMoveSigl {
-            resolve_invade_impl!((self.selected_unit,self.mesh,self.target_cell,game_view,a,func),inner_execute_animate,.await)
-        }
-
-        pub fn execute(
-            self,
-            game_view: &mut GameViewMut<'_, '_>,
-            func: impl FnMut(UnitData),
-        ) -> PartialMoveSigl {
-            self.inner_execute_no_animate(game_view, &mut Doopa2, func)
-        }
-        pub async fn execute_with_animation(
-            self,
-            game_view: &mut GameViewMut<'_, '_>,
-            data: &mut ace::WorkerManager<'_>,
-            func: impl FnMut(UnitData),
-        ) -> PartialMoveSigl {
-            self.inner_execute_animate(game_view, &mut Doopa::new(data), func)
-                .await
-        }
-    }
-}
-
-use surround::HandleSurround;
-
-mod surround {
-    use super::*;
-    macro_rules! resolve_3_players_nearby_impl {
-        ($args:expr, $($_await:tt)*) => {{
-            let (n, doopa, game_view): (GridCoord, _, &mut GameViewMut<'_,'_>) = $args;
-            let team=game_view.team;
-            let n = n.to_cube();
-            if let Some(unit_pos) = game_view
-                        .this_team
-                        .find_slow_mut(&n.to_axial())
-            {
-
-            let unit_pos = unit_pos.position;
-
-            let nearby_enemies: Vec<_> = n
-                .neighbours()
-                .filter(|a| game_view.that_team.find_slow(&a.to_axial()).is_some())
-                .map(|a| a.to_axial())
-                .collect();
-            if nearby_enemies.len() >= 3 {
-
-                for n in nearby_enemies {
-                    let unit_pos = game_view.this_team.find_slow_mut(&unit_pos).unwrap();
-                    let them = game_view.that_team.find_slow_mut(&n).unwrap();
-
-                    let _ = doopa
-                        .wait_animation(Attack::new(them.clone(), unit_pos.clone()), team.not())
-                        $($_await)*;
-
-                    // game_view.that_team.add(them);
-                    // game_view.this_team.add(this_unit);
-                }
-                Some(unit_pos)
+                let _ = data
+                    .wait_animation(
+                        animation::AnimationCommand::Terrain {
+                            pos: self.target,
+                            terrain_type,
+                        },
+                        team,
+                    )
+                    .await;
+                apply_extra_move(self.this_unit, self.target, extra.unit, &mut self.env)
             } else {
-                None
+                let walls = calculate_walls(self.this_unit.position, &self.env);
+
+                let _ = data
+                    .wait_animation(
+                        animation::AnimationCommand::Movement {
+                            unit: self.this_unit.clone(),
+                            mesh,
+                            walls,
+                            end: self.target,
+                        },
+                        team,
+                    )
+                    .await;
+
+                apply_normal_move(self.this_unit, self.target)
             }
-        } else{
-            None
         }
-        }};
-    }
-
-    pub struct HandleSurround {
-        cell: GridCoord,
-    }
-    impl HandleSurround {
-        pub fn new(cell: GridCoord) -> Self {
-            Self { cell }
-        }
-
-        pub(super) fn inner_execute_no_animate(
-            self,
-            game_view: &mut GameViewMut<'_, '_>,
-            a: &mut Doopa2,
-        ) -> Option<GridCoord> {
-            resolve_3_players_nearby_impl!((self.cell, a, game_view),)
-        }
-
-        pub(super) async fn inner_execute_animate(
-            self,
-            game_view: &mut GameViewMut<'_, '_>,
-            a: &mut Doopa<'_, '_>,
-        ) -> Option<GridCoord> {
-            resolve_3_players_nearby_impl!((self.cell,a,game_view),.await)
-        }
-    }
-}
-
-trait UnwrapMe {
-    type Item;
-
-    fn direct_unwrap(self) -> Self::Item;
-    fn into_command(self) -> animation::AnimationCommand;
-    fn unwrapme(a: animation::AnimationCommand) -> Self::Item;
-}
-struct Movement {
-    start: UnitData,
-    mesh: MovementMesh,
-    end: GridCoord,
-}
-impl Movement {
-    pub fn new(start: UnitData, mesh: MovementMesh, end: GridCoord) -> Self {
-        Movement { start, mesh, end }
-    }
-}
-impl UnwrapMe for Movement {
-    type Item = UnitData;
-
-    fn direct_unwrap(self) -> Self::Item {
-        self.start
-    }
-    fn into_command(self) -> animation::AnimationCommand {
-        animation::AnimationCommand::Movement {
-            unit: self.start,
-            mesh: self.mesh,
-            end: self.end,
-        }
-    }
-    fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
-        let animation::AnimationCommand::Movement{unit,..}=a else{
-            unreachable!()
-        };
-        unit
-    }
-}
-
-struct Attack {
-    attacker: UnitData,
-    defender: UnitData,
-}
-impl Attack {
-    pub fn new(attacker: UnitData, defender: UnitData) -> Self {
-        Attack { attacker, defender }
-    }
-}
-impl UnwrapMe for Attack {
-    type Item = [UnitData; 2];
-    fn direct_unwrap(self) -> Self::Item {
-        [self.attacker, self.defender]
-    }
-    fn into_command(self) -> animation::AnimationCommand {
-        animation::AnimationCommand::Attack {
-            attacker: self.attacker,
-            defender: self.defender,
-        }
-    }
-    fn unwrapme(a: animation::AnimationCommand) -> Self::Item {
-        let animation::AnimationCommand::Attack{attacker,defender}=a else{
-            unreachable!()
-        };
-        [attacker, defender]
     }
 }

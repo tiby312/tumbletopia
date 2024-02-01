@@ -49,24 +49,42 @@ pub enum AnimationCommand {
     Movement {
         unit: UnitData,
         mesh: movement::MovementMesh,
+        walls: movement::movement_mesh::Mesh,
         end: GridCoord,
     },
-    Attack {
-        attacker: UnitData,
-        defender: UnitData,
+    Terrain {
+        pos: GridCoord,
+        terrain_type: TerrainType,
     },
+}
+
+#[derive(Debug, Clone)]
+pub enum TerrainType {
+    Snow,
+    Grass,
+    Mountain,
+}
+
+pub fn terrain_create() -> impl Iterator<Item = f32> {
+    Interpolate {
+        curr: -10.0,
+        target: 0.0,
+        tt: 0.2,
+        max: 4.0,
+    }
 }
 
 pub fn movement(
     start: GridCoord,
     path: movement::MovementMesh,
+    walls: movement::movement_mesh::Mesh,
     end: GridCoord,
     v: &grids::GridMatrix,
 ) -> impl Iterator<Item = Vector2<f32>> {
     let v = v.clone();
     let mut counter = v.hex_axial_to_world(&start);
     let mut cc = start;
-    path.path(end.sub(&start)).flat_map(move |m| {
+    path.path(end.sub(&start), &walls).flat_map(move |m| {
         let a = m.to_relative();
         cc.0[0] += a.0[0];
         cc.0[1] += a.0[1];
@@ -84,44 +102,4 @@ pub fn movement(
         }
         .map(move |val| old + dir * val)
     })
-}
-
-//TODO replace box with existental type
-pub struct Animation<T> {
-    it: Box<dyn Iterator<Item = Vector2<f32>>>,
-    data: T,
-    last: Option<Vector2<f32>>,
-}
-use std::fmt;
-impl<T> fmt::Debug for Animation<T> {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Ok(())
-    }
-}
-impl<T> Animation<T> {
-    pub fn new(it: impl Iterator<Item = Vector2<f32>> + 'static, data: T) -> Self {
-        Self {
-            it: Box::new(it),
-            data,
-            last: None,
-        }
-    }
-    pub fn animate_step(&mut self) -> Option<()> {
-        if let Some(x) = self.it.next() {
-            self.last = Some(x);
-            Some(())
-        } else {
-            None
-        }
-    }
-
-    pub fn data(&self) -> &T {
-        &self.data
-    }
-    pub fn into_data(self) -> T {
-        self.data
-    }
-    pub fn calc_pos(&self) -> ([f32; 2], &T) {
-        (self.last.unwrap().into(), &self.data)
-    }
 }

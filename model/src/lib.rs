@@ -3,6 +3,29 @@ use cgmath::Transform;
 use gltf::image::Source;
 use image::imageops::FilterType;
 
+#[macro_export]
+macro_rules! mauga {
+    ($a:expr)=>{
+        ($a).generate()
+    };
+    ( $a:expr,$( $x:expr ),* ) => {
+        {
+
+            let mut a=$a;
+            $(
+
+                let k=$x;
+                let a={
+                    use $crate::matrix::MyMatrix;
+                    a.chain(k)
+                };
+
+            )*
+            a.generate()
+        }
+    };
+}
+
 #[derive(Debug)]
 pub struct Doop {
     pub document: gltf::Document,
@@ -71,6 +94,11 @@ impl Doop {
         for p in m.normals.iter_mut() {
             *p = kk.transform_point((*p).into()).into();
         }
+
+        // let s = matrix::translation(-v / 2.0, -v / 2.0, 0.0).generate();
+        // for p in m.positions.iter_mut() {
+        //     *p = s.transform_point((*p).into()).into();
+        // }
 
         (m, tex)
     }

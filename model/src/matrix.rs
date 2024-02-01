@@ -187,6 +187,8 @@ pub fn scale(x: f32, y: f32, z: f32) -> Scale {
 pub fn translation(tx: f32, ty: f32, tz: f32) -> Translation {
     Translation { tx, ty, tz }
 }
+
+#[derive(Clone, Debug)]
 pub struct Translation {
     tx: f32,
     ty: f32,

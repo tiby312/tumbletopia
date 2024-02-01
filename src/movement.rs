@@ -14,16 +14,16 @@ impl MoveStrategy for WarriorMovement {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Hash, Clone, Debug, Eq, PartialEq, Default)]
 pub struct HexDir {
-    dir: u8,
+    pub dir: u8,
 }
 
 impl HexDir {
     pub fn all() -> impl Iterator<Item = HexDir> {
         (0..6).map(|dir| HexDir { dir })
     }
-    pub fn rotate60_right(&self) -> HexDir {
+    pub const fn rotate60_right(&self) -> HexDir {
         // 0->4
         // 1->5
         // 2->0
@@ -36,7 +36,7 @@ impl HexDir {
         }
     }
 
-    pub fn rotate60_left(&self) -> HexDir {
+    pub const fn rotate60_left(&self) -> HexDir {
         // 0->2
         // 1->3
         // 2->4
@@ -49,77 +49,18 @@ impl HexDir {
         }
     }
 
-    pub fn to_relative(&self) -> GridCoord {
+    pub const fn to_relative(&self) -> GridCoord {
         hex::Cube(hex::OFFSETS[self.dir as usize]).to_axial()
     }
 }
 
-// //TODO a direction is only 6 values. Left over values when
-// //put into 3 bits.
-// #[derive(Copy, Clone)]
-// pub struct Path {
-//     //TODO optimize this to be just one 64bit integer?
-//     //20 moves is just max possible moves
-//     moves: [HexDir; 20],
-//     num_moves: u8,
-// }
-
-// impl std::fmt::Debug for Path {
-//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//         write!(f, "Path:")?;
-//         for a in self.moves.iter().take(self.num_moves as usize) {
-//             write!(f, "{:?},", a)?;
-//         }
-//         writeln!(f)
-//     }
-// }
-// impl Path {
-//     pub fn new() -> Self {
-//         Path {
-//             moves: [HexDir { dir: 0 }; 20],
-//             num_moves: 0,
-//         }
-//     }
-//     pub fn into_moves(self) -> impl Iterator<Item = HexDir> {
-//         self.moves.into_iter().take(self.num_moves as usize)
-//     }
-
-//     pub fn get_moves(&self) -> &[HexDir] {
-//         &self.moves[0..self.num_moves as usize]
-//     }
-//     pub fn add(&mut self, a: HexDir) -> bool {
-//         if self.num_moves >= 20 {
-//             return false;
-//         }
-
-//         self.moves[self.num_moves as usize] = a;
-//         self.num_moves += 1;
-//         true
-//     }
-
-//     pub fn get_end_coord(&self, mut start: GridCoord) -> GridCoord {
-//         for m in self.moves.iter().take(self.num_moves as usize) {
-//             start = start.add(m.to_relative());
-//         }
-//         start
-//     }
-
-//     pub fn total_cost(&self) -> MoveUnit {
-//         let mut total = 0;
-//         for a in self.get_moves() {
-//             total += self.move_cost(*a).0;
-//         }
-//         MoveUnit(total)
-//     }
-//     fn move_cost(&self, _: HexDir) -> MoveUnit {
-//         MoveUnit(1)
-//     }
-// }
-
-#[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
+    pub fn zero() -> GridCoord {
+        GridCoord([0; 2])
+    }
     pub fn dir_to(&self, other: &GridCoord) -> HexDir {
         let mut offset = other.sub(self);
 
@@ -137,11 +78,33 @@ impl GridCoord {
             .map(|(i, _)| HexDir { dir: i as u8 })
             .unwrap()
     }
+    pub fn dir_to2(&self, other: &GridCoord) -> HexDir {
+        let mut offset = other.sub(self);
+
+        offset.0[0] = offset.0[0].clamp(-1, 1);
+        offset.0[1] = offset.0[1].clamp(-1, 1);
+
+        // assert!(offset.0[0].abs() <= 1);
+        // assert!(offset.0[1].abs() <= 1);
+        let offset = offset.to_cube();
+
+        hex::OFFSETS
+            .iter()
+            .rev()
+            .enumerate()
+            .find(|(_, x)| **x == offset.0)
+            .map(|(i, _)| HexDir { dir: i as u8 })
+            .unwrap()
+            .rotate60_right()
+    }
     pub fn to_cube(self) -> hex::Cube {
         let a = self.0;
         hex::Cube([a[0], a[1], -a[0] - a[1]])
     }
-    pub fn advance(self, m: HexDir) -> GridCoord {
+    pub fn advance_by(self, m: HexDir, val: usize) -> GridCoord {
+        (0..val).fold(self, |acc, _| acc.advance(m))
+    }
+    pub const fn advance(self, m: HexDir) -> GridCoord {
         self.add(m.to_relative())
     }
     pub fn sub(mut self, o: &GridCoord) -> Self {
@@ -149,7 +112,7 @@ impl GridCoord {
         self.0[1] -= o.0[1];
         self
     }
-    pub fn add(mut self, o: GridCoord) -> Self {
+    pub const fn add(mut self, o: GridCoord) -> Self {
         self.0[0] += o.0[0];
         self.0[1] += o.0[1];
         self
@@ -196,6 +159,12 @@ pub enum FilterRes {
     Stop,
 }
 impl FilterRes {
+    pub fn to_bool(self) -> bool {
+        match self {
+            FilterRes::Accept => true,
+            FilterRes::Stop => false,
+        }
+    }
     pub fn and(self, other: FilterRes) -> FilterRes {
         match (self, other) {
             (FilterRes::Accept, FilterRes::Accept) => FilterRes::Accept,
@@ -255,12 +224,6 @@ pub trait Filter {
     {
         Or { a: self, b: other }
     }
-    // fn extend(self) -> ExtendFilter<Self>
-    // where
-    //     Self: Sized,
-    // {
-    //     ExtendFilter { filter: self }
-    // }
 
     fn not(self) -> NotFilter<Self>
     where
@@ -277,6 +240,19 @@ impl<F: Filter> Filter for NotFilter<F> {
         match self.filter.filter(a) {
             FilterRes::Accept => FilterRes::Stop,
             FilterRes::Stop => FilterRes::Accept,
+        }
+    }
+}
+
+pub enum Either<A, B> {
+    A(A),
+    B(B),
+}
+impl<A: Filter, B: Filter> Filter for Either<A, B> {
+    fn filter(&self, a: &GridCoord) -> FilterRes {
+        match self {
+            Either::A(c) => c.filter(a),
+            Either::B(c) => c.filter(a),
         }
     }
 }
@@ -301,26 +277,9 @@ impl<A: Filter, B: Filter> Filter for And<A, B> {
     }
 }
 
-// pub struct ExtendFilter<F> {
-//     filter: F,
-// }
-// impl<A: Filter> Filter for ExtendFilter<A> {
-//     fn filter(&self, a: &GridCoord) -> FilterRes {
-//         match self.filter.filter(a) {
-//             FilterRes::Accept => FilterRes::Accept,
-//             FilterRes::Stop => FilterRes::DontAccept,
-//         }
-//     }
-// }
-
 pub fn contains_coord<I: Iterator<Item = GridCoord>>(mut it: I, b: GridCoord) -> bool {
     it.find(|a| *a == b).is_some()
 }
-
-///
-///
-///
-///
 
 pub mod movement_mesh {
 
@@ -340,10 +299,10 @@ pub mod movement_mesh {
         let k2 = GridCoord([1, -2]);
 
         let mut mesh = MovementMesh::new();
-        mesh.add(k1);
-        mesh.add(k2);
+        mesh.add_normal_cell(k1);
+        mesh.add_normal_cell(k2);
 
-        let res: Vec<_> = mesh.path(GridCoord([1, -2])).collect();
+        let res: Vec<_> = mesh.path(GridCoord([1, -2]), &Mesh::new()).collect();
         dbg!(res);
         panic!();
     }
@@ -361,7 +320,7 @@ pub mod movement_mesh {
         let k2 = GridCoord([2, -2]);
         let k3 = GridCoord([-2, 1]);
 
-        let mut mesh = MovementMesh::new();
+        let mut mesh = Mesh::new();
         mesh.add(k1);
         mesh.add(k2);
         mesh.add(k3);
@@ -407,86 +366,128 @@ pub mod movement_mesh {
     //     [2, 0],
     // ];
 
-    use super::GridCoord;
+    // #[derive(PartialEq, Eq, Debug, Clone)]
+    // pub struct SwingMoveRay {
+    //     pub swing: SwingMove,
+    //     pub num_steps: usize,
+    // }
 
-    #[derive(PartialEq, Eq, Debug, Copy, Clone)]
-    pub struct MovementMesh {
-        //A ring of size two not including the center cell has 1+6+12=19 cells.
+    // impl SwingMoveRay {
+    //     pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+    //         self.swing.iter_cells(point).take(self.num_steps)
+    //     }
+    // }
 
-        //We need an additional bit to describe the path that needs to be taken to each that spot.
-        //Either left or right. (only applies for diagonal outer cells)
-        inner: u64,
+    // #[derive(PartialEq, Eq, Debug, Clone)]
+    // pub struct SwingMove {
+    //     pub relative_anchor_point: GridCoord,
+    //     pub radius: i16,
+    //     pub clockwise: bool,
+    // }
+    // impl SwingMove {
+    //     pub fn iter_left(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+    //         // let f=match self.radius{
+    //         //     0=>0,
+    //         //     1=>3,
+    //         //     2=>6,
+    //         //     3=>9,
+    //         //     4=>12,
+    //         //     5=>12,
+    //         //     _=>12
+    //         // };
+    //         let f = 3 * self.radius as usize;
+    //         //radius 1-> 3 (or 4)
+    //         //radius 2-> 6 (or 7 including spot)
+    //         //radius 3-> 9 (or 10)
+    //         //radius 4-> 11 (or 12)
+    //         //radius 5-> 12 (or 13)
+
+    //         self.iter_cells_inner(point, f, true)
+    //     }
+    //     pub fn iter_right(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+    //         // let f=match self.radius{
+    //         //     0=>0,
+    //         //     1=>3,
+    //         //     2=>6,
+    //         //     3=>9,
+    //         //     4=>12,
+    //         //     5=>12,
+    //         //     _=>12
+    //         // };
+    //         let f = 3 * self.radius as usize;
+    //         self.iter_cells_inner(point, f, false)
+    //     }
+
+    //     pub fn iter_cells(&self, point: GridCoord) -> impl Iterator<Item = (HexDir, GridCoord)> {
+    //         self.iter_cells_inner(point, 13, self.clockwise)
+    //     }
+    //     pub fn iter_cells_inner(
+    //         &self,
+    //         point: GridCoord,
+    //         num_cell: usize,
+    //         clockwise: bool,
+    //     ) -> impl Iterator<Item = (HexDir, GridCoord)> {
+    //         let radius = self.radius;
+    //         //let radius = 2;
+    //         //let num_cell = 8;
+    //         //let num_cell = 13;
+
+    //         // let radius = 3;
+    //         // let num_cell = 32;
+
+    //         let i = self.relative_anchor_point.to_cube();
+
+    //         let i1 = if clockwise {
+    //             Some(i.ring(radius))
+    //         } else {
+    //             None
+    //         };
+    //         let i2 = if !clockwise {
+    //             Some(i.cc_ring(radius))
+    //         } else {
+    //             None
+    //         };
+
+    //         let i = i1.into_iter().flatten().chain(i2.into_iter().flatten());
+
+    //         let i = i.map(|(d, a)| (d, a.to_axial()));
+    //         let ii = i.clone();
+    //         let i = i.chain(ii);
+
+    //         let iiii = i.skip_while(|(_, z)| *z != GridCoord([0; 2]));
+
+    //         iiii.take(num_cell + 2).map(move |(d, z)| (d, point.add(z)))
+    //     }
+    // }
+
+    #[derive(PartialEq, Eq, Debug, Clone)]
+    pub struct Mesh {
+        pub inner: u128,
     }
 
-    fn validate_rel(a: GridCoord) {
-        let x = a.0[0];
-        let y = a.0[1];
-
-        assert!(x <= 3 && x >= -3);
-        assert!(y <= 3 && y >= -3);
-
-        assert!(x != 0 || y != 0);
-    }
-    impl MovementMesh {
-        pub fn new() -> Self {
-            MovementMesh { inner: 0 }
+    impl Mesh {
+        pub fn new() -> Mesh {
+            Mesh { inner: 0 }
         }
-        //TODO
-        pub fn path(&self, a: GridCoord) -> impl Iterator<Item = HexDir> {
-            validate_rel(a);
+        pub fn from_iter(it: impl Iterator<Item = GridCoord>) -> Mesh {
+            let mut m = Mesh::new();
+            for a in it {
+                m.add(a);
+            }
+            m
+        }
+        fn validate_rel(a: GridCoord) {
             let x = a.0[0];
             let y = a.0[1];
-            let first = if GridCoord([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
-                Some([GridCoord([0, 0]).dir_to(&a)])
-            } else {
-                None
-            };
 
-            //diagonal
-            let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
-                //TODO inefficient
-                let mut k = GridCoord([0, 0])
-                    .to_cube()
-                    .neighbours()
-                    .filter(|x| x.dist(&a.to_cube()) == 1);
-                let first = k.next().unwrap().to_axial();
-                let second = k.next().unwrap().to_axial();
-                if self.is_set(first) {
-                    Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
-                } else {
-                    //TODO this is not true teamates jumping over each other.
-                    //assert!(self.is_set(second));
-                    Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
-                }
-            } else {
-                None
-            };
+            assert!(x <= 6 && x >= -6);
+            assert!(y <= 6 && y >= -6);
 
-            let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2) {
-                let h = GridCoord([0, 0]).dir_to(&a);
-                Some([h, h])
-            } else {
-                None
-            };
-
-            // size 3 spokes
-            let fourth = if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
-                let h = GridCoord([0, 0]).dir_to(&a);
-                Some([h, h, h])
-            } else {
-                None
-            };
-
-            let a = first.into_iter().flatten();
-            let b = second.into_iter().flatten();
-            let c = third.into_iter().flatten();
-            let d = fourth.into_iter().flatten();
-            a.chain(b).chain(c).chain(d)
+            assert!(x != 0 || y != 0);
         }
         pub fn add(&mut self, a: GridCoord) {
             validate_rel(a);
             let ind = conv(a);
-            dbg!(ind);
             self.inner = self.inner | (1 << ind);
         }
 
@@ -497,29 +498,143 @@ pub mod movement_mesh {
 
             self.inner & (1 << ind) != 0
         }
-
         pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
             let inner = self.inner;
+
+            //let skip_moves = self.swing_moves(point);
+
             // TABLE
             //     .iter()
             //     .enumerate()
             //     .filter(move |(x, _)| inner & (1 << x) != 0)
             //     .map(move |(_, x)| point.add(GridCoord(*x)))
-            (0..64)
+            let mesh_moves = (0..128)
                 .filter(move |x| inner & (1 << x) != 0)
                 .map(move |a| {
-                    let x = a / 7;
-                    let y = a % 7;
-                    point.add(GridCoord([x - 3, y - 3]))
-                })
+                    let x = a / 13;
+                    let y = a % 13;
+                    point.add(GridCoord([x - 6, y - 6]))
+                });
+
+            mesh_moves //.chain(skip_moves)
+        }
+    }
+
+    use super::GridCoord;
+
+    #[derive(PartialEq, Eq, Debug, Clone)]
+    pub struct MovementMesh {
+        inner: Mesh,
+    }
+
+    fn validate_rel(a: GridCoord) {
+        let x = a.0[0];
+        let y = a.0[1];
+
+        assert!(x <= 6 && x >= -6);
+        assert!(y <= 6 && y >= -6);
+
+        assert!(x != 0 || y != 0);
+    }
+    impl MovementMesh {
+        pub fn new() -> Self {
+            MovementMesh { inner: Mesh::new() }
+        }
+
+        pub fn path(&self, a: GridCoord, walls: &Mesh) -> impl Iterator<Item = HexDir> {
+            let mesh_iter = {
+                validate_rel(a);
+                let x = a.0[0];
+                let y = a.0[1];
+                let first = if GridCoord([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
+                    Some([GridCoord([0, 0]).dir_to(&a)])
+                } else {
+                    None
+                };
+
+                //diagonal
+                let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
+                    //TODO inefficient
+                    let mut k = GridCoord([0, 0])
+                        .to_cube()
+                        .neighbours()
+                        .filter(|x| x.dist(&a.to_cube()) == 1);
+                    let first = k.next().unwrap().to_axial();
+                    let second = k.next().unwrap().to_axial();
+
+                    if
+                    /*self.is_set(first)||*/
+                    !walls.is_set(first) {
+                        Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
+                    } else {
+                        Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
+                    }
+
+                    // else if !walls.is_set(first){
+                    //     panic!("its hapening");
+                    //     Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
+                    // }else{
+                    //     Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
+                    // }
+                    // if  || !walls.is_set(first) {
+
+                    // } else {
+                    //     //TODO this is not true teamates jumping over each other.
+                    //     //assert!(self.is_set(second));
+                    // }
+                } else {
+                    None
+                };
+
+                let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2)
+                {
+                    let h = GridCoord([0, 0]).dir_to(&a);
+                    Some([h, h])
+                } else {
+                    None
+                };
+
+                // size 3 spokes
+                let fourth =
+                    if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
+                        let h = GridCoord([0, 0]).dir_to(&a);
+                        Some([h, h, h])
+                    } else {
+                        None
+                    };
+
+                let a = first.into_iter().flatten();
+                let b = second.into_iter().flatten();
+                let c = third.into_iter().flatten();
+                let d = fourth.into_iter().flatten();
+                a.chain(b).chain(c).chain(d)
+            };
+
+            mesh_iter.into_iter()
+        }
+
+        pub fn add_normal_cell(&mut self, a: GridCoord) {
+            self.inner.add(a);
+        }
+
+        fn is_set(&self, a: GridCoord) -> bool {
+            self.inner.is_set(a)
+        }
+
+        pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
+            self.inner.iter_mesh(point)
+        }
+        pub fn is_empty(&self) -> bool {
+            self.inner.inner == 0
         }
     }
     fn conv(a: GridCoord) -> usize {
         let [x, y] = a.0;
         //     let ind=x/7+y%7;
         //     // -3 -2 -1 0 1 2 3
+        //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
         // ind as usize
-        ((x + 3) * 7 + (y + 3)) as usize
+        ((x + 6) * 13 + (y + 6)) as usize
 
         // TABLE
         //     .iter()
@@ -532,338 +647,81 @@ pub mod movement_mesh {
     //     GridCoord(TABLE[ind])
     // }
 }
-#[derive(Debug, Clone)]
-pub struct MoveCand<P> {
-    pub target: GridCoord,
-    pub path: P,
-}
 
-// #[derive(Debug, Clone)]
-// pub struct PossibleMoves2<P> {
-//     //pub orig: GridCoord,
-//     pub moves: Vec<MoveCand<P>>,
-// }
+pub mod bitfield {
+    use std::ops::{Deref, DerefMut};
 
-// pub trait PathHave {
-//     type Foo;
-//     fn path(&self, a: Path) -> Self::Foo;
-// }
-// pub struct WithPath;
-// pub struct NoPath;
+    use super::GridCoord;
 
-// impl PathHave for NoPath {
-//     type Foo = ();
-//     fn path(&self, _: Path) -> () {
-//         ()
-//     }
-// }
-// impl PathHave for WithPath {
-//     type Foo = Path;
-//     fn path(&self, a: Path) -> Path {
-//         a
-//     }
-// }
+    #[test]
+    fn bitfield() {
+        let mut m = BitField::new();
 
-pub fn compute_moves2<F: Filter, F2: Filter>(
-    coord: GridCoord,
-    filter: &F,
-    skip_filter: &F2,
-    restricted_movement: bool,
-    slide_rule: bool,
-) -> MovementMesh {
-    let mut m = MovementMesh::new();
+        for k in -16..16 {
+            dbg!("handling=k", k);
+            m.set_coord(GridCoord([k, k]), true);
 
-    fn handle<F: Filter, F2: Filter>(
-        m: &mut MovementMesh,
-        base: GridCoord,
-        coord: GridCoord,
-        dir: HexDir,
-        filter: &F,
-        skip_filter: &F2,
-        slide_rule: bool,
-    ) -> bool {
-        let first = coord.advance(dir);
-        //TODO first check if this cell is already set
-
-        if let FilterRes::Stop = filter.filter(&first) {
-            return false;
-        }
-
-        if slide_rule {
-            let ttt1_skip = match skip_filter.filter(&coord.advance(dir.rotate60_right())) {
-                FilterRes::Stop => false,
-                FilterRes::Accept => true,
-            };
-
-            let ttt2_skip = match skip_filter.filter(&coord.advance(dir.rotate60_left())) {
-                FilterRes::Stop => false,
-                FilterRes::Accept => true,
-            };
-
-            //let skip_foo=ttt1_skip | ttt2_skip;
-
-            let ttt1 = match filter.filter(&coord.advance(dir.rotate60_right())) {
-                FilterRes::Stop => false,
-                FilterRes::Accept => true,
-            };
-
-            let ttt2 = match filter.filter(&coord.advance(dir.rotate60_left())) {
-                FilterRes::Stop => false,
-                FilterRes::Accept => true,
-            };
-
-            if !ttt1 && !ttt2 && !ttt1_skip && !ttt2_skip {
-                return false;
-            }
-        }
-
-        if let FilterRes::Stop = filter.filter(&first) {
-            return false;
-        }
-
-        //if let FilterRes::Accept = skip_filter.filter(&first) {
-        m.add(first.sub(&base));
-        //}
-
-        return true;
-    }
-
-    for (a, rest) in self::movement_mesh::explore_outward_two() {
-        if handle(&mut m, coord, coord, a, filter, skip_filter, slide_rule) {
-            if !restricted_movement {
-                let first = coord.advance(a);
-                for a in rest {
-                    let _ = handle(&mut m, coord, first, a, filter, skip_filter, slide_rule);
-                }
-            }
+            assert!(m.is_coord_set(GridCoord([k, k])), "boo={}", k);
         }
     }
 
-    m
+    use fixedbitset::FixedBitSet;
+
+    #[derive(Clone, Debug, Hash, Eq, PartialEq)]
+    pub struct BitField {
+        pub inner: FixedBitSet,
+    }
+
+    impl Deref for BitField {
+        type Target = FixedBitSet;
+        fn deref(&self) -> &FixedBitSet {
+            &self.inner
+        }
+    }
+
+    impl DerefMut for BitField {
+        fn deref_mut(&mut self) -> &mut FixedBitSet {
+            &mut self.inner
+        }
+    }
+    impl BitField {
+        pub fn new() -> Self {
+            BitField {
+                inner: FixedBitSet::with_capacity(1024),
+            }
+        }
+        pub fn from_iter(a: impl IntoIterator<Item = GridCoord>) -> Self {
+            let mut k = BitField::new();
+            for a in a {
+                k.set_coord(a, true);
+            }
+            k
+        }
+
+        pub fn set_coord(&mut self, a: GridCoord, val: bool) {
+            let x = a.0[0];
+            let y = a.0[1];
+            assert!(x <= 16 && x >= -16 && y <= 16 && y >= -16, "val={:?}", a);
+
+            let ind = conv(a);
+            self.inner.set(ind, val);
+        }
+
+        pub fn is_coord_set(&self, a: GridCoord) -> bool {
+            let ind = conv(a);
+
+            self.inner[ind]
+        }
+        pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> + '_ {
+            self.inner.ones().map(move |a| {
+                let x = a / 32;
+                let y = a % 32;
+                point.add(GridCoord([x as i16 - 16, y as i16 - 16]))
+            })
+        }
+    }
+    fn conv(a: GridCoord) -> usize {
+        let [x, y] = a.0;
+        ((x + 16) * 32 + (y + 16)) as usize
+    }
 }
-
-// pub fn compute_moves<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost, PH: PathHave>(
-//     movement: &K,
-//     filter: &F,
-//     skip_filter: &F2,
-//     mo: &M,
-//     coord: GridCoord,
-//     remaining_moves: MoveUnit,
-//     slide_rule: bool,
-//     ph: PH,
-// ) -> Vec<MoveCand<PH::Foo>> {
-//     let m = PossibleMoves::new(
-//         movement,
-//         filter,
-//         skip_filter,
-//         mo,
-//         coord,
-//         remaining_moves,
-//         slide_rule,
-//     );
-
-//     let moves = m
-//         .moves
-//         .into_iter()
-//         .map(|(target, path, _)| MoveCand {
-//             target,
-//             path: ph.path(path),
-//         })
-//         .collect();
-//     moves
-// }
-
-// impl PossibleMoves {
-//     fn new<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
-//         movement: &K,
-//         filter: &F,
-//         skip_filter: &F2,
-//         mo: &M,
-//         coord: GridCoord,
-//         remaining_moves: MoveUnit,
-//         slide_rule: bool,
-//     ) -> Self {
-//         let remaining_moves = MoveUnit(remaining_moves.0);
-//         let mut p = PossibleMoves {
-//             moves: vec![],
-//             start: coord,
-//         };
-//         p.explore_path(
-//             movement,
-//             filter,
-//             skip_filter,
-//             mo,
-//             Path::new(),
-//             remaining_moves,
-//             slide_rule,
-//         );
-//         p
-//     }
-
-//     // pub fn get_path_data(&self, g: &GridCoord) -> Option<(&Path, &MoveUnit)> {
-//     //     self.moves.iter().find(|a| &a.0 == g).map(|a| (&a.1, &a.2))
-//     // }
-
-//     // pub fn start(&self) -> &GridCoord {
-//     //     &self.start
-//     // }
-
-//     // pub fn iter_coords(&self) -> impl Iterator<Item = &GridCoord> {
-//     //     self.moves.iter().map(|a| &a.0)
-//     // }
-
-//     fn explore_path<K: MoveStrategy, F: Filter, F2: Filter, M: MoveCost>(
-//         &mut self,
-//         movement: &K,
-//         continue_filter: &F,
-//         skip_filter: &F2,
-//         mo: &M,
-//         current_path: Path,
-//         remaining_moves: MoveUnit,
-//         slide_rule: bool,
-//     ) {
-//         // if remaining_moves.0 == 0 {
-//         //      return;
-//         // }
-
-//         // 2-OG
-//         // warrior has 2 move points
-//         // warrior moves to grass and expends its 2 move points
-//         // warrior cant move anymore
-
-//         // 2-ORG
-//         // warrior has 2 move points
-//         // warrior moves to road on grass and expends 1 move point (2-1)
-//         // warrior has 1 move point.
-//         // warrior moves to grass and expends 2 move points.
-//         // warrior has -1 move points. can't move anymore.
-
-//         // 2-ORRG
-//         // warrior has 2 move points
-//         // warrior moves to road on grass and expends 1 move point (2-1)
-//         // warrior has 1 move point
-//         // warrior moves to road on grass and expends 1 move point?????
-//         // warrior has 0 move points. cant move anymore.
-
-//         let curr_pos = current_path.get_end_coord(self.start);
-
-//         //log!(format!("rem:{:?}",remaining_moves.0));
-//         for a in K::adjacent() {
-//             let target_pos = curr_pos.advance(a);
-
-//             if slide_rule {
-//                 let aaa = a.to_relative().to_cube().rotate_60_left();
-//                 let bbb = a.to_relative().to_cube().rotate_60_right();
-
-//                 let ttt1 = match continue_filter.filter(&target_pos.add(aaa.to_axial())) {
-//                     FilterRes::Stop => false,
-//                     FilterRes::Accept => true,
-//                 };
-
-//                 let ttt2 = match continue_filter.filter(&target_pos.add(bbb.to_axial())) {
-//                     FilterRes::Stop => false,
-//                     FilterRes::Accept => true,
-//                 };
-
-//                 if !ttt1 && !ttt2 {
-//                     continue;
-//                 }
-//             }
-
-//             match continue_filter.filter(&target_pos) {
-//                 FilterRes::Stop => continue,
-//                 FilterRes::Accept => {}
-//             }
-
-//             let skip = match skip_filter.filter(&target_pos) {
-//                 FilterRes::Stop => true,
-//                 FilterRes::Accept => false,
-//             };
-
-//             //We must have remaining moves to satisfy ALL move cost.
-//             // if remaining_moves.0<current_path.move_cost(a).0{
-//             //     continue;
-//             // }
-
-//             let move_cost = current_path.move_cost(a);
-//             // if move_cost.0>remaining_moves.0{
-//             //     move_cost.0=remaining_moves.0;
-//             // }
-//             //TODO road should HALF the cost?
-//             let cost = mo.foop(target_pos, move_cost);
-
-//             //todo!("Need to allow cardinal movement at 1 point. Not working???");
-
-//             //as long as we have SOME remainv moves, we can go to this square even
-//             //if it is really expensive.
-//             // if !(remaining_moves.0 > 0) {
-//             //     continue;
-//             // }
-//             //Allow 1 point remainder!!!!
-//             // if remaining_moves.0 +2 <= 2 {
-//             //     continue;
-//             // }
-
-//             if !(remaining_moves.0 >= cost.0) {
-//                 //-1
-//                 continue;
-//             }
-
-//             //subtract move cost
-//             let rr = remaining_moves.sub(cost);
-
-//             if !skip {
-//                 if !self.consider(&current_path, a, rr) {
-//                     continue;
-//                 }
-//             }
-
-//             //if !stop {
-//             self.explore_path(
-//                 movement,
-//                 continue_filter,
-//                 skip_filter,
-//                 mo,
-//                 current_path.add(a).unwrap(),
-//                 rr,
-//                 slide_rule,
-//             )
-//             //}
-//         }
-//     }
-
-//     fn consider(&mut self, path: &Path, m: HexDir, cost: MoveUnit) -> bool {
-//         //if this move unit is greater than what we already have, replace it.
-//         //we found a quicker way to get to the same square.
-
-//         //if it is not quicker, imediately stop everything.
-//         let new_path = path.add(m).unwrap();
-//         let coord = new_path.get_end_coord(self.start);
-
-//         //we found a match now lets compare
-//         let index =
-//             if let Some((index, _)) = self.moves.iter().enumerate().find(|(_, a)| a.0 == coord) {
-//                 index
-//             } else {
-//                 self.moves.push((coord, new_path, cost));
-//                 return true;
-//             };
-
-//         if cost.0 > self.moves[index].2 .0 {
-//             let og = &mut self.moves[index];
-//             let new = &mut (coord, new_path, cost);
-//             core::mem::swap(og, new);
-//             // self.moves.push();
-//             // self.moves.swap_remove(index);
-//             return true;
-//         }
-
-//         return false;
-//     }
-// }
-
-// //normal terrain is 2.
-// //road is 1.
-// fn terrain_cost(a: GridCoord) -> MoveUnit {
-//     MoveUnit(2)
-// }
