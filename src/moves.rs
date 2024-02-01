@@ -311,6 +311,7 @@ pub mod partial {
             moveto: target_cell,
         }
     }
+
     fn apply_extra_move(
         this_unit: &mut UnitData,
         target_cell: GridCoord,
@@ -369,6 +370,15 @@ pub mod partial {
                 walls
             }
             if let Some(extra) = self.is_extra {
+                let _ = data
+                    .wait_animation(
+                        animation::AnimationCommand::Terrain {
+                            pos: self.target,
+                            terrain_type: animation::TerrainType::Grass,
+                        },
+                        team,
+                    )
+                    .await;
                 apply_extra_move(self.this_unit, self.target, extra.unit, &mut self.env)
             } else {
                 let walls = calculate_walls(self.this_unit.position, &self.env);

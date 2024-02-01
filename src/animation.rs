@@ -59,10 +59,19 @@ pub enum AnimationCommand {
 }
 
 #[derive(Debug, Clone)]
-enum TerrainType {
+pub enum TerrainType {
     Snow,
     Grass,
     Mountain,
+}
+
+pub fn terrain_create() -> impl Iterator<Item = f32> {
+    Interpolate {
+        curr: -10.0,
+        target: 0.0,
+        tt: 0.2,
+        max: 4.0,
+    }
 }
 
 pub fn movement(
@@ -95,22 +104,19 @@ pub fn movement(
     })
 }
 
-pub struct Animation<T,I> {
+pub struct Animation<T, I> {
     it: I,
     data: T,
 }
 use std::fmt;
-impl<T,I> fmt::Debug for Animation<T,I> {
+impl<T, I> fmt::Debug for Animation<T, I> {
     fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
         Ok(())
     }
 }
-impl<T,I:Iterator> Animation<T,I> {
+impl<T, I: Iterator> Animation<T, I> {
     pub fn new(it: I, data: T) -> Self {
-        Self {
-            it,
-            data,
-        }
+        Self { it, data }
     }
     pub fn animate_step(&mut self) -> Option<I::Item> {
         if let Some(x) = self.it.next() {

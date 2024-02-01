@@ -282,6 +282,7 @@ impl EngineStuff {
             //into pieces that this thread understands.
             let mut get_mouse_input = None;
             let mut unit_animation = None;
+            let mut terrain_animation = None;
             let mut poking = 0;
 
             let (mut cat_for_draw, mut dog_for_draw) = (
@@ -304,10 +305,13 @@ impl EngineStuff {
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
                         let aa = animation::Animation::new(it, unit);
 
-                        unit_animation = Some(aa);
+                        unit_animation = Some((Vector2::new(0.0, 0.0), aa));
                     }
-                    animation::AnimationCommand::Terrain { .. } => {
-                        todo!()
+                    animation::AnimationCommand::Terrain { pos, terrain_type } => {
+                        //let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
+                        let it = animation::terrain_create();
+                        let aa = animation::Animation::new(it, (pos, terrain_type));
+                        terrain_animation = Some((0.0, aa));
                     }
                 },
                 ace::Command::GetMouseInput(kk) => {
@@ -335,7 +339,6 @@ impl EngineStuff {
                 }
             };
 
-            let mut animation_finished = false;
             'render_loop: loop {
                 if poking == 1 {
                     console_dbg!("we poked!");
@@ -349,17 +352,6 @@ impl EngineStuff {
                     break 'render_loop;
                 }
                 poking = 0.max(poking - 1);
-
-                if animation_finished {
-                    response_sender
-                        .send(ace::GameWrapResponse {
-                            game,
-                            data: ace::Response::AnimationFinish,
-                        })
-                        .await
-                        .unwrap();
-                    break 'render_loop;
-                }
 
                 let mut on_select = false;
                 let mut end_turn = false;
@@ -463,6 +455,37 @@ impl EngineStuff {
                     }
                 }
 
+                if let Some((z, a)) = &mut terrain_animation {
+                    if let Some(zpos) = a.animate_step() {
+                        *z = zpos;
+                    } else {
+                        terrain_animation = None;
+                        response_sender
+                            .send(ace::GameWrapResponse {
+                                game,
+                                data: ace::Response::AnimationFinish,
+                            })
+                            .await
+                            .unwrap();
+                        break 'render_loop;
+                    }
+                }
+                if let Some((lpos, a)) = &mut unit_animation {
+                    if let Some(pos) = a.animate_step() {
+                        *lpos = pos;
+                    } else {
+                        unit_animation = None;
+                        response_sender
+                            .send(ace::GameWrapResponse {
+                                game,
+                                data: ace::Response::AnimationFinish,
+                            })
+                            .await
+                            .unwrap();
+                        break 'render_loop;
+                    }
+                }
+
                 scroll_manager.step();
 
                 let ggame = &game;
@@ -498,6 +521,23 @@ impl EngineStuff {
                     let t = matrix::translation(pos.x, pos.y, 0.0);
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(mountain);
+                }
+
+                if let Some((zpos, a)) = &mut terrain_animation {
+                    let (gpos, k) = a.data();
+
+                    let texture = match k {
+                        animation::TerrainType::Snow => snow,
+                        animation::TerrainType::Grass => grass,
+                        animation::TerrainType::Mountain => mountain,
+                    };
+                    let gpos = *gpos;
+
+                    let pos = grid_matrix.hex_axial_to_world(&gpos);
+
+                    let t = matrix::translation(pos.x, pos.y, *zpos);
+                    let m = my_matrix.chain(t).generate();
+                    draw_sys.view(&m).draw_a_thing(texture);
                 }
 
                 if let Some(a) = &get_mouse_input {
@@ -580,36 +620,31 @@ impl EngineStuff {
                 );
                 drop(d);
 
-                if let Some(a) = &mut unit_animation {
+                if let Some((pos, a)) = &mut unit_animation {
                     let this_draw = match team {
                         ActiveTeam::Cats => &cat,
                         ActiveTeam::Dogs => &dog,
                     };
 
-                    if let Some(pos) = a.animate_step() {
-                        let unit= a.data();
-                            //This is a unit animation
-                            let a = (this_draw, unit);
+                    let unit = a.data();
+                    //This is a unit animation
+                    let a = (this_draw, unit);
 
-                            let d = DepthDisabler::new(&ctx);
+                    let d = DepthDisabler::new(&ctx);
 
-                            let m = my_matrix
-                                .chain(matrix::translation(pos.x, pos.y, 1.0))
-                                .generate();
+                    let m = my_matrix
+                        .chain(matrix::translation(pos.x, pos.y, 1.0))
+                        .generate();
 
-                            draw_sys.view(&m).draw_a_thing(drop_shadow);
-                            drop(d);
+                    draw_sys.view(&m).draw_a_thing(drop_shadow);
+                    drop(d);
 
-                            let m = my_matrix
-                                .chain(matrix::translation(pos.x, pos.y, 0.0))
-                                .chain(matrix::scale(1.0, 1.0, 1.0))
-                                .generate();
+                    let m = my_matrix
+                        .chain(matrix::translation(pos.x, pos.y, 0.0))
+                        .chain(matrix::scale(1.0, 1.0, 1.0))
+                        .generate();
 
-                            draw_sys.view(&m).draw_a_thing(*a.0);
-                        
-                    } else {
-                        animation_finished = true;
-                    }
+                    draw_sys.view(&m).draw_a_thing(*a.0);
                 }
 
                 ctx.flush();
