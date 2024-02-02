@@ -297,7 +297,11 @@ pub mod movement_mesh {
             let ind = conv(a);
             self.inner = self.inner | (1 << ind);
         }
-
+        pub fn remove(&mut self, a: GridCoord) {
+            validate_rel(a);
+            let ind = conv(a);
+            self.inner = self.inner & (!(1 << ind));
+        }
         pub fn is_set(&self, a: GridCoord) -> bool {
             validate_rel(a);
 
@@ -423,7 +427,9 @@ pub mod movement_mesh {
         pub fn add_normal_cell(&mut self, a: GridCoord) {
             self.inner.add(a);
         }
-
+        pub fn remove_normal_cell(&mut self, a: GridCoord) {
+            self.inner.remove(a);
+        }
         fn is_set(&self, a: GridCoord) -> bool {
             self.inner.is_set(a)
         }

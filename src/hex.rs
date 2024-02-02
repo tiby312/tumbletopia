@@ -181,6 +181,15 @@ impl Cube {
         GridCoord([self.0[0], self.0[1]])
     }
 
+    pub fn ray(&self, dir: HDir) -> impl Iterator<Item = (Cube, Cube)> {
+        let mut c = self.clone();
+        std::iter::repeat_with(move || {
+            let cc = c;
+            let k = c.neighbour(dir);
+            c = k;
+            (cc, k)
+        })
+    }
     pub fn neighbour(&self, dir: HDir) -> Cube {
         self.add(Cube::direction(dir))
     }
