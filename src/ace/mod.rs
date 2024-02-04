@@ -399,13 +399,13 @@ pub fn game_init() -> GameState {
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([-3, 3]), Type::Grass),
         UnitData::new(GridCoord([0, -3]), Type::Grass),
-        UnitData::new(GridCoord([3, 0]), Type::Snow),
+        UnitData::new(GridCoord([3, 0]), Type::Grass),
     ];
 
     //player
     let dogs = smallvec::smallvec![
-        UnitData::new(GridCoord([3, -3]), Type::Snow),
-        UnitData::new(GridCoord([-3, 0]), Type::Snow),
+        UnitData::new(GridCoord([3, -3]), Type::Grass),
+        UnitData::new(GridCoord([-3, 0]), Type::Grass),
         UnitData::new(GridCoord([0, 3]), Type::Grass),
     ];
 
