@@ -50,38 +50,45 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
 
     doop(7, &mut dog_ships, &mut cat_ships, &ship_allowed);
 
-    let foot_snow = {
-        let mut land = view.env.land.snow.clone();
-        let mut t = view.env.forest.clone();
-        t.toggle_range(..);
-        land.intersect_with(&t);
-        land
-    };
-    let mut cat_foot_snow = BitField::from_iter(
-        view.factions
-            .cats
-            .iter()
-            .filter(|a| a.typ == Type::Snow)
-            .map(|a| a.position)
-            .filter(|&a| view.env.land.snow.is_coord_set(a)),
-    );
-    let mut dog_foot_snow = BitField::from_iter(
-        view.factions
-            .dogs
-            .iter()
-            .filter(|a| a.typ == Type::Snow)
-            .map(|a| a.position)
-            .filter(|&a| view.env.land.snow.is_coord_set(a)),
-    );
+    // let foot_snow = {
+    //     let mut land = view.env.land.snow.clone();
+    //     let mut t = view.env.forest.clone();
+    //     t.toggle_range(..);
+    //     land.intersect_with(&t);
+    //     land
+    // };
+    // let mut cat_foot_snow = BitField::from_iter(
+    //     view.factions
+    //         .cats
+    //         .iter()
+    //         .filter(|a| a.typ == Type::Snow)
+    //         .map(|a| a.position)
+    //         .filter(|&a| view.env.land.snow.is_coord_set(a)),
+    // );
+    // let mut dog_foot_snow = BitField::from_iter(
+    //     view.factions
+    //         .dogs
+    //         .iter()
+    //         .filter(|a| a.typ == Type::Snow)
+    //         .map(|a| a.position)
+    //         .filter(|&a| view.env.land.snow.is_coord_set(a)),
+    // );
 
-    doop(7, &mut dog_foot_snow, &mut cat_foot_snow, &foot_snow);
+    //doop(7, &mut dog_foot_snow, &mut cat_foot_snow, &foot_snow);
 
     let foot_grass = {
         let mut land = view.env.land.grass.clone();
         let mut t = view.env.forest.clone();
         t.toggle_range(..);
         land.intersect_with(&t);
-        land
+
+        let mut land2 = land.clone();
+        for a in land.iter_mesh(GridCoord::zero()) {
+            if !moves::has_adjacent_water(view, a) {
+                land2.set_coord(a, false);
+            }
+        }
+        land2
     };
     let mut cat_foot_grass = BitField::from_iter(
         view.factions
@@ -103,7 +110,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
     doop(7, &mut dog_foot_grass, &mut cat_foot_grass, &foot_grass);
 
     let s = cat_ships.count_ones(..) as i64 - dog_ships.count_ones(..) as i64;
-    let r = cat_foot_snow.count_ones(..) as i64 - dog_foot_snow.count_ones(..) as i64;
+    //let r = cat_foot_snow.count_ones(..) as i64 - dog_foot_snow.count_ones(..) as i64;
     let t = cat_foot_grass.count_ones(..) as i64 - dog_foot_grass.count_ones(..) as i64;
 
     //let x=0;
@@ -112,7 +119,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         //console_dbg!("SNOW VAL=",x);
         //console_dbg!("GRASS VAL=",x);
     }
-    s + 2 * (r + t) //+ x + y
+    s + 2 * (t) //+ x + y
 }
 
 fn doop(
@@ -121,6 +128,8 @@ fn doop(
     mut cats: &mut BitField,
     allowed_cells: &BitField,
 ) {
+    dogs.intersect_with(allowed_cells);
+    cats.intersect_with(allowed_cells);
     if dogs.count_ones(..) == 0 && cats.count_ones(..) == 0 {
         return;
     }

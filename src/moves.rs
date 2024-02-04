@@ -56,106 +56,91 @@ impl GameState {
                 mesh.add_normal_cell(last_move.unit.sub(&unit));
             } else {
                 //if !is_ship {
-                    // for d in HDir::all() {
-                    //     for (l1, l2) in unit
-                    //         .to_cube()
-                    //         .ray(d)
-                    //         .map(|(x, y)| (x.to_axial(), y.to_axial()))
-                    //         .take(3)
-                    //     {
-                    //         if !game.world.get_game_cells().is_coord_set(l1) {
-                    //             break;
-                    //         }
-                    //         if !game.world.get_game_cells().is_coord_set(l2) {
-                    //             if l1 != unit {
-                    //                 mesh.add_normal_cell(l1.sub(&unit));
-                    //             }
-                    //             break;
-                    //         }
+                // for d in HDir::all() {
+                //     for (l1, l2) in unit
+                //         .to_cube()
+                //         .ray(d)
+                //         .map(|(x, y)| (x.to_axial(), y.to_axial()))
+                //         .take(3)
+                //     {
+                //         if !game.world.get_game_cells().is_coord_set(l1) {
+                //             break;
+                //         }
+                //         if !game.world.get_game_cells().is_coord_set(l2) {
+                //             if l1 != unit {
+                //                 mesh.add_normal_cell(l1.sub(&unit));
+                //             }
+                //             break;
+                //         }
 
-                    //         if game
-                    //             .factions
-                    //             .relative(team)
-                    //             .this_team
-                    //             .find_slow(&l2)
-                    //             .is_some()
-                    //             || game
-                    //                 .factions
-                    //                 .relative(team)
-                    //                 .that_team
-                    //                 .find_slow(&l2)
-                    //                 .is_some()
-                    //         {
-                    //             if l1 != unit {
-                    //                 mesh.add_normal_cell(l1.sub(&unit));
-                    //             }
-                    //             break;
-                    //         }
+                //         if game
+                //             .factions
+                //             .relative(team)
+                //             .this_team
+                //             .find_slow(&l2)
+                //             .is_some()
+                //             || game
+                //                 .factions
+                //                 .relative(team)
+                //                 .that_team
+                //                 .find_slow(&l2)
+                //                 .is_some()
+                //         {
+                //             if l1 != unit {
+                //                 mesh.add_normal_cell(l1.sub(&unit));
+                //             }
+                //             break;
+                //         }
 
-                    //         if game.env.land.is_coord_set(l2) && !game.env.forest.is_coord_set(l2) {
-                    //             continue;
-                    //         }
+                //         if game.env.land.is_coord_set(l2) && !game.env.forest.is_coord_set(l2) {
+                //             continue;
+                //         }
 
-                    //         if game.env.forest.is_coord_set(l2) {
-                    //             if l1 != unit {
-                    //                 mesh.add_normal_cell(l1.sub(&unit));
-                    //             }
-                    //             break;
-                    //         }
+                //         if game.env.forest.is_coord_set(l2) {
+                //             if l1 != unit {
+                //                 mesh.add_normal_cell(l1.sub(&unit));
+                //             }
+                //             break;
+                //         }
 
-                    //         if !game.env.land.is_coord_set(l2) {
-                    //             mesh.add_normal_cell(l2.sub(&unit));
-                    //             break;
-                    //         }
-                    //     }
-                    // }
-                    //mesh.remove_normal_cell(GridCoord::zero())
+                //         if !game.env.land.is_coord_set(l2) {
+                //             mesh.add_normal_cell(l2.sub(&unit));
+                //             break;
+                //         }
+                //     }
+                // }
+                //mesh.remove_normal_cell(GridCoord::zero())
                 //} else {
-                    for a in unit.to_cube().ring(1) {
-                        let a = a.to_axial();
+                for a in unit.to_cube().ring(1) {
+                    let a = a.to_axial();
 
-                        let j = if is_ship {
-                            // !game.env.land.is_coord_set(a)
-                            //true
-                            !game.env.forest.is_coord_set(a)
-                        } else {
-                            !game.env.forest.is_coord_set(a)
-                        };
-                        if j && cond(a, Some(last_move), 0) {
-                            mesh.add_normal_cell(a.sub(&unit));
-                        }
+                    let j = if is_ship {
+                        // !game.env.land.is_coord_set(a)
+                        //true
+                        !game.env.forest.is_coord_set(a)
+                    } else {
+                        !game.env.forest.is_coord_set(a)
+                    };
+                    if j && cond(a, Some(last_move), 0) {
+                        mesh.add_normal_cell(a.sub(&unit));
                     }
+                }
                 //}
             }
         } else {
-            let has_adjacent_water=|kk:GridCoord|{
-                let mut ret=false;
-                for j in kk.to_cube().ring(1){
-                    if !game.world.get_game_cells().is_coord_set(j.to_axial()){
-                        continue;
-                    }
-                    if !game.env.land.is_coord_set(j.to_axial()){
-                        ret=true;
-                        break;
-                    }
-                }
-                ret
-            };
             let check_is_ship = |kk| {
                 if is_ship {
                     !game.env.land.is_coord_set(kk)
                 } else {
-                    
-
                     let k = match typ {
                         Type::Grass => game.env.land.grass.is_coord_set(kk),
                         Type::Snow => game.env.land.snow.is_coord_set(kk),
                     };
-                    has_adjacent_water(kk) && k && !game.env.forest.is_coord_set(kk)
+                    has_adjacent_water(game, kk) && k && !game.env.forest.is_coord_set(kk)
                 }
             };
 
-            if !is_ship && !has_adjacent_water(unit){
+            if !is_ship && !has_adjacent_water(game, unit) {
                 return mesh;
             }
 
@@ -201,6 +186,20 @@ impl GameState {
 
         mesh
     }
+}
+
+pub fn has_adjacent_water(game: &GameState, kk: GridCoord) -> bool {
+    let mut ret = false;
+    for j in kk.to_cube().ring(1) {
+        if !game.world.get_game_cells().is_coord_set(j.to_axial()) {
+            continue;
+        }
+        if !game.env.land.is_coord_set(j.to_axial()) {
+            ret = true;
+            break;
+        }
+    }
+    ret
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
