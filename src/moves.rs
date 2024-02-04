@@ -119,7 +119,7 @@ impl GameState {
                         //true
                         !game.env.forest.is_coord_set(a)
                     } else {
-                        !game.env.forest.is_coord_set(a)
+                        has_adjacent_water(game, a) && !game.env.forest.is_coord_set(a)
                     };
                     if j && cond(a, Some(last_move), 0) {
                         mesh.add_normal_cell(a.sub(&unit));

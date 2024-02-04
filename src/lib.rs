@@ -284,6 +284,16 @@ impl EngineStuff {
             let mut terrain_animation = None;
             let mut poking = 0;
 
+            let mut shore = BitField::new();
+            let mut inner_land = BitField::new();
+            for a in game.env.land.grass.iter_mesh(GridCoord::zero()) {
+                if moves::has_adjacent_water(game, a) {
+                    shore.set_coord(a, true);
+                } else {
+                    inner_land.set_coord(a, true);
+                }
+            }
+
             let (mut cat_for_draw, mut dog_for_draw) = (
                 game.factions.cats.units.clone().into_vec(),
                 game.factions.dogs.units.clone().into_vec(),
@@ -497,14 +507,14 @@ impl EngineStuff {
                 pub const LAND_OFFSET: f32 = -10.0;
                 pub const MOUNTAIN_OFFSET: f32 = 0.0;
 
-                for c in ggame.env.land.snow.iter_mesh(GridCoord::zero()) {
+                for c in inner_land.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(snow);
                 }
 
-                for c in ggame.env.land.grass.iter_mesh(GridCoord::zero()) {
+                for c in shore.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
                     let m = my_matrix.chain(t).generate();
