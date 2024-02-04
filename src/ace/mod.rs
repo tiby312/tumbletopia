@@ -457,8 +457,8 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Cats {
-            //{
+        //if team_index == ActiveTeam::Cats {
+        {
             doop.send_popup("AI Thinking", team_index).await;
             let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
             doop.send_popup("", team_index).await;

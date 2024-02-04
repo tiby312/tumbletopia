@@ -189,17 +189,19 @@ impl GameState {
 }
 
 pub fn has_adjacent_water(game: &GameState, kk: GridCoord) -> bool {
-    let mut ret = false;
+    //let mut ret = 0;
     for j in kk.to_cube().ring(1) {
         if !game.world.get_game_cells().is_coord_set(j.to_axial()) {
             continue;
         }
         if !game.env.land.is_coord_set(j.to_axial()) {
-            ret = true;
-            break;
+            //ret+=1;
+            //if ret==2{
+            return true;
+            //}
         }
     }
-    ret
+    false
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
