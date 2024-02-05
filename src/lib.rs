@@ -755,7 +755,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
         const ASSETS: &[(&'static [u8], usize, Option<f64>)] = &[
             (include_bytes!("../assets/select_model.glb"), 1, None),
             (include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
-            (include_bytes!("../assets/mountain.glb"), RESIZE, None),
+            (include_bytes!("../assets/city.glb"), RESIZE, None),
             (include_bytes!("../assets/attack.glb"), 1, None),
             (include_bytes!("../assets/donut.glb"), RESIZE, None),
             (include_bytes!("../assets/cat_final.glb"), RESIZE, None),

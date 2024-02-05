@@ -119,7 +119,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         //console_dbg!("SNOW VAL=",x);
         //console_dbg!("GRASS VAL=",x);
     }
-    s + 2 * (t) //+ x + y
+    s + (t) //+ x + y
 }
 
 fn doop(
