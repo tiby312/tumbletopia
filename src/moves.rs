@@ -119,7 +119,8 @@ impl GameState {
                         //true
                         !game.env.forest.is_coord_set(a)
                     } else {
-                        has_adjacent_water(game, a) && !game.env.forest.is_coord_set(a)
+                        /*has_adjacent_water(game, a) &&*/
+                        !game.env.forest.is_coord_set(a)
                     };
                     if j && cond(a, Some(last_move), 0) {
                         mesh.add_normal_cell(a.sub(&unit));
@@ -189,16 +190,12 @@ impl GameState {
 }
 
 pub fn has_adjacent_water(game: &GameState, kk: GridCoord) -> bool {
-    //let mut ret = 0;
     for j in kk.to_cube().ring(1) {
-        if !game.world.get_game_cells().is_coord_set(j.to_axial()) {
-            continue;
-        }
+        // if !game.world.get_game_cells().is_coord_set(j.to_axial()) {
+        //     continue;
+        // }
         if !game.env.land.is_coord_set(j.to_axial()) {
-            //ret+=1;
-            //if ret==2{
             return true;
-            //}
         }
     }
     false
