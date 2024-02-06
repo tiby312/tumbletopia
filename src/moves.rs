@@ -173,7 +173,7 @@ impl GameState {
                             .find_slow(&a)
                             .is_none();
 
-                    if water_to_land {
+                    if typ == Type::Marine && water_to_land {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
                 }
@@ -438,10 +438,7 @@ pub mod partial {
             }
             if let Some(extra) = self.is_extra {
                 let terrain_type = if !self.env.land.is_coord_set(self.target) {
-                    match self.this_unit.typ {
-                        Type::Grass => animation::TerrainType::Grass,
-                        Type::Snow => animation::TerrainType::Snow,
-                    }
+                    animation::TerrainType::Grass
                 } else {
                     if !self.env.forest.is_coord_set(self.target) {
                         animation::TerrainType::Mountain

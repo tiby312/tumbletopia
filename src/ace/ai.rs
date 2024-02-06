@@ -93,7 +93,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         view.factions
             .cats
             .iter()
-            .filter(|a| a.typ == Type::Grass)
+            .filter(|a| a.typ == Type::ShipOnly)
             .map(|a| a.position)
             .filter(|&a| view.env.land.is_coord_set(a)),
     );
@@ -101,7 +101,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         view.factions
             .dogs
             .iter()
-            .filter(|a| a.typ == Type::Grass)
+            .filter(|a| a.typ == Type::ShipOnly)
             .map(|a| a.position)
             .filter(|&a| view.env.land.is_coord_set(a)),
     );

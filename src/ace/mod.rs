@@ -397,16 +397,16 @@ pub async fn reselect_loop(
 
 pub fn game_init() -> GameState {
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
-        UnitData::new(GridCoord([-3, 3]), Type::Grass),
-        UnitData::new(GridCoord([0, -3]), Type::Grass),
-        UnitData::new(GridCoord([3, 0]), Type::Grass),
+        UnitData::new(GridCoord([-3, 3]), Type::Marine),
+        UnitData::new(GridCoord([0, -3]), Type::Marine),
+        UnitData::new(GridCoord([3, 0]), Type::ShipOnly),
     ];
 
     //player
     let dogs = smallvec::smallvec![
-        UnitData::new(GridCoord([3, -3]), Type::Grass),
-        UnitData::new(GridCoord([-3, 0]), Type::Grass),
-        UnitData::new(GridCoord([0, 3]), Type::Grass),
+        UnitData::new(GridCoord([3, -3]), Type::Marine),
+        UnitData::new(GridCoord([-3, 0]), Type::Marine),
+        UnitData::new(GridCoord([0, 3]), Type::ShipOnly),
     ];
 
     let world = Box::leak(Box::new(board::MyWorld::new()));

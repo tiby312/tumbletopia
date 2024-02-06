@@ -23,16 +23,16 @@ pub enum CellSelection {
 #[derive(Hash, Default, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {
     #[default]
-    Grass,
-    Snow,
+    ShipOnly,
+    Marine,
 }
 
 impl Type {
     pub fn type_index(&self) -> usize {
         let a = self;
         match a {
-            Type::Grass { .. } => 0,
-            Type::Snow => 1,
+            Type::ShipOnly { .. } => 0,
+            Type::Marine => 1,
         }
     }
 }

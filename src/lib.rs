@@ -531,13 +531,13 @@ impl EngineStuff {
 
                 if let Some((zpos, _, gpos, k)) = &terrain_animation {
                     let texture = match k {
-                        animation::TerrainType::Snow => snow,
+                        //animation::TerrainType::Snow => snow,
                         animation::TerrainType::Grass => grass,
                         animation::TerrainType::Mountain => mountain,
                     };
 
                     let diff = match k {
-                        animation::TerrainType::Snow => LAND_OFFSET,
+                        //animation::TerrainType::Snow => LAND_OFFSET,
                         animation::TerrainType::Grass => LAND_OFFSET,
                         animation::TerrainType::Mountain => MOUNTAIN_OFFSET,
                     };

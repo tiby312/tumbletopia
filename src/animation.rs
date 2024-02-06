@@ -60,7 +60,6 @@ pub enum AnimationCommand {
 
 #[derive(Debug, Clone)]
 pub enum TerrainType {
-    Snow,
     Grass,
     Mountain,
 }
