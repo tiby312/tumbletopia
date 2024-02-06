@@ -417,11 +417,7 @@ pub fn game_init() -> GameState {
             cats: Tribe { units: cats },
         },
         env: Environment {
-            land: Land {
-                grass: BitField::from_iter([]),
-
-                snow: BitField::from_iter([]),
-            },
+            land: BitField::from_iter([]),
             forest: BitField::from_iter([]),
         },
         world,

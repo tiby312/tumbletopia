@@ -77,28 +77,28 @@ pub struct FactionRelative<T> {
     pub that_team: T,
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct Land {
-    pub grass: BitField,
-    pub snow: BitField,
-}
-impl Land {
-    pub fn set_coord_false(&mut self, a: GridCoord) {
-        if self.grass.is_coord_set(a) {
-            self.grass.set_coord(a, false);
-        } else if self.snow.is_coord_set(a) {
-            self.snow.set_coord(a, false);
-        } else {
-            panic!("Invalid coord");
-        }
-    }
-    pub fn is_coord_set(&self, a: GridCoord) -> bool {
-        self.grass.is_coord_set(a) || self.snow.is_coord_set(a)
-    }
-}
+// #[derive(Clone, Debug, Hash, Eq, PartialEq)]
+// pub struct Land {
+//     pub grass: BitField,
+//     pub snow: BitField,
+// }
+// impl Land {
+//     pub fn set_coord_false(&mut self, a: GridCoord) {
+//         if self.grass.is_coord_set(a) {
+//             self.grass.set_coord(a, false);
+//         } else if self.snow.is_coord_set(a) {
+//             self.snow.set_coord(a, false);
+//         } else {
+//             panic!("Invalid coord");
+//         }
+//     }
+//     pub fn is_coord_set(&self, a: GridCoord) -> bool {
+//         self.grass.is_coord_set(a) || self.snow.is_coord_set(a)
+//     }
+// }
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Environment {
-    land: Land,
+    land: BitField,
     forest: BitField,
     //powerup: BitField,
 }
@@ -286,7 +286,7 @@ impl EngineStuff {
 
             let mut shore = BitField::new();
             let mut inner_land = BitField::new();
-            for a in game.env.land.grass.iter_mesh(GridCoord::zero()) {
+            for a in game.env.land.iter_mesh(GridCoord::zero()) {
                 if moves::has_adjacent_water(game, a) {
                     shore.set_coord(a, true);
                 } else {

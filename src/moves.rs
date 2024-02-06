@@ -133,10 +133,8 @@ impl GameState {
                 if is_ship {
                     !game.env.land.is_coord_set(kk)
                 } else {
-                    let k = match typ {
-                        Type::Grass => game.env.land.grass.is_coord_set(kk),
-                        Type::Snow => game.env.land.snow.is_coord_set(kk),
-                    };
+                    let k = game.env.land.is_coord_set(kk);
+
                     has_adjacent_water(game, kk) && k && !game.env.forest.is_coord_set(kk)
                 }
             };
@@ -159,11 +157,8 @@ impl GameState {
                         }
                     }
                 } else {
-                    let water_to_land = if typ == Type::Grass {
-                        game.env.land.grass.is_coord_set(a)
-                    } else {
-                        game.env.land.snow.is_coord_set(a)
-                    } && !game.env.forest.is_coord_set(a)
+                    let water_to_land = game.env.land.is_coord_set(a)
+                        && !game.env.forest.is_coord_set(a)
                         && is_ship
                         && game
                             .factions
@@ -315,7 +310,7 @@ impl ActualMove {
         if state.env.forest.is_coord_set(attackto) {
             state.env.forest.set_coord(attackto, false);
         } else if state.env.land.is_coord_set(attackto) {
-            state.env.land.set_coord_false(attackto);
+            state.env.land.set_coord(attackto, false);
         } else {
             unreachable!();
         }
@@ -394,10 +389,7 @@ pub mod partial {
         env: &mut Environment,
     ) -> PartialMoveSigl {
         if !env.land.is_coord_set(target_cell) {
-            match this_unit.typ {
-                Type::Grass => env.land.grass.set_coord(target_cell, true),
-                Type::Snow => env.land.snow.set_coord(target_cell, true),
-            }
+            env.land.set_coord(target_cell, true)
         } else {
             if !env.forest.is_coord_set(target_cell) {
                 env.forest.set_coord(target_cell, true);

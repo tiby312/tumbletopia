@@ -23,8 +23,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
 
     let ship_allowed = {
         let water = {
-            let mut t = view.env.land.grass.clone();
-            t.union_with(&view.env.land.snow);
+            let mut t = view.env.land.clone();
             t.toggle_range(..);
             t
         };
@@ -77,7 +76,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
     //doop(7, &mut dog_foot_snow, &mut cat_foot_snow, &foot_snow);
 
     let foot_grass = {
-        let mut land = view.env.land.grass.clone();
+        let mut land = view.env.land.clone();
         let mut t = view.env.forest.clone();
         t.toggle_range(..);
         land.intersect_with(&t);
@@ -96,7 +95,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
             .iter()
             .filter(|a| a.typ == Type::Grass)
             .map(|a| a.position)
-            .filter(|&a| view.env.land.grass.is_coord_set(a)),
+            .filter(|&a| view.env.land.is_coord_set(a)),
     );
     let mut dog_foot_grass = BitField::from_iter(
         view.factions
@@ -104,7 +103,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
             .iter()
             .filter(|a| a.typ == Type::Grass)
             .map(|a| a.position)
-            .filter(|&a| view.env.land.grass.is_coord_set(a)),
+            .filter(|&a| view.env.land.is_coord_set(a)),
     );
 
     doop(7, &mut dog_foot_grass, &mut cat_foot_grass, &foot_grass);
