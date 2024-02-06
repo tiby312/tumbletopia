@@ -112,13 +112,23 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
     //let r = cat_foot_snow.count_ones(..) as i64 - dog_foot_snow.count_ones(..) as i64;
     let t = cat_foot_grass.count_ones(..) as i64 - dog_foot_grass.count_ones(..) as i64;
 
-    //let x=0;
-    //let y = cat_ship_grass.count_ones(..) as i64 - dog_ship_grass.count_ones(..) as i64;
-    if _debug {
-        //console_dbg!("SNOW VAL=",x);
-        //console_dbg!("GRASS VAL=",x);
-    }
-    s + (t) //+ x + y
+    let dog_distance = view
+        .factions
+        .dogs
+        .iter()
+        .map(|a| a.position)
+        .map(|a| a.to_cube().dist(&GridCoord::zero().to_cube()) as i64)
+        .fold(0, |a, b| a + b);
+    let cat_distance = view
+        .factions
+        .cats
+        .iter()
+        .map(|a| a.position)
+        .map(|a| a.to_cube().dist(&GridCoord::zero().to_cube()) as i64)
+        .fold(0, |a, b| a + b);
+
+    //The AI will try to avoid the center.
+    10 * (s + t) + cat_distance - dog_distance
 }
 
 fn doop(
