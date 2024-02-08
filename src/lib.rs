@@ -172,7 +172,7 @@ pub async fn worker_entry() {
     let render = EngineStuff::new(wr.canvas());
 
     loop {
-        let sample_game = ace::share::load(ace::share::SAMPLE_GAME);
+        //let sample_game = ace::share::load(ace::share::SAMPLE_GAME);
 
         let mut game = ace::game_init();
 

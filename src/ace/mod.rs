@@ -359,7 +359,7 @@ pub async fn reselect_loop(
             iii.execute_with_animation(selected_unit.team, doop, cca.clone())
                 .await;
 
-            return LoopRes::EndTurn(moves::ActualMove {
+            return LoopRes::EndTurn(moves::ActualMove::Normal {
                 unit: e.prev_move.unit,
                 moveto: e.prev_move.moveto,
                 attackto: target_cell,
@@ -383,30 +383,38 @@ pub async fn reselect_loop(
                 is_extra: None,
                 env: &mut game.env,
             };
-            let iii = iii
+            let (iii, cont) = iii
                 .execute_with_animation(selected_unit.team, doop, cca.clone())
                 .await;
 
             {
-                *extra_attack = Some(selection::PossibleExtra::new(iii, kk));
-                return LoopRes::Select(selected_unit.with(c).with_team(team_index));
+                if cont {
+                    *extra_attack = Some(selection::PossibleExtra::new(iii, kk));
+                    return LoopRes::Select(selected_unit.with(c).with_team(team_index));
+                } else {
+                    return LoopRes::EndTurn(moves::ActualMove::Powerup {
+                        unit: this_unit.position,
+                        moveto: target_cell,
+                    });
+                }
             }
         }
     }
 }
 
 pub fn game_init() -> GameState {
+    let powerup = true;
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
-        UnitData::new(GridCoord([-3, 3]), Type::Marine),
-        UnitData::new(GridCoord([0, -3]), Type::Marine),
-        UnitData::new(GridCoord([3, 0]), Type::ShipOnly),
+        UnitData::new(GridCoord([-3, 3]), Type::ShipOnly { powerup }),
+        UnitData::new(GridCoord([0, -3]), Type::ShipOnly { powerup }),
+        UnitData::new(GridCoord([3, 0]), Type::ShipOnly { powerup }),
     ];
 
     //player
     let dogs = smallvec::smallvec![
-        UnitData::new(GridCoord([3, -3]), Type::Marine),
-        UnitData::new(GridCoord([-3, 0]), Type::Marine),
-        UnitData::new(GridCoord([0, 3]), Type::ShipOnly),
+        UnitData::new(GridCoord([3, -3]), Type::ShipOnly { powerup }),
+        UnitData::new(GridCoord([-3, 0]), Type::ShipOnly { powerup }),
+        UnitData::new(GridCoord([0, 3]), Type::ShipOnly { powerup }),
     ];
 
     let world = Box::leak(Box::new(board::MyWorld::new()));
@@ -454,7 +462,7 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
 
         //Add AIIIIII.
         if team_index == ActiveTeam::Cats {
-        //{
+            //{
             doop.send_popup("AI Thinking", team_index).await;
             let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
             doop.send_popup("", team_index).await;

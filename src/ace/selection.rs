@@ -56,12 +56,12 @@ impl MoveLog {
                 rdr.read_i16::<BigEndian>().unwrap(),
                 rdr.read_i16::<BigEndian>().unwrap(),
             ];
-
-            ret.push(moves::ActualMove {
-                unit: GridCoord([vals[0], vals[1]]),
-                moveto: GridCoord([vals[2], vals[3]]),
-                attackto: GridCoord([vals[4], vals[5]]),
-            })
+            todo!()
+            // ret.push(moves::ActualMove {
+            //     unit: GridCoord([vals[0], vals[1]]),
+            //     moveto: GridCoord([vals[2], vals[3]]),
+            //     attackto: GridCoord([vals[4], vals[5]]),
+            // })
         }
         MoveLog { inner: ret }
     }
@@ -78,12 +78,13 @@ impl MoveLog {
             .unwrap();
 
         for a in o.iter() {
-            wtr.write_i16::<BigEndian>(a.unit.0[0]).unwrap();
-            wtr.write_i16::<BigEndian>(a.unit.0[1]).unwrap();
-            wtr.write_i16::<BigEndian>(a.moveto.0[0]).unwrap();
-            wtr.write_i16::<BigEndian>(a.moveto.0[1]).unwrap();
-            wtr.write_i16::<BigEndian>(a.attackto.0[0]).unwrap();
-            wtr.write_i16::<BigEndian>(a.attackto.0[1]).unwrap();
+            todo!();
+            // wtr.write_i16::<BigEndian>(a.unit.0[0]).unwrap();
+            // wtr.write_i16::<BigEndian>(a.unit.0[1]).unwrap();
+            // wtr.write_i16::<BigEndian>(a.moveto.0[0]).unwrap();
+            // wtr.write_i16::<BigEndian>(a.moveto.0[1]).unwrap();
+            // wtr.write_i16::<BigEndian>(a.attackto.0[0]).unwrap();
+            // wtr.write_i16::<BigEndian>(a.attackto.0[1]).unwrap();
         }
         wtr
     }

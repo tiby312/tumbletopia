@@ -2,7 +2,7 @@ use crate::movement::FilterRes;
 
 use super::*;
 
-#[derive(Eq, PartialEq, Hash, Debug, Clone, Default)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct UnitData {
     pub position: GridCoord,
     pub typ: Type,
@@ -20,14 +20,27 @@ pub enum CellSelection {
     BuildSelection(GridCoord),
 }
 
-#[derive(Hash, Default, Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Hash, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {
-    #[default]
-    ShipOnly,
+    ShipOnly { powerup: bool },
     Marine,
 }
 
 impl Type {
+    pub fn is_ship(&self) -> bool {
+        if let Type::ShipOnly { .. } = self {
+            true
+        } else {
+            false
+        }
+    }
+    pub fn is_marine(&self) -> bool {
+        if let Type::Marine = self {
+            true
+        } else {
+            false
+        }
+    }
     pub fn type_index(&self) -> usize {
         let a = self;
         match a {

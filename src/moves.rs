@@ -27,7 +27,7 @@ impl GameState {
             !game.env.land.is_coord_set(unit)
         };
 
-        let cond = |a: GridCoord, _extra: Option<PartialMoveSigl>, _depth: usize| {
+        let check_if_occ = |a: GridCoord, _extra: Option<PartialMoveSigl>, _depth: usize| {
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
 
             a != unit
@@ -55,62 +55,6 @@ impl GameState {
             if transition_to_land {
                 mesh.add_normal_cell(last_move.unit.sub(&unit));
             } else {
-                //if !is_ship {
-                // for d in HDir::all() {
-                //     for (l1, l2) in unit
-                //         .to_cube()
-                //         .ray(d)
-                //         .map(|(x, y)| (x.to_axial(), y.to_axial()))
-                //         .take(3)
-                //     {
-                //         if !game.world.get_game_cells().is_coord_set(l1) {
-                //             break;
-                //         }
-                //         if !game.world.get_game_cells().is_coord_set(l2) {
-                //             if l1 != unit {
-                //                 mesh.add_normal_cell(l1.sub(&unit));
-                //             }
-                //             break;
-                //         }
-
-                //         if game
-                //             .factions
-                //             .relative(team)
-                //             .this_team
-                //             .find_slow(&l2)
-                //             .is_some()
-                //             || game
-                //                 .factions
-                //                 .relative(team)
-                //                 .that_team
-                //                 .find_slow(&l2)
-                //                 .is_some()
-                //         {
-                //             if l1 != unit {
-                //                 mesh.add_normal_cell(l1.sub(&unit));
-                //             }
-                //             break;
-                //         }
-
-                //         if game.env.land.is_coord_set(l2) && !game.env.forest.is_coord_set(l2) {
-                //             continue;
-                //         }
-
-                //         if game.env.forest.is_coord_set(l2) {
-                //             if l1 != unit {
-                //                 mesh.add_normal_cell(l1.sub(&unit));
-                //             }
-                //             break;
-                //         }
-
-                //         if !game.env.land.is_coord_set(l2) {
-                //             mesh.add_normal_cell(l2.sub(&unit));
-                //             break;
-                //         }
-                //     }
-                // }
-                //mesh.remove_normal_cell(GridCoord::zero())
-                //} else {
                 for a in unit.to_cube().ring(1) {
                     let a = a.to_axial();
 
@@ -122,14 +66,14 @@ impl GameState {
                         /*has_adjacent_water(game, a) &&*/
                         !game.env.forest.is_coord_set(a)
                     };
-                    if j && cond(a, Some(last_move), 0) {
+                    if j && check_if_occ(a, Some(last_move), 0) {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
                 }
                 //}
             }
         } else {
-            let check_is_ship = |kk| {
+            let check_if_allowed = |kk| {
                 if is_ship {
                     !game.env.land.is_coord_set(kk)
                 } else {
@@ -139,6 +83,7 @@ impl GameState {
                 }
             };
 
+            //If we are landlocked, exit
             if !is_ship && !has_adjacent_water(game, unit) {
                 return mesh;
             }
@@ -146,13 +91,13 @@ impl GameState {
             for a in unit.to_cube().ring(1) {
                 let a = a.to_axial();
 
-                if check_is_ship(a) && cond(a, None, 0) {
+                if check_if_allowed(a) && check_if_occ(a, None, 0) {
                     mesh.add_normal_cell(a.sub(&unit));
 
                     for b in a.to_cube().ring(1) {
                         let b = b.to_axial();
 
-                        if check_is_ship(b) && cond(b, None, 1) {
+                        if check_if_allowed(b) && check_if_occ(b, None, 1) {
                             mesh.add_normal_cell(b.sub(&unit));
                         }
                     }
@@ -176,6 +121,15 @@ impl GameState {
                     if typ == Type::Marine && water_to_land {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
+
+                    if let Type::ShipOnly { powerup } = typ {
+                        if powerup
+                            && game.env.land.is_coord_set(a)
+                            && !game.env.forest.is_coord_set(a)
+                        {
+                            mesh.add_normal_cell(a.sub(&unit));
+                        }
+                    }
                 }
             }
         }
@@ -197,10 +151,16 @@ pub fn has_adjacent_water(game: &GameState, kk: GridCoord) -> bool {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
-pub struct ActualMove {
-    pub unit: GridCoord,
-    pub moveto: GridCoord,
-    pub attackto: GridCoord,
+pub enum ActualMove {
+    Normal {
+        unit: GridCoord,
+        moveto: GridCoord,
+        attackto: GridCoord,
+    },
+    Powerup {
+        unit: GridCoord,
+        moveto: GridCoord,
+    },
 }
 
 impl ActualMove {
@@ -210,112 +170,156 @@ impl ActualMove {
         team_index: ActiveTeam,
         doop: &mut WorkerManager<'_>,
     ) {
-        let unitt = self.unit;
-        let moveto = self.moveto;
-        let attackto = self.attackto;
+        match self {
+            &ActualMove::Normal {
+                unit: unitt,
+                moveto,
+                attackto,
+            } => {
+                let unit = state
+                    .factions
+                    .relative(team_index)
+                    .this_team
+                    .find_slow(&unitt)
+                    .unwrap();
+                let mesh = state.generate_unit_possible_moves_inner(
+                    &unit.position,
+                    unit.typ,
+                    team_index,
+                    None,
+                );
 
-        let target_cell = moveto;
-        let unit = state
-            .factions
-            .relative(team_index)
-            .this_team
-            .find_slow(&unitt)
-            .unwrap();
-        let mesh =
-            state.generate_unit_possible_moves_inner(&unit.position, unit.typ, team_index, None);
+                let unit = state
+                    .factions
+                    .relative_mut(team_index)
+                    .this_team
+                    .find_slow_mut(&unitt)
+                    .unwrap();
 
-        let unit = state
-            .factions
-            .relative_mut(team_index)
-            .this_team
-            .find_slow_mut(&unitt)
-            .unwrap();
+                let ttt = unit.typ;
+                let iii = moves::PartialMove {
+                    this_unit: unit,
+                    target: moveto,
+                    is_extra: None,
+                    env: &mut state.env,
+                };
 
-        let ttt = unit.typ;
-        let iii = moves::PartialMove {
-            this_unit: unit,
-            target: target_cell,
-            is_extra: None,
-            env: &mut state.env,
-        };
+                let (iii, cont) = iii.execute_with_animation(team_index, doop, mesh).await;
 
-        let iii = iii.execute_with_animation(team_index, doop, mesh).await;
+                assert!(cont);
 
-        let selected_unit = moveto;
-        let target_cell = attackto;
+                let selected_unit = moveto;
+                let target_cell = attackto;
 
-        let mesh =
-            state.generate_unit_possible_moves_inner(&selected_unit, ttt, team_index, Some(iii));
+                let mesh = state.generate_unit_possible_moves_inner(
+                    &selected_unit,
+                    ttt,
+                    team_index,
+                    Some(iii),
+                );
 
-        let unit = state
-            .factions
-            .relative_mut(team_index)
-            .this_team
-            .find_slow_mut(&moveto)
-            .unwrap();
-        let iii = moves::PartialMove {
-            this_unit: unit,
-            target: target_cell,
-            is_extra: Some(iii),
-            env: &mut state.env,
-        };
-        iii.execute_with_animation(team_index, doop, mesh).await;
+                let unit = state
+                    .factions
+                    .relative_mut(team_index)
+                    .this_team
+                    .find_slow_mut(&moveto)
+                    .unwrap();
+                let iii = moves::PartialMove {
+                    this_unit: unit,
+                    target: target_cell,
+                    is_extra: Some(iii),
+                    env: &mut state.env,
+                };
+                iii.execute_with_animation(team_index, doop, mesh).await;
+            }
+            &ActualMove::Powerup { unit, moveto } => {
+                assert!(state.env.land.is_coord_set(moveto));
+                state.env.land.set_coord(moveto, false);
+            }
+        }
     }
 
     pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
-        let unitt = self.unit;
-        let moveto = self.moveto;
-        let attackto = self.attackto;
+        match self {
+            &ActualMove::Normal {
+                unit,
+                moveto,
+                attackto,
+            } => {
+                let unit = state
+                    .factions
+                    .relative_mut(team_index)
+                    .this_team
+                    .find_slow_mut(&unit)
+                    .unwrap();
 
-        let target_cell = moveto;
-        let unit = state
-            .factions
-            .relative_mut(team_index)
-            .this_team
-            .find_slow_mut(&unitt)
-            .unwrap();
+                let iii = moves::PartialMove {
+                    this_unit: unit,
+                    target: moveto,
+                    is_extra: None,
+                    env: &mut state.env,
+                };
 
-        let iii = moves::PartialMove {
-            this_unit: unit,
-            target: target_cell,
-            is_extra: None,
-            env: &mut state.env,
-        };
+                let (iii, cont) = iii.execute(team_index);
 
-        let iii = iii.execute(team_index);
+                assert!(cont);
 
-        let target_cell = attackto;
+                let target_cell = attackto;
 
-        let iii = moves::PartialMove {
-            this_unit: unit,
-            target: target_cell,
-            is_extra: Some(iii),
-            env: &mut state.env,
-        };
+                let iii = moves::PartialMove {
+                    this_unit: unit,
+                    target: target_cell,
+                    is_extra: Some(iii),
+                    env: &mut state.env,
+                };
 
-        iii.execute(team_index);
+                iii.execute(team_index);
+            }
+            &ActualMove::Powerup { unit, moveto } => {
+                assert!(state.env.land.is_coord_set(moveto));
+                state.env.land.set_coord(moveto, false);
+            }
+        }
     }
     pub fn execute_undo(&self, state: &mut GameState, team_index: ActiveTeam) {
-        let unitt = self.unit;
-        let moveto = self.moveto;
-        let attackto = self.attackto;
+        match self {
+            &ActualMove::Normal {
+                unit,
+                moveto,
+                attackto,
+            } => {
+                let k = state
+                    .factions
+                    .relative_mut(team_index)
+                    .this_team
+                    .find_slow_mut(&moveto)
+                    .unwrap();
 
-        let k = state
-            .factions
-            .relative_mut(team_index)
-            .this_team
-            .find_slow_mut(&moveto)
-            .unwrap();
+                if state.env.forest.is_coord_set(attackto) {
+                    state.env.forest.set_coord(attackto, false);
+                } else if state.env.land.is_coord_set(attackto) {
+                    state.env.land.set_coord(attackto, false);
+                } else {
+                    unreachable!();
+                }
 
-        if state.env.forest.is_coord_set(attackto) {
-            state.env.forest.set_coord(attackto, false);
-        } else if state.env.land.is_coord_set(attackto) {
-            state.env.land.set_coord(attackto, false);
-        } else {
-            unreachable!();
+                k.position = unit;
+            }
+            &ActualMove::Powerup { unit, moveto } => {
+                assert!(!state.env.land.is_coord_set(moveto));
+                state.env.land.set_coord(moveto, true);
+                let k = state
+                    .factions
+                    .relative_mut(team_index)
+                    .this_team
+                    .find_slow_mut(&unit)
+                    .unwrap();
+                let Type::ShipOnly { powerup } = &mut k.typ else {
+                    unreachable!();
+                };
+                *powerup = true;
+            }
         }
-
-        k.position = unitt;
     }
 }
 
@@ -337,22 +341,31 @@ impl GameState {
                     target: mm,
                     is_extra: None,
                 };
-                let il = ii.execute(team);
+                let (il, cont) = ii.execute(team);
 
-                let second_mesh =
-                    state.generate_unit_possible_moves_inner(&mm, ttt, team, Some(il));
+                if cont {
+                    let second_mesh =
+                        state.generate_unit_possible_moves_inner(&mm, ttt, team, Some(il));
 
-                for sm in second_mesh.iter_mesh(mm) {
-                    //Don't bother applying the extra move. just generate the sigl.
-                    movs.push(moves::ActualMove {
+                    for sm in second_mesh.iter_mesh(mm) {
+                        //Don't bother applying the extra move. just generate the sigl.
+                        movs.push(moves::ActualMove::Normal {
+                            unit: pos,
+                            moveto: mm,
+                            attackto: sm,
+                        })
+                    }
+
+                    //revert it back just the movement component.
+                    state.factions.relative_mut(team).this_team.units[i].position = pos;
+                } else {
+                    let j = moves::ActualMove::Powerup {
                         unit: pos,
                         moveto: mm,
-                        attackto: sm,
-                    })
+                    };
+                    movs.push(j.clone());
+                    j.execute_undo(state, team);
                 }
-
-                //revert it back.
-                state.factions.relative_mut(team).this_team.units[i].position = pos;
             }
         }
         movs
@@ -372,14 +385,43 @@ pub mod partial {
         pub is_extra: Option<PartialMoveSigl>,
     }
 
-    fn apply_normal_move(this_unit: &mut UnitData, target_cell: GridCoord) -> PartialMoveSigl {
+    fn apply_normal_move(
+        this_unit: &mut UnitData,
+        target_cell: GridCoord,
+        env: &mut Environment,
+    ) -> (PartialMoveSigl, bool) {
+        if let Type::ShipOnly { powerup } = &mut this_unit.typ {
+            if env.land.is_coord_set(target_cell) {
+                assert!(*powerup);
+
+                env.land.set_coord(target_cell, false);
+
+                *powerup = false;
+                let orig = this_unit.position;
+
+                //this_unit.position = target_cell;
+
+                return (
+                    PartialMoveSigl {
+                        unit: orig,
+                        moveto: target_cell,
+                    },
+                    false,
+                );
+            }
+        }
+
         let orig = this_unit.position;
+
         this_unit.position = target_cell;
 
-        PartialMoveSigl {
-            unit: orig,
-            moveto: target_cell,
-        }
+        (
+            PartialMoveSigl {
+                unit: orig,
+                moveto: target_cell,
+            },
+            true,
+        )
     }
 
     fn apply_extra_move(
@@ -403,11 +445,14 @@ pub mod partial {
     }
 
     impl PartialMove<'_> {
-        pub fn execute(self, _team: ActiveTeam) -> PartialMoveSigl {
+        pub fn execute(self, _team: ActiveTeam) -> (PartialMoveSigl, bool) {
             if let Some(extra) = self.is_extra {
-                apply_extra_move(self.this_unit, self.target, extra.unit, self.env)
+                (
+                    apply_extra_move(self.this_unit, self.target, extra.unit, self.env),
+                    false,
+                )
             } else {
-                apply_normal_move(self.this_unit, self.target)
+                apply_normal_move(self.this_unit, self.target, self.env)
             }
         }
         pub async fn execute_with_animation(
@@ -415,7 +460,7 @@ pub mod partial {
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
             mesh: MovementMesh,
-        ) -> PartialMoveSigl {
+        ) -> (PartialMoveSigl, bool) {
             fn calculate_walls(position: GridCoord, env: &Environment) -> Mesh {
                 let mut walls = Mesh::new();
 
@@ -456,7 +501,10 @@ pub mod partial {
                         team,
                     )
                     .await;
-                apply_extra_move(self.this_unit, self.target, extra.unit, &mut self.env)
+                (
+                    apply_extra_move(self.this_unit, self.target, extra.unit, &mut self.env),
+                    false,
+                )
             } else {
                 let walls = calculate_walls(self.this_unit.position, &self.env);
 
@@ -472,7 +520,7 @@ pub mod partial {
                     )
                     .await;
 
-                apply_normal_move(self.this_unit, self.target)
+                apply_normal_move(self.this_unit, self.target, self.env)
             }
         }
     }
