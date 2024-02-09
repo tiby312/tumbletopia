@@ -132,8 +132,12 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         .dogs
         .iter()
         .map(|a| {
-            if let Type::ShipOnly { .. } = a.typ {
-                1
+            if let Type::ShipOnly { powerup } = a.typ {
+                if powerup {
+                    1
+                } else {
+                    0
+                }
             } else {
                 0
             }
@@ -145,8 +149,12 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         .cats
         .iter()
         .map(|a| {
-            if let Type::ShipOnly { .. } = a.typ {
-                1
+            if let Type::ShipOnly { powerup } = a.typ {
+                if powerup {
+                    1
+                } else {
+                    0
+                }
             } else {
                 0
             }
@@ -154,7 +162,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         .fold(0, |a, b| a + b);
 
     //The AI will try to avoid the center.
-    10 * (s + t) + 30 * (cat_powerups - dog_powerups) + cat_distance - dog_distance
+    10 * (s + t) + 20 * (cat_powerups - dog_powerups) + cat_distance - dog_distance
 }
 
 fn doop(
