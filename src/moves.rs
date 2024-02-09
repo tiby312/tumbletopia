@@ -233,8 +233,22 @@ impl ActualMove {
                 iii.execute_with_animation(team_index, doop, mesh).await;
             }
             &ActualMove::Powerup { unit, moveto } => {
-                assert!(state.env.land.is_coord_set(moveto));
-                state.env.land.set_coord(moveto, false);
+                let unit = state
+                    .factions
+                    .relative_mut(team_index)
+                    .this_team
+                    .find_slow_mut(&unit)
+                    .unwrap();
+
+                let iii = moves::PartialMove {
+                    this_unit: unit,
+                    target: moveto,
+                    is_extra: None,
+                    env: &mut state.env,
+                };
+                iii.execute(team_index);
+                // assert!(state.env.land.is_coord_set(moveto));
+                // state.env.land.set_coord(moveto, false);
             }
         }
     }
@@ -276,8 +290,22 @@ impl ActualMove {
                 iii.execute(team_index);
             }
             &ActualMove::Powerup { unit, moveto } => {
-                assert!(state.env.land.is_coord_set(moveto));
-                state.env.land.set_coord(moveto, false);
+                let unit = state
+                    .factions
+                    .relative_mut(team_index)
+                    .this_team
+                    .find_slow_mut(&unit)
+                    .unwrap();
+
+                let iii = moves::PartialMove {
+                    this_unit: unit,
+                    target: moveto,
+                    is_extra: None,
+                    env: &mut state.env,
+                };
+                iii.execute(team_index);
+                //     assert!(state.env.land.is_coord_set(moveto));
+                //     state.env.land.set_coord(moveto, false);
             }
         }
     }

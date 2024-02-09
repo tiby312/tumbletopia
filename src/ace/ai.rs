@@ -127,8 +127,34 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         .map(|a| a.to_cube().dist(&GridCoord::zero().to_cube()) as i64)
         .fold(0, |a, b| a + b);
 
+    let dog_powerups = view
+        .factions
+        .dogs
+        .iter()
+        .map(|a| {
+            if let Type::ShipOnly { .. } = a.typ {
+                1
+            } else {
+                0
+            }
+        })
+        .fold(0, |a, b| a + b);
+
+    let cat_powerups = view
+        .factions
+        .cats
+        .iter()
+        .map(|a| {
+            if let Type::ShipOnly { .. } = a.typ {
+                1
+            } else {
+                0
+            }
+        })
+        .fold(0, |a, b| a + b);
+
     //The AI will try to avoid the center.
-    10 * (s + t) + cat_distance - dog_distance
+    10 * (s + t) + 30 * (cat_powerups - dog_powerups) + cat_distance - dog_distance
 }
 
 fn doop(
