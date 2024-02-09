@@ -59,9 +59,9 @@ impl GameState {
                     let a = a.to_axial();
 
                     let j = if is_ship {
-                        // !game.env.land.is_coord_set(a)
+                        !game.env.land.is_coord_set(a)
                         //true
-                        !game.env.forest.is_coord_set(a)
+                        // !game.env.forest.is_coord_set(a)
                     } else {
                         /*has_adjacent_water(game, a) &&*/
                         !game.env.forest.is_coord_set(a)
