@@ -162,7 +162,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         .fold(0, |a, b| a + b);
 
     //The AI will try to avoid the center.
-    10 * (s + t) + 80 * (cat_powerups - dog_powerups) + cat_distance - dog_distance
+    100 * ((s + t) + 6 * (cat_powerups - dog_powerups)) + cat_distance - dog_distance
 }
 
 fn doop(

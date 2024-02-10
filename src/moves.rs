@@ -70,7 +70,59 @@ impl GameState {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
                 }
-                //}
+                // for d in HDir::all() {
+                //     for (l1, l2) in unit
+                //         .to_cube()
+                //         .ray(d)
+                //         .map(|(x, y)| (x.to_axial(), y.to_axial()))
+                //         .take(3)
+                //     {
+                //         if !game.world.get_game_cells().is_coord_set(l1) {
+                //             break;
+                //         }
+                //         if !game.world.get_game_cells().is_coord_set(l2) {
+                //             if l1 != unit {
+                //                 mesh.add_normal_cell(l1.sub(&unit));
+                //             }
+                //             break;
+                //         }
+
+                //         if game
+                //             .factions
+                //             .relative(team)
+                //             .this_team
+                //             .find_slow(&l2)
+                //             .is_some()
+                //             || game
+                //                 .factions
+                //                 .relative(team)
+                //                 .that_team
+                //                 .find_slow(&l2)
+                //                 .is_some()
+                //         {
+                //             if l1 != unit {
+                //                 mesh.add_normal_cell(l1.sub(&unit));
+                //             }
+                //             break;
+                //         }
+
+                //         if game.env.land.is_coord_set(l2) && !game.env.forest.is_coord_set(l2) {
+                //             continue;
+                //         }
+
+                //         if game.env.forest.is_coord_set(l2) {
+                //             if l1 != unit {
+                //                 mesh.add_normal_cell(l1.sub(&unit));
+                //             }
+                //             break;
+                //         }
+
+                //         if !game.env.land.is_coord_set(l2) {
+                //             mesh.add_normal_cell(l2.sub(&unit));
+                //             break;
+                //         }
+                //     }
+                // }
             }
         } else {
             let check_if_allowed = |kk| {
