@@ -474,38 +474,102 @@ pub mod partial {
         pub is_extra: Option<PartialMoveSigl>,
     }
 
-    fn apply_normal_move(
-        this_unit: &mut UnitData,
-        target_cell: GridCoord,
-        env: &mut Environment,
-        world: &'static board::MyWorld,
-    ) -> (PartialMoveSigl, UndoInformation) {
-        let mut e = UndoInformation::None;
-        if let Type::ShipOnly { powerup } = &mut this_unit.typ {
-            if env.land.is_coord_set(target_cell) {
-                env.land.set_coord(target_cell, false);
-                let dir = this_unit.position.dir_to(&target_cell);
-
-                let kk = target_cell.advance(dir);
-
-                env.land.set_coord(kk, true);
-
-                e = UndoInformation::PushedLand;
-            }
-        }
-
-        let orig = this_unit.position;
-
-        this_unit.position = target_cell;
-
-        (
-            PartialMoveSigl {
-                unit: orig,
-                moveto: target_cell,
-            },
-            e,
-        )
+    pub struct MovePhase1{
+        unit:GridCoord,
+        target:GridCoord,
+        team:ActiveTeam
     }
+    impl MovePhase1{
+        pub fn execute(self,game:&mut GameState)->MovePhase2{
+            let this_unit=game.factions.get_unit_mut(self.team,self.unit);
+            let target_cell=self.target;
+            let mut e = UndoInformation::None;
+            if let Type::ShipOnly { .. } = &mut this_unit.typ {
+                if game.env.land.is_coord_set(target_cell) {
+                    game.env.land.set_coord(target_cell, false);
+                    e = UndoInformation::PushedLand;
+                }
+            }
+            MovePhase2{unit:self.unit,target:self.target,team:self.team,ee:e}
+        }
+    }
+    pub struct MovePhase2{
+        unit:GridCoord,
+        target:GridCoord,
+        team:ActiveTeam,
+        ee:UndoInformation
+    }
+    impl MovePhase2{
+        pub fn execute(self,game:&mut GameState)-> (PartialMoveSigl, UndoInformation){
+            let this_unit=game.factions.get_unit_mut(self.team,self.unit);
+            let target_cell=self.target;
+            match self.ee{
+                UndoInformation::PushedLand => {
+                    let dir = this_unit.position.dir_to(&target_cell);
+
+                    let kk = target_cell.advance(dir);
+
+                    game.env.land.set_coord(kk, true);
+                },
+                UndoInformation::None => {}
+            }
+            // if let Type::ShipOnly { .. } = &mut this_unit.typ {
+            //     //if game.env.land.is_coord_set(target_cell) {
+            //         let dir = this_unit.position.dir_to(&target_cell);
+
+            //         let kk = target_cell.advance(dir);
+
+            //         game.env.land.set_coord(kk, true);
+
+            //     //}
+            // }
+
+            let orig = this_unit.position;
+
+            this_unit.position = target_cell;
+
+            (
+                PartialMoveSigl {
+                    unit: orig,
+                    moveto: target_cell,
+                },
+                self.ee,
+            )
+        }
+    }
+
+    // fn apply_normal_move(
+    //     this_unit: &mut UnitData,
+    //     target_cell: GridCoord,
+    //     env: &mut Environment,
+    //     world: &'static board::MyWorld,
+    // ) -> (PartialMoveSigl, UndoInformation) {
+    //     let mut e = UndoInformation::None;
+    //     if let Type::ShipOnly { powerup } = &mut this_unit.typ {
+    //         if env.land.is_coord_set(target_cell) {
+    //             env.land.set_coord(target_cell, false);
+    //             let dir = this_unit.position.dir_to(&target_cell);
+
+    //             let kk = target_cell.advance(dir);
+
+    //             env.land.set_coord(kk, true);
+
+    //             e = UndoInformation::PushedLand;
+    //         }
+    //     }
+
+    //     let orig = this_unit.position;
+
+    //     this_unit.position = target_cell;
+
+    //     (
+    //         PartialMoveSigl {
+    //             unit: orig,
+    //             moveto: target_cell,
+    //         },
+    //         e,
+    //     )
+    // }
 
     fn apply_extra_move(
         this_unit: &mut UnitData,
@@ -544,12 +608,13 @@ pub mod partial {
                     UndoInformation::None,
                 )
             } else {
-                apply_normal_move(
-                    this_unit,
-                    self.target,
-                    &mut self.state.env,
-                    self.state.world,
-                )
+                MovePhase1{unit:self.this_unit,target:self.target,team}.execute(self.state).execute(self.state)
+                // apply_normal_move(
+                //     this_unit,
+                //     self.target,
+                //     &mut self.state.env,
+                //     self.state.world,
+                // )
             }
         }
         pub async fn execute_with_animation(
@@ -620,25 +685,29 @@ pub mod partial {
 
                 let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
+               
                 let _ = data
-                    .wait_animation(
-                        animation::AnimationCommand::Movement {
-                            unit: this_unit.clone(),
-                            mesh,
-                            walls,
-                            end: self.target,
-                        },
-                        team,
-                    )
-                    .await;
+                .wait_animation(
+                    animation::AnimationCommand::Movement {
+                        unit: this_unit.clone(),
+                        mesh,
+                        walls,
+                        end: self.target,
+                    },
+                    team,
+                )
+                .await;
 
-                let (s,a)=apply_normal_move(
-                    this_unit,
-                    self.target,
-                    &mut self.state.env,
-                    self.state.world,
-                );
-
+                let (s,a)=MovePhase1{unit:self.this_unit,target:self.target,team}.execute(self.state).execute(self.state);
+                
+                
+                // apply_normal_move(
+                //     this_unit,
+                //     self.target,
+                //     &mut self.state.env,
+                //     self.state.world,
+                // );
+                
                 
 
                 (s,a)
