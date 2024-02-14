@@ -1,15 +1,23 @@
+use crate::moves::UndoInformation;
+
 use super::*;
 
 #[derive(Clone)]
 pub struct PossibleExtra {
     pub prev_move: moves::PartialMoveSigl,
+    pub prev_effect: UndoInformation,
     pub prev_coord: UnitData,
 }
 impl PossibleExtra {
-    pub fn new(prev_move: moves::PartialMoveSigl, prev_coord: UnitData) -> Self {
+    pub fn new(
+        prev_move: moves::PartialMoveSigl,
+        prev_effect: UndoInformation,
+        prev_coord: UnitData,
+    ) -> Self {
         PossibleExtra {
             prev_move,
             prev_coord,
+            prev_effect,
         }
     }
 

@@ -217,6 +217,7 @@ pub enum ActualMove {
         unit: GridCoord,
         moveto: GridCoord,
         attackto: GridCoord,
+        effect: UndoInformation,
     },
     Powerup {
         unit: GridCoord,
@@ -236,6 +237,7 @@ impl ActualMove {
                 unit: unitt,
                 moveto,
                 attackto,
+                effect,
             } => {
                 let unit = state
                     .factions
@@ -266,9 +268,9 @@ impl ActualMove {
                     world: state.world,
                 };
 
-                let (iii, cont) = iii.execute_with_animation(team_index, doop, mesh).await;
+                let (iii, effect) = iii.execute_with_animation(team_index, doop, mesh).await;
 
-                assert!(cont);
+                //assert!(cont);
 
                 let selected_unit = moveto;
                 let target_cell = attackto;
@@ -323,6 +325,7 @@ impl ActualMove {
                 unit,
                 moveto,
                 attackto,
+                effect,
             } => {
                 let unit = state
                     .factions
@@ -339,9 +342,9 @@ impl ActualMove {
                     world: state.world,
                 };
 
-                let (iii, cont) = iii.execute(team_index);
+                let (iii, effect) = iii.execute(team_index);
 
-                assert!(cont);
+                //assert!(cont);
 
                 let target_cell = attackto;
 
@@ -376,15 +379,15 @@ impl ActualMove {
             }
         }
     }
+
     pub fn execute_undo(&self, state: &mut GameState, team_index: ActiveTeam) {
         match self {
             &ActualMove::Normal {
                 unit,
                 moveto,
                 attackto,
+                effect,
             } => {
-
-
                 let k = state
                     .factions
                     .relative_mut(team_index)
@@ -400,7 +403,7 @@ impl ActualMove {
                     unreachable!();
                 }
 
-                k.position = unit;
+                undo_movement(team_index, unit, moveto, effect, state)
             }
             &ActualMove::Powerup { unit, moveto } => {
                 assert!(!state.env.land.is_coord_set(moveto));
@@ -439,31 +442,34 @@ impl GameState {
                     is_extra: None,
                     world: state.world,
                 };
-                let (il, cont) = ii.execute(team);
+                let (il, effect) = ii.execute(team);
 
-                if cont {
-                    let second_mesh =
-                        state.generate_unit_possible_moves_inner(&mm, ttt, team, Some(il));
+                //if cont {
+                let second_mesh =
+                    state.generate_unit_possible_moves_inner(&mm, ttt, team, Some(il));
 
-                    for sm in second_mesh.iter_mesh(mm) {
-                        //Don't bother applying the extra move. just generate the sigl.
-                        movs.push(moves::ActualMove::Normal {
-                            unit: pos,
-                            moveto: mm,
-                            attackto: sm,
-                        })
-                    }
-
-                    //revert it back just the movement component.
-                    state.factions.relative_mut(team).this_team.units[i].position = pos;
-                } else {
-                    let j = moves::ActualMove::Powerup {
+                for sm in second_mesh.iter_mesh(mm) {
+                    //Don't bother applying the extra move. just generate the sigl.
+                    movs.push(moves::ActualMove::Normal {
                         unit: pos,
                         moveto: mm,
-                    };
-                    movs.push(j.clone());
-                    j.execute_undo(state, team);
+                        attackto: sm,
+                        effect,
+                    })
                 }
+
+                //revert it back just the movement component.
+                undo_movement(team, pos, mm, effect, state);
+
+                //state.factions.relative_mut(team).this_team.units[i].position = pos;
+                // } else {
+                //     let j = moves::ActualMove::Powerup {
+                //         unit: pos,
+                //         moveto: mm,
+                //     };
+                //     movs.push(j.clone());
+                //     j.execute_undo(state, team);
+                // }
             }
         }
         movs
@@ -471,6 +477,39 @@ impl GameState {
 }
 
 use crate::ace::WorkerManager;
+
+#[derive(PartialOrd, Ord, Clone, Copy, Eq, PartialEq, Debug)]
+pub enum UndoInformation {
+    PushedLand,
+    None,
+}
+
+pub fn undo_movement(
+    team_index: ActiveTeam,
+    unit: GridCoord,
+    moveto: GridCoord,
+    effect: UndoInformation,
+    state: &mut GameState,
+) {
+    let k = state
+        .factions
+        .relative_mut(team_index)
+        .this_team
+        .find_slow_mut(&moveto)
+        .unwrap();
+    match effect {
+        UndoInformation::PushedLand => {
+            let dir = unit.dir_to(&moveto);
+            let t3 = moveto.advance(dir);
+            assert!(state.env.land.is_coord_set(t3));
+            state.env.land.set_coord(t3, false);
+            assert!(!state.env.land.is_coord_set(moveto));
+            state.env.land.set_coord(moveto, true);
+        }
+        UndoInformation::None => {}
+    }
+    k.position = unit;
+}
 
 pub use partial::PartialMove;
 pub mod partial {
@@ -489,7 +528,8 @@ pub mod partial {
         target_cell: GridCoord,
         env: &mut Environment,
         world: &'static board::MyWorld,
-    ) -> (PartialMoveSigl, bool) {
+    ) -> (PartialMoveSigl, UndoInformation) {
+        let mut e = UndoInformation::None;
         if let Type::ShipOnly { powerup } = &mut this_unit.typ {
             // if env.land.is_coord_set(target_cell) {
             //     assert!(*powerup);
@@ -539,6 +579,8 @@ pub mod partial {
                 //         },
                 //         false,
                 //     );
+
+                e = UndoInformation::PushedLand;
             }
         }
 
@@ -551,7 +593,7 @@ pub mod partial {
                 unit: orig,
                 moveto: target_cell,
             },
-            true,
+            e,
         )
     }
 
@@ -577,7 +619,7 @@ pub mod partial {
     }
 
     impl PartialMove<'_> {
-        pub fn execute(self, _team: ActiveTeam) -> (PartialMoveSigl, bool) {
+        pub fn execute(self, _team: ActiveTeam) -> (PartialMoveSigl, UndoInformation) {
             if let Some(extra) = self.is_extra {
                 (
                     apply_extra_move(
@@ -587,7 +629,7 @@ pub mod partial {
                         self.env,
                         self.world,
                     ),
-                    false,
+                    UndoInformation::None,
                 )
             } else {
                 apply_normal_move(self.this_unit, self.target, self.env, self.world)
@@ -598,7 +640,7 @@ pub mod partial {
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
             mesh: MovementMesh,
-        ) -> (PartialMoveSigl, bool) {
+        ) -> (PartialMoveSigl, UndoInformation) {
             fn calculate_walls(position: GridCoord, env: &Environment) -> Mesh {
                 let mut walls = Mesh::new();
 
@@ -647,7 +689,7 @@ pub mod partial {
                         &mut self.env,
                         self.world,
                     ),
-                    false,
+                    UndoInformation::None,
                 )
             } else {
                 let walls = calculate_walls(self.this_unit.position, &self.env);

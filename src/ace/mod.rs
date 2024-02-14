@@ -364,6 +364,7 @@ pub async fn reselect_loop(
                 unit: e.prev_move.unit,
                 moveto: e.prev_move.moveto,
                 attackto: target_cell,
+                effect: e.prev_effect,
             });
         } else {
             let p = unit.position;
@@ -385,20 +386,20 @@ pub async fn reselect_loop(
                 env: &mut game.env,
                 world: game.world,
             };
-            let (iii, cont) = iii
+            let (iii, effect) = iii
                 .execute_with_animation(selected_unit.team, doop, cca.clone())
                 .await;
 
             {
-                if cont {
-                    *extra_attack = Some(selection::PossibleExtra::new(iii, kk));
-                    return LoopRes::Select(selected_unit.with(c).with_team(team_index));
-                } else {
-                    return LoopRes::EndTurn(moves::ActualMove::Powerup {
-                        unit: this_unit.position,
-                        moveto: target_cell,
-                    });
-                }
+                //if cont {
+                *extra_attack = Some(selection::PossibleExtra::new(iii, effect, kk));
+                return LoopRes::Select(selected_unit.with(c).with_team(team_index));
+                // } else {
+                //     return LoopRes::EndTurn(moves::ActualMove::Powerup {
+                //         unit: this_unit.position,
+                //         moveto: target_cell,
+                //     });
+                // }
             }
         }
     }
@@ -463,16 +464,16 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         }
 
         //Add AIIIIII.
-        // if team_index == ActiveTeam::Cats {
-        //     //{
-        //     doop.send_popup("AI Thinking", team_index).await;
-        //     let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
-        //     doop.send_popup("", team_index).await;
-        //     the_move.execute_move_ani(game, team_index, &mut doop).await;
-        //     game_history.push(the_move);
+        //if team_index == ActiveTeam::Cats {
+        {
+            doop.send_popup("AI Thinking", team_index).await;
+            let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
+            doop.send_popup("", team_index).await;
+            the_move.execute_move_ani(game, team_index, &mut doop).await;
+            game_history.push(the_move);
 
-        //     continue;
-        // }
+            continue;
+        }
 
         let m = handle_player(game, &mut doop, team_index).await;
 
