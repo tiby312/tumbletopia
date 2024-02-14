@@ -558,7 +558,8 @@ pub mod partial {
             data: &mut ace::WorkerManager<'_>,
             mesh: MovementMesh,
         ) -> (PartialMoveSigl, UndoInformation) {
-            fn calculate_walls(position: GridCoord, env: &Environment) -> Mesh {
+            fn calculate_walls(position: GridCoord, state: &GameState) -> Mesh {
+                let env = &state.env;
                 let mut walls = Mesh::new();
 
                 let is_ship = !env.land.is_coord_set(position);
@@ -571,10 +572,13 @@ pub mod partial {
                     } else {
                         !env.land.is_coord_set(a) || env.forest.is_coord_set(a)
                     };
-                    if cc {
+                    if cc|| (a!=position && state.factions.contains(a)) {
+
                         walls.add(a.sub(&position));
+                        
                     }
                 }
+
 
                 walls
             }
@@ -612,9 +616,9 @@ pub mod partial {
                     UndoInformation::None,
                 )
             } else {
-                let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
+                let walls = calculate_walls(self.this_unit, self.state);
 
-                let walls = calculate_walls(this_unit.position, &self.state.env);
+                let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
                 let _ = data
                     .wait_animation(
