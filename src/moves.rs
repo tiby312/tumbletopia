@@ -632,12 +632,16 @@ pub mod partial {
                     )
                     .await;
 
-                apply_normal_move(
+                let (s,a)=apply_normal_move(
                     this_unit,
                     self.target,
                     &mut self.state.env,
                     self.state.world,
-                )
+                );
+
+                
+
+                (s,a)
             }
         }
     }
