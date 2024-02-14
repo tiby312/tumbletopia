@@ -142,6 +142,7 @@ impl GameState {
 
             for a in unit.to_cube().ring(1) {
                 let a = a.to_axial();
+                let dir = unit.dir_to(&a);
 
                 if check_if_allowed(a) && check_if_occ(a, None, 0) {
                     mesh.add_normal_cell(a.sub(&unit));
@@ -175,13 +176,21 @@ impl GameState {
                     }
 
                     if let Type::ShipOnly { powerup } = typ {
-                        if powerup
-                            && game.env.land.is_coord_set(a)
-                            && !game.env.forest.is_coord_set(a)
-                        {
-                            mesh.add_normal_cell(a.sub(&unit));
+                        if game.env.land.is_coord_set(a) {
+                            let check = a.advance(dir);
+                            if check_if_occ(check, None, 0) && !game.env.land.is_coord_set(check) {
+                                mesh.add_normal_cell(a.sub(&unit));
+                            }
                         }
                     }
+                    // if let Type::ShipOnly { powerup } = typ {
+                    //     if powerup
+                    //         && game.env.land.is_coord_set(a)
+                    //         && !game.env.forest.is_coord_set(a)
+                    //     {
+                    //         mesh.add_normal_cell(a.sub(&unit));
+                    //     }
+                    // }
                 }
             }
         }
@@ -254,6 +263,7 @@ impl ActualMove {
                     target: moveto,
                     is_extra: None,
                     env: &mut state.env,
+                    world: state.world,
                 };
 
                 let (iii, cont) = iii.execute_with_animation(team_index, doop, mesh).await;
@@ -281,6 +291,7 @@ impl ActualMove {
                     target: target_cell,
                     is_extra: Some(iii),
                     env: &mut state.env,
+                    world: state.world,
                 };
                 iii.execute_with_animation(team_index, doop, mesh).await;
             }
@@ -297,6 +308,7 @@ impl ActualMove {
                     target: moveto,
                     is_extra: None,
                     env: &mut state.env,
+                    world: state.world,
                 };
                 iii.execute(team_index);
                 // assert!(state.env.land.is_coord_set(moveto));
@@ -324,6 +336,7 @@ impl ActualMove {
                     target: moveto,
                     is_extra: None,
                     env: &mut state.env,
+                    world: state.world,
                 };
 
                 let (iii, cont) = iii.execute(team_index);
@@ -337,6 +350,7 @@ impl ActualMove {
                     target: target_cell,
                     is_extra: Some(iii),
                     env: &mut state.env,
+                    world: state.world,
                 };
 
                 iii.execute(team_index);
@@ -354,6 +368,7 @@ impl ActualMove {
                     target: moveto,
                     is_extra: None,
                     env: &mut state.env,
+                    world: state.world,
                 };
                 iii.execute(team_index);
                 //     assert!(state.env.land.is_coord_set(moveto));
@@ -368,6 +383,8 @@ impl ActualMove {
                 moveto,
                 attackto,
             } => {
+
+
                 let k = state
                     .factions
                     .relative_mut(team_index)
@@ -420,6 +437,7 @@ impl GameState {
                     env: &mut state.env,
                     target: mm,
                     is_extra: None,
+                    world: state.world,
                 };
                 let (il, cont) = ii.execute(team);
 
@@ -463,31 +481,64 @@ pub mod partial {
         pub env: &'a mut Environment,
         pub target: GridCoord,
         pub is_extra: Option<PartialMoveSigl>,
+        pub world: &'static board::MyWorld,
     }
 
     fn apply_normal_move(
         this_unit: &mut UnitData,
         target_cell: GridCoord,
         env: &mut Environment,
+        world: &'static board::MyWorld,
     ) -> (PartialMoveSigl, bool) {
         if let Type::ShipOnly { powerup } = &mut this_unit.typ {
+            // if env.land.is_coord_set(target_cell) {
+            //     assert!(*powerup);
+
+            //     env.land.set_coord(target_cell, false);
+
+            //     *powerup = false;
+            //     let orig = this_unit.position;
+
+            //     //this_unit.position = target_cell;
+
+            //     return (
+            //         PartialMoveSigl {
+            //             unit: orig,
+            //             moveto: target_cell,
+            //         },
+            //         false,
+            //     );
+            // }
             if env.land.is_coord_set(target_cell) {
-                assert!(*powerup);
-
                 env.land.set_coord(target_cell, false);
+                let dir = this_unit.position.dir_to(&target_cell);
 
-                *powerup = false;
-                let orig = this_unit.position;
+                let kk = target_cell.advance(dir);
+                // loop{
+                //     let test=kk.advance(dir);
+                //     if !world.get_game_cells().is_coord_set(test) || env.land.is_coord_set(test){
+                //         break;
+                //     }
+                //     kk=kk.advance(dir);
+                // }
+                env.land.set_coord(kk, true);
 
-                //this_unit.position = target_cell;
+                //     assert!(*powerup);
 
-                return (
-                    PartialMoveSigl {
-                        unit: orig,
-                        moveto: target_cell,
-                    },
-                    false,
-                );
+                //     env.land.set_coord(target_cell, false);
+
+                //     *powerup = false;
+                //     let orig = this_unit.position;
+
+                //     //this_unit.position = target_cell;
+
+                //     return (
+                //         PartialMoveSigl {
+                //             unit: orig,
+                //             moveto: target_cell,
+                //         },
+                //         false,
+                //     );
             }
         }
 
@@ -509,6 +560,7 @@ pub mod partial {
         target_cell: GridCoord,
         _original: GridCoord,
         env: &mut Environment,
+        world: &'static board::MyWorld,
     ) -> PartialMoveSigl {
         if !env.land.is_coord_set(target_cell) {
             env.land.set_coord(target_cell, true)
@@ -528,11 +580,17 @@ pub mod partial {
         pub fn execute(self, _team: ActiveTeam) -> (PartialMoveSigl, bool) {
             if let Some(extra) = self.is_extra {
                 (
-                    apply_extra_move(self.this_unit, self.target, extra.unit, self.env),
+                    apply_extra_move(
+                        self.this_unit,
+                        self.target,
+                        extra.unit,
+                        self.env,
+                        self.world,
+                    ),
                     false,
                 )
             } else {
-                apply_normal_move(self.this_unit, self.target, self.env)
+                apply_normal_move(self.this_unit, self.target, self.env, self.world)
             }
         }
         pub async fn execute_with_animation(
@@ -582,7 +640,13 @@ pub mod partial {
                     )
                     .await;
                 (
-                    apply_extra_move(self.this_unit, self.target, extra.unit, &mut self.env),
+                    apply_extra_move(
+                        self.this_unit,
+                        self.target,
+                        extra.unit,
+                        &mut self.env,
+                        self.world,
+                    ),
                     false,
                 )
             } else {
@@ -600,7 +664,7 @@ pub mod partial {
                     )
                     .await;
 
-                apply_normal_move(self.this_unit, self.target, self.env)
+                apply_normal_move(self.this_unit, self.target, self.env, self.world)
             }
         }
     }
