@@ -47,6 +47,12 @@ pub struct Factions {
     pub cats: Tribe,
 }
 impl Factions {
+    fn get_unit_mut(&mut self, team: ActiveTeam, coord: GridCoord) -> &mut UnitData {
+        self.relative_mut(team)
+            .this_team
+            .find_slow_mut(&coord)
+            .unwrap()
+    }
     fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
         match team {
             ActiveTeam::Cats => FactionRelative {

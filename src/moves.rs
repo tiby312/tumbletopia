@@ -252,20 +252,12 @@ impl ActualMove {
                     None,
                 );
 
-                let unit = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&unitt)
-                    .unwrap();
-
                 let ttt = unit.typ;
                 let iii = moves::PartialMove {
-                    this_unit: unit,
+                    this_unit: unitt,
                     target: moveto,
                     is_extra: None,
-                    env: &mut state.env,
-                    world: state.world,
+                    state,
                 };
 
                 let (iii, effect) = iii.execute_with_animation(team_index, doop, mesh).await;
@@ -282,35 +274,20 @@ impl ActualMove {
                     Some(iii),
                 );
 
-                let unit = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&moveto)
-                    .unwrap();
                 let iii = moves::PartialMove {
-                    this_unit: unit,
+                    this_unit: moveto,
                     target: target_cell,
                     is_extra: Some(iii),
-                    env: &mut state.env,
-                    world: state.world,
+                    state,
                 };
                 iii.execute_with_animation(team_index, doop, mesh).await;
             }
             &ActualMove::Powerup { unit, moveto } => {
-                let unit = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&unit)
-                    .unwrap();
-
                 let iii = moves::PartialMove {
                     this_unit: unit,
                     target: moveto,
                     is_extra: None,
-                    env: &mut state.env,
-                    world: state.world,
+                    state,
                 };
                 iii.execute(team_index);
                 // assert!(state.env.land.is_coord_set(moveto));
@@ -327,19 +304,11 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                let unit = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&unit)
-                    .unwrap();
-
                 let iii = moves::PartialMove {
                     this_unit: unit,
                     target: moveto,
                     is_extra: None,
-                    env: &mut state.env,
-                    world: state.world,
+                    state,
                 };
 
                 let (iii, effect) = iii.execute(team_index);
@@ -349,29 +318,20 @@ impl ActualMove {
                 let target_cell = attackto;
 
                 let iii = moves::PartialMove {
-                    this_unit: unit,
+                    this_unit: moveto,
                     target: target_cell,
                     is_extra: Some(iii),
-                    env: &mut state.env,
-                    world: state.world,
+                    state,
                 };
 
                 iii.execute(team_index);
             }
             &ActualMove::Powerup { unit, moveto } => {
-                let unit = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&unit)
-                    .unwrap();
-
                 let iii = moves::PartialMove {
                     this_unit: unit,
                     target: moveto,
                     is_extra: None,
-                    env: &mut state.env,
-                    world: state.world,
+                    state,
                 };
                 iii.execute(team_index);
                 //     assert!(state.env.land.is_coord_set(moveto));
@@ -388,13 +348,6 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                let k = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&moveto)
-                    .unwrap();
-
                 if state.env.forest.is_coord_set(attackto) {
                     state.env.forest.set_coord(attackto, false);
                 } else if state.env.land.is_coord_set(attackto) {
@@ -436,11 +389,10 @@ impl GameState {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
                 let ii = PartialMove {
-                    this_unit: &mut state.factions.relative_mut(team).this_team.units[i],
-                    env: &mut state.env,
+                    this_unit: pos,
+                    state,
                     target: mm,
                     is_extra: None,
-                    world: state.world,
                 };
                 let (il, effect) = ii.execute(team);
 
@@ -516,11 +468,10 @@ pub mod partial {
     use super::*;
     #[derive(Debug)]
     pub struct PartialMove<'a> {
-        pub this_unit: &'a mut UnitData,
-        pub env: &'a mut Environment,
+        pub this_unit: GridCoord,
+        pub state: &'a mut GameState,
         pub target: GridCoord,
         pub is_extra: Option<PartialMoveSigl>,
-        pub world: &'static board::MyWorld,
     }
 
     fn apply_normal_move(
@@ -531,54 +482,13 @@ pub mod partial {
     ) -> (PartialMoveSigl, UndoInformation) {
         let mut e = UndoInformation::None;
         if let Type::ShipOnly { powerup } = &mut this_unit.typ {
-            // if env.land.is_coord_set(target_cell) {
-            //     assert!(*powerup);
-
-            //     env.land.set_coord(target_cell, false);
-
-            //     *powerup = false;
-            //     let orig = this_unit.position;
-
-            //     //this_unit.position = target_cell;
-
-            //     return (
-            //         PartialMoveSigl {
-            //             unit: orig,
-            //             moveto: target_cell,
-            //         },
-            //         false,
-            //     );
-            // }
             if env.land.is_coord_set(target_cell) {
                 env.land.set_coord(target_cell, false);
                 let dir = this_unit.position.dir_to(&target_cell);
 
                 let kk = target_cell.advance(dir);
-                // loop{
-                //     let test=kk.advance(dir);
-                //     if !world.get_game_cells().is_coord_set(test) || env.land.is_coord_set(test){
-                //         break;
-                //     }
-                //     kk=kk.advance(dir);
-                // }
+
                 env.land.set_coord(kk, true);
-
-                //     assert!(*powerup);
-
-                //     env.land.set_coord(target_cell, false);
-
-                //     *powerup = false;
-                //     let orig = this_unit.position;
-
-                //     //this_unit.position = target_cell;
-
-                //     return (
-                //         PartialMoveSigl {
-                //             unit: orig,
-                //             moveto: target_cell,
-                //         },
-                //         false,
-                //     );
 
                 e = UndoInformation::PushedLand;
             }
@@ -619,20 +529,27 @@ pub mod partial {
     }
 
     impl PartialMove<'_> {
-        pub fn execute(self, _team: ActiveTeam) -> (PartialMoveSigl, UndoInformation) {
+        pub fn execute(self, team: ActiveTeam) -> (PartialMoveSigl, UndoInformation) {
+            let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
+
             if let Some(extra) = self.is_extra {
                 (
                     apply_extra_move(
-                        self.this_unit,
+                        this_unit,
                         self.target,
                         extra.unit,
-                        self.env,
-                        self.world,
+                        &mut self.state.env,
+                        self.state.world,
                     ),
                     UndoInformation::None,
                 )
             } else {
-                apply_normal_move(self.this_unit, self.target, self.env, self.world)
+                apply_normal_move(
+                    this_unit,
+                    self.target,
+                    &mut self.state.env,
+                    self.state.world,
+                )
             }
         }
         pub async fn execute_with_animation(
@@ -662,10 +579,10 @@ pub mod partial {
                 walls
             }
             if let Some(extra) = self.is_extra {
-                let terrain_type = if !self.env.land.is_coord_set(self.target) {
+                let terrain_type = if !self.state.env.land.is_coord_set(self.target) {
                     animation::TerrainType::Grass
                 } else {
-                    if !self.env.forest.is_coord_set(self.target) {
+                    if !self.state.env.forest.is_coord_set(self.target) {
                         animation::TerrainType::Mountain
                     } else {
                         unreachable!()
@@ -681,23 +598,28 @@ pub mod partial {
                         team,
                     )
                     .await;
+
+                let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
+
                 (
                     apply_extra_move(
-                        self.this_unit,
+                        this_unit,
                         self.target,
                         extra.unit,
-                        &mut self.env,
-                        self.world,
+                        &mut self.state.env,
+                        self.state.world,
                     ),
                     UndoInformation::None,
                 )
             } else {
-                let walls = calculate_walls(self.this_unit.position, &self.env);
+                let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
+
+                let walls = calculate_walls(this_unit.position, &self.state.env);
 
                 let _ = data
                     .wait_animation(
                         animation::AnimationCommand::Movement {
-                            unit: self.this_unit.clone(),
+                            unit: this_unit.clone(),
                             mesh,
                             walls,
                             end: self.target,
@@ -706,7 +628,12 @@ pub mod partial {
                     )
                     .await;
 
-                apply_normal_move(self.this_unit, self.target, self.env, self.world)
+                apply_normal_move(
+                    this_unit,
+                    self.target,
+                    &mut self.state.env,
+                    self.state.world,
+                )
             }
         }
     }
