@@ -47,8 +47,13 @@ pub struct Factions {
     pub cats: Tribe,
 }
 impl Factions {
-    fn contains(&self,coord:GridCoord)->bool{
-        self.dogs.iter().chain(self.cats.iter()).map(|a|a.position).find(|a|*a==coord).is_some()
+    fn contains(&self, coord: GridCoord) -> bool {
+        self.dogs
+            .iter()
+            .chain(self.cats.iter())
+            .map(|a| a.position)
+            .find(|a| *a == coord)
+            .is_some()
     }
     fn get_unit_mut(&mut self, team: ActiveTeam, coord: GridCoord) -> &mut UnitData {
         self.relative_mut(team)
