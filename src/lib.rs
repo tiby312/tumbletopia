@@ -329,8 +329,16 @@ impl EngineStuff {
 
                         unit_animation = Some((Vector2::new(0.0, 0.0), it, unit));
                     }
-                    animation::AnimationCommand::Terrain { pos, terrain_type } => {
-                        let it = animation::terrain_create();
+                    animation::AnimationCommand::Terrain {
+                        pos,
+                        terrain_type,
+                        dir,
+                    } => {
+                        let (a, b) = match dir {
+                            animation::AnimationDirection::Up => (-10., 0.),
+                            animation::AnimationDirection::Down => (0., -10.),
+                        };
+                        let it = animation::terrain_create(a, b);
                         terrain_animation = Some((0.0, it, pos, terrain_type));
                     }
                 },

@@ -55,7 +55,14 @@ pub enum AnimationCommand {
     Terrain {
         pos: GridCoord,
         terrain_type: TerrainType,
+        dir: AnimationDirection,
     },
+}
+
+#[derive(Debug, Clone)]
+pub enum AnimationDirection {
+    Up,
+    Down,
 }
 
 #[derive(Debug, Clone)]
@@ -64,14 +71,23 @@ pub enum TerrainType {
     Mountain,
 }
 
-pub fn terrain_create() -> impl Iterator<Item = f32> {
+pub fn terrain_create(curr: f32, target: f32) -> impl Iterator<Item = f32> {
     Interpolate {
-        curr: -10.0,
-        target: 0.0,
+        curr,
+        target,
         tt: 0.2,
         max: 4.0,
     }
 }
+
+// pub fn terrain_create_down() -> impl Iterator<Item = f32> {
+//     Interpolate {
+//         curr: 0.0,
+//         target: -10.0,
+//         tt: 0.2,
+//         max: 4.0,
+//     }
+// }
 
 pub fn movement(
     start: GridCoord,
