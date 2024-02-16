@@ -53,7 +53,7 @@ pub enum AnimationCommand {
         mesh: movement::MovementMesh,
         walls: movement::movement_mesh::Mesh,
         end: GridCoord,
-        data:UndoInformation
+        data: UndoInformation,
     },
     Terrain {
         pos: GridCoord,
@@ -92,6 +92,11 @@ pub fn terrain_create(curr: f32, target: f32) -> impl Iterator<Item = f32> {
 //     }
 // }
 
+pub fn land_delta(start: GridCoord, end: GridCoord, v: &grids::GridMatrix) -> Vector2<f32> {
+    let s = v.hex_axial_to_world(&start);
+    let e = v.hex_axial_to_world(&end);
+    e - s
+}
 pub fn movement(
     start: GridCoord,
     path: movement::MovementMesh,

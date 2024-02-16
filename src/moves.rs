@@ -476,13 +476,14 @@ pub mod partial {
         pub is_extra: Option<PartialMoveSigl>,
     }
 
+    //TODO wrap in private
     pub struct MovePhase1 {
         unit: GridCoord,
         target: GridCoord,
         team: ActiveTeam,
     }
     impl MovePhase1 {
-        pub fn generate_info(&self,game:&GameState)->UndoInformation{
+        pub fn generate_info(&self, game: &GameState) -> UndoInformation {
             let this_unit = game.factions.get_unit(self.team, self.unit);
             let target_cell = self.target;
             let mut e = UndoInformation::None;
@@ -494,37 +495,36 @@ pub mod partial {
             e
         }
         pub fn execute(self, game: &mut GameState) -> (PartialMoveSigl, UndoInformation) {
-            let env=&mut game.env;
+            let env = &mut game.env;
             let this_unit = game.factions.get_unit_mut(self.team, self.unit);
-            let target_cell=self.target;
+            let target_cell = self.target;
             let mut e = UndoInformation::None;
-                if let Type::ShipOnly { powerup } = &mut this_unit.typ {
-                    if env.land.is_coord_set(target_cell) {
-                        env.land.set_coord(target_cell, false);
-                        let dir = this_unit.position.dir_to(&target_cell);
+            if let Type::ShipOnly { powerup } = &mut this_unit.typ {
+                if env.land.is_coord_set(target_cell) {
+                    env.land.set_coord(target_cell, false);
+                    let dir = this_unit.position.dir_to(&target_cell);
 
-                        let kk = target_cell.advance(dir);
+                    let kk = target_cell.advance(dir);
 
-                        env.land.set_coord(kk, true);
+                    env.land.set_coord(kk, true);
 
-                        e = UndoInformation::PushedLand;
-                    }
+                    e = UndoInformation::PushedLand;
                 }
+            }
 
-                let orig = this_unit.position;
+            let orig = this_unit.position;
 
-                this_unit.position = target_cell;
+            this_unit.position = target_cell;
 
-                (
-                    PartialMoveSigl {
-                        unit: orig,
-                        moveto: target_cell,
-                    },
-                    e,
-                )
+            (
+                PartialMoveSigl {
+                    unit: orig,
+                    moveto: target_cell,
+                },
+                e,
+            )
         }
     }
-
 
     fn apply_extra_move(
         this_unit: &mut UnitData,
@@ -646,8 +646,7 @@ pub mod partial {
                     target: self.target,
                     team,
                 };
-                let info=k.generate_info(self.state);
-
+                let info = k.generate_info(self.state);
 
                 let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
@@ -658,12 +657,11 @@ pub mod partial {
                             mesh,
                             walls,
                             end: self.target,
-                            data:info
+                            data: info,
                         },
                         team,
                     )
                     .await;
-
 
                 let (s, a) = k.execute(self.state);
 

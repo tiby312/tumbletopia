@@ -62,10 +62,7 @@ impl Factions {
             .unwrap()
     }
     fn get_unit(&self, team: ActiveTeam, coord: GridCoord) -> &UnitData {
-        self.relative(team)
-            .this_team
-            .find_slow(&coord)
-            .unwrap()
+        self.relative(team).this_team.find_slow(&coord).unwrap()
     }
     fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
         match team {
@@ -313,8 +310,7 @@ impl EngineStuff {
             //         inner_land.set_coord(a, true);
             //     }
             // }
-            let mut land=game.env.land.clone();
-
+            let mut land = game.env.land.clone();
 
             let (mut cat_for_draw, mut dog_for_draw) = (
                 game.factions.cats.units.clone().into_vec(),
@@ -327,7 +323,7 @@ impl EngineStuff {
                         mesh,
                         walls,
                         end,
-                        data
+                        data,
                     } => {
                         if team == ActiveTeam::Cats {
                             cat_for_draw.retain(|k| k.position != unit.position);
@@ -335,20 +331,20 @@ impl EngineStuff {
                             dog_for_draw.retain(|k| k.position != unit.position);
                         }
 
-                        match data{
+                        let ff = match data {
                             moves::UndoInformation::PushedLand => {
-                                let dir=unit.position.dir_to(&end);
-                                let k=unit.position.advance(dir);
+                                let dir = unit.position.dir_to(&end);
+                                let k = unit.position.advance(dir);
                                 assert!(land.is_coord_set(k));
-                                land.set_coord(k,false);
-                            },
-                            moves::UndoInformation::None => {},
-                        }
-                        //remove target land 
+                                land.set_coord(k, false);
+                                Some(animation::land_delta(unit.position, end, grid_matrix))
+                            }
+                            moves::UndoInformation::None => None,
+                        };
 
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
 
-                        unit_animation = Some((Vector2::new(0.0, 0.0), it, unit));
+                        unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ff));
                     }
                     animation::AnimationCommand::Terrain {
                         pos,
@@ -517,7 +513,7 @@ impl EngineStuff {
                         break 'render_loop;
                     }
                 }
-                if let Some((lpos, a, _)) = &mut unit_animation {
+                if let Some((lpos, a, _, data)) = &mut unit_animation {
                     if let Some(pos) = a.next() {
                         *lpos = pos;
                     } else {
@@ -654,14 +650,14 @@ impl EngineStuff {
                     0.0,
                 );
 
-                if let Some((pos, _, unit)) = &unit_animation {
+                if let Some((pos, _, unit, data)) = &unit_animation {
                     let this_draw = match team {
                         ActiveTeam::Cats => &cat,
                         ActiveTeam::Dogs => &dog,
                     };
 
                     //This is a unit animation
-                    let a = (this_draw, unit);
+                    //let a = (this_draw, unit);
 
                     let d = DepthDisabler::new(&ctx);
 
@@ -672,12 +668,22 @@ impl EngineStuff {
                     draw_sys.view(&m).draw_a_thing(drop_shadow);
                     drop(d);
 
+                    if let Some(f) = data {
+                        let kk = pos + f;
+                        let m = my_matrix
+                            .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
+                            .chain(matrix::scale(1.0, 1.0, 1.0))
+                            .generate();
+
+                        draw_sys.view(&m).draw_a_thing(grass);
+                    }
+
                     let m = my_matrix
                         .chain(matrix::translation(pos.x, pos.y, 0.0))
                         .chain(matrix::scale(1.0, 1.0, 1.0))
                         .generate();
 
-                    draw_sys.view(&m).draw_a_thing(*a.0);
+                    draw_sys.view(&m).draw_a_thing(*this_draw);
                 }
 
                 let d = DepthDisabler::new(&ctx);
