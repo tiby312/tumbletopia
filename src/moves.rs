@@ -482,13 +482,13 @@ pub mod partial {
         team: ActiveTeam,
     }
     impl MovePhase1 {
-        pub fn execute(self, game: &mut GameState) -> MovePhase2 {
-            let this_unit = game.factions.get_unit_mut(self.team, self.unit);
+        pub fn execute(self, game: &GameState) -> MovePhase2 {
+            let this_unit = game.factions.get_unit(self.team, self.unit);
             let target_cell = self.target;
             let mut e = UndoInformation::None;
-            if let Type::ShipOnly { .. } = &mut this_unit.typ {
+            if let Type::ShipOnly { .. } = &this_unit.typ {
                 if game.env.land.is_coord_set(target_cell) {
-                    game.env.land.set_coord(target_cell, false);
+                    //game.env.land.set_coord(target_cell, false);
                     e = UndoInformation::PushedLand;
                 }
             }
@@ -536,7 +536,7 @@ pub mod partial {
                     let dir = self.unit.dir_to(&target_cell);
 
                     let kk = target_cell.advance(dir);
-
+                    game.env.land.set_coord(target_cell, false);
                     game.env.land.set_coord(kk, true);
                 }
                 UndoInformation::None => {}
@@ -719,23 +719,6 @@ pub mod partial {
                 }
                 .execute(self.state);
 
-                match k.ee {
-                    UndoInformation::PushedLand => {
-                        // let dir = self.this_unit.dir_to(&self.target);
-                        // let kk = self.target.advance(dir);
-                        let _ = data
-                            .wait_animation(
-                                animation::AnimationCommand::Terrain {
-                                    pos: self.target,
-                                    terrain_type: TerrainType::Grass,
-                                    dir: animation::AnimationDirection::Down,
-                                },
-                                team,
-                            )
-                            .await;
-                    }
-                    UndoInformation::None => {}
-                }
 
                 let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
@@ -746,38 +729,15 @@ pub mod partial {
                             mesh,
                             walls,
                             end: self.target,
+                            data:k.ee.clone()
                         },
                         team,
                     )
                     .await;
 
                 let k = k.execute(self.state);
-                match k.ee {
-                    UndoInformation::PushedLand => {
-                        let dir = self.this_unit.dir_to(&self.target);
-                        let kk = self.target.advance(dir);
-                        let _ = data
-                            .wait_animation(
-                                animation::AnimationCommand::Terrain {
-                                    pos: kk,
-                                    terrain_type: TerrainType::Grass,
-                                    dir: animation::AnimationDirection::Up,
-                                },
-                                team,
-                            )
-                            .await;
-                    }
-                    UndoInformation::None => {}
-                }
 
                 let (s, a) = k.execute(self.state);
-
-                // apply_normal_move(
-                //     this_unit,
-                //     self.target,
-                //     &mut self.state.env,
-                //     self.state.world,
-                // );
 
                 (s, a)
             }

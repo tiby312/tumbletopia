@@ -1,3 +1,5 @@
+use crate::moves::UndoInformation;
+
 use super::*;
 
 pub struct Interpolate {
@@ -51,6 +53,7 @@ pub enum AnimationCommand {
         mesh: movement::MovementMesh,
         walls: movement::movement_mesh::Mesh,
         end: GridCoord,
+        data:UndoInformation
     },
     Terrain {
         pos: GridCoord,

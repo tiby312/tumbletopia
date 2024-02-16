@@ -61,6 +61,12 @@ impl Factions {
             .find_slow_mut(&coord)
             .unwrap()
     }
+    fn get_unit(&self, team: ActiveTeam, coord: GridCoord) -> &UnitData {
+        self.relative(team)
+            .this_team
+            .find_slow(&coord)
+            .unwrap()
+    }
     fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
         match team {
             ActiveTeam::Cats => FactionRelative {
@@ -298,15 +304,17 @@ impl EngineStuff {
             let mut terrain_animation = None;
             let mut poking = 0;
 
-            let mut shore = BitField::new();
-            let mut inner_land = BitField::new();
-            for a in game.env.land.iter_mesh(GridCoord::zero()) {
-                if moves::has_adjacent_water(game, a) {
-                    shore.set_coord(a, true);
-                } else {
-                    inner_land.set_coord(a, true);
-                }
-            }
+            // let mut shore = BitField::new();
+            // let mut inner_land = BitField::new();
+            // for a in game.env.land.iter_mesh(GridCoord::zero()) {
+            //     if moves::has_adjacent_water(game, a) {
+            //         shore.set_coord(a, true);
+            //     } else {
+            //         inner_land.set_coord(a, true);
+            //     }
+            // }
+            let mut land=game.env.land.clone();
+
 
             let (mut cat_for_draw, mut dog_for_draw) = (
                 game.factions.cats.units.clone().into_vec(),
@@ -319,12 +327,25 @@ impl EngineStuff {
                         mesh,
                         walls,
                         end,
+                        data
                     } => {
                         if team == ActiveTeam::Cats {
                             cat_for_draw.retain(|k| k.position != unit.position);
                         } else {
                             dog_for_draw.retain(|k| k.position != unit.position);
                         }
+
+                        match data{
+                            moves::UndoInformation::PushedLand => {
+                                let dir=unit.position.dir_to(&end);
+                                let k=unit.position.advance(dir);
+                                assert!(land.is_coord_set(k));
+                                land.set_coord(k,false);
+                            },
+                            moves::UndoInformation::None => {},
+                        }
+                        //remove target land 
+
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
 
                         unit_animation = Some((Vector2::new(0.0, 0.0), it, unit));
@@ -529,14 +550,14 @@ impl EngineStuff {
                 pub const LAND_OFFSET: f32 = -10.0;
                 pub const MOUNTAIN_OFFSET: f32 = 0.0;
 
-                for c in inner_land.iter_mesh(GridCoord::zero()) {
-                    let pos = grid_matrix.hex_axial_to_world(&c);
-                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
-                    let m = my_matrix.chain(t).generate();
-                    draw_sys.view(&m).draw_a_thing(snow);
-                }
+                // for c in inner_land.iter_mesh(GridCoord::zero()) {
+                //     let pos = grid_matrix.hex_axial_to_world(&c);
+                //     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
+                //     let m = my_matrix.chain(t).generate();
+                //     draw_sys.view(&m).draw_a_thing(snow);
+                // }
 
-                for c in shore.iter_mesh(GridCoord::zero()) {
+                for c in land.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
                     let m = my_matrix.chain(t).generate();
