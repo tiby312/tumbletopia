@@ -482,118 +482,49 @@ pub mod partial {
         team: ActiveTeam,
     }
     impl MovePhase1 {
-        pub fn execute(self, game: &GameState) -> MovePhase2 {
+        pub fn generate_info(&self,game:&GameState)->UndoInformation{
             let this_unit = game.factions.get_unit(self.team, self.unit);
             let target_cell = self.target;
             let mut e = UndoInformation::None;
             if let Type::ShipOnly { .. } = &this_unit.typ {
                 if game.env.land.is_coord_set(target_cell) {
-                    //game.env.land.set_coord(target_cell, false);
                     e = UndoInformation::PushedLand;
                 }
             }
-            MovePhase2 {
-                unit: self.unit,
-                target: self.target,
-                team: self.team,
-                ee: e,
-            }
+            e
         }
-    }
-    pub struct MovePhase2 {
-        unit: GridCoord,
-        target: GridCoord,
-        team: ActiveTeam,
-        ee: UndoInformation,
-    }
-    impl MovePhase2 {
-        pub fn execute(self, game: &mut GameState) -> MovePhase3 {
-            let this_unit = game.factions.get_unit_mut(self.team, self.unit);
-
-            let orig = this_unit.position;
-
-            this_unit.position = self.target;
-
-            MovePhase3 {
-                unit: self.unit,
-                target: self.target,
-                team: self.team,
-                ee: self.ee,
-            }
-        }
-    }
-    pub struct MovePhase3 {
-        unit: GridCoord,
-        target: GridCoord,
-        team: ActiveTeam,
-        ee: UndoInformation,
-    }
-    impl MovePhase3 {
         pub fn execute(self, game: &mut GameState) -> (PartialMoveSigl, UndoInformation) {
-            let target_cell = self.target;
-            match self.ee {
-                UndoInformation::PushedLand => {
-                    let dir = self.unit.dir_to(&target_cell);
+            let env=&mut game.env;
+            let this_unit = game.factions.get_unit_mut(self.team, self.unit);
+            let target_cell=self.target;
+            let mut e = UndoInformation::None;
+                if let Type::ShipOnly { powerup } = &mut this_unit.typ {
+                    if env.land.is_coord_set(target_cell) {
+                        env.land.set_coord(target_cell, false);
+                        let dir = this_unit.position.dir_to(&target_cell);
 
-                    let kk = target_cell.advance(dir);
-                    game.env.land.set_coord(target_cell, false);
-                    game.env.land.set_coord(kk, true);
+                        let kk = target_cell.advance(dir);
+
+                        env.land.set_coord(kk, true);
+
+                        e = UndoInformation::PushedLand;
+                    }
                 }
-                UndoInformation::None => {}
-            }
-            // if let Type::ShipOnly { .. } = &mut this_unit.typ {
-            //     //if game.env.land.is_coord_set(target_cell) {
-            //         let dir = this_unit.position.dir_to(&target_cell);
 
-            //         let kk = target_cell.advance(dir);
+                let orig = this_unit.position;
 
-            //         game.env.land.set_coord(kk, true);
+                this_unit.position = target_cell;
 
-            //     //}
-            // }
-
-            (
-                PartialMoveSigl {
-                    unit: self.unit,
-                    moveto: target_cell,
-                },
-                self.ee,
-            )
+                (
+                    PartialMoveSigl {
+                        unit: orig,
+                        moveto: target_cell,
+                    },
+                    e,
+                )
         }
     }
 
-    // fn apply_normal_move(
-    //     this_unit: &mut UnitData,
-    //     target_cell: GridCoord,
-    //     env: &mut Environment,
-    //     world: &'static board::MyWorld,
-    // ) -> (PartialMoveSigl, UndoInformation) {
-    //     let mut e = UndoInformation::None;
-    //     if let Type::ShipOnly { powerup } = &mut this_unit.typ {
-    //         if env.land.is_coord_set(target_cell) {
-    //             env.land.set_coord(target_cell, false);
-    //             let dir = this_unit.position.dir_to(&target_cell);
-
-    //             let kk = target_cell.advance(dir);
-
-    //             env.land.set_coord(kk, true);
-
-    //             e = UndoInformation::PushedLand;
-    //         }
-    //     }
-
-    //     let orig = this_unit.position;
-
-    //     this_unit.position = target_cell;
-
-    //     (
-    //         PartialMoveSigl {
-    //             unit: orig,
-    //             moveto: target_cell,
-    //         },
-    //         e,
-    //     )
-    // }
 
     fn apply_extra_move(
         this_unit: &mut UnitData,
@@ -637,8 +568,6 @@ pub mod partial {
                     target: self.target,
                     team,
                 }
-                .execute(self.state)
-                .execute(self.state)
                 .execute(self.state)
                 // apply_normal_move(
                 //     this_unit,
@@ -716,8 +645,8 @@ pub mod partial {
                     unit: self.this_unit,
                     target: self.target,
                     team,
-                }
-                .execute(self.state);
+                };
+                let info=k.generate_info(self.state);
 
 
                 let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
@@ -729,13 +658,12 @@ pub mod partial {
                             mesh,
                             walls,
                             end: self.target,
-                            data:k.ee.clone()
+                            data:info
                         },
                         team,
                     )
                     .await;
 
-                let k = k.execute(self.state);
 
                 let (s, a) = k.execute(self.state);
 
