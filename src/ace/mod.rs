@@ -400,14 +400,14 @@ pub fn game_init() -> GameState {
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([-3, 3]), Type::ShipOnly { powerup }),
         UnitData::new(GridCoord([0, -3]), Type::ShipOnly { powerup }),
-        //UnitData::new(GridCoord([3, 0]), Type::ShipOnly { powerup }),
+        UnitData::new(GridCoord([3, 0]), Type::ShipOnly { powerup }),
     ];
 
     //player
     let dogs = smallvec::smallvec![
         UnitData::new(GridCoord([3, -3]), Type::ShipOnly { powerup }),
         UnitData::new(GridCoord([-3, 0]), Type::ShipOnly { powerup }),
-        //UnitData::new(GridCoord([0, 3]), Type::ShipOnly { powerup }),
+        UnitData::new(GridCoord([0, 3]), Type::ShipOnly { powerup }),
     ];
 
     let world = Box::leak(Box::new(board::MyWorld::new()));
