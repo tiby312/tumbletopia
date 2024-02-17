@@ -188,18 +188,18 @@ pub async fn worker_entry() {
 
     let render = EngineStuff::new(wr.canvas());
 
-    loop {
-        //let sample_game = ace::share::load(ace::share::SAMPLE_GAME);
+    //loop {
+    //let sample_game = ace::share::load(ace::share::SAMPLE_GAME);
 
-        let mut game = ace::game_init();
+    let mut game = ace::game_init();
 
-        let (game, mut r, w) = create_worker_render(&mut game);
+    let (game, mut r, w) = create_worker_render(&mut game);
 
-        futures::join!(
-            ace::main_logic(game, w),
-            render.handle_render_loop(&mut r, &mut frame_timer, &mut wr)
-        );
-    }
+    futures::join!(
+        ace::main_logic(game, w),
+        render.handle_render_loop(&mut r, &mut frame_timer, &mut wr)
+    );
+    //}
 
     log!("Worker thread closin");
 }
@@ -290,7 +290,7 @@ impl EngineStuff {
         let mountain = &models.mountain;
         let water = &models.water;
         let grass = &models.grass;
-        
+
         let snow = &models.snow;
         let select_model = &models.select_model;
 

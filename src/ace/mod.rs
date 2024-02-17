@@ -472,7 +472,7 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         ai::absolute_evaluate(game, true);
     }
 
-    console_dbg!(share::save(&game_history));
+    //console_dbg!(share::save(&game_history));
 }
 
 async fn handle_player(
