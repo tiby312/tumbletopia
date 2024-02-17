@@ -75,42 +75,42 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
 
     //doop(7, &mut dog_foot_snow, &mut cat_foot_snow, &foot_snow);
 
-    let foot_grass = {
-        let mut land = view.env.land.clone();
-        let mut t = view.env.forest.clone();
-        t.toggle_range(..);
-        land.intersect_with(&t);
+    // let foot_grass = {
+    //     let mut land = view.env.land.clone();
+    //     let mut t = view.env.forest.clone();
+    //     t.toggle_range(..);
+    //     land.intersect_with(&t);
 
-        let mut land2 = land.clone();
-        for a in land.iter_mesh(GridCoord::zero()) {
-            if !moves::has_adjacent_water(view, a) {
-                land2.set_coord(a, false);
-            }
-        }
-        land2
-    };
-    let mut cat_foot_grass = BitField::from_iter(
-        view.factions
-            .cats
-            .iter()
-            .filter(|a| a.typ.is_ship())
-            .map(|a| a.position)
-            .filter(|&a| view.env.land.is_coord_set(a)),
-    );
-    let mut dog_foot_grass = BitField::from_iter(
-        view.factions
-            .dogs
-            .iter()
-            .filter(|a| a.typ.is_ship())
-            .map(|a| a.position)
-            .filter(|&a| view.env.land.is_coord_set(a)),
-    );
+    //     let mut land2 = land.clone();
+    //     for a in land.iter_mesh(GridCoord::zero()) {
+    //         if !moves::has_adjacent_water(view, a) {
+    //             land2.set_coord(a, false);
+    //         }
+    //     }
+    //     land2
+    // };
+    // let mut cat_foot_grass = BitField::from_iter(
+    //     view.factions
+    //         .cats
+    //         .iter()
+    //         //.filter(|a| a.typ.is_ship())
+    //         .map(|a| a.position)
+    //         .filter(|&a| view.env.land.is_coord_set(a)),
+    // );
+    // let mut dog_foot_grass = BitField::from_iter(
+    //     view.factions
+    //         .dogs
+    //         .iter()
+    //         //.filter(|a| a.typ.is_ship())
+    //         .map(|a| a.position)
+    //         .filter(|&a| view.env.land.is_coord_set(a)),
+    // );
 
-    doop(7, &mut dog_foot_grass, &mut cat_foot_grass, &foot_grass);
+    //doop(7, &mut dog_foot_grass, &mut cat_foot_grass, &foot_grass);
 
     let s = cat_ships.count_ones(..) as i64 - dog_ships.count_ones(..) as i64;
     //let r = cat_foot_snow.count_ones(..) as i64 - dog_foot_snow.count_ones(..) as i64;
-    let t = cat_foot_grass.count_ones(..) as i64 - dog_foot_grass.count_ones(..) as i64;
+    //let t = cat_foot_grass.count_ones(..) as i64 - dog_foot_grass.count_ones(..) as i64;
 
     let dog_distance = view
         .factions
@@ -127,42 +127,42 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         .map(|a| a.to_cube().dist(&GridCoord::zero().to_cube()) as i64)
         .fold(0, |a, b| a + b);
 
-    let dog_powerups = view
-        .factions
-        .dogs
-        .iter()
-        .map(|a| {
-            if let Type::ShipOnly { powerup } = a.typ {
-                if powerup {
-                    1
-                } else {
-                    0
-                }
-            } else {
-                0
-            }
-        })
-        .fold(0, |a, b| a + b);
+    // let dog_powerups = view
+    //     .factions
+    //     .dogs
+    //     .iter()
+    //     .map(|a| {
+    //         if let Type::Warrior { powerup } = a.typ {
+    //             if powerup {
+    //                 1
+    //             } else {
+    //                 0
+    //             }
+    //         } else {
+    //             0
+    //         }
+    //     })
+    //     .fold(0, |a, b| a + b);
 
-    let cat_powerups = view
-        .factions
-        .cats
-        .iter()
-        .map(|a| {
-            if let Type::ShipOnly { powerup } = a.typ {
-                if powerup {
-                    1
-                } else {
-                    0
-                }
-            } else {
-                0
-            }
-        })
-        .fold(0, |a, b| a + b);
+    // let cat_powerups = view
+    //     .factions
+    //     .cats
+    //     .iter()
+    //     .map(|a| {
+    //         if let Type::Warrior { powerup } = a.typ {
+    //             if powerup {
+    //                 1
+    //             } else {
+    //                 0
+    //             }
+    //         } else {
+    //             0
+    //         }
+    //     })
+    //     .fold(0, |a, b| a + b);
 
     //The AI will try to avoid the center.
-    100 * ((s + t) + 10 * (cat_powerups - dog_powerups)) + cat_distance - dog_distance
+    100 * s + cat_distance - dog_distance
 }
 
 fn doop(

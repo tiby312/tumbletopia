@@ -22,20 +22,20 @@ pub enum CellSelection {
 
 #[derive(Hash, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {
-    ShipOnly { powerup: bool },
-    Marine,
+    Warrior { powerup: bool },
+    Archer,
 }
 
 impl Type {
-    pub fn is_ship(&self) -> bool {
-        if let Type::ShipOnly { .. } = self {
+    pub fn is_warrior(&self) -> bool {
+        if let Type::Warrior { .. } = self {
             true
         } else {
             false
         }
     }
-    pub fn is_marine(&self) -> bool {
-        if let Type::Marine = self {
+    pub fn is_archer(&self) -> bool {
+        if let Type::Archer = self {
             true
         } else {
             false
@@ -44,8 +44,8 @@ impl Type {
     pub fn type_index(&self) -> usize {
         let a = self;
         match a {
-            Type::ShipOnly { .. } => 0,
-            Type::Marine => 1,
+            Type::Warrior { .. } => 0,
+            Type::Archer => 1,
         }
     }
 }

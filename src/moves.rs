@@ -21,11 +21,11 @@ impl GameState {
         let unit = *unit;
         let mut mesh = movement::MovementMesh::new();
 
-        let is_ship = if let Some(e) = last_move {
-            !game.env.land.is_coord_set(e.unit)
-        } else {
-            !game.env.land.is_coord_set(unit)
-        };
+        // let is_ship = if let Some(e) = last_move {
+        //     !game.env.land.is_coord_set(e.unit)
+        // } else {
+        //     !game.env.land.is_coord_set(unit)
+        // };
 
         let check_if_occ = |a: GridCoord, _extra: Option<PartialMoveSigl>, _depth: usize| {
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
@@ -58,87 +58,14 @@ impl GameState {
                 for a in unit.to_cube().ring(1) {
                     let a = a.to_axial();
 
-                    let j = if is_ship {
-                        !game.env.land.is_coord_set(a)
-                        //true
-                        // !game.env.forest.is_coord_set(a)
-                    } else {
-                        /*has_adjacent_water(game, a) &&*/
-                        !game.env.forest.is_coord_set(a)
-                    };
+                    let j = !game.env.land.is_coord_set(a);
                     if j && check_if_occ(a, Some(last_move), 0) {
                         mesh.add_normal_cell(a.sub(&unit));
                     }
                 }
-                // for d in HDir::all() {
-                //     for (l1, l2) in unit
-                //         .to_cube()
-                //         .ray(d)
-                //         .map(|(x, y)| (x.to_axial(), y.to_axial()))
-                //         .take(3)
-                //     {
-                //         if !game.world.get_game_cells().is_coord_set(l1) {
-                //             break;
-                //         }
-                //         if !game.world.get_game_cells().is_coord_set(l2) {
-                //             if l1 != unit {
-                //                 mesh.add_normal_cell(l1.sub(&unit));
-                //             }
-                //             break;
-                //         }
-
-                //         if game
-                //             .factions
-                //             .relative(team)
-                //             .this_team
-                //             .find_slow(&l2)
-                //             .is_some()
-                //             || game
-                //                 .factions
-                //                 .relative(team)
-                //                 .that_team
-                //                 .find_slow(&l2)
-                //                 .is_some()
-                //         {
-                //             if l1 != unit {
-                //                 mesh.add_normal_cell(l1.sub(&unit));
-                //             }
-                //             break;
-                //         }
-
-                //         if game.env.land.is_coord_set(l2) && !game.env.forest.is_coord_set(l2) {
-                //             continue;
-                //         }
-
-                //         if game.env.forest.is_coord_set(l2) {
-                //             if l1 != unit {
-                //                 mesh.add_normal_cell(l1.sub(&unit));
-                //             }
-                //             break;
-                //         }
-
-                //         if !game.env.land.is_coord_set(l2) {
-                //             mesh.add_normal_cell(l2.sub(&unit));
-                //             break;
-                //         }
-                //     }
-                // }
             }
         } else {
-            let check_if_allowed = |kk| {
-                if is_ship {
-                    !game.env.land.is_coord_set(kk)
-                } else {
-                    let k = game.env.land.is_coord_set(kk);
-
-                    has_adjacent_water(game, kk) && k && !game.env.forest.is_coord_set(kk)
-                }
-            };
-
-            //If we are landlocked, exit
-            if !is_ship && !has_adjacent_water(game, unit) {
-                return mesh;
-            }
+            let check_if_allowed = |kk| !game.env.land.is_coord_set(kk);
 
             for a in unit.to_cube().ring(1) {
                 let a = a.to_axial();
@@ -157,7 +84,6 @@ impl GameState {
                 } else {
                     let water_to_land = game.env.land.is_coord_set(a)
                         && !game.env.forest.is_coord_set(a)
-                        && is_ship
                         && game
                             .factions
                             .relative(team)
@@ -171,11 +97,7 @@ impl GameState {
                             .find_slow(&a)
                             .is_none();
 
-                    if typ == Type::Marine && water_to_land {
-                        mesh.add_normal_cell(a.sub(&unit));
-                    }
-
-                    if let Type::ShipOnly { powerup } = typ {
+                    if let Type::Warrior { powerup } = typ {
                         if game.env.land.is_coord_set(a) {
                             let check = a.advance(dir);
                             if check_if_occ(check, None, 0) && !game.env.land.is_coord_set(check) {
@@ -183,14 +105,6 @@ impl GameState {
                             }
                         }
                     }
-                    // if let Type::ShipOnly { powerup } = typ {
-                    //     if powerup
-                    //         && game.env.land.is_coord_set(a)
-                    //         && !game.env.forest.is_coord_set(a)
-                    //     {
-                    //         mesh.add_normal_cell(a.sub(&unit));
-                    //     }
-                    // }
                 }
             }
         }
@@ -367,7 +281,7 @@ impl ActualMove {
                     .this_team
                     .find_slow_mut(&unit)
                     .unwrap();
-                let Type::ShipOnly { powerup } = &mut k.typ else {
+                let Type::Warrior { powerup } = &mut k.typ else {
                     unreachable!();
                 };
                 *powerup = true;
@@ -487,7 +401,7 @@ pub mod partial {
             let this_unit = game.factions.get_unit(self.team, self.unit);
             let target_cell = self.target;
             let mut e = UndoInformation::None;
-            if let Type::ShipOnly { .. } = &this_unit.typ {
+            if let Type::Warrior { .. } = &this_unit.typ {
                 if game.env.land.is_coord_set(target_cell) {
                     e = UndoInformation::PushedLand;
                 }
@@ -499,7 +413,7 @@ pub mod partial {
             let this_unit = game.factions.get_unit_mut(self.team, self.unit);
             let target_cell = self.target;
             let mut e = UndoInformation::None;
-            if let Type::ShipOnly { powerup } = &mut this_unit.typ {
+            if let Type::Warrior { powerup } = &mut this_unit.typ {
                 if env.land.is_coord_set(target_cell) {
                     env.land.set_coord(target_cell, false);
                     let dir = this_unit.position.dir_to(&target_cell);
@@ -587,16 +501,10 @@ pub mod partial {
                 let env = &state.env;
                 let mut walls = Mesh::new();
 
-                let is_ship = !env.land.is_coord_set(position);
-
                 for a in position.to_cube().range(2) {
                     let a = a.to_axial();
                     //TODO this is duplicated logic in selection function???
-                    let cc = if is_ship {
-                        env.land.is_coord_set(a)
-                    } else {
-                        !env.land.is_coord_set(a) || env.forest.is_coord_set(a)
-                    };
+                    let cc = env.land.is_coord_set(a);
                     if cc || (a != position && state.factions.contains(a)) {
                         walls.add(a.sub(&position));
                     }
