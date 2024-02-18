@@ -21,12 +21,6 @@ impl GameState {
         let unit = *unit;
         let mut mesh = movement::MovementMesh::new();
 
-        // let is_ship = if let Some(e) = last_move {
-        //     !game.env.land.is_coord_set(e.unit)
-        // } else {
-        //     !game.env.land.is_coord_set(unit)
-        // };
-
         let check_if_occ = |a: GridCoord, _extra: Option<PartialMoveSigl>, _depth: usize| {
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
 
@@ -47,20 +41,24 @@ impl GameState {
         };
 
         if let Some(last_move) = last_move {
-            let transition_to_land = {
-                !game.env.land.is_coord_set(last_move.unit)
-                    && game.env.land.is_coord_set(last_move.moveto)
-            };
+            for a in unit.to_cube().ring(1) {
+                let a = a.to_axial();
 
-            if transition_to_land {
-                mesh.add_normal_cell(last_move.unit.sub(&unit));
-            } else {
-                for a in unit.to_cube().ring(1) {
-                    let a = a.to_axial();
+                let j = !game.env.land.is_coord_set(a);
+                if j && check_if_occ(a, Some(last_move), 0) {
+                    mesh.add_normal_cell(a.sub(&unit));
+                }
+            }
+            match typ {
+                Type::Warrior { powerup } => {}
+                Type::Archer => {
+                    for a in unit.to_cube().ring(2) {
+                        let a = a.to_axial();
 
-                    let j = !game.env.land.is_coord_set(a);
-                    if j && check_if_occ(a, Some(last_move), 0) {
-                        mesh.add_normal_cell(a.sub(&unit));
+                        let j = !game.env.land.is_coord_set(a);
+                        if j && check_if_occ(a, Some(last_move), 0) {
+                            mesh.add_normal_cell(a.sub(&unit));
+                        }
                     }
                 }
             }
@@ -74,29 +72,16 @@ impl GameState {
                 if check_if_allowed(a) && check_if_occ(a, None, 0) {
                     mesh.add_normal_cell(a.sub(&unit));
 
-                    for b in a.to_cube().ring(1) {
-                        let b = b.to_axial();
+                    // if typ.is_warrior() {
+                    //     for b in a.to_cube().ring(1) {
+                    //         let b = b.to_axial();
 
-                        if check_if_allowed(b) && check_if_occ(b, None, 1) {
-                            mesh.add_normal_cell(b.sub(&unit));
-                        }
-                    }
+                    //         if check_if_allowed(b) && check_if_occ(b, None, 1) {
+                    //             mesh.add_normal_cell(b.sub(&unit));
+                    //         }
+                    //     }
+                    // }
                 } else {
-                    let water_to_land = game.env.land.is_coord_set(a)
-                        && !game.env.forest.is_coord_set(a)
-                        && game
-                            .factions
-                            .relative(team)
-                            .this_team
-                            .find_slow(&a)
-                            .is_none()
-                        && game
-                            .factions
-                            .relative(team)
-                            .that_team
-                            .find_slow(&a)
-                            .is_none();
-
                     if let Type::Warrior { powerup } = typ {
                         if game.env.land.is_coord_set(a) {
                             let check = a.advance(dir);
@@ -315,6 +300,8 @@ impl GameState {
                     state.generate_unit_possible_moves_inner(&mm, ttt, team, Some(il));
 
                 for sm in second_mesh.iter_mesh(mm) {
+                    assert!(!state.env.land.is_coord_set(sm));
+
                     //Don't bother applying the extra move. just generate the sigl.
                     movs.push(moves::ActualMove::Normal {
                         unit: pos,
@@ -323,6 +310,12 @@ impl GameState {
                         effect,
                     })
                 }
+
+                //console_dbg!(effect);
+
+                // if let UndoInformation::PulledLand=effect{
+                //     console_dbg!("YOOOOOOOO");
+                // }
 
                 //revert it back just the movement component.
                 undo_movement(team, pos, mm, effect, state);
@@ -347,6 +340,7 @@ use crate::ace::WorkerManager;
 #[derive(PartialOrd, Ord, Clone, Copy, Eq, PartialEq, Debug)]
 pub enum UndoInformation {
     PushedLand,
+    PulledLand,
     None,
 }
 
@@ -371,6 +365,14 @@ pub fn undo_movement(
             state.env.land.set_coord(t3, false);
             assert!(!state.env.land.is_coord_set(moveto));
             state.env.land.set_coord(moveto, true);
+        }
+        UndoInformation::PulledLand => {
+            let dir = unit.dir_to(&moveto);
+            let t3 = unit.back(dir);
+            assert!(state.env.land.is_coord_set(unit));
+            state.env.land.set_coord(unit, false);
+            assert!(!state.env.land.is_coord_set(t3));
+            state.env.land.set_coord(t3, true);
         }
         UndoInformation::None => {}
     }
@@ -401,11 +403,21 @@ pub mod partial {
             let this_unit = game.factions.get_unit(self.team, self.unit);
             let target_cell = self.target;
             let mut e = UndoInformation::None;
-            if let Type::Warrior { .. } = &this_unit.typ {
-                if game.env.land.is_coord_set(target_cell) {
-                    e = UndoInformation::PushedLand;
+            match this_unit.typ {
+                Type::Warrior { .. } => {
+                    if game.env.land.is_coord_set(target_cell) {
+                        e = UndoInformation::PushedLand;
+                    }
+                }
+                Type::Archer => {
+                    let dir = self.unit.dir_to(&self.target);
+                    let k = self.unit.back(dir);
+                    if game.env.land.is_coord_set(k) {
+                        e = UndoInformation::PulledLand;
+                    }
                 }
             }
+
             e
         }
         pub fn execute(self, game: &mut GameState) -> (PartialMoveSigl, UndoInformation) {
@@ -413,16 +425,30 @@ pub mod partial {
             let this_unit = game.factions.get_unit_mut(self.team, self.unit);
             let target_cell = self.target;
             let mut e = UndoInformation::None;
-            if let Type::Warrior { powerup } = &mut this_unit.typ {
-                if env.land.is_coord_set(target_cell) {
-                    env.land.set_coord(target_cell, false);
+
+            match this_unit.typ {
+                Type::Warrior { .. } => {
+                    if env.land.is_coord_set(target_cell) {
+                        let dir = this_unit.position.dir_to(&target_cell);
+
+                        env.land.set_coord(target_cell, false);
+
+                        let kk = target_cell.advance(dir);
+
+                        env.land.set_coord(kk, true);
+
+                        e = UndoInformation::PushedLand;
+                    }
+                }
+                Type::Archer => {
                     let dir = this_unit.position.dir_to(&target_cell);
 
-                    let kk = target_cell.advance(dir);
-
-                    env.land.set_coord(kk, true);
-
-                    e = UndoInformation::PushedLand;
+                    let kk = self.unit.back(dir);
+                    if env.land.is_coord_set(kk) {
+                        env.land.set_coord(kk, false);
+                        env.land.set_coord(self.unit, true);
+                        e = UndoInformation::PulledLand;
+                    }
                 }
             }
 
@@ -450,9 +476,10 @@ pub mod partial {
         if !env.land.is_coord_set(target_cell) {
             env.land.set_coord(target_cell, true)
         } else {
-            if !env.forest.is_coord_set(target_cell) {
-                env.forest.set_coord(target_cell, true);
-            }
+            // if !env.forest.is_coord_set(target_cell) {
+            //     env.forest.set_coord(target_cell, true);
+            // }
+            unreachable!("WAT");
         }
 
         PartialMoveSigl {

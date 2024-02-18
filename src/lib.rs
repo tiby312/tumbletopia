@@ -340,6 +340,13 @@ impl EngineStuff {
                                 land.set_coord(k, false);
                                 Some(animation::land_delta(unit.position, end, grid_matrix))
                             }
+                            moves::UndoInformation::PulledLand => {
+                                let dir = unit.position.dir_to(&end);
+                                let k = unit.position.back(dir);
+                                assert!(land.is_coord_set(k));
+                                land.set_coord(k, false);
+                                Some(animation::land_delta(unit.position, k, grid_matrix))
+                            }
                             moves::UndoInformation::None => None,
                         };
 

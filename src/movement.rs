@@ -36,6 +36,9 @@ impl GridCoord {
     pub fn advance(self, m: HDir) -> GridCoord {
         self.add(m.to_relative())
     }
+    pub fn back(self, m: HDir) -> GridCoord {
+        self.sub(&m.to_relative())
+    }
     pub fn sub(mut self, o: &GridCoord) -> Self {
         self.0[0] -= o.0[0];
         self.0[1] -= o.0[1];
