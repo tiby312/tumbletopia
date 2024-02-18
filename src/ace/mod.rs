@@ -399,14 +399,14 @@ pub fn game_init() -> GameState {
     let powerup = true;
     let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
         UnitData::new(GridCoord([-3, 3]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([0, -3]), Type::Warrior { powerup }),
+        UnitData::new(GridCoord([0, -3]), Type::Archer),
         UnitData::new(GridCoord([3, 0]), Type::Archer),
     ];
 
     //player
     let dogs = smallvec::smallvec![
         UnitData::new(GridCoord([3, -3]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([-3, 0]), Type::Warrior { powerup }),
+        UnitData::new(GridCoord([-3, 0]), Type::Archer),
         UnitData::new(GridCoord([0, 3]), Type::Archer),
     ];
 
