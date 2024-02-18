@@ -82,14 +82,14 @@ impl GameState {
                         }
                     }
                 } else {
-                    //if let Type::Warrior { powerup } = typ {
-                    if game.env.land.is_coord_set(a) {
-                        let check = a.advance(dir);
-                        if check_if_occ(check, None, 0) && !game.env.land.is_coord_set(check) {
-                            mesh.add_normal_cell(a.sub(&unit));
+                    if let Type::Warrior { powerup } = typ {
+                        if game.env.land.is_coord_set(a) {
+                            let check = a.advance(dir);
+                            if check_if_occ(check, None, 0) && !game.env.land.is_coord_set(check) {
+                                mesh.add_normal_cell(a.sub(&unit));
+                            }
                         }
                     }
-                    //}
                 }
             }
         }
