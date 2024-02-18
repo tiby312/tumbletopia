@@ -82,14 +82,14 @@ impl GameState {
                         }
                     }
                 } else {
-                    if let Type::Warrior { powerup } = typ {
-                        if game.env.land.is_coord_set(a) {
-                            let check = a.advance(dir);
-                            if check_if_occ(check, None, 0) && !game.env.land.is_coord_set(check) {
-                                mesh.add_normal_cell(a.sub(&unit));
-                            }
+                    //if let Type::Warrior { powerup } = typ {
+                    if game.env.land.is_coord_set(a) {
+                        let check = a.advance(dir);
+                        if check_if_occ(check, None, 0) && !game.env.land.is_coord_set(check) {
+                            mesh.add_normal_cell(a.sub(&unit));
                         }
                     }
+                    //}
                 }
             }
         }
@@ -410,11 +410,14 @@ pub mod partial {
                     }
                 }
                 Type::Archer => {
-                    let dir = self.unit.dir_to(&self.target);
-                    let k = self.unit.back(dir);
-                    if game.env.land.is_coord_set(k) {
-                        e = UndoInformation::PulledLand;
+                    if game.env.land.is_coord_set(target_cell) {
+                        e = UndoInformation::PushedLand;
                     }
+                    // let dir = self.unit.dir_to(&self.target);
+                    // let k = self.unit.back(dir);
+                    // if game.env.land.is_coord_set(k) {
+                    //     e = UndoInformation::PulledLand;
+                    // }
                 }
             }
 
@@ -441,14 +444,25 @@ pub mod partial {
                     }
                 }
                 Type::Archer => {
-                    let dir = this_unit.position.dir_to(&target_cell);
+                    if env.land.is_coord_set(target_cell) {
+                        let dir = this_unit.position.dir_to(&target_cell);
 
-                    let kk = self.unit.back(dir);
-                    if env.land.is_coord_set(kk) {
-                        env.land.set_coord(kk, false);
-                        env.land.set_coord(self.unit, true);
-                        e = UndoInformation::PulledLand;
+                        env.land.set_coord(target_cell, false);
+
+                        let kk = target_cell.advance(dir);
+
+                        env.land.set_coord(kk, true);
+
+                        e = UndoInformation::PushedLand;
                     }
+                    // let dir = this_unit.position.dir_to(&target_cell);
+
+                    // let kk = self.unit.back(dir);
+                    // if env.land.is_coord_set(kk) {
+                    //     env.land.set_coord(kk, false);
+                    //     env.land.set_coord(self.unit, true);
+                    //     e = UndoInformation::PulledLand;
+                    // }
                 }
             }
 
