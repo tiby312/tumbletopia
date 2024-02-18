@@ -72,15 +72,15 @@ impl GameState {
                 if check_if_allowed(a) && check_if_occ(a, None, 0) {
                     mesh.add_normal_cell(a.sub(&unit));
 
-                    // if typ.is_warrior() {
-                    //     for b in a.to_cube().ring(1) {
-                    //         let b = b.to_axial();
+                    if typ.is_warrior() {
+                        for b in a.to_cube().ring(1) {
+                            let b = b.to_axial();
 
-                    //         if check_if_allowed(b) && check_if_occ(b, None, 1) {
-                    //             mesh.add_normal_cell(b.sub(&unit));
-                    //         }
-                    //     }
-                    // }
+                            if check_if_allowed(b) && check_if_occ(b, None, 1) {
+                                mesh.add_normal_cell(b.sub(&unit));
+                            }
+                        }
+                    }
                 } else {
                     if let Type::Warrior { powerup } = typ {
                         if game.env.land.is_coord_set(a) {
