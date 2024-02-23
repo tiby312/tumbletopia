@@ -400,14 +400,14 @@ pub fn game_init() -> GameState {
     let cats=vec![
         UnitData::new(GridCoord([-3, 3]), Type::Warrior { powerup }),
         UnitData::new(GridCoord([0, -3]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([3, 0]), Type::Archer),
+        UnitData::new(GridCoord([3, 0]), Type::Warrior{powerup}),
     ];
 
     //player
     let dogs = vec![
         UnitData::new(GridCoord([3, -3]), Type::Warrior { powerup }),
         UnitData::new(GridCoord([-3, 0]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([0, 3]), Type::Archer),
+        UnitData::new(GridCoord([0, 3]), Type::Warrior{powerup}),
     ];
 
     let world = Box::leak(Box::new(board::MyWorld::new()));

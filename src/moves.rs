@@ -485,14 +485,21 @@ pub mod partial {
         moveto:GridCoord,
         target_cell: GridCoord,
         game:&mut GameState,
+        team:ActiveTeam
     ) -> PartialMoveSigl {
-        if !game.env.land.is_coord_set(target_cell) {
-            game.env.land.set_coord(target_cell, true)
-        } else {
-            // if !env.forest.is_coord_set(target_cell) {
-            //     env.forest.set_coord(target_cell, true);
-            // }
-            unreachable!("WAT");
+
+        if target_cell==original{
+            game.factions.relative_mut(team).this_team.push(UnitData::new(target_cell,Type::Archer));
+            
+        }else{
+            if !game.env.land.is_coord_set(target_cell) {
+                game.env.land.set_coord(target_cell, true)
+            } else {
+                // if !env.forest.is_coord_set(target_cell) {
+                //     env.forest.set_coord(target_cell, true);
+                // }
+                unreachable!("WAT");
+            }
         }
 
         PartialMoveSigl {
@@ -512,6 +519,7 @@ pub mod partial {
                         this_unit.position,
                         self.target,
                         self.state,
+                        team
                     ),
                     UndoInformation::None,
                 )
@@ -580,7 +588,8 @@ pub mod partial {
                         extra.unit,
                         this_unit.position,
                         self.target,
-                        self.state
+                        self.state,
+                        team
                     ),
                     UndoInformation::None,
                 )

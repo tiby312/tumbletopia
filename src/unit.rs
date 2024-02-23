@@ -51,10 +51,17 @@ impl Type {
 }
 
 impl std::ops::Deref for Tribe {
-    type Target = [UnitData];
+    type Target = Vec<UnitData>;
 
     fn deref(&self) -> &Self::Target {
         &self.units
+    }
+}
+
+impl std::ops::DerefMut for Tribe {
+    
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.units
     }
 }
 
