@@ -454,16 +454,16 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Cats {
-            //{
-            doop.send_popup("AI Thinking", team_index).await;
-            let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
-            doop.send_popup("", team_index).await;
-            the_move.execute_move_ani(game, team_index, &mut doop).await;
-            game_history.push(the_move);
+        // if team_index == ActiveTeam::Cats {
+        //     //{
+        //     doop.send_popup("AI Thinking", team_index).await;
+        //     let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
+        //     doop.send_popup("", team_index).await;
+        //     the_move.execute_move_ani(game, team_index, &mut doop).await;
+        //     game_history.push(the_move);
 
-            continue;
-        }
+        //     continue;
+        // }
 
         let m = handle_player(game, &mut doop, team_index).await;
 

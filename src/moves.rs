@@ -481,14 +481,13 @@ pub mod partial {
     }
 
     fn apply_extra_move(
-        this_unit: &mut UnitData,
+        original: GridCoord,
+        moveto:GridCoord,
         target_cell: GridCoord,
-        _original: GridCoord,
-        env: &mut Environment,
-        world: &'static board::MyWorld,
+        game:&mut GameState,
     ) -> PartialMoveSigl {
-        if !env.land.is_coord_set(target_cell) {
-            env.land.set_coord(target_cell, true)
+        if !game.env.land.is_coord_set(target_cell) {
+            game.env.land.set_coord(target_cell, true)
         } else {
             // if !env.forest.is_coord_set(target_cell) {
             //     env.forest.set_coord(target_cell, true);
@@ -497,7 +496,7 @@ pub mod partial {
         }
 
         PartialMoveSigl {
-            unit: this_unit.position,
+            unit: moveto,
             moveto: target_cell,
         }
     }
@@ -509,11 +508,10 @@ pub mod partial {
             if let Some(extra) = self.is_extra {
                 (
                     apply_extra_move(
-                        this_unit,
-                        self.target,
                         extra.unit,
-                        &mut self.state.env,
-                        self.state.world,
+                        this_unit.position,
+                        self.target,
+                        self.state,
                     ),
                     UndoInformation::None,
                 )
@@ -579,11 +577,10 @@ pub mod partial {
 
                 (
                     apply_extra_move(
-                        this_unit,
-                        self.target,
                         extra.unit,
-                        &mut self.state.env,
-                        self.state.world,
+                        this_unit.position,
+                        self.target,
+                        self.state
                     ),
                     UndoInformation::None,
                 )
