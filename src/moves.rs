@@ -50,8 +50,7 @@ impl GameState {
                 }
             }
             match typ {
-                Type::Warrior { powerup } => {}
-                Type::Archer => {
+                Type::Warrior { powerup } => {
                     for a in unit.to_cube().ring(2) {
                         let a = a.to_axial();
 
@@ -60,6 +59,9 @@ impl GameState {
                             mesh.add_normal_cell(a.sub(&unit));
                         }
                     }
+                }
+                Type::Archer => {
+                    
                 }
             }
         } else {
