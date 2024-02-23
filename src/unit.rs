@@ -60,7 +60,7 @@ impl std::ops::Deref for Tribe {
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Tribe {
-    pub units: smallvec::SmallVec<[UnitData; 6]>,
+    pub units: Vec<UnitData>,
 }
 impl Tribe {
     pub fn add(&mut self, a: UnitData) {

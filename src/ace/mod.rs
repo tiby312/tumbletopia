@@ -397,14 +397,14 @@ pub async fn reselect_loop(
 
 pub fn game_init() -> GameState {
     let powerup = true;
-    let cats: smallvec::SmallVec<[UnitData; 6]> = smallvec::smallvec![
+    let cats=vec![
         UnitData::new(GridCoord([-3, 3]), Type::Warrior { powerup }),
         UnitData::new(GridCoord([0, -3]), Type::Warrior { powerup }),
         UnitData::new(GridCoord([3, 0]), Type::Archer),
     ];
 
     //player
-    let dogs = smallvec::smallvec![
+    let dogs = vec![
         UnitData::new(GridCoord([3, -3]), Type::Warrior { powerup }),
         UnitData::new(GridCoord([-3, 0]), Type::Warrior { powerup }),
         UnitData::new(GridCoord([0, 3]), Type::Archer),

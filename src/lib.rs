@@ -314,8 +314,8 @@ impl EngineStuff {
             let mut land = game.env.land.clone();
 
             let (mut cat_for_draw, mut dog_for_draw) = (
-                game.factions.cats.units.clone().into_vec(),
-                game.factions.dogs.units.clone().into_vec(),
+                game.factions.cats.units.clone(),
+                game.factions.dogs.units.clone(),
             );
             match data {
                 ace::Command::Animate(ak) => match ak {
