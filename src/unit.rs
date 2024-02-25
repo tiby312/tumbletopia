@@ -16,7 +16,7 @@ impl UnitData {
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(GridCoord, movement::RelativeMesh),
+    MoveSelection(GridCoord, movement::movement_mesh::Mesh),
     BuildSelection(GridCoord),
 }
 

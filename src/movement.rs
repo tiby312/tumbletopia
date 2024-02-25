@@ -1,6 +1,6 @@
 use crate::hex::HDir;
 
-pub use self::movement_mesh::RelativeMesh;
+//pub use self::movement_mesh::RelativeMesh;
 
 use super::*;
 
@@ -287,7 +287,7 @@ pub mod movement_mesh {
             }
             m
         }
-        fn validate_rel(a: GridCoord) {
+        pub fn validate_rel(a: GridCoord) {
             let x = a.0[0];
             let y = a.0[1];
 
@@ -305,6 +305,9 @@ pub mod movement_mesh {
             Self::validate_rel(a);
             let ind = conv(a);
             self.inner = self.inner & (!(1 << ind));
+        }
+        pub fn is_empty(&self) -> bool {
+            self.inner == 0
         }
         pub fn is_set(&self, a: GridCoord) -> bool {
             Self::validate_rel(a);
@@ -337,45 +340,43 @@ pub mod movement_mesh {
 
     use super::GridCoord;
 
-    #[derive(PartialEq, Eq, Debug, Clone)]
-    pub struct RelativeMesh {
-        inner: Mesh,
-    }
+    // #[derive(PartialEq, Eq, Debug, Clone)]
+    // pub struct RelativeMesh {
+    //     inner: Mesh,
+    // }
 
-    
-    impl RelativeMesh {
-        pub fn new() -> Self {
-            RelativeMesh { inner: Mesh::new() }
-        }
+    // impl RelativeMesh {
+    //     pub fn new() -> Self {
+    //         RelativeMesh { inner: Mesh::new() }
+    //     }
 
-        pub fn validate_rel(a: GridCoord) {
-            let x = a.0[0];
-            let y = a.0[1];
-    
-            assert!(x <= 6 && x >= -6);
-            assert!(y <= 6 && y >= -6);
-    
-            //assert!(x != 0 || y != 0);
-        }
-        
+    //     pub fn validate_rel(a: GridCoord) {
+    //         let x = a.0[0];
+    //         let y = a.0[1];
 
-        pub fn add_normal_cell(&mut self, a: GridCoord) {
-            self.inner.add(a);
-        }
-        pub fn remove_normal_cell(&mut self, a: GridCoord) {
-            self.inner.remove(a);
-        }
-        fn is_set(&self, a: GridCoord) -> bool {
-            self.inner.is_set(a)
-        }
+    //         assert!(x <= 6 && x >= -6);
+    //         assert!(y <= 6 && y >= -6);
 
-        pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
-            self.inner.iter_mesh(point)
-        }
-        pub fn is_empty(&self) -> bool {
-            self.inner.inner == 0
-        }
-    }
+    //         //assert!(x != 0 || y != 0);
+    //     }
+
+    //     pub fn add_normal_cell(&mut self, a: GridCoord) {
+    //         self.inner.add(a);
+    //     }
+    //     pub fn remove_normal_cell(&mut self, a: GridCoord) {
+    //         self.inner.remove(a);
+    //     }
+    //     fn is_set(&self, a: GridCoord) -> bool {
+    //         self.inner.is_set(a)
+    //     }
+
+    //     pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
+    //         self.inner.iter_mesh(point)
+    //     }
+    //     pub fn is_empty(&self) -> bool {
+    //         self.inner.inner == 0
+    //     }
+    // }
     fn conv(a: GridCoord) -> usize {
         let [x, y] = a.0;
         //     let ind=x/7+y%7;
@@ -393,9 +394,13 @@ pub mod movement_mesh {
     }
 }
 
-pub fn path(mesh:&RelativeMesh, a: GridCoord, walls: &movement_mesh::Mesh) -> impl Iterator<Item = HDir> {
+pub fn path(
+    mesh: &movement_mesh::Mesh,
+    a: GridCoord,
+    walls: &movement_mesh::Mesh,
+) -> impl Iterator<Item = HDir> {
     let mesh_iter = {
-        RelativeMesh::validate_rel(a);
+        movement_mesh::Mesh::validate_rel(a);
         let x = a.0[0];
         let y = a.0[1];
         let first = if GridCoord([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
@@ -438,8 +443,7 @@ pub fn path(mesh:&RelativeMesh, a: GridCoord, walls: &movement_mesh::Mesh) -> im
             None
         };
 
-        let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2)
-        {
+        let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2) {
             let h = GridCoord([0, 0]).dir_to(&a);
             Some([h, h])
         } else {
@@ -447,13 +451,12 @@ pub fn path(mesh:&RelativeMesh, a: GridCoord, walls: &movement_mesh::Mesh) -> im
         };
 
         // size 3 spokes
-        let fourth =
-            if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
-                let h = GridCoord([0, 0]).dir_to(&a);
-                Some([h, h, h])
-            } else {
-                None
-            };
+        let fourth = if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
+            let h = GridCoord([0, 0]).dir_to(&a);
+            Some([h, h, h])
+        } else {
+            None
+        };
 
         let a = first.into_iter().flatten();
         let b = second.into_iter().flatten();

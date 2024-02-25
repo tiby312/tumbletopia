@@ -50,7 +50,7 @@ pub fn attack(
 pub enum AnimationCommand {
     Movement {
         unit: UnitData,
-        mesh: movement::RelativeMesh,
+        mesh: movement::movement_mesh::Mesh,
         walls: movement::movement_mesh::Mesh,
         end: GridCoord,
         data: UndoInformation,
@@ -99,7 +99,7 @@ pub fn land_delta(start: GridCoord, end: GridCoord, v: &grids::GridMatrix) -> Ve
 }
 pub fn movement(
     start: GridCoord,
-    path: movement::RelativeMesh,
+    path: movement::movement_mesh::Mesh,
     walls: movement::movement_mesh::Mesh,
     end: GridCoord,
     v: &grids::GridMatrix,
@@ -107,7 +107,7 @@ pub fn movement(
     let v = v.clone();
     let mut counter = v.hex_axial_to_world(&start);
     let mut cc = start;
-    movement::path(&path,end.sub(&start), &walls).flat_map(move |m| {
+    movement::path(&path, end.sub(&start), &walls).flat_map(move |m| {
         let a = m.to_relative();
         cc.0[0] += a.0[0];
         cc.0[1] += a.0[1];

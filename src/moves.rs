@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::hex::HDir;
-use crate::movement::{movement_mesh::Mesh, RelativeMesh};
+use crate::movement::movement_mesh::Mesh;
 
 #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
 pub struct PartialMoveSigl {
@@ -16,10 +16,10 @@ impl GameState {
         typ: Type,
         team: ActiveTeam,
         last_move: Option<PartialMoveSigl>,
-    ) -> movement::RelativeMesh {
+    ) -> Mesh {
         let game = self;
         let unit = *unit;
-        let mut mesh = movement::RelativeMesh::new();
+        let mut mesh = Mesh::new();
 
         let check_if_occ = |a: GridCoord| {
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
@@ -47,13 +47,13 @@ impl GameState {
                 let a = a.to_axial();
 
                 if check_if_occ(a) {
-                    mesh.add_normal_cell(a.sub(&unit));
+                    mesh.add(a.sub(&unit));
 
                     for a in a.to_cube().ring(1) {
                         let a = a.to_axial();
 
                         if check_if_occ(a) {
-                            mesh.add_normal_cell(a.sub(&unit));
+                            mesh.add(a.sub(&unit));
                         }
                     }
                 }
@@ -64,14 +64,14 @@ impl GameState {
                 let dir = unit.dir_to(&a);
 
                 if check_if_occ(a) {
-                    mesh.add_normal_cell(a.sub(&unit));
+                    mesh.add(a.sub(&unit));
 
                     if typ.is_warrior() {
                         for b in a.to_cube().ring(1) {
                             let b = b.to_axial();
 
                             if check_if_occ(b) {
-                                mesh.add_normal_cell(b.sub(&unit));
+                                mesh.add(b.sub(&unit));
                             }
                         }
                     }
@@ -80,7 +80,7 @@ impl GameState {
                         if game.env.land.is_coord_set(a) {
                             let check = a.advance(dir);
                             if check_if_occ(check) {
-                                mesh.add_normal_cell(a.sub(&unit));
+                                mesh.add(a.sub(&unit));
                             }
                         }
                     }
@@ -119,14 +119,14 @@ pub enum ActualMove {
 }
 
 pub fn uncover_fog(og: GridCoord, env: &mut Environment) {
-    let mut mesh=RelativeMesh::new();
+    let mut mesh = Mesh::new();
     for a in og.to_cube().range(1) {
-        if env.fog.is_coord_set(a.to_axial()){
-            mesh.add_normal_cell(a.to_axial().sub(&og));
+        if env.fog.is_coord_set(a.to_axial()) {
+            mesh.add(a.to_axial().sub(&og));
         }
     }
 
-    for a in mesh.iter_mesh(GridCoord([0;2])){
+    for a in mesh.iter_mesh(GridCoord([0; 2])) {
         env.fog.set_coord(og.add(a), false);
     }
 }
@@ -531,7 +531,7 @@ pub mod partial {
             mut self,
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
-            mesh: RelativeMesh,
+            mesh: Mesh,
         ) -> (PartialMoveSigl, UndoInformation) {
             fn calculate_walls(position: GridCoord, state: &GameState) -> Mesh {
                 let env = &state.env;
