@@ -21,13 +21,19 @@ impl GameState {
         let unit = *unit;
         let mut mesh = SmallMesh::new();
 
-        let check_if_occ = |a: GridCoord| {
+        let check_if_occ = |a: GridCoord, check_fog: bool| {
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
+
+            let jjj = if check_fog {
+                !game.env.fog.is_coord_set(a)
+            } else {
+                true
+            };
 
             a != unit
                 && is_world_cell
                 && !game.env.land.is_coord_set(a)
-                && !game.env.fog.is_coord_set(a)
+                && jjj
                 && game
                     .factions
                     .relative(team)
@@ -46,13 +52,13 @@ impl GameState {
             for a in unit.to_cube().ring(1) {
                 let a = a.to_axial();
 
-                if check_if_occ(a) {
+                if check_if_occ(a, true) {
                     mesh.add(a.sub(&unit));
 
                     for a in a.to_cube().ring(1) {
                         let a = a.to_axial();
 
-                        if check_if_occ(a) {
+                        if check_if_occ(a, true) {
                             mesh.add(a.sub(&unit));
                         }
                     }
@@ -63,14 +69,14 @@ impl GameState {
                 let a = a.to_axial();
                 let dir = unit.dir_to(&a);
 
-                if check_if_occ(a) {
+                if check_if_occ(a, true) {
                     mesh.add(a.sub(&unit));
 
                     if typ.is_warrior() {
                         for b in a.to_cube().ring(1) {
                             let b = b.to_axial();
 
-                            if check_if_occ(b) {
+                            if check_if_occ(b, true) {
                                 mesh.add(b.sub(&unit));
                             }
                         }
@@ -79,7 +85,7 @@ impl GameState {
                     if let Type::Warrior { powerup } = typ {
                         if game.env.land.is_coord_set(a) {
                             let check = a.advance(dir);
-                            if check_if_occ(check) {
+                            if check_if_occ(check, false) {
                                 mesh.add(a.sub(&unit));
                             }
                         }
