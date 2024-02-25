@@ -412,6 +412,7 @@ pub fn game_init() -> GameState {
 
     let world = Box::leak(Box::new(board::MyWorld::new()));
 
+    let fog=world.get_game_cells().clone();
     GameState {
         factions: Factions {
             dogs: Tribe { units: dogs },
@@ -420,8 +421,15 @@ pub fn game_init() -> GameState {
         env: Environment {
             land: BitField::from_iter([]),
             forest: BitField::from_iter([]),
+            fog
         },
         world,
+    }
+}
+
+pub fn uncover_fog(a:GridCoord,env:&mut Environment){
+    for a in a.to_cube().ring(1){
+        env.fog.set_coord(a.to_axial(),false);
     }
 }
 

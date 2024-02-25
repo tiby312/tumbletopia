@@ -6,6 +6,7 @@ use super::*;
 
 #[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
+#[repr(transparent)]
 pub struct GridCoord(pub [i16; 2]);
 impl GridCoord {
     pub fn zero() -> GridCoord {
