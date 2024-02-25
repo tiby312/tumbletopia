@@ -268,7 +268,7 @@ impl EngineStuff {
         let drop_shadow = &models.drop_shadow;
         let dog = &models.dog;
         let cat = &models.cat;
-        let mountain = &models.mountain;
+        let fog_asset = &models.fog;
         let water = &models.water;
         let grass = &models.grass;
 
@@ -548,14 +548,14 @@ impl EngineStuff {
 
                     let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);
                     let m = my_matrix.chain(t).generate();
-                    draw_sys.view(&m).draw_a_thing(mountain);
+                    draw_sys.view(&m).draw_a_thing(fog_asset);
                 }
 
                 if let Some((zpos, _, gpos, k)) = &terrain_animation {
                     let texture = match k {
                         //animation::TerrainType::Snow => snow,
                         animation::TerrainType::Grass => grass,
-                        animation::TerrainType::Mountain => mountain,
+                        animation::TerrainType::Mountain => unreachable!(),
                     };
 
                     let diff = match k {
@@ -772,7 +772,7 @@ use crate::movement::MoveUnit;
 pub struct Models<T> {
     select_model: T,
     drop_shadow: T,
-    mountain: T,
+    fog: T,
     attack: T,
     cat: T,
     dog: T,
@@ -787,7 +787,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
         const ASSETS: &[(&'static [u8], usize, Option<f64>)] = &[
             (include_bytes!("../assets/select_model.glb"), 1, None),
             (include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
-            (include_bytes!("../assets/city.glb"), RESIZE, None),
+            (include_bytes!("../assets/fog.glb"), RESIZE, None),
             (include_bytes!("../assets/attack.glb"), 1, None),
             (include_bytes!("../assets/donut.glb"), RESIZE, None),
             (include_bytes!("../assets/cat_final.glb"), RESIZE, None),
@@ -814,7 +814,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
         Models {
             select_model: qq(0),
             drop_shadow: qq(1),
-            mountain: qq(2),
+            fog: qq(2),
             attack: qq(3),
             cat: qq(4),
             dog: qq(5),
