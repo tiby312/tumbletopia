@@ -271,7 +271,7 @@ pub mod movement_mesh {
         )
     }
 
-    #[derive(PartialEq, Eq, Debug, Clone)]
+    #[derive(PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
     pub struct SmallMesh {
         pub inner: u128,
     }

@@ -1,4 +1,4 @@
-use crate::moves::UndoInformation;
+use crate::moves::PushPullInfo;
 
 use super::*;
 
@@ -53,7 +53,7 @@ pub enum AnimationCommand {
         mesh: movement::movement_mesh::SmallMesh,
         walls: movement::movement_mesh::SmallMesh,
         end: GridCoord,
-        data: UndoInformation,
+        data: PushPullInfo,
     },
     Terrain {
         pos: GridCoord,

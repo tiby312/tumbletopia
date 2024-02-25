@@ -110,7 +110,7 @@ pub enum ActualMove {
         unit: GridCoord,
         moveto: GridCoord,
         attackto: GridCoord,
-        effect: UndoInformation,
+        effect: UndoInfo,
     },
     Powerup {
         unit: GridCoord,
@@ -118,7 +118,10 @@ pub enum ActualMove {
     },
 }
 
-pub fn uncover_fog(og: GridCoord, env: &mut Environment) {
+//returns a mesh where set bits indicate cells
+//that were fog before this function was called,
+//and were then unfogged.
+pub fn uncover_fog(og: GridCoord, env: &mut Environment) -> SmallMesh {
     let mut mesh = SmallMesh::new();
     for a in og.to_cube().range(1) {
         if env.fog.is_coord_set(a.to_axial()) {
@@ -129,6 +132,7 @@ pub fn uncover_fog(og: GridCoord, env: &mut Environment) {
     for a in mesh.iter_mesh(GridCoord([0; 2])) {
         env.fog.set_coord(og.add(a), false);
     }
+    mesh
 }
 
 impl ActualMove {
@@ -138,7 +142,7 @@ impl ActualMove {
         team_index: ActiveTeam,
         doop: &mut WorkerManager<'_>,
     ) {
-        match self {
+        match &self {
             &ActualMove::Normal {
                 unit: unitt,
                 moveto,
@@ -160,8 +164,8 @@ impl ActualMove {
 
                 let ttt = unit.typ;
                 let iii = moves::PartialMove {
-                    this_unit: unitt,
-                    target: moveto,
+                    this_unit: *unitt,
+                    target: *moveto,
                     is_extra: None,
                     state,
                 };
@@ -181,8 +185,8 @@ impl ActualMove {
                 );
 
                 let iii = moves::PartialMove {
-                    this_unit: moveto,
-                    target: target_cell,
+                    this_unit: *moveto,
+                    target: *target_cell,
                     is_extra: Some(iii),
                     state,
                 };
@@ -190,8 +194,8 @@ impl ActualMove {
             }
             &ActualMove::Powerup { unit, moveto } => {
                 let iii = moves::PartialMove {
-                    this_unit: unit,
-                    target: moveto,
+                    this_unit: *unit,
+                    target: *moveto,
                     is_extra: None,
                     state,
                 };
@@ -203,7 +207,7 @@ impl ActualMove {
     }
 
     pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
-        match self {
+        match &self {
             &ActualMove::Normal {
                 unit,
                 moveto,
@@ -211,8 +215,8 @@ impl ActualMove {
                 effect,
             } => {
                 let iii = moves::PartialMove {
-                    this_unit: unit,
-                    target: moveto,
+                    this_unit: *unit,
+                    target: *moveto,
                     is_extra: None,
                     state,
                 };
@@ -224,8 +228,8 @@ impl ActualMove {
                 let target_cell = attackto;
 
                 let iii = moves::PartialMove {
-                    this_unit: moveto,
-                    target: target_cell,
+                    this_unit: *moveto,
+                    target: *target_cell,
                     is_extra: Some(iii),
                     state,
                 };
@@ -234,8 +238,8 @@ impl ActualMove {
             }
             &ActualMove::Powerup { unit, moveto } => {
                 let iii = moves::PartialMove {
-                    this_unit: unit,
-                    target: moveto,
+                    this_unit: *unit,
+                    target: *moveto,
                     is_extra: None,
                     state,
                 };
@@ -248,21 +252,21 @@ impl ActualMove {
 
     pub fn execute_undo(&self, state: &mut GameState, team_index: ActiveTeam) {
         match self {
-            &ActualMove::Normal {
+            ActualMove::Normal {
                 unit,
                 moveto,
                 attackto,
                 effect,
             } => {
-                if state.env.forest.is_coord_set(attackto) {
-                    state.env.forest.set_coord(attackto, false);
-                } else if state.env.land.is_coord_set(attackto) {
-                    state.env.land.set_coord(attackto, false);
+                if state.env.forest.is_coord_set(*attackto) {
+                    state.env.forest.set_coord(*attackto, false);
+                } else if state.env.land.is_coord_set(*attackto) {
+                    state.env.land.set_coord(*attackto, false);
                 } else {
                     unreachable!();
                 }
 
-                undo_movement(team_index, unit, moveto, effect, state)
+                undo_movement(team_index, *unit, *moveto, effect, state)
             }
             &ActualMove::Powerup { unit, moveto } => {
                 assert!(!state.env.land.is_coord_set(moveto));
@@ -314,7 +318,7 @@ impl GameState {
                         unit: pos,
                         moveto: mm,
                         attackto: sm,
-                        effect,
+                        effect: effect.clone().unwrap(),
                     })
                 }
 
@@ -325,7 +329,7 @@ impl GameState {
                 // }
 
                 //revert it back just the movement component.
-                undo_movement(team, pos, mm, effect, state);
+                undo_movement(team, pos, mm, &effect.unwrap(), state);
 
                 //state.factions.relative_mut(team).this_team.units[i].position = pos;
                 // } else {
@@ -345,17 +349,23 @@ impl GameState {
 use crate::ace::WorkerManager;
 
 #[derive(PartialOrd, Ord, Clone, Copy, Eq, PartialEq, Debug)]
-pub enum UndoInformation {
+pub enum PushPullInfo {
     PushedLand,
     PulledLand,
     None,
+}
+
+#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+pub struct UndoInfo {
+    pub pushpull: PushPullInfo,
+    pub fog: SmallMesh,
 }
 
 pub fn undo_movement(
     team_index: ActiveTeam,
     unit: GridCoord,
     moveto: GridCoord,
-    effect: UndoInformation,
+    effect: &UndoInfo,
     state: &mut GameState,
 ) {
     let k = state
@@ -364,8 +374,14 @@ pub fn undo_movement(
         .this_team
         .find_slow_mut(&moveto)
         .unwrap();
-    match effect {
-        UndoInformation::PushedLand => {
+
+    for a in effect.fog.iter_mesh(moveto) {
+        assert!(!state.env.fog.is_coord_set(a));
+        state.env.fog.set_coord(a, true);
+    }
+
+    match effect.pushpull {
+        PushPullInfo::PushedLand => {
             let dir = unit.dir_to(&moveto);
             let t3 = moveto.advance(dir);
             assert!(state.env.land.is_coord_set(t3));
@@ -373,7 +389,7 @@ pub fn undo_movement(
             assert!(!state.env.land.is_coord_set(moveto));
             state.env.land.set_coord(moveto, true);
         }
-        UndoInformation::PulledLand => {
+        PushPullInfo::PulledLand => {
             let dir = unit.dir_to(&moveto);
             let t3 = unit.back(dir);
             assert!(state.env.land.is_coord_set(unit));
@@ -381,7 +397,7 @@ pub fn undo_movement(
             assert!(!state.env.land.is_coord_set(t3));
             state.env.land.set_coord(t3, true);
         }
-        UndoInformation::None => {}
+        PushPullInfo::None => {}
     }
     k.position = unit;
 }
@@ -406,19 +422,19 @@ pub mod partial {
         team: ActiveTeam,
     }
     impl MovePhase1 {
-        pub fn generate_info(&self, game: &GameState) -> UndoInformation {
+        pub fn generate_info(&self, game: &GameState) -> PushPullInfo {
             let this_unit = game.factions.get_unit(self.team, self.unit);
             let target_cell = self.target;
-            let mut e = UndoInformation::None;
+            let mut e = PushPullInfo::None;
             match this_unit.typ {
                 Type::Warrior { .. } => {
                     if game.env.land.is_coord_set(target_cell) {
-                        e = UndoInformation::PushedLand;
+                        e = PushPullInfo::PushedLand;
                     }
                 }
                 Type::Archer => {
                     if game.env.land.is_coord_set(target_cell) {
-                        e = UndoInformation::PushedLand;
+                        e = PushPullInfo::PushedLand;
                     }
                     // let dir = self.unit.dir_to(&self.target);
                     // let k = self.unit.back(dir);
@@ -430,11 +446,11 @@ pub mod partial {
 
             e
         }
-        pub fn execute(self, game: &mut GameState) -> (PartialMoveSigl, UndoInformation) {
+        pub fn execute(self, game: &mut GameState) -> (PartialMoveSigl, UndoInfo) {
             let env = &mut game.env;
             let this_unit = game.factions.get_unit_mut(self.team, self.unit);
             let target_cell = self.target;
-            let mut e = UndoInformation::None;
+            let mut e = PushPullInfo::None;
 
             match this_unit.typ {
                 Type::Warrior { .. } => {
@@ -447,7 +463,7 @@ pub mod partial {
 
                         env.land.set_coord(kk, true);
 
-                        e = UndoInformation::PushedLand;
+                        e = PushPullInfo::PushedLand;
                     }
                 }
                 Type::Archer => {
@@ -469,15 +485,14 @@ pub mod partial {
             let orig = this_unit.position;
 
             this_unit.position = target_cell;
-
-            uncover_fog(this_unit.position, env);
+            let fog = uncover_fog(target_cell, env);
 
             (
                 PartialMoveSigl {
                     unit: orig,
                     moveto: target_cell,
                 },
-                e,
+                UndoInfo { pushpull: e, fog },
             )
         }
     }
@@ -504,21 +519,22 @@ pub mod partial {
     }
 
     impl PartialMove<'_> {
-        pub fn execute(self, team: ActiveTeam) -> (PartialMoveSigl, UndoInformation) {
+        pub fn execute(self, team: ActiveTeam) -> (PartialMoveSigl, Option<UndoInfo>) {
             let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
             if let Some(extra) = self.is_extra {
                 (
                     apply_extra_move(extra.unit, this_unit.position, self.target, self.state),
-                    UndoInformation::None,
+                    None,
                 )
             } else {
-                MovePhase1 {
+                let (g, h) = MovePhase1 {
                     unit: self.this_unit,
                     target: self.target,
                     team,
                 }
-                .execute(self.state)
+                .execute(self.state);
+                (g, Some(h))
                 // apply_normal_move(
                 //     this_unit,
                 //     self.target,
@@ -532,7 +548,7 @@ pub mod partial {
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
             mesh: SmallMesh,
-        ) -> (PartialMoveSigl, UndoInformation) {
+        ) -> (PartialMoveSigl, Option<UndoInfo>) {
             fn calculate_walls(position: GridCoord, state: &GameState) -> SmallMesh {
                 let env = &state.env;
                 let mut walls = SmallMesh::new();
@@ -574,7 +590,7 @@ pub mod partial {
 
                 (
                     apply_extra_move(extra.unit, this_unit.position, self.target, self.state),
-                    UndoInformation::None,
+                    None,
                 )
             } else {
                 let walls = calculate_walls(self.this_unit, self.state);
@@ -603,7 +619,7 @@ pub mod partial {
 
                 let (s, a) = k.execute(self.state);
 
-                (s, a)
+                (s, Some(a))
             }
         }
     }

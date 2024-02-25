@@ -315,21 +315,21 @@ impl EngineStuff {
                         }
 
                         let ff = match data {
-                            moves::UndoInformation::PushedLand => {
+                            moves::PushPullInfo::PushedLand => {
                                 let dir = unit.position.dir_to(&end);
                                 let k = unit.position.advance(dir);
                                 assert!(land.is_coord_set(k));
                                 land.set_coord(k, false);
                                 Some(animation::land_delta(unit.position, end, grid_matrix))
                             }
-                            moves::UndoInformation::PulledLand => {
+                            moves::PushPullInfo::PulledLand => {
                                 let dir = unit.position.dir_to(&end);
                                 let k = unit.position.back(dir);
                                 assert!(land.is_coord_set(k));
                                 land.set_coord(k, false);
                                 Some(animation::land_delta(unit.position, k, grid_matrix))
                             }
-                            moves::UndoInformation::None => None,
+                            moves::PushPullInfo::None => None,
                         };
 
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
