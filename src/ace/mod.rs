@@ -400,14 +400,14 @@ pub fn game_init() -> GameState {
     let cats = vec![
         UnitData::new(GridCoord([-4, 4]), Type::Warrior { powerup }),
         UnitData::new(GridCoord([0, -4]), Type::Warrior { powerup }),
-        //UnitData::new(GridCoord([3, 0]), Type::Warrior{powerup}),
+        UnitData::new(GridCoord([4, 0]), Type::Warrior{powerup}),
     ];
 
     //player
     let dogs = vec![
         UnitData::new(GridCoord([4, -4]), Type::Warrior { powerup }),
         UnitData::new(GridCoord([-4, 0]), Type::Warrior { powerup }),
-        //UnitData::new(GridCoord([0, 3]), Type::Warrior{powerup}),
+        UnitData::new(GridCoord([0, 4]), Type::Warrior{powerup}),
     ];
 
     let world = Box::leak(Box::new(board::MyWorld::new()));
@@ -463,8 +463,8 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Cats {
-            //{
+        //if team_index == ActiveTeam::Cats {
+        {
             doop.send_popup("AI Thinking", team_index).await;
             let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
             doop.send_popup("", team_index).await;
