@@ -397,17 +397,18 @@ pub async fn reselect_loop(
 
 pub fn game_init() -> GameState {
     let powerup = true;
+    let d=5;
     let cats = vec![
-        UnitData::new(GridCoord([-4, 4]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([0, -4]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([4, 0]), Type::Warrior { powerup }),
+        UnitData::new(GridCoord([-d, d]), Type::Warrior { powerup }),
+        UnitData::new(GridCoord([0, -d]), Type::Warrior { powerup }),
+        UnitData::new(GridCoord([d, 0]), Type::Warrior { powerup }),
     ];
 
     //player
     let dogs = vec![
-        UnitData::new(GridCoord([4, -4]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([-4, 0]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([0, 4]), Type::Warrior { powerup }),
+        UnitData::new(GridCoord([d, -d]), Type::Warrior { powerup }),
+        UnitData::new(GridCoord([-d, 0]), Type::Warrior { powerup }),
+        UnitData::new(GridCoord([0, d]), Type::Warrior { powerup }),
     ];
 
     let world = Box::leak(Box::new(board::MyWorld::new()));

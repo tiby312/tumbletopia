@@ -17,5 +17,16 @@ impl MyWorld {
 }
 
 fn world() -> impl Iterator<Item = hex::Cube> {
-    hex::Cube::new(0, 0).range(4)
+    let d=5;
+    let k=[
+        [-d, d],
+        [0, -d],
+        [d, 0],
+        [d, -d],
+        [-d, 0],
+        [0, d]
+    ];
+
+
+    hex::Cube::new(0, 0).range(4).chain(k.into_iter().map(GridCoord).map(|x|x.to_cube()))
 }
