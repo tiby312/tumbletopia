@@ -41,10 +41,11 @@ impl MoveLog {
     }
 
     pub async fn replay(&self, doop: &mut WorkerManager<'_>, kk: &mut GameState) {
-        for (team_index, m) in ActiveTeam::Dogs.iter().zip(self.inner.iter()) {
+        let mut ii = ActiveTeam::Dogs.iter();
+        for (team_index, m) in (&mut ii).zip(self.inner.iter()) {
             m.execute_move_ani(kk, team_index, doop).await;
         }
-        assert!(kk.game_is_over().is_some());
+        assert!(kk.game_is_over(ii.next().unwrap()).is_some());
     }
     pub fn deserialize(buffer: Vec<u8>) -> MoveLog {
         use byteorder::{BigEndian, ReadBytesExt};

@@ -20,6 +20,7 @@ impl GameState {
         let game = self;
         let unit = *unit;
         let mut mesh = movement::MovementMesh::new();
+        let check_if_allowed = |kk| !game.env.land.is_coord_set(kk);
 
         let check_if_occ = |a: GridCoord, _extra: Option<PartialMoveSigl>, _depth: usize| {
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
@@ -47,12 +48,8 @@ impl GameState {
                 let j = !game.env.land.is_coord_set(a);
                 if j && check_if_occ(a, Some(last_move), 0) {
                     mesh.add_normal_cell(a.sub(&unit));
-                }
-            }
-            match typ {
-                Type::Warrior { powerup } => {}
-                Type::Archer => {
-                    for a in unit.to_cube().ring(2) {
+
+                    for a in a.to_cube().ring(1) {
                         let a = a.to_axial();
 
                         let j = !game.env.land.is_coord_set(a);
@@ -62,9 +59,15 @@ impl GameState {
                     }
                 }
             }
-        } else {
-            let check_if_allowed = |kk| !game.env.land.is_coord_set(kk);
+            // match typ {
+            //     Type::Warrior { powerup } => {
 
+            //     }
+            //     Type::Archer => {
+
+            //     }
+            // }
+        } else {
             for a in unit.to_cube().ring(1) {
                 let a = a.to_axial();
                 let dir = unit.dir_to(&a);
@@ -482,9 +485,9 @@ pub mod partial {
 
     fn apply_extra_move(
         original: GridCoord,
-        moveto:GridCoord,
+        moveto: GridCoord,
         target_cell: GridCoord,
-        game:&mut GameState,
+        game: &mut GameState,
     ) -> PartialMoveSigl {
         if !game.env.land.is_coord_set(target_cell) {
             game.env.land.set_coord(target_cell, true)
@@ -507,12 +510,7 @@ pub mod partial {
 
             if let Some(extra) = self.is_extra {
                 (
-                    apply_extra_move(
-                        extra.unit,
-                        this_unit.position,
-                        self.target,
-                        self.state,
-                    ),
+                    apply_extra_move(extra.unit, this_unit.position, self.target, self.state),
                     UndoInformation::None,
                 )
             } else {
@@ -576,12 +574,7 @@ pub mod partial {
                 let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
                 (
-                    apply_extra_move(
-                        extra.unit,
-                        this_unit.position,
-                        self.target,
-                        self.state
-                    ),
+                    apply_extra_move(extra.unit, this_unit.position, self.target, self.state),
                     UndoInformation::None,
                 )
             } else {
