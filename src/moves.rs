@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::hex::HDir;
-use crate::movement::movement_mesh::Mesh;
+use crate::movement::movement_mesh::SmallMesh;
 
 #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
 pub struct PartialMoveSigl {
@@ -16,10 +16,10 @@ impl GameState {
         typ: Type,
         team: ActiveTeam,
         last_move: Option<PartialMoveSigl>,
-    ) -> Mesh {
+    ) -> SmallMesh {
         let game = self;
         let unit = *unit;
-        let mut mesh = Mesh::new();
+        let mut mesh = SmallMesh::new();
 
         let check_if_occ = |a: GridCoord| {
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
@@ -119,7 +119,7 @@ pub enum ActualMove {
 }
 
 pub fn uncover_fog(og: GridCoord, env: &mut Environment) {
-    let mut mesh = Mesh::new();
+    let mut mesh = SmallMesh::new();
     for a in og.to_cube().range(1) {
         if env.fog.is_coord_set(a.to_axial()) {
             mesh.add(a.to_axial().sub(&og));
@@ -531,11 +531,11 @@ pub mod partial {
             mut self,
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
-            mesh: Mesh,
+            mesh: SmallMesh,
         ) -> (PartialMoveSigl, UndoInformation) {
-            fn calculate_walls(position: GridCoord, state: &GameState) -> Mesh {
+            fn calculate_walls(position: GridCoord, state: &GameState) -> SmallMesh {
                 let env = &state.env;
-                let mut walls = Mesh::new();
+                let mut walls = SmallMesh::new();
 
                 for a in position.to_cube().range(2) {
                     let a = a.to_axial();

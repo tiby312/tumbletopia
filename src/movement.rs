@@ -253,7 +253,7 @@ pub mod movement_mesh {
         let k2 = GridCoord([2, -2]);
         let k3 = GridCoord([-2, 1]);
 
-        let mut mesh = Mesh::new();
+        let mut mesh = SmallMesh::new();
         mesh.add(k1);
         mesh.add(k2);
         mesh.add(k3);
@@ -272,16 +272,16 @@ pub mod movement_mesh {
     }
 
     #[derive(PartialEq, Eq, Debug, Clone)]
-    pub struct Mesh {
+    pub struct SmallMesh {
         pub inner: u128,
     }
 
-    impl Mesh {
-        pub fn new() -> Mesh {
-            Mesh { inner: 0 }
+    impl SmallMesh {
+        pub fn new() -> SmallMesh {
+            SmallMesh { inner: 0 }
         }
-        pub fn from_iter(it: impl Iterator<Item = GridCoord>) -> Mesh {
-            let mut m = Mesh::new();
+        pub fn from_iter(it: impl Iterator<Item = GridCoord>) -> SmallMesh {
+            let mut m = SmallMesh::new();
             for a in it {
                 m.add(a);
             }
@@ -395,12 +395,12 @@ pub mod movement_mesh {
 }
 
 pub fn path(
-    mesh: &movement_mesh::Mesh,
+    mesh: &movement_mesh::SmallMesh,
     a: GridCoord,
-    walls: &movement_mesh::Mesh,
+    walls: &movement_mesh::SmallMesh,
 ) -> impl Iterator<Item = HDir> {
     let mesh_iter = {
-        movement_mesh::Mesh::validate_rel(a);
+        movement_mesh::SmallMesh::validate_rel(a);
         let x = a.0[0];
         let y = a.0[1];
         let first = if GridCoord([0, 0]).to_cube().dist(&a.to_cube()) == 1 {

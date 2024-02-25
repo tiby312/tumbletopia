@@ -50,8 +50,8 @@ pub fn attack(
 pub enum AnimationCommand {
     Movement {
         unit: UnitData,
-        mesh: movement::movement_mesh::Mesh,
-        walls: movement::movement_mesh::Mesh,
+        mesh: movement::movement_mesh::SmallMesh,
+        walls: movement::movement_mesh::SmallMesh,
         end: GridCoord,
         data: UndoInformation,
     },
@@ -99,8 +99,8 @@ pub fn land_delta(start: GridCoord, end: GridCoord, v: &grids::GridMatrix) -> Ve
 }
 pub fn movement(
     start: GridCoord,
-    path: movement::movement_mesh::Mesh,
-    walls: movement::movement_mesh::Mesh,
+    path: movement::movement_mesh::SmallMesh,
+    walls: movement::movement_mesh::SmallMesh,
     end: GridCoord,
     v: &grids::GridMatrix,
 ) -> impl Iterator<Item = Vector2<f32>> {
