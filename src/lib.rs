@@ -293,6 +293,7 @@ impl EngineStuff {
             //     }
             // }
             let mut land = game.env.land.clone();
+            let fog = game.env.fog.clone();
 
             let (mut cat_for_draw, mut dog_for_draw) = (
                 game.factions.cats.units.clone(),
@@ -535,13 +536,6 @@ impl EngineStuff {
                 pub const LAND_OFFSET: f32 = -10.0;
                 pub const MOUNTAIN_OFFSET: f32 = 0.0;
 
-                // for c in inner_land.iter_mesh(GridCoord::zero()) {
-                //     let pos = grid_matrix.hex_axial_to_world(&c);
-                //     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
-                //     let m = my_matrix.chain(t).generate();
-                //     draw_sys.view(&m).draw_a_thing(snow);
-                // }
-
                 for c in land.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
@@ -549,7 +543,7 @@ impl EngineStuff {
                     draw_sys.view(&m).draw_a_thing(grass);
                 }
 
-                for c in ggame.env.forest.iter_mesh(GridCoord::zero()) {
+                for c in fog.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);

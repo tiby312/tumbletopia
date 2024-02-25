@@ -119,7 +119,7 @@ pub enum ActualMove {
 }
 
 pub fn uncover_fog(a: GridCoord, env: &mut Environment) {
-    for a in a.to_cube().ring(1) {
+    for a in a.to_cube().range(1) {
         env.fog.set_coord(a.to_axial(), false);
     }
 }
