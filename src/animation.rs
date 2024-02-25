@@ -50,7 +50,7 @@ pub fn attack(
 pub enum AnimationCommand {
     Movement {
         unit: UnitData,
-        mesh: movement::MovementMesh,
+        mesh: movement::RelativeMesh,
         walls: movement::movement_mesh::Mesh,
         end: GridCoord,
         data: UndoInformation,
@@ -99,7 +99,7 @@ pub fn land_delta(start: GridCoord, end: GridCoord, v: &grids::GridMatrix) -> Ve
 }
 pub fn movement(
     start: GridCoord,
-    path: movement::MovementMesh,
+    path: movement::RelativeMesh,
     walls: movement::movement_mesh::Mesh,
     end: GridCoord,
     v: &grids::GridMatrix,

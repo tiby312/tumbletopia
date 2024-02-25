@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::hex::HDir;
-use crate::movement::{movement_mesh::Mesh, MovementMesh};
+use crate::movement::{movement_mesh::Mesh, RelativeMesh};
 
 #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
 pub struct PartialMoveSigl {
@@ -16,10 +16,10 @@ impl GameState {
         typ: Type,
         team: ActiveTeam,
         last_move: Option<PartialMoveSigl>,
-    ) -> movement::MovementMesh {
+    ) -> movement::RelativeMesh {
         let game = self;
         let unit = *unit;
-        let mut mesh = movement::MovementMesh::new();
+        let mut mesh = movement::RelativeMesh::new();
 
         let check_if_occ = |a: GridCoord| {
             let is_world_cell = game.world.get_game_cells().is_coord_set(a);
@@ -118,9 +118,16 @@ pub enum ActualMove {
     },
 }
 
-pub fn uncover_fog(a: GridCoord, env: &mut Environment) {
-    for a in a.to_cube().range(1) {
-        env.fog.set_coord(a.to_axial(), false);
+pub fn uncover_fog(og: GridCoord, env: &mut Environment) {
+    let mut mesh=RelativeMesh::new();
+    for a in og.to_cube().range(1) {
+        if env.fog.is_coord_set(a.to_axial()){
+            mesh.add_normal_cell(a.to_axial().sub(&og));
+        }
+    }
+
+    for a in mesh.iter_mesh(GridCoord([0;2])){
+        env.fog.set_coord(og.add(a), false);
     }
 }
 
@@ -524,7 +531,7 @@ pub mod partial {
             mut self,
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
-            mesh: MovementMesh,
+            mesh: RelativeMesh,
         ) -> (PartialMoveSigl, UndoInformation) {
             fn calculate_walls(position: GridCoord, state: &GameState) -> Mesh {
                 let env = &state.env;

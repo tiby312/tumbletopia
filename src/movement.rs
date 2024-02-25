@@ -1,6 +1,6 @@
 use crate::hex::HDir;
 
-pub use self::movement_mesh::MovementMesh;
+pub use self::movement_mesh::RelativeMesh;
 
 use super::*;
 
@@ -231,7 +231,7 @@ pub mod movement_mesh {
         let k1 = GridCoord([1, -1]);
         let k2 = GridCoord([1, -2]);
 
-        let mut mesh = MovementMesh::new();
+        let mut mesh = RelativeMesh::new();
         mesh.add_normal_cell(k1);
         mesh.add_normal_cell(k2);
 
@@ -338,7 +338,7 @@ pub mod movement_mesh {
     use super::GridCoord;
 
     #[derive(PartialEq, Eq, Debug, Clone)]
-    pub struct MovementMesh {
+    pub struct RelativeMesh {
         inner: Mesh,
     }
 
@@ -349,11 +349,11 @@ pub mod movement_mesh {
         assert!(x <= 6 && x >= -6);
         assert!(y <= 6 && y >= -6);
 
-        assert!(x != 0 || y != 0);
+        //assert!(x != 0 || y != 0);
     }
-    impl MovementMesh {
+    impl RelativeMesh {
         pub fn new() -> Self {
-            MovementMesh { inner: Mesh::new() }
+            RelativeMesh { inner: Mesh::new() }
         }
 
         pub fn path(&self, a: GridCoord, walls: &Mesh) -> impl Iterator<Item = HDir> {
