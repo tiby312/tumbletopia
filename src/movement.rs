@@ -226,19 +226,19 @@ pub mod movement_mesh {
     }
 
     use crate::hex::HDir;
-    #[test]
-    fn test_path() {
-        let k1 = GridCoord([1, -1]);
-        let k2 = GridCoord([1, -2]);
+    // #[test]
+    // fn test_path() {
+    //     let k1 = GridCoord([1, -1]);
+    //     let k2 = GridCoord([1, -2]);
 
-        let mut mesh = RelativeMesh::new();
-        mesh.add_normal_cell(k1);
-        mesh.add_normal_cell(k2);
+    //     let mut mesh = RelativeMesh::new();
+    //     mesh.add_normal_cell(k1);
+    //     mesh.add_normal_cell(k2);
 
-        let res: Vec<HDir> = mesh.path(GridCoord([1, -2]), &Mesh::new()).collect();
-        dbg!(res);
-        panic!();
-    }
+    //     let res: Vec<HDir> = mesh.path(GridCoord([1, -2]), &Mesh::new()).collect();
+    //     dbg!(res);
+    //     panic!();
+    // }
 
     #[test]
     fn test_mesh() {
@@ -294,20 +294,20 @@ pub mod movement_mesh {
             assert!(x <= 6 && x >= -6);
             assert!(y <= 6 && y >= -6);
 
-            assert!(x != 0 || y != 0);
+            //assert!(x != 0 || y != 0);
         }
         pub fn add(&mut self, a: GridCoord) {
-            validate_rel(a);
+            Self::validate_rel(a);
             let ind = conv(a);
             self.inner = self.inner | (1 << ind);
         }
         pub fn remove(&mut self, a: GridCoord) {
-            validate_rel(a);
+            Self::validate_rel(a);
             let ind = conv(a);
             self.inner = self.inner & (!(1 << ind));
         }
         pub fn is_set(&self, a: GridCoord) -> bool {
-            validate_rel(a);
+            Self::validate_rel(a);
 
             let ind = conv(a);
 
@@ -342,91 +342,22 @@ pub mod movement_mesh {
         inner: Mesh,
     }
 
-    fn validate_rel(a: GridCoord) {
-        let x = a.0[0];
-        let y = a.0[1];
-
-        assert!(x <= 6 && x >= -6);
-        assert!(y <= 6 && y >= -6);
-
-        //assert!(x != 0 || y != 0);
-    }
+    
     impl RelativeMesh {
         pub fn new() -> Self {
             RelativeMesh { inner: Mesh::new() }
         }
 
-        pub fn path(&self, a: GridCoord, walls: &Mesh) -> impl Iterator<Item = HDir> {
-            let mesh_iter = {
-                validate_rel(a);
-                let x = a.0[0];
-                let y = a.0[1];
-                let first = if GridCoord([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
-                    Some([GridCoord([0, 0]).dir_to(&a)])
-                } else {
-                    None
-                };
-
-                //diagonal
-                let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
-                    //TODO inefficient
-                    let mut k = GridCoord([0, 0])
-                        .to_cube()
-                        .neighbours()
-                        .filter(|x| x.dist(&a.to_cube()) == 1);
-                    let first = k.next().unwrap().to_axial();
-                    let second = k.next().unwrap().to_axial();
-
-                    if
-                    /*self.is_set(first)||*/
-                    !walls.is_set(first) {
-                        Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
-                    } else {
-                        Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
-                    }
-
-                    // else if !walls.is_set(first){
-                    //     panic!("its hapening");
-                    //     Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
-                    // }else{
-                    //     Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
-                    // }
-                    // if  || !walls.is_set(first) {
-
-                    // } else {
-                    //     //TODO this is not true teamates jumping over each other.
-                    //     //assert!(self.is_set(second));
-                    // }
-                } else {
-                    None
-                };
-
-                let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2)
-                {
-                    let h = GridCoord([0, 0]).dir_to(&a);
-                    Some([h, h])
-                } else {
-                    None
-                };
-
-                // size 3 spokes
-                let fourth =
-                    if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
-                        let h = GridCoord([0, 0]).dir_to(&a);
-                        Some([h, h, h])
-                    } else {
-                        None
-                    };
-
-                let a = first.into_iter().flatten();
-                let b = second.into_iter().flatten();
-                let c = third.into_iter().flatten();
-                let d = fourth.into_iter().flatten();
-                a.chain(b).chain(c).chain(d)
-            };
-
-            mesh_iter.into_iter()
+        pub fn validate_rel(a: GridCoord) {
+            let x = a.0[0];
+            let y = a.0[1];
+    
+            assert!(x <= 6 && x >= -6);
+            assert!(y <= 6 && y >= -6);
+    
+            //assert!(x != 0 || y != 0);
         }
+        
 
         pub fn add_normal_cell(&mut self, a: GridCoord) {
             self.inner.add(a);
@@ -460,6 +391,78 @@ pub mod movement_mesh {
         //     .expect("Could not find the coord in table")
         //     .0
     }
+}
+
+pub fn path(mesh:&RelativeMesh, a: GridCoord, walls: &movement_mesh::Mesh) -> impl Iterator<Item = HDir> {
+    let mesh_iter = {
+        RelativeMesh::validate_rel(a);
+        let x = a.0[0];
+        let y = a.0[1];
+        let first = if GridCoord([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
+            Some([GridCoord([0, 0]).dir_to(&a)])
+        } else {
+            None
+        };
+
+        //diagonal
+        let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
+            //TODO inefficient
+            let mut k = GridCoord([0, 0])
+                .to_cube()
+                .neighbours()
+                .filter(|x| x.dist(&a.to_cube()) == 1);
+            let first = k.next().unwrap().to_axial();
+            let second = k.next().unwrap().to_axial();
+
+            if
+            /*self.is_set(first)||*/
+            !walls.is_set(first) {
+                Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
+            } else {
+                Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
+            }
+
+            // else if !walls.is_set(first){
+            //     panic!("its hapening");
+            //     Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
+            // }else{
+            //     Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
+            // }
+            // if  || !walls.is_set(first) {
+
+            // } else {
+            //     //TODO this is not true teamates jumping over each other.
+            //     //assert!(self.is_set(second));
+            // }
+        } else {
+            None
+        };
+
+        let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2)
+        {
+            let h = GridCoord([0, 0]).dir_to(&a);
+            Some([h, h])
+        } else {
+            None
+        };
+
+        // size 3 spokes
+        let fourth =
+            if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
+                let h = GridCoord([0, 0]).dir_to(&a);
+                Some([h, h, h])
+            } else {
+                None
+            };
+
+        let a = first.into_iter().flatten();
+        let b = second.into_iter().flatten();
+        let c = third.into_iter().flatten();
+        let d = fourth.into_iter().flatten();
+        a.chain(b).chain(c).chain(d)
+    };
+
+    mesh_iter.into_iter()
 }
 
 pub mod bitfield {

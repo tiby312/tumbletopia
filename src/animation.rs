@@ -107,7 +107,7 @@ pub fn movement(
     let v = v.clone();
     let mut counter = v.hex_axial_to_world(&start);
     let mut cc = start;
-    path.path(end.sub(&start), &walls).flat_map(move |m| {
+    movement::path(&path,end.sub(&start), &walls).flat_map(move |m| {
         let a = m.to_relative();
         cc.0[0] += a.0[0];
         cc.0[1] += a.0[1];
