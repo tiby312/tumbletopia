@@ -412,8 +412,9 @@ pub fn game_init() -> GameState {
 
     let world = Box::leak(Box::new(board::MyWorld::new()));
 
-    let fog=world.get_game_cells().clone();
-    GameState {
+    let fog = world.get_game_cells().clone();
+
+    let mut k = GameState {
         factions: Factions {
             dogs: Tribe { units: dogs },
             cats: Tribe { units: cats },
@@ -421,16 +422,16 @@ pub fn game_init() -> GameState {
         env: Environment {
             land: BitField::from_iter([]),
             forest: BitField::from_iter([]),
-            fog
+            fog,
         },
         world,
-    }
-}
+    };
 
-pub fn uncover_fog(a:GridCoord,env:&mut Environment){
-    for a in a.to_cube().ring(1){
-        env.fog.set_coord(a.to_axial(),false);
+    for a in k.factions.cats.iter().chain(k.factions.dogs.iter()) {
+        moves::uncover_fog(a.position, &mut k.env);
     }
+
+    k
 }
 
 pub mod share {
@@ -462,16 +463,16 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Cats {
-            //{
-            doop.send_popup("AI Thinking", team_index).await;
-            let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
-            doop.send_popup("", team_index).await;
-            the_move.execute_move_ani(game, team_index, &mut doop).await;
-            game_history.push(the_move);
+        // if team_index == ActiveTeam::Cats {
+        //     //{
+        //     doop.send_popup("AI Thinking", team_index).await;
+        //     let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
+        //     doop.send_popup("", team_index).await;
+        //     the_move.execute_move_ani(game, team_index, &mut doop).await;
+        //     game_history.push(the_move);
 
-            continue;
-        }
+        //     continue;
+        // }
 
         let m = handle_player(game, &mut doop, team_index).await;
 

@@ -117,7 +117,7 @@ pub struct FactionRelative<T> {
 pub struct Environment {
     land: BitField,
     forest: BitField,
-    fog: BitField
+    fog: BitField,
 }
 
 //Additionally removes need to special case animation.
