@@ -1,5 +1,5 @@
 use super::*;
-
+use crate::movement::movement_mesh::SmallMesh;
 mod ai;
 pub mod selection;
 use crate::{
@@ -262,7 +262,7 @@ pub async fn reselect_loop(
         &unit.position,
         unit.typ,
         selected_unit.team,
-        extra_attack.clone().map(|a| a.prev_move),
+        extra_attack.is_some(),
     );
 
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
@@ -356,7 +356,10 @@ pub async fn reselect_loop(
                 unit: e.prev_move.unit,
                 moveto: e.prev_move.moveto,
                 attackto: target_cell,
-                effect: e.prev_effect.clone(),
+                effect: moves::UndoInfo {
+                    pushpull: e.prev_effect.clone(),
+                    fog: moves::FogInfo(SmallMesh::new()),
+                },
             });
         } else {
             let p = unit.position;
@@ -376,10 +379,10 @@ pub async fn reselect_loop(
                 is_extra: None,
                 state: game,
             };
-            let (iii, effect) = iii
+            let (iii, effect, k) = iii
                 .execute_with_animation(selected_unit.team, doop, cca.clone())
                 .await;
-
+            assert!(k.is_none());
             {
                 //if cont {
                 *extra_attack = Some(selection::PossibleExtra::new(iii, effect.unwrap(), kk));
@@ -397,7 +400,7 @@ pub async fn reselect_loop(
 
 pub fn game_init() -> GameState {
     let powerup = true;
-    let d=5;
+    let d = 5;
     let cats = vec![
         UnitData::new(GridCoord([-d, d]), Type::Warrior { powerup }),
         UnitData::new(GridCoord([0, -d]), Type::Warrior { powerup }),

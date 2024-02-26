@@ -140,7 +140,7 @@ impl GameState {
         let this_team_stuck = 'foo: {
             for unit in self.factions.relative(team).this_team.units.iter() {
                 let mesh =
-                    self.generate_unit_possible_moves_inner(&unit.position, unit.typ, team, None);
+                    self.generate_unit_possible_moves_inner(&unit.position, unit.typ, team, false);
                 if !mesh.is_empty() {
                     break 'foo false;
                 }

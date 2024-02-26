@@ -15,7 +15,7 @@ impl GameState {
         unit: &GridCoord,
         typ: Type,
         team: ActiveTeam,
-        last_move: Option<PartialMoveSigl>,
+        last_move: bool,
     ) -> SmallMesh {
         let game = self;
         let unit = *unit;
@@ -48,7 +48,7 @@ impl GameState {
                     .is_none()
         };
 
-        if let Some(last_move) = last_move {
+        if last_move {
             for a in unit.to_cube().ring(1) {
                 let a = a.to_axial();
 
@@ -124,10 +124,13 @@ pub enum ActualMove {
     },
 }
 
+#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+pub struct FogInfo(pub SmallMesh);
+
 //returns a mesh where set bits indicate cells
 //that were fog before this function was called,
 //and were then unfogged.
-pub fn uncover_fog(og: GridCoord, env: &mut Environment) -> SmallMesh {
+pub fn uncover_fog(og: GridCoord, env: &mut Environment) -> FogInfo {
     let mut mesh = SmallMesh::new();
     for a in og.to_cube().range(1) {
         if env.fog.is_coord_set(a.to_axial()) {
@@ -138,7 +141,7 @@ pub fn uncover_fog(og: GridCoord, env: &mut Environment) -> SmallMesh {
     for a in mesh.iter_mesh(GridCoord([0; 2])) {
         env.fog.set_coord(og.add(a), false);
     }
-    mesh
+    FogInfo(mesh)
 }
 
 impl ActualMove {
@@ -165,7 +168,7 @@ impl ActualMove {
                     &unit.position,
                     unit.typ,
                     team_index,
-                    None,
+                    false,
                 );
 
                 let ttt = unit.typ;
@@ -176,19 +179,15 @@ impl ActualMove {
                     state,
                 };
 
-                let (iii, effect) = iii.execute_with_animation(team_index, doop, mesh).await;
-
+                let (iii, effect, k) = iii.execute_with_animation(team_index, doop, mesh).await;
+                assert!(k.is_none());
                 //assert!(cont);
 
                 let selected_unit = moveto;
                 let target_cell = attackto;
 
-                let mesh = state.generate_unit_possible_moves_inner(
-                    &selected_unit,
-                    ttt,
-                    team_index,
-                    Some(iii),
-                );
+                let mesh =
+                    state.generate_unit_possible_moves_inner(&selected_unit, ttt, team_index, true);
 
                 let iii = moves::PartialMove {
                     this_unit: *moveto,
@@ -227,8 +226,8 @@ impl ActualMove {
                     state,
                 };
 
-                let (iii, effect) = iii.execute(team_index);
-
+                let (iii, effect, k) = iii.execute(team_index);
+                assert!(k.is_none());
                 //assert!(cont);
 
                 let target_cell = attackto;
@@ -264,15 +263,9 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                if state.env.forest.is_coord_set(*attackto) {
-                    state.env.forest.set_coord(*attackto, false);
-                } else if state.env.land.is_coord_set(*attackto) {
-                    state.env.land.set_coord(*attackto, false);
-                } else {
-                    unreachable!();
-                }
+                undo_extra(team_index, *unit, *moveto, *attackto, &effect.fog, state);
 
-                undo_movement(team_index, *unit, *moveto, effect, state)
+                undo_movement(team_index, *unit, *moveto, &effect.pushpull, state)
             }
             &ActualMove::Powerup { unit, moveto } => {
                 assert!(!state.env.land.is_coord_set(moveto));
@@ -300,7 +293,7 @@ impl GameState {
             let pos = state.factions.relative_mut(team).this_team.units[i].position;
             let ttt = state.factions.relative_mut(team).this_team.units[i].typ;
 
-            let mesh = state.generate_unit_possible_moves_inner(&pos, ttt, team, None);
+            let mesh = state.generate_unit_possible_moves_inner(&pos, ttt, team, false);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
@@ -310,42 +303,40 @@ impl GameState {
                     target: mm,
                     is_extra: None,
                 };
-                let (il, effect) = ii.execute(team);
+                let (il, effect, _) = ii.execute(team);
 
                 //if cont {
-                let second_mesh =
-                    state.generate_unit_possible_moves_inner(&mm, ttt, team, Some(il));
+                let second_mesh = state.generate_unit_possible_moves_inner(&mm, ttt, team, true);
 
                 for sm in second_mesh.iter_mesh(mm) {
                     assert!(!state.env.land.is_coord_set(sm));
 
-                    //Don't bother applying the extra move. just generate the sigl.
-                    movs.push(moves::ActualMove::Normal {
+                    let ii = PartialMove {
+                        this_unit: mm,
+                        state,
+                        target: sm,
+                        is_extra: Some(il),
+                    };
+                    let (il2, _, k) = ii.execute(team);
+                    let k = k.unwrap();
+                    let mmo = moves::ActualMove::Normal {
                         unit: pos,
                         moveto: mm,
                         attackto: sm,
-                        effect: effect.clone().unwrap(),
-                    })
+                        effect: UndoInfo {
+                            pushpull: effect.unwrap(),
+                            fog: k.clone(),
+                        },
+                    };
+                    //Don't bother applying the extra move. just generate the sigl.
+                    movs.push(mmo);
+
+                    //mm.execute_undo(state,team);
+                    undo_extra(team, pos, mm, sm, &k, state);
                 }
-
-                //console_dbg!(effect);
-
-                // if let UndoInformation::PulledLand=effect{
-                //     console_dbg!("YOOOOOOOO");
-                // }
 
                 //revert it back just the movement component.
                 undo_movement(team, pos, mm, &effect.unwrap(), state);
-
-                //state.factions.relative_mut(team).this_team.units[i].position = pos;
-                // } else {
-                //     let j = moves::ActualMove::Powerup {
-                //         unit: pos,
-                //         moveto: mm,
-                //     };
-                //     movs.push(j.clone());
-                //     j.execute_undo(state, team);
-                // }
             }
         }
         movs
@@ -364,14 +355,35 @@ pub enum PushPullInfo {
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct UndoInfo {
     pub pushpull: PushPullInfo,
-    pub fog: SmallMesh,
+    pub fog: FogInfo,
 }
 
+pub fn undo_extra(
+    team_index: ActiveTeam,
+    unit: GridCoord,
+    moveto: GridCoord,
+    attackto: GridCoord,
+    fog: &FogInfo,
+    state: &mut GameState,
+) {
+    for a in fog.0.iter_mesh(moveto) {
+        assert!(!state.env.fog.is_coord_set(a));
+        state.env.fog.set_coord(a, true);
+    }
+
+    if state.env.forest.is_coord_set(attackto) {
+        state.env.forest.set_coord(attackto, false);
+    } else if state.env.land.is_coord_set(attackto) {
+        state.env.land.set_coord(attackto, false);
+    } else {
+        unreachable!();
+    }
+}
 pub fn undo_movement(
     team_index: ActiveTeam,
     unit: GridCoord,
     moveto: GridCoord,
-    effect: &UndoInfo,
+    effect: &PushPullInfo,
     state: &mut GameState,
 ) {
     let k = state
@@ -381,12 +393,12 @@ pub fn undo_movement(
         .find_slow_mut(&moveto)
         .unwrap();
 
-    for a in effect.fog.iter_mesh(moveto) {
-        assert!(!state.env.fog.is_coord_set(a));
-        state.env.fog.set_coord(a, true);
-    }
+    // for a in effect.fog.0.iter_mesh(moveto) {
+    //     assert!(!state.env.fog.is_coord_set(a));
+    //     state.env.fog.set_coord(a, true);
+    // }
 
-    match effect.pushpull {
+    match effect {
         PushPullInfo::PushedLand => {
             let dir = unit.dir_to(&moveto);
             let t3 = moveto.advance(dir);
@@ -412,6 +424,18 @@ pub use partial::PartialMove;
 pub mod partial {
     use crate::animation::TerrainType;
 
+    pub struct Move1;
+    pub struct Move2;
+
+    impl Move1 {
+        fn execute(self) -> Move2 {
+            todo!()
+        }
+        async fn execute_with_animation(self) -> Move2 {
+            todo!()
+        }
+    }
+
     use super::*;
     #[derive(Debug)]
     pub struct PartialMove<'a> {
@@ -421,8 +445,7 @@ pub mod partial {
         pub is_extra: Option<PartialMoveSigl>,
     }
 
-    //TODO wrap in private
-    pub struct MovePhase1 {
+    struct MovePhase1 {
         unit: GridCoord,
         target: GridCoord,
         team: ActiveTeam,
@@ -452,7 +475,7 @@ pub mod partial {
 
             e
         }
-        pub fn execute(self, game: &mut GameState) -> (PartialMoveSigl, UndoInfo) {
+        pub fn execute(self, game: &mut GameState) -> (PartialMoveSigl, PushPullInfo) {
             let env = &mut game.env;
             let this_unit = game.factions.get_unit_mut(self.team, self.unit);
             let target_cell = self.target;
@@ -491,14 +514,13 @@ pub mod partial {
             let orig = this_unit.position;
 
             this_unit.position = target_cell;
-            let fog = uncover_fog(target_cell, env);
 
             (
                 PartialMoveSigl {
                     unit: orig,
                     moveto: target_cell,
                 },
-                UndoInfo { pushpull: e, fog },
+                e,
             )
         }
     }
@@ -508,7 +530,7 @@ pub mod partial {
         moveto: GridCoord,
         target_cell: GridCoord,
         game: &mut GameState,
-    ) -> PartialMoveSigl {
+    ) -> (PartialMoveSigl, FogInfo) {
         if !game.env.land.is_coord_set(target_cell) {
             game.env.land.set_coord(target_cell, true)
         } else {
@@ -518,21 +540,28 @@ pub mod partial {
             unreachable!("WAT");
         }
 
-        PartialMoveSigl {
-            unit: moveto,
-            moveto: target_cell,
-        }
+        let fog = uncover_fog(moveto, &mut game.env);
+
+        (
+            PartialMoveSigl {
+                unit: moveto,
+                moveto: target_cell,
+            },
+            fog,
+        )
     }
 
     impl PartialMove<'_> {
-        pub fn execute(self, team: ActiveTeam) -> (PartialMoveSigl, Option<UndoInfo>) {
+        pub fn execute(
+            self,
+            team: ActiveTeam,
+        ) -> (PartialMoveSigl, Option<PushPullInfo>, Option<FogInfo>) {
             let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
             if let Some(extra) = self.is_extra {
-                (
-                    apply_extra_move(extra.unit, this_unit.position, self.target, self.state),
-                    None,
-                )
+                let (a, b) =
+                    apply_extra_move(extra.unit, this_unit.position, self.target, self.state);
+                (a, None, Some(b))
             } else {
                 let (g, h) = MovePhase1 {
                     unit: self.this_unit,
@@ -540,7 +569,7 @@ pub mod partial {
                     team,
                 }
                 .execute(self.state);
-                (g, Some(h))
+                (g, Some(h), None)
                 // apply_normal_move(
                 //     this_unit,
                 //     self.target,
@@ -554,7 +583,7 @@ pub mod partial {
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
             mesh: SmallMesh,
-        ) -> (PartialMoveSigl, Option<UndoInfo>) {
+        ) -> (PartialMoveSigl, Option<PushPullInfo>, Option<FogInfo>) {
             fn calculate_walls(position: GridCoord, state: &GameState) -> SmallMesh {
                 let env = &state.env;
                 let mut walls = SmallMesh::new();
@@ -594,10 +623,9 @@ pub mod partial {
 
                 let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
-                (
-                    apply_extra_move(extra.unit, this_unit.position, self.target, self.state),
-                    None,
-                )
+                let (f, g) =
+                    apply_extra_move(extra.unit, this_unit.position, self.target, self.state);
+                (f, None, Some(g))
             } else {
                 let walls = calculate_walls(self.this_unit, self.state);
 
@@ -625,7 +653,7 @@ pub mod partial {
 
                 let (s, a) = k.execute(self.state);
 
-                (s, Some(a))
+                (s, Some(a), None)
             }
         }
     }

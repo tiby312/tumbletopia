@@ -5,13 +5,13 @@ use super::*;
 #[derive(Clone)]
 pub struct PossibleExtra {
     pub prev_move: moves::PartialMoveSigl,
-    pub prev_effect: UndoInfo,
+    pub prev_effect: PushPullInfo,
     pub prev_coord: UnitData,
 }
 impl PossibleExtra {
     pub fn new(
         prev_move: moves::PartialMoveSigl,
-        prev_effect: UndoInfo,
+        prev_effect: PushPullInfo,
         prev_coord: UnitData,
     ) -> Self {
         PossibleExtra {
