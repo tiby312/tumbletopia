@@ -258,11 +258,11 @@ pub async fn reselect_loop(
         true
     };
 
-    let cca = game.generate_unit_possible_moves_inner(
+    let cca = game.generate_unit_possible_moves_inner2(
         &unit.position,
         unit.typ,
         selected_unit.team,
-        extra_attack.is_some(),
+        extra_attack.as_ref().map(|a| a.prev_move.unit),
     );
 
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
