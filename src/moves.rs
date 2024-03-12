@@ -136,6 +136,43 @@ pub enum ActualMove {
 }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+pub struct BombInfo(pub SmallMesh);
+
+//returns a mesh where set bits indicate cells
+//that were fog before this function was called,
+//and were then unfogged.
+pub fn detonate_bomb(original: GridCoord, game: &mut GameState) -> BombInfo {
+    let mut mesh = SmallMesh::new();
+
+    for a in original.to_cube().range(2).map(|a| a.to_axial()) {
+        if !game.world.get_game_cells().is_coord_set(a) {
+            continue;
+        }
+
+        if game.factions.contains(a) {
+            continue;
+        }
+
+        if game.env.land.is_coord_set(a) {
+            continue;
+        }
+
+        mesh.add(a.sub(&original));
+    }
+
+    for a in mesh.iter_mesh(GridCoord([0; 2])) {
+        game.env.land.set_coord(original.add(a), true);
+    }
+    BombInfo(mesh)
+}
+
+#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+pub struct MetaInfo {
+    pub fog: FogInfo,
+    pub bomb: BombInfo,
+}
+
+#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct FogInfo(pub SmallMesh);
 
 //returns a mesh where set bits indicate cells
@@ -278,7 +315,7 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                undo_extra(team_index, *unit, *moveto, *attackto, &effect.fog, state);
+                undo_extra(team_index, *unit, *moveto, *attackto, &effect.meta, state);
 
                 undo_movement(team_index, *unit, *moveto, &effect.pushpull, state)
             }
@@ -341,7 +378,7 @@ impl GameState {
                         attackto: sm,
                         effect: UndoInfo {
                             pushpull: effect.unwrap(),
-                            fog: k.clone(),
+                            meta: k.clone(),
                         },
                     };
                     //Don't bother applying the extra move. just generate the sigl.
@@ -371,7 +408,7 @@ pub enum PushPullInfo {
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct UndoInfo {
     pub pushpull: PushPullInfo,
-    pub fog: FogInfo,
+    pub meta: MetaInfo,
 }
 
 pub fn undo_extra(
@@ -379,20 +416,29 @@ pub fn undo_extra(
     unit: GridCoord,
     moveto: GridCoord,
     attackto: GridCoord,
-    fog: &FogInfo,
+    meta: &MetaInfo,
     state: &mut GameState,
 ) {
-    for a in fog.0.iter_mesh(moveto) {
+    for a in meta.fog.0.iter_mesh(moveto) {
         assert!(!state.env.fog.is_coord_set(a));
         state.env.fog.set_coord(a, true);
     }
 
-    if state.env.forest.is_coord_set(attackto) {
-        state.env.forest.set_coord(attackto, false);
-    } else if state.env.land.is_coord_set(attackto) {
-        state.env.land.set_coord(attackto, false);
+    if !meta.bomb.0.is_empty() {
+        assert_eq!(unit, attackto);
+        assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 2);
+        for a in meta.bomb.0.iter_mesh(unit) {
+            assert!(state.env.land.is_coord_set(a));
+            state.env.land.set_coord(a, false);
+        }
     } else {
-        unreachable!();
+        if state.env.forest.is_coord_set(attackto) {
+            state.env.forest.set_coord(attackto, false);
+        } else if state.env.land.is_coord_set(attackto) {
+            state.env.land.set_coord(attackto, false);
+        } else {
+            unreachable!();
+        }
     }
 }
 pub fn undo_movement(
@@ -546,14 +592,19 @@ pub mod partial {
         moveto: GridCoord,
         target_cell: GridCoord,
         game: &mut GameState,
-    ) -> (PartialMoveSigl, FogInfo) {
-        if !game.env.land.is_coord_set(target_cell) {
-            game.env.land.set_coord(target_cell, true)
+    ) -> (PartialMoveSigl, MetaInfo) {
+        let mut bb = BombInfo(SmallMesh::new());
+        if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
+            bb = detonate_bomb(original, game);
         } else {
-            // if !env.forest.is_coord_set(target_cell) {
-            //     env.forest.set_coord(target_cell, true);
-            // }
-            unreachable!("WAT");
+            if !game.env.land.is_coord_set(target_cell) {
+                game.env.land.set_coord(target_cell, true)
+            } else {
+                // if !env.forest.is_coord_set(target_cell) {
+                //     env.forest.set_coord(target_cell, true);
+                // }
+                unreachable!("WAT");
+            }
         }
 
         let fog = uncover_fog(moveto, &mut game.env);
@@ -563,7 +614,7 @@ pub mod partial {
                 unit: moveto,
                 moveto: target_cell,
             },
-            fog,
+            MetaInfo { fog, bomb: bb },
         )
     }
 
@@ -571,7 +622,7 @@ pub mod partial {
         pub fn execute(
             self,
             team: ActiveTeam,
-        ) -> (PartialMoveSigl, Option<PushPullInfo>, Option<FogInfo>) {
+        ) -> (PartialMoveSigl, Option<PushPullInfo>, Option<MetaInfo>) {
             let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
             if let Some(extra) = self.is_extra {
@@ -599,7 +650,7 @@ pub mod partial {
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
             mesh: SmallMesh,
-        ) -> (PartialMoveSigl, Option<PushPullInfo>, Option<FogInfo>) {
+        ) -> (PartialMoveSigl, Option<PushPullInfo>, Option<MetaInfo>) {
             fn calculate_walls(position: GridCoord, state: &GameState) -> SmallMesh {
                 let env = &state.env;
                 let mut walls = SmallMesh::new();

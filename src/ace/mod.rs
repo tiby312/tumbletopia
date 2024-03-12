@@ -358,7 +358,10 @@ pub async fn reselect_loop(
                 attackto: target_cell,
                 effect: moves::UndoInfo {
                     pushpull: e.prev_effect.clone(),
-                    fog: moves::FogInfo(SmallMesh::new()),
+                    meta: moves::MetaInfo {
+                        fog: moves::FogInfo(SmallMesh::new()),
+                        bomb: moves::BombInfo(SmallMesh::new()),
+                    },
                 },
             });
         } else {
