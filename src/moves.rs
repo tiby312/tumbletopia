@@ -598,8 +598,8 @@ pub mod partial {
         game: &mut GameState,
     ) -> (PartialMoveSigl, MetaInfo) {
         let mut bb = BombInfo(SmallMesh::new());
-        //if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
-        if false{
+        if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
+        //if false{
             bb = detonate_bomb(original, game);
         } else {
             if !game.env.land.is_coord_set(target_cell) {
@@ -611,6 +611,23 @@ pub mod partial {
                 unreachable!("WAT");
             }
         }
+
+        // {
+        //     //make fog come back
+        //     let mut k=BitField::new();
+        //     for a in game.factions.dogs.iter().chain(game.factions.cats.iter()).map(|a|a.position){
+        //         for a in a.to_cube().range(2){
+        //             k.set_coord(a.to_axial(),true);
+        //         }
+        //     }
+
+        //     k.toggle_range(..);
+        //     k.intersect_with(game.world.get_game_cells());
+
+        //     for a in k.iter_mesh(GridCoord::zero()){
+        //         game.env.fog.set_coord(a,true);
+        //     }
+        // }
 
         let fog = uncover_fog(moveto, &mut game.env);
 
