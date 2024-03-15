@@ -157,6 +157,10 @@ pub fn detonate_bomb(original: GridCoord, game: &mut GameState) -> BombInfo {
             continue;
         }
 
+        if game.env.fog.is_coord_set(a){
+            continue;
+        }
+
         mesh.add(a.sub(&original));
     }
 
