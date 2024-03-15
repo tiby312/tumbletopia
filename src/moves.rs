@@ -598,7 +598,8 @@ pub mod partial {
         game: &mut GameState,
     ) -> (PartialMoveSigl, MetaInfo) {
         let mut bb = BombInfo(SmallMesh::new());
-        if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
+        //if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
+        if false{
             bb = detonate_bomb(original, game);
         } else {
             if !game.env.land.is_coord_set(target_cell) {
