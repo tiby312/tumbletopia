@@ -1,6 +1,139 @@
 use super::*;
 use crate::{movement::movement_mesh::SmallMesh, moves::*};
 
+
+pub struct PartialMoveMovement<'a>{
+    pub this_unit: GridCoord,
+    pub state: &'a mut GameState,
+    pub target: GridCoord,
+}
+impl PartialMoveMovement<'_>{
+    pub fn execute(
+        self,
+        team: ActiveTeam,
+    ) -> (
+        PartialMoveSigl,
+        move_build::PushPullInfo,
+    ) {
+        let (g, h, pa) = move_build::MovePhase1 {
+            unit: self.this_unit,
+            target: self.target,
+            team,
+        }
+        .execute(self.state);
+        (g, h)
+    }
+
+    pub async fn execute_with_animation(
+        mut self,
+        team: ActiveTeam,
+        data: &mut ace::WorkerManager<'_>,
+        mesh: SmallMesh,
+    ) -> (
+        PartialMoveSigl,
+        move_build::PushPullInfo,
+    ) {
+        
+        let walls = calculate_walls(self.this_unit, self.state);
+
+        let k = move_build::MovePhase1 {
+            unit: self.this_unit,
+            target: self.target,
+            team,
+        };
+        let info = k.generate_info(self.state);
+
+        let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
+
+        let _ = data
+            .wait_animation(
+                animation::AnimationCommand::Movement {
+                    unit: this_unit.clone(),
+                    mesh,
+                    walls,
+                    end: self.target,
+                    data: info,
+                },
+                team,
+            )
+            .await;
+
+        let (s, a, pa) = k.execute(self.state);
+
+        (s, a)
+    }
+}
+
+
+pub struct PartialMoveExtra<'a>{
+    pub this_unit: GridCoord,
+    pub state: &'a mut GameState,
+    pub target: GridCoord,
+    pub extra: PartialMoveSigl,
+}
+impl PartialMoveExtra<'_>{
+    pub fn execute(
+        self,
+        team: ActiveTeam,
+    ) -> (
+        PartialMoveSigl,
+        move_build::MetaInfo,
+    ) {
+        let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
+
+        let (a, b) = move_build::apply_extra_move(
+            self.extra.unit,
+            this_unit.position,
+            self.target,
+            self.state,
+        );
+        (a, b)
+    }
+    pub async fn execute_with_animation(
+        mut self,
+        team: ActiveTeam,
+        data: &mut ace::WorkerManager<'_>,
+        mesh: SmallMesh,
+    ) -> (
+        PartialMoveSigl,
+        move_build::MetaInfo,
+    ) {
+        let terrain_type = if !self.state.env.land.is_coord_set(self.target) {
+            animation::TerrainType::Grass
+        } else {
+            if !self.state.env.forest.is_coord_set(self.target) {
+                animation::TerrainType::Mountain
+            } else {
+                unreachable!()
+            }
+        };
+
+        let _ = data
+            .wait_animation(
+                animation::AnimationCommand::Terrain {
+                    pos: self.target,
+                    terrain_type,
+                    dir: animation::AnimationDirection::Up,
+                },
+                team,
+            )
+            .await;
+
+        let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
+
+        let (f, g) = move_build::apply_extra_move(
+            self.extra.unit,
+            this_unit.position,
+            self.target,
+            self.state,
+        );
+        (f, g)
+
+    }
+}
+
+
+
 pub struct MovePhase1 {
     pub unit: GridCoord,
     pub target: GridCoord,
@@ -277,4 +410,21 @@ pub fn uncover_fog(og: GridCoord, env: &mut Environment) -> FogInfo {
         env.fog.set_coord(og.add(a), false);
     }
     FogInfo(mesh)
+}
+
+
+fn calculate_walls(position: GridCoord, state: &GameState) -> SmallMesh {
+    let env = &state.env;
+    let mut walls = SmallMesh::new();
+
+    for a in position.to_cube().range(2) {
+        let a = a.to_axial();
+        //TODO this is duplicated logic in selection function???
+        let cc = env.land.is_coord_set(a);
+        if cc || (a != position && state.factions.contains(a)) {
+            walls.add(a.sub(&position));
+        }
+    }
+
+    walls
 }

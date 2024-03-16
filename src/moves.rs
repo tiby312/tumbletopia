@@ -345,6 +345,10 @@ pub mod partial {
     use crate::animation::TerrainType;
 
     use super::*;
+
+    
+
+
     #[derive(Debug)]
     pub struct PartialMove<'a> {
         pub this_unit: GridCoord,
