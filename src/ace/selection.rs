@@ -1,4 +1,4 @@
-use crate::moves::{PushPullInfo, UndoInfo};
+use crate::move_build::{PushPullInfo, UndoInfo};
 
 use super::*;
 

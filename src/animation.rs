@@ -1,4 +1,4 @@
-use crate::moves::PushPullInfo;
+use crate::move_build::PushPullInfo;
 
 use super::*;
 

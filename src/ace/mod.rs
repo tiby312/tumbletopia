@@ -356,11 +356,11 @@ pub async fn reselect_loop(
                 unit: e.prev_move.unit,
                 moveto: e.prev_move.moveto,
                 attackto: target_cell,
-                effect: moves::UndoInfo {
+                effect: move_build::UndoInfo {
                     pushpull: e.prev_effect.clone(),
-                    meta: moves::MetaInfo {
-                        fog: moves::FogInfo(SmallMesh::new()),
-                        bomb: moves::BombInfo(SmallMesh::new()),
+                    meta: move_build::MetaInfo {
+                        fog: move_build::FogInfo(SmallMesh::new()),
+                        bomb: move_build::BombInfo(SmallMesh::new()),
                     },
                 },
             });
@@ -404,32 +404,28 @@ pub async fn reselect_loop(
 pub fn game_init() -> GameState {
     let powerup = true;
     let d = 5;
-    let cats = [
-        [-d, d],
-        [0, -d],
-        [d, 0]
-    ];
-    let cats=cats.into_iter().map(|a|{
-        UnitData{position:GridCoord(a),typ: Type::Warrior { powerup },has_powerup:false}
-    }).collect();
-
+    let cats = [[-d, d], [0, -d], [d, 0]];
+    let cats = cats
+        .into_iter()
+        .map(|a| UnitData {
+            position: GridCoord(a),
+            typ: Type::Warrior { powerup },
+            has_powerup: false,
+        })
+        .collect();
 
     //player
-    let dogs = [
-        [d, -d],
-        [-d, 0],
-        [0, d]
-    ];
-    let dogs=dogs.into_iter().map(|a|{
-        UnitData{position:GridCoord(a), typ:Type::Warrior { powerup },has_powerup:false}
-    }).collect();
+    let dogs = [[d, -d], [-d, 0], [0, d]];
+    let dogs = dogs
+        .into_iter()
+        .map(|a| UnitData {
+            position: GridCoord(a),
+            typ: Type::Warrior { powerup },
+            has_powerup: false,
+        })
+        .collect();
 
-    let powerups=vec![
-        [1,1],
-        [1,-2],
-        [-2,1]
-    ];
-
+    let powerups = vec![[1, 1], [1, -2], [-2, 1]];
 
     let world = Box::leak(Box::new(board::MyWorld::new()));
 
@@ -444,13 +440,13 @@ pub fn game_init() -> GameState {
             land: BitField::from_iter([]),
             forest: BitField::from_iter([]),
             fog,
-            powerups:powerups.into_iter().map(GridCoord).collect()
+            powerups: powerups.into_iter().map(GridCoord).collect(),
         },
         world,
     };
 
     for a in k.factions.cats.iter().chain(k.factions.dogs.iter()) {
-        moves::uncover_fog(a.position, &mut k.env);
+        move_build::uncover_fog(a.position, &mut k.env);
     }
 
     k

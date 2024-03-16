@@ -6,7 +6,7 @@ use super::*;
 pub struct UnitData {
     pub position: GridCoord,
     pub typ: Type,
-    pub has_powerup:bool
+    pub has_powerup: bool,
 }
 
 // impl UnitData {

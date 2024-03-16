@@ -19,6 +19,7 @@ pub mod moves;
 pub mod board;
 pub mod grids;
 pub mod model_parse;
+pub mod move_build;
 pub mod movement;
 pub mod projection;
 pub mod scroll;
@@ -118,7 +119,7 @@ pub struct Environment {
     land: BitField,
     forest: BitField,
     fog: BitField,
-    powerups:Vec<GridCoord>
+    powerups: Vec<GridCoord>,
 }
 
 //Additionally removes need to special case animation.
@@ -272,7 +273,7 @@ impl EngineStuff {
         let fog_asset = &models.fog;
         let water = &models.water;
         let grass = &models.grass;
-        let mountain_asset=&models.mountain;
+        let mountain_asset = &models.mountain;
         let snow = &models.snow;
         let select_model = &models.select_model;
 
@@ -316,21 +317,21 @@ impl EngineStuff {
                         }
 
                         let ff = match data {
-                            moves::PushPullInfo::PushedLand => {
+                            move_build::PushPullInfo::PushedLand => {
                                 let dir = unit.position.dir_to(&end);
                                 let k = unit.position.advance(dir);
                                 assert!(land.is_coord_set(k));
                                 land.set_coord(k, false);
                                 Some(animation::land_delta(unit.position, end, grid_matrix))
                             }
-                            moves::PushPullInfo::PulledLand => {
+                            move_build::PushPullInfo::PulledLand => {
                                 let dir = unit.position.dir_to(&end);
                                 let k = unit.position.back(dir);
                                 assert!(land.is_coord_set(k));
                                 land.set_coord(k, false);
                                 Some(animation::land_delta(unit.position, k, grid_matrix))
                             }
-                            moves::PushPullInfo::None => None,
+                            move_build::PushPullInfo::None => None,
                         };
 
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
@@ -552,7 +553,7 @@ impl EngineStuff {
                     draw_sys.view(&m).draw_a_thing(fog_asset);
                 }
 
-                for c in game.env.powerups.iter(){
+                for c in game.env.powerups.iter() {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);
@@ -789,7 +790,7 @@ pub struct Models<T> {
     snow: T,
     water: T,
     direction: T,
-    mountain:T
+    mountain: T,
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
@@ -806,7 +807,6 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             (include_bytes!("../assets/water.glb"), RESIZE, None),
             (include_bytes!("../assets/direction.glb"), 1, None),
             (include_bytes!("../assets/mountain.glb"), 1, None),
-            
         ];
         let quick_load = |name, res, alpha| {
             let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
@@ -834,7 +834,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             snow: qq(7),
             water: qq(8),
             direction: qq(9),
-            mountain:qq(10)
+            mountain: qq(10),
         }
     }
 }
