@@ -6,13 +6,14 @@ use super::*;
 pub struct UnitData {
     pub position: GridCoord,
     pub typ: Type,
+    pub has_powerup:bool
 }
 
-impl UnitData {
-    pub fn new(position: GridCoord, typ: Type) -> Self {
-        UnitData { position, typ }
-    }
-}
+// impl UnitData {
+//     pub fn new(position: GridCoord, typ: Type) -> Self {
+//         UnitData { position, typ }
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {

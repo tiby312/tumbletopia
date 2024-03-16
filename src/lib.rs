@@ -118,6 +118,7 @@ pub struct Environment {
     land: BitField,
     forest: BitField,
     fog: BitField,
+    powerups:Vec<GridCoord>
 }
 
 //Additionally removes need to special case animation.
@@ -271,7 +272,7 @@ impl EngineStuff {
         let fog_asset = &models.fog;
         let water = &models.water;
         let grass = &models.grass;
-
+        let mountain_asset=&models.mountain;
         let snow = &models.snow;
         let select_model = &models.select_model;
 
@@ -551,6 +552,14 @@ impl EngineStuff {
                     draw_sys.view(&m).draw_a_thing(fog_asset);
                 }
 
+                for c in game.env.powerups.iter(){
+                    let pos = grid_matrix.hex_axial_to_world(&c);
+
+                    let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);
+                    let m = my_matrix.chain(t).generate();
+                    draw_sys.view(&m).draw_a_thing(mountain_asset);
+                }
+
                 if let Some((zpos, _, gpos, k)) = &terrain_animation {
                     let texture = match k {
                         //animation::TerrainType::Snow => snow,
@@ -780,6 +789,7 @@ pub struct Models<T> {
     snow: T,
     water: T,
     direction: T,
+    mountain:T
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
@@ -795,6 +805,8 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             (include_bytes!("../assets/snow.glb"), RESIZE, None),
             (include_bytes!("../assets/water.glb"), RESIZE, None),
             (include_bytes!("../assets/direction.glb"), 1, None),
+            (include_bytes!("../assets/mountain.glb"), 1, None),
+            
         ];
         let quick_load = |name, res, alpha| {
             let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
@@ -822,6 +834,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             snow: qq(7),
             water: qq(8),
             direction: qq(9),
+            mountain:qq(10)
         }
     }
 }

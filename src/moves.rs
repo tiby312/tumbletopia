@@ -486,6 +486,13 @@ pub fn undo_movement(
     k.position = unit;
 }
 
+pub enum PowerupAction{
+    GotPowerup,
+    DiscardedPowerup,
+    None
+}
+
+
 pub use partial::PartialMove;
 pub mod partial {
     use crate::animation::TerrainType;
@@ -541,7 +548,7 @@ pub mod partial {
 
             e
         }
-        pub fn execute(self, game: &mut GameState) -> (PartialMoveSigl, PushPullInfo) {
+        pub fn execute(self, game: &mut GameState) -> (PartialMoveSigl, PushPullInfo,PowerupAction) {
             let env = &mut game.env;
             let this_unit = game.factions.get_unit_mut(self.team, self.unit);
             let target_cell = self.target;
@@ -577,6 +584,22 @@ pub mod partial {
                 }
             }
 
+      
+            let powerup=if game.env.powerups.contains(&target_cell)
+            {
+
+                game.env.powerups.retain(|&a|a!=target_cell);
+                if !this_unit.has_powerup{
+                    this_unit.has_powerup=true;
+                    PowerupAction::GotPowerup
+                }else{
+                    // powerup is discarded
+                    PowerupAction::DiscardedPowerup
+                }
+            }else{
+                PowerupAction::None
+            };
+
             let orig = this_unit.position;
 
             this_unit.position = target_cell;
@@ -587,6 +610,7 @@ pub mod partial {
                     moveto: target_cell,
                 },
                 e,
+                powerup
             )
         }
     }
@@ -652,7 +676,7 @@ pub mod partial {
                     apply_extra_move(extra.unit, this_unit.position, self.target, self.state);
                 (a, None, Some(b))
             } else {
-                let (g, h) = MovePhase1 {
+                let (g, h,pa) = MovePhase1 {
                     unit: self.this_unit,
                     target: self.target,
                     team,
@@ -740,7 +764,7 @@ pub mod partial {
                     )
                     .await;
 
-                let (s, a) = k.execute(self.state);
+                let (s, a,pa) = k.execute(self.state);
 
                 (s, Some(a), None)
             }

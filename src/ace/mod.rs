@@ -404,18 +404,32 @@ pub async fn reselect_loop(
 pub fn game_init() -> GameState {
     let powerup = true;
     let d = 5;
-    let cats = vec![
-        UnitData::new(GridCoord([-d, d]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([0, -d]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([d, 0]), Type::Warrior { powerup }),
+    let cats = [
+        [-d, d],
+        [0, -d],
+        [d, 0]
     ];
+    let cats=cats.into_iter().map(|a|{
+        UnitData{position:GridCoord(a),typ: Type::Warrior { powerup },has_powerup:false}
+    }).collect();
+
 
     //player
-    let dogs = vec![
-        UnitData::new(GridCoord([d, -d]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([-d, 0]), Type::Warrior { powerup }),
-        UnitData::new(GridCoord([0, d]), Type::Warrior { powerup }),
+    let dogs = [
+        [d, -d],
+        [-d, 0],
+        [0, d]
     ];
+    let dogs=dogs.into_iter().map(|a|{
+        UnitData{position:GridCoord(a), typ:Type::Warrior { powerup },has_powerup:false}
+    }).collect();
+
+    let powerups=vec![
+        [1,1],
+        [1,-2],
+        [-2,1]
+    ];
+
 
     let world = Box::leak(Box::new(board::MyWorld::new()));
 
@@ -430,6 +444,7 @@ pub fn game_init() -> GameState {
             land: BitField::from_iter([]),
             forest: BitField::from_iter([]),
             fog,
+            powerups:powerups.into_iter().map(GridCoord).collect()
         },
         world,
     };
@@ -470,16 +485,16 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Cats {
-            //{
-            doop.send_popup("AI Thinking", team_index).await;
-            let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
-            doop.send_popup("", team_index).await;
-            the_move.execute_move_ani(game, team_index, &mut doop).await;
-            game_history.push(the_move);
+        // if team_index == ActiveTeam::Cats {
+        //     //{
+        //     doop.send_popup("AI Thinking", team_index).await;
+        //     let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
+        //     doop.send_popup("", team_index).await;
+        //     the_move.execute_move_ani(game, team_index, &mut doop).await;
+        //     game_history.push(the_move);
 
-            continue;
-        }
+        //     continue;
+        // }
 
         let m = handle_player(game, &mut doop, team_index).await;
 
