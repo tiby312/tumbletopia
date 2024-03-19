@@ -75,7 +75,7 @@ impl ExtraPhase1 {
         team: ActiveTeam,
         state: &GameState,
         data: &mut ace::WorkerManager<'_>,
-    ) ->&Self{
+    ) -> &Self {
         let target = self.target_cell;
 
         let terrain_type = if !state.env.land.is_coord_set(target) {
@@ -115,7 +115,7 @@ impl MovePhase1 {
         state: &GameState,
         this_unit: GridCoord,
         target: GridCoord,
-    ) ->&Self{
+    ) -> &Self {
         let walls = calculate_walls(this_unit, state);
 
         let k = move_build::MovePhase1 {

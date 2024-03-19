@@ -361,7 +361,6 @@ use crate::ace::WorkerManager;
 
 pub use partial::PartialMove;
 pub mod partial {
-    use crate::animation::TerrainType;
 
     use super::*;
 
@@ -392,12 +391,6 @@ pub mod partial {
                 }
                 .apply(team, self.state);
 
-                // let (a, b) = move_build::apply_extra_move(
-                //     extra.unit,
-                //     this_unit.position,
-                //     self.target,
-                //     self.state,
-                // );
                 (a, None, Some(b))
             } else {
                 let (g, h, pa) = move_build::MovePhase1 {
@@ -406,16 +399,10 @@ pub mod partial {
                 }
                 .apply(team, self.state);
                 (g, Some(h), None)
-                // apply_normal_move(
-                //     this_unit,
-                //     self.target,
-                //     &mut self.state.env,
-                //     self.state.world,
-                // )
             }
         }
         pub async fn execute_with_animation(
-            mut self,
+            self,
             team: ActiveTeam,
             data: &mut ace::WorkerManager<'_>,
             mesh: SmallMesh,
@@ -424,28 +411,25 @@ pub mod partial {
             Option<move_build::PushPullInfo>,
             Option<move_build::MetaInfo>,
         ) {
-            
             if let Some(extra) = self.is_extra {
-                
-                
                 let (f, g) = move_build::ExtraPhase1 {
                     original: extra.unit,
                     moveto: self.this_unit,
                     target_cell: self.target,
-                }.animate(team,self.state,data).await
-
+                }
+                .animate(team, self.state, data)
+                .await
                 .apply(team, self.state);
 
                 (f, None, Some(g))
             } else {
-                
-                let (s, a, pa)  = move_build::MovePhase1 {
+                let (s, a, pa) = move_build::MovePhase1 {
                     unit: self.this_unit,
                     target: self.target,
-                }.animate(team, data, mesh, self.state, self.this_unit, self.target)
-                    .await.apply(team, self.state);
-
-
+                }
+                .animate(team, data, mesh, self.state, self.this_unit, self.target)
+                .await
+                .apply(team, self.state);
 
                 (s, Some(a), None)
             }
