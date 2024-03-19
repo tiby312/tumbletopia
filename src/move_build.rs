@@ -40,7 +40,7 @@ impl ExtraPhase1 {
         }
     }
 
-    pub fn apply(self, team: ActiveTeam, game: &mut GameState) -> (PartialMoveSigl, MetaInfo) {
+    pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> (PartialMoveSigl, MetaInfo) {
         let original = self.original;
         let moveto = self.moveto;
         let target_cell = self.target_cell;
@@ -75,7 +75,7 @@ impl ExtraPhase1 {
         team: ActiveTeam,
         state: &GameState,
         data: &mut ace::WorkerManager<'_>,
-    ) {
+    ) ->&Self{
         let target = self.target_cell;
 
         let terrain_type = if !state.env.land.is_coord_set(target) {
@@ -98,6 +98,7 @@ impl ExtraPhase1 {
                 team,
             )
             .await;
+        self
     }
 }
 
@@ -114,7 +115,7 @@ impl MovePhase1 {
         state: &GameState,
         this_unit: GridCoord,
         target: GridCoord,
-    ) {
+    ) ->&Self{
         let walls = calculate_walls(this_unit, state);
 
         let k = move_build::MovePhase1 {
@@ -137,6 +138,7 @@ impl MovePhase1 {
                 team,
             )
             .await;
+        self
     }
     //TODO combine with animate
     fn generate_info(&self, team: ActiveTeam, game: &GameState) -> PushPullInfo {
@@ -164,7 +166,7 @@ impl MovePhase1 {
         e
     }
 
-    pub fn undo(self, team_index: ActiveTeam, effect: &PushPullInfo, state: &mut GameState) {
+    pub fn undo(&self, team_index: ActiveTeam, effect: &PushPullInfo, state: &mut GameState) {
         let moveto = self.target;
         let unit = self.unit;
         let k = state
@@ -202,7 +204,7 @@ impl MovePhase1 {
     }
 
     pub fn apply(
-        self,
+        &self,
         team: ActiveTeam,
         game: &mut GameState,
     ) -> (PartialMoveSigl, PushPullInfo, PowerupAction) {

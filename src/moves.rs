@@ -424,82 +424,28 @@ pub mod partial {
             Option<move_build::PushPullInfo>,
             Option<move_build::MetaInfo>,
         ) {
-            fn calculate_walls(position: GridCoord, state: &GameState) -> SmallMesh {
-                let env = &state.env;
-                let mut walls = SmallMesh::new();
-
-                for a in position.to_cube().range(2) {
-                    let a = a.to_axial();
-                    //TODO this is duplicated logic in selection function???
-                    let cc = env.land.is_coord_set(a);
-                    if cc || (a != position && state.factions.contains(a)) {
-                        walls.add(a.sub(&position));
-                    }
-                }
-
-                walls
-            }
+            
             if let Some(extra) = self.is_extra {
-                let terrain_type = if !self.state.env.land.is_coord_set(self.target) {
-                    animation::TerrainType::Grass
-                } else {
-                    if !self.state.env.forest.is_coord_set(self.target) {
-                        animation::TerrainType::Mountain
-                    } else {
-                        unreachable!()
-                    }
-                };
-
-                let _ = data
-                    .wait_animation(
-                        animation::AnimationCommand::Terrain {
-                            pos: self.target,
-                            terrain_type,
-                            dir: animation::AnimationDirection::Up,
-                        },
-                        team,
-                    )
-                    .await;
-
-                let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
-
+                
+                
                 let (f, g) = move_build::ExtraPhase1 {
                     original: extra.unit,
-                    moveto: this_unit.position,
+                    moveto: self.this_unit,
                     target_cell: self.target,
-                }
+                }.animate(team,self.state,data).await
+
                 .apply(team, self.state);
 
                 (f, None, Some(g))
             } else {
-                let walls = calculate_walls(self.this_unit, self.state);
-
-                let k = move_build::MovePhase1 {
+                
+                let (s, a, pa)  = move_build::MovePhase1 {
                     unit: self.this_unit,
                     target: self.target,
-                };
+                }.animate(team, data, mesh, self.state, self.this_unit, self.target)
+                    .await.apply(team, self.state);
 
-                k.animate(team, data, walls, self.state, self.this_unit, self.target)
-                    .await;
 
-                // let info = k.generate_info(team,self.state);
-
-                // let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
-
-                // let _ = data
-                //     .wait_animation(
-                //         animation::AnimationCommand::Movement {
-                //             unit: this_unit.clone(),
-                //             mesh,
-                //             walls,
-                //             end: self.target,
-                //             data: info,
-                //         },
-                //         team,
-                //     )
-                //     .await;
-
-                let (s, a, pa) = k.apply(team, self.state);
 
                 (s, Some(a), None)
             }
