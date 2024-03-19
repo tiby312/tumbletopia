@@ -1,107 +1,87 @@
 use super::*;
 use crate::{movement::movement_mesh::SmallMesh, moves::*};
 
-
-pub struct PartialMoveMovement<'a>{
-    pub this_unit: GridCoord,
-    pub state: &'a mut GameState,
-    pub target: GridCoord,
+pub struct ExtraPhase1 {
+    pub original: GridCoord,
+    pub moveto: GridCoord,
+    pub target_cell: GridCoord,
 }
-impl PartialMoveMovement<'_>{
-    pub fn execute(
-        self,
-        team: ActiveTeam,
-    ) -> (
-        PartialMoveSigl,
-        move_build::PushPullInfo,
-    ) {
-        let (g, h, pa) = move_build::MovePhase1 {
-            unit: self.this_unit,
-            target: self.target,
-            team,
+impl ExtraPhase1 {
+    pub fn undo(self, meta: &MetaInfo, state: &mut GameState) -> MovePhase1 {
+        let moveto = self.moveto;
+        let unit = self.original;
+        let attackto = self.target_cell;
+
+        for a in meta.fog.0.iter_mesh(moveto) {
+            assert!(!state.env.fog.is_coord_set(a));
+            state.env.fog.set_coord(a, true);
         }
-        .execute(self.state);
-        (g, h)
+
+        if !meta.bomb.0.is_empty() {
+            assert_eq!(unit, attackto);
+            assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 2);
+            for a in meta.bomb.0.iter_mesh(unit) {
+                assert!(state.env.land.is_coord_set(a));
+                state.env.land.set_coord(a, false);
+            }
+        } else {
+            if state.env.forest.is_coord_set(attackto) {
+                state.env.forest.set_coord(attackto, false);
+            } else if state.env.land.is_coord_set(attackto) {
+                state.env.land.set_coord(attackto, false);
+            } else {
+                unreachable!();
+            }
+        }
+
+        MovePhase1 {
+            unit: self.original,
+            target: self.moveto,
+        }
     }
 
-    pub async fn execute_with_animation(
-        mut self,
+    pub fn apply(self, team: ActiveTeam, game: &mut GameState) -> (PartialMoveSigl, MetaInfo) {
+        let original = self.original;
+        let moveto = self.moveto;
+        let target_cell = self.target_cell;
+        let mut bb = BombInfo(SmallMesh::new());
+        if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
+            //if false{
+            bb = detonate_bomb(original, game);
+        } else {
+            if !game.env.land.is_coord_set(target_cell) {
+                game.env.land.set_coord(target_cell, true)
+            } else {
+                // if !env.forest.is_coord_set(target_cell) {
+                //     env.forest.set_coord(target_cell, true);
+                // }
+                unreachable!("WAT");
+            }
+        }
+
+        let fog = uncover_fog(moveto, &mut game.env);
+
+        (
+            PartialMoveSigl {
+                unit: moveto,
+                moveto: target_cell,
+            },
+            MetaInfo { fog, bomb: bb },
+        )
+    }
+
+    pub async fn animate(
+        &self,
         team: ActiveTeam,
+        state: &GameState,
         data: &mut ace::WorkerManager<'_>,
-        mesh: SmallMesh,
-    ) -> (
-        PartialMoveSigl,
-        move_build::PushPullInfo,
     ) {
-        
-        let walls = calculate_walls(self.this_unit, self.state);
+        let target = self.target_cell;
 
-        let k = move_build::MovePhase1 {
-            unit: self.this_unit,
-            target: self.target,
-            team,
-        };
-        let info = k.generate_info(self.state);
-
-        let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
-
-        let _ = data
-            .wait_animation(
-                animation::AnimationCommand::Movement {
-                    unit: this_unit.clone(),
-                    mesh,
-                    walls,
-                    end: self.target,
-                    data: info,
-                },
-                team,
-            )
-            .await;
-
-        let (s, a, pa) = k.execute(self.state);
-
-        (s, a)
-    }
-}
-
-
-pub struct PartialMoveExtra<'a>{
-    pub this_unit: GridCoord,
-    pub state: &'a mut GameState,
-    pub target: GridCoord,
-    pub extra: PartialMoveSigl,
-}
-impl PartialMoveExtra<'_>{
-    pub fn execute(
-        self,
-        team: ActiveTeam,
-    ) -> (
-        PartialMoveSigl,
-        move_build::MetaInfo,
-    ) {
-        let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
-
-        let (a, b) = move_build::apply_extra_move(
-            self.extra.unit,
-            this_unit.position,
-            self.target,
-            self.state,
-        );
-        (a, b)
-    }
-    pub async fn execute_with_animation(
-        mut self,
-        team: ActiveTeam,
-        data: &mut ace::WorkerManager<'_>,
-        mesh: SmallMesh,
-    ) -> (
-        PartialMoveSigl,
-        move_build::MetaInfo,
-    ) {
-        let terrain_type = if !self.state.env.land.is_coord_set(self.target) {
+        let terrain_type = if !state.env.land.is_coord_set(target) {
             animation::TerrainType::Grass
         } else {
-            if !self.state.env.forest.is_coord_set(self.target) {
+            if !state.env.forest.is_coord_set(target) {
                 animation::TerrainType::Mountain
             } else {
                 unreachable!()
@@ -111,37 +91,56 @@ impl PartialMoveExtra<'_>{
         let _ = data
             .wait_animation(
                 animation::AnimationCommand::Terrain {
-                    pos: self.target,
+                    pos: target,
                     terrain_type,
                     dir: animation::AnimationDirection::Up,
                 },
                 team,
             )
             .await;
-
-        let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
-
-        let (f, g) = move_build::apply_extra_move(
-            self.extra.unit,
-            this_unit.position,
-            self.target,
-            self.state,
-        );
-        (f, g)
-
     }
 }
-
-
 
 pub struct MovePhase1 {
     pub unit: GridCoord,
     pub target: GridCoord,
-    pub team: ActiveTeam,
 }
 impl MovePhase1 {
-    pub fn generate_info(&self, game: &GameState) -> PushPullInfo {
-        let this_unit = game.factions.get_unit(self.team, self.unit);
+    pub async fn animate(
+        &self,
+        team: ActiveTeam,
+        data: &mut ace::WorkerManager<'_>,
+        mesh: SmallMesh,
+        state: &GameState,
+        this_unit: GridCoord,
+        target: GridCoord,
+    ) {
+        let walls = calculate_walls(this_unit, state);
+
+        let k = move_build::MovePhase1 {
+            unit: this_unit,
+            target: target,
+        };
+        let info = k.generate_info(team, state);
+
+        let this_unit = state.factions.get_unit(team, this_unit);
+
+        let _ = data
+            .wait_animation(
+                animation::AnimationCommand::Movement {
+                    unit: this_unit.clone(),
+                    mesh,
+                    walls,
+                    end: target,
+                    data: info,
+                },
+                team,
+            )
+            .await;
+    }
+    //TODO combine with animate
+    fn generate_info(&self, team: ActiveTeam, game: &GameState) -> PushPullInfo {
+        let this_unit = game.factions.get_unit(team, self.unit);
         let target_cell = self.target;
         let mut e = PushPullInfo::None;
         match this_unit.typ {
@@ -164,9 +163,51 @@ impl MovePhase1 {
 
         e
     }
-    pub fn execute(self, game: &mut GameState) -> (PartialMoveSigl, PushPullInfo, PowerupAction) {
+
+    pub fn undo(self, team_index: ActiveTeam, effect: &PushPullInfo, state: &mut GameState) {
+        let moveto = self.target;
+        let unit = self.unit;
+        let k = state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .find_slow_mut(&moveto)
+            .unwrap();
+
+        // for a in effect.fog.0.iter_mesh(moveto) {
+        //     assert!(!state.env.fog.is_coord_set(a));
+        //     state.env.fog.set_coord(a, true);
+        // }
+
+        match effect {
+            PushPullInfo::PushedLand => {
+                let dir = unit.dir_to(&moveto);
+                let t3 = moveto.advance(dir);
+                assert!(state.env.land.is_coord_set(t3));
+                state.env.land.set_coord(t3, false);
+                assert!(!state.env.land.is_coord_set(moveto));
+                state.env.land.set_coord(moveto, true);
+            }
+            PushPullInfo::PulledLand => {
+                let dir = unit.dir_to(&moveto);
+                let t3 = unit.back(dir);
+                assert!(state.env.land.is_coord_set(unit));
+                state.env.land.set_coord(unit, false);
+                assert!(!state.env.land.is_coord_set(t3));
+                state.env.land.set_coord(t3, true);
+            }
+            PushPullInfo::None => {}
+        }
+        k.position = unit;
+    }
+
+    pub fn apply(
+        self,
+        team: ActiveTeam,
+        game: &mut GameState,
+    ) -> (PartialMoveSigl, PushPullInfo, PowerupAction) {
         let env = &mut game.env;
-        let this_unit = game.factions.get_unit_mut(self.team, self.unit);
+        let this_unit = game.factions.get_unit_mut(team, self.unit);
         let target_cell = self.target;
         let mut e = PushPullInfo::None;
 
@@ -228,114 +269,10 @@ impl MovePhase1 {
     }
 }
 
-pub fn apply_extra_move(
-    original: GridCoord,
-    moveto: GridCoord,
-    target_cell: GridCoord,
-    game: &mut GameState,
-) -> (PartialMoveSigl, MetaInfo) {
-    let mut bb = BombInfo(SmallMesh::new());
-    if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
-        //if false{
-        bb = detonate_bomb(original, game);
-    } else {
-        if !game.env.land.is_coord_set(target_cell) {
-            game.env.land.set_coord(target_cell, true)
-        } else {
-            // if !env.forest.is_coord_set(target_cell) {
-            //     env.forest.set_coord(target_cell, true);
-            // }
-            unreachable!("WAT");
-        }
-    }
-
-    let fog = uncover_fog(moveto, &mut game.env);
-
-    (
-        PartialMoveSigl {
-            unit: moveto,
-            moveto: target_cell,
-        },
-        MetaInfo { fog, bomb: bb },
-    )
-}
-
-pub fn undo_movement(
-    team_index: ActiveTeam,
-    unit: GridCoord,
-    moveto: GridCoord,
-    effect: &PushPullInfo,
-    state: &mut GameState,
-) {
-    let k = state
-        .factions
-        .relative_mut(team_index)
-        .this_team
-        .find_slow_mut(&moveto)
-        .unwrap();
-
-    // for a in effect.fog.0.iter_mesh(moveto) {
-    //     assert!(!state.env.fog.is_coord_set(a));
-    //     state.env.fog.set_coord(a, true);
-    // }
-
-    match effect {
-        PushPullInfo::PushedLand => {
-            let dir = unit.dir_to(&moveto);
-            let t3 = moveto.advance(dir);
-            assert!(state.env.land.is_coord_set(t3));
-            state.env.land.set_coord(t3, false);
-            assert!(!state.env.land.is_coord_set(moveto));
-            state.env.land.set_coord(moveto, true);
-        }
-        PushPullInfo::PulledLand => {
-            let dir = unit.dir_to(&moveto);
-            let t3 = unit.back(dir);
-            assert!(state.env.land.is_coord_set(unit));
-            state.env.land.set_coord(unit, false);
-            assert!(!state.env.land.is_coord_set(t3));
-            state.env.land.set_coord(t3, true);
-        }
-        PushPullInfo::None => {}
-    }
-    k.position = unit;
-}
-
 pub enum PowerupAction {
     GotPowerup,
     DiscardedPowerup,
     None,
-}
-
-pub fn undo_extra(
-    team_index: ActiveTeam,
-    unit: GridCoord,
-    moveto: GridCoord,
-    attackto: GridCoord,
-    meta: &MetaInfo,
-    state: &mut GameState,
-) {
-    for a in meta.fog.0.iter_mesh(moveto) {
-        assert!(!state.env.fog.is_coord_set(a));
-        state.env.fog.set_coord(a, true);
-    }
-
-    if !meta.bomb.0.is_empty() {
-        assert_eq!(unit, attackto);
-        assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 2);
-        for a in meta.bomb.0.iter_mesh(unit) {
-            assert!(state.env.land.is_coord_set(a));
-            state.env.land.set_coord(a, false);
-        }
-    } else {
-        if state.env.forest.is_coord_set(attackto) {
-            state.env.forest.set_coord(attackto, false);
-        } else if state.env.land.is_coord_set(attackto) {
-            state.env.land.set_coord(attackto, false);
-        } else {
-            unreachable!();
-        }
-    }
 }
 
 #[derive(PartialOrd, Ord, Clone, Copy, Eq, PartialEq, Debug)]
@@ -411,7 +348,6 @@ pub fn uncover_fog(og: GridCoord, env: &mut Environment) -> FogInfo {
     }
     FogInfo(mesh)
 }
-
 
 fn calculate_walls(position: GridCoord, state: &GameState) -> SmallMesh {
     let env = &state.env;

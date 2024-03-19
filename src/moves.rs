@@ -258,8 +258,16 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                move_build::undo_extra(team_index, *unit, *moveto, *attackto, &effect.meta, state);
-                move_build::undo_movement(team_index, *unit, *moveto, &effect.pushpull, state)
+                let k = move_build::ExtraPhase1 {
+                    original: *unit,
+                    moveto: *moveto,
+                    target_cell: *attackto,
+                };
+                k.undo(&effect.meta, state)
+                    .undo(team_index, &effect.pushpull, state);
+
+                // move_build::undo_extra(team_index, *unit, *moveto, *attackto, &effect.meta, state);
+                // move_build::undo_movement(team_index, *unit, *moveto, &effect.pushpull, state)
             }
             &ActualMove::Powerup { unit, moveto } => {
                 assert!(!state.env.land.is_coord_set(moveto));
@@ -327,11 +335,22 @@ impl GameState {
                     movs.push(mmo);
 
                     //mm.execute_undo(state,team);
-                    move_build::undo_extra(team, pos, mm, sm, &k, state);
+                    move_build::ExtraPhase1 {
+                        original: pos,
+                        moveto: mm,
+                        target_cell: sm,
+                    }
+                    .undo(&k, state);
+                    //move_build::undo_extra(team, pos, mm, sm, &k, state);
                 }
 
                 //revert it back just the movement component.
-                move_build::undo_movement(team, pos, mm, &effect.unwrap(), state);
+                move_build::MovePhase1 {
+                    unit: pos,
+                    target: mm,
+                }
+                .undo(team, &effect.unwrap(), state);
+                //move_build::undo_movement(team, pos, mm, &effect.unwrap(), state);
             }
         }
         movs
@@ -345,9 +364,6 @@ pub mod partial {
     use crate::animation::TerrainType;
 
     use super::*;
-
-    
-
 
     #[derive(Debug)]
     pub struct PartialMove<'a> {
@@ -369,20 +385,26 @@ pub mod partial {
             let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
             if let Some(extra) = self.is_extra {
-                let (a, b) = move_build::apply_extra_move(
-                    extra.unit,
-                    this_unit.position,
-                    self.target,
-                    self.state,
-                );
+                let (a, b) = move_build::ExtraPhase1 {
+                    original: extra.unit,
+                    moveto: this_unit.position,
+                    target_cell: self.target,
+                }
+                .apply(team, self.state);
+
+                // let (a, b) = move_build::apply_extra_move(
+                //     extra.unit,
+                //     this_unit.position,
+                //     self.target,
+                //     self.state,
+                // );
                 (a, None, Some(b))
             } else {
                 let (g, h, pa) = move_build::MovePhase1 {
                     unit: self.this_unit,
                     target: self.target,
-                    team,
                 }
-                .execute(self.state);
+                .apply(team, self.state);
                 (g, Some(h), None)
                 // apply_normal_move(
                 //     this_unit,
@@ -441,12 +463,13 @@ pub mod partial {
 
                 let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
 
-                let (f, g) = move_build::apply_extra_move(
-                    extra.unit,
-                    this_unit.position,
-                    self.target,
-                    self.state,
-                );
+                let (f, g) = move_build::ExtraPhase1 {
+                    original: extra.unit,
+                    moveto: this_unit.position,
+                    target_cell: self.target,
+                }
+                .apply(team, self.state);
+
                 (f, None, Some(g))
             } else {
                 let walls = calculate_walls(self.this_unit, self.state);
@@ -454,26 +477,29 @@ pub mod partial {
                 let k = move_build::MovePhase1 {
                     unit: self.this_unit,
                     target: self.target,
-                    team,
                 };
-                let info = k.generate_info(self.state);
 
-                let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
-
-                let _ = data
-                    .wait_animation(
-                        animation::AnimationCommand::Movement {
-                            unit: this_unit.clone(),
-                            mesh,
-                            walls,
-                            end: self.target,
-                            data: info,
-                        },
-                        team,
-                    )
+                k.animate(team, data, walls, self.state, self.this_unit, self.target)
                     .await;
 
-                let (s, a, pa) = k.execute(self.state);
+                // let info = k.generate_info(team,self.state);
+
+                // let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
+
+                // let _ = data
+                //     .wait_animation(
+                //         animation::AnimationCommand::Movement {
+                //             unit: this_unit.clone(),
+                //             mesh,
+                //             walls,
+                //             end: self.target,
+                //             data: info,
+                //         },
+                //         team,
+                //     )
+                //     .await;
+
+                let (s, a, pa) = k.apply(team, self.state);
 
                 (s, Some(a), None)
             }
