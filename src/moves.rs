@@ -102,7 +102,6 @@ pub struct ActualMove {
     pub original: GridCoord,
     pub moveto: GridCoord,
     pub attackto: GridCoord,
-    //pub effect: move_build::UndoInfo,
 }
 
 
