@@ -262,7 +262,7 @@ pub async fn reselect_loop(
         &unit.position,
         unit.typ,
         selected_unit.team,
-        extra_attack.as_ref().map(|a| a.prev_move.unit),
+        extra_attack.as_ref().map(|a| a.prev_move.original),
     );
 
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
@@ -342,7 +342,7 @@ pub async fn reselect_loop(
 
     {
         if let Some(e) = extra_attack {
-            let (a, meta) = move_build::ExtraPhase {
+            let meta = move_build::ExtraPhase {
                 original: e.prev_coord.position,
                 moveto: e.coord(),
                 target: target_cell,
@@ -352,7 +352,7 @@ pub async fn reselect_loop(
             .apply(selected_unit.team, game);
 
             return LoopRes::EndTurn(moves::ActualMove::Normal {
-                unit: e.prev_move.unit,
+                unit: e.prev_move.original,
                 moveto: e.prev_move.moveto,
                 attackto: target_cell,
                 effect: move_build::UndoInfo {
@@ -372,34 +372,19 @@ pub async fn reselect_loop(
             let mut kk = this_unit.clone();
             kk.position = target_cell;
 
-            let (iii, effect, pa) = move_build::MovePhase {
+            let mp = move_build::MovePhase {
                 original: p,
                 moveto: target_cell,
-            }
-            .animate(selected_unit.team, doop, game)
-            .await
-            .apply(selected_unit.team, game);
+            };
 
-            // let iii = moves::PartialMove {
-            //     this_unit: p,
-            //     target: target_cell,
-            //     is_extra: None,
-            //     state: game,
-            // };
-            // let (iii, effect, k) = iii
-            //     .execute_with_animation(selected_unit.team, doop, cca.clone())
-            //     .await;
-            // assert!(k.is_none());
+            let (effect, pa) = mp
+                .animate(selected_unit.team, doop, game)
+                .await
+                .apply(selected_unit.team, game);
+
             {
-                //if cont {
-                *extra_attack = Some(selection::PossibleExtra::new(iii, effect, kk));
+                *extra_attack = Some(selection::PossibleExtra::new(mp, effect, kk));
                 return LoopRes::Select(selected_unit.with(c).with_team(team_index));
-                // } else {
-                //     return LoopRes::EndTurn(moves::ActualMove::Powerup {
-                //         unit: this_unit.position,
-                //         moveto: target_cell,
-                //     });
-                // }
             }
         }
     }

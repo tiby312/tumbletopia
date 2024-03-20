@@ -46,7 +46,7 @@ impl ExtraPhase {
         }
     }
 
-    pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> (PartialMoveSigl, MetaInfo) {
+    pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> MetaInfo {
         let original = self.original;
         let moveto = self.moveto;
         let target_cell = self.target;
@@ -67,13 +67,7 @@ impl ExtraPhase {
 
         let fog = uncover_fog(moveto, &mut game.env);
 
-        (
-            PartialMoveSigl {
-                unit: moveto,
-                moveto: target_cell,
-            },
-            MetaInfo { fog, bomb: bb },
-        )
+        MetaInfo { fog, bomb: bb }
     }
 
     pub async fn animate(
@@ -108,6 +102,7 @@ impl ExtraPhase {
     }
 }
 
+#[derive(Clone)]
 pub struct MovePhase {
     pub original: GridCoord,
     pub moveto: GridCoord,
@@ -223,11 +218,7 @@ impl MovePhase {
         k.position = unit;
     }
 
-    pub fn apply(
-        &self,
-        team: ActiveTeam,
-        game: &mut GameState,
-    ) -> (PartialMoveSigl, PushPullInfo, PowerupAction) {
+    pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> (PushPullInfo, PowerupAction) {
         let env = &mut game.env;
         let this_unit = game.factions.get_unit_mut(team, self.original);
         let target_cell = self.moveto;
@@ -280,14 +271,7 @@ impl MovePhase {
 
         this_unit.position = target_cell;
 
-        (
-            PartialMoveSigl {
-                unit: orig,
-                moveto: target_cell,
-            },
-            e,
-            powerup,
-        )
+        (e, powerup)
     }
 }
 

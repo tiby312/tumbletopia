@@ -2,11 +2,11 @@ use super::*;
 
 use crate::movement::movement_mesh::SmallMesh;
 
-#[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
-pub struct PartialMoveSigl {
-    pub unit: GridCoord,
-    pub moveto: GridCoord,
-}
+// #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
+// pub struct PartialMoveSigl {
+//     pub unit: GridCoord,
+//     pub moveto: GridCoord,
+// }
 
 impl GameState {
     pub fn generate_unit_possible_moves_inner2(
@@ -131,7 +131,7 @@ impl ActualMove {
     pub async fn execute_move_ani(
         &self,
         state: &mut GameState,
-        team_index: ActiveTeam,
+        team: ActiveTeam,
         doop: &mut WorkerManager<'_>,
     ) {
         match &self {
@@ -146,16 +146,13 @@ impl ActualMove {
                     moveto: *moveto,
                 };
 
-                let (iii, effect, pa) = kk
-                    .animate(team_index, doop, state)
-                    .await
-                    .apply(team_index, state);
+                let (effect, pa) = kk.animate(team, doop, state).await.apply(team, state);
 
-                let _ = kk
+                let a = kk
                     .into_attack(*attackto)
-                    .animate(team_index, state, doop)
+                    .animate(team, state, doop)
                     .await
-                    .apply(team_index, state);
+                    .apply(team, state);
             }
             &ActualMove::Powerup { unit, moveto } => {
                 todo!()
@@ -171,7 +168,7 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                let (iii, effect, pa) = move_build::MovePhase {
+                let (effect, pa) = move_build::MovePhase {
                     original: *unit,
                     moveto: *moveto,
                 }
@@ -242,7 +239,7 @@ impl GameState {
                     original: pos,
                     moveto: mm,
                 };
-                let (il, effect, pa) = mmm.apply(team, state);
+                let (effect, pa) = mmm.apply(team, state);
 
                 let second_mesh =
                     state.generate_unit_possible_moves_inner2(&mm, ttt, team, Some(pos));
@@ -256,7 +253,7 @@ impl GameState {
                         target: sm,
                     };
 
-                    let (il2, k) = kkk.apply(team, state);
+                    let k = kkk.apply(team, state);
 
                     let mmo = moves::ActualMove::Normal {
                         unit: pos,
