@@ -100,7 +100,76 @@ impl GameState {
             && game.factions.cats.find_slow(&a).is_none()
     }
 
-    pub fn generate_possible_moves(
+    pub fn generate_possible_moves_extra(
+        &self,
+        foo: &move_build::MovePhase,
+        typ: Type,
+        _team: ActiveTeam,
+    ) -> SmallMesh {
+        let game = self;
+        let unit = foo.moveto;
+        let original_pos = foo.original;
+        let mut mesh = SmallMesh::new();
+        for a in unit
+            .to_cube()
+            .ring(1)
+            .chain(std::iter::once(original_pos.to_cube()))
+        {
+            let a = a.to_axial();
+
+            if a != unit && game.check_if_occ(a, true) {
+                mesh.add(a.sub(&unit));
+
+                // for a in a.to_cube().ring(1) {
+                //     let a = a.to_axial();
+
+                //     if check_if_occ(a, true) {
+                //         mesh.add(a.sub(&unit));
+                //     }
+                // }
+            }
+        }
+        mesh
+    }
+    pub fn generate_possible_moves_movement(
+        &self,
+        unit: &GridCoord,
+        typ: Type,
+        _team: ActiveTeam,
+    ) -> SmallMesh {
+        let game = self;
+        let unit = *unit;
+        let mut mesh = SmallMesh::new();
+        for a in unit.to_cube().ring(1) {
+            let a = a.to_axial();
+            let dir = unit.dir_to(&a);
+
+            if a != unit && game.check_if_occ(a, true) {
+                mesh.add(a.sub(&unit));
+
+                if typ.is_warrior() {
+                    for b in a.to_cube().ring(1) {
+                        let b = b.to_axial();
+
+                        if b != unit && game.check_if_occ(b, true) {
+                            mesh.add(b.sub(&unit));
+                        }
+                    }
+                }
+            } else {
+                if let Type::Warrior { powerup } = typ {
+                    if game.env.land.is_coord_set(a) {
+                        let check = a.advance(dir);
+                        if a != unit && game.check_if_occ(check, true) {
+                            mesh.add(a.sub(&unit));
+                        }
+                    }
+                }
+            }
+        }
+        mesh
+    }
+    pub fn generate_possible_moves222(
         &self,
         unit: &GridCoord,
         typ: Type,
@@ -180,7 +249,7 @@ impl GameState {
             let pos = state.factions.relative_mut(team).this_team.units[i].position;
             let ttt = state.factions.relative_mut(team).this_team.units[i].typ;
 
-            let mesh = state.generate_possible_moves(&pos, ttt, team, None);
+            let mesh = state.generate_possible_moves_movement(&pos, ttt, team);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
@@ -190,7 +259,7 @@ impl GameState {
                 };
                 let effect = mmm.apply(team, state);
 
-                let second_mesh = state.generate_possible_moves(&mm, ttt, team, Some(pos));
+                let second_mesh = state.generate_possible_moves_extra(&mmm, ttt, team);
 
                 for sm in second_mesh.iter_mesh(mm) {
                     assert!(!state.env.land.is_coord_set(sm));
