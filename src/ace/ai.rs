@@ -316,7 +316,7 @@ pub async fn iterative_deepening<'a>(
     //     results.pop().unwrap()
     // };
     let mov = results.pop().unwrap();
-    
+
     let m = mov;
 
     console_dbg!("AI MOVE::", m.mov, m.eval);

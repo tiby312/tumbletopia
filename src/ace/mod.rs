@@ -378,7 +378,10 @@ pub async fn reselect_loop(
                 .apply(selected_unit.team, game);
 
             {
-                *have_moved = Some(selection::HaveMoved{the_move:mp,effect});
+                *have_moved = Some(selection::HaveMoved {
+                    the_move: mp,
+                    effect,
+                });
                 return LoopRes::Select(selected_unit.with(c).with_team(team_index));
             }
         }

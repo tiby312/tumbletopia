@@ -2,7 +2,40 @@ use super::*;
 
 use crate::movement::movement_mesh::SmallMesh;
 
+pub struct MoveSelection;
+
+impl MoveSelection {
+    pub fn generate_unit_possible_moves_inner2(
+        &self,
+        unit: &GridCoord,
+        typ: Type,
+        team: ActiveTeam,
+    ) -> SmallMesh {
+        todo!()
+    }
+}
+pub struct AttackSelection;
+
+impl AttackSelection {}
+
 impl GameState {
+    fn check_if_occ(&self, a: GridCoord, check_fog: bool) -> bool {
+        let game = self;
+        let is_world_cell = game.world.get_game_cells().is_coord_set(a);
+
+        let jjj = if check_fog {
+            !game.env.fog.is_coord_set(a)
+        } else {
+            true
+        };
+
+        is_world_cell
+            && !game.env.land.is_coord_set(a)
+            && jjj
+            && game.factions.dogs.find_slow(&a).is_none()
+            && game.factions.cats.find_slow(&a).is_none()
+    }
+
     pub fn generate_unit_possible_moves_inner2(
         &self,
         unit: &GridCoord,
@@ -14,32 +47,32 @@ impl GameState {
         let unit = *unit;
         let mut mesh = SmallMesh::new();
 
-        let check_if_occ = |a: GridCoord, check_fog: bool| {
-            let is_world_cell = game.world.get_game_cells().is_coord_set(a);
+        // let check_if_occ = |a: GridCoord, check_fog: bool| {
+        //     let is_world_cell = game.world.get_game_cells().is_coord_set(a);
 
-            let jjj = if check_fog {
-                !game.env.fog.is_coord_set(a)
-            } else {
-                true
-            };
+        //     let jjj = if check_fog {
+        //         !game.env.fog.is_coord_set(a)
+        //     } else {
+        //         true
+        //     };
 
-            a != unit
-                && is_world_cell
-                && !game.env.land.is_coord_set(a)
-                && jjj
-                && game
-                    .factions
-                    .relative(team)
-                    .this_team
-                    .find_slow(&a)
-                    .is_none()
-                && game
-                    .factions
-                    .relative(team)
-                    .that_team
-                    .find_slow(&a)
-                    .is_none()
-        };
+        //     a != unit
+        //         && is_world_cell
+        //         && !game.env.land.is_coord_set(a)
+        //         && jjj
+        //         && game
+        //             .factions
+        //             .relative(team)
+        //             .this_team
+        //             .find_slow(&a)
+        //             .is_none()
+        //         && game
+        //             .factions
+        //             .relative(team)
+        //             .that_team
+        //             .find_slow(&a)
+        //             .is_none()
+        // };
 
         if let Some(original_pos) = last_move {
             for a in unit
@@ -49,7 +82,7 @@ impl GameState {
             {
                 let a = a.to_axial();
 
-                if check_if_occ(a, true) {
+                if a != unit && game.check_if_occ(a, true) {
                     mesh.add(a.sub(&unit));
 
                     // for a in a.to_cube().ring(1) {
@@ -66,14 +99,14 @@ impl GameState {
                 let a = a.to_axial();
                 let dir = unit.dir_to(&a);
 
-                if check_if_occ(a, true) {
+                if a != unit && game.check_if_occ(a, true) {
                     mesh.add(a.sub(&unit));
 
                     if typ.is_warrior() {
                         for b in a.to_cube().ring(1) {
                             let b = b.to_axial();
 
-                            if check_if_occ(b, true) {
+                            if b != unit && game.check_if_occ(b, true) {
                                 mesh.add(b.sub(&unit));
                             }
                         }
@@ -82,7 +115,7 @@ impl GameState {
                     if let Type::Warrior { powerup } = typ {
                         if game.env.land.is_coord_set(a) {
                             let check = a.advance(dir);
-                            if check_if_occ(check, true) {
+                            if a != unit && game.check_if_occ(check, true) {
                                 mesh.add(a.sub(&unit));
                             }
                         }
