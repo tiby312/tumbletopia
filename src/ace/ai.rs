@@ -454,7 +454,18 @@ impl<'a> AlphaBeta<'a> {
             );
 
             let mov = self.path.pop().unwrap();
-            mov.execute_undo(game_after_move, team);
+            {
+                let k = move_build::ExtraPhase {
+                    original: mov.original,
+                    moveto: mov.moveto,
+                    target: mov.attackto,
+                };
+                k.undo(&mov.effect.extra_effect, game_after_move).undo(
+                    team,
+                    &mov.effect.move_effect,
+                    game_after_move,
+                );
+            }
 
             let (keep_going, consider_good_move) = kk.consider(&mov, eval);
 

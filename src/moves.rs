@@ -121,48 +121,6 @@ pub struct ActualMove {
     pub effect: move_build::UndoInfo,
 }
 
-impl ActualMove {
-    // pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
-    //     let ActualMove {
-    //         original: unit,
-    //         moveto,
-    //         attackto,
-    //         effect,
-    //     } = self;
-
-    //     let effect = move_build::MovePhase {
-    //         original: *unit,
-    //         moveto: *moveto,
-    //     }
-    //     .apply(team_index, state);
-
-    //     let target_cell = attackto;
-
-    //     let _ = move_build::ExtraPhase {
-    //         original: *unit,
-    //         moveto: *moveto,
-    //         target: *target_cell,
-    //     }
-    //     .apply(team_index, state);
-    // }
-
-    pub fn execute_undo(&self, state: &mut GameState, team_index: ActiveTeam) {
-        let ActualMove {
-            original: unit,
-            moveto,
-            attackto,
-            effect,
-        } = self;
-
-        let k = move_build::ExtraPhase {
-            original: *unit,
-            moveto: *moveto,
-            target: *attackto,
-        };
-        k.undo(&effect.extra_effect, state)
-            .undo(team_index, &effect.move_effect, state);
-    }
-}
 
 impl GameState {
     pub fn for_all_moves_fast(&mut self, team: ActiveTeam) -> Vec<moves::ActualMove> {
