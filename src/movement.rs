@@ -426,7 +426,6 @@ pub fn path(
             } else {
                 Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
             }
-            
         } else {
             None
         };

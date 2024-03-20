@@ -6,17 +6,17 @@ use super::*;
 pub struct PossibleExtra {
     pub prev_move: move_build::MovePhase,
     pub prev_effect: move_build::MoveEffect,
-    pub prev_coord: UnitData,
+    //pub prev_coord: UnitData,
 }
 impl PossibleExtra {
     pub fn new(
         prev_move: move_build::MovePhase,
         prev_effect: move_build::MoveEffect,
-        prev_coord: UnitData,
+        //prev_coord: UnitData,
     ) -> Self {
         PossibleExtra {
             prev_move,
-            prev_coord,
+            //prev_coord,
             prev_effect,
         }
     }
@@ -24,9 +24,9 @@ impl PossibleExtra {
     // pub fn prev_move(&self) -> &moves::PartialMoveSigl {
     //     &self.prev_move
     // }
-    pub fn coord(&self) -> GridCoord {
-        self.prev_coord.position
-    }
+    // pub fn coord(&self) -> GridCoord {
+    //     self.prev_coord.position
+    // }
 }
 
 pub struct MoveLog {

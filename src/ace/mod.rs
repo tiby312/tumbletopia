@@ -250,7 +250,7 @@ pub async fn reselect_loop(
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
         if let Some(e) = extra_attack {
-            e.coord() != selected_unit.warrior
+            e.prev_move.moveto != selected_unit.warrior
         } else {
             false
         }
@@ -332,7 +332,7 @@ pub async fn reselect_loop(
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
     if let Some(e) = extra_attack {
-        if unwrapped_selected_unit != e.coord() {
+        if unwrapped_selected_unit != e.prev_move.moveto {
             return LoopRes::Deselect;
         }
     }
@@ -341,15 +341,14 @@ pub async fn reselect_loop(
     //We definately want to act on the action the user took on the selected unit.
 
     {
-        if let Some(e) = extra_attack {
-            let meta = move_build::ExtraPhase {
-                original: e.prev_coord.position,
-                moveto: e.coord(),
-                target: target_cell,
-            }
-            .animate(selected_unit.team, game, doop)
-            .await
-            .apply(selected_unit.team, game);
+        if let Some(e) = extra_attack.take() {
+            let meta = e
+                .prev_move
+                .clone()
+                .into_attack(target_cell)
+                .animate(selected_unit.team, game, doop)
+                .await
+                .apply(selected_unit.team, game);
 
             return LoopRes::EndTurn(moves::ActualMove {
                 original: e.prev_move.original,
@@ -379,7 +378,7 @@ pub async fn reselect_loop(
                 .apply(selected_unit.team, game);
 
             {
-                *extra_attack = Some(selection::PossibleExtra::new(mp, effect, kk));
+                *extra_attack = Some(selection::PossibleExtra::new(mp, effect));
                 return LoopRes::Select(selected_unit.with(c).with_team(team_index));
             }
         }
