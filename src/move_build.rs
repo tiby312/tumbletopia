@@ -143,8 +143,31 @@ impl MovePhase {
             original: this_unit,
             moveto: target,
         };
-        let info = k.generate_info(team, state);
 
+        let info = {
+            let this_unit = state.factions.get_unit(team, self.original);
+            let target_cell = self.moveto;
+            let mut e = PushPullInfo::None;
+            match this_unit.typ {
+                Type::Warrior { .. } => {
+                    if state.env.land.is_coord_set(target_cell) {
+                        e = PushPullInfo::PushedLand;
+                    }
+                }
+                Type::Archer => {
+                    if state.env.land.is_coord_set(target_cell) {
+                        e = PushPullInfo::PushedLand;
+                    }
+                    // let dir = self.unit.dir_to(&self.target);
+                    // let k = self.unit.back(dir);
+                    // if game.env.land.is_coord_set(k) {
+                    //     e = UndoInformation::PulledLand;
+                    // }
+                }
+            }
+
+            e
+        };
         let this_unit = state.factions.get_unit(team, this_unit);
 
         let _ = data
@@ -160,31 +183,6 @@ impl MovePhase {
             )
             .await;
         self
-    }
-    //TODO combine with animate
-    fn generate_info(&self, team: ActiveTeam, game: &GameState) -> PushPullInfo {
-        let this_unit = game.factions.get_unit(team, self.original);
-        let target_cell = self.moveto;
-        let mut e = PushPullInfo::None;
-        match this_unit.typ {
-            Type::Warrior { .. } => {
-                if game.env.land.is_coord_set(target_cell) {
-                    e = PushPullInfo::PushedLand;
-                }
-            }
-            Type::Archer => {
-                if game.env.land.is_coord_set(target_cell) {
-                    e = PushPullInfo::PushedLand;
-                }
-                // let dir = self.unit.dir_to(&self.target);
-                // let k = self.unit.back(dir);
-                // if game.env.land.is_coord_set(k) {
-                //     e = UndoInformation::PulledLand;
-                // }
-            }
-        }
-
-        e
     }
 
     pub fn undo(&self, team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
