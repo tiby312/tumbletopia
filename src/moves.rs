@@ -30,6 +30,7 @@ impl GameState {
         let unit = foo.moveto;
         let original_pos = foo.original;
         let mut mesh = SmallMesh::new();
+
         for a in unit
             .to_cube()
             .ring(1)
@@ -53,12 +54,11 @@ impl GameState {
     }
     pub fn generate_possible_moves_movement(
         &self,
-        unit: &GridCoord,
+        &unit: &GridCoord,
         typ: Type,
         _team: ActiveTeam,
     ) -> SmallMesh {
         let game = self;
-        let unit = *unit;
         let mut mesh = SmallMesh::new();
         for a in unit.to_cube().ring(1) {
             let a = a.to_axial();
@@ -89,7 +89,6 @@ impl GameState {
         }
         mesh
     }
-    
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
