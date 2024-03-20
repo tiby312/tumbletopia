@@ -432,7 +432,17 @@ impl<'a> AlphaBeta<'a> {
         for cand in moves {
             let new_depth = depth - 1;
 
-            cand.execute_move_no_ani(game_after_move, team);
+            //cand.execute_move_no_ani(game_after_move, team);
+            {
+                let j = move_build::MovePhase {
+                    original: cand.original,
+                    moveto: cand.moveto,
+                };
+                j.apply(team, game_after_move);
+
+                j.into_attack(cand.attackto).apply(team, game_after_move);
+            }
+
             self.path.push(cand);
             let eval = self.alpha_beta(
                 game_after_move,

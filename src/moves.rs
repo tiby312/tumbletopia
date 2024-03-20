@@ -122,55 +122,29 @@ pub struct ActualMove {
 }
 
 impl ActualMove {
-    // pub async fn execute_move_ani(
-    //     &self,
-    //     state: &mut GameState,
-    //     team: ActiveTeam,
-    //     doop: &mut WorkerManager<'_>,
-    // ) {
+    // pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
     //     let ActualMove {
-    //         original,
+    //         original: unit,
     //         moveto,
     //         attackto,
     //         effect,
     //     } = self;
-    //     let kk = move_build::MovePhase {
-    //         original: *original,
+
+    //     let effect = move_build::MovePhase {
+    //         original: *unit,
     //         moveto: *moveto,
-    //     };
+    //     }
+    //     .apply(team_index, state);
 
-    //     let effect = kk.animate(team, doop, state).await.apply(team, state);
+    //     let target_cell = attackto;
 
-    //     let a = kk
-    //         .into_attack(*attackto)
-    //         .animate(team, state, doop)
-    //         .await
-    //         .apply(team, state);
+    //     let _ = move_build::ExtraPhase {
+    //         original: *unit,
+    //         moveto: *moveto,
+    //         target: *target_cell,
+    //     }
+    //     .apply(team_index, state);
     // }
-
-    pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
-        let ActualMove {
-            original: unit,
-            moveto,
-            attackto,
-            effect,
-        } = self;
-
-        let effect = move_build::MovePhase {
-            original: *unit,
-            moveto: *moveto,
-        }
-        .apply(team_index, state);
-
-        let target_cell = attackto;
-
-        let _ = move_build::ExtraPhase {
-            original: *unit,
-            moveto: *moveto,
-            target: *target_cell,
-        }
-        .apply(team_index, state);
-    }
 
     pub fn execute_undo(&self, state: &mut GameState, team_index: ActiveTeam) {
         let ActualMove {
