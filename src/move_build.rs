@@ -1,6 +1,12 @@
 use super::*;
 use crate::{movement::movement_mesh::SmallMesh, moves::*};
 
+pub struct CompleteMove {
+    pub original: GridCoord,
+    pub moveto: GridCoord,
+    pub target: GridCoord,
+}
+
 pub struct ExtraPhase {
     pub original: GridCoord,
     pub moveto: GridCoord,
@@ -107,18 +113,30 @@ pub struct MovePhase {
     pub moveto: GridCoord,
 }
 impl MovePhase {
+    pub fn into_attack(self, target: GridCoord) -> ExtraPhase {
+        ExtraPhase {
+            original: self.original,
+            moveto: self.moveto,
+            target,
+        }
+    }
     pub async fn animate(
         &self,
         team: ActiveTeam,
         data: &mut ace::WorkerManager<'_>,
-        mesh: SmallMesh,
         state: &GameState,
-        // this_unit: GridCoord,
-        // target: GridCoord,
     ) -> &Self {
         let this_unit = self.original;
         let target = self.moveto;
         let walls = calculate_walls(this_unit, state);
+
+        let unit = state
+            .factions
+            .relative(team)
+            .this_team
+            .find_slow(&this_unit)
+            .unwrap();
+        let mesh = state.generate_unit_possible_moves_inner2(&unit.position, unit.typ, team, None);
 
         let k = move_build::MovePhase {
             original: this_unit,

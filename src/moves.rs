@@ -48,7 +48,6 @@ impl GameState {
         };
 
         if let Some(original_pos) = last_move {
-
             for a in unit
                 .to_cube()
                 .ring(1)
@@ -142,47 +141,21 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                let unit = state
-                    .factions
-                    .relative(team_index)
-                    .this_team
-                    .find_slow(&unitt)
-                    .unwrap();
-                let mesh = state.generate_unit_possible_moves_inner2(
-                    &unit.position,
-                    unit.typ,
-                    team_index,
-                    None,
-                );
-
-                let ttt = unit.typ;
-
-                let (iii, effect, pa) = move_build::MovePhase {
+                let kk = move_build::MovePhase {
                     original: *unitt,
                     moveto: *moveto,
-                }
-                .animate(team_index, doop, mesh, state)
-                .await
-                .apply(team_index, state);
+                };
 
-                let selected_unit = moveto;
-                let target_cell = attackto;
+                let (iii, effect, pa) = kk
+                    .animate(team_index, doop, state)
+                    .await
+                    .apply(team_index, state);
 
-                let mesh = state.generate_unit_possible_moves_inner2(
-                    &selected_unit,
-                    ttt,
-                    team_index,
-                    Some(*unitt),
-                );
-
-                let _ = move_build::ExtraPhase {
-                    original: *unitt,
-                    moveto: *moveto,
-                    target: *target_cell,
-                }
-                .animate(team_index, state, doop)
-                .await
-                .apply(team_index, state);
+                let _ = kk
+                    .into_attack(*attackto)
+                    .animate(team_index, state, doop)
+                    .await
+                    .apply(team_index, state);
             }
             &ActualMove::Powerup { unit, moveto } => {
                 todo!()
@@ -234,7 +207,6 @@ impl ActualMove {
                 };
                 k.undo(&effect.meta, state)
                     .undo(team_index, &effect.pushpull, state);
-
             }
             &ActualMove::Powerup { unit, moveto } => {
                 assert!(!state.env.land.is_coord_set(moveto));

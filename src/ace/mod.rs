@@ -351,7 +351,6 @@ pub async fn reselect_loop(
             .await
             .apply(selected_unit.team, game);
 
-
             return LoopRes::EndTurn(moves::ActualMove::Normal {
                 unit: e.prev_move.unit,
                 moveto: e.prev_move.moveto,
@@ -377,7 +376,7 @@ pub async fn reselect_loop(
                 original: p,
                 moveto: target_cell,
             }
-            .animate(selected_unit.team, doop, cca.clone(), game)
+            .animate(selected_unit.team, doop, game)
             .await
             .apply(selected_unit.team, game);
 
