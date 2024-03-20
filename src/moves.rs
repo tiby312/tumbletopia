@@ -2,11 +2,6 @@ use super::*;
 
 use crate::movement::movement_mesh::SmallMesh;
 
-// #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
-// pub struct PartialMoveSigl {
-//     pub unit: GridCoord,
-//     pub moveto: GridCoord,
-// }
 
 impl GameState {
     pub fn generate_unit_possible_moves_inner2(
@@ -101,17 +96,6 @@ impl GameState {
     }
 }
 
-pub fn has_adjacent_water(game: &GameState, kk: GridCoord) -> bool {
-    for j in kk.to_cube().ring(1) {
-        // if !game.world.get_game_cells().is_coord_set(j.to_axial()) {
-        //     continue;
-        // }
-        if !game.env.land.is_coord_set(j.to_axial()) {
-            return true;
-        }
-    }
-    false
-}
 
 #[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 pub struct ActualMove {
@@ -177,4 +161,3 @@ impl GameState {
     }
 }
 
-use crate::ace::WorkerManager;
