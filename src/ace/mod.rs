@@ -69,12 +69,12 @@ impl<'a> WorkerManager<'a> {
     pub async fn wait_animation<'c>(
         &mut self,
         animation: animation::AnimationCommand,
-        team_index: ActiveTeam,
+        team: ActiveTeam,
     ) {
         let game = unsafe { &*self.game };
         self.sender
             .send(GameWrap {
-                team: team_index,
+                team,
                 game,
                 data: Command::Animate(animation),
             })
@@ -87,14 +87,14 @@ impl<'a> WorkerManager<'a> {
         };
     }
 
-    async fn get_mouse_no_selection<'c>(&mut self, team_index: ActiveTeam) -> Pototo<GridCoord> {
-        let (_, c) = self.get_mouse(MousePrompt::None, team_index).await;
+    async fn get_mouse_no_selection<'c>(&mut self, team: ActiveTeam) -> Pototo<GridCoord> {
+        let (_, c) = self.get_mouse(MousePrompt::None, team).await;
         c
     }
     async fn get_mouse_selection<'c>(
         &mut self,
         cell: CellSelection,
-        team_index: ActiveTeam,
+        team: ActiveTeam,
         grey: bool,
     ) -> (CellSelection, Pototo<GridCoord>) {
         let (b, c) = self
@@ -103,7 +103,7 @@ impl<'a> WorkerManager<'a> {
                     selection: cell,
                     grey,
                 },
-                team_index,
+                team,
             )
             .await;
 
@@ -119,14 +119,14 @@ impl<'a> WorkerManager<'a> {
         (selection, c)
     }
 
-    async fn poke(&mut self, team_index: ActiveTeam) {
+    async fn poke(&mut self, team: ActiveTeam) {
         let game = unsafe { &*self.game };
 
         self.sender
             .send(GameWrap {
                 game,
                 data: Command::Poke,
-                team: team_index,
+                team,
             })
             .await
             .unwrap();
@@ -137,14 +137,14 @@ impl<'a> WorkerManager<'a> {
             unreachable!();
         };
     }
-    async fn send_popup(&mut self, str: &str, team_index: ActiveTeam) {
+    async fn send_popup(&mut self, str: &str, team: ActiveTeam) {
         let game = unsafe { &*self.game };
 
         self.sender
             .send(GameWrap {
                 game,
                 data: Command::Popup(str.into()),
-                team: team_index,
+                team,
             })
             .await
             .unwrap();
@@ -159,7 +159,7 @@ impl<'a> WorkerManager<'a> {
     async fn get_mouse<'c>(
         &mut self,
         cell: MousePrompt,
-        team_index: ActiveTeam,
+        team: ActiveTeam,
     ) -> (MousePrompt, Pototo<GridCoord>) {
         let game = unsafe { &*self.game };
 
@@ -167,7 +167,7 @@ impl<'a> WorkerManager<'a> {
             .send(GameWrap {
                 game,
                 data: Command::GetMouseInput(cell),
-                team: team_index,
+                team,
             })
             .await
             .unwrap();
@@ -227,7 +227,7 @@ pub enum LoopRes<T> {
 pub async fn reselect_loop(
     doop: &mut WorkerManager<'_>,
     game: &mut GameState,
-    team_index: ActiveTeam,
+    team: ActiveTeam,
     have_moved: &mut Option<selection::HaveMoved>,
     selected_unit: SelectType,
 ) -> LoopRes<SelectType> {
@@ -245,7 +245,7 @@ pub async fn reselect_loop(
         .find_slow(&unwrapped_selected_unit)
         .unwrap();
 
-    let grey = if selected_unit.team == team_index {
+    let grey = if selected_unit.team == team {
         //If we are in the middle of a extra attack move, make sure
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
@@ -312,7 +312,7 @@ pub async fn reselect_loop(
         .that_team
         .find_slow(&target_cell)
     {
-        if selected_unit.team != team_index || !contains {
+        if selected_unit.team != team || !contains {
             //If we select an enemy unit thats outside of our units range.
             return LoopRes::Select(selected_unit.with(target.position).not());
         }
@@ -324,7 +324,7 @@ pub async fn reselect_loop(
     }
 
     //If we are trying to move an enemy piece, deselect.
-    if selected_unit.team != team_index {
+    if selected_unit.team != team {
         return LoopRes::Deselect;
     }
 
@@ -381,7 +381,7 @@ pub async fn reselect_loop(
                     the_move: mp,
                     effect,
                 });
-                return LoopRes::Select(selected_unit.with(c).with_team(team_index));
+                return LoopRes::Select(selected_unit.with(c).with_team(team));
             }
         }
     }
@@ -460,39 +460,37 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
     let mut game_history = selection::MoveLog::new();
 
     //Loop over each team!
-    'game_loop: for team_index in ActiveTeam::Dogs.iter() {
-        if let Some(g) = game.game_is_over(team_index) {
+    'game_loop: for team in ActiveTeam::Dogs.iter() {
+        if let Some(g) = game.game_is_over(team) {
             console_dbg!("Game over=", g);
             break 'game_loop;
         }
 
         //Add AIIIIII.
-        if team_index == ActiveTeam::Cats {
+        if team == ActiveTeam::Cats {
             //{
-            doop.send_popup("AI Thinking", team_index).await;
-            let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
-            doop.send_popup("", team_index).await;
+            doop.send_popup("AI Thinking", team).await;
+            let the_move = ai::iterative_deepening(game, team, &mut doop).await;
+            doop.send_popup("", team).await;
 
             let kk = move_build::MovePhase {
                 original: the_move.original,
                 moveto: the_move.moveto,
             };
 
-            kk.animate(team_index, &mut doop, game)
-                .await
-                .apply(team_index, game);
+            kk.animate(team, &mut doop, game).await.apply(team, game);
 
             kk.into_attack(the_move.attackto)
-                .animate(team_index, game, &mut doop)
+                .animate(team, game, &mut doop)
                 .await
-                .apply(team_index, game);
+                .apply(team, game);
 
             game_history.push(the_move);
 
             continue;
         }
 
-        let m = handle_player(game, &mut doop, team_index).await;
+        let m = handle_player(game, &mut doop, team).await;
 
         game_history.push(m);
 
@@ -505,14 +503,14 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
 async fn handle_player(
     game: &mut GameState,
     doop: &mut WorkerManager<'_>,
-    team_index: ActiveTeam,
+    team: ActiveTeam,
 ) -> moves::ActualMove {
     let mut extra_attack = None;
     //Keep allowing the user to select units
     loop {
         //Loop until the user clicks on a selectable unit in their team.
         let mut selected_unit = loop {
-            let data = doop.get_mouse_no_selection(team_index).await;
+            let data = doop.get_mouse_no_selection(team).await;
             let cell = match data {
                 Pototo::Normal(a) => a,
                 Pototo::EndTurn => {
@@ -524,26 +522,16 @@ async fn handle_player(
             };
             //let game = game.view_mut(team_index);
 
-            if let Some(unit) = game
-                .factions
-                .relative(team_index)
-                .this_team
-                .find_slow(&cell)
-            {
+            if let Some(unit) = game.factions.relative(team).this_team.find_slow(&cell) {
                 break SelectType {
                     warrior: unit.position,
-                    team: team_index,
+                    team,
                 };
             }
-            if let Some(unit) = game
-                .factions
-                .relative(team_index)
-                .that_team
-                .find_slow(&cell)
-            {
+            if let Some(unit) = game.factions.relative(team).that_team.find_slow(&cell) {
                 break SelectType {
                     warrior: unit.position,
-                    team: team_index.not(),
+                    team: team.not(),
                 };
             }
         };
@@ -551,9 +539,7 @@ async fn handle_player(
         //Keep showing the selected unit's options and keep handling the users selections
         //Until the unit is deselected.
         loop {
-            let a = match reselect_loop(doop, game, team_index, &mut extra_attack, selected_unit)
-                .await
-            {
+            let a = match reselect_loop(doop, game, team, &mut extra_attack, selected_unit).await {
                 LoopRes::EndTurn(m) => {
                     return m;
                     //game_history.push(m);
