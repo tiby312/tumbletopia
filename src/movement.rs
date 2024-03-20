@@ -426,19 +426,7 @@ pub fn path(
             } else {
                 Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
             }
-
-            // else if !walls.is_set(first){
-            //     panic!("its hapening");
-            //     Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
-            // }else{
-            //     Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
-            // }
-            // if  || !walls.is_set(first) {
-
-            // } else {
-            //     //TODO this is not true teamates jumping over each other.
-            //     //assert!(self.is_set(second));
-            // }
+            
         } else {
             None
         };
