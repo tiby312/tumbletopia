@@ -1,11 +1,6 @@
 use super::*;
 use crate::movement::movement_mesh::SmallMesh;
 
-// pub struct CompleteMove {
-//     pub original: GridCoord,
-//     pub moveto: GridCoord,
-//     pub target: GridCoord,
-// }
 
 pub struct ExtraPhase {
     pub original: GridCoord,
