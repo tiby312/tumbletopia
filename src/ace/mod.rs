@@ -475,7 +475,20 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
             doop.send_popup("AI Thinking", team_index).await;
             let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
             doop.send_popup("", team_index).await;
-            the_move.execute_move_ani(game, team_index, &mut doop).await;
+
+            let kk = move_build::MovePhase {
+                original: the_move.original,
+                moveto: the_move.moveto,
+            };
+
+            kk.animate(team_index, &mut doop, game)
+                .await
+                .apply(team_index, game);
+
+            kk.into_attack(the_move.attackto)
+                .animate(team_index, game, &mut doop)
+                .await
+                .apply(team_index, game);
 
             game_history.push(the_move);
 

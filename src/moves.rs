@@ -122,31 +122,31 @@ pub struct ActualMove {
 }
 
 impl ActualMove {
-    pub async fn execute_move_ani(
-        &self,
-        state: &mut GameState,
-        team: ActiveTeam,
-        doop: &mut WorkerManager<'_>,
-    ) {
-        let ActualMove {
-            original,
-            moveto,
-            attackto,
-            effect,
-        } = self;
-        let kk = move_build::MovePhase {
-            original: *original,
-            moveto: *moveto,
-        };
+    // pub async fn execute_move_ani(
+    //     &self,
+    //     state: &mut GameState,
+    //     team: ActiveTeam,
+    //     doop: &mut WorkerManager<'_>,
+    // ) {
+    //     let ActualMove {
+    //         original,
+    //         moveto,
+    //         attackto,
+    //         effect,
+    //     } = self;
+    //     let kk = move_build::MovePhase {
+    //         original: *original,
+    //         moveto: *moveto,
+    //     };
 
-        let effect = kk.animate(team, doop, state).await.apply(team, state);
+    //     let effect = kk.animate(team, doop, state).await.apply(team, state);
 
-        let a = kk
-            .into_attack(*attackto)
-            .animate(team, state, doop)
-            .await
-            .apply(team, state);
-    }
+    //     let a = kk
+    //         .into_attack(*attackto)
+    //         .animate(team, state, doop)
+    //         .await
+    //         .apply(team, state);
+    // }
 
     pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
         let ActualMove {
