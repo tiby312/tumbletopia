@@ -1,5 +1,5 @@
 use super::*;
-use crate::{movement::movement_mesh::SmallMesh, moves::*};
+use crate::{movement::movement_mesh::SmallMesh};
 
 // pub struct CompleteMove {
 //     pub original: GridCoord,
@@ -138,7 +138,7 @@ impl MovePhase {
             .find_slow(&this_unit)
             .unwrap();
         let mesh = state.generate_unit_possible_moves_inner2(&unit.position, unit.typ, team, None);
-        
+
         let info = {
             let this_unit = state.factions.get_unit(team, self.original);
             let target_cell = self.moveto;
@@ -265,8 +265,6 @@ impl MovePhase {
         } else {
             PowerupAction::None
         };
-
-        let orig = this_unit.position;
 
         this_unit.position = target_cell;
 
