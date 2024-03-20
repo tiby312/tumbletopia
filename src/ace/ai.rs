@@ -432,8 +432,9 @@ impl<'a> AlphaBeta<'a> {
         for cand in moves {
             let new_depth = depth - 1;
 
-            //cand.execute_move_no_ani(game_after_move, team);
             {
+                //TODO don't we execute the move earlier already when
+                //generating out all themoves? why do again?
                 let j = move_build::MovePhase {
                     original: cand.original,
                     moveto: cand.moveto,
