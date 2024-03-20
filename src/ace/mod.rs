@@ -228,10 +228,10 @@ pub async fn reselect_loop(
     doop: &mut WorkerManager<'_>,
     game: &mut GameState,
     team_index: ActiveTeam,
-    extra_attack: &mut Option<selection::PossibleExtra>,
+    have_moved: &mut Option<selection::HaveMoved>,
     selected_unit: SelectType,
 ) -> LoopRes<SelectType> {
-    console_dbg!(extra_attack.is_some());
+    console_dbg!(have_moved.is_some());
     //At this point we know a friendly unit is currently selected.
 
     //let mut relative_game_view = game.view_mut(selected_unit.team);
@@ -249,8 +249,8 @@ pub async fn reselect_loop(
         //If we are in the middle of a extra attack move, make sure
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
-        if let Some(e) = extra_attack {
-            e.prev_move.moveto != selected_unit.warrior
+        if let Some(e) = have_moved {
+            e.the_move.moveto != selected_unit.warrior
         } else {
             false
         }
@@ -262,7 +262,7 @@ pub async fn reselect_loop(
         &unit.position,
         unit.typ,
         selected_unit.team,
-        extra_attack.as_ref().map(|a| a.prev_move.original),
+        have_moved.as_ref().map(|a| a.the_move.original),
     );
 
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
@@ -331,8 +331,8 @@ pub async fn reselect_loop(
 
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
-    if let Some(e) = extra_attack {
-        if unwrapped_selected_unit != e.prev_move.moveto {
+    if let Some(e) = have_moved {
+        if unwrapped_selected_unit != e.the_move.moveto {
             return LoopRes::Deselect;
         }
     }
@@ -341,9 +341,9 @@ pub async fn reselect_loop(
     //We definately want to act on the action the user took on the selected unit.
 
     {
-        if let Some(e) = extra_attack.take() {
+        if let Some(e) = have_moved.take() {
             let meta = e
-                .prev_move
+                .the_move
                 .clone()
                 .into_attack(target_cell)
                 .animate(selected_unit.team, game, doop)
@@ -351,8 +351,8 @@ pub async fn reselect_loop(
                 .apply(selected_unit.team, game);
 
             return LoopRes::EndTurn(moves::ActualMove {
-                original: e.prev_move.original,
-                moveto: e.prev_move.moveto,
+                original: e.the_move.original,
+                moveto: e.the_move.moveto,
                 attackto: target_cell,
             });
         } else {
@@ -378,7 +378,7 @@ pub async fn reselect_loop(
                 .apply(selected_unit.team, game);
 
             {
-                *extra_attack = Some(selection::PossibleExtra::new(mp, effect));
+                *have_moved = Some(selection::HaveMoved{the_move:mp,effect});
                 return LoopRes::Select(selected_unit.with(c).with_team(team_index));
             }
         }

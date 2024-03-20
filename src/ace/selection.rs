@@ -3,30 +3,9 @@ use crate::move_build::{CombinedEffect, PushPullInfo};
 use super::*;
 
 #[derive(Clone)]
-pub struct PossibleExtra {
-    pub prev_move: move_build::MovePhase,
-    pub prev_effect: move_build::MoveEffect,
-    //pub prev_coord: UnitData,
-}
-impl PossibleExtra {
-    pub fn new(
-        prev_move: move_build::MovePhase,
-        prev_effect: move_build::MoveEffect,
-        //prev_coord: UnitData,
-    ) -> Self {
-        PossibleExtra {
-            prev_move,
-            //prev_coord,
-            prev_effect,
-        }
-    }
-
-    // pub fn prev_move(&self) -> &moves::PartialMoveSigl {
-    //     &self.prev_move
-    // }
-    // pub fn coord(&self) -> GridCoord {
-    //     self.prev_coord.position
-    // }
+pub struct HaveMoved {
+    pub the_move: move_build::MovePhase,
+    pub effect: move_build::MoveEffect,
 }
 
 pub struct MoveLog {
