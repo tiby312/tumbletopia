@@ -1,6 +1,5 @@
 use super::*;
 
-use crate::hex::HDir;
 use crate::movement::movement_mesh::SmallMesh;
 
 #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
@@ -49,12 +48,6 @@ impl GameState {
         };
 
         if let Some(original_pos) = last_move {
-            // let jj=original_pos.to_cube().dist(&unit.to_cube());
-
-            // let k = original_pos
-            // .to_cube()
-            // .neighbours()
-            // .filter(|x| jj==2 && check_if_occ(x.to_axial(),true) && x.dist(&unit.to_cube()) == 1).flat_map(|a|a.ring(1));
 
             for a in unit
                 .to_cube()
@@ -193,15 +186,6 @@ impl ActualMove {
             }
             &ActualMove::Powerup { unit, moveto } => {
                 todo!()
-                // let iii = moves::PartialMove {
-                //     this_unit: *unit,
-                //     target: *moveto,
-                //     is_extra: None,
-                //     state,
-                // };
-                // iii.execute(team_index);
-                // assert!(state.env.land.is_coord_set(moveto));
-                // state.env.land.set_coord(moveto, false);
             }
         }
     }
@@ -220,8 +204,6 @@ impl ActualMove {
                 }
                 .apply(team_index, state);
 
-                //assert!(cont);
-
                 let target_cell = attackto;
 
                 let _ = move_build::ExtraPhase1 {
@@ -233,15 +215,6 @@ impl ActualMove {
             }
             &ActualMove::Powerup { unit, moveto } => {
                 todo!()
-                // let iii = moves::PartialMove {
-                //     this_unit: *unit,
-                //     target: *moveto,
-                //     is_extra: None,
-                //     state,
-                // };
-                // iii.execute(team_index);
-                //     assert!(state.env.land.is_coord_set(moveto));
-                //     state.env.land.set_coord(moveto, false);
             }
         }
     }
@@ -262,8 +235,6 @@ impl ActualMove {
                 k.undo(&effect.meta, state)
                     .undo(team_index, &effect.pushpull, state);
 
-                // move_build::undo_extra(team_index, *unit, *moveto, *attackto, &effect.meta, state);
-                // move_build::undo_movement(team_index, *unit, *moveto, &effect.pushpull, state)
             }
             &ActualMove::Powerup { unit, moveto } => {
                 assert!(!state.env.land.is_coord_set(moveto));
@@ -295,20 +266,12 @@ impl GameState {
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
-                // let ii = PartialMove {
-                //     this_unit: pos,
-                //     state,
-                //     target: mm,
-                //     is_extra: None,
-                // };
-                // let (il, effect, _) = ii.execute(team);
                 let mmm = move_build::MovePhase1 {
                     unit: pos,
                     target: mm,
                 };
                 let (il, effect, pa) = mmm.apply(team, state);
 
-                //if cont {
                 let second_mesh =
                     state.generate_unit_possible_moves_inner2(&mm, ttt, team, Some(pos));
 
@@ -323,14 +286,6 @@ impl GameState {
 
                     let (il2, k) = kkk.apply(team, state);
 
-                    // let ii = PartialMove {
-                    //     this_unit: mm,
-                    //     state,
-                    //     target: sm,
-                    //     is_extra: Some(il),
-                    // };
-                    // let (il2, _, k) = ii.execute(team);
-                    //let k = k.unwrap();
                     let mmo = moves::ActualMove::Normal {
                         unit: pos,
                         moveto: mm,
@@ -343,20 +298,11 @@ impl GameState {
                     //Don't bother applying the extra move. just generate the sigl.
                     movs.push(mmo);
 
-                    //mm.execute_undo(state,team);
                     kkk.undo(&k, state);
-                    // move_build::ExtraPhase1 {
-                    //     original: pos,
-                    //     moveto: mm,
-                    //     target_cell: sm,
-                    // }
-                    // .undo(&k, state);
-                    //move_build::undo_extra(team, pos, mm, sm, &k, state);
                 }
 
                 //revert it back just the movement component.
                 mmm.undo(team, &effect, state);
-                //move_build::undo_movement(team, pos, mm, &effect.unwrap(), state);
             }
         }
         movs
@@ -364,80 +310,3 @@ impl GameState {
 }
 
 use crate::ace::WorkerManager;
-
-pub mod partial {
-
-    use super::*;
-
-    #[derive(Debug)]
-    pub struct PartialMove2<'a> {
-        pub this_unit: GridCoord,
-        pub state: &'a mut GameState,
-        pub target: GridCoord,
-        pub is_extra: Option<PartialMoveSigl>,
-    }
-
-    impl PartialMove2<'_> {
-        pub fn execute(
-            self,
-            team: ActiveTeam,
-        ) -> (
-            PartialMoveSigl,
-            Option<move_build::PushPullInfo>,
-            Option<move_build::MetaInfo>,
-        ) {
-            let this_unit = self.state.factions.get_unit_mut(team, self.this_unit);
-
-            if let Some(extra) = self.is_extra {
-                let (a, b) = move_build::ExtraPhase1 {
-                    original: extra.unit,
-                    moveto: this_unit.position,
-                    target_cell: self.target,
-                }
-                .apply(team, self.state);
-
-                (a, None, Some(b))
-            } else {
-                let (g, h, pa) = move_build::MovePhase1 {
-                    unit: self.this_unit,
-                    target: self.target,
-                }
-                .apply(team, self.state);
-                (g, Some(h), None)
-            }
-        }
-        pub async fn execute_with_animation(
-            self,
-            team: ActiveTeam,
-            data: &mut ace::WorkerManager<'_>,
-            mesh: SmallMesh,
-        ) -> (
-            PartialMoveSigl,
-            Option<move_build::PushPullInfo>,
-            Option<move_build::MetaInfo>,
-        ) {
-            if let Some(extra) = self.is_extra {
-                let (f, g) = move_build::ExtraPhase1 {
-                    original: extra.unit,
-                    moveto: self.this_unit,
-                    target_cell: self.target,
-                }
-                .animate(team, self.state, data)
-                .await
-                .apply(team, self.state);
-
-                (f, None, Some(g))
-            } else {
-                let (s, a, pa) = move_build::MovePhase1 {
-                    unit: self.this_unit,
-                    target: self.target,
-                }
-                .animate(team, data, mesh, self.state)
-                .await
-                .apply(team, self.state);
-
-                (s, Some(a), None)
-            }
-        }
-    }
-}
