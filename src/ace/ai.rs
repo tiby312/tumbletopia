@@ -305,11 +305,6 @@ pub async fn iterative_deepening<'a>(
     console_dbg!(count);
     console_dbg!(&results);
 
-    //TODO THIS CAUSES ISSUES
-    //results.dedup_by_key(|x| x.eval);
-
-    //console_dbg!("deduped",&results);
-
     let target_eval = results.last().unwrap().eval;
     // let mov = if let Some(a) = results
     //     .iter()
@@ -321,7 +316,7 @@ pub async fn iterative_deepening<'a>(
     //     results.pop().unwrap()
     // };
     let mov = results.pop().unwrap();
-    //let mov =
+    
     let m = mov;
 
     console_dbg!("AI MOVE::", m.mov, m.eval);

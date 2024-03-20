@@ -1,6 +1,9 @@
 use super::*;
 use crate::movement::movement_mesh::SmallMesh;
 
+
+
+
 impl crate::moves::ActualMove {
     pub fn as_extra(&self) -> move_build::ExtraPhase {
         move_build::ExtraPhase {
@@ -171,11 +174,6 @@ impl MovePhase {
                     if state.env.land.is_coord_set(target_cell) {
                         e = PushPullInfo::PushedLand;
                     }
-                    // let dir = self.unit.dir_to(&self.target);
-                    // let k = self.unit.back(dir);
-                    // if game.env.land.is_coord_set(k) {
-                    //     e = UndoInformation::PulledLand;
-                    // }
                 }
             }
 
@@ -207,11 +205,6 @@ impl MovePhase {
             .this_team
             .find_slow_mut(&moveto)
             .unwrap();
-
-        // for a in effect.fog.0.iter_mesh(moveto) {
-        //     assert!(!state.env.fog.is_coord_set(a));
-        //     state.env.fog.set_coord(a, true);
-        // }
 
         match effect.pushpull {
             PushPullInfo::PushedLand => {
@@ -257,17 +250,6 @@ impl MovePhase {
             }
             Type::Archer => {
                 unreachable!();
-                // if env.land.is_coord_set(target_cell) {
-                //     let dir = this_unit.position.dir_to(&target_cell);
-
-                //     env.land.set_coord(target_cell, false);
-
-                //     let kk = target_cell.advance(dir);
-
-                //     env.land.set_coord(kk, true);
-
-                //     e = UndoInformation::PushedLand;
-                // }
             }
         }
 
