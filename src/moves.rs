@@ -163,16 +163,14 @@ impl ActualMove {
                 );
 
                 let ttt = unit.typ;
-                let iii = moves::PartialMove {
-                    this_unit: *unitt,
-                    target: *moveto,
-                    is_extra: None,
-                    state,
-                };
 
-                let (iii, effect, k) = iii.execute_with_animation(team_index, doop, mesh).await;
-                assert!(k.is_none());
-                //assert!(cont);
+                let (iii, effect, pa) = move_build::MovePhase1 {
+                    unit: *unitt,
+                    target: *moveto,
+                }
+                .animate(team_index, doop, mesh, state)
+                .await
+                .apply(team_index, state);
 
                 let selected_unit = moveto;
                 let target_cell = attackto;
@@ -184,22 +182,24 @@ impl ActualMove {
                     Some(*unitt),
                 );
 
-                let iii = moves::PartialMove {
-                    this_unit: *moveto,
-                    target: *target_cell,
-                    is_extra: Some(iii),
-                    state,
-                };
-                iii.execute_with_animation(team_index, doop, mesh).await;
+                let _ = move_build::ExtraPhase1 {
+                    original: *unitt,
+                    moveto: *moveto,
+                    target_cell: *target_cell,
+                }
+                .animate(team_index, state, doop)
+                .await
+                .apply(team_index, state);
             }
             &ActualMove::Powerup { unit, moveto } => {
-                let iii = moves::PartialMove {
-                    this_unit: *unit,
-                    target: *moveto,
-                    is_extra: None,
-                    state,
-                };
-                iii.execute(team_index);
+                todo!()
+                // let iii = moves::PartialMove {
+                //     this_unit: *unit,
+                //     target: *moveto,
+                //     is_extra: None,
+                //     state,
+                // };
+                // iii.execute(team_index);
                 // assert!(state.env.land.is_coord_set(moveto));
                 // state.env.land.set_coord(moveto, false);
             }
@@ -214,36 +214,32 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                let iii = moves::PartialMove {
-                    this_unit: *unit,
+                let (iii, effect, pa) = move_build::MovePhase1 {
+                    unit: *unit,
                     target: *moveto,
-                    is_extra: None,
-                    state,
-                };
+                }
+                .apply(team_index, state);
 
-                let (iii, effect, k) = iii.execute(team_index);
-                assert!(k.is_none());
                 //assert!(cont);
 
                 let target_cell = attackto;
 
-                let iii = moves::PartialMove {
-                    this_unit: *moveto,
-                    target: *target_cell,
-                    is_extra: Some(iii),
-                    state,
-                };
-
-                iii.execute(team_index);
+                let _ = move_build::ExtraPhase1 {
+                    original: *unit,
+                    moveto: *moveto,
+                    target_cell: *target_cell,
+                }
+                .apply(team_index, state);
             }
             &ActualMove::Powerup { unit, moveto } => {
-                let iii = moves::PartialMove {
-                    this_unit: *unit,
-                    target: *moveto,
-                    is_extra: None,
-                    state,
-                };
-                iii.execute(team_index);
+                todo!()
+                // let iii = moves::PartialMove {
+                //     this_unit: *unit,
+                //     target: *moveto,
+                //     is_extra: None,
+                //     state,
+                // };
+                // iii.execute(team_index);
                 //     assert!(state.env.land.is_coord_set(moveto));
                 //     state.env.land.set_coord(moveto, false);
             }
@@ -299,13 +295,18 @@ impl GameState {
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
-                let ii = PartialMove {
-                    this_unit: pos,
-                    state,
+                // let ii = PartialMove {
+                //     this_unit: pos,
+                //     state,
+                //     target: mm,
+                //     is_extra: None,
+                // };
+                // let (il, effect, _) = ii.execute(team);
+                let mmm = move_build::MovePhase1 {
+                    unit: pos,
                     target: mm,
-                    is_extra: None,
                 };
-                let (il, effect, _) = ii.execute(team);
+                let (il, effect, pa) = mmm.apply(team, state);
 
                 //if cont {
                 let second_mesh =
@@ -314,20 +315,28 @@ impl GameState {
                 for sm in second_mesh.iter_mesh(mm) {
                     assert!(!state.env.land.is_coord_set(sm));
 
-                    let ii = PartialMove {
-                        this_unit: mm,
-                        state,
-                        target: sm,
-                        is_extra: Some(il),
+                    let kkk = move_build::ExtraPhase1 {
+                        original: pos,
+                        moveto: mm,
+                        target_cell: sm,
                     };
-                    let (il2, _, k) = ii.execute(team);
-                    let k = k.unwrap();
+
+                    let (il2, k) = kkk.apply(team, state);
+
+                    // let ii = PartialMove {
+                    //     this_unit: mm,
+                    //     state,
+                    //     target: sm,
+                    //     is_extra: Some(il),
+                    // };
+                    // let (il2, _, k) = ii.execute(team);
+                    //let k = k.unwrap();
                     let mmo = moves::ActualMove::Normal {
                         unit: pos,
                         moveto: mm,
                         attackto: sm,
                         effect: move_build::UndoInfo {
-                            pushpull: effect.unwrap(),
+                            pushpull: effect,
                             meta: k.clone(),
                         },
                     };
@@ -335,21 +344,18 @@ impl GameState {
                     movs.push(mmo);
 
                     //mm.execute_undo(state,team);
-                    move_build::ExtraPhase1 {
-                        original: pos,
-                        moveto: mm,
-                        target_cell: sm,
-                    }
-                    .undo(&k, state);
+                    kkk.undo(&k, state);
+                    // move_build::ExtraPhase1 {
+                    //     original: pos,
+                    //     moveto: mm,
+                    //     target_cell: sm,
+                    // }
+                    // .undo(&k, state);
                     //move_build::undo_extra(team, pos, mm, sm, &k, state);
                 }
 
                 //revert it back just the movement component.
-                move_build::MovePhase1 {
-                    unit: pos,
-                    target: mm,
-                }
-                .undo(team, &effect.unwrap(), state);
+                mmm.undo(team, &effect, state);
                 //move_build::undo_movement(team, pos, mm, &effect.unwrap(), state);
             }
         }
@@ -359,20 +365,19 @@ impl GameState {
 
 use crate::ace::WorkerManager;
 
-pub use partial::PartialMove;
 pub mod partial {
 
     use super::*;
 
     #[derive(Debug)]
-    pub struct PartialMove<'a> {
+    pub struct PartialMove2<'a> {
         pub this_unit: GridCoord,
         pub state: &'a mut GameState,
         pub target: GridCoord,
         pub is_extra: Option<PartialMoveSigl>,
     }
 
-    impl PartialMove<'_> {
+    impl PartialMove2<'_> {
         pub fn execute(
             self,
             team: ActiveTeam,
@@ -427,7 +432,7 @@ pub mod partial {
                     unit: self.this_unit,
                     target: self.target,
                 }
-                .animate(team, data, mesh, self.state, self.this_unit, self.target)
+                .animate(team, data, mesh, self.state)
                 .await
                 .apply(team, self.state);
 

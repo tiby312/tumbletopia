@@ -342,15 +342,24 @@ pub async fn reselect_loop(
 
     {
         if let Some(e) = extra_attack {
-            let iii = moves::PartialMove {
-                this_unit: e.coord(),
-                target: target_cell,
-                is_extra: Some(e.prev_move),
-                state: game,
-            };
+            let (a, b) = move_build::ExtraPhase1 {
+                original: e.prev_coord.position,
+                moveto: e.coord(),
+                target_cell: target_cell,
+            }
+            .animate(selected_unit.team, game, doop)
+            .await
+            .apply(selected_unit.team, game);
 
-            iii.execute_with_animation(selected_unit.team, doop, cca.clone())
-                .await;
+            // let iii = moves::PartialMove {
+            //     this_unit: e.coord(),
+            //     target: target_cell,
+            //     is_extra: Some(e.prev_move),
+            //     state: game,
+            // };
+
+            // iii.execute_with_animation(selected_unit.team, doop, cca.clone())
+            //     .await;
 
             return LoopRes::EndTurn(moves::ActualMove::Normal {
                 unit: e.prev_move.unit,
@@ -376,19 +385,27 @@ pub async fn reselect_loop(
             let mut kk = this_unit.clone();
             kk.position = target_cell;
 
-            let iii = moves::PartialMove {
-                this_unit: p,
+            let (iii, effect, pa) = move_build::MovePhase1 {
+                unit: p,
                 target: target_cell,
-                is_extra: None,
-                state: game,
-            };
-            let (iii, effect, k) = iii
-                .execute_with_animation(selected_unit.team, doop, cca.clone())
-                .await;
-            assert!(k.is_none());
+            }
+            .animate(selected_unit.team, doop, cca.clone(), game)
+            .await
+            .apply(selected_unit.team, game);
+
+            // let iii = moves::PartialMove {
+            //     this_unit: p,
+            //     target: target_cell,
+            //     is_extra: None,
+            //     state: game,
+            // };
+            // let (iii, effect, k) = iii
+            //     .execute_with_animation(selected_unit.team, doop, cca.clone())
+            //     .await;
+            // assert!(k.is_none());
             {
                 //if cont {
-                *extra_attack = Some(selection::PossibleExtra::new(iii, effect.unwrap(), kk));
+                *extra_attack = Some(selection::PossibleExtra::new(iii, effect, kk));
                 return LoopRes::Select(selected_unit.with(c).with_team(team_index));
                 // } else {
                 //     return LoopRes::EndTurn(moves::ActualMove::Powerup {

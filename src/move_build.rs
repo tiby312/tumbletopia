@@ -113,9 +113,11 @@ impl MovePhase1 {
         data: &mut ace::WorkerManager<'_>,
         mesh: SmallMesh,
         state: &GameState,
-        this_unit: GridCoord,
-        target: GridCoord,
+        // this_unit: GridCoord,
+        // target: GridCoord,
     ) -> &Self {
+        let this_unit = self.unit;
+        let target = self.target;
         let walls = calculate_walls(this_unit, state);
 
         let k = move_build::MovePhase1 {
