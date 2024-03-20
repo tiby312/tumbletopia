@@ -1,5 +1,5 @@
 use super::*;
-use crate::{movement::movement_mesh::SmallMesh};
+use crate::movement::movement_mesh::SmallMesh;
 
 // pub struct CompleteMove {
 //     pub original: GridCoord,

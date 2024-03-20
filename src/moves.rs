@@ -114,17 +114,11 @@ pub fn has_adjacent_water(game: &GameState, kk: GridCoord) -> bool {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
-pub enum ActualMove {
-    Normal {
-        unit: GridCoord,
-        moveto: GridCoord,
-        attackto: GridCoord,
-        effect: move_build::UndoInfo,
-    },
-    Powerup {
-        unit: GridCoord,
-        moveto: GridCoord,
-    },
+pub struct ActualMove {
+    pub original: GridCoord,
+    pub moveto: GridCoord,
+    pub attackto: GridCoord,
+    pub effect: move_build::UndoInfo,
 }
 
 impl ActualMove {
@@ -134,92 +128,65 @@ impl ActualMove {
         team: ActiveTeam,
         doop: &mut WorkerManager<'_>,
     ) {
-        match &self {
-            &ActualMove::Normal {
-                unit: unitt,
-                moveto,
-                attackto,
-                effect,
-            } => {
-                let kk = move_build::MovePhase {
-                    original: *unitt,
-                    moveto: *moveto,
-                };
+        let ActualMove {
+            original,
+            moveto,
+            attackto,
+            effect,
+        } = self;
+        let kk = move_build::MovePhase {
+            original: *original,
+            moveto: *moveto,
+        };
 
-                let effect = kk.animate(team, doop, state).await.apply(team, state);
+        let effect = kk.animate(team, doop, state).await.apply(team, state);
 
-                let a = kk
-                    .into_attack(*attackto)
-                    .animate(team, state, doop)
-                    .await
-                    .apply(team, state);
-            }
-            &ActualMove::Powerup { unit, moveto } => {
-                todo!()
-            }
-        }
+        let a = kk
+            .into_attack(*attackto)
+            .animate(team, state, doop)
+            .await
+            .apply(team, state);
     }
 
     pub fn execute_move_no_ani(&self, state: &mut GameState, team_index: ActiveTeam) {
-        match &self {
-            &ActualMove::Normal {
-                unit,
-                moveto,
-                attackto,
-                effect,
-            } => {
-                let effect = move_build::MovePhase {
-                    original: *unit,
-                    moveto: *moveto,
-                }
-                .apply(team_index, state);
+        let ActualMove {
+            original: unit,
+            moveto,
+            attackto,
+            effect,
+        } = self;
 
-                let target_cell = attackto;
-
-                let _ = move_build::ExtraPhase {
-                    original: *unit,
-                    moveto: *moveto,
-                    target: *target_cell,
-                }
-                .apply(team_index, state);
-            }
-            &ActualMove::Powerup { unit, moveto } => {
-                todo!()
-            }
+        let effect = move_build::MovePhase {
+            original: *unit,
+            moveto: *moveto,
         }
+        .apply(team_index, state);
+
+        let target_cell = attackto;
+
+        let _ = move_build::ExtraPhase {
+            original: *unit,
+            moveto: *moveto,
+            target: *target_cell,
+        }
+        .apply(team_index, state);
     }
 
     pub fn execute_undo(&self, state: &mut GameState, team_index: ActiveTeam) {
-        match self {
-            ActualMove::Normal {
-                unit,
-                moveto,
-                attackto,
-                effect,
-            } => {
-                let k = move_build::ExtraPhase {
-                    original: *unit,
-                    moveto: *moveto,
-                    target: *attackto,
-                };
-                k.undo(&effect.extra_effect, state)
-                    .undo(team_index, &effect.move_effect, state);
-            }
-            &ActualMove::Powerup { unit, moveto } => {
-                assert!(!state.env.land.is_coord_set(moveto));
-                state.env.land.set_coord(moveto, true);
-                let k = state
-                    .factions
-                    .relative_mut(team_index)
-                    .this_team
-                    .find_slow_mut(&unit)
-                    .unwrap();
-                let Type::Warrior { powerup } = &mut k.typ else {
-                    unreachable!();
-                };
-                *powerup = true;
-            }
-        }
+        let ActualMove {
+            original: unit,
+            moveto,
+            attackto,
+            effect,
+        } = self;
+
+        let k = move_build::ExtraPhase {
+            original: *unit,
+            moveto: *moveto,
+            target: *attackto,
+        };
+        k.undo(&effect.extra_effect, state)
+            .undo(team_index, &effect.move_effect, state);
     }
 }
 
@@ -255,8 +222,8 @@ impl GameState {
 
                     let k = kkk.apply(team, state);
 
-                    let mmo = moves::ActualMove::Normal {
-                        unit: pos,
+                    let mmo = moves::ActualMove {
+                        original: pos,
                         moveto: mm,
                         attackto: sm,
                         effect: move_build::UndoInfo {

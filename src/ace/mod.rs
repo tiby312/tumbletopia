@@ -351,8 +351,8 @@ pub async fn reselect_loop(
             .await
             .apply(selected_unit.team, game);
 
-            return LoopRes::EndTurn(moves::ActualMove::Normal {
-                unit: e.prev_move.original,
+            return LoopRes::EndTurn(moves::ActualMove {
+                original: e.prev_move.original,
                 moveto: e.prev_move.moveto,
                 attackto: target_cell,
                 effect: move_build::UndoInfo {
