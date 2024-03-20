@@ -146,7 +146,7 @@ impl ActualMove {
                     moveto: *moveto,
                 };
 
-                let (effect, pa) = kk.animate(team, doop, state).await.apply(team, state);
+                let effect = kk.animate(team, doop, state).await.apply(team, state);
 
                 let a = kk
                     .into_attack(*attackto)
@@ -168,7 +168,7 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                let (effect, pa) = move_build::MovePhase {
+                let effect = move_build::MovePhase {
                     original: *unit,
                     moveto: *moveto,
                 }
@@ -239,7 +239,7 @@ impl GameState {
                     original: pos,
                     moveto: mm,
                 };
-                let (effect, pa) = mmm.apply(team, state);
+                let effect = mmm.apply(team, state);
 
                 let second_mesh =
                     state.generate_unit_possible_moves_inner2(&mm, ttt, team, Some(pos));
@@ -260,7 +260,7 @@ impl GameState {
                         moveto: mm,
                         attackto: sm,
                         effect: move_build::UndoInfo {
-                            pushpull: effect,
+                            pushpull: effect.clone(),
                             meta: k.clone(),
                         },
                     };

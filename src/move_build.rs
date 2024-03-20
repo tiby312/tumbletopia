@@ -1,11 +1,11 @@
 use super::*;
 use crate::{movement::movement_mesh::SmallMesh, moves::*};
 
-pub struct CompleteMove {
-    pub original: GridCoord,
-    pub moveto: GridCoord,
-    pub target: GridCoord,
-}
+// pub struct CompleteMove {
+//     pub original: GridCoord,
+//     pub moveto: GridCoord,
+//     pub target: GridCoord,
+// }
 
 pub struct ExtraPhase {
     pub original: GridCoord,
@@ -13,7 +13,7 @@ pub struct ExtraPhase {
     pub target: GridCoord,
 }
 impl ExtraPhase {
-    pub fn undo(self, meta: &MetaInfo, state: &mut GameState) -> MovePhase {
+    pub fn undo(self, meta: &ExtraEffect, state: &mut GameState) -> MovePhase {
         let moveto = self.moveto;
         let unit = self.original;
         let attackto = self.target;
@@ -46,7 +46,7 @@ impl ExtraPhase {
         }
     }
 
-    pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> MetaInfo {
+    pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> ExtraEffect {
         let original = self.original;
         let moveto = self.moveto;
         let target_cell = self.target;
@@ -67,7 +67,7 @@ impl ExtraPhase {
 
         let fog = uncover_fog(moveto, &mut game.env);
 
-        MetaInfo { fog, bomb: bb }
+        ExtraEffect { fog, bomb: bb }
     }
 
     pub async fn animate(
@@ -100,6 +100,12 @@ impl ExtraPhase {
             .await;
         self
     }
+}
+
+#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+pub struct MoveEffect {
+    pub pushpull: PushPullInfo,
+    pub powerup: PowerupAction,
 }
 
 #[derive(Clone)]
@@ -181,7 +187,7 @@ impl MovePhase {
         e
     }
 
-    pub fn undo(&self, team_index: ActiveTeam, effect: &PushPullInfo, state: &mut GameState) {
+    pub fn undo(&self, team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;
         let unit = self.original;
         let k = state
@@ -196,7 +202,7 @@ impl MovePhase {
         //     state.env.fog.set_coord(a, true);
         // }
 
-        match effect {
+        match effect.pushpull {
             PushPullInfo::PushedLand => {
                 let dir = unit.dir_to(&moveto);
                 let t3 = moveto.advance(dir);
@@ -218,7 +224,7 @@ impl MovePhase {
         k.position = unit;
     }
 
-    pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> (PushPullInfo, PowerupAction) {
+    pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> MoveEffect {
         let env = &mut game.env;
         let this_unit = game.factions.get_unit_mut(team, self.original);
         let target_cell = self.moveto;
@@ -271,10 +277,14 @@ impl MovePhase {
 
         this_unit.position = target_cell;
 
-        (e, powerup)
+        MoveEffect {
+            pushpull: e,
+            powerup,
+        }
     }
 }
 
+#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub enum PowerupAction {
     GotPowerup,
     DiscardedPowerup,
@@ -290,8 +300,8 @@ pub enum PushPullInfo {
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct UndoInfo {
-    pub pushpull: PushPullInfo,
-    pub meta: MetaInfo,
+    pub pushpull: MoveEffect,
+    pub meta: ExtraEffect,
 }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
@@ -330,7 +340,7 @@ fn detonate_bomb(original: GridCoord, game: &mut GameState) -> BombInfo {
 }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-pub struct MetaInfo {
+pub struct ExtraEffect {
     pub fog: FogInfo,
     pub bomb: BombInfo,
 }

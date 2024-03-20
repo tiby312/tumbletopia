@@ -377,7 +377,7 @@ pub async fn reselect_loop(
                 moveto: target_cell,
             };
 
-            let (effect, pa) = mp
+            let effect = mp
                 .animate(selected_unit.team, doop, game)
                 .await
                 .apply(selected_unit.team, game);
