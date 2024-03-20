@@ -372,7 +372,7 @@ pub async fn reselect_loop(
             };
 
             let effect = mp
-                .animate(selected_unit.team, doop, game)
+                .animate(selected_unit.team, game, doop)
                 .await
                 .apply(selected_unit.team, game);
 
@@ -467,18 +467,15 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         }
 
         //Add AIIIIII.
-        if team == ActiveTeam::Cats {
-            //{
+        //if team == ActiveTeam::Cats {
+        {
             doop.send_popup("AI Thinking", team).await;
             let the_move = ai::iterative_deepening(game, team, &mut doop).await;
             doop.send_popup("", team).await;
 
-            let kk = move_build::MovePhase {
-                original: the_move.original,
-                moveto: the_move.moveto,
-            };
+            let kk = the_move.as_move();
 
-            kk.animate(team, &mut doop, game).await.apply(team, game);
+            kk.animate(team, game, &mut doop).await.apply(team, game);
 
             kk.into_attack(the_move.attackto)
                 .animate(team, game, &mut doop)

@@ -142,8 +142,8 @@ impl MovePhase {
     pub async fn animate(
         &self,
         team: ActiveTeam,
-        data: &mut ace::WorkerManager<'_>,
         state: &GameState,
+        data: &mut ace::WorkerManager<'_>,
     ) -> &Self {
         let this_unit = self.original;
         let target = self.moveto;
