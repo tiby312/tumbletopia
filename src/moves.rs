@@ -202,8 +202,8 @@ impl ActualMove {
                     moveto: *moveto,
                     target: *attackto,
                 };
-                k.undo(&effect.meta, state)
-                    .undo(team_index, &effect.pushpull, state);
+                k.undo(&effect.extra_effect, state)
+                    .undo(team_index, &effect.move_effect, state);
             }
             &ActualMove::Powerup { unit, moveto } => {
                 assert!(!state.env.land.is_coord_set(moveto));
@@ -260,8 +260,8 @@ impl GameState {
                         moveto: mm,
                         attackto: sm,
                         effect: move_build::UndoInfo {
-                            pushpull: effect.clone(),
-                            meta: k.clone(),
+                            move_effect: effect.clone(),
+                            extra_effect: k.clone(),
                         },
                     };
                     //Don't bother applying the extra move. just generate the sigl.

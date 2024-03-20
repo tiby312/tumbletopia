@@ -356,8 +356,8 @@ pub async fn reselect_loop(
                 moveto: e.prev_move.moveto,
                 attackto: target_cell,
                 effect: move_build::UndoInfo {
-                    pushpull: e.prev_effect.clone(),
-                    meta,
+                    move_effect: e.prev_effect.clone(),
+                    extra_effect: meta,
                 },
             });
         } else {
@@ -476,6 +476,7 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
             let the_move = ai::iterative_deepening(game, team_index, &mut doop).await;
             doop.send_popup("", team_index).await;
             the_move.execute_move_ani(game, team_index, &mut doop).await;
+
             game_history.push(the_move);
 
             continue;

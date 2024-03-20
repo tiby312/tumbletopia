@@ -300,8 +300,8 @@ pub enum PushPullInfo {
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct UndoInfo {
-    pub pushpull: MoveEffect,
-    pub meta: ExtraEffect,
+    pub move_effect: MoveEffect,
+    pub extra_effect: ExtraEffect,
 }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
