@@ -155,7 +155,7 @@ impl MovePhase {
             .this_team
             .find_slow(&this_unit)
             .unwrap();
-        let mesh = state.generate_unit_possible_moves_inner2(&unit.position, unit.typ, team, None);
+        let mesh = state.generate_possible_moves(&unit.position, unit.typ, team, None);
 
         let info = {
             let this_unit = state.factions.get_unit(team, self.original);

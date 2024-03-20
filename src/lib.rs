@@ -141,8 +141,7 @@ impl GameState {
     pub fn game_is_over(&self, team: ActiveTeam) -> Option<GameOver> {
         let this_team_stuck = 'foo: {
             for unit in self.factions.relative(team).this_team.units.iter() {
-                let mesh =
-                    self.generate_unit_possible_moves_inner2(&unit.position, unit.typ, team, None);
+                let mesh = self.generate_possible_moves(&unit.position, unit.typ, team, None);
                 if !mesh.is_empty() {
                     break 'foo false;
                 }

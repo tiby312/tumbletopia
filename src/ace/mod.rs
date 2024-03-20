@@ -258,7 +258,7 @@ pub async fn reselect_loop(
         true
     };
 
-    let cca = game.generate_unit_possible_moves_inner2(
+    let cca = game.generate_possible_moves(
         &unit.position,
         unit.typ,
         selected_unit.team,
