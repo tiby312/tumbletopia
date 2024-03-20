@@ -147,7 +147,7 @@ impl GameState {
                             extra_effect: k.clone(),
                         },
                     };
-                    //Don't bother applying the extra move. just generate the sigl.
+                    
                     movs.push(mmo);
 
                     kkk.undo(&k, state);
