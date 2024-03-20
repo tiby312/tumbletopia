@@ -1,4 +1,4 @@
-use crate::move_build::{PushPullInfo, UndoInfo};
+use crate::move_build::{CombinedEffect, PushPullInfo};
 
 use super::*;
 

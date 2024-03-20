@@ -432,20 +432,11 @@ impl<'a> AlphaBeta<'a> {
         for cand in moves {
             let new_depth = depth - 1;
 
-            let effect={
-                //TODO don't we execute the move earlier already when
-                //generating out all themoves? why do again?
-                let j = move_build::MovePhase {
-                    original: cand.original,
-                    moveto: cand.moveto,
-                };
-                let k=j.apply(team, game_after_move);
-
-                let j=j.into_attack(cand.attackto).apply(team, game_after_move);
-                move_build::UndoInfo{
-                    move_effect:k,
-                    extra_effect:j
-                }
+            let effect = {
+                let j = cand.as_move();
+                let k = j.apply(team, game_after_move);
+                let j = j.into_attack(cand.attackto).apply(team, game_after_move);
+                k.combine(j)
             };
 
             self.path.push(cand);
@@ -459,11 +450,7 @@ impl<'a> AlphaBeta<'a> {
 
             let mov = self.path.pop().unwrap();
             {
-                let k = move_build::ExtraPhase {
-                    original: mov.original,
-                    moveto: mov.moveto,
-                    target: mov.attackto,
-                };
+                let k = mov.as_extra();
                 k.undo(&effect.extra_effect, game_after_move).undo(
                     team,
                     &effect.move_effect,

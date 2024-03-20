@@ -2,7 +2,6 @@ use super::*;
 
 use crate::movement::movement_mesh::SmallMesh;
 
-
 impl GameState {
     pub fn generate_unit_possible_moves_inner2(
         &self,
@@ -96,14 +95,12 @@ impl GameState {
     }
 }
 
-
 #[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 pub struct ActualMove {
     pub original: GridCoord,
     pub moveto: GridCoord,
     pub attackto: GridCoord,
 }
-
 
 impl GameState {
     pub fn for_all_moves_fast(&mut self, team: ActiveTeam) -> Vec<moves::ActualMove> {
@@ -117,7 +114,7 @@ impl GameState {
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
-                let mmm = move_build::MovePhase {
+                let mut mmm = move_build::MovePhase {
                     original: pos,
                     moveto: mm,
                 };
@@ -129,11 +126,7 @@ impl GameState {
                 for sm in second_mesh.iter_mesh(mm) {
                     assert!(!state.env.land.is_coord_set(sm));
 
-                    let kkk = move_build::ExtraPhase {
-                        original: pos,
-                        moveto: mm,
-                        target: sm,
-                    };
+                    let kkk = mmm.into_attack(sm);
 
                     let k = kkk.apply(team, state);
 
@@ -142,10 +135,10 @@ impl GameState {
                         moveto: mm,
                         attackto: sm,
                     };
-                    
+
                     movs.push(mmo);
 
-                    kkk.undo(&k, state);
+                    mmm = kkk.undo(&k, state);
                 }
 
                 //revert it back just the movement component.
@@ -155,4 +148,3 @@ impl GameState {
         movs
     }
 }
-

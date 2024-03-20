@@ -1,6 +1,22 @@
 use super::*;
 use crate::movement::movement_mesh::SmallMesh;
 
+impl crate::moves::ActualMove {
+    pub fn as_extra(&self) -> move_build::ExtraPhase {
+        move_build::ExtraPhase {
+            original: self.original,
+            moveto: self.moveto,
+            target: self.attackto,
+        }
+    }
+    pub fn as_move(&self) -> move_build::MovePhase {
+        move_build::MovePhase {
+            original: self.original,
+            moveto: self.moveto,
+        }
+    }
+}
+
 pub struct ExtraPhase {
     pub original: GridCoord,
     pub moveto: GridCoord,
@@ -100,6 +116,14 @@ impl ExtraPhase {
 pub struct MoveEffect {
     pub pushpull: PushPullInfo,
     pub powerup: PowerupAction,
+}
+impl MoveEffect {
+    pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
+        CombinedEffect {
+            move_effect: self,
+            extra_effect,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -284,7 +308,7 @@ pub enum PushPullInfo {
 }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-pub struct UndoInfo {
+pub struct CombinedEffect {
     pub move_effect: MoveEffect,
     pub extra_effect: ExtraEffect,
 }
