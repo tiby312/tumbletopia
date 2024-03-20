@@ -355,10 +355,6 @@ pub async fn reselect_loop(
                 original: e.prev_move.original,
                 moveto: e.prev_move.moveto,
                 attackto: target_cell,
-                effect: move_build::UndoInfo {
-                    move_effect: e.prev_effect.clone(),
-                    extra_effect: meta,
-                },
             });
         } else {
             let p = unit.position;

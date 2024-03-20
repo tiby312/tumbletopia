@@ -102,7 +102,7 @@ pub struct ActualMove {
     pub original: GridCoord,
     pub moveto: GridCoord,
     pub attackto: GridCoord,
-    pub effect: move_build::UndoInfo,
+    //pub effect: move_build::UndoInfo,
 }
 
 
@@ -142,10 +142,6 @@ impl GameState {
                         original: pos,
                         moveto: mm,
                         attackto: sm,
-                        effect: move_build::UndoInfo {
-                            move_effect: effect.clone(),
-                            extra_effect: k.clone(),
-                        },
                     };
                     
                     movs.push(mmo);
