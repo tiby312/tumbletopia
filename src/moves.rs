@@ -157,9 +157,9 @@ impl ActualMove {
 
                 let ttt = unit.typ;
 
-                let (iii, effect, pa) = move_build::MovePhase1 {
-                    unit: *unitt,
-                    target: *moveto,
+                let (iii, effect, pa) = move_build::MovePhase {
+                    original: *unitt,
+                    moveto: *moveto,
                 }
                 .animate(team_index, doop, mesh, state)
                 .await
@@ -175,10 +175,10 @@ impl ActualMove {
                     Some(*unitt),
                 );
 
-                let _ = move_build::ExtraPhase1 {
+                let _ = move_build::ExtraPhase {
                     original: *unitt,
                     moveto: *moveto,
-                    target_cell: *target_cell,
+                    target: *target_cell,
                 }
                 .animate(team_index, state, doop)
                 .await
@@ -198,18 +198,18 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                let (iii, effect, pa) = move_build::MovePhase1 {
-                    unit: *unit,
-                    target: *moveto,
+                let (iii, effect, pa) = move_build::MovePhase {
+                    original: *unit,
+                    moveto: *moveto,
                 }
                 .apply(team_index, state);
 
                 let target_cell = attackto;
 
-                let _ = move_build::ExtraPhase1 {
+                let _ = move_build::ExtraPhase {
                     original: *unit,
                     moveto: *moveto,
-                    target_cell: *target_cell,
+                    target: *target_cell,
                 }
                 .apply(team_index, state);
             }
@@ -227,10 +227,10 @@ impl ActualMove {
                 attackto,
                 effect,
             } => {
-                let k = move_build::ExtraPhase1 {
+                let k = move_build::ExtraPhase {
                     original: *unit,
                     moveto: *moveto,
-                    target_cell: *attackto,
+                    target: *attackto,
                 };
                 k.undo(&effect.meta, state)
                     .undo(team_index, &effect.pushpull, state);
@@ -266,9 +266,9 @@ impl GameState {
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
-                let mmm = move_build::MovePhase1 {
-                    unit: pos,
-                    target: mm,
+                let mmm = move_build::MovePhase {
+                    original: pos,
+                    moveto: mm,
                 };
                 let (il, effect, pa) = mmm.apply(team, state);
 
@@ -278,10 +278,10 @@ impl GameState {
                 for sm in second_mesh.iter_mesh(mm) {
                     assert!(!state.env.land.is_coord_set(sm));
 
-                    let kkk = move_build::ExtraPhase1 {
+                    let kkk = move_build::ExtraPhase {
                         original: pos,
                         moveto: mm,
-                        target_cell: sm,
+                        target: sm,
                     };
 
                     let (il2, k) = kkk.apply(team, state);

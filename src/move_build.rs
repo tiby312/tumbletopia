@@ -1,16 +1,16 @@
 use super::*;
 use crate::{movement::movement_mesh::SmallMesh, moves::*};
 
-pub struct ExtraPhase1 {
+pub struct ExtraPhase {
     pub original: GridCoord,
     pub moveto: GridCoord,
-    pub target_cell: GridCoord,
+    pub target: GridCoord,
 }
-impl ExtraPhase1 {
-    pub fn undo(self, meta: &MetaInfo, state: &mut GameState) -> MovePhase1 {
+impl ExtraPhase {
+    pub fn undo(self, meta: &MetaInfo, state: &mut GameState) -> MovePhase {
         let moveto = self.moveto;
         let unit = self.original;
-        let attackto = self.target_cell;
+        let attackto = self.target;
 
         for a in meta.fog.0.iter_mesh(moveto) {
             assert!(!state.env.fog.is_coord_set(a));
@@ -34,16 +34,16 @@ impl ExtraPhase1 {
             }
         }
 
-        MovePhase1 {
-            unit: self.original,
-            target: self.moveto,
+        MovePhase {
+            original: self.original,
+            moveto: self.moveto,
         }
     }
 
     pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> (PartialMoveSigl, MetaInfo) {
         let original = self.original;
         let moveto = self.moveto;
-        let target_cell = self.target_cell;
+        let target_cell = self.target;
         let mut bb = BombInfo(SmallMesh::new());
         if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
             //if false{
@@ -76,7 +76,7 @@ impl ExtraPhase1 {
         state: &GameState,
         data: &mut ace::WorkerManager<'_>,
     ) -> &Self {
-        let target = self.target_cell;
+        let target = self.target;
 
         let terrain_type = if !state.env.land.is_coord_set(target) {
             animation::TerrainType::Grass
@@ -102,11 +102,11 @@ impl ExtraPhase1 {
     }
 }
 
-pub struct MovePhase1 {
-    pub unit: GridCoord,
-    pub target: GridCoord,
+pub struct MovePhase {
+    pub original: GridCoord,
+    pub moveto: GridCoord,
 }
-impl MovePhase1 {
+impl MovePhase {
     pub async fn animate(
         &self,
         team: ActiveTeam,
@@ -116,13 +116,13 @@ impl MovePhase1 {
         // this_unit: GridCoord,
         // target: GridCoord,
     ) -> &Self {
-        let this_unit = self.unit;
-        let target = self.target;
+        let this_unit = self.original;
+        let target = self.moveto;
         let walls = calculate_walls(this_unit, state);
 
-        let k = move_build::MovePhase1 {
-            unit: this_unit,
-            target: target,
+        let k = move_build::MovePhase {
+            original: this_unit,
+            moveto: target,
         };
         let info = k.generate_info(team, state);
 
@@ -144,8 +144,8 @@ impl MovePhase1 {
     }
     //TODO combine with animate
     fn generate_info(&self, team: ActiveTeam, game: &GameState) -> PushPullInfo {
-        let this_unit = game.factions.get_unit(team, self.unit);
-        let target_cell = self.target;
+        let this_unit = game.factions.get_unit(team, self.original);
+        let target_cell = self.moveto;
         let mut e = PushPullInfo::None;
         match this_unit.typ {
             Type::Warrior { .. } => {
@@ -169,8 +169,8 @@ impl MovePhase1 {
     }
 
     pub fn undo(&self, team_index: ActiveTeam, effect: &PushPullInfo, state: &mut GameState) {
-        let moveto = self.target;
-        let unit = self.unit;
+        let moveto = self.moveto;
+        let unit = self.original;
         let k = state
             .factions
             .relative_mut(team_index)
@@ -211,8 +211,8 @@ impl MovePhase1 {
         game: &mut GameState,
     ) -> (PartialMoveSigl, PushPullInfo, PowerupAction) {
         let env = &mut game.env;
-        let this_unit = game.factions.get_unit_mut(team, self.unit);
-        let target_cell = self.target;
+        let this_unit = game.factions.get_unit_mut(team, self.original);
+        let target_cell = self.moveto;
         let mut e = PushPullInfo::None;
 
         match this_unit.typ {
@@ -293,12 +293,12 @@ pub struct UndoInfo {
 }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-pub struct BombInfo(pub SmallMesh);
+struct BombInfo(pub SmallMesh);
 
 //returns a mesh where set bits indicate cells
 //that were fog before this function was called,
 //and were then unfogged.
-pub fn detonate_bomb(original: GridCoord, game: &mut GameState) -> BombInfo {
+fn detonate_bomb(original: GridCoord, game: &mut GameState) -> BombInfo {
     let mut mesh = SmallMesh::new();
 
     for a in original.to_cube().range(2).map(|a| a.to_axial()) {

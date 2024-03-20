@@ -342,24 +342,15 @@ pub async fn reselect_loop(
 
     {
         if let Some(e) = extra_attack {
-            let (a, b) = move_build::ExtraPhase1 {
+            let (a, meta) = move_build::ExtraPhase {
                 original: e.prev_coord.position,
                 moveto: e.coord(),
-                target_cell: target_cell,
+                target: target_cell,
             }
             .animate(selected_unit.team, game, doop)
             .await
             .apply(selected_unit.team, game);
 
-            // let iii = moves::PartialMove {
-            //     this_unit: e.coord(),
-            //     target: target_cell,
-            //     is_extra: Some(e.prev_move),
-            //     state: game,
-            // };
-
-            // iii.execute_with_animation(selected_unit.team, doop, cca.clone())
-            //     .await;
 
             return LoopRes::EndTurn(moves::ActualMove::Normal {
                 unit: e.prev_move.unit,
@@ -367,10 +358,7 @@ pub async fn reselect_loop(
                 attackto: target_cell,
                 effect: move_build::UndoInfo {
                     pushpull: e.prev_effect.clone(),
-                    meta: move_build::MetaInfo {
-                        fog: move_build::FogInfo(SmallMesh::new()),
-                        bomb: move_build::BombInfo(SmallMesh::new()),
-                    },
+                    meta,
                 },
             });
         } else {
@@ -385,9 +373,9 @@ pub async fn reselect_loop(
             let mut kk = this_unit.clone();
             kk.position = target_cell;
 
-            let (iii, effect, pa) = move_build::MovePhase1 {
-                unit: p,
-                target: target_cell,
+            let (iii, effect, pa) = move_build::MovePhase {
+                original: p,
+                moveto: target_cell,
             }
             .animate(selected_unit.team, doop, cca.clone(), game)
             .await
