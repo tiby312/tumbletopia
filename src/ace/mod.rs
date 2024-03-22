@@ -416,6 +416,7 @@ pub fn game_init() -> GameState {
     let world = Box::leak(Box::new(board::MyWorld::new()));
 
     let fog = world.get_game_cells().clone();
+    //let fog = BitField::new();
 
     let mut k = GameState {
         factions: Factions {
@@ -467,8 +468,8 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         }
 
         //Add AIIIIII.
-        //if team == ActiveTeam::Cats {
-        {
+        if team == ActiveTeam::Cats {
+        //{
             doop.send_popup("AI Thinking", team).await;
             let the_move = ai::iterative_deepening(game, team, &mut doop).await;
             doop.send_popup("", team).await;
