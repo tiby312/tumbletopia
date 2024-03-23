@@ -55,14 +55,46 @@ impl ExtraPhase {
             moveto: self.moveto,
         }
     }
+    //returns a mesh where set bits indicate cells
+    //that were fog before this function was called,
+    //and were then unfogged.
+    fn compute_bomb(&self, game: &GameState) -> Option<BombInfo> {
+        if self.target != self.original || self.original.to_cube().dist(&self.moveto.to_cube()) != 2
+        {
+            return None;
+        }
+
+        let mut mesh = SmallMesh::new();
+
+        for a in self.original.to_cube().range(2).map(|a| a.to_axial()) {
+            if !game.world.get_game_cells().is_coord_set(a) {
+                continue;
+            }
+
+            if game.factions.contains(a) {
+                continue;
+            }
+
+            if game.env.land.is_coord_set(a) {
+                continue;
+            }
+
+            if game.env.fog.is_coord_set(a) {
+                continue;
+            }
+
+            mesh.add(a.sub(&self.original));
+        }
+
+        Some(BombInfo(mesh))
+    }
 
     pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> ExtraEffect {
         let original = self.original;
         let moveto = self.moveto;
         let target_cell = self.target;
-        let bb = if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
-            //if false{
-            let bb = compute_bomb(original, game);
+
+        let bb = if let Some(bb) = self.compute_bomb(game) {
             bb.apply(original, game);
             Some(bb)
         } else {
@@ -76,6 +108,23 @@ impl ExtraPhase {
             }
             None
         };
+
+        // let bb = if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
+        //     //if false{
+        //     let bb = compute_bomb(original, game);
+        //     bb.apply(original, game);
+        //     Some(bb)
+        // } else {
+        //     if !game.env.land.is_coord_set(target_cell) {
+        //         game.env.land.set_coord(target_cell, true)
+        //     } else {
+        //         // if !env.forest.is_coord_set(target_cell) {
+        //         //     env.forest.set_coord(target_cell, true);
+        //         // }
+        //         unreachable!("WAT");
+        //     }
+        //     None
+        // };
 
         let fog = compute_fog(moveto, &mut game.env);
         fog.apply(moveto, &mut game.env);
@@ -332,34 +381,6 @@ impl BombInfo {
             game.env.land.set_coord(original.add(a), true);
         }
     }
-}
-//returns a mesh where set bits indicate cells
-//that were fog before this function was called,
-//and were then unfogged.
-fn compute_bomb(original: GridCoord, game: &GameState) -> BombInfo {
-    let mut mesh = SmallMesh::new();
-
-    for a in original.to_cube().range(2).map(|a| a.to_axial()) {
-        if !game.world.get_game_cells().is_coord_set(a) {
-            continue;
-        }
-
-        if game.factions.contains(a) {
-            continue;
-        }
-
-        if game.env.land.is_coord_set(a) {
-            continue;
-        }
-
-        if game.env.fog.is_coord_set(a) {
-            continue;
-        }
-
-        mesh.add(a.sub(&original));
-    }
-
-    BombInfo(mesh)
 }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
