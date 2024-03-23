@@ -63,7 +63,8 @@ impl ExtraPhase {
         let mut bb = BombInfo(SmallMesh::new());
         if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
             //if false{
-            bb = detonate_bomb(original, game);
+            bb = compute_bomb(original, game);
+            bb.apply(original,game)
         } else {
             if !game.env.land.is_coord_set(target_cell) {
                 game.env.land.set_coord(target_cell, true)
@@ -324,11 +325,17 @@ pub struct CombinedEffect {
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 struct BombInfo(pub SmallMesh);
-
+impl BombInfo{
+    fn apply(&self,original:GridCoord,game:&mut GameState){
+        for a in self.0.iter_mesh(GridCoord([0; 2])) {
+            game.env.land.set_coord(original.add(a), true);
+        }
+    }
+}
 //returns a mesh where set bits indicate cells
 //that were fog before this function was called,
 //and were then unfogged.
-fn detonate_bomb(original: GridCoord, game: &mut GameState) -> BombInfo {
+fn compute_bomb(original: GridCoord, game: &GameState) -> BombInfo {
     let mut mesh = SmallMesh::new();
 
     for a in original.to_cube().range(2).map(|a| a.to_axial()) {
@@ -351,9 +358,7 @@ fn detonate_bomb(original: GridCoord, game: &mut GameState) -> BombInfo {
         mesh.add(a.sub(&original));
     }
 
-    for a in mesh.iter_mesh(GridCoord([0; 2])) {
-        game.env.land.set_coord(original.add(a), true);
-    }
+    
     BombInfo(mesh)
 }
 
@@ -373,6 +378,8 @@ impl FogInfo {
         }
     }
 }
+
+
 //returns a mesh where set bits indicate cells
 //that were fog before this function was called,
 //and were then unfogged.
