@@ -140,33 +140,52 @@ impl ExtraPhase {
     ) -> &Self {
         let target = self.target;
 
-        let terrain_type = if !state.env.land.is_coord_set(target) {
-            animation::TerrainType::Grass
-        } else {
-            if !state.env.forest.is_coord_set(target) {
-                animation::TerrainType::Mountain
-            } else {
-                unreachable!()
-            }
-        };
+        // let terrain_type = if !state.env.land.is_coord_set(target) {
+        //     animation::TerrainType::Grass
+        // } else {
+        //     if !state.env.forest.is_coord_set(target) {
+        //         animation::TerrainType::Mountain
+        //     } else {
+        //         unreachable!()
+        //     }
+        // };
 
-        data.wait_animation(
-            animation::AnimationCommand::Terrain {
-                pos: target,
-                terrain_type,
-                dir: animation::AnimationDirection::Up,
-            },
-            team,
-            state.clone(),
-        )
-        .await;
+        let mut gg = state.clone();
+
+        if let Some(bb) = self.compute_bomb(state) {
+            for b in bb.0.iter_mesh(self.original) {
+                gg = data
+                    .wait_animation(
+                        animation::AnimationCommand::Terrain {
+                            pos: b,
+                            terrain_type: animation::TerrainType::Grass,
+                            dir: animation::AnimationDirection::Up,
+                        },
+                        team,
+                        gg,
+                    )
+                    .await;
+                gg.env.land.set_coord(b, true);
+            }
+        } else {
+            data.wait_animation(
+                animation::AnimationCommand::Terrain {
+                    pos: target,
+                    terrain_type: animation::TerrainType::Grass,
+                    dir: animation::AnimationDirection::Up,
+                },
+                team,
+                state.clone(),
+            )
+            .await;
+        }
 
         let fog = compute_fog(self.moveto, &state.env);
 
-        let mut game = state.clone();
+        //let mut game = state.clone();
         for a in fog.0.iter_mesh(self.moveto) {
             // Change mesh
-            game = data
+            gg = data
                 .wait_animation(
                     animation::AnimationCommand::Terrain {
                         pos: a,
@@ -174,11 +193,11 @@ impl ExtraPhase {
                         dir: animation::AnimationDirection::Down,
                     },
                     team,
-                    game,
+                    gg,
                 )
                 .await;
 
-            game.env.fog.set_coord(a, false);
+            gg.env.fog.set_coord(a, false);
         }
 
         self
