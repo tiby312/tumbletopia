@@ -268,7 +268,7 @@ impl EngineStuff {
         let drop_shadow = &models.drop_shadow;
         let dog = &models.dog;
         let cat = &models.cat;
-        let fog_asset = &models.fog;
+        //let fog_asset = &models.fog;
         let water = &models.water;
         let grass = &models.grass;
         let mountain_asset = &models.mountain;
@@ -311,7 +311,6 @@ impl EngineStuff {
                         let (a, b) = match dir {
                             animation::AnimationDirection::Up => (-10., 0.),
                             animation::AnimationDirection::Down => (0., -10.),
-                            animation::AnimationDirection::DownDown => (0., -15.),
                         };
                         let it = animation::terrain_create(a, b);
                         terrain_animation = Some((0.0, it, pos, terrain_type));
@@ -514,9 +513,9 @@ impl EngineStuff {
                 for c in game.env.fog.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
-                    let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);
+                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
                     let m = my_matrix.chain(t).generate();
-                    draw_sys.view(&m).draw_a_thing(fog_asset);
+                    draw_sys.view(&m).draw_a_thing(snow);
                 }
 
                 for c in game.env.powerups.iter() {
@@ -531,13 +530,13 @@ impl EngineStuff {
                     let texture = match k {
                         //animation::TerrainType::Snow => snow,
                         animation::TerrainType::Grass => grass,
-                        animation::TerrainType::Fog => fog_asset,
+                        animation::TerrainType::Fog => snow,
                     };
 
                     let diff = match k {
                         //animation::TerrainType::Snow => LAND_OFFSET,
                         animation::TerrainType::Grass => LAND_OFFSET,
-                        animation::TerrainType::Fog => MOUNTAIN_OFFSET,
+                        animation::TerrainType::Fog => LAND_OFFSET,
                     };
 
                     let gpos = *gpos;
