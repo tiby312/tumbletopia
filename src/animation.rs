@@ -66,6 +66,7 @@ pub enum AnimationCommand {
 pub enum AnimationDirection {
     Up,
     Down,
+    DownDown,
 }
 
 #[derive(Debug, Clone)]

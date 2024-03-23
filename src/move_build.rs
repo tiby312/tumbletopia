@@ -184,7 +184,7 @@ impl ExtraPhase {
                     animation::AnimationCommand::Terrain {
                         pos: a,
                         terrain_type: animation::TerrainType::Fog,
-                        dir: animation::AnimationDirection::Down,
+                        dir: animation::AnimationDirection::DownDown,
                     },
                     team,
                     gg,
