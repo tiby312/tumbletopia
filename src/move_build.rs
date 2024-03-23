@@ -75,7 +75,8 @@ impl ExtraPhase {
             }
         }
 
-        let fog = uncover_fog(moveto, &mut game.env);
+        let fog = compute_fog(moveto, &mut game.env);
+        fog.apply(moveto, &mut game.env);
 
         ExtraEffect { fog, bomb: bb }
     }
@@ -98,16 +99,31 @@ impl ExtraPhase {
             }
         };
 
-        let _ = data
-            .wait_animation(
+        data.wait_animation(
+            animation::AnimationCommand::Terrain {
+                pos: target,
+                terrain_type,
+                dir: animation::AnimationDirection::Up,
+            },
+            team,
+        )
+        .await;
+
+        let fog = compute_fog(self.moveto, &state.env);
+
+        for a in fog.0.iter_mesh(self.moveto) {
+            // Change mesh
+            data.wait_animation(
                 animation::AnimationCommand::Terrain {
-                    pos: target,
-                    terrain_type,
-                    dir: animation::AnimationDirection::Up,
+                    pos: a,
+                    terrain_type: animation::TerrainType::Grass,
+                    dir: animation::AnimationDirection::Down,
                 },
                 team,
             )
             .await;
+        }
+
         self
     }
 }
@@ -336,19 +352,22 @@ pub struct ExtraEffect {
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct FogInfo(pub SmallMesh);
 
+impl FogInfo {
+    pub fn apply(&self, og: GridCoord, env: &mut Environment) {
+        for a in self.0.iter_mesh(GridCoord([0; 2])) {
+            env.fog.set_coord(og.add(a), false);
+        }
+    }
+}
 //returns a mesh where set bits indicate cells
 //that were fog before this function was called,
 //and were then unfogged.
-pub fn uncover_fog(og: GridCoord, env: &mut Environment) -> FogInfo {
+pub fn compute_fog(og: GridCoord, env: &Environment) -> FogInfo {
     let mut mesh = SmallMesh::new();
     for a in og.to_cube().range(1) {
         if env.fog.is_coord_set(a.to_axial()) {
             mesh.add(a.to_axial().sub(&og));
         }
-    }
-
-    for a in mesh.iter_mesh(GridCoord([0; 2])) {
-        env.fog.set_coord(og.add(a), false);
     }
     FogInfo(mesh)
 }
