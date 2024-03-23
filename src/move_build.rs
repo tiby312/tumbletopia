@@ -112,18 +112,22 @@ impl ExtraPhase {
 
         let fog = compute_fog(self.moveto, &state.env);
 
+        let mut game = state.clone();
         for a in fog.0.iter_mesh(self.moveto) {
             // Change mesh
-            data.wait_animation(
-                animation::AnimationCommand::Terrain {
-                    pos: a,
-                    terrain_type: animation::TerrainType::Grass,
-                    dir: animation::AnimationDirection::Down,
-                },
-                team,
-                state.clone(),
-            )
-            .await;
+            game = data
+                .wait_animation(
+                    animation::AnimationCommand::Terrain {
+                        pos: a,
+                        terrain_type: animation::TerrainType::Grass,
+                        dir: animation::AnimationDirection::Down,
+                    },
+                    team,
+                    game,
+                )
+                .await;
+
+            game.env.fog.set_coord(a, false);
         }
 
         self

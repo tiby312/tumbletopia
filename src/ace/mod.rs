@@ -70,7 +70,7 @@ impl WorkerManager {
         animation: animation::AnimationCommand,
         team: ActiveTeam,
         game: GameState,
-    ) {
+    ) -> GameState {
         self.sender
             .send(GameWrap {
                 team,
@@ -80,10 +80,11 @@ impl WorkerManager {
             .await
             .unwrap();
 
-        let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
+        let GameWrapResponse { game, data } = self.receiver.next().await.unwrap();
         let Response::AnimationFinish = data else {
             unreachable!();
         };
+        game
     }
 
     async fn get_mouse_no_selection<'c>(
