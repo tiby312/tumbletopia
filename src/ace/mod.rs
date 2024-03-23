@@ -7,14 +7,14 @@ use crate::{
     CellSelection, GameState, UnitData,
 };
 
-pub struct GameWrap<'a, T> {
-    pub game: &'a GameState,
+pub struct GameWrap<T> {
+    pub game: GameState,
     pub team: ActiveTeam,
     pub data: T,
 }
 
-pub struct GameWrapResponse<'a, T> {
-    pub game: &'a GameState,
+pub struct GameWrapResponse<T> {
+    pub game: GameState,
     pub data: T,
 }
 
@@ -59,19 +59,18 @@ use futures::{
     SinkExt, StreamExt,
 };
 
-pub struct WorkerManager<'a> {
-    pub game: *mut GameState,
-    pub sender: Sender<GameWrap<'a, Command>>,
-    pub receiver: Receiver<GameWrapResponse<'a, Response>>,
+pub struct WorkerManager {
+    pub sender: Sender<GameWrap<Command>>,
+    pub receiver: Receiver<GameWrapResponse<Response>>,
 }
 
-impl<'a> WorkerManager<'a> {
-    pub async fn wait_animation<'c>(
+impl WorkerManager {
+    pub async fn wait_animation(
         &mut self,
         animation: animation::AnimationCommand,
         team: ActiveTeam,
+        game: GameState,
     ) {
-        let game = unsafe { &*self.game };
         self.sender
             .send(GameWrap {
                 team,
@@ -87,14 +86,19 @@ impl<'a> WorkerManager<'a> {
         };
     }
 
-    async fn get_mouse_no_selection<'c>(&mut self, team: ActiveTeam) -> Pototo<GridCoord> {
-        let (_, c) = self.get_mouse(MousePrompt::None, team).await;
+    async fn get_mouse_no_selection<'c>(
+        &mut self,
+        team: ActiveTeam,
+        game: GameState,
+    ) -> Pototo<GridCoord> {
+        let (_, c) = self.get_mouse(MousePrompt::None, team, game).await;
         c
     }
     async fn get_mouse_selection<'c>(
         &mut self,
         cell: CellSelection,
         team: ActiveTeam,
+        game: GameState,
         grey: bool,
     ) -> (CellSelection, Pototo<GridCoord>) {
         let (b, c) = self
@@ -104,6 +108,7 @@ impl<'a> WorkerManager<'a> {
                     grey,
                 },
                 team,
+                game,
             )
             .await;
 
@@ -119,8 +124,8 @@ impl<'a> WorkerManager<'a> {
         (selection, c)
     }
 
-    async fn poke(&mut self, team: ActiveTeam) {
-        let game = unsafe { &*self.game };
+    async fn poke(&mut self, team: ActiveTeam, game: GameState) {
+        //let game = unsafe { &*self.game };
 
         self.sender
             .send(GameWrap {
@@ -137,9 +142,7 @@ impl<'a> WorkerManager<'a> {
             unreachable!();
         };
     }
-    async fn send_popup(&mut self, str: &str, team: ActiveTeam) {
-        let game = unsafe { &*self.game };
-
+    async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: GameState) {
         self.sender
             .send(GameWrap {
                 game,
@@ -160,9 +163,8 @@ impl<'a> WorkerManager<'a> {
         &mut self,
         cell: MousePrompt,
         team: ActiveTeam,
+        game: GameState,
     ) -> (MousePrompt, Pototo<GridCoord>) {
-        let game = unsafe { &*self.game };
-
         self.sender
             .send(GameWrap {
                 game,
@@ -225,7 +227,7 @@ pub enum LoopRes<T> {
 }
 
 pub async fn reselect_loop(
-    doop: &mut WorkerManager<'_>,
+    doop: &mut WorkerManager,
     game: &mut GameState,
     team: ActiveTeam,
     have_moved: &mut Option<selection::HaveMoved>,
@@ -267,7 +269,9 @@ pub async fn reselect_loop(
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
     let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca.clone());
 
-    let (cell, pototo) = doop.get_mouse_selection(cc, selected_unit.team, grey).await;
+    let (cell, pototo) = doop
+        .get_mouse_selection(cc, selected_unit.team, game.clone(), grey)
+        .await;
 
     let mouse_world = match pototo {
         Pototo::Normal(t) => t,
@@ -457,7 +461,7 @@ pub mod share {
     }
 }
 
-pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>) {
+pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager) {
     let mut game_history = selection::MoveLog::new();
 
     //Loop over each team!
@@ -470,9 +474,9 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
         //Add AIIIIII.
         if team == ActiveTeam::Cats {
             //{
-            doop.send_popup("AI Thinking", team).await;
+            doop.send_popup("AI Thinking", team, game.clone()).await;
             let the_move = ai::iterative_deepening(game, team, &mut doop).await;
-            doop.send_popup("", team).await;
+            doop.send_popup("", team, game.clone()).await;
 
             let kk = the_move.as_move();
 
@@ -500,7 +504,7 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager<'a>
 
 async fn handle_player(
     game: &mut GameState,
-    doop: &mut WorkerManager<'_>,
+    doop: &mut WorkerManager,
     team: ActiveTeam,
 ) -> moves::ActualMove {
     let mut extra_attack = None;
@@ -508,7 +512,7 @@ async fn handle_player(
     loop {
         //Loop until the user clicks on a selectable unit in their team.
         let mut selected_unit = loop {
-            let data = doop.get_mouse_no_selection(team).await;
+            let data = doop.get_mouse_no_selection(team, game.clone()).await;
             let cell = match data {
                 Pototo::Normal(a) => a,
                 Pototo::EndTurn => {

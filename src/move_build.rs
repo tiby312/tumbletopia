@@ -85,7 +85,7 @@ impl ExtraPhase {
         &self,
         team: ActiveTeam,
         state: &GameState,
-        data: &mut ace::WorkerManager<'_>,
+        data: &mut ace::WorkerManager,
     ) -> &Self {
         let target = self.target;
 
@@ -106,6 +106,7 @@ impl ExtraPhase {
                 dir: animation::AnimationDirection::Up,
             },
             team,
+            state.clone(),
         )
         .await;
 
@@ -120,6 +121,7 @@ impl ExtraPhase {
                     dir: animation::AnimationDirection::Down,
                 },
                 team,
+                state.clone(),
             )
             .await;
         }
@@ -159,7 +161,7 @@ impl MovePhase {
         &self,
         team: ActiveTeam,
         state: &GameState,
-        data: &mut ace::WorkerManager<'_>,
+        data: &mut ace::WorkerManager,
     ) -> &Self {
         let this_unit = self.original;
         let target = self.moveto;
@@ -194,6 +196,13 @@ impl MovePhase {
         };
         let this_unit = state.factions.get_unit(team, this_unit);
 
+        let mut ss = state.clone();
+        ss.factions
+            .relative_mut(team)
+            .this_team
+            .units
+            .retain(|k| k.position != unit.position);
+
         let _ = data
             .wait_animation(
                 animation::AnimationCommand::Movement {
@@ -204,6 +213,7 @@ impl MovePhase {
                     data: info,
                 },
                 team,
+                ss,
             )
             .await;
         self

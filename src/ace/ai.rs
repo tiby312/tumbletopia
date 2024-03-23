@@ -254,10 +254,10 @@ impl PrincipalVariation {
     }
 }
 
-pub async fn iterative_deepening<'a>(
+pub async fn iterative_deepening(
     game: &GameState,
     team: ActiveTeam,
-    doop: &mut WorkerManager<'a>,
+    doop: &mut WorkerManager,
 ) -> moves::ActualMove {
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
@@ -299,7 +299,7 @@ pub async fn iterative_deepening<'a>(
             break;
         }
 
-        doop.poke(team).await;
+        doop.poke(team, game.clone()).await;
     }
 
     console_dbg!(count);

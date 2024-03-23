@@ -192,7 +192,6 @@ fn create_worker_render(
     let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
     let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
     let doop = ace::WorkerManager {
-        game: game as *mut _,
         sender: command_sender,
         receiver: response_recv,
     };
@@ -207,9 +206,9 @@ fn create_worker_render(
     )
 }
 
-struct RenderManager<'c> {
-    response_sender: futures::channel::mpsc::Sender<GameWrapResponse<'c, ace::Response>>,
-    command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<'c, ace::Command>>,
+struct RenderManager {
+    response_sender: futures::channel::mpsc::Sender<GameWrapResponse<ace::Response>>,
+    command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<ace::Command>>,
 }
 pub struct EngineStuff {
     grid_matrix: grids::GridMatrix,
@@ -238,7 +237,7 @@ impl EngineStuff {
 
     async fn handle_render_loop(
         &self,
-        rm: &mut RenderManager<'_>,
+        rm: &mut RenderManager,
         frame_timer: &mut shogo::FrameTimer<
             MEvent,
             futures::channel::mpsc::UnboundedReceiver<MEvent>,
@@ -284,22 +283,6 @@ impl EngineStuff {
             let mut terrain_animation = None;
             let mut poking = 0;
 
-            // let mut shore = BitField::new();
-            // let mut inner_land = BitField::new();
-            // for a in game.env.land.iter_mesh(GridCoord::zero()) {
-            //     if moves::has_adjacent_water(game, a) {
-            //         shore.set_coord(a, true);
-            //     } else {
-            //         inner_land.set_coord(a, true);
-            //     }
-            // }
-            let mut land = game.env.land.clone();
-            let fog = game.env.fog.clone();
-
-            let (mut cat_for_draw, mut dog_for_draw) = (
-                game.factions.cats.units.clone(),
-                game.factions.dogs.units.clone(),
-            );
             match data {
                 ace::Command::Animate(ak) => match ak {
                     animation::AnimationCommand::Movement {
@@ -309,25 +292,17 @@ impl EngineStuff {
                         end,
                         data,
                     } => {
-                        if team == ActiveTeam::Cats {
-                            cat_for_draw.retain(|k| k.position != unit.position);
-                        } else {
-                            dog_for_draw.retain(|k| k.position != unit.position);
-                        }
-
                         let ff = match data {
                             move_build::PushPullInfo::PushedLand => {
                                 let dir = unit.position.dir_to(&end);
                                 let k = unit.position.advance(dir);
-                                assert!(land.is_coord_set(k));
-                                land.set_coord(k, false);
+                                assert!(game.env.land.is_coord_set(k));
                                 Some(animation::land_delta(unit.position, end, grid_matrix))
                             }
                             move_build::PushPullInfo::PulledLand => {
                                 let dir = unit.position.dir_to(&end);
                                 let k = unit.position.back(dir);
-                                assert!(land.is_coord_set(k));
-                                land.set_coord(k, false);
+                                assert!(game.env.land.is_coord_set(k));
                                 Some(animation::land_delta(unit.position, k, grid_matrix))
                             }
                             move_build::PushPullInfo::None => None,
@@ -537,14 +512,14 @@ impl EngineStuff {
                 pub const LAND_OFFSET: f32 = -10.0;
                 pub const MOUNTAIN_OFFSET: f32 = 0.0;
 
-                for c in land.iter_mesh(GridCoord::zero()) {
+                for c in game.env.land.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(grass);
                 }
 
-                for c in fog.iter_mesh(GridCoord::zero()) {
+                for c in game.env.fog.iter_mesh(GridCoord::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);
@@ -611,10 +586,11 @@ impl EngineStuff {
                 let d = DepthDisabler::new(&ctx);
 
                 draw_something_grid(
-                    cat_for_draw
+                    game.factions
+                        .cats
                         .iter()
                         .map(|x| x.position)
-                        .chain(dog_for_draw.iter().map(|x| x.position)),
+                        .chain(game.factions.dogs.iter().map(|x| x.position)),
                     grid_matrix,
                     &mut draw_sys,
                     drop_shadow,
@@ -625,7 +601,7 @@ impl EngineStuff {
                 drop(d);
 
                 draw_something_grid(
-                    cat_for_draw.iter().map(|x| x.position),
+                    game.factions.cats.iter().map(|x| x.position),
                     grid_matrix,
                     &mut draw_sys,
                     &cat,
@@ -634,7 +610,7 @@ impl EngineStuff {
                 );
 
                 draw_something_grid(
-                    dog_for_draw.iter().map(|x| x.position),
+                    game.factions.dogs.iter().map(|x| x.position),
                     grid_matrix,
                     &mut draw_sys,
                     &dog,
@@ -681,11 +657,13 @@ impl EngineStuff {
                 let d = DepthDisabler::new(&ctx);
 
                 draw_health_text(
-                    cat_for_draw
+                    game.factions
+                        .cats
                         .iter()
                         .map(|x| (x.position, x.typ.type_index() as i8))
                         .chain(
-                            dog_for_draw
+                            game.factions
+                                .dogs
                                 .iter()
                                 .map(|x| (x.position, x.typ.type_index() as i8)),
                         ),

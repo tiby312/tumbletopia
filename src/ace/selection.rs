@@ -17,7 +17,7 @@ impl MoveLog {
         self.inner.push(o);
     }
 
-    pub async fn replay(&self, doop: &mut WorkerManager<'_>, kk: &mut GameState) {
+    pub async fn replay(&self, doop: &mut WorkerManager, kk: &mut GameState) {
         todo!();
         // let mut ii = ActiveTeam::Dogs.iter();
         // for (team_index, m) in (&mut ii).zip(self.inner.iter()) {
