@@ -293,19 +293,10 @@ impl EngineStuff {
                         data,
                     } => {
                         let ff = match data {
-                            move_build::PushPullInfo::PushedLand => {
-                                let dir = unit.position.dir_to(&end);
-                                let k = unit.position.advance(dir);
-                                assert!(game.env.land.is_coord_set(k));
+                            move_build::PushInfo::PushedLand => {
                                 Some(animation::land_delta(unit.position, end, grid_matrix))
                             }
-                            move_build::PushPullInfo::PulledLand => {
-                                let dir = unit.position.dir_to(&end);
-                                let k = unit.position.back(dir);
-                                assert!(game.env.land.is_coord_set(k));
-                                Some(animation::land_delta(unit.position, k, grid_matrix))
-                            }
-                            move_build::PushPullInfo::None => None,
+                            move_build::PushInfo::None => None,
                         };
 
                         let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);

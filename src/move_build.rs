@@ -198,7 +198,7 @@ impl ExtraPhase {
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct MoveEffect {
-    pub pushpull: PushPullInfo,
+    pub pushpull: PushInfo,
     pub powerup: PowerupAction,
 }
 impl MoveEffect {
@@ -244,16 +244,16 @@ impl MovePhase {
         let info = {
             let this_unit = state.factions.get_unit(team, self.original);
             let target_cell = self.moveto;
-            let mut e = PushPullInfo::None;
+            let mut e = PushInfo::None;
             match this_unit.typ {
                 Type::Warrior { .. } => {
                     if state.env.land.is_coord_set(target_cell) {
-                        e = PushPullInfo::PushedLand;
+                        e = PushInfo::PushedLand;
                     }
                 }
                 Type::Archer => {
                     if state.env.land.is_coord_set(target_cell) {
-                        e = PushPullInfo::PushedLand;
+                        e = PushInfo::PushedLand;
                     }
                 }
             }
@@ -269,13 +269,25 @@ impl MovePhase {
             .units
             .retain(|k| k.position != unit.position);
 
+        let end = target;
+        match info {
+            PushInfo::PushedLand => {
+                let dir = unit.position.dir_to(&end);
+                let k = unit.position.advance(dir);
+                assert!(ss.env.land.is_coord_set(k));
+                ss.env.land.set_coord(k, false);
+            }
+
+            PushInfo::None => {}
+        }
+
         let _ = data
             .wait_animation(
                 animation::AnimationCommand::Movement {
                     unit: this_unit.clone(),
                     mesh,
                     walls,
-                    end: target,
+                    end,
                     data: info,
                 },
                 team,
@@ -296,7 +308,7 @@ impl MovePhase {
             .unwrap();
 
         match effect.pushpull {
-            PushPullInfo::PushedLand => {
+            PushInfo::PushedLand => {
                 let dir = unit.dir_to(&moveto);
                 let t3 = moveto.advance(dir);
                 assert!(state.env.land.is_coord_set(t3));
@@ -304,15 +316,8 @@ impl MovePhase {
                 assert!(!state.env.land.is_coord_set(moveto));
                 state.env.land.set_coord(moveto, true);
             }
-            PushPullInfo::PulledLand => {
-                let dir = unit.dir_to(&moveto);
-                let t3 = unit.back(dir);
-                assert!(state.env.land.is_coord_set(unit));
-                state.env.land.set_coord(unit, false);
-                assert!(!state.env.land.is_coord_set(t3));
-                state.env.land.set_coord(t3, true);
-            }
-            PushPullInfo::None => {}
+
+            PushInfo::None => {}
         }
         k.position = unit;
     }
@@ -321,7 +326,7 @@ impl MovePhase {
         let env = &mut game.env;
         let this_unit = game.factions.get_unit_mut(team, self.original);
         let target_cell = self.moveto;
-        let mut e = PushPullInfo::None;
+        let mut e = PushInfo::None;
 
         match this_unit.typ {
             Type::Warrior { .. } => {
@@ -334,7 +339,7 @@ impl MovePhase {
 
                     env.land.set_coord(kk, true);
 
-                    e = PushPullInfo::PushedLand;
+                    e = PushInfo::PushedLand;
                 }
             }
             Type::Archer => {
@@ -372,9 +377,8 @@ pub enum PowerupAction {
 }
 
 #[derive(PartialOrd, Ord, Clone, Copy, Eq, PartialEq, Debug)]
-pub enum PushPullInfo {
+pub enum PushInfo {
     PushedLand,
-    PulledLand,
     None,
 }
 
