@@ -33,10 +33,10 @@ impl ExtraPhase {
             state.env.fog.set_coord(a, true);
         }
 
-        if !meta.bomb.0.is_empty() {
+        if let Some(m) = &meta.bomb {
             assert_eq!(unit, attackto);
             assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 2);
-            for a in meta.bomb.0.iter_mesh(unit) {
+            for a in m.0.iter_mesh(unit) {
                 assert!(state.env.land.is_coord_set(a));
                 state.env.land.set_coord(a, false);
             }
@@ -60,11 +60,11 @@ impl ExtraPhase {
         let original = self.original;
         let moveto = self.moveto;
         let target_cell = self.target;
-        let mut bb = BombInfo(SmallMesh::new());
-        if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
+        let bb = if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
             //if false{
-            bb = compute_bomb(original, game);
-            bb.apply(original,game)
+            let bb = compute_bomb(original, game);
+            bb.apply(original, game);
+            Some(bb)
         } else {
             if !game.env.land.is_coord_set(target_cell) {
                 game.env.land.set_coord(target_cell, true)
@@ -74,7 +74,8 @@ impl ExtraPhase {
                 // }
                 unreachable!("WAT");
             }
-        }
+            None
+        };
 
         let fog = compute_fog(moveto, &mut game.env);
         fog.apply(moveto, &mut game.env);
@@ -325,8 +326,8 @@ pub struct CombinedEffect {
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 struct BombInfo(pub SmallMesh);
-impl BombInfo{
-    fn apply(&self,original:GridCoord,game:&mut GameState){
+impl BombInfo {
+    fn apply(&self, original: GridCoord, game: &mut GameState) {
         for a in self.0.iter_mesh(GridCoord([0; 2])) {
             game.env.land.set_coord(original.add(a), true);
         }
@@ -358,14 +359,13 @@ fn compute_bomb(original: GridCoord, game: &GameState) -> BombInfo {
         mesh.add(a.sub(&original));
     }
 
-    
     BombInfo(mesh)
 }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct ExtraEffect {
     pub fog: FogInfo,
-    pub bomb: BombInfo,
+    pub bomb: Option<BombInfo>,
 }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
@@ -378,7 +378,6 @@ impl FogInfo {
         }
     }
 }
-
 
 //returns a mesh where set bits indicate cells
 //that were fog before this function was called,
