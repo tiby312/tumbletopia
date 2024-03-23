@@ -143,19 +143,22 @@ impl ExtraPhase {
         let mut gg = state.clone();
 
         if let Some(bb) = self.compute_bomb(state) {
-            for b in bb.0.iter_mesh(self.original) {
-                gg = data
-                    .wait_animation(
-                        animation::AnimationCommand::Terrain {
-                            pos: b,
-                            terrain_type: animation::TerrainType::Grass,
-                            dir: animation::AnimationDirection::Up,
-                        },
-                        team,
-                        gg,
-                    )
-                    .await;
-                gg.env.land.set_coord(b, true);
+            let k = self.original.to_cube();
+            for a in std::iter::once(k).chain(k.ring(1)).chain(k.ring(2)) {
+                if bb.0.is_set(a.sub(self.original.to_cube()).to_axial()) {
+                    gg = data
+                        .wait_animation(
+                            animation::AnimationCommand::Terrain {
+                                pos: a.to_axial(),
+                                terrain_type: animation::TerrainType::Grass,
+                                dir: animation::AnimationDirection::Up,
+                            },
+                            team,
+                            gg,
+                        )
+                        .await;
+                    gg.env.land.set_coord(a.to_axial(), true);
+                }
             }
         } else {
             gg = data

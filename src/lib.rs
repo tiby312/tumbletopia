@@ -311,7 +311,7 @@ impl EngineStuff {
                         let (a, b) = match dir {
                             animation::AnimationDirection::Up => (-10., 0.),
                             animation::AnimationDirection::Down => (0., -10.),
-                            animation::AnimationDirection::DownDown => (0., -20.),
+                            animation::AnimationDirection::DownDown => (0., -15.),
                         };
                         let it = animation::terrain_create(a, b);
                         terrain_animation = Some((0.0, it, pos, terrain_type));
