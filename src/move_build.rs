@@ -140,16 +140,6 @@ impl ExtraPhase {
     ) -> &Self {
         let target = self.target;
 
-        // let terrain_type = if !state.env.land.is_coord_set(target) {
-        //     animation::TerrainType::Grass
-        // } else {
-        //     if !state.env.forest.is_coord_set(target) {
-        //         animation::TerrainType::Mountain
-        //     } else {
-        //         unreachable!()
-        //     }
-        // };
-
         let mut gg = state.clone();
 
         if let Some(bb) = self.compute_bomb(state) {
@@ -168,36 +158,38 @@ impl ExtraPhase {
                 gg.env.land.set_coord(b, true);
             }
         } else {
-            data.wait_animation(
-                animation::AnimationCommand::Terrain {
-                    pos: target,
-                    terrain_type: animation::TerrainType::Grass,
-                    dir: animation::AnimationDirection::Up,
-                },
-                team,
-                state.clone(),
-            )
-            .await;
-        }
-
-        let fog = compute_fog(self.moveto, &state.env);
-
-        //let mut game = state.clone();
-        for a in fog.0.iter_mesh(self.moveto) {
-            // Change mesh
             gg = data
                 .wait_animation(
                     animation::AnimationCommand::Terrain {
-                        pos: a,
+                        pos: target,
                         terrain_type: animation::TerrainType::Grass,
-                        dir: animation::AnimationDirection::Down,
+                        dir: animation::AnimationDirection::Up,
                     },
                     team,
                     gg,
                 )
                 .await;
 
+            gg.env.land.set_coord(target, true);
+        }
+
+        let fog = compute_fog(self.moveto, &state.env);
+
+        //let mut game = state.clone();
+        for a in fog.0.iter_mesh(self.moveto) {
             gg.env.fog.set_coord(a, false);
+            // Change mesh
+            gg = data
+                .wait_animation(
+                    animation::AnimationCommand::Terrain {
+                        pos: a,
+                        terrain_type: animation::TerrainType::Fog,
+                        dir: animation::AnimationDirection::Down,
+                    },
+                    team,
+                    gg,
+                )
+                .await;
         }
 
         self

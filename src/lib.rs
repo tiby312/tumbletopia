@@ -539,13 +539,13 @@ impl EngineStuff {
                     let texture = match k {
                         //animation::TerrainType::Snow => snow,
                         animation::TerrainType::Grass => grass,
-                        animation::TerrainType::Mountain => unreachable!(),
+                        animation::TerrainType::Fog => fog_asset,
                     };
 
                     let diff = match k {
                         //animation::TerrainType::Snow => LAND_OFFSET,
                         animation::TerrainType::Grass => LAND_OFFSET,
-                        animation::TerrainType::Mountain => MOUNTAIN_OFFSET,
+                        animation::TerrainType::Fog => MOUNTAIN_OFFSET,
                     };
 
                     let gpos = *gpos;

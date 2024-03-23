@@ -71,7 +71,7 @@ pub enum AnimationDirection {
 #[derive(Debug, Clone)]
 pub enum TerrainType {
     Grass,
-    Mountain,
+    Fog,
 }
 
 pub fn terrain_create(curr: f32, target: f32) -> impl Iterator<Item = f32> {
