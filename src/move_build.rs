@@ -1,5 +1,5 @@
 use super::*;
-use crate::movement::movement_mesh::SmallMesh;
+use crate::mesh::small_mesh::SmallMesh;
 
 impl crate::moves::ActualMove {
     pub fn as_extra(&self) -> move_build::ExtraPhase {

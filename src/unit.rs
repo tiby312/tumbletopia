@@ -1,4 +1,3 @@
-
 use super::*;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
@@ -16,7 +15,7 @@ pub struct UnitData {
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(Axial, movement::movement_mesh::SmallMesh),
+    MoveSelection(Axial, mesh::small_mesh::SmallMesh),
     BuildSelection(Axial),
 }
 

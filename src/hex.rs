@@ -1,6 +1,5 @@
 use duckduckgeo::dists::grid::Grid;
 
-
 // pub const OFFSETS: [[i16; 3]; 6] = [
 //     [0, 1, -1],
 //     [1, 0, -1],

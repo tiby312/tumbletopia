@@ -2,7 +2,7 @@ use crate::hex::HDir;
 
 use super::*;
 
-pub mod movement_mesh {
+pub mod small_mesh {
 
     pub fn explore_outward_two() -> impl Iterator<Item = (HDir, [HDir; 3])> {
         HDir::all().map(move |dir| {
@@ -187,12 +187,12 @@ pub mod movement_mesh {
 }
 
 pub fn path(
-    mesh: &movement_mesh::SmallMesh,
+    mesh: &small_mesh::SmallMesh,
     a: Axial,
-    walls: &movement_mesh::SmallMesh,
+    walls: &small_mesh::SmallMesh,
 ) -> impl Iterator<Item = HDir> {
     let mesh_iter = {
-        movement_mesh::SmallMesh::validate_rel(a);
+        small_mesh::SmallMesh::validate_rel(a);
         let x = a.q;
         let y = a.r;
         let first = if Axial::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 1 {

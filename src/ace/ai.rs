@@ -1,4 +1,4 @@
-use crate::movement::bitfield::BitField;
+use crate::mesh::bitfield::BitField;
 
 use super::*;
 

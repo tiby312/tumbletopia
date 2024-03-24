@@ -50,8 +50,8 @@ pub fn attack(
 pub enum AnimationCommand {
     Movement {
         unit: UnitData,
-        mesh: movement::movement_mesh::SmallMesh,
-        walls: movement::movement_mesh::SmallMesh,
+        mesh: mesh::small_mesh::SmallMesh,
+        walls: mesh::small_mesh::SmallMesh,
         end: Axial,
         data: PushInfo,
     },
@@ -99,15 +99,15 @@ pub fn land_delta(start: Axial, end: Axial, v: &grids::GridMatrix) -> Vector2<f3
 }
 pub fn movement(
     start: Axial,
-    path: movement::movement_mesh::SmallMesh,
-    walls: movement::movement_mesh::SmallMesh,
+    path: mesh::small_mesh::SmallMesh,
+    walls: mesh::small_mesh::SmallMesh,
     end: Axial,
     v: &grids::GridMatrix,
 ) -> impl Iterator<Item = Vector2<f32>> {
     let v = v.clone();
     let mut counter = v.hex_axial_to_world(&start);
     let mut cc = start;
-    movement::path(&path, end.sub(&start), &walls).flat_map(move |m| {
+    mesh::path(&path, end.sub(&start), &walls).flat_map(move |m| {
         let a = m.to_relative();
         cc.q += a.q;
         cc.r += a.r;

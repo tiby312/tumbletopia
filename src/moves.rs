@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::movement::movement_mesh::SmallMesh;
+use crate::mesh::small_mesh::SmallMesh;
 
 impl GameState {
     fn check_if_occ(&self, a: Axial, check_fog: bool) -> bool {
