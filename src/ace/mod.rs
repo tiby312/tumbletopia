@@ -222,7 +222,7 @@ impl SelectType {
 }
 
 pub enum LoopRes<T> {
-    EndTurn(moves::ActualMove),
+    EndTurn((moves::ActualMove, move_build::CombinedEffect)),
     Deselect,
     Select(T),
 }
@@ -279,7 +279,8 @@ pub async fn reselect_loop(
         Pototo::EndTurn => {
             //End the turn. Ok because we are not int he middle of anything.
             //return LoopRes::EndTurn;
-            unreachable!();
+            //unreachable!();
+            return LoopRes::Deselect;
         }
     };
     let target_cell = mouse_world;
@@ -354,11 +355,16 @@ pub async fn reselect_loop(
                 .await
                 .apply(selected_unit.team, game);
 
-            return LoopRes::EndTurn(moves::ActualMove {
-                original: e.the_move.original,
-                moveto: e.the_move.moveto,
-                attackto: target_cell,
-            });
+            let effect = e.effect.combine(meta);
+
+            return LoopRes::EndTurn((
+                moves::ActualMove {
+                    original: e.the_move.original,
+                    moveto: e.the_move.moveto,
+                    attackto: target_cell,
+                },
+                effect,
+            ));
         } else {
             let p = unit.position;
             let this_unit = game
@@ -481,19 +487,20 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager) {
 
             let kk = the_move.as_move();
 
-            kk.animate(team, game, &mut doop).await.apply(team, game);
+            let effect_m = kk.animate(team, game, &mut doop).await.apply(team, game);
 
-            kk.into_attack(the_move.attackto)
+            let effect_a = kk
+                .into_attack(the_move.attackto)
                 .animate(team, game, &mut doop)
                 .await
                 .apply(team, game);
 
-            game_history.push(the_move);
+            game_history.push((the_move, effect_m.combine(effect_a)));
 
             continue;
         }
 
-        let m = handle_player(game, &mut doop, team).await;
+        let m = handle_player(game, &mut doop, team, &mut game_history).await;
 
         game_history.push(m);
 
@@ -507,7 +514,8 @@ async fn handle_player(
     game: &mut GameState,
     doop: &mut WorkerManager,
     team: ActiveTeam,
-) -> moves::ActualMove {
+    move_log: &mut selection::MoveLog,
+) -> (moves::ActualMove, move_build::CombinedEffect) {
     let mut extra_attack = None;
     //Keep allowing the user to select units
     loop {
@@ -517,10 +525,17 @@ async fn handle_player(
             let cell = match data {
                 Pototo::Normal(a) => a,
                 Pototo::EndTurn => {
-                    log!("cant end turn!");
-                    //game_history.push(moves::ActualMove::SkipTurn);
-                    unreachable!();
-                    //break 'select_loop;
+                    if extra_attack.is_none() {
+                        log!("undoing turn!!!");
+                        let (a, e) = move_log.inner.pop().unwrap();
+                        a.as_extra().undo(&e.extra_effect, game);
+                        a.as_move().undo(team.not(), &e.move_effect, game);
+
+                        let (a, e) = move_log.inner.pop().unwrap();
+                        a.as_extra().undo(&e.extra_effect, game);
+                        a.as_move().undo(team, &e.move_effect, game);
+                    }
+                    continue;
                 }
             };
             //let game = game.view_mut(team_index);
@@ -544,6 +559,7 @@ async fn handle_player(
         loop {
             let a = match reselect_loop(doop, game, team, &mut extra_attack, selected_unit).await {
                 LoopRes::EndTurn(m) => {
+                    //todo!();
                     return m;
                     //game_history.push(m);
                     //break 'select_loop;

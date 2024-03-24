@@ -7,13 +7,13 @@ pub struct HaveMoved {
 }
 
 pub struct MoveLog {
-    pub inner: Vec<moves::ActualMove>,
+    pub inner: Vec<(moves::ActualMove, move_build::CombinedEffect)>,
 }
 impl MoveLog {
     pub fn new() -> Self {
         MoveLog { inner: vec![] }
     }
-    pub fn push(&mut self, o: moves::ActualMove) {
+    pub fn push(&mut self, o: (moves::ActualMove, move_build::CombinedEffect)) {
         self.inner.push(o);
     }
 
