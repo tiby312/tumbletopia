@@ -162,7 +162,7 @@ impl WorkerManager {
             unreachable!();
         };
     }
-    async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: GameState) {
+    async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: GameState) -> GameState {
         self.sender
             .send(GameWrap {
                 game,
@@ -172,11 +172,13 @@ impl WorkerManager {
             .await
             .unwrap();
 
-        let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
+        let GameWrapResponse { game, data } = self.receiver.next().await.unwrap();
 
         let Response::Ack = data else {
             unreachable!();
         };
+
+        game
     }
 
     // async fn doop<F: Foop>(
@@ -295,7 +297,7 @@ pub async fn reselect_loop(
     };
 
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
-    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca.clone());
+    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca);
 
     let (cell, pototo, gg) = doop
         .get_mouse_selection(cc, selected_unit.team, game, grey)
@@ -514,9 +516,9 @@ pub async fn main_logic(mut game: GameState, mut doop: WorkerManager) {
         //Add AIIIIII.
         if team == ActiveTeam::Cats {
             //{
-            doop.send_popup("AI Thinking", team, game.clone()).await;
-            let the_move = ai::iterative_deepening(&mut game, team, &mut doop).await;
-            doop.send_popup("", team, game.clone()).await;
+            game = doop.send_popup("AI Thinking", team, game).await;
+            let the_move = ai::iterative_deepening(&mut game, team);
+            game = doop.send_popup("", team, game).await;
 
             let kk = the_move.as_move();
 
