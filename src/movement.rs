@@ -6,17 +6,23 @@ use super::*;
 
 #[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
-#[repr(transparent)]
-pub struct GridCoord(pub [i16; 2]);
+pub struct GridCoord {
+    pub q: i16,
+    pub r: i16,
+}
+
 impl GridCoord {
+    pub const fn from_arr([q, r]: [i16; 2]) -> Self {
+        GridCoord { q, r }
+    }
     pub fn zero() -> GridCoord {
-        GridCoord([0; 2])
+        GridCoord { q: 0, r: 0 }
     }
     pub fn dir_to(&self, other: &GridCoord) -> HDir {
         let mut offset = other.sub(self);
 
-        offset.0[0] = offset.0[0].clamp(-1, 1);
-        offset.0[1] = offset.0[1].clamp(-1, 1);
+        offset.q = offset.q.clamp(-1, 1);
+        offset.r = offset.r.clamp(-1, 1);
 
         // assert!(offset.0[0].abs() <= 1);
         // assert!(offset.0[1].abs() <= 1);
@@ -30,8 +36,8 @@ impl GridCoord {
             .unwrap()
     }
     pub fn to_cube(self) -> hex::Cube {
-        let a = self.0;
-        hex::Cube([a[0], a[1], -a[0] - a[1]])
+        let a = self;
+        hex::Cube([a.q, a.r, -a.q - a.r])
     }
 
     pub fn advance(self, m: HDir) -> GridCoord {
@@ -41,13 +47,13 @@ impl GridCoord {
         self.sub(&m.to_relative())
     }
     pub fn sub(mut self, o: &GridCoord) -> Self {
-        self.0[0] -= o.0[0];
-        self.0[1] -= o.0[1];
+        self.q -= o.q;
+        self.r -= o.r;
         self
     }
     pub const fn add(mut self, o: GridCoord) -> Self {
-        self.0[0] += o.0[0];
-        self.0[1] += o.0[1];
+        self.q += o.q;
+        self.r += o.r;
         self
     }
 }
@@ -249,9 +255,9 @@ pub mod movement_mesh {
         //     println!("[{},{}],", a.0[0], a.0[1]);
         // }
 
-        let k1 = GridCoord([2, 0]);
-        let k2 = GridCoord([2, -2]);
-        let k3 = GridCoord([-2, 1]);
+        let k1 = GridCoord::from_arr([2, 0]);
+        let k2 = GridCoord::from_arr([2, -2]);
+        let k3 = GridCoord::from_arr([-2, 1]);
 
         let mut mesh = SmallMesh::new();
         mesh.add(k1);
@@ -261,13 +267,17 @@ pub mod movement_mesh {
         assert!(mesh.is_set(k1));
         assert!(mesh.is_set(k2));
         assert!(mesh.is_set(k3));
-        assert!(!mesh.is_set(GridCoord([-2, 2])));
+        assert!(!mesh.is_set(GridCoord::from_arr([-2, 2])));
 
-        let res: Vec<_> = mesh.iter_mesh(GridCoord([0; 2])).collect();
+        let res: Vec<_> = mesh.iter_mesh(GridCoord::from_arr([0; 2])).collect();
 
         assert_eq!(
             res,
-            vec!(GridCoord([-2, 1]), GridCoord([2, -2]), GridCoord([2, 0]))
+            vec!(
+                GridCoord::from_arr([-2, 1]),
+                GridCoord::from_arr([2, -2]),
+                GridCoord::from_arr([2, 0])
+            )
         )
     }
 
@@ -288,8 +298,8 @@ pub mod movement_mesh {
             m
         }
         pub fn validate_rel(a: GridCoord) {
-            let x = a.0[0];
-            let y = a.0[1];
+            let x = a.q;
+            let y = a.r;
 
             assert!(x <= 6 && x >= -6);
             assert!(y <= 6 && y >= -6);
@@ -331,7 +341,7 @@ pub mod movement_mesh {
                 .map(move |a| {
                     let x = a / 13;
                     let y = a % 13;
-                    point.add(GridCoord([x - 6, y - 6]))
+                    point.add(GridCoord::from_arr([x - 6, y - 6]))
                 });
 
             mesh_moves //.chain(skip_moves)
@@ -378,12 +388,12 @@ pub mod movement_mesh {
     //     }
     // }
     fn conv(a: GridCoord) -> usize {
-        let [x, y] = a.0;
+        let GridCoord { q, r } = a;
         //     let ind=x/7+y%7;
         //     // -3 -2 -1 0 1 2 3
         //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
         // ind as usize
-        ((x + 6) * 13 + (y + 6)) as usize
+        ((q + 6) * 13 + (r + 6)) as usize
 
         // TABLE
         //     .iter()
@@ -401,10 +411,10 @@ pub fn path(
 ) -> impl Iterator<Item = HDir> {
     let mesh_iter = {
         movement_mesh::SmallMesh::validate_rel(a);
-        let x = a.0[0];
-        let y = a.0[1];
-        let first = if GridCoord([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
-            Some([GridCoord([0, 0]).dir_to(&a)])
+        let x = a.q;
+        let y = a.r;
+        let first = if GridCoord::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
+            Some([GridCoord::from_arr([0, 0]).dir_to(&a)])
         } else {
             None
         };
@@ -412,7 +422,7 @@ pub fn path(
         //diagonal
         let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
             //TODO inefficient
-            let mut k = GridCoord([0, 0])
+            let mut k = GridCoord::from_arr([0, 0])
                 .to_cube()
                 .neighbours()
                 .filter(|x| x.dist(&a.to_cube()) == 1);
@@ -422,16 +432,19 @@ pub fn path(
             if
             /*self.is_set(first)||*/
             !walls.is_set(first) {
-                Some([GridCoord([0, 0]).dir_to(&first), first.dir_to(&a)])
+                Some([GridCoord::from_arr([0, 0]).dir_to(&first), first.dir_to(&a)])
             } else {
-                Some([GridCoord([0, 0]).dir_to(&second), second.dir_to(&a)])
+                Some([
+                    GridCoord::from_arr([0, 0]).dir_to(&second),
+                    second.dir_to(&a),
+                ])
             }
         } else {
             None
         };
 
         let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2) {
-            let h = GridCoord([0, 0]).dir_to(&a);
+            let h = GridCoord::from_arr([0, 0]).dir_to(&a);
             Some([h, h])
         } else {
             None
@@ -439,7 +452,7 @@ pub fn path(
 
         // size 3 spokes
         let fourth = if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
-            let h = GridCoord([0, 0]).dir_to(&a);
+            let h = GridCoord::from_arr([0, 0]).dir_to(&a);
             Some([h, h, h])
         } else {
             None
@@ -466,9 +479,9 @@ pub mod bitfield {
 
         for k in -16..16 {
             dbg!("handling=k", k);
-            m.set_coord(GridCoord([k, k]), true);
+            m.set_coord(GridCoord::from_arr([k, k]), true);
 
-            assert!(m.is_coord_set(GridCoord([k, k])), "boo={}", k);
+            assert!(m.is_coord_set(GridCoord::from_arr([k, k])), "boo={}", k);
         }
     }
 
@@ -506,8 +519,8 @@ pub mod bitfield {
         }
 
         pub fn set_coord(&mut self, a: GridCoord, val: bool) {
-            let x = a.0[0];
-            let y = a.0[1];
+            let x = a.q;
+            let y = a.r;
             assert!(x <= 16 && x >= -16 && y <= 16 && y >= -16, "val={:?}", a);
 
             let ind = conv(a);
@@ -523,12 +536,12 @@ pub mod bitfield {
             self.inner.ones().map(move |a| {
                 let x = a / 32;
                 let y = a % 32;
-                point.add(GridCoord([x as i16 - 16, y as i16 - 16]))
+                point.add(GridCoord::from_arr([x as i16 - 16, y as i16 - 16]))
             })
         }
     }
     fn conv(a: GridCoord) -> usize {
-        let [x, y] = a.0;
-        ((x + 16) * 32 + (y + 16)) as usize
+        let GridCoord { q, r } = a;
+        ((q + 16) * 32 + (r + 16)) as usize
     }
 }

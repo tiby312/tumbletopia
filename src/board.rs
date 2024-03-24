@@ -22,5 +22,5 @@ fn world() -> impl Iterator<Item = hex::Cube> {
 
     hex::Cube::new(0, 0)
         .range(4)
-        .chain(k.into_iter().map(GridCoord).map(|x| x.to_cube()))
+        .chain(k.into_iter().map(GridCoord::from_arr).map(|x| x.to_cube()))
 }

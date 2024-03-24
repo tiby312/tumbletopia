@@ -395,7 +395,7 @@ pub struct CombinedEffect {
 struct BombInfo(pub SmallMesh);
 impl BombInfo {
     fn apply(&self, original: GridCoord, game: &mut GameState) {
-        for a in self.0.iter_mesh(GridCoord([0; 2])) {
+        for a in self.0.iter_mesh(GridCoord::zero()) {
             game.env.land.set_coord(original.add(a), true);
         }
     }
@@ -412,7 +412,7 @@ pub struct FogInfo(pub SmallMesh);
 
 impl FogInfo {
     pub fn apply(&self, og: GridCoord, env: &mut Environment) {
-        for a in self.0.iter_mesh(GridCoord([0; 2])) {
+        for a in self.0.iter_mesh(GridCoord::zero()) {
             env.fog.set_coord(og.add(a), false);
         }
     }

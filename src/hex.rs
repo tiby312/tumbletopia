@@ -95,7 +95,6 @@ pub(crate) const SQRT_3: f32 = 1.73205080757;
 pub const HEX_PROJ_FLAT: cgmath::Matrix2<f32> =
     cgmath::Matrix2::new(3.0 / 2.0, SQRT_3 / 2.0, 0.0, SQRT_3);
 
-
 //q r s
 #[derive(Copy, Clone, Debug)]
 pub struct Cube(pub [i16; 3]);
@@ -181,7 +180,7 @@ impl Cube {
     }
 
     pub const fn to_axial(&self) -> GridCoord {
-        GridCoord([self.0[0], self.0[1]])
+        GridCoord::from_arr([self.0[0], self.0[1]])
     }
 
     pub fn ray(&self, dir: HDir) -> impl Iterator<Item = (Cube, Cube)> {

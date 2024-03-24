@@ -109,8 +109,8 @@ pub fn movement(
     let mut cc = start;
     movement::path(&path, end.sub(&start), &walls).flat_map(move |m| {
         let a = m.to_relative();
-        cc.0[0] += a.0[0];
-        cc.0[1] += a.0[1];
+        cc.q += a.q;
+        cc.r += a.r;
         let k = v.hex_axial_to_world(&cc);
         let dis = (k - counter).magnitude();
         let dir = (k - counter).normalize();

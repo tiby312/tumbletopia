@@ -31,7 +31,7 @@ impl GridMatrix {
     }
 
     pub fn hex_axial_to_world(&self, coord: &GridCoord) -> cgmath::Vector2<f32> {
-        let v = cgmath::Vector2::new(coord.0[0] as f32, coord.0[1] as f32);
+        let v = cgmath::Vector2::new(coord.q as f32, coord.r as f32);
         self.hex_axial_to_square_matrix() * v
     }
 

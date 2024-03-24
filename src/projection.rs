@@ -14,10 +14,10 @@ pub fn get_world_rect(view_projection: &Matrix4<f32>, grid: &GridMatrix) -> [[i1
     r.grow_to_fit_point(c.into());
     r.grow_to_fit_point(d.into());
 
-    let a = grid.world_to_hex([r.x.start, r.y.start].into()).0;
-    let b = grid.world_to_hex([r.x.end, r.y.end].into()).0;
+    let a = grid.world_to_hex([r.x.start, r.y.start].into());
+    let b = grid.world_to_hex([r.x.end, r.y.end].into());
 
-    [[a[0], b[0] + 1], [a[1], b[1] + 1]]
+    [[a.q, b.q + 1], [a.r, b.r + 1]]
 }
 
 pub fn clip_to_world(clip: [f32; 2], view_projection: &Matrix4<f32>) -> [f32; 2] {

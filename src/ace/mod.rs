@@ -145,7 +145,6 @@ impl WorkerManager {
     }
 
     async fn poke(&mut self, team: ActiveTeam, game: GameState) {
-        
         self.sender
             .send(GameWrap {
                 game,
@@ -439,7 +438,7 @@ pub fn game_init() -> GameState {
     let cats = cats
         .into_iter()
         .map(|a| UnitData {
-            position: GridCoord(a),
+            position: GridCoord::from_arr(a),
             typ: Type::Warrior { powerup },
             has_powerup: false,
         })
@@ -450,7 +449,7 @@ pub fn game_init() -> GameState {
     let dogs = dogs
         .into_iter()
         .map(|a| UnitData {
-            position: GridCoord(a),
+            position: GridCoord::from_arr(a),
             typ: Type::Warrior { powerup },
             has_powerup: false,
         })
@@ -472,7 +471,7 @@ pub fn game_init() -> GameState {
             land: BitField::from_iter([]),
             forest: BitField::from_iter([]),
             fog,
-            powerups: powerups.into_iter().map(GridCoord).collect(),
+            powerups: powerups.into_iter().map(GridCoord::from_arr).collect(),
         },
         world,
     };
@@ -537,7 +536,7 @@ pub async fn main_logic(mut game: GameState, mut doop: WorkerManager) {
             continue;
         }
 
-        let (a,b);
+        let (a, b);
         (game, a, b) = handle_player(game, &mut doop, team, &mut game_history).await;
         game_history.push((a, b));
 
@@ -601,7 +600,7 @@ async fn handle_player(
         loop {
             let res;
             (game, res) = reselect_loop(doop, game, team, &mut extra_attack, selected_unit).await;
-            
+
             let a = match res {
                 LoopRes::EndTurn((a, b)) => {
                     //todo!();
