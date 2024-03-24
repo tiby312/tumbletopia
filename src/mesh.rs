@@ -48,6 +48,12 @@ pub mod small_mesh {
         pub inner: u128,
     }
 
+    impl Default for SmallMesh {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl SmallMesh {
         pub fn new() -> SmallMesh {
             SmallMesh { inner: 0 }
@@ -63,20 +69,20 @@ pub mod small_mesh {
             let x = a.q;
             let y = a.r;
 
-            assert!(x <= 6 && x >= -6);
-            assert!(y <= 6 && y >= -6);
+            assert!((-6..=6).contains(&x));
+            assert!((-6..=6).contains(&y));
 
             //assert!(x != 0 || y != 0);
         }
         pub fn add(&mut self, a: Axial) {
             Self::validate_rel(a);
             let ind = conv(a);
-            self.inner = self.inner | (1 << ind);
+            self.inner |= 1 << ind;
         }
         pub fn remove(&mut self, a: Axial) {
             Self::validate_rel(a);
             let ind = conv(a);
-            self.inner = self.inner & (!(1 << ind));
+            self.inner &= !(1 << ind);
         }
         pub fn is_empty(&self) -> bool {
             self.inner == 0
@@ -98,15 +104,14 @@ pub mod small_mesh {
             //     .enumerate()
             //     .filter(move |(x, _)| inner & (1 << x) != 0)
             //     .map(move |(_, x)| point.add(GridCoord(*x)))
-            let mesh_moves = (0..128)
+
+            (0..128)
                 .filter(move |x| inner & (1 << x) != 0)
                 .map(move |a| {
                     let x = a / 13;
                     let y = a % 13;
                     point.add(Axial::from_arr([x - 6, y - 6]))
-                });
-
-            mesh_moves //.chain(skip_moves)
+                }) //.chain(skip_moves)
         }
     }
 
@@ -130,7 +135,7 @@ pub mod small_mesh {
 }
 
 pub fn path(
-    mesh: &small_mesh::SmallMesh,
+    _mesh: &small_mesh::SmallMesh,
     a: Axial,
     walls: &small_mesh::SmallMesh,
 ) -> impl Iterator<Item = HDir> {
@@ -226,6 +231,12 @@ pub mod bitfield {
             &mut self.inner
         }
     }
+    impl Default for BitField {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl BitField {
         pub fn new() -> Self {
             BitField {
@@ -243,7 +254,11 @@ pub mod bitfield {
         pub fn set_coord(&mut self, a: Axial, val: bool) {
             let x = a.q;
             let y = a.r;
-            assert!(x <= 16 && x >= -16 && y <= 16 && y >= -16, "val={:?}", a);
+            assert!(
+                (-16..=16).contains(&x) && (-16..=16).contains(&y),
+                "val={:?}",
+                a
+            );
 
             let ind = conv(a);
             self.inner.set(ind, val);

@@ -53,8 +53,7 @@ impl Factions {
             .iter()
             .chain(self.cats.iter())
             .map(|a| a.position)
-            .find(|a| *a == coord)
-            .is_some()
+            .any(|a| a == coord)
     }
     fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
         self.relative_mut(team)
@@ -385,7 +384,7 @@ impl EngineStuff {
                             scroll_manager.on_new_touch(touches);
                         }
                         MEvent::TouchEnd { touches } => {
-                            if let scroll::MouseUp::Select = scroll_manager.on_touch_up(&touches) {
+                            if let scroll::MouseUp::Select = scroll_manager.on_touch_up(touches) {
                                 on_select = true;
                             }
                         }
@@ -426,7 +425,7 @@ impl EngineStuff {
                 let mouse_world =
                     scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
-                if let Some(_) = &mut get_mouse_input {
+                if get_mouse_input.is_some() {
                     if end_turn {
                         response_sender
                             .send(ace::GameWrapResponse {
@@ -440,7 +439,7 @@ impl EngineStuff {
                         let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
                         log!(format!("pos:{:?}", mouse));
 
-                        let data = if let Some((selection, grey)) = get_mouse_input.unwrap() {
+                        let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
                             ace::Response::MouseWithSelection(selection, Pototo::Normal(mouse))
                         } else {
                             ace::Response::Mouse(Pototo::Normal(mouse))
@@ -467,7 +466,7 @@ impl EngineStuff {
                         break 'render_loop;
                     }
                 }
-                if let Some((lpos, a, _, data)) = &mut unit_animation {
+                if let Some((lpos, a, _, _data)) = &mut unit_animation {
                     if let Some(pos) = a.next() {
                         *lpos = pos;
                     } else {
@@ -492,7 +491,7 @@ impl EngineStuff {
                     ggame.world.get_game_cells().iter_mesh(Axial::zero()),
                     grid_matrix,
                     &mut draw_sys,
-                    &water,
+                    water,
                     &my_matrix,
                     -10.0,
                 );
@@ -516,7 +515,7 @@ impl EngineStuff {
                 }
 
                 for c in game.env.powerups.iter() {
-                    let pos = grid_matrix.hex_axial_to_world(&c);
+                    let pos = grid_matrix.hex_axial_to_world(c);
 
                     let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);
                     let m = my_matrix.chain(t).generate();
@@ -549,7 +548,7 @@ impl EngineStuff {
                     if let Some((selection, grey)) = a {
                         match selection {
                             CellSelection::MoveSelection(point, mesh) => {
-                                let _d = DepthDisabler::new(&ctx);
+                                let _d = DepthDisabler::new(ctx);
 
                                 for a in mesh.iter_mesh(*point) {
                                     let pos = grid_matrix.hex_axial_to_world(&a);
@@ -570,7 +569,7 @@ impl EngineStuff {
                     }
                 }
 
-                let d = DepthDisabler::new(&ctx);
+                let d = DepthDisabler::new(ctx);
 
                 draw_something_grid(
                     game.factions
@@ -591,7 +590,7 @@ impl EngineStuff {
                     game.factions.cats.iter().map(|x| x.position),
                     grid_matrix,
                     &mut draw_sys,
-                    &cat,
+                    cat,
                     &my_matrix,
                     0.0,
                 );
@@ -600,12 +599,12 @@ impl EngineStuff {
                     game.factions.dogs.iter().map(|x| x.position),
                     grid_matrix,
                     &mut draw_sys,
-                    &dog,
+                    dog,
                     &my_matrix,
                     0.0,
                 );
 
-                if let Some((pos, _, unit, data)) = &unit_animation {
+                if let Some((pos, _, _unit, data)) = &unit_animation {
                     let this_draw = match team {
                         ActiveTeam::Cats => &cat,
                         ActiveTeam::Dogs => &dog,
@@ -614,7 +613,7 @@ impl EngineStuff {
                     //This is a unit animation
                     //let a = (this_draw, unit);
 
-                    let d = DepthDisabler::new(&ctx);
+                    let d = DepthDisabler::new(ctx);
 
                     let m = my_matrix
                         .chain(matrix::translation(pos.x, pos.y, 1.0))
@@ -641,7 +640,7 @@ impl EngineStuff {
                     draw_sys.view(&m).draw_a_thing(*this_draw);
                 }
 
-                let d = DepthDisabler::new(&ctx);
+                let d = DepthDisabler::new(ctx);
 
                 draw_health_text(
                     game.factions
@@ -654,7 +653,7 @@ impl EngineStuff {
                                 .iter()
                                 .map(|x| (x.position, x.typ.type_index() as i8)),
                         ),
-                    &grid_matrix,
+                    grid_matrix,
                     &numm.health_numbers,
                     &view_proj,
                     &proj,
@@ -706,7 +705,7 @@ fn draw_health_text(
         let jj = view_proj.chain(t).generate();
         let jj: &[f32; 16] = jj.as_ref();
         let tt = matrix::translation(jj[12], jj[13], jj[14]);
-        let new_proj = proj.clone().chain(tt);
+        let new_proj = (*proj).chain(tt);
 
         let s = matrix::scale(5.0, 5.0, 5.0);
         let m = new_proj.chain(s).generate();
@@ -757,7 +756,7 @@ pub struct Models<T> {
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
     pub fn new(grid_matrix: &grids::GridMatrix, ctx: &WebGl2RenderingContext) -> Self {
-        const ASSETS: &[(&'static [u8], usize, Option<f64>)] = &[
+        const ASSETS: &[(&[u8], usize, Option<f64>)] = &[
             (include_bytes!("../assets/select_model.glb"), 1, None),
             (include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
             (include_bytes!("../assets/fog.glb"), RESIZE, None),
@@ -775,8 +774,8 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
 
             log!(format!("texture:{:?}", (t.width, t.height)));
             model_parse::Foo {
-                texture: model_parse::TextureGpu::new(&ctx, &t),
-                model: model_parse::ModelGpu::new(&ctx, &data),
+                texture: model_parse::TextureGpu::new(ctx, &t),
+                model: model_parse::ModelGpu::new(ctx, &data),
             }
         };
 
@@ -810,10 +809,10 @@ impl Numm {
         let text_texture = {
             let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
 
-            model_parse::TextureGpu::new(&ctx, &ascii_tex)
+            model_parse::TextureGpu::new(ctx, &ascii_tex)
         };
 
-        let health_numbers = NumberTextManager::new(&ctx);
+        let health_numbers = NumberTextManager::new(ctx);
 
         Numm {
             text_texture,
@@ -862,7 +861,7 @@ fn string_to_coords<'a>(st: &str) -> model::ModelData {
     let mut inds = vec![];
     for (_, a) in st.chars().enumerate() {
         let ascii = a as u8;
-        let index = (ascii - 0/*32*/) as u16;
+        let index = ascii as u16;
 
         let x = (index % num_rows) as f32 / num_rows as f32;
         let y = (index / num_rows) as f32 / num_columns as f32;

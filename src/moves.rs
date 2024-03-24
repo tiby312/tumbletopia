@@ -23,7 +23,7 @@ impl GameState {
     pub fn generate_possible_moves_extra(
         &self,
         foo: &move_build::MovePhase,
-        typ: Type,
+        _typ: Type,
         _team: ActiveTeam,
     ) -> SmallMesh {
         let game = self;
@@ -76,13 +76,11 @@ impl GameState {
                         }
                     }
                 }
-            } else {
-                if let Type::Warrior { powerup } = typ {
-                    if game.env.land.is_coord_set(a) {
-                        let check = a.advance(dir);
-                        if a != unit && game.check_if_occ(check, true) {
-                            mesh.add(a.sub(&unit));
-                        }
+            } else if let Type::Warrior { powerup: _ } = typ {
+                if game.env.land.is_coord_set(a) {
+                    let check = a.advance(dir);
+                    if a != unit && game.check_if_occ(check, true) {
+                        mesh.add(a.sub(&unit));
                     }
                 }
             }

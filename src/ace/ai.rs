@@ -118,14 +118,14 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         .iter()
         .map(|a| a.position)
         .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-        .fold(0, |a, b| a + b);
+        .sum::<i64>();
     let cat_distance = view
         .factions
         .cats
         .iter()
         .map(|a| a.position)
         .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-        .fold(0, |a, b| a + b);
+        .sum::<i64>();
 
     // let dog_powerups = view
     //     .factions
@@ -165,12 +165,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
     100 * s + cat_distance - dog_distance
 }
 
-fn doop(
-    iteration: usize,
-    mut dogs: &mut BitField,
-    mut cats: &mut BitField,
-    allowed_cells: &BitField,
-) {
+fn doop(iteration: usize, dogs: &mut BitField, cats: &mut BitField, allowed_cells: &BitField) {
     dogs.intersect_with(allowed_cells);
     cats.intersect_with(allowed_cells);
     if dogs.count_ones(..) == 0 && cats.count_ones(..) == 0 {
@@ -201,17 +196,17 @@ fn doop(
     for _i in 0..iteration {
         cache.clear();
         cache.union_with(dogs);
-        expand_mesh(&mut dogs, &mut w);
+        expand_mesh(dogs, &mut w);
         let dogs_changed = &cache != dogs;
         cache.clear();
         cache.union_with(cats);
-        expand_mesh(&mut cats, &mut w);
+        expand_mesh(cats, &mut w);
         let cats_changed = &cache != cats;
         if !dogs_changed && !cats_changed {
             break;
         }
-        dogs.intersect_with(&allowed_cells);
-        cats.intersect_with(&allowed_cells);
+        dogs.intersect_with(allowed_cells);
+        cats.intersect_with(allowed_cells);
 
         contested.clear();
         contested.union_with(dogs);
@@ -250,7 +245,7 @@ impl PrincipalVariation {
         //}
     }
     pub fn insert(&mut self, path: &[moves::ActualMove], m: moves::ActualMove) {
-        self.a.insert(path.iter().cloned().collect(), m);
+        self.a.insert(path.to_vec(), m);
     }
 }
 
@@ -301,7 +296,7 @@ pub fn iterative_deepening(game: &GameState, team: ActiveTeam) -> moves::ActualM
     console_dbg!(count);
     console_dbg!(&results);
 
-    let target_eval = results.last().unwrap().eval;
+    let _target_eval = results.last().unwrap().eval;
     // let mov = if let Some(a) = results
     //     .iter()
     //     .rev()
@@ -397,7 +392,7 @@ impl<'a> AlphaBeta<'a> {
 
         let Some(mut moves) = foo else {
             self.calls.add_eval();
-            return absolute_evaluate(&game_after_move, false);
+            return absolute_evaluate(game_after_move, false);
         };
 
         let mut num_sorted = 0;
@@ -461,7 +456,7 @@ impl<'a> AlphaBeta<'a> {
 
         let (eval, m) = kk.finish();
         if let Some(kk) = m {
-            self.prev_cache.update(&self.path, &kk);
+            self.prev_cache.update(self.path, &kk);
         }
         eval
     }

@@ -6,6 +6,12 @@ use super::*;
 pub struct MyWorld {
     w: BitField,
 }
+impl Default for MyWorld {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MyWorld {
     pub fn new() -> MyWorld {
         let w = BitField::from_iter(world().map(|a| a.to_axial()));

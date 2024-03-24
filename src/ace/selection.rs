@@ -9,6 +9,12 @@ pub struct HaveMoved {
 pub struct MoveLog {
     pub inner: Vec<(moves::ActualMove, move_build::CombinedEffect)>,
 }
+impl Default for MoveLog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MoveLog {
     pub fn new() -> Self {
         MoveLog { inner: vec![] }
@@ -17,7 +23,7 @@ impl MoveLog {
         self.inner.push(o);
     }
 
-    pub async fn replay(&self, doop: &mut WorkerManager, kk: &mut GameState) {
+    pub async fn replay(&self, _doop: &mut WorkerManager, _kk: &mut GameState) {
         todo!();
         // let mut ii = ActiveTeam::Dogs.iter();
         // for (team_index, m) in (&mut ii).zip(self.inner.iter()) {
@@ -33,9 +39,9 @@ impl MoveLog {
         assert_eq!(ver, 0);
         let num = rdr.read_u32::<BigEndian>().unwrap();
 
-        let mut ret = vec![];
+        let ret = vec![];
         for _ in 0..num {
-            let vals = [
+            let _vals = [
                 rdr.read_i16::<BigEndian>().unwrap(),
                 rdr.read_i16::<BigEndian>().unwrap(),
                 rdr.read_i16::<BigEndian>().unwrap(),
@@ -64,7 +70,7 @@ impl MoveLog {
         wtr.write_u32::<BigEndian>(o.len().try_into().unwrap())
             .unwrap();
 
-        for a in o.iter() {
+        for _a in o.iter() {
             todo!();
             // wtr.write_i16::<BigEndian>(a.unit.0[0]).unwrap();
             // wtr.write_i16::<BigEndian>(a.unit.0[1]).unwrap();

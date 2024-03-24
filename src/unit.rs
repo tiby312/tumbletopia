@@ -78,7 +78,7 @@ impl Tribe {
         self.units.iter().find(|b| &b.position == a)
     }
 
-    pub fn find_slow_mut<'a, 'b>(&'a mut self, a: &'b Axial) -> Option<&'a mut UnitData> {
+    pub fn find_slow_mut<'a>(&'a mut self, a: &Axial) -> Option<&'a mut UnitData> {
         self.units.iter_mut().find(|b| &b.position == a)
     }
 }

@@ -1,10 +1,7 @@
 use super::*;
 mod ai;
 pub mod selection;
-use crate::{
-    mesh::{self},
-    CellSelection, GameState, UnitData,
-};
+use crate::{CellSelection, GameState, UnitData};
 
 pub struct GameWrap<T> {
     pub game: GameState,
@@ -387,7 +384,7 @@ pub async fn reselect_loop(
 
             let effect = e.effect.combine(meta);
 
-            return (
+            (
                 game,
                 LoopRes::EndTurn((
                     moves::ActualMove {
@@ -397,7 +394,7 @@ pub async fn reselect_loop(
                     },
                     effect,
                 )),
-            );
+            )
         } else {
             let p = unit.position;
             let this_unit = game
@@ -425,7 +422,7 @@ pub async fn reselect_loop(
                     the_move: mp,
                     effect,
                 });
-                return (game, LoopRes::Select(selected_unit.with(c).with_team(team)));
+                (game, LoopRes::Select(selected_unit.with(c).with_team(team)))
             }
         }
     }

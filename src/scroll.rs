@@ -139,7 +139,7 @@ impl TouchController {
             Foo::OneTouchActive { touch_id } => {
                 let second_touch_id = touches.select_lowest_touch_excluding(touch_id).unwrap();
 
-                let (dis, middle, rot) = compute_middle(&touches, touch_id, second_touch_id);
+                let (dis, middle, rot) = compute_middle(touches, touch_id, second_touch_id);
 
                 //we don't want to propogate this click to the user.
                 let _ = self.inner.handle_mouse_up();
@@ -196,7 +196,7 @@ impl TouchController {
                 first_touch_id,
                 second_touch_id,
             } => {
-                let (dis, middle, r) = compute_middle(&touches, first_touch_id, second_touch_id);
+                let (dis, middle, r) = compute_middle(touches, first_touch_id, second_touch_id);
                 self.inner
                     .handle_mouse_move(0.0, middle, view_projection, dim);
                 zoom.update(dis);
@@ -369,7 +369,7 @@ impl ScrollController {
     pub fn new(camera: Vector2<f32>) -> Self {
         ScrollController {
             camera,
-            last_camera: camera.into(),
+            last_camera: camera,
             cursor_canvas: [0.0; 2].into(),
             scrolling: Scrollin::NotScrolling,
         }
@@ -407,8 +407,8 @@ impl ScrollController {
                 mouse_anchor,
                 camera_anchor,
             } => {
-                let a = Vector2::from(self.cursor_canvas);
-                let b = Vector2::from(mouse_anchor);
+                let a = self.cursor_canvas;
+                let b = mouse_anchor;
                 let offset = b - a;
                 if offset.magnitude2() >= buffer_radius * buffer_radius {
                     self.scrolling = Scrollin::Scrolling {
@@ -425,8 +425,8 @@ impl ScrollController {
         self.cursor_canvas = mouse.into();
 
         self.scrolling = Scrollin::MouseDown {
-            mouse_anchor: Vector2::from(self.cursor_canvas),
-            camera_anchor: Vector2::from(self.camera),
+            mouse_anchor: self.cursor_canvas,
+            camera_anchor: self.camera,
         };
     }
 
@@ -452,10 +452,10 @@ impl ScrollController {
         match self.scrolling {
             Scrollin::Scrolling { .. } => {}
             _ => {
-                let delta = Vector2::from(self.camera) - Vector2::from(self.last_camera);
-                self.last_camera = Vector2::from(self.camera);
+                let delta = self.camera - self.last_camera;
+                self.last_camera = self.camera;
 
-                self.camera = (Vector2::from(self.camera) + delta * 0.9).into();
+                self.camera += delta * 0.9;
             }
         }
     }

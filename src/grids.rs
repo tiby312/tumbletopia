@@ -9,6 +9,12 @@ pub struct GridMatrix {
 const FOO: f32 = hex::SQRT_3;
 const EPSILON: f32 = 1.01;
 
+impl Default for GridMatrix {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GridMatrix {
     pub fn hex_axial_to_square_matrix(&self) -> cgmath::Matrix2<f32> {
         let sc = EPSILON * self.spacing() / FOO;

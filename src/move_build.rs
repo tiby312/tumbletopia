@@ -40,14 +40,12 @@ impl ExtraPhase {
                 assert!(state.env.land.is_coord_set(a));
                 state.env.land.set_coord(a, false);
             }
+        } else if state.env.forest.is_coord_set(attackto) {
+            state.env.forest.set_coord(attackto, false);
+        } else if state.env.land.is_coord_set(attackto) {
+            state.env.land.set_coord(attackto, false);
         } else {
-            if state.env.forest.is_coord_set(attackto) {
-                state.env.forest.set_coord(attackto, false);
-            } else if state.env.land.is_coord_set(attackto) {
-                state.env.land.set_coord(attackto, false);
-            } else {
-                unreachable!();
-            }
+            unreachable!();
         }
 
         MovePhase {

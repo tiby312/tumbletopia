@@ -29,7 +29,7 @@ pub enum HDir {
 }
 impl HDir {
     pub fn all() -> impl Iterator<Item = HDir> {
-        (0..6).map(|dir| HDir::from(dir))
+        (0..6).map(HDir::from)
     }
     pub fn rotate60_right(&self) -> HDir {
         // 0->4
@@ -72,7 +72,7 @@ impl From<u8> for HDir {
     }
 }
 
-pub(crate) const SQRT_3: f32 = 1.73205080757;
+pub(crate) const SQRT_3: f32 = 1.732_050_8;
 
 // https://www.redblobgames.com/grids/hexagons/#hex-to-pixel
 
@@ -190,7 +190,7 @@ impl Cube {
         } else {
             s = -q - r
         }
-        return Cube::from_arr([q, r, s]);
+        Cube::from_arr([q, r, s])
     }
 
     pub const fn to_axial(&self) -> Axial {
@@ -198,7 +198,7 @@ impl Cube {
     }
 
     pub fn ray(&self, dir: HDir) -> impl Iterator<Item = (Cube, Cube)> {
-        let mut c = self.clone();
+        let mut c = *self;
         std::iter::repeat_with(move || {
             let cc = c;
             let k = c.neighbour(dir);
