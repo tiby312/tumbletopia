@@ -211,7 +211,7 @@ impl MoveEffect {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MovePhase {
     pub original: Axial,
     pub moveto: Axial,

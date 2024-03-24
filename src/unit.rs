@@ -9,7 +9,11 @@ pub struct UnitData {
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(Axial, mesh::small_mesh::SmallMesh),
+    MoveSelection(
+        Axial,
+        mesh::small_mesh::SmallMesh,
+        Option<ace::selection::HaveMoved>,
+    ),
     BuildSelection(Axial),
 }
 

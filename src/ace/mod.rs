@@ -292,7 +292,7 @@ pub async fn reselect_loop(
     };
 
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
-    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca);
+    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
 
     let (cell, pototo, gg) = doop
         .get_mouse_selection(cc, selected_unit.team, game, grey)
@@ -311,7 +311,7 @@ pub async fn reselect_loop(
     let target_cell = mouse_world;
 
     //This is the cell the user selected from the pool of available moves for the unit
-    let CellSelection::MoveSelection(_, ss) = cell else {
+    let CellSelection::MoveSelection(_, ss, _) = cell else {
         unreachable!()
     };
 

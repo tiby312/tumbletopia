@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HaveMoved {
     pub the_move: move_build::MovePhase,
     pub effect: move_build::MoveEffect,

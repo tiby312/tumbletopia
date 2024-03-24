@@ -273,6 +273,7 @@ impl EngineStuff {
         let mountain_asset = &models.mountain;
         let snow = &models.snow;
         let select_model = &models.select_model;
+        let attack_model = &models.attack;
 
         while let Some(ace::GameWrap { game, data, team }) = command_recv.next().await {
             //First lets process the command. Break it down
@@ -547,7 +548,7 @@ impl EngineStuff {
                 if let Some(a) = &get_mouse_input {
                     if let Some((selection, grey)) = a {
                         match selection {
-                            CellSelection::MoveSelection(point, mesh) => {
+                            CellSelection::MoveSelection(point, mesh, hh) => {
                                 let _d = DepthDisabler::new(ctx);
 
                                 for a in mesh.iter_mesh(*point) {
@@ -562,6 +563,28 @@ impl EngineStuff {
                                         false,
                                         false,
                                     );
+                                }
+
+                                if let Some(k) = hh {
+                                    if k.the_move
+                                        .original
+                                        .to_cube()
+                                        .dist(&k.the_move.moveto.to_cube())
+                                        == 2
+                                    {
+                                        let a = k.the_move.original;
+                                        let pos = grid_matrix.hex_axial_to_world(&a);
+                                        let t = matrix::translation(pos.x, pos.y, 0.0);
+                                        let m = my_matrix.chain(t).generate();
+
+                                        draw_sys.view(&m).draw_a_thing_ext(
+                                            attack_model,
+                                            *grey,
+                                            false,
+                                            false,
+                                            false,
+                                        );
+                                    }
                                 }
                             }
                             CellSelection::BuildSelection(_) => {}
