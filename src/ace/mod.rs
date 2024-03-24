@@ -526,6 +526,7 @@ async fn handle_player(
                 Pototo::Normal(a) => a,
                 Pototo::EndTurn => {
                     if extra_attack.is_none() {
+                        assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
                         log!("undoing turn!!!");
                         let (a, e) = move_log.inner.pop().unwrap();
                         a.as_extra().undo(&e.extra_effect, game);
