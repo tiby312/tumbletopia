@@ -5,9 +5,9 @@ use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
 use gloo::console::log;
+use hex::Axial;
 use model::matrix::{self, MyMatrix};
 use movement::bitfield::BitField;
-use movement::Axial;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d::{self, CtxWrap, ShaderSystem};
 use shogo::utils;

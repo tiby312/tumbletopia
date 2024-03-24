@@ -4,69 +4,6 @@ use crate::hex::HDir;
 
 use super::*;
 
-#[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[must_use]
-pub struct Axial {
-    pub q: i16,
-    pub r: i16,
-}
-
-impl Axial {
-    pub fn q(&self) -> i16 {
-        self.q
-    }
-    pub fn r(&self) -> i16 {
-        self.r
-    }
-    pub const fn from_arr([q, r]: [i16; 2]) -> Self {
-        Axial { q, r }
-    }
-    pub fn zero() -> Axial {
-        Axial { q: 0, r: 0 }
-    }
-    pub fn dir_to(&self, other: &Axial) -> HDir {
-        let mut offset = other.sub(self);
-
-        offset.q = offset.q.clamp(-1, 1);
-        offset.r = offset.r.clamp(-1, 1);
-
-        // assert!(offset.0[0].abs() <= 1);
-        // assert!(offset.0[1].abs() <= 1);
-        let hex::Cube {
-            ax: Axial { q, r },
-            s,
-        } = offset.to_cube();
-
-        hex::OFFSETS
-            .iter()
-            .enumerate()
-            .find(|(_, x)| **x == [q, r, s])
-            .map(|(i, _)| HDir::from(i as u8))
-            .unwrap()
-    }
-    pub fn to_cube(self) -> hex::Cube {
-        let a = self;
-        hex::Cube::from_arr([a.q, a.r, -a.q - a.r])
-    }
-
-    pub fn advance(self, m: HDir) -> Axial {
-        self.add(m.to_relative())
-    }
-    pub fn back(self, m: HDir) -> Axial {
-        self.sub(&m.to_relative())
-    }
-    pub fn sub(mut self, o: &Axial) -> Self {
-        self.q -= o.q;
-        self.r -= o.r;
-        self
-    }
-    pub const fn add(mut self, o: Axial) -> Self {
-        self.q += o.q;
-        self.r += o.r;
-        self
-    }
-}
-
 #[derive(Debug, Copy, Clone)]
 pub struct MoveUnit(pub i8);
 impl MoveUnit {
@@ -443,10 +380,7 @@ pub fn path(
             !walls.is_set(first) {
                 Some([Axial::from_arr([0, 0]).dir_to(&first), first.dir_to(&a)])
             } else {
-                Some([
-                    Axial::from_arr([0, 0]).dir_to(&second),
-                    second.dir_to(&a),
-                ])
+                Some([Axial::from_arr([0, 0]).dir_to(&second), second.dir_to(&a)])
             }
         } else {
             None

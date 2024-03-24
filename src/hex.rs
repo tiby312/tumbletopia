@@ -1,6 +1,6 @@
 use duckduckgeo::dists::grid::Grid;
 
-use crate::movement::{Filter, FilterRes, Axial};
+use crate::movement::{Filter, FilterRes};
 
 // pub const OFFSETS: [[i16; 3]; 6] = [
 //     [0, 1, -1],
@@ -295,5 +295,68 @@ impl Cube {
         let a = self;
         // https://www.redblobgames.com/grids/hexagons/#distances-cube
         ((b.q() - a.q()).abs() + (b.r() - a.r()).abs() + (b.s() - a.s()).abs()) / 2
+    }
+}
+
+#[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[must_use]
+pub struct Axial {
+    pub q: i16,
+    pub r: i16,
+}
+
+impl Axial {
+    pub fn q(&self) -> i16 {
+        self.q
+    }
+    pub fn r(&self) -> i16 {
+        self.r
+    }
+    pub const fn from_arr([q, r]: [i16; 2]) -> Self {
+        Axial { q, r }
+    }
+    pub fn zero() -> Axial {
+        Axial { q: 0, r: 0 }
+    }
+    pub fn dir_to(&self, other: &Axial) -> HDir {
+        let mut offset = other.sub(self);
+
+        offset.q = offset.q.clamp(-1, 1);
+        offset.r = offset.r.clamp(-1, 1);
+
+        // assert!(offset.0[0].abs() <= 1);
+        // assert!(offset.0[1].abs() <= 1);
+        let Cube {
+            ax: Axial { q, r },
+            s,
+        } = offset.to_cube();
+
+        OFFSETS
+            .iter()
+            .enumerate()
+            .find(|(_, x)| **x == [q, r, s])
+            .map(|(i, _)| HDir::from(i as u8))
+            .unwrap()
+    }
+    pub fn to_cube(self) -> Cube {
+        let a = self;
+        Cube::from_arr([a.q, a.r, -a.q - a.r])
+    }
+
+    pub fn advance(self, m: HDir) -> Axial {
+        self.add(m.to_relative())
+    }
+    pub fn back(self, m: HDir) -> Axial {
+        self.sub(&m.to_relative())
+    }
+    pub fn sub(mut self, o: &Axial) -> Self {
+        self.q -= o.q;
+        self.r -= o.r;
+        self
+    }
+    pub const fn add(mut self, o: Axial) -> Self {
+        self.q += o.q;
+        self.r += o.r;
+        self
     }
 }

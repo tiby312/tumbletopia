@@ -2,7 +2,7 @@ use super::*;
 mod ai;
 pub mod selection;
 use crate::{
-    movement::{self, Axial},
+    movement::{self},
     CellSelection, GameState, UnitData,
 };
 
