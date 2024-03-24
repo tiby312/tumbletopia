@@ -20,15 +20,6 @@ pub const OFFSETS: [[i16; 3]; 6] = [
     [0, 1, -1],
 ];
 
-#[test]
-fn what() {
-    let k = Cube(OFFSETS[0]);
-
-    let j = k.rotate_60_right().rotate_60_right();
-
-    assert_eq!(j.0, [0, -1, 1]);
-}
-
 //TODO use this
 #[derive(Copy, Clone, Default, Hash, Debug, PartialEq, Eq)]
 pub enum HDir {
@@ -67,7 +58,7 @@ impl HDir {
     }
 
     pub const fn to_relative(&self) -> GridCoord {
-        Cube(OFFSETS[*self as usize]).to_axial()
+        Cube::from_arr(OFFSETS[*self as usize]).to_axial()
     }
 }
 impl From<u8> for HDir {
@@ -97,8 +88,23 @@ pub const HEX_PROJ_FLAT: cgmath::Matrix2<f32> =
 
 //q r s
 #[derive(Copy, Clone, Debug)]
-pub struct Cube(pub [i16; 3]);
+pub struct Cube {
+    pub ax: GridCoord,
+    pub s: i16,
+}
+
+impl std::ops::Deref for Cube {
+    type Target = GridCoord;
+    fn deref(&self) -> &Self::Target {
+        &self.ax
+    }
+}
+
 impl Cube {
+    pub fn s(&self) -> i16 {
+        self.s
+    }
+
     // triplex & operator*=(const triplex &rhs)
     // {
     //     /*
@@ -116,23 +122,35 @@ impl Cube {
     //     this->r = new_r; this->s = new_s;
     //     return *this;
     // }
-    pub fn triplex(self, other: &Cube) -> Self {
-        let this = &self.0;
-        let other = &other.0;
-        let new_q = this[0] * other[0] - 3 * this[1] * other[1];
-        let new_r = this[0] * other[1] + this[1] * other[1];
-        Cube::new(new_q, new_r)
-    }
+    // pub fn triplex(self, other: &Cube) -> Self {
+    //     let this = &self;
+    //     let other = &other;
+    //     let new_q = this.q() * other.q() - 3 * this.r() * other.r();
+    //     let new_r = this.q() * other.r() + this.r() * other.r();
+    //     Cube::new(new_q, new_r)
+    // }
 
-    pub fn new(q: i16, r: i16) -> Self {
-        Cube([q, r, -q - r])
+    pub const fn from_arr([q, r, s]: [i16; 3]) -> Self {
+        Cube {
+            ax: GridCoord { q, r },
+            s,
+        }
+    }
+    pub const fn new(q: i16, r: i16) -> Self {
+        Cube::from_arr([q, r, -q - r])
     }
     pub fn rotate_60_right(self) -> Cube {
-        let [q, _, s] = self.0;
+        let Cube {
+            ax: GridCoord { q, r },
+            s,
+        } = self;
         Cube::new(-s, -q)
     }
     pub fn rotate_60_left(self) -> Cube {
-        let [_, r, s] = self.0;
+        let Cube {
+            ax: GridCoord { q, r },
+            s,
+        } = self;
         Cube::new(-r, -s)
     }
 
@@ -176,11 +194,11 @@ impl Cube {
         } else {
             s = -q - r
         }
-        return Cube([q, r, s]);
+        return Cube::from_arr([q, r, s]);
     }
 
     pub const fn to_axial(&self) -> GridCoord {
-        GridCoord::from_arr([self.0[0], self.0[1]])
+        self.ax
     }
 
     pub fn ray(&self, dir: HDir) -> impl Iterator<Item = (Cube, Cube)> {
@@ -196,23 +214,19 @@ impl Cube {
         self.add(Cube::direction(dir))
     }
     pub fn direction(dir: HDir) -> Cube {
-        Cube(OFFSETS[dir as usize])
+        Cube::from_arr(OFFSETS[dir as usize])
     }
     pub fn add(mut self, other: Cube) -> Cube {
-        let a = &mut self.0;
-        let b = other.0;
-        a[0] += b[0];
-        a[1] += b[1];
-        a[2] += b[2];
+        self.ax.q += other.ax.q;
+        self.ax.r += other.ax.r;
+        self.s += other.s;
 
         self
     }
     pub fn sub(mut self, other: Cube) -> Cube {
-        let a = &mut self.0;
-        let b = other.0;
-        a[0] -= b[0];
-        a[1] -= b[1];
-        a[2] -= b[2];
+        self.ax.q -= other.ax.q;
+        self.ax.r -= other.ax.r;
+        self.s -= other.s;
 
         self
     }
@@ -221,7 +235,7 @@ impl Cube {
         let o = *self;
         OFFSETS.iter().flat_map(move |&i| {
             (1..end)
-                .map(move |a| (a, o.add(Cube(i).scale(a))))
+                .map(move |a| (a, o.add(Cube::from_arr(i).scale(a))))
                 .take_while(move |(_, o)| ff.filter(&o.to_axial()) == FilterRes::Accept)
                 .filter(move |(a, _)| *a >= start)
                 .map(|(_, a)| a)
@@ -244,9 +258,11 @@ impl Cube {
             })
     }
 
-    pub fn scale(self, n: i16) -> Cube {
-        let a = self.0;
-        Cube(a.map(|a| a * n))
+    pub fn scale(mut self, n: i16) -> Cube {
+        self.ax.q *= n;
+        self.ax.r *= n;
+        self.s *= n;
+        self
     }
 
     pub fn range(&self, n: i16) -> impl Iterator<Item = Cube> + Clone {
@@ -255,7 +271,7 @@ impl Cube {
             .flat_map(move |q| ((-n).max(-q - n)..n.min(-q + n) + 1).map(move |r| (q, r)))
             .map(move |(q, r)| {
                 let s = -q - r;
-                o.add(Cube([q, r, s]))
+                o.add(Cube::from_arr([q, r, s]))
             })
     }
 
@@ -275,9 +291,9 @@ impl Cube {
     }
 
     pub fn dist(&self, other: &Cube) -> i16 {
-        let b = other.0;
-        let a = self.0;
+        let b = other;
+        let a = self;
         // https://www.redblobgames.com/grids/hexagons/#distances-cube
-        ((b[0] - a[0]).abs() + (b[1] - a[1]).abs() + (b[2] - a[2]).abs()) / 2
+        ((b.q() - a.q()).abs() + (b.r() - a.r()).abs() + (b.s() - a.s()).abs()) / 2
     }
 }

@@ -12,6 +12,12 @@ pub struct GridCoord {
 }
 
 impl GridCoord {
+    pub fn q(&self) -> i16 {
+        self.q
+    }
+    pub fn r(&self) -> i16 {
+        self.r
+    }
     pub const fn from_arr([q, r]: [i16; 2]) -> Self {
         GridCoord { q, r }
     }
@@ -26,18 +32,21 @@ impl GridCoord {
 
         // assert!(offset.0[0].abs() <= 1);
         // assert!(offset.0[1].abs() <= 1);
-        let offset = offset.to_cube();
+        let hex::Cube {
+            ax: GridCoord { q, r },
+            s,
+        } = offset.to_cube();
 
         hex::OFFSETS
             .iter()
             .enumerate()
-            .find(|(_, x)| **x == offset.0)
+            .find(|(_, x)| **x == [q, r, s])
             .map(|(i, _)| HDir::from(i as u8))
             .unwrap()
     }
     pub fn to_cube(self) -> hex::Cube {
         let a = self;
-        hex::Cube([a.q, a.r, -a.q - a.r])
+        hex::Cube::from_arr([a.q, a.r, -a.q - a.r])
     }
 
     pub fn advance(self, m: HDir) -> GridCoord {
