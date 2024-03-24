@@ -149,7 +149,8 @@ pub fn path(
     walls: &small_mesh::SmallMesh,
 ) -> impl Iterator<Item = HDir> {
     let mesh_iter = {
-        small_mesh::SmallMesh::validate_rel(a);
+        assert!(small_mesh::SmallMesh::validate_rel(a));
+
         let x = a.q;
         let y = a.r;
         let first = if Axial::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
