@@ -63,6 +63,12 @@ pub struct WorkerManager {
     pub receiver: Receiver<GameWrapResponse<Response>>,
 }
 
+trait Foop {
+    type Ret;
+    fn command(&self) -> Command;
+    fn unpack(&self, r: Response) -> Self::Ret;
+}
+
 impl WorkerManager {
     pub async fn wait_animation(
         &mut self,
@@ -157,6 +163,16 @@ impl WorkerManager {
         let Response::Ack = data else {
             unreachable!();
         };
+    }
+
+    async fn doop<F: Foop>(
+        &mut self,
+        team: ActiveTeam,
+        game: GameState,
+        f: F,
+    ) -> (GameState, F::Ret) {
+        let (game, ret) = self.send_command(team, game, f.command()).await;
+        (game, f.unpack(ret))
     }
 
     async fn send_command(
