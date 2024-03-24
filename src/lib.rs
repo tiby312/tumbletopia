@@ -500,21 +500,13 @@ impl EngineStuff {
                 pub const LAND_OFFSET: f32 = -10.0;
                 pub const MOUNTAIN_OFFSET: f32 = 0.0;
 
-                draw_sys.draw_batch(
-                    game.env.land.iter_mesh().map(|c| {
-                        let pos = grid_matrix.hex_axial_to_world(&c);
-                        let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
-                        my_matrix.chain(t)
-                    }),
-                    grass,
-                );
-
-                for c in game.env.land.iter_mesh() {
+                let trans_land = |c: Axial| {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
-                    let m = my_matrix.chain(t).generate();
-                    draw_sys.view(&m).draw_a_thing(grass);
-                }
+                    my_matrix.chain(t)
+                };
+
+                draw_sys.draw_batch(grass, game.env.land.iter_mesh().map(trans_land));
 
                 for c in game.env.fog.iter_mesh() {
                     let pos = grid_matrix.hex_axial_to_world(&c);
@@ -703,16 +695,16 @@ impl EngineStuff {
 pub trait Doop {
     fn draw_batch<K: MyMatrix>(
         &mut self,
-        ff: impl IntoIterator<Item = K>,
         texture: &Foo<TextureGpu, ModelGpu>,
+        ff: impl IntoIterator<Item = K>,
     );
 }
 
 impl Doop for ShaderSystem {
     fn draw_batch<K: MyMatrix>(
         &mut self,
-        ff: impl IntoIterator<Item = K>,
         texture: &Foo<TextureGpu, ModelGpu>,
+        ff: impl IntoIterator<Item = K>,
     ) {
         for a in ff.into_iter() {
             let m = a.generate();
