@@ -561,8 +561,9 @@ async fn handle_player(
     loop {
         //Loop until the user clicks on a selectable unit in their team.
         let mut selected_unit = loop {
-            let (data, g) = doop.get_mouse_no_selection(team, game).await;
-            game = g;
+            let data;
+            (data, game) = doop.get_mouse_no_selection(team, game).await;
+
             let cell = match data {
                 Pototo::Normal(a) => a,
                 Pototo::EndTurn => {
@@ -599,8 +600,9 @@ async fn handle_player(
         //Keep showing the selected unit's options and keep handling the users selections
         //Until the unit is deselected.
         loop {
-            let (gg, res) = reselect_loop(doop, game, team, &mut extra_attack, selected_unit).await;
-            game = gg;
+            let res;
+            (game, res) = reselect_loop(doop, game, team, &mut extra_attack, selected_unit).await;
+            
             let a = match res {
                 LoopRes::EndTurn((a, b)) => {
                     //todo!();
