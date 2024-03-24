@@ -65,22 +65,29 @@ pub mod small_mesh {
             }
             m
         }
-        pub fn validate_rel(a: Axial) {
-            let x = a.q;
-            let y = a.r;
 
-            assert!((-6..=6).contains(&x));
-            assert!((-6..=6).contains(&y));
+        #[must_use]
+        pub fn validate_rel(a: Axial) -> bool {
+            let ind = conv(a);
+
+            ind < 128
+
+            // let x = a.q;
+            // let y = a.r;
+
+            // assert!((-6..=6).contains(&x));
+            // assert!((-6..=6).contains(&y));
 
             //assert!(x != 0 || y != 0);
         }
         pub fn add(&mut self, a: Axial) {
-            Self::validate_rel(a);
+            assert!(Self::validate_rel(a));
+
             let ind = conv(a);
             self.inner |= 1 << ind;
         }
         pub fn remove(&mut self, a: Axial) {
-            Self::validate_rel(a);
+            assert!(Self::validate_rel(a));
             let ind = conv(a);
             self.inner &= !(1 << ind);
         }
@@ -88,7 +95,9 @@ pub mod small_mesh {
             self.inner == 0
         }
         pub fn is_set(&self, a: Axial) -> bool {
-            Self::validate_rel(a);
+            if !Self::validate_rel(a) {
+                return false;
+            }
 
             let ind = conv(a);
 
