@@ -22,35 +22,40 @@ pub struct AnimationWrapper<K> {
     pub enu: animation::AnimationCommand,
 }
 
-#[derive(Debug, Clone)]
-pub enum MousePrompt {
-    Selection {
-        selection: CellSelection,
-        grey: bool,
-    },
-    None,
-}
+// #[derive(Debug, Clone)]
+// pub enum MousePrompt {
+//     Selection {
+//         selection: CellSelection,
+//         grey: bool,
+//     },
+//     None,
+// }
 
 #[derive(Debug)]
 pub enum Command {
     Animate(animation::AnimationCommand),
-    GetMouseInput(MousePrompt),
+    GetMouseInputSelection {
+        selection: CellSelection,
+        grey: bool,
+    },
+    GetMouseInputNoSelect,
     Nothing,
     Popup(String),
     Poke,
 }
 
 #[derive(Debug)]
-pub enum Pototo<T> {
-    Normal(T),
-    EndTurn,
+pub enum Response {
+    MouseWithSelection(CellSelection, Pototo<GridCoord>),
+    Mouse(Pototo<GridCoord>),
+    AnimationFinish,
+    Ack,
 }
 
 #[derive(Debug)]
-pub enum Response {
-    Mouse(MousePrompt, Pototo<GridCoord>),
-    AnimationFinish,
-    Ack,
+pub enum Pototo<T> {
+    Normal(T),
+    EndTurn,
 }
 
 use futures::{
@@ -63,11 +68,26 @@ pub struct WorkerManager {
     pub receiver: Receiver<GameWrapResponse<Response>>,
 }
 
-trait Foop {
-    type Ret;
-    fn command(&self) -> Command;
-    fn unpack(&self, r: Response) -> Self::Ret;
-}
+// trait Foop {
+//     type Ret;
+//     fn command(&self) -> Command;
+//     fn unpack(&self, r: Response) -> Self::Ret;
+// }
+
+// struct MousePrompt2(CellSelection);
+// impl Foop for MousePrompt2{
+//     type Ret=CellSelection;
+//     fn command(&self)->Command{
+//         Command::GetMouseInput(self.0)
+//     }
+//     fn unpack(&self,r:Response)->Self::Ret{
+//         let Response::Mouse(cell, o) = r else {
+//             unreachable!();
+//         };
+
+//         cell
+//     }
+// }
 
 impl WorkerManager {
     pub async fn wait_animation(
@@ -92,42 +112,53 @@ impl WorkerManager {
         game
     }
 
-    async fn get_mouse_no_selection<'c>(
-        &mut self,
-        team: ActiveTeam,
-        game: GameState,
-    ) -> Pototo<GridCoord> {
-        let (_, c) = self.get_mouse(MousePrompt::None, team, game).await;
-        c
-    }
-    async fn get_mouse_selection<'c>(
+    // async fn get_mouse_no_selection<'c>(
+    //     &mut self,
+    //     team: ActiveTeam,
+    //     game: GameState,
+    // ) -> Pototo<GridCoord> {
+    //     let (_, c) = self.get_mouse(MousePrompt::None, team, game).await;
+    //     c
+    // }
+    async fn get_mouse_selection(
         &mut self,
         cell: CellSelection,
         team: ActiveTeam,
         game: GameState,
         grey: bool,
-    ) -> (CellSelection, Pototo<GridCoord>) {
-        let (b, c) = self
-            .get_mouse(
-                MousePrompt::Selection {
+    ) -> (CellSelection, Pototo<GridCoord>, GameState) {
+        let (a, b) = self
+            .send_command(
+                team,
+                game,
+                Command::GetMouseInputSelection {
                     selection: cell,
                     grey,
                 },
-                team,
-                game,
             )
             .await;
 
-        let MousePrompt::Selection {
-            selection,
-            grey: grey2,
-        } = b
-        else {
-            unreachable!()
+        let Response::MouseWithSelection(cell, o) = b else {
+            unreachable!();
         };
-        assert_eq!(grey2, grey);
 
-        (selection, c)
+        (cell, o, a)
+    }
+
+    async fn get_mouse_no_selection(
+        &mut self,
+        team: ActiveTeam,
+        game: GameState,
+    ) -> (Pototo<GridCoord>, GameState) {
+        let (a, b) = self
+            .send_command(team, game, Command::GetMouseInputNoSelect)
+            .await;
+
+        let Response::Mouse(o) = b else {
+            unreachable!();
+        };
+
+        (o, a)
     }
 
     async fn poke(&mut self, team: ActiveTeam, game: GameState) {
@@ -165,16 +196,17 @@ impl WorkerManager {
         };
     }
 
-    async fn doop<F: Foop>(
-        &mut self,
-        team: ActiveTeam,
-        game: GameState,
-        f: F,
-    ) -> (GameState, F::Ret) {
-        let (game, ret) = self.send_command(team, game, f.command()).await;
-        (game, f.unpack(ret))
-    }
+    // async fn doop<F: Foop>(
+    //     &mut self,
+    //     team: ActiveTeam,
+    //     game: GameState,
+    //     f: F,
+    // ) -> (GameState, F::Ret) {
+    //     let (game, ret) = self.send_command(team, game, f.command()).await;
+    //     (game, f.unpack(ret))
+    // }
 
+    //TODO use
     async fn send_command(
         &mut self,
         team: ActiveTeam,
@@ -194,29 +226,29 @@ impl WorkerManager {
 
         (game, data)
     }
-    async fn get_mouse<'c>(
-        &mut self,
-        cell: MousePrompt,
-        team: ActiveTeam,
-        game: GameState,
-    ) -> (MousePrompt, Pototo<GridCoord>) {
-        self.sender
-            .send(GameWrap {
-                game,
-                data: Command::GetMouseInput(cell),
-                team,
-            })
-            .await
-            .unwrap();
+    // async fn get_mouse<'c>(
+    //     &mut self,
+    //     cell: MousePrompt,
+    //     team: ActiveTeam,
+    //     game: GameState,
+    // ) -> (MousePrompt, Pototo<GridCoord>) {
+    //     self.sender
+    //         .send(GameWrap {
+    //             game,
+    //             data: Command::GetMouseInput(cell),
+    //             team,
+    //         })
+    //         .await
+    //         .unwrap();
 
-        let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
+    //     let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
 
-        let Response::Mouse(cell, o) = data else {
-            unreachable!();
-        };
+    //     let Response::Mouse(cell, o) = data else {
+    //         unreachable!();
+    //     };
 
-        (cell, o)
-    }
+    //     (cell, o)
+    // }
 }
 
 #[derive(Hash, Debug, Copy, Clone, Eq, PartialEq)]
@@ -304,7 +336,7 @@ pub async fn reselect_loop(
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
     let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca.clone());
 
-    let (cell, pototo) = doop
+    let (cell, pototo, _) = doop
         .get_mouse_selection(cc, selected_unit.team, game.clone(), grey)
         .await;
 
@@ -557,7 +589,7 @@ async fn handle_player(
     loop {
         //Loop until the user clicks on a selectable unit in their team.
         let mut selected_unit = loop {
-            let data = doop.get_mouse_no_selection(team, game.clone()).await;
+            let (data, _) = doop.get_mouse_no_selection(team, game.clone()).await;
             let cell = match data {
                 Pototo::Normal(a) => a,
                 Pototo::EndTurn => {

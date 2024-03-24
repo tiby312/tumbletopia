@@ -316,9 +316,10 @@ impl EngineStuff {
                         terrain_animation = Some((0.0, it, pos, terrain_type));
                     }
                 },
-                ace::Command::GetMouseInput(kk) => {
-                    get_mouse_input = Some(kk);
+                ace::Command::GetMouseInputSelection { selection, grey } => {
+                    get_mouse_input = Some(Some((selection, grey)));
                 }
+                ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
                 ace::Command::Nothing => {}
                 ace::Command::Popup(str) => {
                     if str.is_empty() {
@@ -430,10 +431,7 @@ impl EngineStuff {
                         response_sender
                             .send(ace::GameWrapResponse {
                                 game,
-                                data: ace::Response::Mouse(
-                                    get_mouse_input.take().unwrap(),
-                                    Pototo::EndTurn,
-                                ),
+                                data: ace::Response::Mouse(Pototo::EndTurn),
                             })
                             .await
                             .unwrap();
@@ -442,14 +440,13 @@ impl EngineStuff {
                         let mouse: GridCoord = grid_matrix.center_world_to_hex(mouse_world.into());
                         log!(format!("pos:{:?}", mouse));
 
+                        let data = if let Some((selection, grey)) = get_mouse_input.unwrap() {
+                            ace::Response::MouseWithSelection(selection, Pototo::Normal(mouse))
+                        } else {
+                            ace::Response::Mouse(Pototo::Normal(mouse))
+                        };
                         response_sender
-                            .send(ace::GameWrapResponse {
-                                game,
-                                data: ace::Response::Mouse(
-                                    get_mouse_input.take().unwrap(),
-                                    Pototo::Normal(mouse),
-                                ),
-                            })
+                            .send(ace::GameWrapResponse { game, data })
                             .await
                             .unwrap();
                         break 'render_loop;
@@ -549,8 +546,8 @@ impl EngineStuff {
                 }
 
                 if let Some(a) = &get_mouse_input {
-                    match a {
-                        MousePrompt::Selection { selection, grey } => match selection {
+                    if let Some((selection, grey)) = a {
+                        match selection {
                             CellSelection::MoveSelection(point, mesh) => {
                                 let _d = DepthDisabler::new(&ctx);
 
@@ -569,9 +566,8 @@ impl EngineStuff {
                                 }
                             }
                             CellSelection::BuildSelection(_) => {}
-                        },
-                        MousePrompt::None => {}
-                    };
+                        }
+                    }
                 }
 
                 let d = DepthDisabler::new(&ctx);
@@ -742,7 +738,7 @@ impl<'a> DepthDisabler<'a> {
 
 use web_sys::{OffscreenCanvas, WebGl2RenderingContext};
 
-use crate::ace::{ActiveTeam, MousePrompt, Pototo};
+use crate::ace::{ActiveTeam, Pototo};
 use crate::model_parse::{Foo, ModelGpu, TextureGpu};
 //use crate::gameplay::GameStepper;
 use crate::movement::MoveUnit;
