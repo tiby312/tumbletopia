@@ -538,8 +538,8 @@ pub async fn main_logic(mut game: GameState, mut doop: WorkerManager) {
             continue;
         }
 
-        let (gg, a, b) = handle_player(game, &mut doop, team, &mut game_history).await;
-        game = gg;
+        let (a,b);
+        (game, a, b) = handle_player(game, &mut doop, team, &mut game_history).await;
         game_history.push((a, b));
 
         ai::absolute_evaluate(&mut game, true);
