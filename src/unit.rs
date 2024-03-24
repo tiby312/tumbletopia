@@ -1,4 +1,3 @@
-use crate::movement::FilterRes;
 
 use super::*;
 
@@ -102,11 +101,11 @@ impl Tribe {
 pub struct UnitCollectionFilter<'a, T> {
     a: &'a [T],
 }
-impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
-    fn filter(&self, b: &Axial) -> FilterRes {
-        FilterRes::from_bool(self.a.iter().find(|a| a.get_pos() == b).is_some())
-    }
-}
+// impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
+//     fn filter(&self, b: &Axial) -> FilterRes {
+//         FilterRes::from_bool(self.a.iter().find(|a| a.get_pos() == b).is_some())
+//     }
+// }
 
 pub trait HasPos {
     fn get_pos(&self) -> &Axial;

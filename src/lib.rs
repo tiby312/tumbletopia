@@ -740,8 +740,6 @@ use web_sys::{OffscreenCanvas, WebGl2RenderingContext};
 
 use crate::ace::{ActiveTeam, Pototo};
 use crate::model_parse::{Foo, ModelGpu, TextureGpu};
-//use crate::gameplay::GameStepper;
-use crate::movement::MoveUnit;
 
 pub struct Models<T> {
     select_model: T,

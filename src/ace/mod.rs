@@ -323,7 +323,7 @@ pub async fn reselect_loop(
         return (game, LoopRes::Deselect);
     }
 
-    let contains = movement::contains_coord(ss.iter_mesh(unwrapped_selected_unit), target_cell);
+    let contains = ss.is_set(target_cell.sub(&unwrapped_selected_unit));
 
     //If we select a friendly unit quick swap
     if let Some(target) = game
