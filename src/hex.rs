@@ -95,14 +95,7 @@ pub(crate) const SQRT_3: f32 = 1.73205080757;
 pub const HEX_PROJ_FLAT: cgmath::Matrix2<f32> =
     cgmath::Matrix2::new(3.0 / 2.0, SQRT_3 / 2.0, 0.0, SQRT_3);
 
-// impl std::ops::Deref for Cube{
-//     type Target=GridCoord;
-//     fn deref(&self)->&GridCoord{
-//         let k=&self.0;
-//         let j=k as *const _ as *const _;
-//         unsafe{&*j}
-//     }
-// }
+
 //q r s
 #[derive(Copy, Clone, Debug)]
 pub struct Cube(pub [i16; 3]);

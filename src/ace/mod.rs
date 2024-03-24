@@ -145,8 +145,7 @@ impl WorkerManager {
     }
 
     async fn poke(&mut self, team: ActiveTeam, game: GameState) {
-        //let game = unsafe { &*self.game };
-
+        
         self.sender
             .send(GameWrap {
                 game,
