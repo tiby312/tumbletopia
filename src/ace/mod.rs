@@ -1,5 +1,4 @@
 use super::*;
-use crate::movement::movement_mesh::SmallMesh;
 mod ai;
 pub mod selection;
 use crate::{
@@ -160,6 +159,25 @@ impl WorkerManager {
         };
     }
 
+    async fn send_command(
+        &mut self,
+        team: ActiveTeam,
+        game: GameState,
+        co: Command,
+    ) -> (GameState, Response) {
+        self.sender
+            .send(GameWrap {
+                game,
+                data: co,
+                team,
+            })
+            .await
+            .unwrap();
+
+        let GameWrapResponse { game, data } = self.receiver.next().await.unwrap();
+
+        (game, data)
+    }
     async fn get_mouse<'c>(
         &mut self,
         cell: MousePrompt,
@@ -516,6 +534,8 @@ async fn handle_player(
     team: ActiveTeam,
     move_log: &mut selection::MoveLog,
 ) -> (moves::ActualMove, move_build::CombinedEffect) {
+    //doop.send_popup("haha", team, game.clone()).await;
+
     let mut extra_attack = None;
     //Keep allowing the user to select units
     loop {
