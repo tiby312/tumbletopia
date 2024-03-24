@@ -279,11 +279,11 @@ pub mod bitfield {
 
             self.inner[ind]
         }
-        pub fn iter_mesh(&self, point: Axial) -> impl Iterator<Item = Axial> + '_ {
+        pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
             self.inner.ones().map(move |a| {
                 let x = a / 32;
                 let y = a % 32;
-                point.add(Axial::from_arr([x as i16 - 16, y as i16 - 16]))
+                Axial::from_arr([x as i16 - 16, y as i16 - 16])
             })
         }
     }

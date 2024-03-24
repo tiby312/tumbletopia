@@ -180,7 +180,7 @@ fn doop(iteration: usize, dogs: &mut BitField, cats: &mut BitField, allowed_cell
         workspace.clear();
         workspace.union_with(mesh);
 
-        for a in workspace.iter_mesh(Axial::zero()) {
+        for a in workspace.iter_mesh() {
             for b in around(a) {
                 mesh.set_coord(b, true);
             }

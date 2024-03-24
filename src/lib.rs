@@ -488,7 +488,7 @@ impl EngineStuff {
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
                 draw_something_grid(
-                    ggame.world.get_game_cells().iter_mesh(Axial::zero()),
+                    ggame.world.get_game_cells().iter_mesh(),
                     grid_matrix,
                     &mut draw_sys,
                     water,
@@ -499,14 +499,14 @@ impl EngineStuff {
                 pub const LAND_OFFSET: f32 = -10.0;
                 pub const MOUNTAIN_OFFSET: f32 = 0.0;
 
-                for c in game.env.land.iter_mesh(Axial::zero()) {
+                for c in game.env.land.iter_mesh() {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(grass);
                 }
 
-                for c in game.env.fog.iter_mesh(Axial::zero()) {
+                for c in game.env.fog.iter_mesh() {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
