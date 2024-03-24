@@ -7,12 +7,6 @@ pub struct UnitData {
     pub has_powerup: bool,
 }
 
-// impl UnitData {
-//     pub fn new(position: GridCoord, typ: Type) -> Self {
-//         UnitData { position, typ }
-//     }
-// }
-
 #[derive(Debug, Clone)]
 pub enum CellSelection {
     MoveSelection(Axial, mesh::small_mesh::SmallMesh),
@@ -86,37 +80,5 @@ impl Tribe {
 
     pub fn find_slow_mut<'a, 'b>(&'a mut self, a: &'b Axial) -> Option<&'a mut UnitData> {
         self.units.iter_mut().find(|b| &b.position == a)
-    }
-
-    pub fn filter(&self) -> UnitCollectionFilter<UnitData> {
-        UnitCollectionFilter { a: &self.units }
-    }
-
-    // pub fn filter_type(&self, ty: Type) -> UnitCollectionFilterType<UnitData> {
-    //     UnitCollectionFilterType { a: &self.units, ty }
-    // }
-}
-
-pub struct UnitCollectionFilter<'a, T> {
-    a: &'a [T],
-}
-// impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
-//     fn filter(&self, b: &Axial) -> FilterRes {
-//         FilterRes::from_bool(self.a.iter().find(|a| a.get_pos() == b).is_some())
-//     }
-// }
-
-pub trait HasPos {
-    fn get_pos(&self) -> &Axial;
-}
-impl HasPos for Axial {
-    fn get_pos(&self) -> &Axial {
-        self
-    }
-}
-
-impl HasPos for UnitData {
-    fn get_pos(&self) -> &Axial {
-        &self.position
     }
 }

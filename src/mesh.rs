@@ -14,29 +14,9 @@ pub mod small_mesh {
     }
 
     use crate::hex::HDir;
-    // #[test]
-    // fn test_path() {
-    //     let k1 = GridCoord([1, -1]);
-    //     let k2 = GridCoord([1, -2]);
-
-    //     let mut mesh = RelativeMesh::new();
-    //     mesh.add_normal_cell(k1);
-    //     mesh.add_normal_cell(k2);
-
-    //     let res: Vec<HDir> = mesh.path(GridCoord([1, -2]), &Mesh::new()).collect();
-    //     dbg!(res);
-    //     panic!();
-    // }
 
     #[test]
     fn test_mesh() {
-        //dbg!(generate_range(1).count());
-
-        // let k = generate_range(2).collect::<Vec<_>>();
-        // for a in k {
-        //     println!("[{},{}],", a.0[0], a.0[1]);
-        // }
-
         let k1 = Axial::from_arr([2, 0]);
         let k2 = Axial::from_arr([2, -2]);
         let k3 = Axial::from_arr([-2, 1]);
@@ -132,43 +112,6 @@ pub mod small_mesh {
 
     use super::Axial;
 
-    // #[derive(PartialEq, Eq, Debug, Clone)]
-    // pub struct RelativeMesh {
-    //     inner: Mesh,
-    // }
-
-    // impl RelativeMesh {
-    //     pub fn new() -> Self {
-    //         RelativeMesh { inner: Mesh::new() }
-    //     }
-
-    //     pub fn validate_rel(a: GridCoord) {
-    //         let x = a.0[0];
-    //         let y = a.0[1];
-
-    //         assert!(x <= 6 && x >= -6);
-    //         assert!(y <= 6 && y >= -6);
-
-    //         //assert!(x != 0 || y != 0);
-    //     }
-
-    //     pub fn add_normal_cell(&mut self, a: GridCoord) {
-    //         self.inner.add(a);
-    //     }
-    //     pub fn remove_normal_cell(&mut self, a: GridCoord) {
-    //         self.inner.remove(a);
-    //     }
-    //     fn is_set(&self, a: GridCoord) -> bool {
-    //         self.inner.is_set(a)
-    //     }
-
-    //     pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
-    //         self.inner.iter_mesh(point)
-    //     }
-    //     pub fn is_empty(&self) -> bool {
-    //         self.inner.inner == 0
-    //     }
-    // }
     fn conv(a: Axial) -> usize {
         let Axial { q, r } = a;
         //     let ind=x/7+y%7;

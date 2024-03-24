@@ -89,7 +89,7 @@ impl ExtraPhase {
         Some(BombInfo(mesh))
     }
 
-    pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> ExtraEffect {
+    pub fn apply(&self, _team: ActiveTeam, game: &mut GameState) -> ExtraEffect {
         let original = self.original;
         let moveto = self.moveto;
         let target_cell = self.target;
@@ -201,8 +201,8 @@ impl ExtraPhase {
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct MoveEffect {
-    pub pushpull: PushInfo,
-    pub powerup: PowerupAction,
+    pushpull: PushInfo,
+    powerup: PowerupAction,
 }
 impl MoveEffect {
     pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
@@ -403,8 +403,8 @@ impl BombInfo {
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct ExtraEffect {
-    pub fog: FogInfo,
-    pub bomb: Option<BombInfo>,
+    fog: FogInfo,
+    bomb: Option<BombInfo>,
 }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]

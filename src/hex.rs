@@ -1,5 +1,3 @@
-use duckduckgeo::dists::grid::Grid;
-
 // pub const OFFSETS: [[i16; 3]; 6] = [
 //     [0, 1, -1],
 //     [1, 0, -1],
@@ -139,14 +137,14 @@ impl Cube {
     }
     pub fn rotate_60_right(self) -> Cube {
         let Cube {
-            ax: Axial { q, r },
+            ax: Axial { q, .. },
             s,
         } = self;
         Cube::new(-s, -q)
     }
     pub fn rotate_60_left(self) -> Cube {
         let Cube {
-            ax: Axial { q, r },
+            ax: Axial { r, .. },
             s,
         } = self;
         Cube::new(-r, -s)
