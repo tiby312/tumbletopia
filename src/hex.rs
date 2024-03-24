@@ -1,6 +1,6 @@
 use duckduckgeo::dists::grid::Grid;
 
-use crate::movement::{Filter, FilterRes, GridCoord};
+use crate::movement::{Filter, FilterRes, Axial};
 
 // pub const OFFSETS: [[i16; 3]; 6] = [
 //     [0, 1, -1],
@@ -57,7 +57,7 @@ impl HDir {
         HDir::from((*self as u8 + 5) % 6)
     }
 
-    pub const fn to_relative(&self) -> GridCoord {
+    pub const fn to_relative(&self) -> Axial {
         Cube::from_arr(OFFSETS[*self as usize]).to_axial()
     }
 }
@@ -89,12 +89,12 @@ pub const HEX_PROJ_FLAT: cgmath::Matrix2<f32> =
 //q r s
 #[derive(Copy, Clone, Debug)]
 pub struct Cube {
-    pub ax: GridCoord,
+    pub ax: Axial,
     pub s: i16,
 }
 
 impl std::ops::Deref for Cube {
-    type Target = GridCoord;
+    type Target = Axial;
     fn deref(&self) -> &Self::Target {
         &self.ax
     }
@@ -132,7 +132,7 @@ impl Cube {
 
     pub const fn from_arr([q, r, s]: [i16; 3]) -> Self {
         Cube {
-            ax: GridCoord { q, r },
+            ax: Axial { q, r },
             s,
         }
     }
@@ -141,14 +141,14 @@ impl Cube {
     }
     pub fn rotate_60_right(self) -> Cube {
         let Cube {
-            ax: GridCoord { q, r },
+            ax: Axial { q, r },
             s,
         } = self;
         Cube::new(-s, -q)
     }
     pub fn rotate_60_left(self) -> Cube {
         let Cube {
-            ax: GridCoord { q, r },
+            ax: Axial { q, r },
             s,
         } = self;
         Cube::new(-r, -s)
@@ -197,7 +197,7 @@ impl Cube {
         return Cube::from_arr([q, r, s]);
     }
 
-    pub const fn to_axial(&self) -> GridCoord {
+    pub const fn to_axial(&self) -> Axial {
         self.ax
     }
 

@@ -4,7 +4,7 @@ use super::*;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct UnitData {
-    pub position: GridCoord,
+    pub position: Axial,
     pub typ: Type,
     pub has_powerup: bool,
 }
@@ -17,8 +17,8 @@ pub struct UnitData {
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(GridCoord, movement::movement_mesh::SmallMesh),
-    BuildSelection(GridCoord),
+    MoveSelection(Axial, movement::movement_mesh::SmallMesh),
+    BuildSelection(Axial),
 }
 
 #[derive(Hash, Debug, Clone, Copy, Eq, PartialEq)]
@@ -69,7 +69,7 @@ impl Tribe {
     }
 
     #[must_use]
-    pub fn find_take(&mut self, a: &GridCoord) -> Option<UnitData> {
+    pub fn find_take(&mut self, a: &Axial) -> Option<UnitData> {
         if let Some((i, _)) = self
             .units
             .iter()
@@ -82,11 +82,11 @@ impl Tribe {
         }
     }
 
-    pub fn find_slow(&self, a: &GridCoord) -> Option<&UnitData> {
+    pub fn find_slow(&self, a: &Axial) -> Option<&UnitData> {
         self.units.iter().find(|b| &b.position == a)
     }
 
-    pub fn find_slow_mut<'a, 'b>(&'a mut self, a: &'b GridCoord) -> Option<&'a mut UnitData> {
+    pub fn find_slow_mut<'a, 'b>(&'a mut self, a: &'b Axial) -> Option<&'a mut UnitData> {
         self.units.iter_mut().find(|b| &b.position == a)
     }
 
@@ -103,22 +103,22 @@ pub struct UnitCollectionFilter<'a, T> {
     a: &'a [T],
 }
 impl<'a> movement::Filter for UnitCollectionFilter<'a, UnitData> {
-    fn filter(&self, b: &GridCoord) -> FilterRes {
+    fn filter(&self, b: &Axial) -> FilterRes {
         FilterRes::from_bool(self.a.iter().find(|a| a.get_pos() == b).is_some())
     }
 }
 
 pub trait HasPos {
-    fn get_pos(&self) -> &GridCoord;
+    fn get_pos(&self) -> &Axial;
 }
-impl HasPos for GridCoord {
-    fn get_pos(&self) -> &GridCoord {
+impl HasPos for Axial {
+    fn get_pos(&self) -> &Axial {
         self
     }
 }
 
 impl HasPos for UnitData {
-    fn get_pos(&self) -> &GridCoord {
+    fn get_pos(&self) -> &Axial {
         &self.position
     }
 }

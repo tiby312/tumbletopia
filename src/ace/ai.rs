@@ -117,14 +117,14 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
         .dogs
         .iter()
         .map(|a| a.position)
-        .map(|a| a.to_cube().dist(&GridCoord::zero().to_cube()) as i64)
+        .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
         .fold(0, |a, b| a + b);
     let cat_distance = view
         .factions
         .cats
         .iter()
         .map(|a| a.position)
-        .map(|a| a.to_cube().dist(&GridCoord::zero().to_cube()) as i64)
+        .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
         .fold(0, |a, b| a + b);
 
     // let dog_powerups = view
@@ -177,7 +177,7 @@ fn doop(
         return;
     }
 
-    fn around(point: GridCoord) -> impl Iterator<Item = GridCoord> {
+    fn around(point: Axial) -> impl Iterator<Item = Axial> {
         point.to_cube().ring(1).map(|b| b.to_axial())
     }
 
@@ -185,7 +185,7 @@ fn doop(
         workspace.clear();
         workspace.union_with(mesh);
 
-        for a in workspace.iter_mesh(GridCoord::zero()) {
+        for a in workspace.iter_mesh(Axial::zero()) {
             for b in around(a) {
                 mesh.set_coord(b, true);
             }

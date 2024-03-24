@@ -2,7 +2,7 @@ use super::*;
 mod ai;
 pub mod selection;
 use crate::{
-    movement::{self, GridCoord},
+    movement::{self, Axial},
     CellSelection, GameState, UnitData,
 };
 
@@ -37,8 +37,8 @@ pub enum Command {
 
 #[derive(Debug)]
 pub enum Response {
-    MouseWithSelection(CellSelection, Pototo<GridCoord>),
-    Mouse(Pototo<GridCoord>),
+    MouseWithSelection(CellSelection, Pototo<Axial>),
+    Mouse(Pototo<Axial>),
     AnimationFinish,
     Ack,
 }
@@ -109,7 +109,7 @@ impl WorkerManager {
         team: ActiveTeam,
         game: GameState,
         grey: bool,
-    ) -> (CellSelection, Pototo<GridCoord>, GameState) {
+    ) -> (CellSelection, Pototo<Axial>, GameState) {
         let (a, b) = self
             .send_command(
                 team,
@@ -132,7 +132,7 @@ impl WorkerManager {
         &mut self,
         team: ActiveTeam,
         game: GameState,
-    ) -> (Pototo<GridCoord>, GameState) {
+    ) -> (Pototo<Axial>, GameState) {
         let (a, b) = self
             .send_command(team, game, Command::GetMouseInputNoSelect)
             .await;
@@ -229,11 +229,11 @@ impl ActiveTeam {
 }
 
 pub struct SelectType {
-    warrior: GridCoord,
+    warrior: Axial,
     team: ActiveTeam,
 }
 impl SelectType {
-    pub fn with(mut self, a: GridCoord) -> Self {
+    pub fn with(mut self, a: Axial) -> Self {
         self.warrior = a;
         self
     }
@@ -438,7 +438,7 @@ pub fn game_init() -> GameState {
     let cats = cats
         .into_iter()
         .map(|a| UnitData {
-            position: GridCoord::from_arr(a),
+            position: Axial::from_arr(a),
             typ: Type::Warrior { powerup },
             has_powerup: false,
         })
@@ -449,7 +449,7 @@ pub fn game_init() -> GameState {
     let dogs = dogs
         .into_iter()
         .map(|a| UnitData {
-            position: GridCoord::from_arr(a),
+            position: Axial::from_arr(a),
             typ: Type::Warrior { powerup },
             has_powerup: false,
         })
@@ -471,7 +471,7 @@ pub fn game_init() -> GameState {
             land: BitField::from_iter([]),
             forest: BitField::from_iter([]),
             fog,
-            powerups: powerups.into_iter().map(GridCoord::from_arr).collect(),
+            powerups: powerups.into_iter().map(Axial::from_arr).collect(),
         },
         world,
     };

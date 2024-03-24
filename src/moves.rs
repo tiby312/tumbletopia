@@ -3,7 +3,7 @@ use super::*;
 use crate::movement::movement_mesh::SmallMesh;
 
 impl GameState {
-    fn check_if_occ(&self, a: GridCoord, check_fog: bool) -> bool {
+    fn check_if_occ(&self, a: Axial, check_fog: bool) -> bool {
         let game = self;
         let is_world_cell = game.world.get_game_cells().is_coord_set(a);
 
@@ -54,7 +54,7 @@ impl GameState {
     }
     pub fn generate_possible_moves_movement(
         &self,
-        &unit: &GridCoord,
+        &unit: &Axial,
         typ: Type,
         _team: ActiveTeam,
     ) -> SmallMesh {
@@ -93,9 +93,9 @@ impl GameState {
 
 #[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 pub struct ActualMove {
-    pub original: GridCoord,
-    pub moveto: GridCoord,
-    pub attackto: GridCoord,
+    pub original: Axial,
+    pub moveto: Axial,
+    pub attackto: Axial,
 }
 
 impl GameState {

@@ -7,7 +7,7 @@ use futures::{SinkExt, StreamExt};
 use gloo::console::log;
 use model::matrix::{self, MyMatrix};
 use movement::bitfield::BitField;
-use movement::GridCoord;
+use movement::Axial;
 use serde::{Deserialize, Serialize};
 use shogo::simple2d::{self, CtxWrap, ShaderSystem};
 use shogo::utils;
@@ -48,7 +48,7 @@ pub struct Factions {
     pub cats: Tribe,
 }
 impl Factions {
-    fn contains(&self, coord: GridCoord) -> bool {
+    fn contains(&self, coord: Axial) -> bool {
         self.dogs
             .iter()
             .chain(self.cats.iter())
@@ -56,13 +56,13 @@ impl Factions {
             .find(|a| *a == coord)
             .is_some()
     }
-    fn get_unit_mut(&mut self, team: ActiveTeam, coord: GridCoord) -> &mut UnitData {
+    fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
         self.relative_mut(team)
             .this_team
             .find_slow_mut(&coord)
             .unwrap()
     }
-    fn get_unit(&self, team: ActiveTeam, coord: GridCoord) -> &UnitData {
+    fn get_unit(&self, team: ActiveTeam, coord: Axial) -> &UnitData {
         self.relative(team).this_team.find_slow(&coord).unwrap()
     }
     fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
@@ -119,7 +119,7 @@ pub struct Environment {
     land: BitField,
     forest: BitField,
     fog: BitField,
-    powerups: Vec<GridCoord>,
+    powerups: Vec<Axial>,
 }
 
 //Additionally removes need to special case animation.
@@ -437,7 +437,7 @@ impl EngineStuff {
                             .unwrap();
                         break 'render_loop;
                     } else if on_select {
-                        let mouse: GridCoord = grid_matrix.center_world_to_hex(mouse_world.into());
+                        let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
                         log!(format!("pos:{:?}", mouse));
 
                         let data = if let Some((selection, grey)) = get_mouse_input.unwrap() {
@@ -489,7 +489,7 @@ impl EngineStuff {
                 ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
                 draw_something_grid(
-                    ggame.world.get_game_cells().iter_mesh(GridCoord::zero()),
+                    ggame.world.get_game_cells().iter_mesh(Axial::zero()),
                     grid_matrix,
                     &mut draw_sys,
                     &water,
@@ -500,14 +500,14 @@ impl EngineStuff {
                 pub const LAND_OFFSET: f32 = -10.0;
                 pub const MOUNTAIN_OFFSET: f32 = 0.0;
 
-                for c in game.env.land.iter_mesh(GridCoord::zero()) {
+                for c in game.env.land.iter_mesh(Axial::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
                     let m = my_matrix.chain(t).generate();
                     draw_sys.view(&m).draw_a_thing(grass);
                 }
 
-                for c in game.env.fog.iter_mesh(GridCoord::zero()) {
+                for c in game.env.fog.iter_mesh(Axial::zero()) {
                     let pos = grid_matrix.hex_axial_to_world(&c);
 
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
@@ -670,7 +670,7 @@ impl EngineStuff {
 }
 
 fn draw_something_grid(
-    f: impl IntoIterator<Item = GridCoord>,
+    f: impl IntoIterator<Item = Axial>,
     grid_matrix: &grids::GridMatrix,
     draw_sys: &mut ShaderSystem,
     texture: &Foo<TextureGpu, ModelGpu>,
@@ -688,7 +688,7 @@ fn draw_something_grid(
     }
 }
 fn draw_health_text(
-    f: impl IntoIterator<Item = (GridCoord, i8)>,
+    f: impl IntoIterator<Item = (Axial, i8)>,
 
     gg: &grids::GridMatrix,
     health_numbers: &NumberTextManager,

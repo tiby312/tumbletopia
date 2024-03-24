@@ -6,12 +6,12 @@ use super::*;
 
 #[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
-pub struct GridCoord {
+pub struct Axial {
     pub q: i16,
     pub r: i16,
 }
 
-impl GridCoord {
+impl Axial {
     pub fn q(&self) -> i16 {
         self.q
     }
@@ -19,12 +19,12 @@ impl GridCoord {
         self.r
     }
     pub const fn from_arr([q, r]: [i16; 2]) -> Self {
-        GridCoord { q, r }
+        Axial { q, r }
     }
-    pub fn zero() -> GridCoord {
-        GridCoord { q: 0, r: 0 }
+    pub fn zero() -> Axial {
+        Axial { q: 0, r: 0 }
     }
-    pub fn dir_to(&self, other: &GridCoord) -> HDir {
+    pub fn dir_to(&self, other: &Axial) -> HDir {
         let mut offset = other.sub(self);
 
         offset.q = offset.q.clamp(-1, 1);
@@ -33,7 +33,7 @@ impl GridCoord {
         // assert!(offset.0[0].abs() <= 1);
         // assert!(offset.0[1].abs() <= 1);
         let hex::Cube {
-            ax: GridCoord { q, r },
+            ax: Axial { q, r },
             s,
         } = offset.to_cube();
 
@@ -49,18 +49,18 @@ impl GridCoord {
         hex::Cube::from_arr([a.q, a.r, -a.q - a.r])
     }
 
-    pub fn advance(self, m: HDir) -> GridCoord {
+    pub fn advance(self, m: HDir) -> Axial {
         self.add(m.to_relative())
     }
-    pub fn back(self, m: HDir) -> GridCoord {
+    pub fn back(self, m: HDir) -> Axial {
         self.sub(&m.to_relative())
     }
-    pub fn sub(mut self, o: &GridCoord) -> Self {
+    pub fn sub(mut self, o: &Axial) -> Self {
         self.q -= o.q;
         self.r -= o.r;
         self
     }
-    pub const fn add(mut self, o: GridCoord) -> Self {
+    pub const fn add(mut self, o: Axial) -> Self {
         self.q += o.q;
         self.r += o.r;
         self
@@ -79,7 +79,7 @@ impl MoveUnit {
 }
 
 impl<T: Filter> Filter for &T {
-    fn filter(&self, a: &GridCoord) -> FilterRes {
+    fn filter(&self, a: &Axial) -> FilterRes {
         (**self).filter(a)
     }
 }
@@ -88,15 +88,15 @@ impl<T: Filter> Filter for &T {
 pub struct NoFilter;
 
 impl Filter for NoFilter {
-    fn filter(&self, _: &GridCoord) -> FilterRes {
+    fn filter(&self, _: &Axial) -> FilterRes {
         FilterRes::from_bool(true)
     }
 }
 
-pub struct FilterThese<'a>(pub &'a [GridCoord]);
+pub struct FilterThese<'a>(pub &'a [Axial]);
 
 impl Filter for FilterThese<'_> {
-    fn filter(&self, a: &GridCoord) -> FilterRes {
+    fn filter(&self, a: &Axial) -> FilterRes {
         FilterRes::from_bool(self.0.contains(a))
     }
 }
@@ -143,13 +143,13 @@ impl FilterRes {
 pub struct AcceptCoords<I> {
     coords: I,
 }
-impl<I: Iterator<Item = GridCoord> + Clone> AcceptCoords<I> {
+impl<I: Iterator<Item = Axial> + Clone> AcceptCoords<I> {
     pub fn new(coords: I) -> Self {
         Self { coords }
     }
 }
-impl<I: Iterator<Item = GridCoord> + Clone> Filter for AcceptCoords<I> {
-    fn filter(&self, a: &GridCoord) -> FilterRes {
+impl<I: Iterator<Item = Axial> + Clone> Filter for AcceptCoords<I> {
+    fn filter(&self, a: &Axial) -> FilterRes {
         if self.coords.clone().any(|b| b == *a) {
             FilterRes::Accept
         } else {
@@ -159,7 +159,7 @@ impl<I: Iterator<Item = GridCoord> + Clone> Filter for AcceptCoords<I> {
 }
 
 pub trait Filter {
-    fn filter(&self, a: &GridCoord) -> FilterRes;
+    fn filter(&self, a: &Axial) -> FilterRes;
     fn and<K: Filter>(self, other: K) -> And<Self, K>
     where
         Self: Sized,
@@ -184,7 +184,7 @@ pub struct NotFilter<F> {
     filter: F,
 }
 impl<F: Filter> Filter for NotFilter<F> {
-    fn filter(&self, a: &GridCoord) -> FilterRes {
+    fn filter(&self, a: &Axial) -> FilterRes {
         match self.filter.filter(a) {
             FilterRes::Accept => FilterRes::Stop,
             FilterRes::Stop => FilterRes::Accept,
@@ -197,7 +197,7 @@ pub enum Either<A, B> {
     B(B),
 }
 impl<A: Filter, B: Filter> Filter for Either<A, B> {
-    fn filter(&self, a: &GridCoord) -> FilterRes {
+    fn filter(&self, a: &Axial) -> FilterRes {
         match self {
             Either::A(c) => c.filter(a),
             Either::B(c) => c.filter(a),
@@ -211,7 +211,7 @@ pub struct Or<A, B> {
     b: B,
 }
 impl<A: Filter, B: Filter> Filter for Or<A, B> {
-    fn filter(&self, a: &GridCoord) -> FilterRes {
+    fn filter(&self, a: &Axial) -> FilterRes {
         self.a.filter(a).or(self.b.filter(a))
     }
 }
@@ -220,12 +220,12 @@ pub struct And<A, B> {
     b: B,
 }
 impl<A: Filter, B: Filter> Filter for And<A, B> {
-    fn filter(&self, a: &GridCoord) -> FilterRes {
+    fn filter(&self, a: &Axial) -> FilterRes {
         self.a.filter(a).and(self.b.filter(a))
     }
 }
 
-pub fn contains_coord<I: Iterator<Item = GridCoord>>(mut it: I, b: GridCoord) -> bool {
+pub fn contains_coord<I: Iterator<Item = Axial>>(mut it: I, b: Axial) -> bool {
     it.find(|a| *a == b).is_some()
 }
 
@@ -264,9 +264,9 @@ pub mod movement_mesh {
         //     println!("[{},{}],", a.0[0], a.0[1]);
         // }
 
-        let k1 = GridCoord::from_arr([2, 0]);
-        let k2 = GridCoord::from_arr([2, -2]);
-        let k3 = GridCoord::from_arr([-2, 1]);
+        let k1 = Axial::from_arr([2, 0]);
+        let k2 = Axial::from_arr([2, -2]);
+        let k3 = Axial::from_arr([-2, 1]);
 
         let mut mesh = SmallMesh::new();
         mesh.add(k1);
@@ -276,16 +276,16 @@ pub mod movement_mesh {
         assert!(mesh.is_set(k1));
         assert!(mesh.is_set(k2));
         assert!(mesh.is_set(k3));
-        assert!(!mesh.is_set(GridCoord::from_arr([-2, 2])));
+        assert!(!mesh.is_set(Axial::from_arr([-2, 2])));
 
-        let res: Vec<_> = mesh.iter_mesh(GridCoord::from_arr([0; 2])).collect();
+        let res: Vec<_> = mesh.iter_mesh(Axial::from_arr([0; 2])).collect();
 
         assert_eq!(
             res,
             vec!(
-                GridCoord::from_arr([-2, 1]),
-                GridCoord::from_arr([2, -2]),
-                GridCoord::from_arr([2, 0])
+                Axial::from_arr([-2, 1]),
+                Axial::from_arr([2, -2]),
+                Axial::from_arr([2, 0])
             )
         )
     }
@@ -299,14 +299,14 @@ pub mod movement_mesh {
         pub fn new() -> SmallMesh {
             SmallMesh { inner: 0 }
         }
-        pub fn from_iter(it: impl Iterator<Item = GridCoord>) -> SmallMesh {
+        pub fn from_iter(it: impl Iterator<Item = Axial>) -> SmallMesh {
             let mut m = SmallMesh::new();
             for a in it {
                 m.add(a);
             }
             m
         }
-        pub fn validate_rel(a: GridCoord) {
+        pub fn validate_rel(a: Axial) {
             let x = a.q;
             let y = a.r;
 
@@ -315,12 +315,12 @@ pub mod movement_mesh {
 
             //assert!(x != 0 || y != 0);
         }
-        pub fn add(&mut self, a: GridCoord) {
+        pub fn add(&mut self, a: Axial) {
             Self::validate_rel(a);
             let ind = conv(a);
             self.inner = self.inner | (1 << ind);
         }
-        pub fn remove(&mut self, a: GridCoord) {
+        pub fn remove(&mut self, a: Axial) {
             Self::validate_rel(a);
             let ind = conv(a);
             self.inner = self.inner & (!(1 << ind));
@@ -328,14 +328,14 @@ pub mod movement_mesh {
         pub fn is_empty(&self) -> bool {
             self.inner == 0
         }
-        pub fn is_set(&self, a: GridCoord) -> bool {
+        pub fn is_set(&self, a: Axial) -> bool {
             Self::validate_rel(a);
 
             let ind = conv(a);
 
             self.inner & (1 << ind) != 0
         }
-        pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> {
+        pub fn iter_mesh(&self, point: Axial) -> impl Iterator<Item = Axial> {
             let inner = self.inner;
 
             //let skip_moves = self.swing_moves(point);
@@ -350,14 +350,14 @@ pub mod movement_mesh {
                 .map(move |a| {
                     let x = a / 13;
                     let y = a % 13;
-                    point.add(GridCoord::from_arr([x - 6, y - 6]))
+                    point.add(Axial::from_arr([x - 6, y - 6]))
                 });
 
             mesh_moves //.chain(skip_moves)
         }
     }
 
-    use super::GridCoord;
+    use super::Axial;
 
     // #[derive(PartialEq, Eq, Debug, Clone)]
     // pub struct RelativeMesh {
@@ -396,8 +396,8 @@ pub mod movement_mesh {
     //         self.inner.inner == 0
     //     }
     // }
-    fn conv(a: GridCoord) -> usize {
-        let GridCoord { q, r } = a;
+    fn conv(a: Axial) -> usize {
+        let Axial { q, r } = a;
         //     let ind=x/7+y%7;
         //     // -3 -2 -1 0 1 2 3
         //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
@@ -415,15 +415,15 @@ pub mod movement_mesh {
 
 pub fn path(
     mesh: &movement_mesh::SmallMesh,
-    a: GridCoord,
+    a: Axial,
     walls: &movement_mesh::SmallMesh,
 ) -> impl Iterator<Item = HDir> {
     let mesh_iter = {
         movement_mesh::SmallMesh::validate_rel(a);
         let x = a.q;
         let y = a.r;
-        let first = if GridCoord::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
-            Some([GridCoord::from_arr([0, 0]).dir_to(&a)])
+        let first = if Axial::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
+            Some([Axial::from_arr([0, 0]).dir_to(&a)])
         } else {
             None
         };
@@ -431,7 +431,7 @@ pub fn path(
         //diagonal
         let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
             //TODO inefficient
-            let mut k = GridCoord::from_arr([0, 0])
+            let mut k = Axial::from_arr([0, 0])
                 .to_cube()
                 .neighbours()
                 .filter(|x| x.dist(&a.to_cube()) == 1);
@@ -441,10 +441,10 @@ pub fn path(
             if
             /*self.is_set(first)||*/
             !walls.is_set(first) {
-                Some([GridCoord::from_arr([0, 0]).dir_to(&first), first.dir_to(&a)])
+                Some([Axial::from_arr([0, 0]).dir_to(&first), first.dir_to(&a)])
             } else {
                 Some([
-                    GridCoord::from_arr([0, 0]).dir_to(&second),
+                    Axial::from_arr([0, 0]).dir_to(&second),
                     second.dir_to(&a),
                 ])
             }
@@ -453,7 +453,7 @@ pub fn path(
         };
 
         let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2) {
-            let h = GridCoord::from_arr([0, 0]).dir_to(&a);
+            let h = Axial::from_arr([0, 0]).dir_to(&a);
             Some([h, h])
         } else {
             None
@@ -461,7 +461,7 @@ pub fn path(
 
         // size 3 spokes
         let fourth = if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
-            let h = GridCoord::from_arr([0, 0]).dir_to(&a);
+            let h = Axial::from_arr([0, 0]).dir_to(&a);
             Some([h, h, h])
         } else {
             None
@@ -480,7 +480,7 @@ pub fn path(
 pub mod bitfield {
     use std::ops::{Deref, DerefMut};
 
-    use super::GridCoord;
+    use super::Axial;
 
     #[test]
     fn bitfield() {
@@ -488,9 +488,9 @@ pub mod bitfield {
 
         for k in -16..16 {
             dbg!("handling=k", k);
-            m.set_coord(GridCoord::from_arr([k, k]), true);
+            m.set_coord(Axial::from_arr([k, k]), true);
 
-            assert!(m.is_coord_set(GridCoord::from_arr([k, k])), "boo={}", k);
+            assert!(m.is_coord_set(Axial::from_arr([k, k])), "boo={}", k);
         }
     }
 
@@ -519,7 +519,7 @@ pub mod bitfield {
                 inner: FixedBitSet::with_capacity(1024),
             }
         }
-        pub fn from_iter(a: impl IntoIterator<Item = GridCoord>) -> Self {
+        pub fn from_iter(a: impl IntoIterator<Item = Axial>) -> Self {
             let mut k = BitField::new();
             for a in a {
                 k.set_coord(a, true);
@@ -527,7 +527,7 @@ pub mod bitfield {
             k
         }
 
-        pub fn set_coord(&mut self, a: GridCoord, val: bool) {
+        pub fn set_coord(&mut self, a: Axial, val: bool) {
             let x = a.q;
             let y = a.r;
             assert!(x <= 16 && x >= -16 && y <= 16 && y >= -16, "val={:?}", a);
@@ -536,21 +536,21 @@ pub mod bitfield {
             self.inner.set(ind, val);
         }
 
-        pub fn is_coord_set(&self, a: GridCoord) -> bool {
+        pub fn is_coord_set(&self, a: Axial) -> bool {
             let ind = conv(a);
 
             self.inner[ind]
         }
-        pub fn iter_mesh(&self, point: GridCoord) -> impl Iterator<Item = GridCoord> + '_ {
+        pub fn iter_mesh(&self, point: Axial) -> impl Iterator<Item = Axial> + '_ {
             self.inner.ones().map(move |a| {
                 let x = a / 32;
                 let y = a % 32;
-                point.add(GridCoord::from_arr([x as i16 - 16, y as i16 - 16]))
+                point.add(Axial::from_arr([x as i16 - 16, y as i16 - 16]))
             })
         }
     }
-    fn conv(a: GridCoord) -> usize {
-        let GridCoord { q, r } = a;
+    fn conv(a: Axial) -> usize {
+        let Axial { q, r } = a;
         ((q + 16) * 32 + (r + 16)) as usize
     }
 }

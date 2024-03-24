@@ -18,9 +18,9 @@ impl crate::moves::ActualMove {
 }
 
 pub struct ExtraPhase {
-    pub original: GridCoord,
-    pub moveto: GridCoord,
-    pub target: GridCoord,
+    pub original: Axial,
+    pub moveto: Axial,
+    pub target: Axial,
 }
 impl ExtraPhase {
     pub fn undo(self, meta: &ExtraEffect, state: &mut GameState) -> MovePhase {
@@ -215,11 +215,11 @@ impl MoveEffect {
 
 #[derive(Clone)]
 pub struct MovePhase {
-    pub original: GridCoord,
-    pub moveto: GridCoord,
+    pub original: Axial,
+    pub moveto: Axial,
 }
 impl MovePhase {
-    pub fn into_attack(self, target: GridCoord) -> ExtraPhase {
+    pub fn into_attack(self, target: Axial) -> ExtraPhase {
         ExtraPhase {
             original: self.original,
             moveto: self.moveto,
@@ -394,8 +394,8 @@ pub struct CombinedEffect {
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 struct BombInfo(pub SmallMesh);
 impl BombInfo {
-    fn apply(&self, original: GridCoord, game: &mut GameState) {
-        for a in self.0.iter_mesh(GridCoord::zero()) {
+    fn apply(&self, original: Axial, game: &mut GameState) {
+        for a in self.0.iter_mesh(Axial::zero()) {
             game.env.land.set_coord(original.add(a), true);
         }
     }
@@ -411,8 +411,8 @@ pub struct ExtraEffect {
 pub struct FogInfo(pub SmallMesh);
 
 impl FogInfo {
-    pub fn apply(&self, og: GridCoord, env: &mut Environment) {
-        for a in self.0.iter_mesh(GridCoord::zero()) {
+    pub fn apply(&self, og: Axial, env: &mut Environment) {
+        for a in self.0.iter_mesh(Axial::zero()) {
             env.fog.set_coord(og.add(a), false);
         }
     }
@@ -421,7 +421,7 @@ impl FogInfo {
 //returns a mesh where set bits indicate cells
 //that were fog before this function was called,
 //and were then unfogged.
-pub fn compute_fog(og: GridCoord, env: &Environment) -> FogInfo {
+pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
     let mut mesh = SmallMesh::new();
     for a in og.to_cube().range(1) {
         if env.fog.is_coord_set(a.to_axial()) {
@@ -431,7 +431,7 @@ pub fn compute_fog(og: GridCoord, env: &Environment) -> FogInfo {
     FogInfo(mesh)
 }
 
-fn calculate_walls(position: GridCoord, state: &GameState) -> SmallMesh {
+fn calculate_walls(position: Axial, state: &GameState) -> SmallMesh {
     let env = &state.env;
     let mut walls = SmallMesh::new();
 

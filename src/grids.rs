@@ -16,7 +16,7 @@ impl GridMatrix {
         scale * hex::HEX_PROJ_FLAT
     }
 
-    pub fn world_to_hex(&self, pos: cgmath::Vector2<f32>) -> GridCoord {
+    pub fn world_to_hex(&self, pos: cgmath::Vector2<f32>) -> Axial {
         use cgmath::SquareMatrix;
         let k = self.hex_axial_to_square_matrix().invert().unwrap() * pos;
         let q = k.x;
@@ -24,13 +24,13 @@ impl GridMatrix {
         let s = -k.x - k.y;
         hex::Cube::round([q, r, s]).to_axial()
     }
-    pub fn center_world_to_hex(&self, mut pos: cgmath::Vector2<f32>) -> GridCoord {
+    pub fn center_world_to_hex(&self, mut pos: cgmath::Vector2<f32>) -> Axial {
         pos.x -= EPSILON * self.spacing() / FOO;
         pos.y -= EPSILON * self.spacing() / FOO;
         self.world_to_hex(pos)
     }
 
-    pub fn hex_axial_to_world(&self, coord: &GridCoord) -> cgmath::Vector2<f32> {
+    pub fn hex_axial_to_world(&self, coord: &Axial) -> cgmath::Vector2<f32> {
         let v = cgmath::Vector2::new(coord.q as f32, coord.r as f32);
         self.hex_axial_to_square_matrix() * v
     }

@@ -21,8 +21,8 @@ impl Iterator for Interpolate {
 }
 
 pub fn attack(
-    start: GridCoord,
-    target: GridCoord,
+    start: Axial,
+    target: Axial,
     v: &grids::GridMatrix,
 ) -> impl Iterator<Item = Vector2<f32>> {
     let v = v.clone();
@@ -52,11 +52,11 @@ pub enum AnimationCommand {
         unit: UnitData,
         mesh: movement::movement_mesh::SmallMesh,
         walls: movement::movement_mesh::SmallMesh,
-        end: GridCoord,
+        end: Axial,
         data: PushInfo,
     },
     Terrain {
-        pos: GridCoord,
+        pos: Axial,
         terrain_type: TerrainType,
         dir: AnimationDirection,
     },
@@ -92,16 +92,16 @@ pub fn terrain_create(curr: f32, target: f32) -> impl Iterator<Item = f32> {
 //     }
 // }
 
-pub fn land_delta(start: GridCoord, end: GridCoord, v: &grids::GridMatrix) -> Vector2<f32> {
+pub fn land_delta(start: Axial, end: Axial, v: &grids::GridMatrix) -> Vector2<f32> {
     let s = v.hex_axial_to_world(&start);
     let e = v.hex_axial_to_world(&end);
     e - s
 }
 pub fn movement(
-    start: GridCoord,
+    start: Axial,
     path: movement::movement_mesh::SmallMesh,
     walls: movement::movement_mesh::SmallMesh,
-    end: GridCoord,
+    end: Axial,
     v: &grids::GridMatrix,
 ) -> impl Iterator<Item = Vector2<f32>> {
     let v = v.clone();
