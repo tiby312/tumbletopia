@@ -2,20 +2,20 @@ use super::*;
 
 ///A way to map a grid to world coordinates and vice versa
 #[derive(Debug, Clone)]
-pub struct GridMatrix {
+pub struct HexConverter {
     spacing: f32,
 }
 
 const FOO: f32 = hex::SQRT_3;
 const EPSILON: f32 = 1.01;
 
-impl Default for GridMatrix {
+impl Default for HexConverter {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl GridMatrix {
+impl HexConverter {
     pub fn hex_axial_to_square_matrix(&self) -> cgmath::Matrix2<f32> {
         let sc = EPSILON * self.spacing() / FOO;
         let scale = cgmath::Matrix2::new(sc, 0.0, 0.0, sc);

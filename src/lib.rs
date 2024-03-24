@@ -210,7 +210,7 @@ struct RenderManager {
     command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<ace::Command>>,
 }
 pub struct EngineStuff {
-    grid_matrix: grids::GridMatrix,
+    grid_matrix: grids::HexConverter,
     models: Models<Foo<TextureGpu, ModelGpu>>,
     numm: Numm,
     ctx: CtxWrap,
@@ -221,7 +221,7 @@ impl EngineStuff {
         let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
         ctx.setup_alpha();
 
-        let grid_matrix = grids::GridMatrix::new();
+        let grid_matrix = grids::HexConverter::new();
         let models = Models::new(&grid_matrix, &ctx);
         let numm = Numm::new(&ctx);
 
@@ -500,6 +500,15 @@ impl EngineStuff {
                 pub const LAND_OFFSET: f32 = -10.0;
                 pub const MOUNTAIN_OFFSET: f32 = 0.0;
 
+                draw_sys.draw_batch(
+                    game.env.land.iter_mesh().map(|c| {
+                        let pos = grid_matrix.hex_axial_to_world(&c);
+                        let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
+                        my_matrix.chain(t)
+                    }),
+                    grass,
+                );
+
                 for c in game.env.land.iter_mesh() {
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
@@ -691,9 +700,30 @@ impl EngineStuff {
     }
 }
 
+pub trait Doop {
+    fn draw_batch<K: MyMatrix>(
+        &mut self,
+        ff: impl IntoIterator<Item = K>,
+        texture: &Foo<TextureGpu, ModelGpu>,
+    );
+}
+
+impl Doop for ShaderSystem {
+    fn draw_batch<K: MyMatrix>(
+        &mut self,
+        ff: impl IntoIterator<Item = K>,
+        texture: &Foo<TextureGpu, ModelGpu>,
+    ) {
+        for a in ff.into_iter() {
+            let m = a.generate();
+            self.view(&m).draw_a_thing(texture);
+        }
+    }
+}
+
 fn draw_something_grid(
     f: impl IntoIterator<Item = Axial>,
-    grid_matrix: &grids::GridMatrix,
+    grid_matrix: &grids::HexConverter,
     draw_sys: &mut ShaderSystem,
     texture: &Foo<TextureGpu, ModelGpu>,
     m: &Matrix4<f32>,
@@ -712,7 +742,7 @@ fn draw_something_grid(
 fn draw_health_text(
     f: impl IntoIterator<Item = (Axial, i8)>,
 
-    gg: &grids::GridMatrix,
+    gg: &grids::HexConverter,
     health_numbers: &NumberTextManager,
     view_proj: &Matrix4<f32>,
     proj: &Matrix4<f32>,
@@ -778,7 +808,7 @@ pub struct Models<T> {
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
-    pub fn new(grid_matrix: &grids::GridMatrix, ctx: &WebGl2RenderingContext) -> Self {
+    pub fn new(grid_matrix: &grids::HexConverter, ctx: &WebGl2RenderingContext) -> Self {
         const ASSETS: &[(&[u8], usize, Option<f64>)] = &[
             (include_bytes!("../assets/select_model.glb"), 1, None),
             (include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),

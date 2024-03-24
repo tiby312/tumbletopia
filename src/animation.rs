@@ -23,7 +23,7 @@ impl Iterator for Interpolate {
 pub fn attack(
     start: Axial,
     target: Axial,
-    v: &grids::GridMatrix,
+    v: &grids::HexConverter,
 ) -> impl Iterator<Item = Vector2<f32>> {
     let v = v.clone();
     let start = v.hex_axial_to_world(&start);
@@ -92,7 +92,7 @@ pub fn terrain_create(curr: f32, target: f32) -> impl Iterator<Item = f32> {
 //     }
 // }
 
-pub fn land_delta(start: Axial, end: Axial, v: &grids::GridMatrix) -> Vector2<f32> {
+pub fn land_delta(start: Axial, end: Axial, v: &grids::HexConverter) -> Vector2<f32> {
     let s = v.hex_axial_to_world(&start);
     let e = v.hex_axial_to_world(&end);
     e - s
@@ -102,7 +102,7 @@ pub fn movement(
     path: mesh::small_mesh::SmallMesh,
     walls: mesh::small_mesh::SmallMesh,
     end: Axial,
-    v: &grids::GridMatrix,
+    v: &grids::HexConverter,
 ) -> impl Iterator<Item = Vector2<f32>> {
     let v = v.clone();
     let mut counter = v.hex_axial_to_world(&start);

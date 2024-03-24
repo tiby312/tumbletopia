@@ -1,7 +1,7 @@
-use crate::grids::GridMatrix;
+use crate::grids::HexConverter;
 
 use super::*;
-pub fn get_world_rect(view_projection: &Matrix4<f32>, grid: &GridMatrix) -> [[i16; 2]; 2] {
+pub fn get_world_rect(view_projection: &Matrix4<f32>, grid: &HexConverter) -> [[i16; 2]; 2] {
     let k = 1.0;
     let a = clip_to_world([k, k], view_projection);
     let b = clip_to_world([-k, -k], view_projection);
