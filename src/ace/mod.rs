@@ -22,15 +22,6 @@ pub struct AnimationWrapper<K> {
     pub enu: animation::AnimationCommand,
 }
 
-// #[derive(Debug, Clone)]
-// pub enum MousePrompt {
-//     Selection {
-//         selection: CellSelection,
-//         grey: bool,
-//     },
-//     None,
-// }
-
 #[derive(Debug)]
 pub enum Command {
     Animate(animation::AnimationCommand),
@@ -112,14 +103,6 @@ impl WorkerManager {
         game
     }
 
-    // async fn get_mouse_no_selection<'c>(
-    //     &mut self,
-    //     team: ActiveTeam,
-    //     game: GameState,
-    // ) -> Pototo<GridCoord> {
-    //     let (_, c) = self.get_mouse(MousePrompt::None, team, game).await;
-    //     c
-    // }
     async fn get_mouse_selection(
         &mut self,
         cell: CellSelection,
@@ -226,29 +209,6 @@ impl WorkerManager {
 
         (game, data)
     }
-    // async fn get_mouse<'c>(
-    //     &mut self,
-    //     cell: MousePrompt,
-    //     team: ActiveTeam,
-    //     game: GameState,
-    // ) -> (MousePrompt, Pototo<GridCoord>) {
-    //     self.sender
-    //         .send(GameWrap {
-    //             game,
-    //             data: Command::GetMouseInput(cell),
-    //             team,
-    //         })
-    //         .await
-    //         .unwrap();
-
-    //     let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
-
-    //     let Response::Mouse(cell, o) = data else {
-    //         unreachable!();
-    //     };
-
-    //     (cell, o)
-    // }
 }
 
 #[derive(Hash, Debug, Copy, Clone, Eq, PartialEq)]
@@ -295,11 +255,11 @@ pub enum LoopRes<T> {
 
 pub async fn reselect_loop(
     doop: &mut WorkerManager,
-    game: &mut GameState,
+    mut game: GameState,
     team: ActiveTeam,
     have_moved: &mut Option<selection::HaveMoved>,
     selected_unit: SelectType,
-) -> LoopRes<SelectType> {
+) -> (GameState, LoopRes<SelectType>) {
     console_dbg!(have_moved.is_some());
     //At this point we know a friendly unit is currently selected.
 
@@ -312,7 +272,8 @@ pub async fn reselect_loop(
         .relative(selected_unit.team)
         .this_team
         .find_slow(&unwrapped_selected_unit)
-        .unwrap();
+        .unwrap()
+        .clone();
 
     let grey = if selected_unit.team == team {
         //If we are in the middle of a extra attack move, make sure
@@ -336,9 +297,10 @@ pub async fn reselect_loop(
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
     let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca.clone());
 
-    let (cell, pototo, _) = doop
-        .get_mouse_selection(cc, selected_unit.team, game.clone(), grey)
+    let (cell, pototo, gg) = doop
+        .get_mouse_selection(cc, selected_unit.team, game, grey)
         .await;
+    game = gg;
 
     let mouse_world = match pototo {
         Pototo::Normal(t) => t,
@@ -346,7 +308,7 @@ pub async fn reselect_loop(
             //End the turn. Ok because we are not int he middle of anything.
             //return LoopRes::EndTurn;
             //unreachable!();
-            return LoopRes::Deselect;
+            return (game, LoopRes::Deselect);
         }
     };
     let target_cell = mouse_world;
@@ -358,7 +320,7 @@ pub async fn reselect_loop(
 
     //If we just clicked on ourselves, just deselect.
     if target_cell == unwrapped_selected_unit {
-        return LoopRes::Deselect;
+        return (game, LoopRes::Deselect);
     }
 
     let contains = movement::contains_coord(ss.iter_mesh(unwrapped_selected_unit), target_cell);
@@ -370,10 +332,11 @@ pub async fn reselect_loop(
         .this_team
         .find_slow(&target_cell)
     {
+        let tt = target.position;
         if !contains {
             //it should be impossible for a unit to move onto a friendly
             //assert!(!contains);
-            return LoopRes::Select(selected_unit.with(target.position));
+            return (game, LoopRes::Select(selected_unit.with(tt)));
         }
     }
 
@@ -384,27 +347,28 @@ pub async fn reselect_loop(
         .that_team
         .find_slow(&target_cell)
     {
+        let tt = target.position;
         if selected_unit.team != team || !contains {
             //If we select an enemy unit thats outside of our units range.
-            return LoopRes::Select(selected_unit.with(target.position).not());
+            return (game, LoopRes::Select(selected_unit.with(tt).not()));
         }
     }
 
     //If we selected an empty space, deselect.
     if !contains {
-        return LoopRes::Deselect;
+        return (game, LoopRes::Deselect);
     }
 
     //If we are trying to move an enemy piece, deselect.
     if selected_unit.team != team {
-        return LoopRes::Deselect;
+        return (game, LoopRes::Deselect);
     }
 
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
     if let Some(e) = have_moved {
         if unwrapped_selected_unit != e.the_move.moveto {
-            return LoopRes::Deselect;
+            return (game, LoopRes::Deselect);
         }
     }
 
@@ -417,20 +381,23 @@ pub async fn reselect_loop(
                 .the_move
                 .clone()
                 .into_attack(target_cell)
-                .animate(selected_unit.team, game, doop)
+                .animate(selected_unit.team, &mut game, doop)
                 .await
-                .apply(selected_unit.team, game);
+                .apply(selected_unit.team, &mut game);
 
             let effect = e.effect.combine(meta);
 
-            return LoopRes::EndTurn((
-                moves::ActualMove {
-                    original: e.the_move.original,
-                    moveto: e.the_move.moveto,
-                    attackto: target_cell,
-                },
-                effect,
-            ));
+            return (
+                game,
+                LoopRes::EndTurn((
+                    moves::ActualMove {
+                        original: e.the_move.original,
+                        moveto: e.the_move.moveto,
+                        attackto: target_cell,
+                    },
+                    effect,
+                )),
+            );
         } else {
             let p = unit.position;
             let this_unit = game
@@ -449,16 +416,16 @@ pub async fn reselect_loop(
             };
 
             let effect = mp
-                .animate(selected_unit.team, game, doop)
+                .animate(selected_unit.team, &mut game, doop)
                 .await
-                .apply(selected_unit.team, game);
+                .apply(selected_unit.team, &mut game);
 
             {
                 *have_moved = Some(selection::HaveMoved {
                     the_move: mp,
                     effect,
                 });
-                return LoopRes::Select(selected_unit.with(c).with_team(team));
+                return (game, LoopRes::Select(selected_unit.with(c).with_team(team)));
             }
         }
     }
@@ -534,7 +501,7 @@ pub mod share {
     }
 }
 
-pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager) {
+pub async fn main_logic(mut game: GameState, mut doop: WorkerManager) {
     let mut game_history = selection::MoveLog::new();
 
     //Loop over each team!
@@ -548,40 +515,43 @@ pub async fn main_logic<'a>(game: &'a mut GameState, mut doop: WorkerManager) {
         if team == ActiveTeam::Cats {
             //{
             doop.send_popup("AI Thinking", team, game.clone()).await;
-            let the_move = ai::iterative_deepening(game, team, &mut doop).await;
+            let the_move = ai::iterative_deepening(&mut game, team, &mut doop).await;
             doop.send_popup("", team, game.clone()).await;
 
             let kk = the_move.as_move();
 
-            let effect_m = kk.animate(team, game, &mut doop).await.apply(team, game);
+            let effect_m = kk
+                .animate(team, &mut game, &mut doop)
+                .await
+                .apply(team, &mut game);
 
             let effect_a = kk
                 .into_attack(the_move.attackto)
-                .animate(team, game, &mut doop)
+                .animate(team, &mut game, &mut doop)
                 .await
-                .apply(team, game);
+                .apply(team, &mut game);
 
             game_history.push((the_move, effect_m.combine(effect_a)));
 
             continue;
         }
 
-        let m = handle_player(game, &mut doop, team, &mut game_history).await;
+        let (gg, a, b) = handle_player(game, &mut doop, team, &mut game_history).await;
+        game = gg;
+        game_history.push((a, b));
 
-        game_history.push(m);
-
-        ai::absolute_evaluate(game, true);
+        ai::absolute_evaluate(&mut game, true);
     }
 
     //console_dbg!(share::save(&game_history));
 }
 
 async fn handle_player(
-    game: &mut GameState,
+    mut game: GameState,
     doop: &mut WorkerManager,
     team: ActiveTeam,
     move_log: &mut selection::MoveLog,
-) -> (moves::ActualMove, move_build::CombinedEffect) {
+) -> (GameState, moves::ActualMove, move_build::CombinedEffect) {
     //doop.send_popup("haha", team, game.clone()).await;
 
     let mut extra_attack = None;
@@ -589,7 +559,8 @@ async fn handle_player(
     loop {
         //Loop until the user clicks on a selectable unit in their team.
         let mut selected_unit = loop {
-            let (data, _) = doop.get_mouse_no_selection(team, game.clone()).await;
+            let (data, g) = doop.get_mouse_no_selection(team, game).await;
+            game = g;
             let cell = match data {
                 Pototo::Normal(a) => a,
                 Pototo::EndTurn => {
@@ -597,12 +568,12 @@ async fn handle_player(
                         assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
                         log!("undoing turn!!!");
                         let (a, e) = move_log.inner.pop().unwrap();
-                        a.as_extra().undo(&e.extra_effect, game);
-                        a.as_move().undo(team.not(), &e.move_effect, game);
+                        a.as_extra().undo(&e.extra_effect, &mut game);
+                        a.as_move().undo(team.not(), &e.move_effect, &mut game);
 
                         let (a, e) = move_log.inner.pop().unwrap();
-                        a.as_extra().undo(&e.extra_effect, game);
-                        a.as_move().undo(team, &e.move_effect, game);
+                        a.as_extra().undo(&e.extra_effect, &mut game);
+                        a.as_move().undo(team, &e.move_effect, &mut game);
                     }
                     continue;
                 }
@@ -626,10 +597,12 @@ async fn handle_player(
         //Keep showing the selected unit's options and keep handling the users selections
         //Until the unit is deselected.
         loop {
-            let a = match reselect_loop(doop, game, team, &mut extra_attack, selected_unit).await {
-                LoopRes::EndTurn(m) => {
+            let (gg, res) = reselect_loop(doop, game, team, &mut extra_attack, selected_unit).await;
+            game = gg;
+            let a = match res {
+                LoopRes::EndTurn((a, b)) => {
                     //todo!();
-                    return m;
+                    return (game, a, b);
                     //game_history.push(m);
                     //break 'select_loop;
                 }

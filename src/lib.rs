@@ -175,7 +175,7 @@ pub async fn worker_entry() {
 
     let mut game = ace::game_init();
 
-    let (game, mut r, w) = create_worker_render(&mut game);
+    let (_, mut r, w) = create_worker_render(&mut game);
 
     futures::join!(
         ace::main_logic(game, w),
