@@ -209,6 +209,438 @@ struct RenderManager {
     response_sender: futures::channel::mpsc::Sender<GameWrapResponse<ace::Response>>,
     command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<ace::Command>>,
 }
+
+pub enum RenderControl {
+    Break(ace::GameWrapResponse<ace::Response>),
+    Continue2(ace::GameWrapResponse<ace::Response>),
+}
+
+async fn handle_render_loop_inner(
+    scroll_manager: &mut scroll::TouchController,
+    last_matrix: &mut Matrix4<f32>,
+    ace::GameWrap { game, data, team }: ace::GameWrap<ace::Command>,
+    e: &EngineStuff,
+    //rm: &mut RenderManager,
+    frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
+    engine_worker: &mut shogo::EngineWorker<MEvent, UiButton>,
+) -> RenderControl {
+    // let response_sender = &mut rm.response_sender;
+    // let command_recv = &mut rm.command_recv;
+    let ctx = &e.ctx;
+    let canvas = &e.canvas;
+    let grid_matrix = &e.grid_matrix;
+    let models = &e.models;
+    let numm = &e.numm;
+
+    let mut draw_sys = ctx.shader_system();
+
+    let gl_width = canvas.width();
+    let gl_height = canvas.height();
+    ctx.viewport(0, 0, gl_width as i32, gl_height as i32);
+    let mut viewport = [canvas.width() as f32, canvas.height() as f32];
+
+    let drop_shadow = &models.drop_shadow;
+    let dog = &models.dog;
+    let cat = &models.cat;
+    //let fog_asset = &models.fog;
+    let water = &models.water;
+    let grass = &models.grass;
+    let mountain_asset = &models.mountain;
+    let snow = &models.snow;
+    let select_model = &models.select_model;
+    let attack_model = &models.attack;
+
+    //First lets process the command. Break it down
+    //into pieces that this thread understands.
+    let mut get_mouse_input = None;
+    let mut unit_animation = None;
+    let mut terrain_animation = None;
+    let mut poking = 0;
+
+    match data {
+        ace::Command::Animate(ak) => match ak {
+            animation::AnimationCommand::Movement {
+                unit,
+                mesh,
+                walls,
+                end,
+                data,
+            } => {
+                let ff = match data {
+                    move_build::PushInfo::PushedLand => {
+                        Some(animation::land_delta(unit.position, end, grid_matrix))
+                    }
+                    move_build::PushInfo::None => None,
+                };
+
+                let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
+
+                unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ff));
+            }
+            animation::AnimationCommand::Terrain {
+                pos,
+                terrain_type,
+                dir,
+            } => {
+                let (a, b) = match dir {
+                    animation::AnimationDirection::Up => (-10., 0.),
+                    animation::AnimationDirection::Down => (0., -10.),
+                };
+                let it = animation::terrain_create(a, b);
+                terrain_animation = Some((0.0, it, pos, terrain_type));
+            }
+        },
+        ace::Command::GetMouseInputSelection { selection, grey } => {
+            get_mouse_input = Some(Some((selection, grey)));
+        }
+        ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
+        ace::Command::Nothing => {}
+        ace::Command::Popup(str) => {
+            if str.is_empty() {
+                engine_worker.post_message(UiButton::HidePopup);
+            } else {
+                engine_worker.post_message(UiButton::ShowPopup(str));
+            }
+
+            return RenderControl::Break(ace::GameWrapResponse {
+                game,
+                data: ace::Response::Ack,
+            });
+        }
+        ace::Command::Poke => {
+            poking = 3;
+        }
+    };
+
+    loop {
+        if poking == 1 {
+            console_dbg!("we poked!");
+            return RenderControl::Break(ace::GameWrapResponse {
+                game,
+                data: ace::Response::Ack,
+            });
+        }
+        poking = 0.max(poking - 1);
+
+        let mut on_select = false;
+        let mut end_turn = false;
+
+        let res = frame_timer.next().await;
+
+        for e in res {
+            match e {
+                MEvent::Resize {
+                    canvasx: _canvasx,
+                    canvasy: _canvasy,
+                    x,
+                    y,
+                } => {
+                    let xx = *x as u32;
+                    let yy = *y as u32;
+                    canvas.set_width(xx);
+                    canvas.set_height(yy);
+                    ctx.viewport(0, 0, xx as i32, yy as i32);
+
+                    viewport = [xx as f32, yy as f32];
+                    log!(format!("updating viewport to be:{:?}", viewport));
+                }
+                MEvent::TouchMove { touches } => {
+                    scroll_manager.on_touch_move(touches, &last_matrix, viewport);
+                }
+                MEvent::TouchDown { touches } => {
+                    scroll_manager.on_new_touch(touches);
+                }
+                MEvent::TouchEnd { touches } => {
+                    if let scroll::MouseUp::Select = scroll_manager.on_touch_up(touches) {
+                        on_select = true;
+                    }
+                }
+                MEvent::CanvasMouseLeave => {
+                    log!("mouse leaving!");
+                    let _ = scroll_manager.on_mouse_up();
+                }
+                MEvent::CanvasMouseUp => {
+                    if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
+                        on_select = true;
+                    }
+                }
+                MEvent::CanvasMouseMove { x, y } => {
+                    scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
+                }
+                MEvent::EndTurn => {
+                    end_turn = true;
+                }
+                MEvent::CanvasMouseDown { x, y } => {
+                    scroll_manager.on_mouse_down([*x, *y]);
+                }
+                MEvent::ButtonClick => {}
+                MEvent::ShutdownClick => todo!(),
+            }
+        }
+
+        let proj = projection::projection(viewport).generate();
+        let view_proj = projection::view_matrix(
+            scroll_manager.camera(),
+            scroll_manager.zoom(),
+            scroll_manager.rot(),
+        );
+
+        let my_matrix = proj.chain(view_proj).generate();
+
+        *last_matrix = my_matrix;
+
+        let mouse_world =
+            scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
+
+        if get_mouse_input.is_some() {
+            if end_turn {
+                return RenderControl::Break(ace::GameWrapResponse {
+                    game,
+                    data: ace::Response::Mouse(Pototo::EndTurn),
+                });
+            } else if on_select {
+                let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
+                log!(format!("pos:{:?}", mouse));
+
+                let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
+                    ace::Response::MouseWithSelection(selection, Pototo::Normal(mouse))
+                } else {
+                    ace::Response::Mouse(Pototo::Normal(mouse))
+                };
+
+                return RenderControl::Break(ace::GameWrapResponse { game, data });
+            }
+        }
+
+        if let Some((z, a, _, _)) = &mut terrain_animation {
+            if let Some(zpos) = a.next() {
+                *z = zpos;
+            } else {
+                return RenderControl::Break(ace::GameWrapResponse {
+                    game,
+                    data: ace::Response::AnimationFinish,
+                });
+            }
+        }
+        if let Some((lpos, a, _, _data)) = &mut unit_animation {
+            if let Some(pos) = a.next() {
+                *lpos = pos;
+            } else {
+                return RenderControl::Break(ace::GameWrapResponse {
+                    game,
+                    data: ace::Response::AnimationFinish,
+                });
+            }
+        }
+
+        scroll_manager.step();
+
+        let ggame = &game;
+
+        ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
+
+        draw_something_grid(
+            ggame.world.get_game_cells().iter_mesh(),
+            grid_matrix,
+            &mut draw_sys,
+            water,
+            &my_matrix,
+            -10.0,
+        );
+
+        pub const LAND_OFFSET: f32 = -10.0;
+        pub const MOUNTAIN_OFFSET: f32 = 0.0;
+
+        let trans_land = |c: Axial| {
+            let pos = grid_matrix.hex_axial_to_world(&c);
+            let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
+            my_matrix.chain(t)
+        };
+
+        draw_sys.draw_batch(grass, game.env.land.iter_mesh().map(trans_land));
+
+        for c in game.env.fog.iter_mesh() {
+            let pos = grid_matrix.hex_axial_to_world(&c);
+
+            let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
+            let m = my_matrix.chain(t).generate();
+            draw_sys.view(&m).draw_a_thing(snow);
+        }
+
+        for c in game.env.powerups.iter() {
+            let pos = grid_matrix.hex_axial_to_world(c);
+
+            let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);
+            let m = my_matrix.chain(t).generate();
+            draw_sys.view(&m).draw_a_thing(mountain_asset);
+        }
+
+        if let Some((zpos, _, gpos, k)) = &terrain_animation {
+            let texture = match k {
+                //animation::TerrainType::Snow => snow,
+                animation::TerrainType::Grass => grass,
+                animation::TerrainType::Fog => snow,
+            };
+
+            let diff = match k {
+                //animation::TerrainType::Snow => LAND_OFFSET,
+                animation::TerrainType::Grass => LAND_OFFSET,
+                animation::TerrainType::Fog => LAND_OFFSET,
+            };
+
+            let gpos = *gpos;
+
+            let pos = grid_matrix.hex_axial_to_world(&gpos);
+
+            let t = matrix::translation(pos.x, pos.y, diff + *zpos);
+            let m = my_matrix.chain(t).generate();
+            draw_sys.view(&m).draw_a_thing(texture);
+        }
+
+        if let Some(a) = &get_mouse_input {
+            if let Some((selection, grey)) = a {
+                match selection {
+                    CellSelection::MoveSelection(point, mesh, hh) => {
+                        let _d = DepthDisabler::new(ctx);
+
+                        for a in mesh.iter_mesh(*point) {
+                            let pos = grid_matrix.hex_axial_to_world(&a);
+                            let t = matrix::translation(pos.x, pos.y, 0.0);
+                            let m = my_matrix.chain(t).generate();
+
+                            draw_sys.view(&m).draw_a_thing_ext(
+                                select_model,
+                                *grey,
+                                false,
+                                false,
+                                false,
+                            );
+                        }
+
+                        if let Some(k) = hh {
+                            if k.the_move
+                                .original
+                                .to_cube()
+                                .dist(&k.the_move.moveto.to_cube())
+                                == 2
+                            {
+                                let a = k.the_move.original;
+                                let pos = grid_matrix.hex_axial_to_world(&a);
+                                let t = matrix::translation(pos.x, pos.y, 0.0);
+                                let m = my_matrix.chain(t).generate();
+
+                                draw_sys.view(&m).draw_a_thing_ext(
+                                    attack_model,
+                                    *grey,
+                                    false,
+                                    false,
+                                    false,
+                                );
+                            }
+                        }
+                    }
+                    CellSelection::BuildSelection(_) => {}
+                }
+            }
+        }
+
+        let d = DepthDisabler::new(ctx);
+
+        draw_something_grid(
+            game.factions
+                .cats
+                .iter()
+                .map(|x| x.position)
+                .chain(game.factions.dogs.iter().map(|x| x.position)),
+            grid_matrix,
+            &mut draw_sys,
+            drop_shadow,
+            &my_matrix,
+            1.0,
+        );
+
+        drop(d);
+
+        draw_something_grid(
+            game.factions.cats.iter().map(|x| x.position),
+            grid_matrix,
+            &mut draw_sys,
+            cat,
+            &my_matrix,
+            0.0,
+        );
+
+        draw_something_grid(
+            game.factions.dogs.iter().map(|x| x.position),
+            grid_matrix,
+            &mut draw_sys,
+            dog,
+            &my_matrix,
+            0.0,
+        );
+
+        if let Some((pos, _, _unit, data)) = &unit_animation {
+            let this_draw = match team {
+                ActiveTeam::Cats => &cat,
+                ActiveTeam::Dogs => &dog,
+            };
+
+            //This is a unit animation
+            //let a = (this_draw, unit);
+
+            let d = DepthDisabler::new(ctx);
+
+            let m = my_matrix
+                .chain(matrix::translation(pos.x, pos.y, 1.0))
+                .generate();
+
+            draw_sys.view(&m).draw_a_thing(drop_shadow);
+            drop(d);
+
+            if let Some(f) = data {
+                let kk = pos + f;
+                let m = my_matrix
+                    .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
+                    .chain(matrix::scale(1.0, 1.0, 1.0))
+                    .generate();
+
+                draw_sys.view(&m).draw_a_thing(grass);
+            }
+
+            let m = my_matrix
+                .chain(matrix::translation(pos.x, pos.y, 0.0))
+                .chain(matrix::scale(1.0, 1.0, 1.0))
+                .generate();
+
+            draw_sys.view(&m).draw_a_thing(*this_draw);
+        }
+
+        let d = DepthDisabler::new(ctx);
+
+        draw_health_text(
+            game.factions
+                .cats
+                .iter()
+                .map(|x| (x.position, x.typ.type_index() as i8))
+                .chain(
+                    game.factions
+                        .dogs
+                        .iter()
+                        .map(|x| (x.position, x.typ.type_index() as i8)),
+                ),
+            grid_matrix,
+            &numm.health_numbers,
+            &view_proj,
+            &proj,
+            &mut draw_sys,
+            &numm.text_texture,
+        );
+        drop(d);
+
+        ctx.flush();
+    }
+}
+
 pub struct EngineStuff {
     grid_matrix: grids::HexConverter,
     models: Models<Foo<TextureGpu, ModelGpu>>,
@@ -243,450 +675,59 @@ impl EngineStuff {
         >,
         engine_worker: &mut shogo::EngineWorker<MEvent, UiButton>,
     ) {
+        use cgmath::SquareMatrix;
+
         let e = self;
         let response_sender = &mut rm.response_sender;
         let command_recv = &mut rm.command_recv;
-        let ctx = &e.ctx;
-        let canvas = &e.canvas;
-        let grid_matrix = &e.grid_matrix;
-        let models = &e.models;
-        let numm = &e.numm;
+        let mut last_matrix = cgmath::Matrix4::identity();
 
-        let mut draw_sys = ctx.shader_system();
+        // let ctx = &e.ctx;
+        // let canvas = &e.canvas;
+        // let grid_matrix = &e.grid_matrix;
+        // let models = &e.models;
+        // let numm = &e.numm;
 
-        let gl_width = canvas.width();
-        let gl_height = canvas.height();
-        ctx.viewport(0, 0, gl_width as i32, gl_height as i32);
-        let mut viewport = [canvas.width() as f32, canvas.height() as f32];
+        // let mut draw_sys = ctx.shader_system();
+
+        // let gl_width = canvas.width();
+        // let gl_height = canvas.height();
+        // ctx.viewport(0, 0, gl_width as i32, gl_height as i32);
+        // let mut viewport = [canvas.width() as f32, canvas.height() as f32];
+
+        // let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
+
+        // use cgmath::SquareMatrix;
+        // let mut last_matrix = cgmath::Matrix4::identity();
+
+        // let drop_shadow = &models.drop_shadow;
+        // let dog = &models.dog;
+        // let cat = &models.cat;
+        // //let fog_asset = &models.fog;
+        // let water = &models.water;
+        // let grass = &models.grass;
+        // let mountain_asset = &models.mountain;
+        // let snow = &models.snow;
+        // let select_model = &models.select_model;
+        // let attack_model = &models.attack;
 
         let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
-        use cgmath::SquareMatrix;
-        let mut last_matrix = cgmath::Matrix4::identity();
-
-        let drop_shadow = &models.drop_shadow;
-        let dog = &models.dog;
-        let cat = &models.cat;
-        //let fog_asset = &models.fog;
-        let water = &models.water;
-        let grass = &models.grass;
-        let mountain_asset = &models.mountain;
-        let snow = &models.snow;
-        let select_model = &models.select_model;
-        let attack_model = &models.attack;
-
-        while let Some(ace::GameWrap { game, data, team }) = command_recv.next().await {
-            //First lets process the command. Break it down
-            //into pieces that this thread understands.
-            let mut get_mouse_input = None;
-            let mut unit_animation = None;
-            let mut terrain_animation = None;
-            let mut poking = 0;
-
-            match data {
-                ace::Command::Animate(ak) => match ak {
-                    animation::AnimationCommand::Movement {
-                        unit,
-                        mesh,
-                        walls,
-                        end,
-                        data,
-                    } => {
-                        let ff = match data {
-                            move_build::PushInfo::PushedLand => {
-                                Some(animation::land_delta(unit.position, end, grid_matrix))
-                            }
-                            move_build::PushInfo::None => None,
-                        };
-
-                        let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
-
-                        unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ff));
-                    }
-                    animation::AnimationCommand::Terrain {
-                        pos,
-                        terrain_type,
-                        dir,
-                    } => {
-                        let (a, b) = match dir {
-                            animation::AnimationDirection::Up => (-10., 0.),
-                            animation::AnimationDirection::Down => (0., -10.),
-                        };
-                        let it = animation::terrain_create(a, b);
-                        terrain_animation = Some((0.0, it, pos, terrain_type));
-                    }
-                },
-                ace::Command::GetMouseInputSelection { selection, grey } => {
-                    get_mouse_input = Some(Some((selection, grey)));
+        while let Some(game_wrap) = command_recv.next().await {
+            match handle_render_loop_inner(
+                &mut scroll_manager,
+                &mut last_matrix,
+                game_wrap,
+                e,
+                frame_timer,
+                engine_worker,
+            )
+            .await
+            {
+                RenderControl::Break(e) => {
+                    response_sender.send(e).await.unwrap();
                 }
-                ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
-                ace::Command::Nothing => {}
-                ace::Command::Popup(str) => {
-                    if str.is_empty() {
-                        engine_worker.post_message(UiButton::HidePopup);
-                    } else {
-                        engine_worker.post_message(UiButton::ShowPopup(str));
-                    }
-
-                    response_sender
-                        .send(ace::GameWrapResponse {
-                            game,
-                            data: ace::Response::Ack,
-                        })
-                        .await
-                        .unwrap();
-                    continue;
-                }
-                ace::Command::Poke => {
-                    poking = 3;
-                }
-            };
-
-            'render_loop: loop {
-                if poking == 1 {
-                    console_dbg!("we poked!");
-                    response_sender
-                        .send(ace::GameWrapResponse {
-                            game,
-                            data: ace::Response::Ack,
-                        })
-                        .await
-                        .unwrap();
-                    break 'render_loop;
-                }
-                poking = 0.max(poking - 1);
-
-                let mut on_select = false;
-                let mut end_turn = false;
-
-                let res = frame_timer.next().await;
-
-                for e in res {
-                    match e {
-                        MEvent::Resize {
-                            canvasx: _canvasx,
-                            canvasy: _canvasy,
-                            x,
-                            y,
-                        } => {
-                            let xx = *x as u32;
-                            let yy = *y as u32;
-                            canvas.set_width(xx);
-                            canvas.set_height(yy);
-                            ctx.viewport(0, 0, xx as i32, yy as i32);
-
-                            viewport = [xx as f32, yy as f32];
-                            log!(format!("updating viewport to be:{:?}", viewport));
-                        }
-                        MEvent::TouchMove { touches } => {
-                            scroll_manager.on_touch_move(touches, &last_matrix, viewport);
-                        }
-                        MEvent::TouchDown { touches } => {
-                            scroll_manager.on_new_touch(touches);
-                        }
-                        MEvent::TouchEnd { touches } => {
-                            if let scroll::MouseUp::Select = scroll_manager.on_touch_up(touches) {
-                                on_select = true;
-                            }
-                        }
-                        MEvent::CanvasMouseLeave => {
-                            log!("mouse leaving!");
-                            let _ = scroll_manager.on_mouse_up();
-                        }
-                        MEvent::CanvasMouseUp => {
-                            if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
-                                on_select = true;
-                            }
-                        }
-                        MEvent::CanvasMouseMove { x, y } => {
-                            scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
-                        }
-                        MEvent::EndTurn => {
-                            end_turn = true;
-                        }
-                        MEvent::CanvasMouseDown { x, y } => {
-                            scroll_manager.on_mouse_down([*x, *y]);
-                        }
-                        MEvent::ButtonClick => {}
-                        MEvent::ShutdownClick => break 'render_loop,
-                    }
-                }
-
-                let proj = projection::projection(viewport).generate();
-                let view_proj = projection::view_matrix(
-                    scroll_manager.camera(),
-                    scroll_manager.zoom(),
-                    scroll_manager.rot(),
-                );
-
-                let my_matrix = proj.chain(view_proj).generate();
-
-                last_matrix = my_matrix;
-
-                let mouse_world =
-                    scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
-
-                if get_mouse_input.is_some() {
-                    if end_turn {
-                        response_sender
-                            .send(ace::GameWrapResponse {
-                                game,
-                                data: ace::Response::Mouse(Pototo::EndTurn),
-                            })
-                            .await
-                            .unwrap();
-                        break 'render_loop;
-                    } else if on_select {
-                        let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
-                        log!(format!("pos:{:?}", mouse));
-
-                        let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
-                            ace::Response::MouseWithSelection(selection, Pototo::Normal(mouse))
-                        } else {
-                            ace::Response::Mouse(Pototo::Normal(mouse))
-                        };
-                        response_sender
-                            .send(ace::GameWrapResponse { game, data })
-                            .await
-                            .unwrap();
-                        break 'render_loop;
-                    }
-                }
-
-                if let Some((z, a, _, _)) = &mut terrain_animation {
-                    if let Some(zpos) = a.next() {
-                        *z = zpos;
-                    } else {
-                        response_sender
-                            .send(ace::GameWrapResponse {
-                                game,
-                                data: ace::Response::AnimationFinish,
-                            })
-                            .await
-                            .unwrap();
-                        break 'render_loop;
-                    }
-                }
-                if let Some((lpos, a, _, _data)) = &mut unit_animation {
-                    if let Some(pos) = a.next() {
-                        *lpos = pos;
-                    } else {
-                        response_sender
-                            .send(ace::GameWrapResponse {
-                                game,
-                                data: ace::Response::AnimationFinish,
-                            })
-                            .await
-                            .unwrap();
-                        break 'render_loop;
-                    }
-                }
-
-                scroll_manager.step();
-
-                let ggame = &game;
-
-                ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
-
-                draw_something_grid(
-                    ggame.world.get_game_cells().iter_mesh(),
-                    grid_matrix,
-                    &mut draw_sys,
-                    water,
-                    &my_matrix,
-                    -10.0,
-                );
-
-                pub const LAND_OFFSET: f32 = -10.0;
-                pub const MOUNTAIN_OFFSET: f32 = 0.0;
-
-                let trans_land = |c: Axial| {
-                    let pos = grid_matrix.hex_axial_to_world(&c);
-                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
-                    my_matrix.chain(t)
-                };
-
-                draw_sys.draw_batch(grass, game.env.land.iter_mesh().map(trans_land));
-
-                for c in game.env.fog.iter_mesh() {
-                    let pos = grid_matrix.hex_axial_to_world(&c);
-
-                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
-                    let m = my_matrix.chain(t).generate();
-                    draw_sys.view(&m).draw_a_thing(snow);
-                }
-
-                for c in game.env.powerups.iter() {
-                    let pos = grid_matrix.hex_axial_to_world(c);
-
-                    let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);
-                    let m = my_matrix.chain(t).generate();
-                    draw_sys.view(&m).draw_a_thing(mountain_asset);
-                }
-
-                if let Some((zpos, _, gpos, k)) = &terrain_animation {
-                    let texture = match k {
-                        //animation::TerrainType::Snow => snow,
-                        animation::TerrainType::Grass => grass,
-                        animation::TerrainType::Fog => snow,
-                    };
-
-                    let diff = match k {
-                        //animation::TerrainType::Snow => LAND_OFFSET,
-                        animation::TerrainType::Grass => LAND_OFFSET,
-                        animation::TerrainType::Fog => LAND_OFFSET,
-                    };
-
-                    let gpos = *gpos;
-
-                    let pos = grid_matrix.hex_axial_to_world(&gpos);
-
-                    let t = matrix::translation(pos.x, pos.y, diff + *zpos);
-                    let m = my_matrix.chain(t).generate();
-                    draw_sys.view(&m).draw_a_thing(texture);
-                }
-
-                if let Some(a) = &get_mouse_input {
-                    if let Some((selection, grey)) = a {
-                        match selection {
-                            CellSelection::MoveSelection(point, mesh, hh) => {
-                                let _d = DepthDisabler::new(ctx);
-
-                                for a in mesh.iter_mesh(*point) {
-                                    let pos = grid_matrix.hex_axial_to_world(&a);
-                                    let t = matrix::translation(pos.x, pos.y, 0.0);
-                                    let m = my_matrix.chain(t).generate();
-
-                                    draw_sys.view(&m).draw_a_thing_ext(
-                                        select_model,
-                                        *grey,
-                                        false,
-                                        false,
-                                        false,
-                                    );
-                                }
-
-                                if let Some(k) = hh {
-                                    if k.the_move
-                                        .original
-                                        .to_cube()
-                                        .dist(&k.the_move.moveto.to_cube())
-                                        == 2
-                                    {
-                                        let a = k.the_move.original;
-                                        let pos = grid_matrix.hex_axial_to_world(&a);
-                                        let t = matrix::translation(pos.x, pos.y, 0.0);
-                                        let m = my_matrix.chain(t).generate();
-
-                                        draw_sys.view(&m).draw_a_thing_ext(
-                                            attack_model,
-                                            *grey,
-                                            false,
-                                            false,
-                                            false,
-                                        );
-                                    }
-                                }
-                            }
-                            CellSelection::BuildSelection(_) => {}
-                        }
-                    }
-                }
-
-                let d = DepthDisabler::new(ctx);
-
-                draw_something_grid(
-                    game.factions
-                        .cats
-                        .iter()
-                        .map(|x| x.position)
-                        .chain(game.factions.dogs.iter().map(|x| x.position)),
-                    grid_matrix,
-                    &mut draw_sys,
-                    drop_shadow,
-                    &my_matrix,
-                    1.0,
-                );
-
-                drop(d);
-
-                draw_something_grid(
-                    game.factions.cats.iter().map(|x| x.position),
-                    grid_matrix,
-                    &mut draw_sys,
-                    cat,
-                    &my_matrix,
-                    0.0,
-                );
-
-                draw_something_grid(
-                    game.factions.dogs.iter().map(|x| x.position),
-                    grid_matrix,
-                    &mut draw_sys,
-                    dog,
-                    &my_matrix,
-                    0.0,
-                );
-
-                if let Some((pos, _, _unit, data)) = &unit_animation {
-                    let this_draw = match team {
-                        ActiveTeam::Cats => &cat,
-                        ActiveTeam::Dogs => &dog,
-                    };
-
-                    //This is a unit animation
-                    //let a = (this_draw, unit);
-
-                    let d = DepthDisabler::new(ctx);
-
-                    let m = my_matrix
-                        .chain(matrix::translation(pos.x, pos.y, 1.0))
-                        .generate();
-
-                    draw_sys.view(&m).draw_a_thing(drop_shadow);
-                    drop(d);
-
-                    if let Some(f) = data {
-                        let kk = pos + f;
-                        let m = my_matrix
-                            .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
-                            .chain(matrix::scale(1.0, 1.0, 1.0))
-                            .generate();
-
-                        draw_sys.view(&m).draw_a_thing(grass);
-                    }
-
-                    let m = my_matrix
-                        .chain(matrix::translation(pos.x, pos.y, 0.0))
-                        .chain(matrix::scale(1.0, 1.0, 1.0))
-                        .generate();
-
-                    draw_sys.view(&m).draw_a_thing(*this_draw);
-                }
-
-                let d = DepthDisabler::new(ctx);
-
-                draw_health_text(
-                    game.factions
-                        .cats
-                        .iter()
-                        .map(|x| (x.position, x.typ.type_index() as i8))
-                        .chain(
-                            game.factions
-                                .dogs
-                                .iter()
-                                .map(|x| (x.position, x.typ.type_index() as i8)),
-                        ),
-                    grid_matrix,
-                    &numm.health_numbers,
-                    &view_proj,
-                    &proj,
-                    &mut draw_sys,
-                    &numm.text_texture,
-                );
-                drop(d);
-
-                ctx.flush();
+                RenderControl::Continue2(_) => todo!(),
             }
         }
     }
