@@ -169,9 +169,6 @@ pub async fn worker_entry() {
 
     let render = EngineStuff::new(wr.canvas());
 
-    //loop {
-    //let sample_game = ace::share::load(ace::share::SAMPLE_GAME);
-
     let mut game = ace::game_init();
 
     let (_, mut r, w) = create_worker_render(&mut game);
@@ -180,7 +177,7 @@ pub async fn worker_entry() {
         ace::main_logic(game, w),
         render.handle_render_loop(&mut r, &mut frame_timer, &mut wr)
     );
-    //}
+    
 
     log!("Worker thread closin");
 }
@@ -210,21 +207,14 @@ struct RenderManager {
     command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<ace::Command>>,
 }
 
-pub enum RenderControl {
-    Break(ace::GameWrapResponse<ace::Response>),
-}
-
 async fn handle_render_loop_inner(
     scroll_manager: &mut scroll::TouchController,
     last_matrix: &mut Matrix4<f32>,
     ace::GameWrap { game, data, team }: ace::GameWrap<ace::Command>,
     e: &EngineStuff,
-    //rm: &mut RenderManager,
     frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
     engine_worker: &mut shogo::EngineWorker<MEvent, UiButton>,
-) -> RenderControl {
-    // let response_sender = &mut rm.response_sender;
-    // let command_recv = &mut rm.command_recv;
+) -> ace::GameWrapResponse<ace::Response> {
     let ctx = &e.ctx;
     let canvas = &e.canvas;
     let grid_matrix = &e.grid_matrix;
@@ -301,10 +291,10 @@ async fn handle_render_loop_inner(
                 engine_worker.post_message(UiButton::ShowPopup(str));
             }
 
-            return RenderControl::Break(ace::GameWrapResponse {
+            return ace::GameWrapResponse {
                 game,
                 data: ace::Response::Ack,
-            });
+            };
         }
         ace::Command::Poke => {
             poking = 3;
@@ -314,10 +304,10 @@ async fn handle_render_loop_inner(
     loop {
         if poking == 1 {
             console_dbg!("we poked!");
-            return RenderControl::Break(ace::GameWrapResponse {
+            return ace::GameWrapResponse {
                 game,
                 data: ace::Response::Ack,
-            });
+            };
         }
         poking = 0.max(poking - 1);
 
@@ -393,10 +383,10 @@ async fn handle_render_loop_inner(
 
         if get_mouse_input.is_some() {
             if end_turn {
-                return RenderControl::Break(ace::GameWrapResponse {
+                return ace::GameWrapResponse {
                     game,
                     data: ace::Response::Mouse(Pototo::EndTurn),
-                });
+                };
             } else if on_select {
                 let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
                 log!(format!("pos:{:?}", mouse));
@@ -407,7 +397,7 @@ async fn handle_render_loop_inner(
                     ace::Response::Mouse(Pototo::Normal(mouse))
                 };
 
-                return RenderControl::Break(ace::GameWrapResponse { game, data });
+                return ace::GameWrapResponse { game, data };
             }
         }
 
@@ -415,37 +405,26 @@ async fn handle_render_loop_inner(
             if let Some(zpos) = a.next() {
                 *z = zpos;
             } else {
-                return RenderControl::Break(ace::GameWrapResponse {
+                return ace::GameWrapResponse {
                     game,
                     data: ace::Response::AnimationFinish,
-                });
+                };
             }
         }
         if let Some((lpos, a, _, _data)) = &mut unit_animation {
             if let Some(pos) = a.next() {
                 *lpos = pos;
             } else {
-                return RenderControl::Break(ace::GameWrapResponse {
+                return ace::GameWrapResponse {
                     game,
                     data: ace::Response::AnimationFinish,
-                });
+                };
             }
         }
 
         scroll_manager.step();
 
-        let ggame = &game;
-
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
-
-        // draw_something_grid(
-        //     ggame.world.get_game_cells().iter_mesh(),
-        //     grid_matrix,
-        //     &mut draw_sys,
-        //     water,
-        //     &my_matrix,
-        //     -10.0,
-        // );
 
         pub const LAND_OFFSET: f32 = -10.0;
 
@@ -641,6 +620,8 @@ async fn handle_render_loop_inner(
     }
 }
 
+
+//TODO remove this. Not really gaining anything from this.
 pub struct EngineStuff {
     grid_matrix: grids::HexConverter,
     models: Models<Foo<TextureGpu, ModelGpu>>,
@@ -694,11 +675,8 @@ impl EngineStuff {
                 engine_worker,
             )
             .await;
-            match e {
-                RenderControl::Break(e) => {
-                    response_sender.send(e).await.unwrap();
-                }
-            }
+
+            response_sender.send(e).await.unwrap();
         }
     }
 }
