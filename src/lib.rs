@@ -559,6 +559,8 @@ async fn render_command(
             )
             .build(dog);
 
+
+        //TODO combine animation with regular draw calls.
         if let Some((pos, _, _unit, data)) = &unit_animation {
             let this_draw = match team {
                 ActiveTeam::Cats => &cat,
