@@ -434,7 +434,7 @@ async fn handle_render_loop_inner(
                     .map(|e| trans_land(e, LAND_OFFSET)),
             )
             .build(grass);
-        
+
         draw_sys
             .batch(game.env.fog.iter_mesh().map(|e| trans_land(e, LAND_OFFSET)))
             .build(snow);
@@ -457,7 +457,7 @@ async fn handle_render_loop_inner(
             let t = matrix::translation(pos.x, pos.y, diff + *zpos);
             let m = my_matrix.chain(t).generate();
 
-            draw_sys.batch(std::iter::once(m)).build(texture);
+            draw_sys.batch([m]).build(texture);
         }
 
         if let Some(a) = &get_mouse_input {
@@ -471,11 +471,7 @@ async fn handle_render_loop_inner(
                             let t = matrix::translation(pos.x, pos.y, 0.0);
                             let m = my_matrix.chain(t).generate();
 
-                            draw_sys
-                                .batch(std::iter::once(m))
-                                .no_lighting()
-                                .build(select_model);
-
+                            draw_sys.batch([m]).no_lighting().build(select_model);
                         }
 
                         if let Some(k) = hh {
@@ -489,10 +485,7 @@ async fn handle_render_loop_inner(
                                 let pos = grid_matrix.hex_axial_to_world(&a);
                                 let t = matrix::translation(pos.x, pos.y, 0.0);
                                 let m = my_matrix.chain(t).generate();
-                                draw_sys
-                                    .batch(std::iter::once(m))
-                                    .no_lighting()
-                                    .build(attack_model);
+                                draw_sys.batch([m]).no_lighting().build(attack_model);
                             }
                         }
                     }
@@ -550,7 +543,7 @@ async fn handle_render_loop_inner(
                 .chain(matrix::translation(pos.x, pos.y, 1.0))
                 .generate();
 
-            draw_sys.batch(std::iter::once(m)).build(drop_shadow);
+            draw_sys.batch([m]).build(drop_shadow);
 
             drop(d);
 
@@ -561,7 +554,7 @@ async fn handle_render_loop_inner(
                     .chain(matrix::scale(1.0, 1.0, 1.0))
                     .generate();
 
-                draw_sys.batch(std::iter::once(m)).build(grass);
+                draw_sys.batch([m]).build(grass);
             }
 
             let m = my_matrix
@@ -569,7 +562,7 @@ async fn handle_render_loop_inner(
                 .chain(matrix::scale(1.0, 1.0, 1.0))
                 .generate();
 
-            draw_sys.batch(std::iter::once(m)).build(this_draw);
+            draw_sys.batch([m]).build(this_draw);
         }
 
         // let d = DepthDisabler::new(ctx);
