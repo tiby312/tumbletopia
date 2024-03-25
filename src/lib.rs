@@ -524,7 +524,7 @@ async fn render_command(
             }
         }
 
-        {
+        {// Draw shadows
             let d = DepthDisabler::new(ctx);
 
             let shadows = game
@@ -552,8 +552,8 @@ async fn render_command(
             drop(d);
         }
 
-        {
-            //Draw cats
+        {//Draw cats
+            
             let cats = game
                 .factions
                 .cats
@@ -580,8 +580,8 @@ async fn render_command(
             draw_sys.batch(all_cats).build(cat);
         }
 
-        {
-            //Draw dogs
+        {//Draw dogs
+            
             let dogs = game
                 .factions
                 .dogs
