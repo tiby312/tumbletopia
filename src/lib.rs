@@ -439,17 +439,16 @@ async fn handle_render_loop_inner(
 
         ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
-        draw_something_grid(
-            ggame.world.get_game_cells().iter_mesh(),
-            grid_matrix,
-            &mut draw_sys,
-            water,
-            &my_matrix,
-            -10.0,
-        );
+        // draw_something_grid(
+        //     ggame.world.get_game_cells().iter_mesh(),
+        //     grid_matrix,
+        //     &mut draw_sys,
+        //     water,
+        //     &my_matrix,
+        //     -10.0,
+        // );
 
         pub const LAND_OFFSET: f32 = -10.0;
-        pub const MOUNTAIN_OFFSET: f32 = 0.0;
 
         let trans_land = |c: Axial| {
             let pos = grid_matrix.hex_axial_to_world(&c);
@@ -457,33 +456,26 @@ async fn handle_render_loop_inner(
             my_matrix.chain(t)
         };
 
+        let visible_water = {
+            let mut g = game.env.land.clone();
+            g.union_with(&game.env.fog);
+            g.toggle_range(..);
+            g.intersect_with(game.world.get_game_cells());
+            g
+        };
+
+        draw_sys.draw_batch(water, visible_water.iter_mesh().map(trans_land));
+
         draw_sys.draw_batch(grass, game.env.land.iter_mesh().map(trans_land));
-
-        for c in game.env.fog.iter_mesh() {
-            let pos = grid_matrix.hex_axial_to_world(&c);
-
-            let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
-            let m = my_matrix.chain(t).generate();
-            draw_sys.view(&m).draw_a_thing(snow);
-        }
-
-        for c in game.env.powerups.iter() {
-            let pos = grid_matrix.hex_axial_to_world(c);
-
-            let t = matrix::translation(pos.x, pos.y, MOUNTAIN_OFFSET);
-            let m = my_matrix.chain(t).generate();
-            draw_sys.view(&m).draw_a_thing(mountain_asset);
-        }
+        draw_sys.draw_batch(snow, game.env.fog.iter_mesh().map(trans_land));
 
         if let Some((zpos, _, gpos, k)) = &terrain_animation {
             let texture = match k {
-                //animation::TerrainType::Snow => snow,
                 animation::TerrainType::Grass => grass,
                 animation::TerrainType::Fog => snow,
             };
 
             let diff = match k {
-                //animation::TerrainType::Snow => LAND_OFFSET,
                 animation::TerrainType::Grass => LAND_OFFSET,
                 animation::TerrainType::Fog => LAND_OFFSET,
             };
