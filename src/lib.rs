@@ -449,9 +449,9 @@ async fn handle_render_loop_inner(
 
         pub const LAND_OFFSET: f32 = -10.0;
 
-        let trans_land = |c: Axial| {
+        let trans_land = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
-            let t = matrix::translation(pos.x, pos.y, LAND_OFFSET);
+            let t = matrix::translation(pos.x, pos.y, cc);
             my_matrix.chain(t)
         };
 
@@ -463,10 +463,23 @@ async fn handle_render_loop_inner(
             g
         };
 
-        draw_sys.draw_batch(water, visible_water.iter_mesh().map(trans_land));
-
-        draw_sys.draw_batch(grass, game.env.land.iter_mesh().map(trans_land));
-        draw_sys.draw_batch(snow, game.env.fog.iter_mesh().map(trans_land));
+        draw_sys.draw_batch(
+            water,
+            visible_water
+                .iter_mesh()
+                .map(|e| trans_land(e, LAND_OFFSET)),
+        );
+        draw_sys.draw_batch(
+            grass,
+            game.env
+                .land
+                .iter_mesh()
+                .map(|e| trans_land(e, LAND_OFFSET)),
+        );
+        draw_sys.draw_batch(
+            snow,
+            game.env.fog.iter_mesh().map(|e| trans_land(e, LAND_OFFSET)),
+        );
 
         if let Some((zpos, _, gpos, k)) = &terrain_animation {
             let texture = match k {
@@ -537,37 +550,33 @@ async fn handle_render_loop_inner(
 
         let d = DepthDisabler::new(ctx);
 
-        draw_something_grid(
+        draw_sys.draw_batch(
+            drop_shadow,
             game.factions
                 .cats
                 .iter()
                 .map(|x| x.position)
-                .chain(game.factions.dogs.iter().map(|x| x.position)),
-            grid_matrix,
-            &mut draw_sys,
-            drop_shadow,
-            &my_matrix,
-            1.0,
+                .chain(game.factions.dogs.iter().map(|x| x.position))
+                .map(|e| trans_land(e, 1.0)),
         );
 
         drop(d);
 
-        draw_something_grid(
-            game.factions.cats.iter().map(|x| x.position),
-            grid_matrix,
-            &mut draw_sys,
+        draw_sys.draw_batch(
             cat,
-            &my_matrix,
-            0.0,
+            game.factions
+                .cats
+                .iter()
+                .map(|x| x.position)
+                .map(|e| trans_land(e, 0.0)),
         );
-
-        draw_something_grid(
-            game.factions.dogs.iter().map(|x| x.position),
-            grid_matrix,
-            &mut draw_sys,
+        draw_sys.draw_batch(
             dog,
-            &my_matrix,
-            0.0,
+            game.factions
+                .dogs
+                .iter()
+                .map(|x| x.position)
+                .map(|e| trans_land(e, 0.0)),
         );
 
         if let Some((pos, _, _unit, data)) = &unit_animation {
@@ -606,27 +615,27 @@ async fn handle_render_loop_inner(
             draw_sys.view(&m).draw_a_thing(*this_draw);
         }
 
-        let d = DepthDisabler::new(ctx);
+        // let d = DepthDisabler::new(ctx);
 
-        draw_health_text(
-            game.factions
-                .cats
-                .iter()
-                .map(|x| (x.position, x.typ.type_index() as i8))
-                .chain(
-                    game.factions
-                        .dogs
-                        .iter()
-                        .map(|x| (x.position, x.typ.type_index() as i8)),
-                ),
-            grid_matrix,
-            &numm.health_numbers,
-            &view_proj,
-            &proj,
-            &mut draw_sys,
-            &numm.text_texture,
-        );
-        drop(d);
+        // draw_health_text(
+        //     game.factions
+        //         .cats
+        //         .iter()
+        //         .map(|x| (x.position, x.typ.type_index() as i8))
+        //         .chain(
+        //             game.factions
+        //                 .dogs
+        //                 .iter()
+        //                 .map(|x| (x.position, x.typ.type_index() as i8)),
+        //         ),
+        //     grid_matrix,
+        //     &numm.health_numbers,
+        //     &view_proj,
+        //     &proj,
+        //     &mut draw_sys,
+        //     &numm.text_texture,
+        // );
+        // drop(d);
 
         ctx.flush();
     }
@@ -673,7 +682,6 @@ impl EngineStuff {
         let command_recv = &mut rm.command_recv;
         let mut last_matrix = cgmath::Matrix4::identity();
 
-
         let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
         while let Some(game_wrap) = command_recv.next().await {
@@ -716,24 +724,6 @@ impl Doop for ShaderSystem {
     }
 }
 
-fn draw_something_grid(
-    f: impl IntoIterator<Item = Axial>,
-    grid_matrix: &grids::HexConverter,
-    draw_sys: &mut ShaderSystem,
-    texture: &Foo<TextureGpu, ModelGpu>,
-    m: &Matrix4<f32>,
-    height: f32,
-) {
-    for a in f.into_iter() {
-        let pos = grid_matrix.hex_axial_to_world(&a);
-
-        let m = m
-            .chain(matrix::translation(pos.x, pos.y, height))
-            .generate();
-
-        draw_sys.view(&m).draw_a_thing(texture);
-    }
-}
 fn draw_health_text(
     f: impl IntoIterator<Item = (Axial, i8)>,
 
