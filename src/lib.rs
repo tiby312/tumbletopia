@@ -170,8 +170,7 @@ pub async fn worker_entry() {
 
     let j = async {
         while let Some(game_wrap) = rm.command_recv.next().await {
-            let e =
-                render_command(game_wrap, &mut render, &mut frame_timer, &mut wr).await;
+            let e = render_command(game_wrap, &mut render, &mut frame_timer, &mut wr).await;
 
             rm.response_sender.send(e).await.unwrap();
         }
@@ -438,7 +437,7 @@ async fn render_command(
         let trans_land = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
-            my_matrix.chain(t)
+            my_matrix.chain(t).generate()
         };
 
         let visible_water = {
@@ -525,40 +524,89 @@ async fn render_command(
             }
         }
 
-        let d = DepthDisabler::new(ctx);
+        {
+            let d = DepthDisabler::new(ctx);
 
-        draw_sys
-            .batch(
-                game.factions
-                    .cats
-                    .iter()
-                    .map(|x| x.position)
-                    .chain(game.factions.dogs.iter().map(|x| x.position))
-                    .map(|e| trans_land(e, 1.0)),
-            )
-            .build(drop_shadow);
+            let shadows = game
+                .factions
+                .cats
+                .iter()
+                .map(|x| x.position)
+                .chain(game.factions.dogs.iter().map(|x| x.position))
+                .map(|e| trans_land(e, 1.0));
 
-        drop(d);
+            let ani_drop_shadow = if let Some((pos, _, _unit, data)) = &unit_animation {
+                let m = my_matrix
+                    .chain(matrix::translation(pos.x, pos.y, 1.0))
+                    .generate();
 
-        draw_sys
-            .batch(
-                game.factions
-                    .cats
-                    .iter()
-                    .map(|x| x.position)
-                    .map(|e| trans_land(e, 0.0)),
-            )
-            .build(cat);
-        draw_sys
-            .batch(
-                game.factions
-                    .dogs
-                    .iter()
-                    .map(|x| x.position)
-                    .map(|e| trans_land(e, 0.0)),
-            )
-            .build(dog);
+                Some(m)
+            } else {
+                None
+            };
 
+            let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
+
+            draw_sys.batch(all_shadows).build(drop_shadow);
+
+            drop(d);
+        }
+
+        {
+            //Draw cats
+            let cats = game
+                .factions
+                .cats
+                .iter()
+                .map(|x| x.position)
+                .map(|e| trans_land(e, 0.0));
+            let ani_cat = if let Some((pos, _, _unit, data)) = &unit_animation {
+                if team == ActiveTeam::Cats {
+                    let m = my_matrix
+                        .chain(matrix::translation(pos.x, pos.y, 0.0))
+                        .chain(matrix::scale(1.0, 1.0, 1.0))
+                        .generate();
+
+                    Some(m)
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            let all_cats = cats.chain(ani_cat.into_iter());
+
+            draw_sys.batch(all_cats).build(cat);
+        }
+
+        {
+            //Draw dogs
+            let dogs = game
+                .factions
+                .dogs
+                .iter()
+                .map(|x| x.position)
+                .map(|e| trans_land(e, 0.0));
+            let ani_dog = if let Some((pos, _, _unit, data)) = &unit_animation {
+                if team == ActiveTeam::Dogs {
+                    let m = my_matrix
+                        .chain(matrix::translation(pos.x, pos.y, 0.0))
+                        .chain(matrix::scale(1.0, 1.0, 1.0))
+                        .generate();
+
+                    Some(m)
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            let all_dogs = dogs.chain(ani_dog.into_iter());
+
+            draw_sys.batch(all_dogs).build(dog);
+        }
 
         //TODO combine animation with regular draw calls.
         if let Some((pos, _, _unit, data)) = &unit_animation {
@@ -566,17 +614,6 @@ async fn render_command(
                 ActiveTeam::Cats => &cat,
                 ActiveTeam::Dogs => &dog,
             };
-
-
-            let d = DepthDisabler::new(ctx);
-
-            let m = my_matrix
-                .chain(matrix::translation(pos.x, pos.y, 1.0))
-                .generate();
-
-            draw_sys.batch([m]).build(drop_shadow);
-
-            drop(d);
 
             if let Some(f) = data {
                 let kk = pos + f;
@@ -587,13 +624,6 @@ async fn render_command(
 
                 draw_sys.batch([m]).build(grass);
             }
-
-            let m = my_matrix
-                .chain(matrix::translation(pos.x, pos.y, 0.0))
-                .chain(matrix::scale(1.0, 1.0, 1.0))
-                .generate();
-
-            draw_sys.batch([m]).build(this_draw);
         }
 
         // let d = DepthDisabler::new(ctx);
