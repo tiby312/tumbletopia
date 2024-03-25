@@ -212,7 +212,6 @@ struct RenderManager {
 
 pub enum RenderControl {
     Break(ace::GameWrapResponse<ace::Response>),
-    Continue2(ace::GameWrapResponse<ace::Response>),
 }
 
 async fn handle_render_loop_inner(
@@ -674,39 +673,11 @@ impl EngineStuff {
         let command_recv = &mut rm.command_recv;
         let mut last_matrix = cgmath::Matrix4::identity();
 
-        // let ctx = &e.ctx;
-        // let canvas = &e.canvas;
-        // let grid_matrix = &e.grid_matrix;
-        // let models = &e.models;
-        // let numm = &e.numm;
-
-        // let mut draw_sys = ctx.shader_system();
-
-        // let gl_width = canvas.width();
-        // let gl_height = canvas.height();
-        // ctx.viewport(0, 0, gl_width as i32, gl_height as i32);
-        // let mut viewport = [canvas.width() as f32, canvas.height() as f32];
-
-        // let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
-
-        // use cgmath::SquareMatrix;
-        // let mut last_matrix = cgmath::Matrix4::identity();
-
-        // let drop_shadow = &models.drop_shadow;
-        // let dog = &models.dog;
-        // let cat = &models.cat;
-        // //let fog_asset = &models.fog;
-        // let water = &models.water;
-        // let grass = &models.grass;
-        // let mountain_asset = &models.mountain;
-        // let snow = &models.snow;
-        // let select_model = &models.select_model;
-        // let attack_model = &models.attack;
 
         let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
 
         while let Some(game_wrap) = command_recv.next().await {
-            match handle_render_loop_inner(
+            let e = handle_render_loop_inner(
                 &mut scroll_manager,
                 &mut last_matrix,
                 game_wrap,
@@ -714,12 +685,11 @@ impl EngineStuff {
                 frame_timer,
                 engine_worker,
             )
-            .await
-            {
+            .await;
+            match e {
                 RenderControl::Break(e) => {
                     response_sender.send(e).await.unwrap();
                 }
-                RenderControl::Continue2(_) => todo!(),
             }
         }
     }
