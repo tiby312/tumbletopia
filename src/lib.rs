@@ -733,6 +733,7 @@ use web_sys::{OffscreenCanvas, WebGl2RenderingContext};
 use crate::ace::{ActiveTeam, Pototo};
 use crate::model_parse::{Foo, ModelGpu, TextureGpu};
 
+//TODO move this to a seperate crate
 pub struct Models<T> {
     select_model: T,
     drop_shadow: T,
