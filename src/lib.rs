@@ -1,5 +1,4 @@
 use ace::GameWrapResponse;
-//use ace::AnimationOptions;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use gloo::console::console_dbg;
 
@@ -15,7 +14,6 @@ use wasm_bindgen::prelude::*;
 pub mod animation;
 pub mod dom;
 pub mod moves;
-//pub mod gameplay;
 pub mod board;
 pub mod grids;
 pub mod mesh;
@@ -32,8 +30,6 @@ pub mod unit;
 
 use unit::*;
 
-//pub mod state;
-//pub mod logic;
 pub const RESIZE: usize = 10;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -94,25 +90,6 @@ pub struct FactionRelative<T> {
     pub that_team: T,
 }
 
-// #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-// pub struct Land {
-//     pub grass: BitField,
-//     pub snow: BitField,
-// }
-// impl Land {
-//     pub fn set_coord_false(&mut self, a: GridCoord) {
-//         if self.grass.is_coord_set(a) {
-//             self.grass.set_coord(a, false);
-//         } else if self.snow.is_coord_set(a) {
-//             self.snow.set_coord(a, false);
-//         } else {
-//             panic!("Invalid coord");
-//         }
-//     }
-//     pub fn is_coord_set(&self, a: GridCoord) -> bool {
-//         self.grass.is_coord_set(a) || self.snow.is_coord_set(a)
-//     }
-// }
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Environment {
     land: BitField,
