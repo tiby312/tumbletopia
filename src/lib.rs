@@ -171,7 +171,7 @@ pub async fn worker_entry() {
     let j = async {
         while let Some(game_wrap) = rm.command_recv.next().await {
             let e =
-                handle_render_loop_inner(game_wrap, &mut render, &mut frame_timer, &mut wr).await;
+                render_command(game_wrap, &mut render, &mut frame_timer, &mut wr).await;
 
             rm.response_sender.send(e).await.unwrap();
         }
@@ -182,7 +182,6 @@ pub async fn worker_entry() {
     log!("Worker thread closin");
 }
 
-//TODO remove this. Not really gaining anything from this.
 pub struct EngineStuff {
     grid_matrix: grids::HexConverter,
     models: Models<Foo<TextureGpu, ModelGpu>>,
@@ -215,7 +214,7 @@ struct RenderManager {
     command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<ace::Command>>,
 }
 
-async fn handle_render_loop_inner(
+async fn render_command(
     ace::GameWrap { game, data, team }: ace::GameWrap<ace::Command>,
     e: &mut EngineStuff,
     frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
@@ -566,8 +565,6 @@ async fn handle_render_loop_inner(
                 ActiveTeam::Dogs => &dog,
             };
 
-            //This is a unit animation
-            //let a = (this_draw, unit);
 
             let d = DepthDisabler::new(ctx);
 
