@@ -144,23 +144,56 @@ pub async fn worker_entry() {
     let (mut wr, ss) = shogo::EngineWorker::new().await;
     let mut frame_timer = shogo::FrameTimer::new(60, ss);
 
-    let render = EngineStuff::new(wr.canvas());
+    let scroll_manager = scroll::TouchController::new([0., 0.].into());
+    use cgmath::SquareMatrix;
 
-    let mut game = ace::game_init();
+    let last_matrix = cgmath::Matrix4::identity();
+    let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&wr.canvas()));
+    ctx.setup_alpha();
 
-    let (_, mut r, w) = create_worker_render(&mut game);
+    let grid_matrix = grids::HexConverter::new();
+    let models = Models::new(&grid_matrix, &ctx);
+    let numm = Numm::new(&ctx);
 
-    futures::join!(
-        ace::main_logic(game, w),
-        render.handle_render_loop(&mut r, &mut frame_timer, &mut wr)
-    );
+    let mut render = EngineStuff {
+        grid_matrix,
+        models,
+        numm,
+        ctx,
+        canvas: wr.canvas(),
+        scroll_manager,
+        last_matrix,
+    };
+
+    let game = ace::game_init();
+    let (mut rm, w) = create_worker_render();
+
+    let j = async {
+        while let Some(game_wrap) = rm.command_recv.next().await {
+            let e =
+                handle_render_loop_inner(game_wrap, &mut render, &mut frame_timer, &mut wr).await;
+
+            rm.response_sender.send(e).await.unwrap();
+        }
+    };
+
+    futures::join!(ace::main_logic(game, w), j);
 
     log!("Worker thread closin");
 }
 
-fn create_worker_render(
-    game: &mut GameState,
-) -> (&mut GameState, RenderManager, ace::WorkerManager) {
+//TODO remove this. Not really gaining anything from this.
+pub struct EngineStuff {
+    grid_matrix: grids::HexConverter,
+    models: Models<Foo<TextureGpu, ModelGpu>>,
+    numm: Numm,
+    ctx: CtxWrap,
+    canvas: OffscreenCanvas,
+    scroll_manager: scroll::TouchController,
+    last_matrix: cgmath::Matrix4<f32>,
+}
+
+fn create_worker_render() -> (RenderManager, ace::WorkerManager) {
     let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
     let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
     let doop = ace::WorkerManager {
@@ -169,7 +202,6 @@ fn create_worker_render(
     };
 
     (
-        game,
         RenderManager {
             response_sender,
             command_recv,
@@ -184,13 +216,13 @@ struct RenderManager {
 }
 
 async fn handle_render_loop_inner(
-    scroll_manager: &mut scroll::TouchController,
-    last_matrix: &mut Matrix4<f32>,
     ace::GameWrap { game, data, team }: ace::GameWrap<ace::Command>,
-    e: &EngineStuff,
+    e: &mut EngineStuff,
     frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
     engine_worker: &mut shogo::EngineWorker<MEvent, UiButton>,
 ) -> ace::GameWrapResponse<ace::Response> {
+    let scroll_manager = &mut e.scroll_manager;
+    let last_matrix = &mut e.last_matrix;
     let ctx = &e.ctx;
     let canvas = &e.canvas;
     let grid_matrix = &e.grid_matrix;
@@ -588,66 +620,6 @@ async fn handle_render_loop_inner(
         // drop(d);
 
         ctx.flush();
-    }
-}
-
-//TODO remove this. Not really gaining anything from this.
-pub struct EngineStuff {
-    grid_matrix: grids::HexConverter,
-    models: Models<Foo<TextureGpu, ModelGpu>>,
-    numm: Numm,
-    ctx: CtxWrap,
-    canvas: OffscreenCanvas,
-}
-impl EngineStuff {
-    fn new(canvas: OffscreenCanvas) -> Self {
-        let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&canvas));
-        ctx.setup_alpha();
-
-        let grid_matrix = grids::HexConverter::new();
-        let models = Models::new(&grid_matrix, &ctx);
-        let numm = Numm::new(&ctx);
-
-        EngineStuff {
-            grid_matrix,
-            models,
-            numm,
-            ctx,
-            canvas,
-        }
-    }
-
-    async fn handle_render_loop(
-        &self,
-        rm: &mut RenderManager,
-        frame_timer: &mut shogo::FrameTimer<
-            MEvent,
-            futures::channel::mpsc::UnboundedReceiver<MEvent>,
-        >,
-        engine_worker: &mut shogo::EngineWorker<MEvent, UiButton>,
-    ) {
-        use cgmath::SquareMatrix;
-
-        let e = self;
-        let response_sender = &mut rm.response_sender;
-        let command_recv = &mut rm.command_recv;
-        let mut last_matrix = cgmath::Matrix4::identity();
-
-        let mut scroll_manager = scroll::TouchController::new([0., 0.].into());
-
-        while let Some(game_wrap) = command_recv.next().await {
-            let e = handle_render_loop_inner(
-                &mut scroll_manager,
-                &mut last_matrix,
-                game_wrap,
-                e,
-                frame_timer,
-                engine_worker,
-            )
-            .await;
-
-            response_sender.send(e).await.unwrap();
-        }
     }
 }
 
