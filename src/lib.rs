@@ -456,39 +456,80 @@ async fn render_command(
             )
             .build(water);
 
-        draw_sys
-            .batch(
-                game.env
-                    .land
-                    .iter_mesh()
-                    .map(|e| trans_land(e, LAND_OFFSET)),
-            )
-            .build(grass);
+        {
+            //Draw grass
+            let grass1 = game
+                .env
+                .land
+                .iter_mesh()
+                .map(|e| trans_land(e, LAND_OFFSET));
 
-        draw_sys
-            .batch(game.env.fog.iter_mesh().map(|e| trans_land(e, LAND_OFFSET)))
-            .build(snow);
+            let ani_grass = if let Some((zpos, _, gpos, k)) = &terrain_animation {
+                if let animation::TerrainType::Grass = k {
+                    let gpos = *gpos;
 
-        if let Some((zpos, _, gpos, k)) = &terrain_animation {
-            let texture = match k {
-                animation::TerrainType::Grass => grass,
-                animation::TerrainType::Fog => snow,
+                    let pos = grid_matrix.hex_axial_to_world(&gpos);
+
+                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET + *zpos);
+                    let m = my_matrix.chain(t).generate();
+                    Some(m)
+                } else {
+                    None
+                }
+            } else {
+                None
             };
 
-            let diff = match k {
-                animation::TerrainType::Grass => LAND_OFFSET,
-                animation::TerrainType::Fog => LAND_OFFSET,
-            };
+            let all_grass = grass1.chain(ani_grass.into_iter());
 
-            let gpos = *gpos;
-
-            let pos = grid_matrix.hex_axial_to_world(&gpos);
-
-            let t = matrix::translation(pos.x, pos.y, diff + *zpos);
-            let m = my_matrix.chain(t).generate();
-
-            draw_sys.batch([m]).build(texture);
+            draw_sys.batch(all_grass).build(grass);
         }
+
+        {
+            //Draw fog
+            let fog1 = game.env.fog.iter_mesh().map(|e| trans_land(e, LAND_OFFSET));
+
+            let ani_fog = if let Some((zpos, _, gpos, k)) = &terrain_animation {
+                if let animation::TerrainType::Fog = k {
+                    let gpos = *gpos;
+
+                    let pos = grid_matrix.hex_axial_to_world(&gpos);
+
+                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET + *zpos);
+                    let m = my_matrix.chain(t).generate();
+                    Some(m)
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            let all_fog = fog1.chain(ani_fog.into_iter());
+
+            draw_sys.batch(all_fog).build(snow);
+        }
+
+        // if let Some((zpos, _, gpos, k)) = &terrain_animation {
+        //     let texture = match k {
+        //         animation::TerrainType::Grass => grass,
+        //         animation::TerrainType::Fog => snow,
+        //     };
+
+        //     let diff = match k {
+        //         animation::TerrainType::Grass => LAND_OFFSET,
+        //         animation::TerrainType::Fog => LAND_OFFSET,
+        //     };
+
+        //     let gpos = *gpos;
+
+        //     let pos = grid_matrix.hex_axial_to_world(&gpos);
+
+        //     let t = matrix::translation(pos.x, pos.y, diff + *zpos);
+        //     let m = my_matrix.chain(t).generate();
+
+        //     draw_sys.batch([m]).build(texture);
+        // }
 
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
@@ -524,7 +565,8 @@ async fn render_command(
             }
         }
 
-        {// Draw shadows
+        {
+            // Draw shadows
             let d = DepthDisabler::new(ctx);
 
             let shadows = game
@@ -552,8 +594,9 @@ async fn render_command(
             drop(d);
         }
 
-        {//Draw cats
-            
+        {
+            //Draw cats
+
             let cats = game
                 .factions
                 .cats
@@ -580,8 +623,9 @@ async fn render_command(
             draw_sys.batch(all_cats).build(cat);
         }
 
-        {//Draw dogs
-            
+        {
+            //Draw dogs
+
             let dogs = game
                 .factions
                 .dogs
