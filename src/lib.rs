@@ -12,13 +12,13 @@ use shogo::simple2d::{self, CtxWrap, ShaderSystem};
 use shogo::utils;
 use wasm_bindgen::prelude::*;
 pub mod animation;
-pub mod dom;
-pub mod moves;
 pub mod board;
+pub mod dom;
 pub mod grids;
 pub mod mesh;
 pub mod model_parse;
 pub mod move_build;
+pub mod moves;
 pub mod projection;
 pub mod scroll;
 pub mod util;
@@ -154,7 +154,6 @@ pub async fn worker_entry() {
         ace::main_logic(game, w),
         render.handle_render_loop(&mut r, &mut frame_timer, &mut wr)
     );
-    
 
     log!("Worker thread closin");
 }
@@ -419,23 +418,26 @@ async fn handle_render_loop_inner(
             g
         };
 
-        draw_sys.draw_batch(
-            water,
-            visible_water
-                .iter_mesh()
-                .map(|e| trans_land(e, LAND_OFFSET)),
-        );
-        draw_sys.draw_batch(
-            grass,
-            game.env
-                .land
-                .iter_mesh()
-                .map(|e| trans_land(e, LAND_OFFSET)),
-        );
-        draw_sys.draw_batch(
-            snow,
-            game.env.fog.iter_mesh().map(|e| trans_land(e, LAND_OFFSET)),
-        );
+        draw_sys
+            .batch(
+                visible_water
+                    .iter_mesh()
+                    .map(|e| trans_land(e, LAND_OFFSET)),
+            )
+            .build(water);
+
+        draw_sys
+            .batch(
+                game.env
+                    .land
+                    .iter_mesh()
+                    .map(|e| trans_land(e, LAND_OFFSET)),
+            )
+            .build(grass);
+        
+        draw_sys
+            .batch(game.env.fog.iter_mesh().map(|e| trans_land(e, LAND_OFFSET)))
+            .build(snow);
 
         if let Some((zpos, _, gpos, k)) = &terrain_animation {
             let texture = match k {
@@ -454,7 +456,8 @@ async fn handle_render_loop_inner(
 
             let t = matrix::translation(pos.x, pos.y, diff + *zpos);
             let m = my_matrix.chain(t).generate();
-            draw_sys.view(&m).draw_a_thing(texture);
+
+            draw_sys.batch(std::iter::once(m)).build(texture);
         }
 
         if let Some(a) = &get_mouse_input {
@@ -468,13 +471,11 @@ async fn handle_render_loop_inner(
                             let t = matrix::translation(pos.x, pos.y, 0.0);
                             let m = my_matrix.chain(t).generate();
 
-                            draw_sys.view(&m).draw_a_thing_ext(
-                                select_model,
-                                *grey,
-                                false,
-                                false,
-                                false,
-                            );
+                            draw_sys
+                                .batch(std::iter::once(m))
+                                .no_lighting()
+                                .build(select_model);
+
                         }
 
                         if let Some(k) = hh {
@@ -488,14 +489,10 @@ async fn handle_render_loop_inner(
                                 let pos = grid_matrix.hex_axial_to_world(&a);
                                 let t = matrix::translation(pos.x, pos.y, 0.0);
                                 let m = my_matrix.chain(t).generate();
-
-                                draw_sys.view(&m).draw_a_thing_ext(
-                                    attack_model,
-                                    *grey,
-                                    false,
-                                    false,
-                                    false,
-                                );
+                                draw_sys
+                                    .batch(std::iter::once(m))
+                                    .no_lighting()
+                                    .build(attack_model);
                             }
                         }
                     }
@@ -506,34 +503,37 @@ async fn handle_render_loop_inner(
 
         let d = DepthDisabler::new(ctx);
 
-        draw_sys.draw_batch(
-            drop_shadow,
-            game.factions
-                .cats
-                .iter()
-                .map(|x| x.position)
-                .chain(game.factions.dogs.iter().map(|x| x.position))
-                .map(|e| trans_land(e, 1.0)),
-        );
+        draw_sys
+            .batch(
+                game.factions
+                    .cats
+                    .iter()
+                    .map(|x| x.position)
+                    .chain(game.factions.dogs.iter().map(|x| x.position))
+                    .map(|e| trans_land(e, 1.0)),
+            )
+            .build(drop_shadow);
 
         drop(d);
 
-        draw_sys.draw_batch(
-            cat,
-            game.factions
-                .cats
-                .iter()
-                .map(|x| x.position)
-                .map(|e| trans_land(e, 0.0)),
-        );
-        draw_sys.draw_batch(
-            dog,
-            game.factions
-                .dogs
-                .iter()
-                .map(|x| x.position)
-                .map(|e| trans_land(e, 0.0)),
-        );
+        draw_sys
+            .batch(
+                game.factions
+                    .cats
+                    .iter()
+                    .map(|x| x.position)
+                    .map(|e| trans_land(e, 0.0)),
+            )
+            .build(cat);
+        draw_sys
+            .batch(
+                game.factions
+                    .dogs
+                    .iter()
+                    .map(|x| x.position)
+                    .map(|e| trans_land(e, 0.0)),
+            )
+            .build(dog);
 
         if let Some((pos, _, _unit, data)) = &unit_animation {
             let this_draw = match team {
@@ -550,7 +550,8 @@ async fn handle_render_loop_inner(
                 .chain(matrix::translation(pos.x, pos.y, 1.0))
                 .generate();
 
-            draw_sys.view(&m).draw_a_thing(drop_shadow);
+            draw_sys.batch(std::iter::once(m)).build(drop_shadow);
+
             drop(d);
 
             if let Some(f) = data {
@@ -560,7 +561,7 @@ async fn handle_render_loop_inner(
                     .chain(matrix::scale(1.0, 1.0, 1.0))
                     .generate();
 
-                draw_sys.view(&m).draw_a_thing(grass);
+                draw_sys.batch(std::iter::once(m)).build(grass);
             }
 
             let m = my_matrix
@@ -568,7 +569,7 @@ async fn handle_render_loop_inner(
                 .chain(matrix::scale(1.0, 1.0, 1.0))
                 .generate();
 
-            draw_sys.view(&m).draw_a_thing(*this_draw);
+            draw_sys.batch(std::iter::once(m)).build(this_draw);
         }
 
         // let d = DepthDisabler::new(ctx);
@@ -596,7 +597,6 @@ async fn handle_render_loop_inner(
         ctx.flush();
     }
 }
-
 
 //TODO remove this. Not really gaining anything from this.
 pub struct EngineStuff {
@@ -658,25 +658,43 @@ impl EngineStuff {
     }
 }
 
-pub trait Doop {
-    fn draw_batch<K: MyMatrix>(
-        &mut self,
-        texture: &Foo<TextureGpu, ModelGpu>,
-        ff: impl IntoIterator<Item = K>,
-    );
+#[must_use]
+pub struct BatchBuilder<'a, I> {
+    sys: &'a mut ShaderSystem,
+    ff: I,
+    lighting: bool,
 }
-
-impl Doop for ShaderSystem {
-    fn draw_batch<K: MyMatrix>(
-        &mut self,
-        texture: &Foo<TextureGpu, ModelGpu>,
-        ff: impl IntoIterator<Item = K>,
-    ) {
-        for a in ff.into_iter() {
+impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
+    pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>) {
+        for a in &mut self.ff {
             let m = a.generate();
-            self.view(&m).draw_a_thing(texture);
+            self.sys
+                .view(&m)
+                .draw_a_thing_ext(texture, false, false, false, self.lighting);
         }
     }
+    pub fn no_lighting(&mut self) -> &mut Self {
+        self.lighting = false;
+        self
+    }
+}
+impl Doop for ShaderSystem {
+    fn batch<'a, K: MyMatrix, I>(&'a mut self, ff: I) -> BatchBuilder<'a, I::IntoIter>
+    where
+        I: IntoIterator<Item = K>,
+    {
+        BatchBuilder {
+            sys: self,
+            ff: ff.into_iter(),
+            lighting: true,
+        }
+    }
+}
+
+pub trait Doop {
+    fn batch<'a, K: MyMatrix, I>(&'a mut self, ff: I) -> BatchBuilder<'a, I::IntoIter>
+    where
+        I: IntoIterator<Item = K>;
 }
 
 fn draw_health_text(
