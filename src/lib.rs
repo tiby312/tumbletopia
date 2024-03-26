@@ -505,7 +505,7 @@ async fn render_command(
         {
             //Draw fog
             let fog1 = game.env.fog.iter_mesh().map(|e| trans_land(e, LAND_OFFSET));
-
+            
             let ani_fog = if let Some((zpos, _, gpos, k)) = &terrain_animation {
                 if let animation::TerrainType::Fog = k {
                     let gpos = *gpos;
@@ -585,7 +585,6 @@ async fn render_command(
 
         {
             //Draw cats
-
             let cats = game
                 .factions
                 .cats
@@ -610,7 +609,6 @@ async fn render_command(
 
         {
             //Draw dogs
-
             let dogs = game
                 .factions
                 .dogs
@@ -633,23 +631,6 @@ async fn render_command(
             draw_sys.batch(all_dogs).build(dog);
         }
 
-        //TODO combine animation with regular draw calls.
-        // if let Some((pos, _, _unit, data)) = &unit_animation {
-        //     let this_draw = match team {
-        //         ActiveTeam::Cats => &cat,
-        //         ActiveTeam::Dogs => &dog,
-        //     };
-
-        //     if let Some(f) = data {
-        //         let kk = pos + f;
-        //         let m = my_matrix
-        //             .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
-        //             .chain(matrix::scale(1.0, 1.0, 1.0))
-        //             .generate();
-
-        //         draw_sys.batch([m]).build(grass);
-        //     }
-        // }
 
         // let d = DepthDisabler::new(ctx);
 
