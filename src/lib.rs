@@ -480,7 +480,24 @@ async fn render_command(
                 None
             };
 
-            let all_grass = grass1.chain(ani_grass.into_iter());
+            let push_grass = if let Some((pos, _, _unit, data)) = &unit_animation {
+                if let Some(f) = data {
+                    let kk = pos + f;
+                    let m = my_matrix
+                        .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
+                        .chain(matrix::scale(1.0, 1.0, 1.0))
+                        .generate();
+                    Some(m)
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            let all_grass = grass1
+                .chain(ani_grass.into_iter())
+                .chain(push_grass.into_iter());
 
             draw_sys.batch(all_grass).build(grass);
         }
@@ -510,33 +527,10 @@ async fn render_command(
             draw_sys.batch(all_fog).build(snow);
         }
 
-        // if let Some((zpos, _, gpos, k)) = &terrain_animation {
-        //     let texture = match k {
-        //         animation::TerrainType::Grass => grass,
-        //         animation::TerrainType::Fog => snow,
-        //     };
-
-        //     let diff = match k {
-        //         animation::TerrainType::Grass => LAND_OFFSET,
-        //         animation::TerrainType::Fog => LAND_OFFSET,
-        //     };
-
-        //     let gpos = *gpos;
-
-        //     let pos = grid_matrix.hex_axial_to_world(&gpos);
-
-        //     let t = matrix::translation(pos.x, pos.y, diff + *zpos);
-        //     let m = my_matrix.chain(t).generate();
-
-        //     draw_sys.batch([m]).build(texture);
-        // }
-
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
-                        let _d = DepthDisabler::new(ctx);
-
                         for a in mesh.iter_mesh(*point) {
                             let pos = grid_matrix.hex_axial_to_world(&a);
                             let t = matrix::translation(pos.x, pos.y, 0.0);
@@ -567,7 +561,7 @@ async fn render_command(
 
         {
             // Draw shadows
-            let d = DepthDisabler::new(ctx);
+            //let d = DepthDisabler::new(ctx);
 
             let shadows = game
                 .factions
@@ -577,21 +571,16 @@ async fn render_command(
                 .chain(game.factions.dogs.iter().map(|x| x.position))
                 .map(|e| trans_land(e, 1.0));
 
-            let ani_drop_shadow = if let Some((pos, _, _unit, data)) = &unit_animation {
-                let m = my_matrix
+            let ani_drop_shadow = unit_animation.as_ref().map(|a| {
+                let pos = a.0;
+                my_matrix
                     .chain(matrix::translation(pos.x, pos.y, 1.0))
-                    .generate();
-
-                Some(m)
-            } else {
-                None
-            };
+                    .generate()
+            });
 
             let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
 
             draw_sys.batch(all_shadows).build(drop_shadow);
-
-            drop(d);
         }
 
         {
@@ -603,20 +592,16 @@ async fn render_command(
                 .iter()
                 .map(|x| x.position)
                 .map(|e| trans_land(e, 0.0));
-            let ani_cat = if let Some((pos, _, _unit, data)) = &unit_animation {
-                if team == ActiveTeam::Cats {
-                    let m = my_matrix
+
+            let ani_cat = unit_animation
+                .as_ref()
+                .map(|(pos, _, _unit, data)| {
+                    my_matrix
                         .chain(matrix::translation(pos.x, pos.y, 0.0))
                         .chain(matrix::scale(1.0, 1.0, 1.0))
-                        .generate();
-
-                    Some(m)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
+                        .generate()
+                })
+                .filter(|_| team == ActiveTeam::Cats);
 
             let all_cats = cats.chain(ani_cat.into_iter());
 
@@ -632,20 +617,16 @@ async fn render_command(
                 .iter()
                 .map(|x| x.position)
                 .map(|e| trans_land(e, 0.0));
-            let ani_dog = if let Some((pos, _, _unit, data)) = &unit_animation {
-                if team == ActiveTeam::Dogs {
-                    let m = my_matrix
+
+            let ani_dog = unit_animation
+                .as_ref()
+                .map(|(pos, _, _unit, data)| {
+                    my_matrix
                         .chain(matrix::translation(pos.x, pos.y, 0.0))
                         .chain(matrix::scale(1.0, 1.0, 1.0))
-                        .generate();
-
-                    Some(m)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
+                        .generate()
+                })
+                .filter(|_| team == ActiveTeam::Dogs);
 
             let all_dogs = dogs.chain(ani_dog.into_iter());
 
@@ -653,22 +634,22 @@ async fn render_command(
         }
 
         //TODO combine animation with regular draw calls.
-        if let Some((pos, _, _unit, data)) = &unit_animation {
-            let this_draw = match team {
-                ActiveTeam::Cats => &cat,
-                ActiveTeam::Dogs => &dog,
-            };
+        // if let Some((pos, _, _unit, data)) = &unit_animation {
+        //     let this_draw = match team {
+        //         ActiveTeam::Cats => &cat,
+        //         ActiveTeam::Dogs => &dog,
+        //     };
 
-            if let Some(f) = data {
-                let kk = pos + f;
-                let m = my_matrix
-                    .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
-                    .chain(matrix::scale(1.0, 1.0, 1.0))
-                    .generate();
+        //     if let Some(f) = data {
+        //         let kk = pos + f;
+        //         let m = my_matrix
+        //             .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
+        //             .chain(matrix::scale(1.0, 1.0, 1.0))
+        //             .generate();
 
-                draw_sys.batch([m]).build(grass);
-            }
-        }
+        //         draw_sys.batch([m]).build(grass);
+        //     }
+        // }
 
         // let d = DepthDisabler::new(ctx);
 
