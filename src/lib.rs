@@ -434,7 +434,7 @@ async fn render_command(
 
         pub const LAND_OFFSET: f32 = -10.0;
 
-        let trans_land = |c: Axial, cc| {
+        let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
             my_matrix.chain(t).generate()
@@ -452,7 +452,7 @@ async fn render_command(
             .batch(
                 visible_water
                     .iter_mesh()
-                    .map(|e| trans_land(e, LAND_OFFSET)),
+                    .map(|e| grid_snap(e, LAND_OFFSET)),
             )
             .build(water);
 
@@ -462,7 +462,7 @@ async fn render_command(
                 .env
                 .land
                 .iter_mesh()
-                .map(|e| trans_land(e, LAND_OFFSET));
+                .map(|e| grid_snap(e, LAND_OFFSET));
 
             let ani_grass = if let Some((zpos, _, gpos, k)) = &terrain_animation {
                 if let animation::TerrainType::Grass = k {
@@ -504,7 +504,7 @@ async fn render_command(
 
         {
             //Draw fog
-            let fog1 = game.env.fog.iter_mesh().map(|e| trans_land(e, LAND_OFFSET));
+            let fog1 = game.env.fog.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET));
 
             let ani_fog = if let Some((zpos, _, gpos, k)) = &terrain_animation {
                 if let animation::TerrainType::Fog = k {
@@ -532,7 +532,7 @@ async fn render_command(
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
                         
-                        let cells = mesh.iter_mesh(*point).map(|e| trans_land(e, 0.0));
+                        let cells = mesh.iter_mesh(*point).map(|e| grid_snap(e, 0.0));
                         draw_sys.batch(cells).no_lighting().build(select_model);
 
                         if let Some(k) = hh {
@@ -565,7 +565,7 @@ async fn render_command(
                 .iter()
                 .map(|x| x.position)
                 .chain(game.factions.dogs.iter().map(|x| x.position))
-                .map(|e| trans_land(e, 1.0));
+                .map(|e| grid_snap(e, 1.0));
 
             let ani_drop_shadow = unit_animation.as_ref().map(|a| {
                 let pos = a.0;
@@ -586,7 +586,7 @@ async fn render_command(
                 .cats
                 .iter()
                 .map(|x| x.position)
-                .map(|e| trans_land(e, 0.0));
+                .map(|e| grid_snap(e, 0.0));
 
             let ani_cat = unit_animation
                 .as_ref()
@@ -610,7 +610,7 @@ async fn render_command(
                 .dogs
                 .iter()
                 .map(|x| x.position)
-                .map(|e| trans_land(e, 0.0));
+                .map(|e| grid_snap(e, 0.0));
 
             let ani_dog = unit_animation
                 .as_ref()
