@@ -531,13 +531,9 @@ async fn render_command(
             if let Some((selection, grey)) = a {
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
-                        for a in mesh.iter_mesh(*point) {
-                            let pos = grid_matrix.hex_axial_to_world(&a);
-                            let t = matrix::translation(pos.x, pos.y, 0.0);
-                            let m = my_matrix.chain(t).generate();
-
-                            draw_sys.batch([m]).no_lighting().build(select_model);
-                        }
+                        
+                        let cells = mesh.iter_mesh(*point).map(|e| trans_land(e, 0.0));
+                        draw_sys.batch(cells).no_lighting().build(select_model);
 
                         if let Some(k) = hh {
                             if k.the_move
