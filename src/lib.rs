@@ -505,7 +505,7 @@ async fn render_command(
         {
             //Draw fog
             let fog1 = game.env.fog.iter_mesh().map(|e| trans_land(e, LAND_OFFSET));
-            
+
             let ani_fog = if let Some((zpos, _, gpos, k)) = &terrain_animation {
                 if let animation::TerrainType::Fog = k {
                     let gpos = *gpos;
@@ -630,7 +630,6 @@ async fn render_command(
 
             draw_sys.batch(all_dogs).build(dog);
         }
-
 
         // let d = DepthDisabler::new(ctx);
 
