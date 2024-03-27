@@ -26,9 +26,9 @@ impl<A: Borrow<TextureGpu>, B: Borrow<ModelGpu>> simple2d::Drawable for Foo<A, B
             WebGl2RenderingContext::TRIANGLES,
             &tex.texture,
             &model.tex_coord,
-            &model.position,
+            &model.position.0,
             model.index.as_ref(),
-            &model.normals,
+            &model.normals.0,
             false,
             false,
             false,
@@ -49,9 +49,9 @@ impl<A: Borrow<TextureGpu>, B: Borrow<ModelGpu>> simple2d::Drawable for Foo<A, B
             WebGl2RenderingContext::TRIANGLES,
             &tex.texture,
             &model.tex_coord,
-            &model.position,
+            &model.position.0,
             model.index.as_ref(),
-            &model.normals,
+            &model.normals.0,
             grayscale,
             text,
             false,
@@ -63,8 +63,8 @@ impl<A: Borrow<TextureGpu>, B: Borrow<ModelGpu>> simple2d::Drawable for Foo<A, B
 pub struct ModelGpu {
     index: Option<simple2d::IndexBuffer>,
     tex_coord: simple2d::TextureCoordBuffer,
-    position: simple2d::DynamicBuffer,
-    normals: simple2d::DynamicBuffer,
+    position: simple2d::Vert3Buffer,
+    normals: simple2d::Vert3Buffer,
 }
 impl ModelGpu {
     pub fn new(ctx: &web_sys::WebGl2RenderingContext, data: &model::ModelData) -> Self {
@@ -79,11 +79,11 @@ impl ModelGpu {
         let mut tex_coord = simple2d::TextureCoordBuffer::new(ctx).unwrap_throw();
         tex_coord.update(&data.tex_coords);
 
-        let mut position = simple2d::DynamicBuffer::new(ctx).unwrap_throw();
-        position.update_no_clear(&data.positions);
+        let mut position = simple2d::Vert3Buffer::new(ctx).unwrap_throw();
+        position.update(&data.positions);
 
-        let mut normals = simple2d::DynamicBuffer::new(ctx).unwrap_throw();
-        normals.update_no_clear(&data.normals);
+        let mut normals = simple2d::Vert3Buffer::new(ctx).unwrap_throw();
+        normals.update(&data.normals);
 
         ModelGpu {
             index,

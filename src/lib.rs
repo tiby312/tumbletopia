@@ -449,20 +449,12 @@ async fn render_command(
         };
 
         draw_sys
-            .batch(
-                visible_water
-                    .iter_mesh()
-                    .map(|e| grid_snap(e, LAND_OFFSET)),
-            )
+            .batch(visible_water.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET)))
             .build(water);
 
         {
             //Draw grass
-            let grass1 = game
-                .env
-                .land
-                .iter_mesh()
-                .map(|e| grid_snap(e, LAND_OFFSET));
+            let grass1 = game.env.land.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET));
 
             let ani_grass = if let Some((zpos, _, gpos, k)) = &terrain_animation {
                 if let animation::TerrainType::Grass = k {
@@ -531,7 +523,6 @@ async fn render_command(
             if let Some((selection, grey)) = a {
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
-                        
                         let cells = mesh.iter_mesh(*point).map(|e| grid_snap(e, 0.0));
                         draw_sys.batch(cells).no_lighting().build(select_model);
 
