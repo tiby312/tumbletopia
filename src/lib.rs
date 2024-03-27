@@ -652,7 +652,6 @@ pub struct BatchBuilder<'a, I> {
 }
 impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
     pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>) {
-        //TODO don't allocate every time?
         let mmatrix: Vec<[f32; 16]> = (&mut self.ff)
             .map(|x| {
                 let x = x.generate();
