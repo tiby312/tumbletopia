@@ -652,12 +652,18 @@ pub struct BatchBuilder<'a, I> {
 }
 impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
     pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>) {
-        for a in &mut self.ff {
-            let m = a.generate();
-            self.sys
-                .view(&m)
-                .draw_a_thing_ext(texture, false, false, false, self.lighting);
-        }
+        //TODO don't allocate every time?
+        let mmatrix: Vec<[f32; 16]> = (&mut self.ff)
+            .map(|x| {
+                let x = x.generate();
+                let x: &[f32; 16] = x.as_ref();
+                x.clone()
+            })
+            .collect();
+
+        self.sys
+            .view2(&mmatrix)
+            .draw_a_thing_ext(texture, false, false, false, self.lighting);
     }
     pub fn no_lighting(&mut self) -> &mut Self {
         self.lighting = false;
@@ -683,36 +689,36 @@ pub trait Doop {
         I: IntoIterator<Item = K>;
 }
 
-fn draw_health_text(
-    f: impl IntoIterator<Item = (Axial, i8)>,
+// fn draw_health_text(
+//     f: impl IntoIterator<Item = (Axial, i8)>,
 
-    gg: &grids::HexConverter,
-    health_numbers: &NumberTextManager,
-    view_proj: &Matrix4<f32>,
-    proj: &Matrix4<f32>,
-    draw_sys: &mut ShaderSystem,
-    text_texture: &TextureGpu,
-) {
-    //draw text
-    for (ccat, ii) in f {
-        let pos = gg.hex_axial_to_world(&ccat);
+//     gg: &grids::HexConverter,
+//     health_numbers: &NumberTextManager,
+//     view_proj: &Matrix4<f32>,
+//     proj: &Matrix4<f32>,
+//     draw_sys: &mut ShaderSystem,
+//     text_texture: &TextureGpu,
+// ) {
+//     //draw text
+//     for (ccat, ii) in f {
+//         let pos = gg.hex_axial_to_world(&ccat);
 
-        let t = matrix::translation(pos.x, pos.y + 20.0, 20.0);
+//         let t = matrix::translation(pos.x, pos.y + 20.0, 20.0);
 
-        let jj = view_proj.chain(t).generate();
-        let jj: &[f32; 16] = jj.as_ref();
-        let tt = matrix::translation(jj[12], jj[13], jj[14]);
-        let new_proj = (*proj).chain(tt);
+//         let jj = view_proj.chain(t).generate();
+//         let jj: &[f32; 16] = jj.as_ref();
+//         let tt = matrix::translation(jj[12], jj[13], jj[14]);
+//         let new_proj = (*proj).chain(tt);
 
-        let s = matrix::scale(5.0, 5.0, 5.0);
-        let m = new_proj.chain(s).generate();
+//         let s = matrix::scale(5.0, 5.0, 5.0);
+//         let m = new_proj.chain(s).generate();
 
-        let nn = health_numbers.get_number(ii, text_texture);
-        draw_sys
-            .view(&m)
-            .draw_a_thing_ext(&nn, false, false, true, false);
-    }
-}
+//         let nn = health_numbers.get_number(ii, text_texture);
+//         draw_sys
+//             .view(&m)
+//             .draw_a_thing_ext(&nn, false, false, true, false);
+//     }
+// }
 
 pub struct DepthDisabler<'a> {
     ctx: &'a WebGl2RenderingContext,
