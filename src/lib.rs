@@ -152,17 +152,20 @@ pub async fn worker_entry() {
     ctx.setup_alpha();
 
     let grid_matrix = grids::HexConverter::new();
-    let models = Models::new(&grid_matrix, &ctx);
-    let numm = Numm::new(&ctx);
+
+    let shader = ctx.shader_system();
+
+    let models = Models::new(&grid_matrix, &shader);
+    //let numm = Numm::new(&ctx);
 
     let mut render = EngineStuff {
         grid_matrix,
         models,
-        numm,
         ctx,
         canvas: wr.canvas(),
         scroll_manager,
         last_matrix,
+        shader,
     };
 
     let game = ace::game_init();
@@ -184,11 +187,12 @@ pub async fn worker_entry() {
 pub struct EngineStuff {
     grid_matrix: grids::HexConverter,
     models: Models<Foo<TextureGpu, ModelGpu>>,
-    numm: Numm,
+    //numm: Numm,
     ctx: CtxWrap,
     canvas: OffscreenCanvas,
     scroll_manager: scroll::TouchController,
     last_matrix: cgmath::Matrix4<f32>,
+    shader: ShaderSystem,
 }
 
 fn create_worker_render() -> (RenderManager, ace::WorkerManager) {
@@ -225,9 +229,9 @@ async fn render_command(
     let canvas = &e.canvas;
     let grid_matrix = &e.grid_matrix;
     let models = &e.models;
-    let numm = &e.numm;
+    //let numm = &e.numm;
 
-    let mut draw_sys = ctx.shader_system();
+    let mut draw_sys = &mut e.shader; //ctx.shader_system();
 
     let gl_width = canvas.width();
     let gl_height = canvas.height();
@@ -758,7 +762,7 @@ pub struct Models<T> {
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
-    pub fn new(grid_matrix: &grids::HexConverter, ctx: &WebGl2RenderingContext) -> Self {
+    pub fn new(grid_matrix: &grids::HexConverter, shader: &ShaderSystem) -> Self {
         const ASSETS: &[(&[u8], usize, Option<f64>)] = &[
             (include_bytes!("../assets/select_model.glb"), 1, None),
             (include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
@@ -777,8 +781,8 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
 
             log!(format!("texture:{:?}", (t.width, t.height)));
             model_parse::Foo {
-                texture: model_parse::TextureGpu::new(ctx, &t),
-                model: model_parse::ModelGpu::new(ctx, &data),
+                texture: model_parse::TextureGpu::new(&shader.ctx, &t),
+                model: model_parse::ModelGpu::new(shader, &data),
             }
         };
 
@@ -803,55 +807,55 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
     }
 }
 
-pub struct Numm {
-    text_texture: TextureGpu,
-    health_numbers: NumberTextManager,
-}
-impl Numm {
-    pub fn new(ctx: &WebGl2RenderingContext) -> Self {
-        let text_texture = {
-            let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
+// pub struct Numm {
+//     text_texture: TextureGpu,
+//     health_numbers: NumberTextManager,
+// }
+// impl Numm {
+//     pub fn new(ctx: &WebGl2RenderingContext) -> Self {
+//         let text_texture = {
+//             let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
 
-            model_parse::TextureGpu::new(ctx, &ascii_tex)
-        };
+//             model_parse::TextureGpu::new(ctx, &ascii_tex)
+//         };
 
-        let health_numbers = NumberTextManager::new(ctx);
+//         let health_numbers = NumberTextManager::new(ctx);
 
-        Numm {
-            text_texture,
-            health_numbers,
-        }
-    }
-}
+//         Numm {
+//             text_texture,
+//             health_numbers,
+//         }
+//     }
+// }
 
-pub struct NumberTextManager {
-    pub numbers: Vec<model_parse::ModelGpu>,
-}
-impl NumberTextManager {
-    fn new(ctx: &WebGl2RenderingContext) -> Self {
-        let range = -10..=10;
-        fn generate_number(number: i8, ctx: &WebGl2RenderingContext) -> model_parse::ModelGpu {
-            let data = string_to_coords(&format!("{}", number));
-            model_parse::ModelGpu::new(ctx, &data)
-        }
+// pub struct NumberTextManager {
+//     pub numbers: Vec<model_parse::ModelGpu>,
+// }
+// impl NumberTextManager {
+//     fn new(ctx: &WebGl2RenderingContext) -> Self {
+//         let range = -10..=10;
+//         fn generate_number(number: i8, ctx: &WebGl2RenderingContext) -> model_parse::ModelGpu {
+//             let data = string_to_coords(&format!("{}", number));
+//             model_parse::ModelGpu::new(ctx, &data)
+//         }
 
-        let numbers = range.into_iter().map(|i| generate_number(i, ctx)).collect();
-        Self { numbers }
-    }
+//         let numbers = range.into_iter().map(|i| generate_number(i, ctx)).collect();
+//         Self { numbers }
+//     }
 
-    pub fn get_number<'b>(
-        &self,
-        num: i8,
-        texture: &'b model_parse::TextureGpu,
-    ) -> model_parse::Foo<&'b model_parse::TextureGpu, &model_parse::ModelGpu> {
-        let gpu = &self.numbers[(num + 10) as usize];
+//     pub fn get_number<'b>(
+//         &self,
+//         num: i8,
+//         texture: &'b model_parse::TextureGpu,
+//     ) -> model_parse::Foo<&'b model_parse::TextureGpu, &model_parse::ModelGpu> {
+//         let gpu = &self.numbers[(num + 10) as usize];
 
-        model_parse::Foo {
-            texture,
-            model: gpu,
-        }
-    }
-}
+//         model_parse::Foo {
+//             texture,
+//             model: gpu,
+//         }
+//     }
+// }
 fn string_to_coords<'a>(st: &str) -> model::ModelData {
     let num_rows = 16;
     let num_columns = 16;
