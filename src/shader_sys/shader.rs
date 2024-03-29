@@ -1,6 +1,5 @@
 use super::*;
 
-
 const SQUARE_FRAG_SHADER_STR: &str = r#"#version 300 es
 precision mediump float;
 out vec4 out_color;
@@ -127,7 +126,8 @@ impl GlProgram {
         let fs = SQUARE_FRAG_SHADER_STR;
 
         let vert_shader = util::compile_shader(context, WebGl2RenderingContext::VERTEX_SHADER, vs)?;
-        let frag_shader = util::compile_shader(context, WebGl2RenderingContext::FRAGMENT_SHADER, fs)?;
+        let frag_shader =
+            util::compile_shader(context, WebGl2RenderingContext::FRAGMENT_SHADER, fs)?;
         let program = util::link_program(context, &vert_shader, &frag_shader)?;
 
         context.delete_shader(Some(&vert_shader));
@@ -340,7 +340,6 @@ pub struct GlProgram {
     pub matrix_buffer: Mat4Buffer,
     pub ctx: WebGl2RenderingContext,
 }
-
 
 trait NumComponent {
     fn num() -> i32;

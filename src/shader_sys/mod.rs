@@ -8,14 +8,12 @@ use gloo::console::log;
 pub mod shader;
 mod util;
 
-
 use web_sys::WebGlBuffer;
 use web_sys::WebGlShader;
 use web_sys::WebGlUniformLocation;
 use web_sys::{WebGl2RenderingContext, WebGlProgram};
 
 use WebGl2RenderingContext as GL;
-
 
 use shader::*;
 
@@ -154,46 +152,13 @@ impl TextureBuffer {
 
 use wasm_bindgen::{prelude::*, Clamped};
 
-pub fn ctx_wrap(a: &WebGl2RenderingContext) -> CtxWrap {
-    CtxWrap::new(a)
-}
-
-///
-/// Wrapper around a webgl2 context with convenience functions. Derefs to [`WebGl2RenderingContext`].
-///
-pub struct CtxWrap {
-    pub ctx: WebGl2RenderingContext,
-}
-
-impl std::ops::Deref for CtxWrap {
-    type Target = WebGl2RenderingContext;
-    fn deref(&self) -> &Self::Target {
-        &self.ctx
-    }
-}
-
-impl CtxWrap {
-    pub fn new(a: &WebGl2RenderingContext) -> Self {
-        CtxWrap { ctx: a.clone() }
-    }
-
-    pub fn shader_system(&self) -> ShaderSystem {
-        ShaderSystem::new(self)
-            .map_err(|e| {
-                log!(format!("{:?}", e));
-                e
-            })
-            .unwrap_throw()
-    }
-
-    pub fn draw_clear(&self, color: [f32; 4]) {
-        let [a, b, c, d] = color;
-        self.ctx.clear_color(a, b, c, d);
-        self.ctx.clear(
-            web_sys::WebGl2RenderingContext::COLOR_BUFFER_BIT
-                | web_sys::WebGl2RenderingContext::DEPTH_BUFFER_BIT,
-        );
-    }
+pub fn draw_clear(ctx: &WebGl2RenderingContext, color: [f32; 4]) {
+    let [a, b, c, d] = color;
+    ctx.clear_color(a, b, c, d);
+    ctx.clear(
+        web_sys::WebGl2RenderingContext::COLOR_BUFFER_BIT
+            | web_sys::WebGl2RenderingContext::DEPTH_BUFFER_BIT,
+    );
 }
 
 ///

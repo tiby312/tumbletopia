@@ -8,7 +8,7 @@ use hex::Axial;
 use mesh::bitfield::BitField;
 use model::matrix::{self, MyMatrix};
 use serde::{Deserialize, Serialize};
-use shader_sys::{CtxWrap, ShaderSystem};
+use shader_sys::ShaderSystem;
 
 use shogo::utils;
 use wasm_bindgen::prelude::*;
@@ -151,11 +151,11 @@ pub async fn worker_entry() {
     use cgmath::SquareMatrix;
 
     let last_matrix = cgmath::Matrix4::identity();
-    let ctx = shader_sys::ctx_wrap(&utils::get_context_webgl2_offscreen(&wr.canvas()));
+    let ctx = &utils::get_context_webgl2_offscreen(&wr.canvas());
 
     let grid_matrix = grids::HexConverter::new();
 
-    let shader = ctx.shader_system();
+    let shader = shader_sys::ShaderSystem::new(&ctx).unwrap();
 
     let models = Models::new(&grid_matrix, &shader);
     //let numm = Numm::new(&ctx);
@@ -163,7 +163,7 @@ pub async fn worker_entry() {
     let mut render = EngineStuff {
         grid_matrix,
         models,
-        ctx,
+        ctx: ctx.clone(),
         canvas: wr.canvas(),
         scroll_manager,
         last_matrix,
@@ -190,7 +190,7 @@ pub struct EngineStuff {
     grid_matrix: grids::HexConverter,
     models: Models<Foo<TextureGpu, ModelGpu>>,
     //numm: Numm,
-    ctx: CtxWrap,
+    ctx: WebGl2RenderingContext,
     canvas: OffscreenCanvas,
     scroll_manager: scroll::TouchController,
     last_matrix: cgmath::Matrix4<f32>,
@@ -436,7 +436,7 @@ async fn render_command(
 
         scroll_manager.step();
 
-        ctx.draw_clear([0.0, 0.0, 0.0, 0.0]);
+        shader_sys::draw_clear(ctx, [0.0, 0.0, 0.0, 0.0]);
 
         pub const LAND_OFFSET: f32 = -10.0;
 
