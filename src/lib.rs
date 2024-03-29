@@ -436,7 +436,7 @@ async fn render_command(
 
         scroll_manager.step();
 
-        shader_sys::draw_clear(ctx, [0.0, 0.0, 0.0, 0.0]);
+        draw_sys.draw_clear([0.0, 0.0, 0.0, 0.0]);
 
         pub const LAND_OFFSET: f32 = -10.0;
 

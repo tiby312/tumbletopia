@@ -152,15 +152,6 @@ impl TextureBuffer {
 
 use wasm_bindgen::{prelude::*, Clamped};
 
-pub fn draw_clear(ctx: &WebGl2RenderingContext, color: [f32; 4]) {
-    let [a, b, c, d] = color;
-    ctx.clear_color(a, b, c, d);
-    ctx.clear(
-        web_sys::WebGl2RenderingContext::COLOR_BUFFER_BIT
-            | web_sys::WebGl2RenderingContext::DEPTH_BUFFER_BIT,
-    );
-}
-
 ///
 /// A simple shader program that allows the user to draw simple primitives.
 ///
@@ -196,6 +187,16 @@ impl ShaderSystem {
             program,
             ctx: ctx.clone(),
         })
+    }
+
+    pub fn draw_clear(&self, color: [f32; 4]) {
+        let ctx = &self.ctx;
+        let [a, b, c, d] = color;
+        ctx.clear_color(a, b, c, d);
+        ctx.clear(
+            web_sys::WebGl2RenderingContext::COLOR_BUFFER_BIT
+                | web_sys::WebGl2RenderingContext::DEPTH_BUFFER_BIT,
+        );
     }
 
     pub fn draw(
