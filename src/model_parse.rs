@@ -1,4 +1,3 @@
-
 use super::*;
 
 pub struct TextureGpu {
@@ -21,7 +20,6 @@ pub struct Foo<A, B> {
 pub struct ModelGpu {
     pub res: simple2d::shader::VaoResult,
 }
-
 
 impl ModelGpu {
     pub fn new(shader: &ShaderSystem, data: &model::ModelData) -> Self {

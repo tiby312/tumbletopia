@@ -149,7 +149,7 @@ pub async fn worker_entry() {
 
     let last_matrix = cgmath::Matrix4::identity();
     let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&wr.canvas()));
-    
+
     let grid_matrix = grids::HexConverter::new();
 
     let shader = ctx.shader_system();
@@ -663,8 +663,14 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
             })
             .collect();
 
-        self.sys.draw(&texture.model.res,&texture.texture.texture,&mmatrix,false,false,self.lighting);
-
+        self.sys.draw(
+            &texture.model.res,
+            &texture.texture.texture,
+            &mmatrix,
+            false,
+            false,
+            self.lighting,
+        );
     }
     pub fn no_lighting(&mut self) -> &mut Self {
         self.lighting = false;
