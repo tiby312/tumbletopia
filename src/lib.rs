@@ -149,8 +149,7 @@ pub async fn worker_entry() {
 
     let last_matrix = cgmath::Matrix4::identity();
     let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&wr.canvas()));
-    ctx.setup_alpha();
-
+    
     let grid_matrix = grids::HexConverter::new();
 
     let shader = ctx.shader_system();
