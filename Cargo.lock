@@ -633,6 +633,7 @@ version = "0.1.0"
 dependencies = [
  "axgeom",
  "base64 0.21.7",
+ "byte-slice-cast",
  "byteorder",
  "cgmath",
  "collision",

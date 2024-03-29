@@ -8,9 +8,11 @@ use hex::Axial;
 use mesh::bitfield::BitField;
 use model::matrix::{self, MyMatrix};
 use serde::{Deserialize, Serialize};
-use shogo::simple2d::{self, CtxWrap, ShaderSystem};
+use shader_sys::{CtxWrap, ShaderSystem};
+
 use shogo::utils;
 use wasm_bindgen::prelude::*;
+
 pub mod animation;
 pub mod board;
 pub mod dom;
@@ -21,6 +23,7 @@ pub mod move_build;
 pub mod moves;
 pub mod projection;
 pub mod scroll;
+pub mod shader_sys;
 pub mod util;
 use dom::MEvent;
 use projection::*;
@@ -148,7 +151,7 @@ pub async fn worker_entry() {
     use cgmath::SquareMatrix;
 
     let last_matrix = cgmath::Matrix4::identity();
-    let ctx = simple2d::ctx_wrap(&utils::get_context_webgl2_offscreen(&wr.canvas()));
+    let ctx = shader_sys::ctx_wrap(&utils::get_context_webgl2_offscreen(&wr.canvas()));
 
     let grid_matrix = grids::HexConverter::new();
 
@@ -784,6 +787,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
 
             log!(format!("texture:{:?}", (t.width, t.height)));
+
             model_parse::Foo {
                 texture: model_parse::TextureGpu::new(&shader.ctx, &t),
                 model: model_parse::ModelGpu::new(shader, &data),
