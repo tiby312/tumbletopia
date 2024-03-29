@@ -230,7 +230,7 @@ async fn render_command(
     let models = &e.models;
     //let numm = &e.numm;
 
-    let mut draw_sys = &mut e.shader; //ctx.shader_system();
+    let draw_sys = &mut e.shader; //ctx.shader_system();
 
     let gl_width = canvas.width();
     let gl_height = canvas.height();
@@ -663,9 +663,8 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
             })
             .collect();
 
-        self.sys
-            .view2(&mmatrix)
-            .draw_a_thing_ext(texture, false, false, false, self.lighting);
+        self.sys.draw(&texture.model.res,&texture.texture.texture,&mmatrix,false,false,self.lighting);
+
     }
     pub fn no_lighting(&mut self) -> &mut Self {
         self.lighting = false;
