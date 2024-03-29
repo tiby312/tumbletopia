@@ -5,11 +5,10 @@
 //! The color can also be changed for all vertices in a buffer.
 //!
 use gloo::console::log;
-use web_sys::{WebGl2RenderingContext, WebGlBuffer};
+use web_sys::{WebGl2RenderingContext};
 pub mod shader;
 
 use shader::*;
-use WebGl2RenderingContext as GL;
 
 pub type Vertex = [f32; 3];
 
