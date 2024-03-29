@@ -1,11 +1,5 @@
-use web_sys::WebGlBuffer;
-use web_sys::WebGlShader;
-use web_sys::WebGlUniformLocation;
-use web_sys::{WebGl2RenderingContext, WebGlProgram};
+use super::*;
 
-use WebGl2RenderingContext as GL;
-
-use super::TextureBuffer;
 
 const SQUARE_FRAG_SHADER_STR: &str = r#"#version 300 es
 precision mediump float;
@@ -132,9 +126,9 @@ impl GlProgram {
         let vs = VERT_SHADER_STR;
         let fs = SQUARE_FRAG_SHADER_STR;
 
-        let vert_shader = compile_shader(context, WebGl2RenderingContext::VERTEX_SHADER, vs)?;
-        let frag_shader = compile_shader(context, WebGl2RenderingContext::FRAGMENT_SHADER, fs)?;
-        let program = link_program(context, &vert_shader, &frag_shader)?;
+        let vert_shader = util::compile_shader(context, WebGl2RenderingContext::VERTEX_SHADER, vs)?;
+        let frag_shader = util::compile_shader(context, WebGl2RenderingContext::FRAGMENT_SHADER, fs)?;
+        let program = util::link_program(context, &vert_shader, &frag_shader)?;
 
         context.delete_shader(Some(&vert_shader));
         context.delete_shader(Some(&frag_shader));
@@ -347,55 +341,6 @@ pub struct GlProgram {
     pub ctx: WebGl2RenderingContext,
 }
 
-fn compile_shader(
-    context: &WebGl2RenderingContext,
-    shader_type: u32,
-    source: &str,
-) -> Result<WebGlShader, String> {
-    let shader = context
-        .create_shader(shader_type)
-        .ok_or_else(|| String::from("Unable to create shader object"))?;
-    context.shader_source(&shader, source);
-    context.compile_shader(&shader);
-
-    if context
-        .get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(shader)
-    } else {
-        Err(context
-            .get_shader_info_log(&shader)
-            .unwrap_or_else(|| String::from("Unknown error creating shader")))
-    }
-}
-
-fn link_program(
-    context: &WebGl2RenderingContext,
-    vert_shader: &WebGlShader,
-    frag_shader: &WebGlShader,
-) -> Result<WebGlProgram, String> {
-    let program = context
-        .create_program()
-        .ok_or_else(|| String::from("Unable to create shader object"))?;
-
-    context.attach_shader(&program, vert_shader);
-    context.attach_shader(&program, frag_shader);
-    context.link_program(&program);
-
-    if context
-        .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(program)
-    } else {
-        Err(context
-            .get_program_info_log(&program)
-            .unwrap_or_else(|| String::from("Unknown error creating program object")))
-    }
-}
 
 trait NumComponent {
     fn num() -> i32;
