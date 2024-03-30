@@ -182,23 +182,6 @@ impl WorkerManager {
     }
 }
 
-#[derive(Hash, Debug, Copy, Clone, Eq, PartialEq)]
-pub enum ActiveTeam {
-    Cats = 0,
-    Dogs = 1,
-}
-impl ActiveTeam {
-    pub fn iter(&self) -> impl Iterator<Item = Self> {
-        [*self, self.not()].into_iter().cycle()
-    }
-    pub fn not(&self) -> Self {
-        match self {
-            ActiveTeam::Cats => ActiveTeam::Dogs,
-            ActiveTeam::Dogs => ActiveTeam::Cats,
-        }
-    }
-}
-
 pub struct SelectType {
     warrior: Axial,
     team: ActiveTeam,

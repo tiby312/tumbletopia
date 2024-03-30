@@ -40,103 +40,6 @@ enum UiButton {
     HidePopup,
 }
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct Factions {
-    pub dogs: Tribe,
-    pub cats: Tribe,
-}
-impl Factions {
-    fn contains(&self, coord: Axial) -> bool {
-        self.dogs
-            .iter()
-            .chain(self.cats.iter())
-            .map(|a| a.position)
-            .any(|a| a == coord)
-    }
-    fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
-        self.relative_mut(team)
-            .this_team
-            .find_slow_mut(&coord)
-            .unwrap()
-    }
-    fn get_unit(&self, team: ActiveTeam, coord: Axial) -> &UnitData {
-        self.relative(team).this_team.find_slow(&coord).unwrap()
-    }
-    fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
-        match team {
-            ActiveTeam::Cats => FactionRelative {
-                this_team: &mut self.cats,
-                that_team: &mut self.dogs,
-            },
-            ActiveTeam::Dogs => FactionRelative {
-                this_team: &mut self.dogs,
-                that_team: &mut self.cats,
-            },
-        }
-    }
-    fn relative(&self, team: ActiveTeam) -> FactionRelative<&Tribe> {
-        match team {
-            ActiveTeam::Cats => FactionRelative {
-                this_team: &self.cats,
-                that_team: &self.dogs,
-            },
-            ActiveTeam::Dogs => FactionRelative {
-                this_team: &self.dogs,
-                that_team: &self.cats,
-            },
-        }
-    }
-}
-pub struct FactionRelative<T> {
-    pub this_team: T,
-    pub that_team: T,
-}
-
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct Environment {
-    land: BitField,
-    forest: BitField,
-    fog: BitField,
-    powerups: Vec<Axial>,
-}
-
-//Additionally removes need to special case animation.
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct GameState {
-    factions: Factions,
-    env: Environment,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum GameOver {
-    CatWon,
-    DogWon,
-    Tie,
-}
-
-impl GameState {
-    pub fn game_is_over(&self, world: &board::MyWorld, team: ActiveTeam) -> Option<GameOver> {
-        let this_team_stuck = 'foo: {
-            for unit in self.factions.relative(team).this_team.units.iter() {
-                let mesh =
-                    self.generate_possible_moves_movement(world, &unit.position, unit.typ, team);
-                if !mesh.is_empty() {
-                    break 'foo false;
-                }
-            }
-            true
-        };
-
-        if this_team_stuck {
-            match team {
-                ActiveTeam::Cats => Some(GameOver::DogWon),
-                ActiveTeam::Dogs => Some(GameOver::CatWon),
-            }
-        } else {
-            None
-        }
-    }
-}
 #[wasm_bindgen]
 pub async fn worker_entry() {
     console_error_panic_hook::set_once();
@@ -767,7 +670,7 @@ impl<'a> DepthDisabler<'a> {
 
 use web_sys::{OffscreenCanvas, WebGl2RenderingContext};
 
-use crate::ace::{ActiveTeam, Pototo};
+use crate::ace::Pototo;
 use crate::model_parse::{Foo, ModelGpu, TextureGpu};
 
 //TODO move this to a seperate crate
