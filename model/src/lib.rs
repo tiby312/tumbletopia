@@ -128,6 +128,7 @@ impl Doop {
                     let image =
                         image::load_from_memory_with_format(data, image::ImageFormat::Png).unwrap();
 
+                    
                     //unpremultiply here?
 
                     let width = image.width();
@@ -147,6 +148,21 @@ impl Doop {
                             a.0[3] = (alpha * 256.0) as u8;
                         }
                     }
+
+                    // greyscale
+                    // for a in rgba_image.pixels_mut() {
+                    
+                    //     let r=a.0[0] as f64 /256.0;
+                    //     let g=a.0[1] as f64 /256.0;
+                    //     let b=a.0[2] as f64 /256.0;
+                        
+                    //     let coll =  0.299 * r + 0.587 * g + 0.114 * b;
+                    
+                    //     a.0[0] = (coll * 256.0) as u8;
+                    //     a.0[1] = (coll * 256.0) as u8;
+                    //     a.0[2] = (coll * 256.0) as u8;
+                        
+                    // }
 
                     let data = rgba_image.into_raw();
 
