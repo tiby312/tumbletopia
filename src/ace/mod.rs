@@ -81,14 +81,14 @@ impl WorkerManager {
         game: &mut GameState,
         grey: bool,
     ) -> Pototo<Axial> {
-        let cell2 = std::mem::take(cell);
+        let selection = std::mem::take(cell);
 
         let b = self
             .send_command(
                 team,
                 game,
                 Command::GetMouseInputSelection {
-                    selection: cell2,
+                    selection,
                     grey,
                 },
             )
