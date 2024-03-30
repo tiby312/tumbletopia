@@ -43,15 +43,9 @@ pub mod small_mesh {
         )
     }
 
-    #[derive(PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
+    #[derive(Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
     pub struct SmallMesh {
         pub inner: u128,
-    }
-
-    impl Default for SmallMesh {
-        fn default() -> Self {
-            Self::new()
-        }
     }
 
     impl SmallMesh {

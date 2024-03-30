@@ -83,31 +83,38 @@ impl WorkerManager {
 
     async fn get_mouse_with_mesh(
         &mut self,
-        cell: CellSelection,
+        cell: &mut CellSelection,
         team: ActiveTeam,
-        game: GameState,
+        game: &mut GameState,
         grey: bool,
-    ) -> (CellSelection, Pototo<Axial>, GameState) {
-        let (a, b) = self
+    ) -> Pototo<Axial> {
+        let cell2 = std::mem::take(cell);
+        let mut game2 = std::mem::take(game);
+
+        let b = self
             .send_command(
                 team,
-                game,
+                &mut game2,
                 Command::GetMouseInputSelection {
-                    selection: cell,
+                    selection: cell2,
                     grey,
                 },
             )
             .await;
 
-        let Response::MouseWithSelection(cell, o) = b else {
+        std::mem::swap(game, &mut game2);
+
+        let Response::MouseWithSelection(mut cell2, o) = b else {
             unreachable!();
         };
 
-        (cell, o, a)
+        std::mem::swap(&mut cell2, cell);
+
+        o
     }
 
-    async fn get_mouse(&mut self, team: ActiveTeam, game: GameState) -> (Pototo<Axial>, GameState) {
-        let (a, b) = self
+    async fn get_mouse(&mut self, team: ActiveTeam, game: &mut GameState) -> Pototo<Axial> {
+        let b = self
             .send_command(team, game, Command::GetMouseInputNoSelect)
             .await;
 
@@ -115,25 +122,25 @@ impl WorkerManager {
             unreachable!();
         };
 
-        (o, a)
+        o
     }
 
-    async fn poke(&mut self, team: ActiveTeam, game: GameState) {
-        self.sender
-            .send(GameWrap {
-                game,
-                data: Command::Poke,
-                team,
-            })
-            .await
-            .unwrap();
+    // async fn poke(&mut self, team: ActiveTeam, game: GameState) {
+    //     self.sender
+    //         .send(GameWrap {
+    //             game,
+    //             data: Command::Poke,
+    //             team,
+    //         })
+    //         .await
+    //         .unwrap();
 
-        let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
+    //     let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
 
-        let Response::Ack = data else {
-            unreachable!();
-        };
-    }
+    //     let Response::Ack = data else {
+    //         unreachable!();
+    //     };
+    // }
 
     async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: GameState) -> GameState {
         self.sender
@@ -180,21 +187,24 @@ impl WorkerManager {
     async fn send_command(
         &mut self,
         team: ActiveTeam,
-        game: GameState,
+        game1: &mut GameState,
         co: Command,
-    ) -> (GameState, Response) {
+    ) -> Response {
+        let game2 = std::mem::take(game1);
         self.sender
             .send(GameWrap {
-                game,
+                game: game2,
                 data: co,
                 team,
             })
             .await
             .unwrap();
 
-        let GameWrapResponse { game, data } = self.receiver.next().await.unwrap();
+        let GameWrapResponse { mut game, data } = self.receiver.next().await.unwrap();
 
-        (game, data)
+        std::mem::swap(&mut game, game1);
+
+        data
     }
 }
 
@@ -294,12 +304,11 @@ pub async fn reselect_loop(
     });
 
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
-    let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
+    let mut cell = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
 
-    let (cell, pototo, gg) = doop
-        .get_mouse_with_mesh(cc, selected_unit.team, game, grey)
+    let pototo = doop
+        .get_mouse_with_mesh(&mut cell, selected_unit.team, &mut game, grey)
         .await;
-    game = gg;
 
     let mouse_world = match pototo {
         Pototo::Normal(t) => t,
@@ -556,8 +565,7 @@ async fn handle_player(
     loop {
         //Loop until the user clicks on a selectable unit in their team.
         let mut selected_unit = loop {
-            let data;
-            (data, game) = doop.get_mouse(team, game).await;
+            let data = doop.get_mouse(team, &mut game).await;
 
             let cell = match data {
                 Pototo::Normal(a) => a,

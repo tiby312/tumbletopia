@@ -16,6 +16,11 @@ pub enum CellSelection {
     ),
     BuildSelection(Axial),
 }
+impl Default for CellSelection {
+    fn default() -> Self {
+        CellSelection::BuildSelection(Axial::default())
+    }
+}
 
 #[derive(Hash, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Type {
@@ -55,7 +60,7 @@ impl std::ops::Deref for Tribe {
     }
 }
 
-#[derive(Default,Eq, PartialEq, Hash, Clone, Debug)]
+#[derive(Default, Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Tribe {
     pub units: Vec<UnitData>,
 }
