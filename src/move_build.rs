@@ -150,32 +150,30 @@ impl ExtraPhase {
             let k = self.original.to_cube();
             for a in std::iter::once(k).chain(k.ring(1)).chain(k.ring(2)) {
                 if bb.0.is_set(a.sub(self.original.to_cube()).to_axial()) {
-                    gg = data
-                        .wait_animation(
-                            animation::AnimationCommand::Terrain {
-                                pos: a.to_axial(),
-                                terrain_type: animation::TerrainType::Grass,
-                                dir: animation::AnimationDirection::Up,
-                            },
-                            team,
-                            gg,
-                        )
-                        .await;
+                    data.wait_animation(
+                        animation::AnimationCommand::Terrain {
+                            pos: a.to_axial(),
+                            terrain_type: animation::TerrainType::Grass,
+                            dir: animation::AnimationDirection::Up,
+                        },
+                        team,
+                        &mut gg,
+                    )
+                    .await;
                     gg.env.land.set_coord(a.to_axial(), true);
                 }
             }
         } else {
-            gg = data
-                .wait_animation(
-                    animation::AnimationCommand::Terrain {
-                        pos: target,
-                        terrain_type: animation::TerrainType::Grass,
-                        dir: animation::AnimationDirection::Up,
-                    },
-                    team,
-                    gg,
-                )
-                .await;
+            data.wait_animation(
+                animation::AnimationCommand::Terrain {
+                    pos: target,
+                    terrain_type: animation::TerrainType::Grass,
+                    dir: animation::AnimationDirection::Up,
+                },
+                team,
+                &mut gg,
+            )
+            .await;
 
             gg.env.land.set_coord(target, true);
         }
@@ -186,17 +184,16 @@ impl ExtraPhase {
         for a in fog.0.iter_mesh(self.moveto) {
             gg.env.fog.set_coord(a, false);
             // Change mesh
-            gg = data
-                .wait_animation(
-                    animation::AnimationCommand::Terrain {
-                        pos: a,
-                        terrain_type: animation::TerrainType::Fog,
-                        dir: animation::AnimationDirection::Down,
-                    },
-                    team,
-                    gg,
-                )
-                .await;
+            data.wait_animation(
+                animation::AnimationCommand::Terrain {
+                    pos: a,
+                    terrain_type: animation::TerrainType::Fog,
+                    dir: animation::AnimationDirection::Down,
+                },
+                team,
+                &mut gg,
+            )
+            .await;
         }
 
         self
@@ -289,19 +286,18 @@ impl MovePhase {
             PushInfo::None => {}
         }
 
-        let _ = data
-            .wait_animation(
-                animation::AnimationCommand::Movement {
-                    unit: this_unit.clone(),
-                    mesh,
-                    walls,
-                    end,
-                    data: info,
-                },
-                team,
-                ss,
-            )
-            .await;
+        data.wait_animation(
+            animation::AnimationCommand::Movement {
+                unit: this_unit.clone(),
+                mesh,
+                walls,
+                end,
+                data: info,
+            },
+            team,
+            &mut ss,
+        )
+        .await;
         self
     }
 

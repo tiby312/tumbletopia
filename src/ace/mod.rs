@@ -63,22 +63,15 @@ impl WorkerManager {
         &mut self,
         animation: animation::AnimationCommand,
         team: ActiveTeam,
-        game: GameState,
-    ) -> GameState {
-        self.sender
-            .send(GameWrap {
-                team,
-                game,
-                data: Command::Animate(animation),
-            })
-            .await
-            .unwrap();
+        game: &mut GameState,
+    ) {
+        let data = self
+            .send_command(team, game, Command::Animate(animation))
+            .await;
 
-        let GameWrapResponse { game, data } = self.receiver.next().await.unwrap();
         let Response::AnimationFinish = data else {
             unreachable!();
         };
-        game
     }
 
     async fn get_mouse_with_mesh(
@@ -89,20 +82,17 @@ impl WorkerManager {
         grey: bool,
     ) -> Pototo<Axial> {
         let cell2 = std::mem::take(cell);
-        let mut game2 = std::mem::take(game);
 
         let b = self
             .send_command(
                 team,
-                &mut game2,
+                game,
                 Command::GetMouseInputSelection {
                     selection: cell2,
                     grey,
                 },
             )
             .await;
-
-        std::mem::swap(game, &mut game2);
 
         let Response::MouseWithSelection(mut cell2, o) = b else {
             unreachable!();
@@ -142,24 +132,24 @@ impl WorkerManager {
     //     };
     // }
 
-    async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: GameState) -> GameState {
-        self.sender
-            .send(GameWrap {
-                game,
-                data: Command::Popup(str.into()),
-                team,
-            })
-            .await
-            .unwrap();
+    // async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: GameState) -> GameState {
+    //     self.sender
+    //         .send(GameWrap {
+    //             game,
+    //             data: Command::Popup(str.into()),
+    //             team,
+    //         })
+    //         .await
+    //         .unwrap();
 
-        let GameWrapResponse { game, data } = self.receiver.next().await.unwrap();
+    //     let GameWrapResponse { game, data } = self.receiver.next().await.unwrap();
 
-        let Response::Ack = data else {
-            unreachable!();
-        };
+    //     let Response::Ack = data else {
+    //         unreachable!();
+    //     };
 
-        game
-    }
+    //     game
+    // }
 
     // TODO do this
     // async fn send_command_mut(
@@ -519,9 +509,9 @@ pub async fn main_logic(mut game: GameState, world: &board::MyWorld, mut doop: W
         //Add AIIIIII.
         if team == ActiveTeam::Cats {
             //{
-            game = doop.send_popup("AI Thinking", team, game).await;
+            //game = doop.send_popup("AI Thinking", team, game).await;
             let the_move = ai::iterative_deepening(&mut game, world, team);
-            game = doop.send_popup("", team, game).await;
+            //game = doop.send_popup("", team, game).await;
 
             let kk = the_move.as_move();
 
