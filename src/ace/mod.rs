@@ -235,8 +235,6 @@ pub async fn reselect_loop(
     console_dbg!(have_moved.is_some());
     //At this point we know a friendly unit is currently selected.
 
-    //let mut relative_game_view = game.view_mut(selected_unit.team);
-
     let unwrapped_selected_unit = selected_unit.warrior;
 
     let unit = game
@@ -357,58 +355,56 @@ pub async fn reselect_loop(
     //At this point all re-selecting of units based off of the input has occured.
     //We definately want to act on the action the user took on the selected unit.
 
-    {
-        if let Some(e) = have_moved.take() {
-            let meta = e
-                .the_move
-                .clone()
-                .into_attack(target_cell)
-                .animate(selected_unit.team, &mut game, world, doop)
-                .await
-                .apply(selected_unit.team, &mut game, world);
+    if let Some(e) = have_moved.take() {
+        let meta = e
+            .the_move
+            .clone()
+            .into_attack(target_cell)
+            .animate(selected_unit.team, &mut game, world, doop)
+            .await
+            .apply(selected_unit.team, &mut game, world);
 
-            let effect = e.effect.combine(meta);
+        let effect = e.effect.combine(meta);
 
-            (
-                game,
-                LoopRes::EndTurn((
-                    moves::ActualMove {
-                        original: e.the_move.original,
-                        moveto: e.the_move.moveto,
-                        attackto: target_cell,
-                    },
-                    effect,
-                )),
-            )
-        } else {
-            let p = unit.position;
-            let this_unit = game
-                .factions
-                .relative_mut(selected_unit.team)
-                .this_team
-                .find_slow_mut(&p)
-                .unwrap();
-            let c = target_cell;
-            let mut kk = this_unit.clone();
-            kk.position = target_cell;
+        (
+            game,
+            LoopRes::EndTurn((
+                moves::ActualMove {
+                    original: e.the_move.original,
+                    moveto: e.the_move.moveto,
+                    attackto: target_cell,
+                },
+                effect,
+            )),
+        )
+    } else {
+        let p = unit.position;
+        let this_unit = game
+            .factions
+            .relative_mut(selected_unit.team)
+            .this_team
+            .find_slow_mut(&p)
+            .unwrap();
+        let c = target_cell;
+        let mut kk = this_unit.clone();
+        kk.position = target_cell;
 
-            let mp = move_build::MovePhase {
-                original: p,
-                moveto: target_cell,
-            };
+        let mp = move_build::MovePhase {
+            original: p,
+            moveto: target_cell,
+        };
 
-            let effect = mp
-                .animate(selected_unit.team, &mut game, world, doop)
-                .await
-                .apply(selected_unit.team, &mut game);
+        let effect = mp
+            .animate(selected_unit.team, &mut game, world, doop)
+            .await
+            .apply(selected_unit.team, &mut game);
 
-            {
-                *have_moved = Some(selection::HaveMoved {
-                    the_move: mp,
-                    effect,
-                });
-                (game, LoopRes::Select(selected_unit.with(c).with_team(team)))
-            }
+        {
+            *have_moved = Some(selection::HaveMoved {
+                the_move: mp,
+                effect,
+            });
+            (game, LoopRes::Select(selected_unit.with(c).with_team(team)))
         }
     }
 }

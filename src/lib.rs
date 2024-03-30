@@ -157,7 +157,7 @@ pub async fn worker_entry() {
     let shader = shader_sys::ShaderSystem::new(&ctx).unwrap();
 
     let models = Models::new(&grid_matrix, &shader);
-    
+
     let mut render = EngineStuff {
         grid_matrix,
         models,
@@ -174,7 +174,6 @@ pub async fn worker_entry() {
 
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
-    
 
     let j = async {
         while let Some(ace::GameWrap {
@@ -201,7 +200,17 @@ pub async fn worker_entry() {
         }
     };
 
-    futures::join!(ace::main_logic(game, &world, ace::WorkerManager { sender: command_sender, receiver: response_recv, }), j);
+    futures::join!(
+        ace::main_logic(
+            game,
+            &world,
+            ace::WorkerManager {
+                sender: command_sender,
+                receiver: response_recv,
+            }
+        ),
+        j
+    );
 
     log!("Worker thread closin");
 }
@@ -216,7 +225,6 @@ pub struct EngineStuff {
     last_matrix: cgmath::Matrix4<f32>,
     shader: ShaderSystem,
 }
-
 
 async fn render_command(
     command: ace::Command,
@@ -555,8 +563,6 @@ async fn render_command(
             }
         }
 
-  
-
         {
             // Draw shadows
             let d = DepthDisabler::new(ctx);
@@ -592,7 +598,7 @@ async fn render_command(
 
             let ani_cat = unit_animation
                 .as_ref()
-                .map(|(pos, _, _unit, data)| {
+                .map(|(pos, _, _unit, _data)| {
                     my_matrix
                         .chain(matrix::translation(pos.x, pos.y, 0.0))
                         .chain(matrix::scale(1.0, 1.0, 1.0))
@@ -616,7 +622,7 @@ async fn render_command(
 
             let ani_dog = unit_animation
                 .as_ref()
-                .map(|(pos, _, _unit, data)| {
+                .map(|(pos, _, _unit, _data)| {
                     my_matrix
                         .chain(matrix::translation(pos.x, pos.y, 0.0))
                         .chain(matrix::scale(1.0, 1.0, 1.0))
@@ -628,7 +634,6 @@ async fn render_command(
 
             draw_sys.batch(all_dogs).build(dog);
         }
-
 
         // let d = DepthDisabler::new(ctx);
 
