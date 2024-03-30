@@ -9,10 +9,10 @@ pub struct GameWrap<T> {
     pub data: T,
 }
 
-pub struct GameWrapResponse<T> {
-    pub game: GameState,
-    pub data: T,
-}
+// pub struct GameWrapResponse<T> {
+//     pub game: GameState,
+//     pub data: T,
+// }
 
 pub struct AnimationWrapper<K> {
     pub unwrapper: K,
@@ -55,7 +55,7 @@ use futures::{
 
 pub struct WorkerManager {
     pub sender: Sender<GameWrap<Command>>,
-    pub receiver: Receiver<GameWrapResponse<Response>>,
+    pub receiver: Receiver<GameWrap<Response>>,
 }
 
 impl WorkerManager {
@@ -87,10 +87,7 @@ impl WorkerManager {
             .send_command(
                 team,
                 game,
-                Command::GetMouseInputSelection {
-                    selection,
-                    grey,
-                },
+                Command::GetMouseInputSelection { selection, grey },
             )
             .await;
 
@@ -132,11 +129,11 @@ impl WorkerManager {
     //     };
     // }
 
-    async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: &mut GameState)  {
-        self.send_command(team, game,Command::Popup(str.into())).await;
+    async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: &mut GameState) {
+        self.send_command(team, game, Command::Popup(str.into()))
+            .await;
 
-
-        let GameWrapResponse { data ,..} = self.receiver.next().await.unwrap();
+        let GameWrap { data, .. } = self.receiver.next().await.unwrap();
 
         let Response::Ack = data else {
             unreachable!();
@@ -182,7 +179,7 @@ impl WorkerManager {
             .await
             .unwrap();
 
-        let GameWrapResponse { mut game, data } = self.receiver.next().await.unwrap();
+        let GameWrap { mut game, data, .. } = self.receiver.next().await.unwrap();
 
         std::mem::swap(&mut game, game1);
 

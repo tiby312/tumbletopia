@@ -1,4 +1,3 @@
-use ace::GameWrapResponse;
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use gloo::console::console_dbg;
 
@@ -176,10 +175,27 @@ pub async fn worker_entry() {
     let (mut rm, w) = create_worker_render();
 
     let j = async {
-        while let Some(game_wrap) = rm.command_recv.next().await {
-            let e = render_command(game_wrap, &mut render, &world, &mut frame_timer, &mut wr).await;
+        while let Some(ace::GameWrap {
+            mut game,
+            data,
+            team,
+        }) = rm.command_recv.next().await
+        {
+            let data = render_command(
+                data,
+                &mut game,
+                team,
+                &mut render,
+                &world,
+                &mut frame_timer,
+                &mut wr,
+            )
+            .await;
 
-            rm.response_sender.send(e).await.unwrap();
+            rm.response_sender
+                .send(ace::GameWrap { game, data, team })
+                .await
+                .unwrap();
         }
     };
 
@@ -217,17 +233,19 @@ fn create_worker_render() -> (RenderManager, ace::WorkerManager) {
 }
 
 struct RenderManager {
-    response_sender: futures::channel::mpsc::Sender<GameWrapResponse<ace::Response>>,
+    response_sender: futures::channel::mpsc::Sender<ace::GameWrap<ace::Response>>,
     command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<ace::Command>>,
 }
 
 async fn render_command(
-    ace::GameWrap { game, data, team }: ace::GameWrap<ace::Command>,
+    command: ace::Command,
+    game: &mut GameState,
+    team: ActiveTeam,
     e: &mut EngineStuff,
     world: &board::MyWorld,
     frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
     engine_worker: &mut shogo::EngineWorker<MEvent, UiButton>,
-) -> ace::GameWrapResponse<ace::Response> {
+) -> ace::Response {
     let scroll_manager = &mut e.scroll_manager;
     let last_matrix = &mut e.last_matrix;
     let ctx = &e.ctx;
@@ -261,20 +279,14 @@ async fn render_command(
     let mut terrain_animation = None;
     let mut poking = 0;
 
-    match data {
+    match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(UiButton::HidePopup);
-            return ace::GameWrapResponse {
-                game,
-                data: ace::Response::Ack,
-            };
+            return ace::Response::Ack;
         }
         ace::Command::ShowUndo => {
             engine_worker.post_message(UiButton::HidePopup);
-            return ace::GameWrapResponse {
-                game,
-                data: ace::Response::Ack,
-            };
+            return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
             animation::AnimationCommand::Movement {
@@ -320,10 +332,7 @@ async fn render_command(
                 engine_worker.post_message(UiButton::ShowPopup(str));
             }
 
-            return ace::GameWrapResponse {
-                game,
-                data: ace::Response::Ack,
-            };
+            return ace::Response::Ack;
         }
         ace::Command::Poke => {
             poking = 3;
@@ -333,10 +342,7 @@ async fn render_command(
     loop {
         if poking == 1 {
             console_dbg!("we poked!");
-            return ace::GameWrapResponse {
-                game,
-                data: ace::Response::Ack,
-            };
+            return ace::Response::Ack;
         }
         poking = 0.max(poking - 1);
 
@@ -412,10 +418,7 @@ async fn render_command(
 
         if get_mouse_input.is_some() {
             if end_turn {
-                return ace::GameWrapResponse {
-                    game,
-                    data: ace::Response::Mouse(Pototo::EndTurn),
-                };
+                return ace::Response::Mouse(Pototo::EndTurn);
             } else if on_select {
                 let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
                 log!(format!("pos:{:?}", mouse));
@@ -426,7 +429,7 @@ async fn render_command(
                     ace::Response::Mouse(Pototo::Normal(mouse))
                 };
 
-                return ace::GameWrapResponse { game, data };
+                return data;
             }
         }
 
@@ -434,20 +437,14 @@ async fn render_command(
             if let Some(zpos) = a.next() {
                 *z = zpos;
             } else {
-                return ace::GameWrapResponse {
-                    game,
-                    data: ace::Response::AnimationFinish,
-                };
+                return ace::Response::AnimationFinish;
             }
         }
         if let Some((lpos, a, _, _data)) = &mut unit_animation {
             if let Some(pos) = a.next() {
                 *lpos = pos;
             } else {
-                return ace::GameWrapResponse {
-                    game,
-                    data: ace::Response::AnimationFinish,
-                };
+                return ace::Response::AnimationFinish;
             }
         }
 
