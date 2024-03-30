@@ -577,6 +577,30 @@ async fn render_command(
   
 
         {
+            // Draw shadows
+            let d = DepthDisabler::new(ctx);
+
+            let shadows = game
+                .factions
+                .cats
+                .iter()
+                .map(|x| x.position)
+                .chain(game.factions.dogs.iter().map(|x| x.position))
+                .map(|e| grid_snap(e, 1.0));
+
+            let ani_drop_shadow = unit_animation.as_ref().map(|a| {
+                let pos = a.0;
+                my_matrix
+                    .chain(matrix::translation(pos.x, pos.y, 1.0))
+                    .generate()
+            });
+
+            let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
+
+            draw_sys.batch(all_shadows).build(drop_shadow);
+        }
+        
+        {
             //Draw cats
             let cats = game
                 .factions
@@ -624,29 +648,6 @@ async fn render_command(
             draw_sys.batch(all_dogs).build(dog);
         }
 
-        {
-            // Draw shadows
-            //let d = DepthDisabler::new(ctx);
-
-            let shadows = game
-                .factions
-                .cats
-                .iter()
-                .map(|x| x.position)
-                .chain(game.factions.dogs.iter().map(|x| x.position))
-                .map(|e| grid_snap(e, 1.0));
-
-            let ani_drop_shadow = unit_animation.as_ref().map(|a| {
-                let pos = a.0;
-                my_matrix
-                    .chain(matrix::translation(pos.x, pos.y, 1.0))
-                    .generate()
-            });
-
-            let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
-
-            draw_sys.batch(all_shadows).build(drop_shadow);
-        }
 
         // let d = DepthDisabler::new(ctx);
 
