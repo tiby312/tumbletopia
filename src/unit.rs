@@ -48,6 +48,7 @@ impl Factions {
     }
 }
 
+#[must_use]
 #[derive(Hash, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ActiveTeam {
     Cats = 0,

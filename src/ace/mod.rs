@@ -183,22 +183,8 @@ impl WorkerManager {
 }
 
 pub struct SelectType {
-    warrior: Axial,
+    coord: Axial,
     team: ActiveTeam,
-}
-impl SelectType {
-    pub fn with(mut self, a: Axial) -> Self {
-        self.warrior = a;
-        self
-    }
-    pub fn not(mut self) -> Self {
-        self.team = self.team.not();
-        self
-    }
-    pub fn with_team(mut self, a: ActiveTeam) -> Self {
-        self.team = a;
-        self
-    }
 }
 
 pub enum LoopRes<T> {
@@ -213,12 +199,12 @@ pub async fn reselect_loop(
     world: &board::MyWorld,
     team: ActiveTeam,
     have_moved: &mut Option<selection::HaveMoved>,
-    selected_unit: SelectType,
+    mut selected_unit: SelectType,
 ) -> LoopRes<SelectType> {
     console_dbg!(have_moved.is_some());
     //At this point we know a friendly unit is currently selected.
 
-    let unwrapped_selected_unit = selected_unit.warrior;
+    let unwrapped_selected_unit = selected_unit.coord;
 
     let unit = game
         .factions
@@ -233,7 +219,7 @@ pub async fn reselect_loop(
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
         if let Some(e) = have_moved {
-            e.the_move.moveto != selected_unit.warrior
+            e.the_move.moveto != selected_unit.coord
         } else {
             false
         }
@@ -242,7 +228,7 @@ pub async fn reselect_loop(
     };
 
     let cca = if let Some(have_moved) = have_moved {
-        (selected_unit.warrior == have_moved.the_move.moveto).then(|| {
+        (selected_unit.coord == have_moved.the_move.moveto).then(|| {
             game.generate_possible_moves_extra(
                 world,
                 &have_moved.the_move,
@@ -299,7 +285,8 @@ pub async fn reselect_loop(
         if !contains {
             //it should be impossible for a unit to move onto a friendly
             //assert!(!contains);
-            return LoopRes::Select(selected_unit.with(tt));
+            selected_unit.coord = tt;
+            return LoopRes::Select(selected_unit);
         }
     }
 
@@ -313,7 +300,9 @@ pub async fn reselect_loop(
         let tt = target.position;
         if selected_unit.team != team || !contains {
             //If we select an enemy unit thats outside of our units range.
-            return LoopRes::Select(selected_unit.with(tt).not());
+            selected_unit.coord = tt;
+            selected_unit.team = selected_unit.team.not();
+            return LoopRes::Select(selected_unit);
         }
     }
 
@@ -384,7 +373,9 @@ pub async fn reselect_loop(
                 the_move: mp,
                 effect,
             });
-            LoopRes::Select(selected_unit.with(c).with_team(team))
+            selected_unit.coord = c;
+            selected_unit.team = team;
+            LoopRes::Select(selected_unit)
         }
     }
 }
@@ -537,13 +528,13 @@ async fn handle_player(
 
             if let Some(unit) = game.factions.relative(team).this_team.find_slow(&cell) {
                 break SelectType {
-                    warrior: unit.position,
+                    coord: unit.position,
                     team,
                 };
             }
             if let Some(unit) = game.factions.relative(team).that_team.find_slow(&cell) {
                 break SelectType {
-                    warrior: unit.position,
+                    coord: unit.position,
                     team: team.not(),
                 };
             }
