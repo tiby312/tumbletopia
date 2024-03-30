@@ -106,7 +106,6 @@ pub struct Environment {
 pub struct GameState {
     factions: Factions,
     env: Environment,
-    world: &'static board::MyWorld,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -117,10 +116,11 @@ pub enum GameOver {
 }
 
 impl GameState {
-    pub fn game_is_over(&self, team: ActiveTeam) -> Option<GameOver> {
+    pub fn game_is_over(&self, world: &board::MyWorld, team: ActiveTeam) -> Option<GameOver> {
         let this_team_stuck = 'foo: {
             for unit in self.factions.relative(team).this_team.units.iter() {
-                let mesh = self.generate_possible_moves_movement(&unit.position, unit.typ, team);
+                let mesh =
+                    self.generate_possible_moves_movement(world, &unit.position, unit.typ, team);
                 if !mesh.is_empty() {
                     break 'foo false;
                 }
@@ -170,18 +170,20 @@ pub async fn worker_entry() {
         shader,
     };
 
-    let game = ace::game_init();
+    let world = board::MyWorld::new();
+
+    let game = ace::game_init(&world);
     let (mut rm, w) = create_worker_render();
 
     let j = async {
         while let Some(game_wrap) = rm.command_recv.next().await {
-            let e = render_command(game_wrap, &mut render, &mut frame_timer, &mut wr).await;
+            let e = render_command(game_wrap, &mut render, &world, &mut frame_timer, &mut wr).await;
 
             rm.response_sender.send(e).await.unwrap();
         }
     };
 
-    futures::join!(ace::main_logic(game, w), j);
+    futures::join!(ace::main_logic(game, &world, w), j);
 
     log!("Worker thread closin");
 }
@@ -222,6 +224,7 @@ struct RenderManager {
 async fn render_command(
     ace::GameWrap { game, data, team }: ace::GameWrap<ace::Command>,
     e: &mut EngineStuff,
+    world: &board::MyWorld,
     frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
     engine_worker: &mut shogo::EngineWorker<MEvent, UiButton>,
 ) -> ace::GameWrapResponse<ace::Response> {
@@ -259,14 +262,14 @@ async fn render_command(
     let mut poking = 0;
 
     match data {
-        ace::Command::HideUndo=>{
+        ace::Command::HideUndo => {
             engine_worker.post_message(UiButton::HidePopup);
             return ace::GameWrapResponse {
                 game,
                 data: ace::Response::Ack,
             };
         }
-        ace::Command::ShowUndo=>{
+        ace::Command::ShowUndo => {
             engine_worker.post_message(UiButton::HidePopup);
             return ace::GameWrapResponse {
                 game,
@@ -464,7 +467,7 @@ async fn render_command(
             let mut g = game.env.land.clone();
             g.union_with(&game.env.fog);
             g.toggle_range(..);
-            g.intersect_with(game.world.get_game_cells());
+            g.intersect_with(world.get_game_cells());
             g
         };
 

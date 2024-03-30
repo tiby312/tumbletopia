@@ -3,9 +3,9 @@ use super::*;
 use crate::mesh::small_mesh::SmallMesh;
 
 impl GameState {
-    fn check_if_occ(&self, a: Axial, check_fog: bool) -> bool {
+    fn check_if_occ(&self, world: &board::MyWorld, a: Axial, check_fog: bool) -> bool {
         let game = self;
-        let is_world_cell = game.world.get_game_cells().is_coord_set(a);
+        let is_world_cell = world.get_game_cells().is_coord_set(a);
 
         let jjj = if check_fog {
             !game.env.fog.is_coord_set(a)
@@ -22,6 +22,7 @@ impl GameState {
 
     pub fn generate_possible_moves_extra(
         &self,
+        world: &board::MyWorld,
         foo: &move_build::MovePhase,
         _typ: Type,
         _team: ActiveTeam,
@@ -38,7 +39,7 @@ impl GameState {
         {
             let a = a.to_axial();
 
-            if a != unit && game.check_if_occ(a, true) {
+            if a != unit && game.check_if_occ(world, a, true) {
                 mesh.add(a.sub(&unit));
 
                 // for a in a.to_cube().ring(1) {
@@ -54,6 +55,7 @@ impl GameState {
     }
     pub fn generate_possible_moves_movement(
         &self,
+        world: &board::MyWorld,
         &unit: &Axial,
         typ: Type,
         _team: ActiveTeam,
@@ -64,14 +66,14 @@ impl GameState {
             let a = a.to_axial();
             let dir = unit.dir_to(&a);
 
-            if a != unit && game.check_if_occ(a, true) {
+            if a != unit && game.check_if_occ(world, a, true) {
                 mesh.add(a.sub(&unit));
 
                 if typ.is_warrior() {
                     for b in a.to_cube().ring(1) {
                         let b = b.to_axial();
 
-                        if b != unit && game.check_if_occ(b, true) {
+                        if b != unit && game.check_if_occ(world, b, true) {
                             mesh.add(b.sub(&unit));
                         }
                     }
@@ -79,7 +81,7 @@ impl GameState {
             } else if let Type::Warrior { powerup: _ } = typ {
                 if game.env.land.is_coord_set(a) {
                     let check = a.advance(dir);
-                    if a != unit && game.check_if_occ(check, true) {
+                    if a != unit && game.check_if_occ(world, check, true) {
                         mesh.add(a.sub(&unit));
                     }
                 }
@@ -97,14 +99,18 @@ pub struct ActualMove {
 }
 
 impl GameState {
-    pub fn for_all_moves_fast(&mut self, team: ActiveTeam) -> Vec<moves::ActualMove> {
+    pub fn for_all_moves_fast(
+        &mut self,
+        team: ActiveTeam,
+        world: &board::MyWorld,
+    ) -> Vec<moves::ActualMove> {
         let state = self;
         let mut movs = Vec::new();
         for i in 0..state.factions.relative(team).this_team.units.len() {
             let pos = state.factions.relative_mut(team).this_team.units[i].position;
             let ttt = state.factions.relative_mut(team).this_team.units[i].typ;
 
-            let mesh = state.generate_possible_moves_movement(&pos, ttt, team);
+            let mesh = state.generate_possible_moves_movement(world, &pos, ttt, team);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
@@ -114,14 +120,14 @@ impl GameState {
                 };
                 let effect = mmm.apply(team, state);
 
-                let second_mesh = state.generate_possible_moves_extra(&mmm, ttt, team);
+                let second_mesh = state.generate_possible_moves_extra(world, &mmm, ttt, team);
 
                 for sm in second_mesh.iter_mesh(mm) {
                     assert!(!state.env.land.is_coord_set(sm));
 
                     let kkk = mmm.into_attack(sm);
 
-                    let k = kkk.apply(team, state);
+                    let k = kkk.apply(team, state, world);
 
                     let mmo = moves::ActualMove {
                         original: pos,

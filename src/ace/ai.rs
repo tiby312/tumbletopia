@@ -7,7 +7,7 @@ const MATE: i64 = 1_000_000;
 
 //cats maximizing
 //dogs minimizing
-pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
+pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool) -> Eval {
     // Doesnt seem that important that the AI knows exactly when it is winning.
     // (There doesnt seem to be many tactical combinations near the end of the game).
     // match view.game_is_over() {
@@ -27,7 +27,7 @@ pub fn absolute_evaluate(view: &GameState, _debug: bool) -> Eval {
             t.toggle_range(..);
             t
         };
-        let mut t = view.world.get_game_cells().clone();
+        let mut t = world.get_game_cells().clone();
         t.intersect_with(&water);
         t
     };
@@ -249,7 +249,11 @@ impl PrincipalVariation {
     }
 }
 
-pub fn iterative_deepening(game: &GameState, team: ActiveTeam) -> moves::ActualMove {
+pub fn iterative_deepening(
+    game: &GameState,
+    world: &board::MyWorld,
+    team: ActiveTeam,
+) -> moves::ActualMove {
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
@@ -274,7 +278,7 @@ pub fn iterative_deepening(game: &GameState, team: ActiveTeam) -> moves::ActualM
         };
 
         let mut kk = game.clone();
-        let res = aaaa.alpha_beta(&mut kk, ABAB::new(), team, depth, 0);
+        let res = aaaa.alpha_beta(&mut kk, world, ABAB::new(), team, depth, 0);
         assert_eq!(&kk, game);
 
         let mov = foo1.a.get(&[] as &[_]).cloned().unwrap();
@@ -371,6 +375,7 @@ impl<'a> AlphaBeta<'a> {
     pub fn alpha_beta(
         &mut self,
         game_after_move: &mut GameState,
+        world: &board::MyWorld,
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
@@ -381,7 +386,7 @@ impl<'a> AlphaBeta<'a> {
         let foo = if depth == 0 {
             None
         } else {
-            let moves = game_after_move.for_all_moves_fast(team);
+            let moves = game_after_move.for_all_moves_fast(team, world);
 
             if !moves.is_empty() {
                 Some(moves)
@@ -392,7 +397,7 @@ impl<'a> AlphaBeta<'a> {
 
         let Some(mut moves) = foo else {
             self.calls.add_eval();
-            return absolute_evaluate(game_after_move, false);
+            return absolute_evaluate(game_after_move, world, false);
         };
 
         let mut num_sorted = 0;
@@ -421,13 +426,16 @@ impl<'a> AlphaBeta<'a> {
             let effect = {
                 let j = cand.as_move();
                 let k = j.apply(team, game_after_move);
-                let j = j.into_attack(cand.attackto).apply(team, game_after_move);
+                let j = j
+                    .into_attack(cand.attackto)
+                    .apply(team, game_after_move, world);
                 k.combine(j)
             };
 
             self.path.push(cand);
             let eval = self.alpha_beta(
                 game_after_move,
+                world,
                 kk.clone_ab_values(),
                 team.not(),
                 new_depth,

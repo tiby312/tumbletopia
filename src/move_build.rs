@@ -56,7 +56,7 @@ impl ExtraPhase {
     //returns a mesh where set bits indicate cells
     //that were fog before this function was called,
     //and were then unfogged.
-    fn compute_bomb(&self, game: &GameState) -> Option<BombInfo> {
+    fn compute_bomb(&self, game: &GameState, world: &board::MyWorld) -> Option<BombInfo> {
         if self.target != self.original || self.original.to_cube().dist(&self.moveto.to_cube()) != 2
         {
             return None;
@@ -65,7 +65,7 @@ impl ExtraPhase {
         let mut mesh = SmallMesh::new();
 
         for a in self.original.to_cube().range(2).map(|a| a.to_axial()) {
-            if !game.world.get_game_cells().is_coord_set(a) {
+            if !world.get_game_cells().is_coord_set(a) {
                 continue;
             }
 
@@ -87,12 +87,17 @@ impl ExtraPhase {
         Some(BombInfo(mesh))
     }
 
-    pub fn apply(&self, _team: ActiveTeam, game: &mut GameState) -> ExtraEffect {
+    pub fn apply(
+        &self,
+        _team: ActiveTeam,
+        game: &mut GameState,
+        world: &board::MyWorld,
+    ) -> ExtraEffect {
         let original = self.original;
         let moveto = self.moveto;
         let target_cell = self.target;
 
-        let bb = if let Some(bb) = self.compute_bomb(game) {
+        let bb = if let Some(bb) = self.compute_bomb(game, world) {
             bb.apply(original, game);
             Some(bb)
         } else {
@@ -134,13 +139,14 @@ impl ExtraPhase {
         &self,
         team: ActiveTeam,
         state: &GameState,
+        world: &board::MyWorld,
         data: &mut ace::WorkerManager,
     ) -> &Self {
         let target = self.target;
 
         let mut gg = state.clone();
 
-        if let Some(bb) = self.compute_bomb(state) {
+        if let Some(bb) = self.compute_bomb(state, world) {
             let k = self.original.to_cube();
             for a in std::iter::once(k).chain(k.ring(1)).chain(k.ring(2)) {
                 if bb.0.is_set(a.sub(self.original.to_cube()).to_axial()) {
@@ -228,6 +234,7 @@ impl MovePhase {
         &self,
         team: ActiveTeam,
         state: &GameState,
+        world: &board::MyWorld,
         data: &mut ace::WorkerManager,
     ) -> &Self {
         let this_unit = self.original;
@@ -240,7 +247,7 @@ impl MovePhase {
             .this_team
             .find_slow(&this_unit)
             .unwrap();
-        let mesh = state.generate_possible_moves_movement(&unit.position, unit.typ, team);
+        let mesh = state.generate_possible_moves_movement(world, &unit.position, unit.typ, team);
 
         let info = {
             let this_unit = state.factions.get_unit(team, self.original);
