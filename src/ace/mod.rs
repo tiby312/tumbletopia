@@ -3,15 +3,15 @@ mod ai;
 pub mod selection;
 use crate::{CellSelection, GameState, UnitData};
 
+use futures::{
+    channel::mpsc::{Receiver, Sender},
+    SinkExt, StreamExt,
+};
+
 pub struct GameWrap<T> {
     pub game: GameState,
     pub team: ActiveTeam,
     pub data: T,
-}
-
-pub struct AnimationWrapper<K> {
-    pub unwrapper: K,
-    pub enu: animation::AnimationCommand,
 }
 
 #[derive(Debug)]
@@ -31,22 +31,17 @@ pub enum Command {
 
 #[derive(Debug)]
 pub enum Response {
-    MouseWithSelection(CellSelection, Pototo<Axial>),
-    Mouse(Pototo<Axial>),
+    MouseWithSelection(CellSelection, MouseEvent<Axial>),
+    Mouse(MouseEvent<Axial>),
     AnimationFinish,
     Ack,
 }
 
 #[derive(Debug)]
-pub enum Pototo<T> {
+pub enum MouseEvent<T> {
     Normal(T),
     EndTurn,
 }
-
-use futures::{
-    channel::mpsc::{Receiver, Sender},
-    SinkExt, StreamExt,
-};
 
 pub struct WorkerManager {
     pub sender: Sender<GameWrap<Command>>,
@@ -75,7 +70,7 @@ impl WorkerManager {
         team: ActiveTeam,
         game: &mut GameState,
         grey: bool,
-    ) -> Pototo<Axial> {
+    ) -> MouseEvent<Axial> {
         let selection = std::mem::take(cell);
 
         let b = self
@@ -95,7 +90,7 @@ impl WorkerManager {
         o
     }
 
-    async fn get_mouse(&mut self, team: ActiveTeam, game: &mut GameState) -> Pototo<Axial> {
+    async fn get_mouse(&mut self, team: ActiveTeam, game: &mut GameState) -> MouseEvent<Axial> {
         let b = self
             .send_command(team, game, Command::GetMouseInputNoSelect)
             .await;
@@ -252,8 +247,8 @@ pub async fn reselect_loop(
         .await;
 
     let mouse_world = match pototo {
-        Pototo::Normal(t) => t,
-        Pototo::EndTurn => {
+        MouseEvent::Normal(t) => t,
+        MouseEvent::EndTurn => {
             //End the turn. Ok because we are not int he middle of anything.
             //return LoopRes::EndTurn;
             //unreachable!();
@@ -508,8 +503,8 @@ async fn handle_player(
             let data = doop.get_mouse(team, game).await;
 
             let cell = match data {
-                Pototo::Normal(a) => a,
-                Pototo::EndTurn => {
+                MouseEvent::Normal(a) => a,
+                MouseEvent::EndTurn => {
                     if extra_attack.is_none() {
                         assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
                         log!("undoing turn!!!");

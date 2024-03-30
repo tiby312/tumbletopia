@@ -221,7 +221,7 @@ fn doop(iteration: usize, dogs: &mut BitField, cats: &mut BitField, allowed_cell
 }
 
 //TODO use bump allocator!!!!!
-pub struct PrincipalVariation {
+struct PrincipalVariation {
     a: std::collections::BTreeMap<Vec<moves::ActualMove>, moves::ActualMove>,
 }
 impl PrincipalVariation {
@@ -320,7 +320,7 @@ pub fn iterative_deepening(
 }
 
 #[derive(Debug)]
-pub struct Counter {
+struct Counter {
     count: u128,
 }
 impl Counter {
@@ -329,7 +329,7 @@ impl Counter {
     }
 }
 
-pub struct AlphaBeta<'a> {
+struct AlphaBeta<'a> {
     //table: &'a mut LeafTranspositionTable,
     prev_cache: &'a mut PrincipalVariation,
     calls: &'a mut Counter,
@@ -338,7 +338,7 @@ pub struct AlphaBeta<'a> {
     max_ext: usize,
 }
 
-pub struct KillerMoves {
+struct KillerMoves {
     a: Vec<smallvec::SmallVec<[moves::ActualMove; 2]>>,
 }
 
@@ -366,13 +366,13 @@ impl KillerMoves {
 }
 
 #[derive(Debug, Clone)]
-pub struct EvalRet<T> {
+struct EvalRet<T> {
     pub mov: T,
     pub eval: Eval,
 }
 
 impl<'a> AlphaBeta<'a> {
-    pub fn alpha_beta(
+    fn alpha_beta(
         &mut self,
         game_after_move: &mut GameState,
         world: &board::MyWorld,

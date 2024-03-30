@@ -310,15 +310,15 @@ async fn render_command(
 
         if get_mouse_input.is_some() {
             if end_turn {
-                return ace::Response::Mouse(Pototo::EndTurn);
+                return ace::Response::Mouse(MouseEvent::EndTurn);
             } else if on_select {
                 let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
                 log!(format!("pos:{:?}", mouse));
 
                 let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
-                    ace::Response::MouseWithSelection(selection, Pototo::Normal(mouse))
+                    ace::Response::MouseWithSelection(selection, MouseEvent::Normal(mouse))
                 } else {
-                    ace::Response::Mouse(Pototo::Normal(mouse))
+                    ace::Response::Mouse(MouseEvent::Normal(mouse))
                 };
 
                 return data;
@@ -670,7 +670,7 @@ impl<'a> DepthDisabler<'a> {
 
 use web_sys::{OffscreenCanvas, WebGl2RenderingContext};
 
-use crate::ace::Pototo;
+use crate::ace::MouseEvent;
 use crate::model_parse::{Foo, ModelGpu, TextureGpu};
 
 //TODO move this to a seperate crate
