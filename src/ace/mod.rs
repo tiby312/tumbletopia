@@ -9,11 +9,6 @@ pub struct GameWrap<T> {
     pub data: T,
 }
 
-// pub struct GameWrapResponse<T> {
-//     pub game: GameState,
-//     pub data: T,
-// }
-
 pub struct AnimationWrapper<K> {
     pub unwrapper: K,
     pub enu: animation::AnimationCommand,
