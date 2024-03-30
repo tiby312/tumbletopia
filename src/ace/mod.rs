@@ -132,24 +132,16 @@ impl WorkerManager {
     //     };
     // }
 
-    // async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: GameState) -> GameState {
-    //     self.sender
-    //         .send(GameWrap {
-    //             game,
-    //             data: Command::Popup(str.into()),
-    //             team,
-    //         })
-    //         .await
-    //         .unwrap();
+    async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: &mut GameState)  {
+        self.send_command(team, game,Command::Popup(str.into())).await;
 
-    //     let GameWrapResponse { game, data } = self.receiver.next().await.unwrap();
 
-    //     let Response::Ack = data else {
-    //         unreachable!();
-    //     };
+        let GameWrapResponse { data ,..} = self.receiver.next().await.unwrap();
 
-    //     game
-    // }
+        let Response::Ack = data else {
+            unreachable!();
+        };
+    }
 
     // TODO do this
     // async fn send_command_mut(
@@ -509,9 +501,9 @@ pub async fn main_logic(mut game: GameState, world: &board::MyWorld, mut doop: W
         //Add AIIIIII.
         if team == ActiveTeam::Cats {
             //{
-            //game = doop.send_popup("AI Thinking", team, game).await;
+            //doop.send_popup("AI Thinking", team, &mut game).await;
             let the_move = ai::iterative_deepening(&mut game, world, team);
-            //game = doop.send_popup("", team, game).await;
+            //doop.send_popup("", team, &mut game).await;
 
             let kk = the_move.as_move();
 
