@@ -157,8 +157,7 @@ pub async fn worker_entry() {
     let shader = shader_sys::ShaderSystem::new(&ctx).unwrap();
 
     let models = Models::new(&grid_matrix, &shader);
-    //let numm = Numm::new(&ctx);
-
+    
     let mut render = EngineStuff {
         grid_matrix,
         models,
@@ -172,14 +171,17 @@ pub async fn worker_entry() {
     let world = board::MyWorld::new();
 
     let game = ace::game_init(&world);
-    let (mut rm, w) = create_worker_render();
+
+    let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
+    let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
+    
 
     let j = async {
         while let Some(ace::GameWrap {
             mut game,
             data,
             team,
-        }) = rm.command_recv.next().await
+        }) = command_recv.next().await
         {
             let data = render_command(
                 data,
@@ -192,14 +194,14 @@ pub async fn worker_entry() {
             )
             .await;
 
-            rm.response_sender
+            response_sender
                 .send(ace::GameWrap { game, data, team })
                 .await
                 .unwrap();
         }
     };
 
-    futures::join!(ace::main_logic(game, &world, w), j);
+    futures::join!(ace::main_logic(game, &world, ace::WorkerManager { sender: command_sender, receiver: response_recv, }), j);
 
     log!("Worker thread closin");
 }
@@ -215,27 +217,6 @@ pub struct EngineStuff {
     shader: ShaderSystem,
 }
 
-fn create_worker_render() -> (RenderManager, ace::WorkerManager) {
-    let (command_sender, command_recv) = futures::channel::mpsc::channel(5);
-    let (response_sender, response_recv) = futures::channel::mpsc::channel(5);
-    let doop = ace::WorkerManager {
-        sender: command_sender,
-        receiver: response_recv,
-    };
-
-    (
-        RenderManager {
-            response_sender,
-            command_recv,
-        },
-        doop,
-    )
-}
-
-struct RenderManager {
-    response_sender: futures::channel::mpsc::Sender<ace::GameWrap<ace::Response>>,
-    command_recv: futures::channel::mpsc::Receiver<ace::GameWrap<ace::Command>>,
-}
 
 async fn render_command(
     command: ace::Command,
@@ -599,7 +580,7 @@ async fn render_command(
 
             draw_sys.batch(all_shadows).build(drop_shadow);
         }
-        
+
         {
             //Draw cats
             let cats = game
