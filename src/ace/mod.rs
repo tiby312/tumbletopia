@@ -28,6 +28,8 @@ pub enum Command {
     },
     GetMouseInputNoSelect,
     Nothing,
+    ShowUndo,
+    HideUndo,
     Popup(String),
     Poke,
 }
@@ -56,27 +58,6 @@ pub struct WorkerManager {
     pub receiver: Receiver<GameWrapResponse<Response>>,
 }
 
-// trait Foop {
-//     type Ret;
-//     fn command(&self) -> Command;
-//     fn unpack(&self, r: Response) -> Self::Ret;
-// }
-
-// struct MousePrompt2(CellSelection);
-// impl Foop for MousePrompt2{
-//     type Ret=CellSelection;
-//     fn command(&self)->Command{
-//         Command::GetMouseInput(self.0)
-//     }
-//     fn unpack(&self,r:Response)->Self::Ret{
-//         let Response::Mouse(cell, o) = r else {
-//             unreachable!();
-//         };
-
-//         cell
-//     }
-// }
-
 impl WorkerManager {
     pub async fn wait_animation(
         &mut self,
@@ -100,7 +81,7 @@ impl WorkerManager {
         game
     }
 
-    async fn get_mouse_selection(
+    async fn get_mouse_with_mesh(
         &mut self,
         cell: CellSelection,
         team: ActiveTeam,
@@ -125,7 +106,7 @@ impl WorkerManager {
         (cell, o, a)
     }
 
-    async fn get_mouse_no_selection(
+    async fn get_mouse(
         &mut self,
         team: ActiveTeam,
         game: GameState,
@@ -157,6 +138,7 @@ impl WorkerManager {
             unreachable!();
         };
     }
+
     async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: GameState) -> GameState {
         self.sender
             .send(GameWrap {
@@ -176,14 +158,26 @@ impl WorkerManager {
         game
     }
 
-    // async fn doop<F: Foop>(
+    // TODO do this
+    // async fn send_command_mut(
     //     &mut self,
     //     team: ActiveTeam,
-    //     game: GameState,
-    //     f: F,
-    // ) -> (GameState, F::Ret) {
-    //     let (game, ret) = self.send_command(team, game, f.command()).await;
-    //     (game, f.unpack(ret))
+    //     game: &mut GameState,
+    //     co: Command,
+    // ) -> Response {
+
+    //     self.sender
+    //         .send(GameWrap {
+    //             game,
+    //             data: co,
+    //             team,
+    //         })
+    //         .await
+    //         .unwrap();
+
+    //     let GameWrapResponse { game, data } = self.receiver.next().await.unwrap();
+
+    //     (game, data)
     // }
 
     //TODO use
@@ -301,7 +295,7 @@ pub async fn reselect_loop(
     let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
 
     let (cell, pototo, gg) = doop
-        .get_mouse_selection(cc, selected_unit.team, game, grey)
+        .get_mouse_with_mesh(cc, selected_unit.team, game, grey)
         .await;
     game = gg;
 
@@ -563,7 +557,7 @@ async fn handle_player(
         //Loop until the user clicks on a selectable unit in their team.
         let mut selected_unit = loop {
             let data;
-            (data, game) = doop.get_mouse_no_selection(team, game).await;
+            (data, game) = doop.get_mouse(team, game).await;
 
             let cell = match data {
                 Pototo::Normal(a) => a,

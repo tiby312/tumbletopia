@@ -259,6 +259,20 @@ async fn render_command(
     let mut poking = 0;
 
     match data {
+        ace::Command::HideUndo=>{
+            engine_worker.post_message(UiButton::HidePopup);
+            return ace::GameWrapResponse {
+                game,
+                data: ace::Response::Ack,
+            };
+        }
+        ace::Command::ShowUndo=>{
+            engine_worker.post_message(UiButton::HidePopup);
+            return ace::GameWrapResponse {
+                game,
+                data: ace::Response::Ack,
+            };
+        }
         ace::Command::Animate(ak) => match ak {
             animation::AnimationCommand::Movement {
                 unit,
