@@ -41,7 +41,7 @@ enum UiButton {
     HidePopup,
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Default,Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Factions {
     pub dogs: Tribe,
     pub cats: Tribe,
@@ -93,7 +93,7 @@ pub struct FactionRelative<T> {
     pub that_team: T,
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Default,Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Environment {
     land: BitField,
     forest: BitField,
@@ -102,7 +102,7 @@ pub struct Environment {
 }
 
 //Additionally removes need to special case animation.
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Default,Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
     factions: Factions,
     env: Environment,

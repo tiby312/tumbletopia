@@ -55,7 +55,7 @@ impl std::ops::Deref for Tribe {
     }
 }
 
-#[derive(Eq, PartialEq, Hash, Clone, Debug)]
+#[derive(Default,Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Tribe {
     pub units: Vec<UnitData>,
 }
