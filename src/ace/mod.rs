@@ -286,10 +286,16 @@ pub async fn reselect_loop(
     };
 
     let cca = if let Some(have_moved) = have_moved {
-        game.generate_possible_moves_extra(&have_moved.the_move, unit.typ, selected_unit.team)
+        (selected_unit.warrior == have_moved.the_move.moveto).then(|| {
+            game.generate_possible_moves_extra(&have_moved.the_move, unit.typ, selected_unit.team)
+        })
     } else {
-        game.generate_possible_moves_movement(&unit.position, unit.typ, selected_unit.team)
+        None
     };
+
+    let cca = cca.unwrap_or_else(|| {
+        game.generate_possible_moves_movement(&unit.position, unit.typ, selected_unit.team)
+    });
 
     //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
     let cc = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
