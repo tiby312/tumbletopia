@@ -530,7 +530,11 @@ async fn render_command(
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
                         let cells = mesh.iter_mesh(*point).map(|e| grid_snap(e, 0.0));
-                        draw_sys.batch(cells).no_lighting().build(select_model);
+                        draw_sys
+                            .batch(cells)
+                            .no_lighting()
+                            .grey(*grey)
+                            .build(select_model);
 
                         if let Some(k) = hh {
                             if k.the_move
@@ -543,7 +547,11 @@ async fn render_command(
                                 let pos = grid_matrix.hex_axial_to_world(&a);
                                 let t = matrix::translation(pos.x, pos.y, 0.0);
                                 let m = my_matrix.chain(t).generate();
-                                draw_sys.batch([m]).no_lighting().build(attack_model);
+                                draw_sys
+                                    .batch([m])
+                                    .no_lighting()
+                                    .grey(*grey)
+                                    .build(attack_model);
                             }
                         }
                     }
@@ -655,6 +663,7 @@ pub struct BatchBuilder<'a, I> {
     sys: &'a mut ShaderSystem,
     ff: I,
     lighting: bool,
+    grey: bool,
 }
 impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
     pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>) {
@@ -670,10 +679,14 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
             &texture.model.res,
             &texture.texture.texture,
             &mmatrix,
-            false,
+            self.grey,
             false,
             self.lighting,
         );
+    }
+    pub fn grey(&mut self, grey: bool) -> &mut Self {
+        self.grey = grey;
+        self
     }
     pub fn no_lighting(&mut self) -> &mut Self {
         self.lighting = false;
@@ -689,6 +702,7 @@ impl Doop for ShaderSystem {
             sys: self,
             ff: ff.into_iter(),
             lighting: true,
+            grey: false,
         }
     }
 }

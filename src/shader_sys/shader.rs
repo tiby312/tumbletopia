@@ -30,7 +30,7 @@ void main() {
         vec3 normal = normalize(f_normal);
       
         float light = dot(normal, normalize(vec3(-1.0,1.0,1.0)));
-        light=min(1.0,light+0.9);
+        light = min(1.0,light+0.9);
     
         // Lets multiply just the color portion (not the alpha)
         // by the light

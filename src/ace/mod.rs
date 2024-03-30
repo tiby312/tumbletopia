@@ -600,7 +600,6 @@ async fn handle_player(
 
             let a = match res {
                 LoopRes::EndTurn((a, b)) => {
-                    //todo!();
                     return (game, a, b);
                     //game_history.push(m);
                     //break 'select_loop;
