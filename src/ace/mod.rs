@@ -185,6 +185,7 @@ pub struct SelectType {
 pub enum LoopRes<T> {
     EndTurn((moves::ActualMove, move_build::CombinedEffect)),
     Deselect,
+    Undo,
     Select(T),
 }
 
@@ -239,7 +240,6 @@ pub async fn reselect_loop(
         game.generate_possible_moves_movement(world, &unit.position, unit.typ, selected_unit.team)
     });
 
-    //let cc = relative_game_view.get_unit_possible_moves(&unit, extra_attack);
     let mut cell = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
 
     let pototo = doop
@@ -252,7 +252,7 @@ pub async fn reselect_loop(
             //End the turn. Ok because we are not int he middle of anything.
             //return LoopRes::EndTurn;
             //unreachable!();
-            return LoopRes::Deselect;
+            return LoopRes::Undo;
         }
     };
     let target_cell = mouse_world;
@@ -402,7 +402,6 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
     let fog = world.get_game_cells().clone();
-    //let fog = BitField::new();
 
     let mut k = GameState {
         factions: Factions {
@@ -493,6 +492,19 @@ async fn handle_player(
     team: ActiveTeam,
     move_log: &mut selection::MoveLog,
 ) -> (moves::ActualMove, move_build::CombinedEffect) {
+    let undo = |move_log: &mut selection::MoveLog, game: &mut GameState| {
+        log!("undoing turn!!!");
+        assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
+
+        let (a, e) = move_log.inner.pop().unwrap();
+        a.as_extra().undo(&e.extra_effect, game);
+        a.as_move().undo(team.not(), &e.move_effect, game);
+
+        let (a, e) = move_log.inner.pop().unwrap();
+        a.as_extra().undo(&e.extra_effect, game);
+        a.as_move().undo(team, &e.move_effect, game);
+    };
+
     let mut extra_attack = None;
     //Keep allowing the user to select units
     'outer: loop {
@@ -510,16 +522,8 @@ async fn handle_player(
                 MouseEvent::Normal(a) => a,
                 MouseEvent::Undo => {
                     assert!(extra_attack.is_none());
-                    assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
 
-                    log!("undoing turn!!!");
-                    let (a, e) = move_log.inner.pop().unwrap();
-                    a.as_extra().undo(&e.extra_effect, game);
-                    a.as_move().undo(team.not(), &e.move_effect, game);
-
-                    let (a, e) = move_log.inner.pop().unwrap();
-                    a.as_extra().undo(&e.extra_effect, game);
-                    a.as_move().undo(team, &e.move_effect, game);
+                    undo(move_log, game);
 
                     continue 'outer;
                 }
@@ -552,11 +556,15 @@ async fn handle_player(
             let a = match res {
                 LoopRes::EndTurn(r) => {
                     return r;
-                    //game_history.push(m);
-                    //break 'select_loop;
                 }
                 LoopRes::Deselect => break,
                 LoopRes::Select(a) => a,
+                LoopRes::Undo => {
+                    assert!(extra_attack.is_none());
+
+                    undo(move_log, game);
+                    continue 'outer;
+                }
             };
             selected_unit = a;
         }

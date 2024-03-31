@@ -311,7 +311,12 @@ async fn render_command(
 
         if get_mouse_input.is_some() {
             if end_turn {
-                return ace::Response::Mouse(MouseEvent::Undo);
+                return if let Some((selection, _grey)) = get_mouse_input.unwrap() {
+                    ace::Response::MouseWithSelection(selection, MouseEvent::Undo)
+                } else {
+                    ace::Response::Mouse(MouseEvent::Undo)
+                };
+                //return ace::Response::Mouse(MouseEvent::Undo);
             } else if on_select {
                 let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
                 log!(format!("pos:{:?}", mouse));
