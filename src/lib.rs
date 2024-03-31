@@ -171,14 +171,17 @@ async fn render_command(
     let mut terrain_animation = None;
     let mut poking = 0;
 
+    let mut waiting_engine_ack = false;
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(UiButton::HideUndo);
-            return ace::Response::Ack;
+            waiting_engine_ack = true;
+            //return ace::Response::Ack;
         }
         ace::Command::ShowUndo => {
             engine_worker.post_message(UiButton::ShowUndo);
-            return ace::Response::Ack;
+            waiting_engine_ack = true;
+            //return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
             animation::AnimationCommand::Movement {
@@ -240,8 +243,8 @@ async fn render_command(
         poking = 0.max(poking - 1);
 
         let mut on_select = false;
-        let mut end_turn = false;
-
+        //let mut end_turn = false;
+        let mut on_undo = false;
         let res = frame_timer.next().await;
 
         for e in res {
@@ -281,12 +284,18 @@ async fn render_command(
                         on_select = true;
                     }
                 }
+                MEvent::Undo => {
+                    on_undo = true;
+                }
+                MEvent::Ack => {
+                    if waiting_engine_ack {
+                        return ace::Response::Ack;
+                    }
+                }
                 MEvent::CanvasMouseMove { x, y } => {
                     scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
                 }
-                MEvent::EndTurn => {
-                    end_turn = true;
-                }
+
                 MEvent::CanvasMouseDown { x, y } => {
                     scroll_manager.on_mouse_down([*x, *y]);
                 }
@@ -310,7 +319,7 @@ async fn render_command(
             scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
         if get_mouse_input.is_some() {
-            if end_turn {
+            if on_undo {
                 return if let Some((selection, _grey)) = get_mouse_input.unwrap() {
                     ace::Response::MouseWithSelection(selection, MouseEvent::Undo)
                 } else {

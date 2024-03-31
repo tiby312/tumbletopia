@@ -20,7 +20,8 @@ pub enum MEvent {
     TouchEnd {
         touches: scroll::Touches,
     },
-    EndTurn,
+    Undo,
+    Ack,
     CanvasMouseUp,
     CanvasMouseLeave,
     ButtonClick,
@@ -126,10 +127,10 @@ pub async fn main_entry() {
 
     log!("demo start");
 
-    let (canvas, button, endturn, popup) = (
+    let (canvas, button, undo, popup) = (
         utils::get_by_id_canvas("mycanvas"),
         utils::get_by_id_elem("mybutton"),
-        utils::get_by_id_elem("endturn"),
+        utils::get_by_id_elem("undo"),
         utils::get_by_id_elem("popup"),
     );
 
@@ -186,9 +187,9 @@ pub async fn main_entry() {
         MEvent::ButtonClick.some()
     });
 
-    let _handler = worker.register_event(&endturn, "click", move |_| {
+    let _handler = worker.register_event(&undo, "click", move |_| {
         log!("clicked the button!!!!!");
-        MEvent::EndTurn.some()
+        MEvent::Undo.some()
     });
 
     let w = gloo::utils::window();
@@ -203,12 +204,14 @@ pub async fn main_entry() {
 
         match hay {
             UiButton::ShowUndo => {
-                endturn.set_hidden(false);
+                undo.set_hidden(false);
+                worker.post_message(MEvent::Ack);
                 //popup.set_text_content(Some(&text));
             }
             UiButton::HideUndo => {
                 //popup.set_text_content(Some(""));
-                endturn.set_hidden(true);
+                undo.set_hidden(true);
+                worker.post_message(MEvent::Ack);
             }
         }
         //log!(format!("main thread received={:?}", hay));
