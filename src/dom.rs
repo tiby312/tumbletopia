@@ -202,13 +202,13 @@ pub async fn main_entry() {
         let hay: UiButton = response.next().await.unwrap_throw();
 
         match hay {
-            UiButton::ShowPopup(text) => {
-                popup.set_hidden(false);
-                popup.set_text_content(Some(&text));
+            UiButton::ShowUndo => {
+                endturn.set_hidden(false);
+                //popup.set_text_content(Some(&text));
             }
-            UiButton::HidePopup => {
-                popup.set_text_content(Some(""));
-                popup.set_hidden(true);
+            UiButton::HideUndo => {
+                //popup.set_text_content(Some(""));
+                endturn.set_hidden(true);
             }
         }
         //log!(format!("main thread received={:?}", hay));

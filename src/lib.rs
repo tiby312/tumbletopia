@@ -36,8 +36,8 @@ pub const RESIZE: usize = 10;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum UiButton {
-    ShowPopup(String),
-    HidePopup,
+    ShowUndo,
+    HideUndo,
 }
 
 #[wasm_bindgen]
@@ -173,11 +173,11 @@ async fn render_command(
 
     match command {
         ace::Command::HideUndo => {
-            engine_worker.post_message(UiButton::HidePopup);
+            engine_worker.post_message(UiButton::HideUndo);
             return ace::Response::Ack;
         }
         ace::Command::ShowUndo => {
-            engine_worker.post_message(UiButton::HidePopup);
+            engine_worker.post_message(UiButton::ShowUndo);
             return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
@@ -218,13 +218,14 @@ async fn render_command(
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
         ace::Command::Nothing => {}
         ace::Command::Popup(str) => {
-            if str.is_empty() {
-                engine_worker.post_message(UiButton::HidePopup);
-            } else {
-                engine_worker.post_message(UiButton::ShowPopup(str));
-            }
+            todo!();
+            // if str.is_empty() {
+            //     engine_worker.post_message(UiButton::HidePopup);
+            // } else {
+            //     engine_worker.post_message(UiButton::ShowPopup(str));
+            // }
 
-            return ace::Response::Ack;
+            // return ace::Response::Ack;
         }
         ace::Command::Poke => {
             poking = 3;
@@ -310,7 +311,7 @@ async fn render_command(
 
         if get_mouse_input.is_some() {
             if end_turn {
-                return ace::Response::Mouse(MouseEvent::EndTurn);
+                return ace::Response::Mouse(MouseEvent::Undo);
             } else if on_select {
                 let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
                 log!(format!("pos:{:?}", mouse));

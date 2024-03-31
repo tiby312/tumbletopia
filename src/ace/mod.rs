@@ -40,7 +40,7 @@ pub enum Response {
 #[derive(Debug)]
 pub enum MouseEvent<T> {
     Normal(T),
-    EndTurn,
+    Undo,
 }
 
 pub struct WorkerManager {
@@ -248,7 +248,7 @@ pub async fn reselect_loop(
 
     let mouse_world = match pototo {
         MouseEvent::Normal(t) => t,
-        MouseEvent::EndTurn => {
+        MouseEvent::Undo => {
             //End the turn. Ok because we are not int he middle of anything.
             //return LoopRes::EndTurn;
             //unreachable!();
@@ -493,33 +493,37 @@ async fn handle_player(
     team: ActiveTeam,
     move_log: &mut selection::MoveLog,
 ) -> (moves::ActualMove, move_build::CombinedEffect) {
-    //doop.send_popup("haha", team, game.clone()).await;
-
     let mut extra_attack = None;
     //Keep allowing the user to select units
-    loop {
+    'outer: loop {
+        if move_log.inner.len() >= 2 {
+            doop.send_command(team, game, Command::ShowUndo).await;
+        } else {
+            doop.send_command(team, game, Command::HideUndo).await;
+        }
+
         //Loop until the user clicks on a selectable unit in their team.
         let mut selected_unit = loop {
             let data = doop.get_mouse(team, game).await;
 
             let cell = match data {
                 MouseEvent::Normal(a) => a,
-                MouseEvent::EndTurn => {
-                    if extra_attack.is_none() {
-                        assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
-                        log!("undoing turn!!!");
-                        let (a, e) = move_log.inner.pop().unwrap();
-                        a.as_extra().undo(&e.extra_effect, game);
-                        a.as_move().undo(team.not(), &e.move_effect, game);
+                MouseEvent::Undo => {
+                    assert!(extra_attack.is_none());
+                    assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
 
-                        let (a, e) = move_log.inner.pop().unwrap();
-                        a.as_extra().undo(&e.extra_effect, game);
-                        a.as_move().undo(team, &e.move_effect, game);
-                    }
-                    continue;
+                    log!("undoing turn!!!");
+                    let (a, e) = move_log.inner.pop().unwrap();
+                    a.as_extra().undo(&e.extra_effect, game);
+                    a.as_move().undo(team.not(), &e.move_effect, game);
+
+                    let (a, e) = move_log.inner.pop().unwrap();
+                    a.as_extra().undo(&e.extra_effect, game);
+                    a.as_move().undo(team, &e.move_effect, game);
+
+                    continue 'outer;
                 }
             };
-            //let game = game.view_mut(team_index);
 
             if let Some(unit) = game.factions.relative(team).this_team.find_slow(&cell) {
                 break SelectType {
@@ -538,6 +542,10 @@ async fn handle_player(
         //Keep showing the selected unit's options and keep handling the users selections
         //Until the unit is deselected.
         loop {
+            if extra_attack.is_some() {
+                doop.send_command(team, game, Command::HideUndo).await;
+            }
+
             let res =
                 reselect_loop(doop, game, world, team, &mut extra_attack, selected_unit).await;
 
