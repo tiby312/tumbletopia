@@ -168,9 +168,7 @@ fn engine_handlers(
     ]
 }
 
-
-pub async fn start_game(){
-
+pub async fn start_game() {
     let (canvas, button, undo, popup) = (
         utils::get_by_id_canvas("mycanvas"),
         utils::get_by_id_elem("mybutton"),
@@ -211,46 +209,38 @@ pub async fn start_game(){
         //log!(format!("main thread received={:?}", hay));
     }
     //log!("main thread is closing");
-
 }
 #[wasm_bindgen]
 pub async fn main_entry() {
-    
-    let mut search=gloo::utils::window().location().search().unwrap();
+    let mut search = gloo::utils::window().location().search().unwrap();
 
-    let k=search.as_str();
-    let mut k=k.chars();
+    let k = search.as_str();
+    let mut k = k.chars();
 
-    assert_eq!(k.next().unwrap(),'?');
-    assert_eq!(k.next().unwrap(),'v');
-    assert_eq!(k.next().unwrap(),'=');
-    let hash=k.as_str();
+    assert_eq!(k.next().unwrap(), '?');
+    assert_eq!(k.next().unwrap(), 'v');
+    assert_eq!(k.next().unwrap(), '=');
+    let hash = k.as_str();
     console_dbg!(hash);
-
-
 
     //search.sp
     //TODO check if its PLAY AI VS LOCAL PLAY
     console_dbg!(search);
-
-
 
     log!("demo start");
 
     // let (sender, mut receiver) = futures::channel::mpsc::unbounded();
 
     // let start_button = utils::get_by_id_elem("startgame");
-            
+
     // // Attach an event listener
     // let _listener = gloo::events::EventListener::new(&start_button, "click", move |_event| {
     //     log!("STARTING");
     //     sender.unbounded_send(()).unwrap_throw();
     // });
 
-    
     // let e=receiver.next().await;
     log!("FOO");
-
 
     start_game().await;
 }

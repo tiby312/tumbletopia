@@ -1,101 +1,47 @@
+
+
 <html>
 <head>
   <title>gridlock</title>
   <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
   <meta name="viewport" content="user-scalable=no,width=device-width, initial-scale=1" />
-  <style>
-    .unselectable {
-      user-select: none;
+  <style>  
+    body, input, textarea, button{
+      font-family:"Lucida Console", Monaco, monospace;
+      background-color:#222;
+      color:white;
+    }
+    div a {
+      display:block;
+      padding:10px;
+      margin:auto;
+      margin-bottom:10px;
+      background-color: #4CAF50;
+      text-decoration: none;
+      max-width:400px;
+      text-align: center;
+      font-size: 150%;
+      list-style-type:none;
+    }
+    div text{
+      display:block;
+      padding:10px;
+      margin:auto;
+      max-width: 200px;
+      text-align: center;
+      list-style-type:none;  
+      color:white;
     }
   </style>
-    <style>
-      html, body {
-        width: 100%;
-        height: 100%;
-        margin: 0px;
-        border: 0;
-        background-color: #222;
-        overflow: hidden; /*  Disable scrollbars */
-        display: block;  /* No floating content on sides */
-        font-family:"Lucida Console", Monaco, monospace;
-        color:white;
-      }
-      body {
-        position: absolute;
-      }
-      #mycanvas{
-        position: absolute;
-        top:0px;
-        left:0px;
-        z-index: 0;
-        width:100%;
-        height:100%;
-      }
-      #mybutton{
-        z-index: 10;
-        position: absolute;
-        top:90%;
-        left:50%;
-        font-size: 24px;
-        background-color: #213022; /* Green */
-        border: none;
-        color: white;
-        padding: 15px 32px;
-        text-align: center;
-        text-decoration: none;
-        font-size: 16px;
-        transform: translate(-50%, -50%);
-      }
-      #popup{
-        z-index: 10;
-        position: absolute;
-        top:90%;
-        left:90%;
-        background-color: #213022; /* Green */
-        border: none;
-        color: white;
-        padding: 15px 32px;
-        text-align: center;
-        text-decoration: none;
-        font-size: 16px;
-        transform: translate(-50%, -50%);
-      }
-      #startgame{
-        z-index: 10;
-        position: absolute;
-        
-      }
-      #undo{
-        z-index: 10;
-        position: absolute;
-        top:90%;
-        left:90%;
-        font-size: 24px;
-        background-color: #213022; /* Green */
-        border: none;
-        color: white;
-        padding: 15px 32px;
-        text-align: center;
-        text-decoration: none;
-        font-size: 16px;
-        transform: translate(-50%, -50%);
-      }
-    </style>
-  <script type=module>
-    import { default as init } from './pkg/gridlock.js';
-    var w=await init('pkg/gridlock_bg.wasm');
-    await w.main_entry();
-    
-  </script>
 </head>
-<body style="background-color: black;">
-  
-  <button id="mybutton" class="ui"></button>
-  <button id="undo" class="ui">Undo</button>
-  <button id="popup" class="ui" hidden="true">Hello</button>
-  
-  <canvas id="mycanvas" class="unselectable"></canvas>
-  <!-- <button id="startgame" class="ui">START GAME</button> -->
-  
+
+
+<body>
+  <div>
+    <text> Gridlock </text>
+    <a href="http://localhost:8000/game.html?v=playai">single player</a>
+    <a href="http://localhost:8000/game.html?v=playpassplay">pass and play</a>
+    <a href="http://localhost:8000/game.html?v=replay&data=abc">replay</a>
+  </div>  
 </body>
 </html>
