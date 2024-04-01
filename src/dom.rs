@@ -121,6 +121,52 @@ pub fn text_texture(text: &str, width: usize, height: usize) -> web_sys::HtmlCan
     canvas
 }
 
+fn engine_handlers(
+    worker: &mut shogo::EngineMain<MEvent, UiButton>,
+    canvas: &web_sys::HtmlCanvasElement,
+) -> [gloo::events::EventListener; 10] {
+    [
+        worker.register_event(&canvas, "mousemove", |e| {
+            let [x, y] = convert_coord(e.elem, e.event);
+            MEvent::CanvasMouseMove { x, y }.some()
+        }),
+        worker.register_event(&canvas, "mousedown", |e| {
+            let [x, y] = convert_coord(e.elem, e.event);
+            MEvent::CanvasMouseDown { x, y }.some()
+        }),
+        worker.register_event(&canvas, "wheel", |e| {
+            e.event.prevent_default();
+            e.event.stop_propagation();
+            None
+        }),
+        worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp.some()),
+        worker.register_event(&canvas, "mouseleave", |_| MEvent::CanvasMouseLeave.some()),
+        worker.register_event(&canvas, "touchstart", |e| {
+            let touches = convert_coord_touch(e.elem, e.event);
+            MEvent::TouchDown { touches }.some()
+        }),
+        worker.register_event(&canvas, "touchmove", |e| {
+            let touches = convert_coord_touch(e.elem, e.event);
+            MEvent::TouchMove { touches }.some()
+        }),
+        worker.register_event(&canvas, "touchend", |e| {
+            let touches = convert_coord_touch(e.elem, e.event);
+            MEvent::TouchEnd { touches }.some()
+        }),
+        {
+            let undo = utils::get_by_id_elem("undo");
+            worker.register_event(&undo, "click", move |_| {
+                log!("clicked the button!!!!!");
+                MEvent::Undo.some()
+            })
+        },
+        {
+            let w = gloo::utils::window();
+
+            worker.register_event(&w, "resize", |_| resize().some())
+        },
+    ]
+}
 #[wasm_bindgen]
 pub async fn main_entry() {
     use futures::StreamExt;
@@ -144,57 +190,7 @@ pub async fn main_entry() {
     let (mut worker, mut response) =
         shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
 
-    let _handler = worker.register_event(&canvas, "mousemove", |e| {
-        let [x, y] = convert_coord(e.elem, e.event);
-        MEvent::CanvasMouseMove { x, y }.some()
-    });
-
-    let _handler = worker.register_event(&canvas, "mousedown", |e| {
-        let [x, y] = convert_coord(e.elem, e.event);
-        MEvent::CanvasMouseDown { x, y }.some()
-    });
-
-    let _handler = worker.register_event(&canvas, "wheel", |e| {
-        e.event.prevent_default();
-        e.event.stop_propagation();
-        None
-    });
-
-    let _handler = worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp.some());
-
-    let _handler =
-        worker.register_event(&canvas, "mouseleave", |_| MEvent::CanvasMouseLeave.some());
-
-    let _handler = worker.register_event(&canvas, "touchstart", |e| {
-        let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchDown { touches }.some()
-    });
-
-    let _handler = worker.register_event(&canvas, "touchmove", |e| {
-        let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchMove { touches }.some()
-    });
-
-    let _handler = worker.register_event(&canvas, "touchend", |e| {
-        let touches = convert_coord_touch(e.elem, e.event);
-        MEvent::TouchEnd { touches }.some()
-    });
-
-    let bb = button.clone();
-    let _handler = worker.register_event(&button, "click", move |_| {
-        log!("clicked the button!!!!!");
-        bb.set_hidden(true);
-        MEvent::ButtonClick.some()
-    });
-
-    let _handler = worker.register_event(&undo, "click", move |_| {
-        log!("clicked the button!!!!!");
-        MEvent::Undo.some()
-    });
-
-    let w = gloo::utils::window();
-
-    let _handler = worker.register_event(&w, "resize", |_| resize().some());
+    let _handlers = engine_handlers(&mut worker, &canvas);
 
     //TODO make this happen on start??
     worker.post_message(resize());
