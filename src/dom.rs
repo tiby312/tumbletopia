@@ -167,11 +167,9 @@ fn engine_handlers(
         },
     ]
 }
-#[wasm_bindgen]
-pub async fn main_entry() {
-    use futures::StreamExt;
 
-    log!("demo start");
+
+pub async fn start_game(){
 
     let (canvas, button, undo, popup) = (
         utils::get_by_id_canvas("mycanvas"),
@@ -213,6 +211,30 @@ pub async fn main_entry() {
         //log!(format!("main thread received={:?}", hay));
     }
     //log!("main thread is closing");
+
+}
+#[wasm_bindgen]
+pub async fn main_entry() {
+    
+
+    log!("demo start");
+
+    // let (sender, mut receiver) = futures::channel::mpsc::unbounded();
+
+    // let start_button = utils::get_by_id_elem("startgame");
+            
+    // // Attach an event listener
+    // let _listener = gloo::events::EventListener::new(&start_button, "click", move |_event| {
+    //     log!("STARTING");
+    //     sender.unbounded_send(()).unwrap_throw();
+    // });
+
+    
+    // let e=receiver.next().await;
+    log!("FOO");
+
+
+    start_game().await;
 }
 fn resize() -> MEvent {
     let canvas = utils::get_by_id_canvas("mycanvas");

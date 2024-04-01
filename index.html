@@ -60,6 +60,11 @@
         font-size: 16px;
         transform: translate(-50%, -50%);
       }
+      #startgame{
+        z-index: 10;
+        position: absolute;
+        
+      }
       #undo{
         z-index: 10;
         position: absolute;
@@ -84,11 +89,13 @@
   </script>
 </head>
 <body style="background-color: black;">
+  
   <button id="mybutton" class="ui"></button>
   <button id="undo" class="ui">Undo</button>
   <button id="popup" class="ui" hidden="true">Hello</button>
   
   <canvas id="mycanvas" class="unselectable"></canvas>
+  <!-- <button id="startgame" class="ui">START GAME</button> -->
   
 </body>
 </html>
