@@ -216,7 +216,20 @@ pub async fn start_game(){
 #[wasm_bindgen]
 pub async fn main_entry() {
     
-    let search=gloo::utils::window().location().search().unwrap();
+    let mut search=gloo::utils::window().location().search().unwrap();
+
+    let k=search.as_str();
+    let mut k=k.chars();
+
+    assert_eq!(k.next().unwrap(),'?');
+    assert_eq!(k.next().unwrap(),'v');
+    assert_eq!(k.next().unwrap(),'=');
+    let hash=k.as_str();
+    console_dbg!(hash);
+
+
+
+    //search.sp
     //TODO check if its PLAY AI VS LOCAL PLAY
     console_dbg!(search);
 
