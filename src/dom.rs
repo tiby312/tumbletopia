@@ -216,6 +216,11 @@ pub async fn start_game(){
 #[wasm_bindgen]
 pub async fn main_entry() {
     
+    let search=gloo::utils::window().location().search().unwrap();
+    //TODO check if its PLAY AI VS LOCAL PLAY
+    console_dbg!(search);
+
+
 
     log!("demo start");
 
