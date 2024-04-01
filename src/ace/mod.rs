@@ -441,7 +441,12 @@ pub mod share {
     }
 }
 
-pub async fn main_logic(mut game: GameState, world: &board::MyWorld, mut doop: WorkerManager) {
+pub async fn main_logic(
+    g: dom::GameType,
+    mut game: GameState,
+    world: &board::MyWorld,
+    mut doop: WorkerManager,
+) {
     let mut game_history = selection::MoveLog::new();
 
     //Loop over each team!
@@ -452,7 +457,14 @@ pub async fn main_logic(mut game: GameState, world: &board::MyWorld, mut doop: W
         }
 
         //Add AIIIIII.
-        if team == ActiveTeam::Cats {
+        let foo = match g {
+            dom::GameType::SinglePlayer => team == ActiveTeam::Cats,
+            dom::GameType::PassPlay => false,
+            dom::GameType::AIBattle => true,
+            dom::GameType::Replay(_) => todo!(),
+        };
+
+        if foo {
             //{
             //doop.send_popup("AI Thinking", team, &mut game).await;
             let the_move = ai::iterative_deepening(&mut game, world, team);

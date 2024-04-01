@@ -38,6 +38,7 @@ pub const RESIZE: usize = 10;
 enum UiButton {
     ShowUndo,
     HideUndo,
+    Ack,
 }
 
 #[wasm_bindgen]
@@ -46,7 +47,14 @@ pub async fn worker_entry() {
 
     console_dbg!("num tiles={}", hex::Cube::new(0, 0).range(4).count());
 
-    let (mut wr, ss) = shogo::EngineWorker::new().await;
+    let (mut wr, mut ss) = shogo::EngineWorker::new().await;
+
+    let k = ss.next().await.unwrap();
+    let MEvent::Start(g) = k else { unreachable!() };
+    wr.post_message(UiButton::Ack);
+
+    console_dbg!("Found game thingy", g);
+
     let mut frame_timer = shogo::FrameTimer::new(60, ss);
 
     let scroll_manager = scroll::TouchController::new([0., 0.].into());
@@ -105,6 +113,7 @@ pub async fn worker_entry() {
 
     futures::join!(
         ace::main_logic(
+            g,
             game,
             &world,
             ace::WorkerManager {
@@ -301,6 +310,7 @@ async fn render_command(
                 }
                 MEvent::ButtonClick => {}
                 MEvent::ShutdownClick => todo!(),
+                MEvent::Start(_) => todo!(),
             }
         }
 

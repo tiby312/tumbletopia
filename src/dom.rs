@@ -20,6 +20,7 @@ pub enum MEvent {
     TouchEnd {
         touches: scroll::Touches,
     },
+    Start(GameType),
     Undo,
     Ack,
     CanvasMouseUp,
@@ -168,15 +169,8 @@ fn engine_handlers(
     ]
 }
 
-pub async fn start_game() {
-    let (canvas, button, undo, popup) = (
-        utils::get_by_id_canvas("mycanvas"),
-        utils::get_by_id_elem("mybutton"),
-        utils::get_by_id_elem("undo"),
-        utils::get_by_id_elem("popup"),
-    );
-
-    button.set_hidden(true);
+pub async fn start_game(game_type: GameType) {
+    let canvas = utils::get_by_id_canvas("mycanvas");
 
     canvas.set_width(gloo::utils::body().client_width() as u32);
     canvas.set_height(gloo::utils::body().client_height() as u32);
@@ -188,13 +182,23 @@ pub async fn start_game() {
 
     let _handlers = engine_handlers(&mut worker, &canvas);
 
+    worker.post_message(MEvent::Start(game_type));
+    let hay: UiButton = response.next().await.unwrap_throw();
+    matches!(hay, UiButton::Ack);
+
+    log!("dom:worker received the game");
+
     //TODO make this happen on start??
     worker.post_message(resize());
 
     loop {
         let hay: UiButton = response.next().await.unwrap_throw();
 
+        let undo = utils::get_by_id_elem("undo");
         match hay {
+            UiButton::Ack => {
+                unreachable!();
+            }
             UiButton::ShowUndo => {
                 undo.set_hidden(false);
                 worker.post_message(MEvent::Ack);
@@ -210,10 +214,18 @@ pub async fn start_game() {
     }
     //log!("main thread is closing");
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum GameType {
+    SinglePlayer,
+    PassPlay,
+    AIBattle,
+    Replay(String),
+}
+
 #[wasm_bindgen]
 pub async fn main_entry() {
     let mut search = gloo::utils::window().location().search().unwrap();
-    
 
     let k = search.as_str();
     let mut k = k.chars();
@@ -228,20 +240,24 @@ pub async fn main_entry() {
     //TODO check if its PLAY AI VS LOCAL PLAY
     console_dbg!(search);
 
-    match command{
-        "singleplayer"=>{
+    let command = match command {
+        "singleplayer" => {
             log!("singleplayer!!!");
-        },
-        "passplay"=>{
+            GameType::SinglePlayer
+        }
+        "passplay" => {
             log!("passplay!!!");
-        },
-        "replay"=>{
-
-        },
-        _=>{
+            GameType::PassPlay
+        }
+        "aibattle" => {
+            log!("aibattle!!!");
+            GameType::AIBattle
+        }
+        "replay" => GameType::Replay("".to_string()),
+        _ => {
             unreachable!("unrecognized command");
         }
-    }
+    };
 
     log!("demo start");
 
@@ -258,7 +274,7 @@ pub async fn main_entry() {
     // let e=receiver.next().await;
     log!("FOO");
 
-    start_game().await;
+    start_game(command).await;
 }
 fn resize() -> MEvent {
     let canvas = utils::get_by_id_canvas("mycanvas");
