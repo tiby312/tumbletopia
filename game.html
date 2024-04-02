@@ -21,7 +21,7 @@
         color:white;
       }
       body {
-        position: absolute;
+        /*position: absolute;*/
       }
       #mycanvas{
         position: absolute;
@@ -60,10 +60,20 @@
         font-size: 16px;
         transform: translate(-50%, -50%);
       }
-      #startgame{
+      #gameover_popup{
         z-index: 10;
-        position: absolute;
+        display:block;
+        position:absolute;
+        padding:10px;
+        margin:auto;
+        background-color: #213022; /* Green */
         
+        top:50%;
+        left:50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
       }
       #undo{
         z-index: 10;
@@ -92,7 +102,9 @@
   
   <button id="undo" class="ui">Undo</button>
   <button id="popup" class="ui" hidden="true">Hello</button>
-  
+  <div id="gameover_popup" hidden="false">
+    <text>HELLO TEST</text>
+  </div>
   <canvas id="mycanvas" class="unselectable"></canvas>
   <!-- <button id="startgame" class="ui">START GAME</button> -->
   

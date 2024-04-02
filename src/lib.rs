@@ -24,7 +24,7 @@ pub mod projection;
 pub mod scroll;
 pub mod shader_sys;
 pub mod util;
-use dom::MEvent;
+use dom::DomToWorker;
 use projection::*;
 pub mod ace;
 pub mod hex;
@@ -35,9 +35,13 @@ use unit::*;
 pub const RESIZE: usize = 10;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-enum UiButton {
+enum WorkerToDom {
     ShowUndo,
     HideUndo,
+    GameFinish{
+        replay_string:String,
+        result:GameOver
+    },
     Ack,
 }
 
@@ -50,8 +54,8 @@ pub async fn worker_entry() {
     let (mut wr, mut ss) = shogo::EngineWorker::new().await;
 
     let k = ss.next().await.unwrap();
-    let MEvent::Start(g) = k else { unreachable!() };
-    wr.post_message(UiButton::Ack);
+    let DomToWorker::Start(g) = k else { unreachable!() };
+    wr.post_message(WorkerToDom::Ack);
 
     console_dbg!("Found game thingy", g);
 
@@ -111,7 +115,7 @@ pub async fn worker_entry() {
         }
     };
 
-    futures::join!(
+    let (result,())=futures::join!(
         ace::main_logic(
             g,
             game,
@@ -124,6 +128,9 @@ pub async fn worker_entry() {
         j
     );
 
+    wr.post_message(WorkerToDom::GameFinish { replay_string: String::new(), result });
+
+    
     log!("Worker thread closin");
 }
 
@@ -144,8 +151,8 @@ async fn render_command(
     team: ActiveTeam,
     e: &mut EngineStuff,
     world: &board::MyWorld,
-    frame_timer: &mut shogo::FrameTimer<MEvent, futures::channel::mpsc::UnboundedReceiver<MEvent>>,
-    engine_worker: &mut shogo::EngineWorker<MEvent, UiButton>,
+    frame_timer: &mut shogo::FrameTimer<DomToWorker, futures::channel::mpsc::UnboundedReceiver<DomToWorker>>,
+    engine_worker: &mut shogo::EngineWorker<DomToWorker, WorkerToDom>,
 ) -> ace::Response {
     let scroll_manager = &mut e.scroll_manager;
     let last_matrix = &mut e.last_matrix;
@@ -183,12 +190,12 @@ async fn render_command(
     let mut waiting_engine_ack = false;
     match command {
         ace::Command::HideUndo => {
-            engine_worker.post_message(UiButton::HideUndo);
+            engine_worker.post_message(WorkerToDom::HideUndo);
             waiting_engine_ack = true;
             //return ace::Response::Ack;
         }
         ace::Command::ShowUndo => {
-            engine_worker.post_message(UiButton::ShowUndo);
+            engine_worker.post_message(WorkerToDom::ShowUndo);
             waiting_engine_ack = true;
             //return ace::Response::Ack;
         }
@@ -258,7 +265,7 @@ async fn render_command(
 
         for e in res {
             match e {
-                MEvent::Resize {
+                DomToWorker::Resize {
                     canvasx: _canvasx,
                     canvasy: _canvasy,
                     x,
@@ -273,44 +280,44 @@ async fn render_command(
                     viewport = [xx as f32, yy as f32];
                     log!(format!("updating viewport to be:{:?}", viewport));
                 }
-                MEvent::TouchMove { touches } => {
+                DomToWorker::TouchMove { touches } => {
                     scroll_manager.on_touch_move(touches, &last_matrix, viewport);
                 }
-                MEvent::TouchDown { touches } => {
+                DomToWorker::TouchDown { touches } => {
                     scroll_manager.on_new_touch(touches);
                 }
-                MEvent::TouchEnd { touches } => {
+                DomToWorker::TouchEnd { touches } => {
                     if let scroll::MouseUp::Select = scroll_manager.on_touch_up(touches) {
                         on_select = true;
                     }
                 }
-                MEvent::CanvasMouseLeave => {
+                DomToWorker::CanvasMouseLeave => {
                     log!("mouse leaving!");
                     let _ = scroll_manager.on_mouse_up();
                 }
-                MEvent::CanvasMouseUp => {
+                DomToWorker::CanvasMouseUp => {
                     if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
                         on_select = true;
                     }
                 }
-                MEvent::Undo => {
+                DomToWorker::Undo => {
                     on_undo = true;
                 }
-                MEvent::Ack => {
+                DomToWorker::Ack => {
                     if waiting_engine_ack {
                         return ace::Response::Ack;
                     }
                 }
-                MEvent::CanvasMouseMove { x, y } => {
+                DomToWorker::CanvasMouseMove { x, y } => {
                     scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
                 }
 
-                MEvent::CanvasMouseDown { x, y } => {
+                DomToWorker::CanvasMouseDown { x, y } => {
                     scroll_manager.on_mouse_down([*x, *y]);
                 }
-                MEvent::ButtonClick => {}
-                MEvent::ShutdownClick => todo!(),
-                MEvent::Start(_) => todo!(),
+                DomToWorker::ButtonClick => {}
+                DomToWorker::ShutdownClick => todo!(),
+                DomToWorker::Start(_) => todo!(),
             }
         }
 

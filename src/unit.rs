@@ -86,7 +86,8 @@ pub struct GameState {
     pub env: Environment,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[must_use]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum GameOver {
     CatWon,
     DogWon,

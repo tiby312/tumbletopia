@@ -446,14 +446,15 @@ pub async fn main_logic(
     mut game: GameState,
     world: &board::MyWorld,
     mut doop: WorkerManager,
-) {
+) ->GameOver{
     let mut game_history = selection::MoveLog::new();
 
     //Loop over each team!
-    'game_loop: for team in ActiveTeam::Dogs.iter() {
+    for team in ActiveTeam::Dogs.iter() {
         if let Some(g) = game.game_is_over(world, team) {
             console_dbg!("Game over=", g);
-            break 'game_loop;
+            return g;
+            //break 'game_loop;
         }
 
         //Add AIIIIII.
@@ -493,6 +494,8 @@ pub async fn main_logic(
 
         ai::absolute_evaluate(&mut game, world, true);
     }
+
+    unreachable!();
 
     //console_dbg!(share::save(&game_history));
 }

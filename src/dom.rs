@@ -2,7 +2,7 @@ use super::*;
 
 ///Common data sent from the main thread to the worker.
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum MEvent {
+pub enum DomToWorker {
     CanvasMouseMove {
         x: f32,
         y: f32,
@@ -34,7 +34,7 @@ pub enum MEvent {
         y: f32,
     },
 }
-impl MEvent {
+impl DomToWorker {
     fn some(self) -> Option<Self> {
         Some(self)
     }
@@ -123,42 +123,42 @@ pub fn text_texture(text: &str, width: usize, height: usize) -> web_sys::HtmlCan
 }
 
 fn engine_handlers(
-    worker: &mut shogo::EngineMain<MEvent, UiButton>,
+    worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
     canvas: &web_sys::HtmlCanvasElement,
 ) -> [gloo::events::EventListener; 10] {
     [
         worker.register_event(&canvas, "mousemove", |e| {
             let [x, y] = convert_coord(e.elem, e.event);
-            MEvent::CanvasMouseMove { x, y }.some()
+            DomToWorker::CanvasMouseMove { x, y }.some()
         }),
         worker.register_event(&canvas, "mousedown", |e| {
             let [x, y] = convert_coord(e.elem, e.event);
-            MEvent::CanvasMouseDown { x, y }.some()
+            DomToWorker::CanvasMouseDown { x, y }.some()
         }),
         worker.register_event(&canvas, "wheel", |e| {
             e.event.prevent_default();
             e.event.stop_propagation();
             None
         }),
-        worker.register_event(&canvas, "mouseup", |_| MEvent::CanvasMouseUp.some()),
-        worker.register_event(&canvas, "mouseleave", |_| MEvent::CanvasMouseLeave.some()),
+        worker.register_event(&canvas, "mouseup", |_| DomToWorker::CanvasMouseUp.some()),
+        worker.register_event(&canvas, "mouseleave", |_| DomToWorker::CanvasMouseLeave.some()),
         worker.register_event(&canvas, "touchstart", |e| {
             let touches = convert_coord_touch(e.elem, e.event);
-            MEvent::TouchDown { touches }.some()
+            DomToWorker::TouchDown { touches }.some()
         }),
         worker.register_event(&canvas, "touchmove", |e| {
             let touches = convert_coord_touch(e.elem, e.event);
-            MEvent::TouchMove { touches }.some()
+            DomToWorker::TouchMove { touches }.some()
         }),
         worker.register_event(&canvas, "touchend", |e| {
             let touches = convert_coord_touch(e.elem, e.event);
-            MEvent::TouchEnd { touches }.some()
+            DomToWorker::TouchEnd { touches }.some()
         }),
         {
             let undo = utils::get_by_id_elem("undo");
             worker.register_event(&undo, "click", move |_| {
                 log!("clicked the button!!!!!");
-                MEvent::Undo.some()
+                DomToWorker::Undo.some()
             })
         },
         {
@@ -182,9 +182,9 @@ pub async fn start_game(game_type: GameType) {
 
     let _handlers = engine_handlers(&mut worker, &canvas);
 
-    worker.post_message(MEvent::Start(game_type));
-    let hay: UiButton = response.next().await.unwrap_throw();
-    matches!(hay, UiButton::Ack);
+    worker.post_message(DomToWorker::Start(game_type));
+    let hay: WorkerToDom = response.next().await.unwrap_throw();
+    matches!(hay, WorkerToDom::Ack);
 
     log!("dom:worker received the game");
 
@@ -192,22 +192,28 @@ pub async fn start_game(game_type: GameType) {
     worker.post_message(resize());
 
     loop {
-        let hay: UiButton = response.next().await.unwrap_throw();
+        let hay: WorkerToDom = response.next().await.unwrap_throw();
 
         let undo = utils::get_by_id_elem("undo");
         match hay {
-            UiButton::Ack => {
+            WorkerToDom::Ack => {
                 unreachable!();
             }
-            UiButton::ShowUndo => {
+            WorkerToDom::GameFinish { replay_string, result }=>{
+                let gameover = utils::get_by_id_canvas("gameover_popup");
+                
+                gameover.set_hidden(false);
+                log!("dom:Game finished");
+            }
+            WorkerToDom::ShowUndo => {
                 undo.set_hidden(false);
-                worker.post_message(MEvent::Ack);
+                worker.post_message(DomToWorker::Ack);
                 //popup.set_text_content(Some(&text));
             }
-            UiButton::HideUndo => {
+            WorkerToDom::HideUndo => {
                 //popup.set_text_content(Some(""));
                 undo.set_hidden(true);
-                worker.post_message(MEvent::Ack);
+                worker.post_message(DomToWorker::Ack);
             }
         }
         //log!(format!("main thread received={:?}", hay));
@@ -276,7 +282,7 @@ pub async fn main_entry() {
 
     start_game(command).await;
 }
-fn resize() -> MEvent {
+fn resize() -> DomToWorker {
     let canvas = utils::get_by_id_canvas("mycanvas");
     //canvas.set_width(gloo::utils::body().client_width() as u32);
     //canvas.set_height(gloo::utils::body().client_height() as u32);
@@ -302,7 +308,7 @@ fn resize() -> MEvent {
     let gl_width = (width as f64 * realpixels).floor();
     let gl_height = (height as f64 * realpixels).floor();
 
-    MEvent::Resize {
+    DomToWorker::Resize {
         canvasx: gloo::utils::body().client_width() as u32,
         canvasy: gloo::utils::body().client_height() as u32,
         x: gl_width as f32,
