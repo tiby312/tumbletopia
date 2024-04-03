@@ -23,6 +23,20 @@
       body {
         /*position: absolute;*/
       }
+      a {
+        color:white;
+        text-decoration: none;
+        background-color: #4CAF50;
+        padding:10px;
+        margin:10px;
+        border-radius: 5px;
+      }
+      button{
+        color:white;
+        text-decoration: none;
+        background-color: gray;
+        border-style:ridge;
+      }
       #mycanvas{
         position: absolute;
         top:0px;
@@ -68,6 +82,7 @@
         margin:auto;
         background-color: #213022; /* Green */
         
+        border-radius: 5px;
         top:50%;
         left:50%;
         transform: translate(-50%, -50%);
@@ -93,6 +108,14 @@
       textarea {
         resize: none;
       }
+      .foo{
+        display:list-item;
+        margin:auto;
+        list-style-type:none;
+        margin-top: 10px;
+        margin-bottom:10px;
+
+      }
     </style>
   <script type=module>
     import { default as init } from './pkg/gridlock.js';
@@ -103,15 +126,16 @@
 </head>
 <body style="background-color: black;">
   
-  <button id="undo" class="ui">Undo</button>
+  <button id="undo" class="foo">Undo</button>
   <button id="popup" class="ui" hidden="true">Hello</button>
   <div id="gameover_popup" hidden="false">
     
-    <text style="display:list-item;">GAME OVER</text>
-    <text style="display:list-item;">Game Replay Code</text>
-    <textarea style="display:list-item;" id="w3review" disabled="true" readonly="true" name="w3review" rows="4" cols="50">At w3schools.com you will learn how to make a website. They offer free tutorials in all web development technologies.</textarea>
-    <button style="display:list-item;">Copy</button>
-    <a style="display:list-item;" href="http://localhost:8000/index.html ">main menu</a>
+    <text class="foo">GAME OVER</text>
+    <text class="foo">Game Replay Code</text>
+    <button class="foo">Copy</button>
+    
+    <textarea class="foo" id="w3review" disabled="true" readonly="true" name="w3review" rows="4" cols="50">At w3schools.com you will learn how to make a website. They offer free tutorials in all web development technologies.</textarea>
+    <a class="foo" href="http://localhost:8000/index.html ">main menu</a>
   </div>
   <canvas id="mycanvas" class="unselectable"></canvas>
   <!-- <button id="startgame" class="ui">START GAME</button> -->
