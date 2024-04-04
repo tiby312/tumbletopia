@@ -38,9 +38,9 @@ pub const RESIZE: usize = 10;
 enum WorkerToDom {
     ShowUndo,
     HideUndo,
-    GameFinish{
-        replay_string:String,
-        result:GameOver
+    GameFinish {
+        replay_string: String,
+        result: GameOver,
     },
     Ack,
 }
@@ -54,7 +54,9 @@ pub async fn worker_entry() {
     let (mut wr, mut ss) = shogo::EngineWorker::new().await;
 
     let k = ss.next().await.unwrap();
-    let DomToWorker::Start(g) = k else { unreachable!() };
+    let DomToWorker::Start(g) = k else {
+        unreachable!()
+    };
     wr.post_message(WorkerToDom::Ack);
 
     console_dbg!("Found game thingy", g);
@@ -115,7 +117,7 @@ pub async fn worker_entry() {
         }
     };
 
-    let (result,())=futures::join!(
+    let (result, ()) = futures::join!(
         ace::main_logic(
             g,
             game,
@@ -128,9 +130,11 @@ pub async fn worker_entry() {
         j
     );
 
-    wr.post_message(WorkerToDom::GameFinish { replay_string: String::new(), result });
+    wr.post_message(WorkerToDom::GameFinish {
+        replay_string: String::new(),
+        result,
+    });
 
-    
     log!("Worker thread closin");
 }
 
@@ -151,7 +155,10 @@ async fn render_command(
     team: ActiveTeam,
     e: &mut EngineStuff,
     world: &board::MyWorld,
-    frame_timer: &mut shogo::FrameTimer<DomToWorker, futures::channel::mpsc::UnboundedReceiver<DomToWorker>>,
+    frame_timer: &mut shogo::FrameTimer<
+        DomToWorker,
+        futures::channel::mpsc::UnboundedReceiver<DomToWorker>,
+    >,
     engine_worker: &mut shogo::EngineWorker<DomToWorker, WorkerToDom>,
 ) -> ace::Response {
     let scroll_manager = &mut e.scroll_manager;

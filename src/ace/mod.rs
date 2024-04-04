@@ -446,7 +446,7 @@ pub async fn main_logic(
     mut game: GameState,
     world: &board::MyWorld,
     mut doop: WorkerManager,
-) ->GameOver{
+) -> GameOver {
     let mut game_history = selection::MoveLog::new();
 
     //Loop over each team!

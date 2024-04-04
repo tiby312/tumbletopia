@@ -141,7 +141,9 @@ fn engine_handlers(
             None
         }),
         worker.register_event(&canvas, "mouseup", |_| DomToWorker::CanvasMouseUp.some()),
-        worker.register_event(&canvas, "mouseleave", |_| DomToWorker::CanvasMouseLeave.some()),
+        worker.register_event(&canvas, "mouseleave", |_| {
+            DomToWorker::CanvasMouseLeave.some()
+        }),
         worker.register_event(&canvas, "touchstart", |e| {
             let touches = convert_coord_touch(e.elem, e.event);
             DomToWorker::TouchDown { touches }.some()
@@ -199,10 +201,38 @@ pub async fn start_game(game_type: GameType) {
             WorkerToDom::Ack => {
                 unreachable!();
             }
-            WorkerToDom::GameFinish { replay_string, result }=>{
-                let gameover = utils::get_by_id_canvas("gameover_popup");
+            WorkerToDom::GameFinish {
+                replay_string,
+                result,
+            } => {
+                //let gameover = utils::get_by_id_canvas("gameover_popup");
+
+                let body = gloo::utils::document().body().unwrap();
+
+                let team_str = match result {
+                    GameOver::CatWon => "Cat Won!",
+                    GameOver::DogWon => "Dog Won!",
+                    GameOver::Tie => "Its a tie!",
+                };
+                use std::fmt::Write;
+
+                let host = "http://localhost:8000";
+                let mut k = String::new();
+                write!(&mut k,r###"
+                <div id="gameover_popup" hidden="true">
                 
-                gameover.set_hidden(false);
+                <text class="foo">GAME OVER:{}</text>
+                <text class="foo">Game Replay Code</text>
+                <button class="foo">Copy</button>
+                
+                <textarea class="foo" id="w3review" disabled="true" readonly="true" name="w3review" rows="4" cols="50">At w3schools.com you will learn how to make a website. They offer free tutorials in all web development technologies.</textarea>
+                <a class="foo" href="{}/index.html ">main menu</a>
+              </div>
+              "###,team_str,host).unwrap();
+
+                body.insert_adjacent_html("beforeend", &k).unwrap();
+
+                //gameover.set_hidden(false);
                 log!("dom:Game finished");
             }
             WorkerToDom::ShowUndo => {
@@ -241,19 +271,6 @@ pub async fn main_entry() {
     assert_eq!(k.next().unwrap(), '=');
     let command = k.as_str();
     console_dbg!(command);
-
-    let body=gloo::utils::document().body().unwrap();
-    body.insert_adjacent_html("beforeend", r###"
-    <div id="gameover_popup" hidden="true">
-    
-    <text class="foo">GAME OVER</text>
-    <text class="foo">Game Replay Code</text>
-    <button class="foo">Copy</button>
-    
-    <textarea class="foo" id="w3review" disabled="true" readonly="true" name="w3review" rows="4" cols="50">At w3schools.com you will learn how to make a website. They offer free tutorials in all web development technologies.</textarea>
-    <a class="foo" href="http://localhost:8000/index.html ">main menu</a>
-  </div>
-  "###).unwrap();
 
     //search.sp
     //TODO check if its PLAY AI VS LOCAL PLAY
