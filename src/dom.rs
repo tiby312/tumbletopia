@@ -243,7 +243,17 @@ pub async fn main_entry() {
     console_dbg!(command);
 
     let body=gloo::utils::document().body().unwrap();
-    body.insert_adjacent_html("beforeend", "<text>testing testing</text>").unwrap();
+    body.insert_adjacent_html("beforeend", r###"
+    <div id="gameover_popup" hidden="true">
+    
+    <text class="foo">GAME OVER</text>
+    <text class="foo">Game Replay Code</text>
+    <button class="foo">Copy</button>
+    
+    <textarea class="foo" id="w3review" disabled="true" readonly="true" name="w3review" rows="4" cols="50">At w3schools.com you will learn how to make a website. They offer free tutorials in all web development technologies.</textarea>
+    <a class="foo" href="http://localhost:8000/index.html ">main menu</a>
+  </div>
+  "###).unwrap();
 
     //search.sp
     //TODO check if its PLAY AI VS LOCAL PLAY
