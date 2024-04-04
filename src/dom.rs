@@ -242,6 +242,9 @@ pub async fn main_entry() {
     let command = k.as_str();
     console_dbg!(command);
 
+    let body=gloo::utils::document().body().unwrap();
+    body.insert_adjacent_html("beforeend", "<text>testing testing</text>").unwrap();
+
     //search.sp
     //TODO check if its PLAY AI VS LOCAL PLAY
     console_dbg!(search);
