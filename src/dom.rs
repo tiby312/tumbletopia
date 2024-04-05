@@ -222,7 +222,7 @@ pub async fn start_game(game_type: GameType) {
                 <text class="foo">GAME OVER:{team_str}</text>
                 <text class="foo">Game Replay Code</text>
                 <textarea class="foo" id="w3review" readonly="true" rows="6" cols="50">{replay_string}</textarea>
-                <a class="foo" href="{host}/game.html?v=replay&data={replay_string}">replay</a>
+                <a class="foo" href="{host}/game1.html?v=replay&data={replay_string}">replay</a>
                 <a class="foo" href="{host}/index.html ">main menu</a>
                 
               </div>
