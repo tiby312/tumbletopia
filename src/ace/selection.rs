@@ -7,68 +7,69 @@ pub struct HaveMoved {
 }
 
 //This is for saving/loading.
+#[derive(Deserialize, Serialize)]
 pub struct JustMoveLog {
     pub inner: Vec<moves::ActualMove>,
 }
 impl JustMoveLog {
-    pub fn deserialize(buffer: Vec<u8>) -> JustMoveLog {
-        use byteorder::{BigEndian, ReadBytesExt};
-        use std::io::Cursor;
-        let mut rdr = Cursor::new(buffer);
-        let ver = rdr.read_u32::<BigEndian>().unwrap();
-        assert_eq!(ver, 0);
-        let num = rdr.read_u32::<BigEndian>().unwrap();
+    // pub fn deserialize(buffer: Vec<u8>) -> JustMoveLog {
+    //     use byteorder::{BigEndian, ReadBytesExt};
+    //     use std::io::Cursor;
+    //     let mut rdr = Cursor::new(buffer);
+    //     let ver = rdr.read_u32::<BigEndian>().unwrap();
+    //     assert_eq!(ver, 0);
+    //     let num = rdr.read_u32::<BigEndian>().unwrap();
 
-        let mut ret = vec![];
-        for _ in 0..num {
-            let vals = [
-                rdr.read_i16::<BigEndian>().unwrap(),
-                rdr.read_i16::<BigEndian>().unwrap(),
-                rdr.read_i16::<BigEndian>().unwrap(),
-                rdr.read_i16::<BigEndian>().unwrap(),
-                rdr.read_i16::<BigEndian>().unwrap(),
-                rdr.read_i16::<BigEndian>().unwrap(),
-            ];
+    //     let mut ret = vec![];
+    //     for _ in 0..num {
+    //         let vals = [
+    //             rdr.read_i16::<BigEndian>().unwrap(),
+    //             rdr.read_i16::<BigEndian>().unwrap(),
+    //             rdr.read_i16::<BigEndian>().unwrap(),
+    //             rdr.read_i16::<BigEndian>().unwrap(),
+    //             rdr.read_i16::<BigEndian>().unwrap(),
+    //             rdr.read_i16::<BigEndian>().unwrap(),
+    //         ];
 
-            ret.push(moves::ActualMove {
-                original: Axial {
-                    q: vals[0],
-                    r: vals[1],
-                },
-                moveto: Axial {
-                    q: vals[2],
-                    r: vals[3],
-                },
-                attackto: Axial {
-                    q: vals[4],
-                    r: vals[5],
-                },
-            });
-        }
-        JustMoveLog { inner: ret }
-    }
-    pub fn serialize(&self) -> Vec<u8> {
-        let o = &self.inner;
-        use byteorder::{BigEndian, WriteBytesExt};
+    //         ret.push(moves::ActualMove {
+    //             original: Axial {
+    //                 q: vals[0],
+    //                 r: vals[1],
+    //             },
+    //             moveto: Axial {
+    //                 q: vals[2],
+    //                 r: vals[3],
+    //             },
+    //             attackto: Axial {
+    //                 q: vals[4],
+    //                 r: vals[5],
+    //             },
+    //         });
+    //     }
+    //     JustMoveLog { inner: ret }
+    // }
+    // pub fn serialize(&self) -> Vec<u8> {
+    //     let o = &self.inner;
+    //     use byteorder::{BigEndian, WriteBytesExt};
 
-        let mut wtr = vec![];
+    //     let mut wtr = vec![];
 
-        let version = 0;
-        wtr.write_u32::<BigEndian>(version).unwrap();
+    //     let version = 0;
+    //     wtr.write_u32::<BigEndian>(version).unwrap();
 
-        wtr.write_u32::<BigEndian>(o.len().try_into().unwrap())
-            .unwrap();
+    //     wtr.write_u32::<BigEndian>(o.len().try_into().unwrap())
+    //         .unwrap();
 
-        for a in o.iter() {
-            wtr.write_i16::<BigEndian>(a.original.q).unwrap();
-            wtr.write_i16::<BigEndian>(a.original.r).unwrap();
-            wtr.write_i16::<BigEndian>(a.moveto.q).unwrap();
-            wtr.write_i16::<BigEndian>(a.moveto.r).unwrap();
-            wtr.write_i16::<BigEndian>(a.attackto.q).unwrap();
-            wtr.write_i16::<BigEndian>(a.attackto.r).unwrap();
-        }
-        wtr
-    }
+    //     for a in o.iter() {
+    //         wtr.write_i16::<BigEndian>(a.original.q).unwrap();
+    //         wtr.write_i16::<BigEndian>(a.original.r).unwrap();
+    //         wtr.write_i16::<BigEndian>(a.moveto.q).unwrap();
+    //         wtr.write_i16::<BigEndian>(a.moveto.r).unwrap();
+    //         wtr.write_i16::<BigEndian>(a.attackto.q).unwrap();
+    //         wtr.write_i16::<BigEndian>(a.attackto.r).unwrap();
+    //     }
+    //     wtr
+    // }
 }
 
 //Need to keep effect so you can undo all the way to the start.

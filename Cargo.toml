@@ -30,6 +30,7 @@ miniz_oxide = "0.7.1"
 getrandom = { version = "0.2", features = ["js"] }
 byte-slice-cast = "1.2.2"
 querystring = "1.1.0"
+postcard = {version="1.0.8",features=["alloc"]}
 
 [workspace]
 members = [

@@ -302,8 +302,11 @@ impl Cube {
         ((b.q() - a.q()).abs() + (b.r() - a.r()).abs() + (b.s() - a.s()).abs()) / 2
     }
 }
-
-#[derive(Hash, Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+use serde::Deserialize;
+use serde::Serialize;
+#[derive(
+    Deserialize, Serialize, Hash, Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord,
+)]
 #[must_use]
 pub struct Axial {
     pub q: i16,

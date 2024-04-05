@@ -440,15 +440,25 @@ pub mod share {
     use super::*;
     pub fn load(s: &str) -> selection::JustMoveLog {
         use base64::prelude::*;
-        let k = BASE64_STANDARD.decode(s).unwrap();
+        let k = BASE64_STANDARD_NO_PAD.decode(s).unwrap();
         let k = miniz_oxide::inflate::decompress_to_vec(&k).unwrap();
-        selection::JustMoveLog::deserialize(k)
+
+        //let k=String::from_utf8(k).unwrap();
+
+        postcard::from_bytes(&k).unwrap()
+        //serde_json::from_str(&k).unwrap()
+
+        //selection::JustMoveLog::deserialize(k)
     }
     pub fn save(game_history: &selection::JustMoveLog) -> String {
         use base64::prelude::*;
-        let k = game_history.serialize();
-        let k = miniz_oxide::deflate::compress_to_vec(&k, 6);
-        BASE64_STANDARD.encode(k)
+        //let k = game_history.serialize();
+        //let k=serde_json::to_string(&game_history).unwrap();
+
+        let k = postcard::to_allocvec(game_history).unwrap();
+
+        let k = miniz_oxide::deflate::compress_to_vec(&k, 10);
+        BASE64_STANDARD_NO_PAD.encode(k)
     }
 }
 

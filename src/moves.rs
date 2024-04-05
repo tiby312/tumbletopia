@@ -91,7 +91,7 @@ impl GameState {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 pub struct ActualMove {
     pub original: Axial,
     pub moveto: Axial,
