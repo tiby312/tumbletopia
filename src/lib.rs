@@ -117,7 +117,7 @@ pub async fn worker_entry() {
         }
     };
 
-    let (result, ()) = futures::join!(
+    let ((result,game), ()) = futures::join!(
         ace::main_logic(
             g,
             game,
@@ -131,7 +131,7 @@ pub async fn worker_entry() {
     );
 
     wr.post_message(WorkerToDom::GameFinish {
-        replay_string: String::new(),
+        replay_string: ace::share::save(&game),
         result,
     });
 

@@ -439,6 +439,8 @@ pub mod share {
         let k = miniz_oxide::deflate::compress_to_vec(&k, 6);
         BASE64_STANDARD.encode(k)
     }
+    
+    
 }
 
 pub async fn main_logic(
@@ -446,14 +448,14 @@ pub async fn main_logic(
     mut game: GameState,
     world: &board::MyWorld,
     mut doop: WorkerManager,
-) -> GameOver {
+) -> (GameOver,selection::MoveLog) {
     let mut game_history = selection::MoveLog::new();
 
     //Loop over each team!
     for team in ActiveTeam::Dogs.iter() {
         if let Some(g) = game.game_is_over(world, team) {
             console_dbg!("Game over=", g);
-            return g;
+            return (g,game_history);
             //break 'game_loop;
         }
 

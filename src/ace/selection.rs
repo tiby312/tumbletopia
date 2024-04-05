@@ -19,6 +19,7 @@ impl MoveLog {
     pub fn new() -> Self {
         MoveLog { inner: vec![] }
     }
+    
     pub fn push(&mut self, o: (moves::ActualMove, move_build::CombinedEffect)) {
         self.inner.push(o);
     }

@@ -205,8 +205,7 @@ pub async fn start_game(game_type: GameType) {
                 replay_string,
                 result,
             } => {
-                //let gameover = utils::get_by_id_canvas("gameover_popup");
-
+                
                 let body = gloo::utils::document().body().unwrap();
 
                 let team_str = match result {
@@ -225,10 +224,10 @@ pub async fn start_game(game_type: GameType) {
                 <text class="foo">Game Replay Code</text>
                 <button class="foo">Copy</button>
                 
-                <textarea class="foo" id="w3review" disabled="true" readonly="true" name="w3review" rows="4" cols="50">At w3schools.com you will learn how to make a website. They offer free tutorials in all web development technologies.</textarea>
+                <textarea class="foo" id="w3review" disabled="true" readonly="true" name="w3review" rows="4" cols="50">{}</textarea>
                 <a class="foo" href="{}/index.html ">main menu</a>
               </div>
-              "###,team_str,host).unwrap();
+              "###,team_str,replay_string,host).unwrap();
 
                 body.insert_adjacent_html("beforeend", &k).unwrap();
 
