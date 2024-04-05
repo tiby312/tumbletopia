@@ -219,14 +219,14 @@ pub async fn start_game(game_type: GameType) {
                 write!(&mut k,r###"
                 <div id="gameover_popup" hidden="true">
                 
-                <text class="foo">GAME OVER:{}</text>
+                <text class="foo">GAME OVER:{team_str}</text>
                 <text class="foo">Game Replay Code</text>
-                <button class="foo">Copy</button>
+                <textarea class="foo" id="w3review" readonly="true" rows="6" cols="50">{replay_string}</textarea>
+                <a class="foo" href="{host}/game.html?v=replay&data={replay_string}">replay</a>
+                <a class="foo" href="{host}/index.html ">main menu</a>
                 
-                <textarea class="foo" id="w3review" disabled="true" readonly="true" name="w3review" rows="4" cols="50">{}</textarea>
-                <a class="foo" href="{}/index.html ">main menu</a>
               </div>
-              "###,team_str,replay_string,host).unwrap();
+              "###).unwrap();
 
                 body.insert_adjacent_html("beforeend", &k).unwrap();
 
