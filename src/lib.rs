@@ -131,7 +131,7 @@ pub async fn worker_entry() {
     );
 
     wr.post_message(WorkerToDom::GameFinish {
-        replay_string: ace::share::save(&game),
+        replay_string: ace::share::save(&game.into_just_move()),
         result,
     });
 

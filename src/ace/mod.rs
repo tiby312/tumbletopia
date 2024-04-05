@@ -427,13 +427,13 @@ pub mod share {
     pub const SAMPLE_GAME:&str="TY5RAsAgCEIpT7D7n9UYUm3Wx1MkCfB5EExMLhNM1lmaXM1UP3Sldr+qUFXd2K8Pzw4z26y8FOm++a3VnqmMUJJZmlPh/H92/7L5+V8=";
 
     use super::*;
-    pub fn load(s: &str) -> selection::MoveLog {
+    pub fn load(s: &str) -> selection::JustMoveLog {
         use base64::prelude::*;
         let k = BASE64_STANDARD.decode(s).unwrap();
         let k = miniz_oxide::inflate::decompress_to_vec(&k).unwrap();
-        selection::MoveLog::deserialize(k)
+        selection::JustMoveLog::deserialize(k)
     }
-    pub fn save(game_history: &selection::MoveLog) -> String {
+    pub fn save(game_history: &selection::JustMoveLog) -> String {
         use base64::prelude::*;
         let k = game_history.serialize();
         let k = miniz_oxide::deflate::compress_to_vec(&k, 6);
@@ -448,8 +448,8 @@ pub async fn main_logic(
     mut game: GameState,
     world: &board::MyWorld,
     mut doop: WorkerManager,
-) -> (GameOver,selection::MoveLog) {
-    let mut game_history = selection::MoveLog::new();
+) -> (GameOver,selection::MoveHistory) {
+    let mut game_history = selection::MoveHistory::new();
 
     //Loop over each team!
     for team in ActiveTeam::Dogs.iter() {
@@ -507,9 +507,9 @@ async fn handle_player(
     world: &board::MyWorld,
     doop: &mut WorkerManager,
     team: ActiveTeam,
-    move_log: &mut selection::MoveLog,
+    move_log: &mut selection::MoveHistory,
 ) -> (moves::ActualMove, move_build::CombinedEffect) {
-    let undo = |move_log: &mut selection::MoveLog, game: &mut GameState| {
+    let undo = |move_log: &mut selection::MoveHistory, game: &mut GameState| {
         log!("undoing turn!!!");
         assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
 
