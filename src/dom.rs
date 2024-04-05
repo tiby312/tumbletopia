@@ -205,7 +205,6 @@ pub async fn start_game(game_type: GameType) {
                 replay_string,
                 result,
             } => {
-                
                 let body = gloo::utils::document().body().unwrap();
 
                 let team_str = match result {
@@ -260,35 +259,45 @@ pub enum GameType {
 
 #[wasm_bindgen]
 pub async fn main_entry() {
-    let mut search = gloo::utils::window().location().search().unwrap();
+    let search = gloo::utils::window().location().search().unwrap();
 
     let k = search.as_str();
-    let mut k = k.chars();
 
-    assert_eq!(k.next().unwrap(), '?');
-    assert_eq!(k.next().unwrap(), 'v');
-    assert_eq!(k.next().unwrap(), '=');
-    let command = k.as_str();
-    console_dbg!(command);
+    let (a, k) = k.split_at(1);
+    console_dbg!(a, k);
+    assert_eq!(a, "?");
+
+    let res = querystring::querify(k);
+    console_dbg!("querystring:", res);
+    // let mut k = k.chars();
+
+    // assert_eq!(k.next().unwrap(), '?');
+    // assert_eq!(k.next().unwrap(), 'v');
+    // assert_eq!(k.next().unwrap(), '=');
+    // let command = k.as_str();
+    // console_dbg!(command);
 
     //search.sp
     //TODO check if its PLAY AI VS LOCAL PLAY
     console_dbg!(search);
 
-    let command = match command {
-        "singleplayer" => {
+    let command = match res[0] {
+        ("v", "singleplayer") => {
             log!("singleplayer!!!");
             GameType::SinglePlayer
         }
-        "passplay" => {
+        ("v", "passplay") => {
             log!("passplay!!!");
             GameType::PassPlay
         }
-        "aibattle" => {
+        ("v", "aibattle") => {
             log!("aibattle!!!");
             GameType::AIBattle
         }
-        "replay" => GameType::Replay("".to_string()),
+        ("v", "replay") => {
+            assert_eq!(res[1].0, "data");
+            GameType::Replay(res[1].1.into())
+        }
         _ => {
             unreachable!("unrecognized command");
         }

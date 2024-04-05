@@ -16,6 +16,15 @@ pub const OFFSETS: [[i16; 3]; 6] = [
     [0, 1, -1],
 ];
 
+// pub enum MovDir{
+//     Inner(HDir),
+//     Outer(Outer)
+// }
+// pub enum Outer{
+//     Aligned(HDir),
+//     UnAligned(HDir)
+// }
+
 //TODO use this
 #[derive(Copy, Clone, Default, Hash, Debug, PartialEq, Eq)]
 pub enum HDir {

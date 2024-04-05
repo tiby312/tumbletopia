@@ -55,7 +55,7 @@ pub async fn worker_entry() {
 
     let k = ss.next().await.unwrap();
     let DomToWorker::Start(g) = k else {
-        unreachable!()
+        unreachable!("worker:Didn't receive start")
     };
     wr.post_message(WorkerToDom::Ack);
 
@@ -87,8 +87,6 @@ pub async fn worker_entry() {
 
     let world = board::MyWorld::new();
 
-    let game = ace::game_init(&world);
-
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
@@ -117,10 +115,9 @@ pub async fn worker_entry() {
         }
     };
 
-    let ((result,game), ()) = futures::join!(
+    let ((result, game), ()) = futures::join!(
         ace::main_logic(
             g,
-            game,
             &world,
             ace::WorkerManager {
                 sender: command_sender,

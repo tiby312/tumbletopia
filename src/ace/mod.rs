@@ -1,3 +1,5 @@
+use self::selection::JustMoveLog;
+
 use super::*;
 mod ai;
 pub mod selection;
@@ -12,6 +14,15 @@ pub struct GameWrap<T> {
     pub game: GameState,
     pub team: ActiveTeam,
     pub data: T,
+}
+impl<T> GameWrap<T> {
+    pub fn with_data<K>(self, a: K) -> GameWrap<K> {
+        GameWrap {
+            game: self.game,
+            team: self.team,
+            data: a,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -439,23 +450,65 @@ pub mod share {
         let k = miniz_oxide::deflate::compress_to_vec(&k, 6);
         BASE64_STANDARD.encode(k)
     }
-    
-    
 }
 
-pub async fn main_logic(
-    g: dom::GameType,
-    mut game: GameState,
-    world: &board::MyWorld,
-    mut doop: WorkerManager,
-) -> (GameOver,selection::MoveHistory) {
+pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: JustMoveLog) {
+    let mut game = ace::game_init(&world);
+
     let mut game_history = selection::MoveHistory::new();
 
-    //Loop over each team!
-    for team in ActiveTeam::Dogs.iter() {
+    let mut team_gen = ActiveTeam::Dogs.iter();
+
+    for the_move in just_logs.inner {
+        let team = team_gen.next().unwrap();
+
         if let Some(g) = game.game_is_over(world, team) {
             console_dbg!("Game over=", g);
-            return (g,game_history);
+            todo!();
+        }
+
+        let kk = the_move.as_move();
+
+        let effect_m = kk
+            .animate(team, &mut game, world, &mut doop)
+            .await
+            .apply(team, &mut game);
+
+        let effect_a = kk
+            .into_attack(the_move.attackto)
+            .animate(team, &mut game, world, &mut doop)
+            .await
+            .apply(team, &mut game, world);
+
+        game_history.push((the_move, effect_m.combine(effect_a)));
+    }
+
+    //RZABEgMhCAMRuJ/0/x9UzyYB25thggunBDN9H3vOtDyLiuxBllSxOBuxxJQhphnUpGSvedd4rlqxAb3MpcWGtJhLX3EpZnoQSRU74t4scGbwzF5qIHPEEBtlTLPXC3VrtFZv6D+y65PMVfPfBKFZr7/sXm5jiXWtN1Nd5Xy34ymndO7tQW/0BqW47ei11B216U2m6VjL/1a+
+}
+pub async fn main_logic(
+    g: dom::GameType,
+    world: &board::MyWorld,
+    mut doop: WorkerManager,
+) -> (GameOver, selection::MoveHistory) {
+    if let dom::GameType::Replay(rr) = g {
+        console_dbg!("YOOOOO", rr);
+        replay(world, doop, share::load(&rr)).await;
+        unreachable!("Finished replaying");
+    };
+
+    let mut game = ace::game_init(&world);
+
+    let mut game_history = selection::MoveHistory::new();
+
+    let mut team_gen = ActiveTeam::Dogs.iter();
+
+    //Loop over each team!
+    loop {
+        let team = team_gen.next().unwrap();
+
+        if let Some(g) = game.game_is_over(world, team) {
+            console_dbg!("Game over=", g);
+            break (g, game_history);
             //break 'game_loop;
         }
 
@@ -496,10 +549,6 @@ pub async fn main_logic(
 
         ai::absolute_evaluate(&mut game, world, true);
     }
-
-    unreachable!();
-
-    //console_dbg!(share::save(&game_history));
 }
 
 async fn handle_player(

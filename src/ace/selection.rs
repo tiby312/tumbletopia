@@ -7,10 +7,10 @@ pub struct HaveMoved {
 }
 
 //This is for saving/loading.
-pub struct JustMoveLog{
-    pub inner:Vec<moves::ActualMove>
+pub struct JustMoveLog {
+    pub inner: Vec<moves::ActualMove>,
 }
-impl JustMoveLog{
+impl JustMoveLog {
     pub fn deserialize(buffer: Vec<u8>) -> JustMoveLog {
         use byteorder::{BigEndian, ReadBytesExt};
         use std::io::Cursor;
@@ -29,11 +29,20 @@ impl JustMoveLog{
                 rdr.read_i16::<BigEndian>().unwrap(),
                 rdr.read_i16::<BigEndian>().unwrap(),
             ];
-            
+
             ret.push(moves::ActualMove {
-                original: Axial{q:vals[0],r:vals[1]},
-                moveto: Axial{q:vals[2], r:vals[3]},
-                attackto: Axial{q:vals[4], r:vals[5]},
+                original: Axial {
+                    q: vals[0],
+                    r: vals[1],
+                },
+                moveto: Axial {
+                    q: vals[2],
+                    r: vals[3],
+                },
+                attackto: Axial {
+                    q: vals[4],
+                    r: vals[5],
+                },
             });
         }
         JustMoveLog { inner: ret }
@@ -62,8 +71,6 @@ impl JustMoveLog{
     }
 }
 
-
-
 //Need to keep effect so you can undo all the way to the start.
 pub struct MoveHistory {
     pub inner: Vec<(moves::ActualMove, move_build::CombinedEffect)>,
@@ -78,10 +85,12 @@ impl MoveHistory {
     pub fn new() -> Self {
         MoveHistory { inner: vec![] }
     }
-    pub fn into_just_move(self)->JustMoveLog{
-        JustMoveLog { inner: self.inner.into_iter().map(|a|a.0).collect() }
+    pub fn into_just_move(self) -> JustMoveLog {
+        JustMoveLog {
+            inner: self.inner.into_iter().map(|a| a.0).collect(),
+        }
     }
-    
+
     pub fn push(&mut self, o: (moves::ActualMove, move_build::CombinedEffect)) {
         self.inner.push(o);
     }
@@ -94,35 +103,34 @@ impl MoveHistory {
         // }
         // assert!(kk.game_is_over(ii.next().unwrap()).is_some());
     }
-    
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum Steering {
-    Left,
-    Right,
-    LeftLeft,
-    RightRight,
-    None,
-}
+// #[derive(Copy, Clone, Debug)]
+// pub enum Steering {
+//     Left,
+//     Right,
+//     LeftLeft,
+//     RightRight,
+//     None,
+// }
 
-#[derive(Copy, Clone, Debug)]
-pub enum Attackable {
-    Yes,
-    No,
-}
+// #[derive(Copy, Clone, Debug)]
+// pub enum Attackable {
+//     Yes,
+//     No,
+// }
 
-#[derive(Copy, Clone, Debug)]
-pub enum StopsIter {
-    Yes,
-    No,
-}
+// #[derive(Copy, Clone, Debug)]
+// pub enum StopsIter {
+//     Yes,
+//     No,
+// }
 
-#[derive(Copy, Clone, Debug)]
-pub enum ResetIter {
-    Yes,
-    No,
-}
+// #[derive(Copy, Clone, Debug)]
+// pub enum ResetIter {
+//     Yes,
+//     No,
+// }
 
 // pub const WARRIOR_STEERING: [(GridCoord, Steering, Attackable, StopsIter, ResetIter); 6] = {
 //     let f1 = GridCoord([0, 0]).advance(HexDir { dir: 0 });
