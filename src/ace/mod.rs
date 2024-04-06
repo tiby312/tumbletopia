@@ -560,6 +560,33 @@ pub async fn main_logic(
     }
 }
 
+pub fn convert_starting_position_index_to_position(world: &mut BitField){
+
+pub fn num_starting_positions()->usize{
+    3*3 //*6*5
+}
+     //TODO
+    //### Starting position:
+
+    //The starting position is randomized to be slightly different between games. One unit per team is randomly selected to be slightly further back than the rest. Two outer hexes are selected at random to be removed from the game.
+
+
+
+
+    //world.
+    // A00B00  0
+    // 0A0B00  1
+    // 00AB00  2
+    // A000B0  3
+    // 0A00B0  4
+    // 00A0B0  5
+    // A0000B  6
+    // 0A000B  7
+    // 00A00B  8
+    
+}
+
+
 async fn handle_player(
     game: &mut GameState,
     world: &board::MyWorld,
