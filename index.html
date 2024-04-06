@@ -12,10 +12,7 @@
       color:white;
     }
     div a {
-      display:block;
       padding:10px;
-      margin:auto;
-      margin-bottom:10px;
       background-color: #4CAF50;
       text-decoration: none;
       max-width:400px;
@@ -34,17 +31,52 @@
       list-style-type:none;  
       color:white;
     }
+    .list{
+      display:block;
+      margin:auto;
+      margin-bottom:10px;
+      
+    }
+    button{
+      background-color: #04AA6D; /* Green */
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    }
+
   </style>
+  <script>
+    function myFunction() {
+      var text=document.getElementById("textarea").value;
+
+
+      let a = document.createElement("a");
+      a.setAttribute("class","list");
+      a.setAttribute("href","http://localhost:8000/game1.html?v=replay&data="+text);
+      a.text="replay";
+      document.getElementById("listdiv").append(a);
+      
+      
+    }
+    </script>
 </head>
 
 
 <body>
-  <div>
+  <div id="listdiv">
     <text> Gridlock: A chess-like game </text>
-    <a href="http://localhost:8000/game1.html?v=singleplayer">single player</a>
-    <a href="http://localhost:8000/game1.html?v=passplay">pass play</a>
-    <a href="http://localhost:8000/game1.html?v=aibattle">AI Battle</a>
-    <a href="http://localhost:8000/game1.html?v=replay&data=abc">replay</a>
+    <a class="list" href="http://localhost:8000/game1.html?v=singleplayer">single player</a>
+    <a class="list" href="http://localhost:8000/game1.html?v=passplay">pass play</a>
+    <a class="list" href="http://localhost:8000/game1.html?v=aibattle">AI Battle</a>
+    <button id="fooo" class="list" onclick="myFunction()">generate replay link</button>
+    <form>
+    <textarea class="list" id="textarea" rows="6" cols="30" placeholder="Enter replay code"></textarea>
+    </form>
+
   </div>  
 </body>
 </html>

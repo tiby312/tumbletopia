@@ -435,7 +435,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 }
 
 pub mod share {
-    
+
     use super::*;
     pub fn load(s: &str) -> selection::JustMoveLog {
         use base64::prelude::*;
