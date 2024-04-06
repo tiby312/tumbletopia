@@ -48,19 +48,30 @@
     font-size: 16px;
     }
 
+    .disabled {
+      pointer-events: none;
+      cursor: default;
+      background-color: gray;
+      
+    }
+
   </style>
   <script>
     function myFunction() {
       var text=document.getElementById("textarea").value;
 
 
-      let a = document.createElement("a");
-      a.setAttribute("class","list");
-      a.setAttribute("href","http://localhost:8000/game1.html?v=replay&data="+text);
-      a.text="replay";
-      document.getElementById("listdiv").append(a);
-      
-      
+      // let a = document.createElement("a");
+      // a.setAttribute("class","list");
+      // a.setAttribute("href","http://localhost:8000/game1.html?v=replay&data="+text);
+      // a.text="replay";
+      // document.getElementById("listdiv").append(a);
+      var rp=document.getElementById("replaybutton");
+      rp.setAttribute("href","http://localhost:8000/game1.html?v=replay&data="+text);
+      rp.setAttribute("class","list");
+      if (text==""){
+        rp.setAttribute("class","list disabled");
+      }
     }
     </script>
 </head>
@@ -72,9 +83,10 @@
     <a class="list" href="http://localhost:8000/game1.html?v=singleplayer">single player</a>
     <a class="list" href="http://localhost:8000/game1.html?v=passplay">pass play</a>
     <a class="list" href="http://localhost:8000/game1.html?v=aibattle">AI Battle</a>
-    <button id="fooo" class="list" onclick="myFunction()">generate replay link</button>
+    <a class="list disabled" id="replaybutton" href="" >replay</a>
+    
     <form>
-    <textarea class="list" id="textarea" rows="6" cols="30" placeholder="Enter replay code"></textarea>
+    <textarea class="list" oninput="myFunction()" id="textarea" rows="6" cols="30" placeholder="Paste the replay code here"></textarea>
     </form>
 
   </div>  
