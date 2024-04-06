@@ -388,23 +388,23 @@ pub async fn reselect_loop(
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
     let powerup = true;
-    let d = 5;
-    let cats = [[-d, d], [0, -d], [d, 0]];
-    let cats = cats
-        .into_iter()
-        .map(|a| UnitData {
-            position: Axial::from_arr(a),
+
+    let cats = world
+        .cat_start()
+        .iter()
+        .map(|&position| UnitData {
+            position,
             typ: Type::Warrior { powerup },
             has_powerup: false,
         })
         .collect();
 
     //player
-    let dogs = [[d, -d], [-d, 0], [0, d]];
-    let dogs = dogs
-        .into_iter()
-        .map(|a| UnitData {
-            position: Axial::from_arr(a),
+    let dogs = world
+        .dog_start()
+        .iter()
+        .map(|&position| UnitData {
+            position,
             typ: Type::Warrior { powerup },
             has_powerup: false,
         })
@@ -560,18 +560,14 @@ pub async fn main_logic(
     }
 }
 
-pub fn convert_starting_position_index_to_position(world: &mut BitField){
-
-pub fn num_starting_positions()->usize{
-    3*3 //*6*5
-}
-     //TODO
+pub fn convert_starting_position_index_to_position(world: &mut BitField) {
+    pub fn num_starting_positions() -> usize {
+        3 * 3 //*6*5
+    }
+    //TODO
     //### Starting position:
 
     //The starting position is randomized to be slightly different between games. One unit per team is randomly selected to be slightly further back than the rest. Two outer hexes are selected at random to be removed from the game.
-
-
-
 
     //world.
     // A00B00  0
@@ -583,9 +579,7 @@ pub fn num_starting_positions()->usize{
     // A0000B  6
     // 0A000B  7
     // 00A00B  8
-    
 }
-
 
 async fn handle_player(
     game: &mut GameState,
