@@ -15,13 +15,57 @@ impl Default for MyWorld {
     }
 }
 
+fn increase_mag(a: &mut i16) {
+    if *a == 0 {
+        return;
+    }
+
+    if *a > 0 {
+        *a += 1
+    } else {
+        *a -= 1
+    }
+}
+
 impl MyWorld {
     pub fn new() -> MyWorld {
-        let w = BitField::from_iter(world().map(|a| a.to_axial()));
+        let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(4).map(|x| x.to_axial()));
+
+        let cat_long = 1; // 0,1,2
+        let dog_long = 2; // 0,1,2
+        let dog_long2 = 1; // 0,1,2
+        let world_missing_index1 = 5; //0,1,2,3,4,5
+        let world_missing_index2 = 2; //0,1,2,3,4,5
+
         let d = 5;
 
-        let cat_start = [[-d, d], [0, -d], [d, 0]].map(Axial::from_arr);
-        let dog_start = [[d, -d], [-d, 0], [0, d]].map(Axial::from_arr);
+        let mut cat_start = [[-d, d], [0, -d], [d, 0]].map(Axial::from_arr);
+        let mut dog_start = [[d, -d], [-d, 0], [0, d]].map(Axial::from_arr);
+        let world_missing =
+            [[2, -4], [-2, -2], [-4, 2], [-2, 4], [2, 2], [4, -2]].map(Axial::from_arr);
+
+        w.set_coord(cat_start[cat_long], true);
+        increase_mag(&mut cat_start[cat_long].q);
+        increase_mag(&mut cat_start[cat_long].r);
+
+        w.set_coord(dog_start[dog_long], true);
+        increase_mag(&mut dog_start[dog_long].q);
+        increase_mag(&mut dog_start[dog_long].r);
+
+        w.set_coord(dog_start[dog_long2], true);
+        increase_mag(&mut dog_start[dog_long2].q);
+        increase_mag(&mut dog_start[dog_long2].r);
+
+        w.set_coord(world_missing[world_missing_index1], false);
+        w.set_coord(world_missing[world_missing_index2], false);
+
+        for a in cat_start {
+            w.set_coord(a, true);
+        }
+
+        for a in dog_start {
+            w.set_coord(a, true);
+        }
 
         MyWorld {
             w,
