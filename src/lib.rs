@@ -85,7 +85,8 @@ pub async fn worker_entry() {
         shader,
     };
 
-    let world = board::MyWorld::new();
+    let seed = board::WorldSeed::new();
+    let world = board::MyWorld::new(&seed);
 
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
@@ -378,7 +379,7 @@ async fn render_command(
 
         scroll_manager.step();
 
-        draw_sys.draw_clear([0.0, 0.0, 0.0, 0.0]);
+        draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
 
         pub const LAND_OFFSET: f32 = -10.0;
 
@@ -392,7 +393,9 @@ async fn render_command(
             let mut g = game.env.land.clone();
             g.union_with(&game.env.fog);
             g.toggle_range(..);
+
             g.intersect_with(world.get_game_cells());
+
             g
         };
 

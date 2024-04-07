@@ -675,6 +675,7 @@ dependencies = [
  "model",
  "postcard",
  "querystring",
+ "rand 0.8.5",
  "serde",
  "shogo",
  "smallvec",
