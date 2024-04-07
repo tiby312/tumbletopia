@@ -85,13 +85,19 @@ pub async fn worker_entry() {
         shader,
     };
 
-    let seed = board::WorldSeed::new();
-    let world = board::MyWorld::new(&seed);
+    let (seed, o) = if let dom::GameType::Replay(rr) = &g {
+        let j = ace::share::load(rr);
+        (j.seed.clone(), Some(j))
+    } else {
+        (board::WorldSeed::new(), None)
+    };
+
+    let world = board::MyWorld::new(seed);
 
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
-    let j = async {
+    let render_thead = async {
         while let Some(ace::GameWrap {
             mut game,
             data,
@@ -116,20 +122,85 @@ pub async fn worker_entry() {
         }
     };
 
-    let ((result, game), ()) = futures::join!(
-        ace::main_logic(
-            g,
-            &world,
-            ace::WorkerManager {
-                sender: command_sender,
-                receiver: response_recv,
+    let gameplay_thread = async {
+        let mut doop = ace::WorkerManager {
+            sender: command_sender,
+            receiver: response_recv,
+        };
+
+        if let dom::GameType::Replay(rr) = g {
+            console_dbg!("YOOOOO", rr);
+            ace::replay(&world, doop, o.unwrap()).await;
+            unreachable!("Finished replaying");
+        };
+
+        let mut game = ace::game_init(&world);
+
+        let mut game_history = ace::selection::MoveHistory::new();
+
+        let mut team_gen = ActiveTeam::Dogs.iter();
+
+        //Loop over each team!
+        loop {
+            let team = team_gen.next().unwrap();
+
+            if let Some(g) = game.game_is_over(&world, team) {
+                console_dbg!("Game over=", g);
+                break (g, game_history);
+                //break 'game_loop;
             }
-        ),
-        j
-    );
+
+            //Add AIIIIII.
+            let foo = match g {
+                dom::GameType::SinglePlayer => team == ActiveTeam::Cats,
+                dom::GameType::PassPlay => false,
+                dom::GameType::AIBattle => true,
+                dom::GameType::Replay(_) => todo!(),
+            };
+
+            if foo {
+                //{
+                //doop.send_popup("AI Thinking", team, &mut game).await;
+                let the_move = ace::ai::iterative_deepening(&mut game, &world, team);
+                //doop.send_popup("", team, &mut game).await;
+
+                let kk = the_move.as_move();
+
+                let effect_m = kk
+                    .animate(team, &mut game, &world, &mut doop)
+                    .await
+                    .apply(team, &mut game);
+
+                let effect_a = kk
+                    .into_attack(the_move.attackto)
+                    .animate(team, &mut game, &world, &mut doop)
+                    .await
+                    .apply(team, &mut game, &world);
+
+                game_history.push((the_move, effect_m.combine(effect_a)));
+
+                continue;
+            }
+
+            let r = ace::handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
+            game_history.push(r);
+
+            ace::ai::absolute_evaluate(&mut game, &world, true);
+        }
+        // ace::main_logic(
+        //     g,
+        //     &world,
+        //     ace::WorkerManager {
+        //         sender: command_sender,
+        //         receiver: response_recv,
+        //     }
+        // ).await
+    };
+
+    let ((result, game), ()) = futures::join!(gameplay_thread, render_thead);
 
     wr.post_message(WorkerToDom::GameFinish {
-        replay_string: ace::share::save(&game.into_just_move()),
+        replay_string: ace::share::save(&game.into_just_move(world.seed)),
         result,
     });
 

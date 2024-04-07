@@ -1,7 +1,7 @@
 use self::selection::JustMoveLog;
 
 use super::*;
-mod ai;
+pub mod ai;
 pub mod selection;
 use crate::{CellSelection, GameState, UnitData};
 
@@ -494,71 +494,13 @@ pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: 
 
     //RZABEgMhCAMRuJ/0/x9UzyYB25thggunBDN9H3vOtDyLiuxBllSxOBuxxJQhphnUpGSvedd4rlqxAb3MpcWGtJhLX3EpZnoQSRU74t4scGbwzF5qIHPEEBtlTLPXC3VrtFZv6D+y65PMVfPfBKFZr7/sXm5jiXWtN1Nd5Xy34ymndO7tQW/0BqW47ei11B216U2m6VjL/1a+
 }
-pub async fn main_logic(
-    g: dom::GameType,
-    world: &board::MyWorld,
-    mut doop: WorkerManager,
-) -> (GameOver, selection::MoveHistory) {
-    if let dom::GameType::Replay(rr) = g {
-        console_dbg!("YOOOOO", rr);
-        replay(world, doop, share::load(&rr)).await;
-        unreachable!("Finished replaying");
-    };
+// pub async fn main_logic(
+//     g: dom::GameType,
+//     world: &board::MyWorld,
+//     mut doop: WorkerManager,
+// ) -> (GameOver, selection::MoveHistory) {
 
-    let mut game = ace::game_init(&world);
-
-    let mut game_history = selection::MoveHistory::new();
-
-    let mut team_gen = ActiveTeam::Dogs.iter();
-
-    //Loop over each team!
-    loop {
-        let team = team_gen.next().unwrap();
-
-        if let Some(g) = game.game_is_over(world, team) {
-            console_dbg!("Game over=", g);
-            break (g, game_history);
-            //break 'game_loop;
-        }
-
-        //Add AIIIIII.
-        let foo = match g {
-            dom::GameType::SinglePlayer => team == ActiveTeam::Cats,
-            dom::GameType::PassPlay => false,
-            dom::GameType::AIBattle => true,
-            dom::GameType::Replay(_) => todo!(),
-        };
-
-        if foo {
-            //{
-            //doop.send_popup("AI Thinking", team, &mut game).await;
-            let the_move = ai::iterative_deepening(&mut game, world, team);
-            //doop.send_popup("", team, &mut game).await;
-
-            let kk = the_move.as_move();
-
-            let effect_m = kk
-                .animate(team, &mut game, world, &mut doop)
-                .await
-                .apply(team, &mut game);
-
-            let effect_a = kk
-                .into_attack(the_move.attackto)
-                .animate(team, &mut game, world, &mut doop)
-                .await
-                .apply(team, &mut game, world);
-
-            game_history.push((the_move, effect_m.combine(effect_a)));
-
-            continue;
-        }
-
-        let r = handle_player(&mut game, world, &mut doop, team, &mut game_history).await;
-        game_history.push(r);
-
-        ai::absolute_evaluate(&mut game, world, true);
-    }
-}
+// }
 
 pub fn convert_starting_position_index_to_position(world: &mut BitField) {
     pub fn num_starting_positions() -> usize {
@@ -581,7 +523,7 @@ pub fn convert_starting_position_index_to_position(world: &mut BitField) {
     // 00A00B  8  X
 }
 
-async fn handle_player(
+pub async fn handle_player(
     game: &mut GameState,
     world: &board::MyWorld,
     doop: &mut WorkerManager,

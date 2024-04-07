@@ -9,6 +9,7 @@ pub struct HaveMoved {
 //This is for saving/loading.
 #[derive(Deserialize, Serialize)]
 pub struct JustMoveLog {
+    pub seed: board::WorldSeed,
     pub inner: Vec<moves::ActualMove>,
 }
 impl JustMoveLog {
@@ -76,18 +77,19 @@ impl JustMoveLog {
 pub struct MoveHistory {
     pub inner: Vec<(moves::ActualMove, move_build::CombinedEffect)>,
 }
-impl Default for MoveHistory {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// impl Default for MoveHistory {
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }
 
 impl MoveHistory {
     pub fn new() -> Self {
         MoveHistory { inner: vec![] }
     }
-    pub fn into_just_move(self) -> JustMoveLog {
+    pub fn into_just_move(self, seed: board::WorldSeed) -> JustMoveLog {
         JustMoveLog {
+            seed,
             inner: self.inner.into_iter().map(|a| a.0).collect(),
         }
     }

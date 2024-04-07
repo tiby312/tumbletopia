@@ -4,6 +4,7 @@ use super::*;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct MyWorld {
+    pub seed: WorldSeed,
     w: BitField,
     dog_start: [Axial; 3],
     cat_start: [Axial; 3],
@@ -75,8 +76,9 @@ fn foo() {
     assert!(false);
 }
 
+#[derive(Deserialize, Serialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct WorldSeed {
-    foo: u16,
+    foo: u64,
 }
 
 impl WorldSeed {
@@ -88,12 +90,12 @@ impl WorldSeed {
 }
 
 impl MyWorld {
-    pub fn new(seed: &WorldSeed) -> MyWorld {
+    pub fn new(seed: WorldSeed) -> MyWorld {
         let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(4).map(|x| x.to_axial()));
 
         //3*3*2*5*4 = 360 choices!!!
 
-        let mut i: usize = seed.foo.into();
+        let mut i: usize = seed.foo.try_into().unwrap();
 
         let cat_long = i % 3;
         i /= 3;
@@ -153,6 +155,7 @@ impl MyWorld {
         }
 
         MyWorld {
+            seed,
             w,
             dog_start,
             cat_start,
