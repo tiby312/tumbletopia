@@ -82,6 +82,8 @@ fn foo(){
         );
     assert!(false);
 }
+
+
 impl MyWorld {
     pub fn new() -> MyWorld {
         let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(4).map(|x| x.to_axial()));
@@ -89,7 +91,7 @@ impl MyWorld {
 
         //3*3*2*5*4 = 360 choices!!!
 
-        let mut i=359;
+        let mut i=22;
 
         let cat_long=i%3;
         i/=3;
