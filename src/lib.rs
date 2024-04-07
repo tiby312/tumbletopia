@@ -54,12 +54,12 @@ pub async fn worker_entry() {
     let (mut wr, mut ss) = shogo::EngineWorker::new().await;
 
     let k = ss.next().await.unwrap();
-    let DomToWorker::Start(g) = k else {
+    let DomToWorker::Start(game_type) = k else {
         unreachable!("worker:Didn't receive start")
     };
     wr.post_message(WorkerToDom::Ack);
 
-    console_dbg!("Found game thingy", g);
+    console_dbg!("Found game thingy", game_type);
 
     let mut frame_timer = shogo::FrameTimer::new(60, ss);
 
@@ -85,8 +85,8 @@ pub async fn worker_entry() {
         shader,
     };
 
-    let (seed, o) = if let dom::GameType::Replay(rr) = &g {
-        let j = ace::share::load(rr);
+    let (seed, o) = if let dom::GameType::Replay(rr) = &game_type {
+        let j = ace::share::load(&rr);
         (j.seed.clone(), Some(j))
     } else {
         (board::WorldSeed::new(), None)
@@ -128,11 +128,10 @@ pub async fn worker_entry() {
             receiver: response_recv,
         };
 
-        if let dom::GameType::Replay(rr) = g {
-            console_dbg!("YOOOOO", rr);
-            ace::replay(&world, doop, o.unwrap()).await;
+        if let Some(fff)=o{
+            ace::replay(&world, doop, fff).await;
             unreachable!("Finished replaying");
-        };
+        }
 
         let mut game = ace::game_init(&world);
 
@@ -151,7 +150,7 @@ pub async fn worker_entry() {
             }
 
             //Add AIIIIII.
-            let foo = match g {
+            let foo = match game_type {
                 dom::GameType::SinglePlayer => team == ActiveTeam::Cats,
                 dom::GameType::PassPlay => false,
                 dom::GameType::AIBattle => true,
@@ -187,14 +186,6 @@ pub async fn worker_entry() {
 
             ace::ai::absolute_evaluate(&mut game, &world, true);
         }
-        // ace::main_logic(
-        //     g,
-        //     &world,
-        //     ace::WorkerManager {
-        //         sender: command_sender,
-        //         receiver: response_recv,
-        //     }
-        // ).await
     };
 
     let ((result, game), ()) = futures::join!(gameplay_thread, render_thead);
