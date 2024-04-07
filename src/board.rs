@@ -27,15 +27,91 @@ fn increase_mag(a: &mut i16) {
     }
 }
 
+
+#[test]
+fn foo(){
+
+    //let i=234314;
+    let mut cat_long_buffer=0;
+    let mut dog_long_buffer=0;
+    let mut dog_long2_buffer=0;
+    let mut world_missing_index1_buffer=0;
+    let mut world_missing_index2_buffer=0;
+    
+
+    //3*3*2*5*4 = 360 choices!!!
+
+
+    
+
+    for mut i in 0..360{
+
+        let cat_long=i%3;
+        i/=3;
+        let dog_long=i%3;
+        i/=3;
+        let dog_long2=i%2;
+        i/=2;
+        let world_missing_index1=i%5;
+        i/=5;
+        let world_missing_index2=i%4;
+        i/=4;
+        assert_eq!(i,0);
+
+        //12 bits total
+        // let cat_long = i%3; // 0,1,2   //2 bits
+        // let dog_long = (i/3)%3; // 0,1,2   // 2 bits
+        // let dog_long2 = (i/(3*3))%3; // 0,1,2   // 2 bits
+        // let world_missing_index1 = (i/(3*3*3))%5; //0,1,2,3,4,5 //3 bits
+        // let world_missing_index2 = (i/(3*3*3*5))%5; //0,1,2,3,4,5 //3 bits
+
+        cat_long_buffer|=cat_long;
+        dog_long_buffer|=dog_long;
+        dog_long2_buffer|=dog_long2;
+        world_missing_index1_buffer|=world_missing_index1;
+        world_missing_index2_buffer|=world_missing_index2;
+        
+    }
+
+        dbg!(
+            cat_long_buffer,
+            dog_long_buffer,
+            dog_long2_buffer,
+            world_missing_index1_buffer,
+            world_missing_index2_buffer
+        );
+    assert!(false);
+}
 impl MyWorld {
     pub fn new() -> MyWorld {
         let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(4).map(|x| x.to_axial()));
 
-        let cat_long = 1; // 0,1,2
-        let dog_long = 2; // 0,1,2
-        let dog_long2 = 1; // 0,1,2
-        let world_missing_index1 = 5; //0,1,2,3,4,5
-        let world_missing_index2 = 2; //0,1,2,3,4,5
+
+        //3*3*2*5*4 = 360 choices!!!
+
+        let mut i=359;
+
+        let cat_long=i%3;
+        i/=3;
+        let dog_long=i%3;
+        i/=3;
+        let dog_long2=i%2;
+        i/=2;
+        let world_missing_index1=i%5;
+        i/=5;
+        let world_missing_index2=i%4;
+        i/=4;
+        assert_eq!(i,0);
+
+
+        assert_ne!(dog_long,dog_long2);
+        assert_ne!(world_missing_index1,world_missing_index2);
+        assert!((0..3).contains(&cat_long),"uhoh:{}",cat_long);
+        assert!((0..3).contains(&dog_long));
+        assert!((0..3).contains(&dog_long2));
+        assert!((0..6).contains(&world_missing_index1));
+        assert!((0..6).contains(&world_missing_index2));
+
 
         let d = 5;
 
