@@ -462,7 +462,7 @@ pub mod share {
 }
 
 pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: JustMoveLog) {
-    let mut game = ace::game_init(&world);
+    let mut game = ace::game_init(world);
 
     let mut game_history = selection::MoveHistory::new();
 
@@ -502,7 +502,7 @@ pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: 
 
 // }
 
-pub fn convert_starting_position_index_to_position(world: &mut BitField) {
+pub fn convert_starting_position_index_to_position(_world: &mut BitField) {
     pub fn num_starting_positions() -> usize {
         3 * 3 //*6*5
     }

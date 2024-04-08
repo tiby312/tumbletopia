@@ -83,6 +83,12 @@ pub struct MoveHistory {
 //     }
 // }
 
+impl Default for MoveHistory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MoveHistory {
     pub fn new() -> Self {
         MoveHistory { inner: vec![] }

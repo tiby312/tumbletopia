@@ -81,6 +81,12 @@ pub struct WorldSeed {
     foo: u64,
 }
 
+impl Default for WorldSeed {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorldSeed {
     pub fn new() -> Self {
         use rand::Rng;

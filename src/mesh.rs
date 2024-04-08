@@ -259,8 +259,8 @@ pub mod bitfield {
             (-16..16).contains(&a.q) && (-16..16).contains(&a.r)
         }
         pub fn set_coord(&mut self, a: Axial, val: bool) {
-            let x = a.q;
-            let y = a.r;
+            let _x = a.q;
+            let _y = a.r;
             assert!(self.contains_coord(a), "val={:?}", a);
 
             let ind = conv(a);

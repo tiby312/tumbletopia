@@ -71,7 +71,7 @@ pub async fn worker_entry() {
 
     let grid_matrix = grids::HexConverter::new();
 
-    let shader = shader_sys::ShaderSystem::new(&ctx).unwrap();
+    let shader = shader_sys::ShaderSystem::new(ctx).unwrap();
 
     let models = Models::new(&grid_matrix, &shader);
 
@@ -86,7 +86,7 @@ pub async fn worker_entry() {
     };
 
     let (seed, o) = if let dom::GameType::Replay(rr) = &game_type {
-        let j = ace::share::load(&rr);
+        let j = ace::share::load(rr);
         (j.seed.clone(), Some(j))
     } else {
         (board::WorldSeed::new(), None)
@@ -242,7 +242,7 @@ async fn render_command(
     //let fog_asset = &models.fog;
     let water = &models.water;
     let grass = &models.grass;
-    let mountain_asset = &models.mountain;
+    let _mountain_asset = &models.mountain;
     let snow = &models.snow;
     let select_model = &models.select_model;
     let attack_model = &models.attack;
@@ -303,7 +303,7 @@ async fn render_command(
         }
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
         ace::Command::Nothing => {}
-        ace::Command::Popup(str) => {
+        ace::Command::Popup(_str) => {
             todo!();
             // if str.is_empty() {
             //     engine_worker.post_message(UiButton::HidePopup);
@@ -362,7 +362,7 @@ async fn render_command(
                     log!(format!("updating viewport to be:{:?}", viewport));
                 }
                 DomToWorker::TouchMove { touches } => {
-                    scroll_manager.on_touch_move(touches, &last_matrix, viewport);
+                    scroll_manager.on_touch_move(touches, last_matrix, viewport);
                 }
                 DomToWorker::TouchDown { touches } => {
                     scroll_manager.on_new_touch(touches);
@@ -390,7 +390,7 @@ async fn render_command(
                     }
                 }
                 DomToWorker::CanvasMouseMove { x, y } => {
-                    scroll_manager.on_mouse_move([*x, *y], &last_matrix, viewport);
+                    scroll_manager.on_mouse_move([*x, *y], last_matrix, viewport);
                 }
 
                 DomToWorker::CanvasMouseDown { x, y } => {
@@ -575,7 +575,7 @@ async fn render_command(
 
         {
             // Draw shadows
-            let d = DepthDisabler::new(ctx);
+            let _d = DepthDisabler::new(ctx);
 
             let shadows = game
                 .factions
@@ -684,7 +684,7 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
             .map(|x| {
                 let x = x.generate();
                 let x: &[f32; 16] = x.as_ref();
-                x.clone()
+                *x
             })
             .collect();
 
@@ -707,7 +707,7 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
     }
 }
 impl Doop for ShaderSystem {
-    fn batch<'a, K: MyMatrix, I>(&'a mut self, ff: I) -> BatchBuilder<'a, I::IntoIter>
+    fn batch<K: MyMatrix, I>(&mut self, ff: I) -> BatchBuilder<'_, I::IntoIter>
     where
         I: IntoIterator<Item = K>,
     {
@@ -721,7 +721,7 @@ impl Doop for ShaderSystem {
 }
 
 pub trait Doop {
-    fn batch<'a, K: MyMatrix, I>(&'a mut self, ff: I) -> BatchBuilder<'a, I::IntoIter>
+    fn batch<K: MyMatrix, I>(&mut self, ff: I) -> BatchBuilder<'_, I::IntoIter>
     where
         I: IntoIterator<Item = K>;
 }

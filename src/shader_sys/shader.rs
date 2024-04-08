@@ -218,7 +218,7 @@ impl Mat4Buffer {
             // note the stride and offset
 
             ctx.vertex_attrib_pointer_with_i32(
-                loc as u32,
+                loc,
                 4,
                 WebGl2RenderingContext::FLOAT,
                 false,
@@ -226,7 +226,7 @@ impl Mat4Buffer {
                 offset,
             );
 
-            ctx.vertex_attrib_divisor(loc as u32, 1);
+            ctx.vertex_attrib_divisor(loc, 1);
         }
     }
 }
@@ -272,7 +272,7 @@ pub fn create_vao(
         GL::STATIC_DRAW,
     );
     ctx.vertex_attrib_pointer_with_i32(
-        program.texcoord as u32,
+        program.texcoord,
         <[f32; 2]>::num(),
         GL::FLOAT,
         false,
@@ -284,7 +284,7 @@ pub fn create_vao(
     ctx.bind_buffer(GL::ARRAY_BUFFER, Some(&position));
     ctx.buffer_data_with_u8_array(GL::ARRAY_BUFFER, positions.as_byte_slice(), GL::STATIC_DRAW);
     ctx.vertex_attrib_pointer_with_i32(
-        program.position as u32,
+        program.position,
         <[f32; 3]>::num(),
         GL::FLOAT,
         false,
@@ -296,7 +296,7 @@ pub fn create_vao(
     ctx.bind_buffer(GL::ARRAY_BUFFER, Some(&normal));
     ctx.buffer_data_with_u8_array(GL::ARRAY_BUFFER, normals.as_byte_slice(), GL::STATIC_DRAW);
     ctx.vertex_attrib_pointer_with_i32(
-        program.normal as u32,
+        program.normal,
         <[f32; 3]>::num(),
         GL::FLOAT,
         false,

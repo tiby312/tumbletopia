@@ -127,32 +127,32 @@ fn engine_handlers(
     canvas: &web_sys::HtmlCanvasElement,
 ) -> [gloo::events::EventListener; 10] {
     [
-        worker.register_event(&canvas, "mousemove", |e| {
+        worker.register_event(canvas, "mousemove", |e| {
             let [x, y] = convert_coord(e.elem, e.event);
             DomToWorker::CanvasMouseMove { x, y }.some()
         }),
-        worker.register_event(&canvas, "mousedown", |e| {
+        worker.register_event(canvas, "mousedown", |e| {
             let [x, y] = convert_coord(e.elem, e.event);
             DomToWorker::CanvasMouseDown { x, y }.some()
         }),
-        worker.register_event(&canvas, "wheel", |e| {
+        worker.register_event(canvas, "wheel", |e| {
             e.event.prevent_default();
             e.event.stop_propagation();
             None
         }),
-        worker.register_event(&canvas, "mouseup", |_| DomToWorker::CanvasMouseUp.some()),
-        worker.register_event(&canvas, "mouseleave", |_| {
+        worker.register_event(canvas, "mouseup", |_| DomToWorker::CanvasMouseUp.some()),
+        worker.register_event(canvas, "mouseleave", |_| {
             DomToWorker::CanvasMouseLeave.some()
         }),
-        worker.register_event(&canvas, "touchstart", |e| {
+        worker.register_event(canvas, "touchstart", |e| {
             let touches = convert_coord_touch(e.elem, e.event);
             DomToWorker::TouchDown { touches }.some()
         }),
-        worker.register_event(&canvas, "touchmove", |e| {
+        worker.register_event(canvas, "touchmove", |e| {
             let touches = convert_coord_touch(e.elem, e.event);
             DomToWorker::TouchMove { touches }.some()
         }),
-        worker.register_event(&canvas, "touchend", |e| {
+        worker.register_event(canvas, "touchend", |e| {
             let touches = convert_coord_touch(e.elem, e.event);
             DomToWorker::TouchEnd { touches }.some()
         }),
