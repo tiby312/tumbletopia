@@ -178,12 +178,3 @@ impl MyWorld {
         &self.w
     }
 }
-
-fn world() -> impl Iterator<Item = hex::Cube> {
-    let d = 5;
-    let k = [[-d, d], [0, -d], [d, 0], [d, -d], [-d, 0], [0, d]];
-
-    hex::Cube::new(0, 0)
-        .range(4)
-        .chain(k.into_iter().map(Axial::from_arr).map(|x| x.to_cube()))
-}

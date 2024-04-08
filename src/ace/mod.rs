@@ -492,36 +492,8 @@ pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: 
         game_history.push((the_move, effect_m.combine(effect_a)));
     }
 
-    //RZABEgMhCAMRuJ/0/x9UzyYB25thggunBDN9H3vOtDyLiuxBllSxOBuxxJQhphnUpGSvedd4rlqxAb3MpcWGtJhLX3EpZnoQSRU74t4scGbwzF5qIHPEEBtlTLPXC3VrtFZv6D+y65PMVfPfBKFZr7/sXm5jiXWtN1Nd5Xy34ymndO7tQW/0BqW47ei11B216U2m6VjL/1a+
 }
-// pub async fn main_logic(
-//     g: dom::GameType,
-//     world: &board::MyWorld,
-//     mut doop: WorkerManager,
-// ) -> (GameOver, selection::MoveHistory) {
 
-// }
-
-pub fn convert_starting_position_index_to_position(_world: &mut BitField) {
-    pub fn num_starting_positions() -> usize {
-        3 * 3 //*6*5
-    }
-    //TODO
-    //### Starting position:
-
-    //The starting position is randomized to be slightly different between games. One unit per team is randomly selected to be slightly further back than the rest. Two outer hexes are selected at random to be removed from the game.
-
-    //world.
-    // A00B00  0   X
-    // 0A0B00  1
-    // 00AB00  2
-    // A000B0  3
-    // 0A00B0  4   X
-    // 00A0B0  5
-    // A0000B  6
-    // 0A000B  7
-    // 00A00B  8  X
-}
 
 pub async fn handle_player(
     game: &mut GameState,
