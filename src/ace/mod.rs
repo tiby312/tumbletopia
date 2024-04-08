@@ -467,6 +467,10 @@ pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: 
     let mut game_history = selection::MoveHistory::new();
 
     let mut team_gen = ActiveTeam::Dogs.iter();
+    
+    
+    doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
+        
 
     for the_move in just_logs.inner {
         let team = team_gen.next().unwrap();

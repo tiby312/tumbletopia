@@ -196,7 +196,6 @@ pub async fn start_game(game_type: GameType) {
     loop {
         let hay: WorkerToDom = response.next().await.unwrap_throw();
 
-        let undo = utils::get_by_id_elem("undo");
         match hay {
             WorkerToDom::Ack => {
                 unreachable!();
@@ -234,13 +233,27 @@ pub async fn start_game(game_type: GameType) {
                 log!("dom:Game finished");
             }
             WorkerToDom::ShowUndo => {
+                let undo = utils::get_by_id_elem("undo");
+                
                 undo.set_hidden(false);
+
+                let k=r###"<button id="undo" class="foo">Undo</button>"###;
+                //let body = gloo::utils::document().body().expect("get body fail");
+
+                //body.insert_adjacent_html("beforeend",&k).expect("inserting undo fail");
+                //undo.set_attribute("hidden","false").unwrap();
+
                 worker.post_message(DomToWorker::Ack);
                 //popup.set_text_content(Some(&text));
             }
             WorkerToDom::HideUndo => {
+                let undo = utils::get_by_id_elem("undo");
+                //let body = gloo::utils::document().body().expect("get body fail");
+                //body.remove_child(&undo).expect("Couldnt remove undo");
                 //popup.set_text_content(Some(""));
                 undo.set_hidden(true);
+                //undo.set_attribute("hidden","true").unwrap();
+
                 worker.post_message(DomToWorker::Ack);
             }
         }
