@@ -211,7 +211,7 @@ pub struct EngineStuff {
 
 async fn render_command(
     command: ace::Command,
-    game: &mut GameState,
+    game: &GameState,
     team: ActiveTeam,
     e: &mut EngineStuff,
     world: &board::MyWorld,
@@ -316,6 +316,20 @@ async fn render_command(
         ace::Command::Poke => {
             poking = 3;
         }
+    };
+
+    //TODO don't calculate 60 times a second?
+    let visible_water = {
+        let mut g = game.env.land.clone();
+        g.union_with(&game.env.fog);
+
+        g.toggle_range(..);
+
+        ace::ai::expand_mesh(&mut g, &mut BitField::new());
+
+        g.intersect_with(world.get_game_cells());
+
+        g
     };
 
     loop {
@@ -451,19 +465,7 @@ async fn render_command(
             my_matrix.chain(t).generate()
         };
 
-        //TODO don't calculate 60 times a second?
-        let visible_water = {
-            let mut g = game.env.land.clone();
-            g.union_with(&game.env.fog);
-
-            g.toggle_range(..);
-
-            ace::ai::expand_mesh(&mut g, &mut BitField::new());
-
-            g.intersect_with(world.get_game_cells());
-
-            g
-        };
+        
 
         draw_sys
             .batch(visible_water.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET)))
