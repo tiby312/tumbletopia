@@ -165,26 +165,28 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
     100 * s + cat_distance - dog_distance
 }
 
+fn around(point: Axial) -> impl Iterator<Item = Axial> {
+    point.to_cube().ring(1).map(|b| b.to_axial())
+}
+
+pub fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
+    workspace.clear();
+    workspace.union_with(mesh);
+
+    for a in workspace.iter_mesh() {
+        for b in around(a) {
+            if mesh.contains_coord(b) {
+                mesh.set_coord(b, true);
+            }
+        }
+    }
+}
+
 fn doop(iteration: usize, dogs: &mut BitField, cats: &mut BitField, allowed_cells: &BitField) {
     dogs.intersect_with(allowed_cells);
     cats.intersect_with(allowed_cells);
     if dogs.count_ones(..) == 0 && cats.count_ones(..) == 0 {
         return;
-    }
-
-    fn around(point: Axial) -> impl Iterator<Item = Axial> {
-        point.to_cube().ring(1).map(|b| b.to_axial())
-    }
-
-    fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
-        workspace.clear();
-        workspace.union_with(mesh);
-
-        for a in workspace.iter_mesh() {
-            for b in around(a) {
-                mesh.set_coord(b, true);
-            }
-        }
     }
 
     let mut nomans = BitField::new();

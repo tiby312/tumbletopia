@@ -128,7 +128,7 @@ pub async fn worker_entry() {
             receiver: response_recv,
         };
 
-        if let Some(fff)=o{
+        if let Some(fff) = o {
             ace::replay(&world, doop, fff).await;
             unreachable!("Finished replaying");
         }
@@ -291,8 +291,8 @@ async fn render_command(
                 dir,
             } => {
                 let (a, b) = match dir {
-                    animation::AnimationDirection::Up => (-10., 0.),
-                    animation::AnimationDirection::Down => (0., -10.),
+                    animation::AnimationDirection::Up => (-5., 0.),
+                    animation::AnimationDirection::Down => (0., -5.),
                 };
                 let it = animation::terrain_create(a, b);
                 terrain_animation = Some((0.0, it, pos, terrain_type));
@@ -451,10 +451,14 @@ async fn render_command(
             my_matrix.chain(t).generate()
         };
 
+        //TODO don't calculate 60 times a second?
         let visible_water = {
             let mut g = game.env.land.clone();
             g.union_with(&game.env.fog);
+
             g.toggle_range(..);
+
+            ace::ai::expand_mesh(&mut g, &mut BitField::new());
 
             g.intersect_with(world.get_game_cells());
 
