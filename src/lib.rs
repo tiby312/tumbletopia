@@ -138,7 +138,9 @@ pub async fn worker_entry() {
         let mut game_history = ace::selection::MoveHistory::new();
 
         let mut team_gen = ActiveTeam::Dogs.iter();
-
+        
+        //doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
+    
         //Loop over each team!
         loop {
             let team = team_gen.next().unwrap();
@@ -180,7 +182,7 @@ pub async fn worker_entry() {
 
                 continue;
             }
-
+            
             let r = ace::handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
             game_history.push(r);
 
