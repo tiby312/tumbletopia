@@ -271,38 +271,17 @@ pub fn create_vao(
         tex_coords.as_byte_slice(),
         GL::STATIC_DRAW,
     );
-    ctx.vertex_attrib_pointer_with_i32(
-        program.texcoord,
-        <[f32; 2]>::num(),
-        GL::FLOAT,
-        false,
-        0,
-        0,
-    );
+    ctx.vertex_attrib_pointer_with_i32(program.texcoord, <[f32; 2]>::num(), GL::FLOAT, false, 0, 0);
 
     let position = ctx.create_buffer().unwrap();
     ctx.bind_buffer(GL::ARRAY_BUFFER, Some(&position));
     ctx.buffer_data_with_u8_array(GL::ARRAY_BUFFER, positions.as_byte_slice(), GL::STATIC_DRAW);
-    ctx.vertex_attrib_pointer_with_i32(
-        program.position,
-        <[f32; 3]>::num(),
-        GL::FLOAT,
-        false,
-        0,
-        0,
-    );
+    ctx.vertex_attrib_pointer_with_i32(program.position, <[f32; 3]>::num(), GL::FLOAT, false, 0, 0);
 
     let normal = ctx.create_buffer().unwrap();
     ctx.bind_buffer(GL::ARRAY_BUFFER, Some(&normal));
     ctx.buffer_data_with_u8_array(GL::ARRAY_BUFFER, normals.as_byte_slice(), GL::STATIC_DRAW);
-    ctx.vertex_attrib_pointer_with_i32(
-        program.normal,
-        <[f32; 3]>::num(),
-        GL::FLOAT,
-        false,
-        0,
-        0,
-    );
+    ctx.vertex_attrib_pointer_with_i32(program.normal, <[f32; 3]>::num(), GL::FLOAT, false, 0, 0);
 
     mat.bind(ctx);
     mat.setup_attrib_special(ctx, program);

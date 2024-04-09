@@ -193,12 +193,36 @@ pub async fn start_game(game_type: GameType) {
     //TODO make this happen on start??
     worker.post_message(resize());
 
+    //TODO put somewhere else
+    let host = "http://localhost:8000";
+
     loop {
         let hay: WorkerToDom = response.next().await.unwrap_throw();
 
         match hay {
             WorkerToDom::Ack => {
                 unreachable!();
+            }
+            WorkerToDom::CantParseReplay => {
+                let body = gloo::utils::document().body().unwrap();
+
+                use std::fmt::Write;
+
+                let mut k = String::new();
+                write!(
+                    &mut k,
+                    r###"
+                <div id="gameover_popup" hidden="true">
+                
+                <text class="foo">Failed to parse replay code</text>
+                <a class="foo" href="{host}/index.html ">main menu</a>
+    
+              </div>
+              "###
+                )
+                .unwrap();
+
+                body.insert_adjacent_html("beforeend", &k).unwrap();
             }
             WorkerToDom::GameFinish {
                 replay_string,
@@ -213,7 +237,6 @@ pub async fn start_game(game_type: GameType) {
                 };
                 use std::fmt::Write;
 
-                let host = "http://localhost:8000";
                 let mut k = String::new();
                 write!(&mut k,r###"
                 <div id="gameover_popup" hidden="true">
@@ -234,10 +257,10 @@ pub async fn start_game(game_type: GameType) {
             }
             WorkerToDom::ShowUndo => {
                 let undo = utils::get_by_id_elem("undo");
-                
+
                 undo.set_hidden(false);
 
-                let k=r###"<button id="undo" class="foo">Undo</button>"###;
+                let k = r###"<button id="undo" class="foo">Undo</button>"###;
                 //let body = gloo::utils::document().body().expect("get body fail");
 
                 //body.insert_adjacent_html("beforeend",&k).expect("inserting undo fail");

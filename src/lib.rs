@@ -42,6 +42,7 @@ enum WorkerToDom {
         replay_string: String,
         result: GameOver,
     },
+    CantParseReplay,
     Ack,
 }
 
@@ -86,7 +87,11 @@ pub async fn worker_entry() {
     };
 
     let (seed, o) = if let dom::GameType::Replay(rr) = &game_type {
-        let j = ace::share::load(rr);
+        let Ok(j) = ace::share::load(&rr) else {
+            wr.post_message(WorkerToDom::CantParseReplay);
+            return;
+        };
+
         (j.seed.clone(), Some(j))
     } else {
         (board::WorldSeed::new(), None)
@@ -138,9 +143,9 @@ pub async fn worker_entry() {
         let mut game_history = ace::selection::MoveHistory::new();
 
         let mut team_gen = ActiveTeam::Dogs.iter();
-        
+
         //doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
-    
+
         //Loop over each team!
         loop {
             let team = team_gen.next().unwrap();
@@ -182,7 +187,7 @@ pub async fn worker_entry() {
 
                 continue;
             }
-            
+
             let r = ace::handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
             game_history.push(r);
 
@@ -466,8 +471,6 @@ async fn render_command(
             let t = matrix::translation(pos.x, pos.y, cc);
             my_matrix.chain(t).generate()
         };
-
-        
 
         draw_sys
             .batch(visible_water.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET)))
@@ -893,8 +896,6 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
 //         }
 //     }
 // }
-
-
 
 fn string_to_coords<'a>(st: &str) -> model::ModelData {
     let num_rows = 16;

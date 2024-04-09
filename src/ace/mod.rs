@@ -435,24 +435,38 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 }
 
 pub mod share {
+    // enum LoadError{
+    //     Decode(base64::DecodeError),
+    //     Decompres(miniz_oxide::inflate::DecompressError),
+    //     Serialize(postcard::Error)
+    // }
+    // impl From<postcard::Error> for LoadError {
+    //     fn from(e: postcard::Error) -> Self {
+    //         LoadError::Serialize(e)
+    //     }
+    // }
+    // impl From<base64::DecodeError> for LoadError {
+    //     fn from(e: base64::DecodeError) -> Self {
+    //         LoadError::Decode(e)
+    //     }
+    // }
+    // impl From<miniz_oxide::inflate::DecompressError> for LoadError {
+    //     fn from(e: miniz_oxide::inflate::DecompressError) -> Self {
+    //         LoadError::Decompres(e)
+    //     }
+    // }
+
+    pub struct LoadError;
 
     use super::*;
-    pub fn load(s: &str) -> selection::JustMoveLog {
+    pub fn load(s: &str) -> Result<selection::JustMoveLog, LoadError> {
         use base64::prelude::*;
-        let k = BASE64_STANDARD_NO_PAD.decode(s).unwrap();
-        let k = miniz_oxide::inflate::decompress_to_vec(&k).unwrap();
-
-        //let k=String::from_utf8(k).unwrap();
-
-        postcard::from_bytes(&k).unwrap()
-        //serde_json::from_str(&k).unwrap()
-
-        //selection::JustMoveLog::deserialize(k)
+        let k = BASE64_STANDARD_NO_PAD.decode(s).map_err(|_| LoadError)?;
+        let k = miniz_oxide::inflate::decompress_to_vec(&k).map_err(|_| LoadError)?;
+        Ok(postcard::from_bytes(&k).map_err(|_| LoadError)?)
     }
     pub fn save(game_history: &selection::JustMoveLog) -> String {
         use base64::prelude::*;
-        //let k = game_history.serialize();
-        //let k=serde_json::to_string(&game_history).unwrap();
 
         let k = postcard::to_allocvec(game_history).unwrap();
 
@@ -467,10 +481,9 @@ pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: 
     let mut game_history = selection::MoveHistory::new();
 
     let mut team_gen = ActiveTeam::Dogs.iter();
-    
-    
-    doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
-        
+
+    doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo)
+        .await;
 
     for the_move in just_logs.inner {
         let team = team_gen.next().unwrap();
@@ -495,9 +508,7 @@ pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: 
 
         game_history.push((the_move, effect_m.combine(effect_a)));
     }
-
 }
-
 
 pub async fn handle_player(
     game: &mut GameState,
