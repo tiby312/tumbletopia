@@ -171,7 +171,7 @@ fn engine_handlers(
     ]
 }
 
-pub async fn start_game(game_type: GameType) {
+pub async fn start_game(game_type: GameType, host: &str) {
     let canvas = utils::get_by_id_canvas("mycanvas");
 
     canvas.set_width(gloo::utils::body().client_width() as u32);
@@ -194,7 +194,7 @@ pub async fn start_game(game_type: GameType) {
     worker.post_message(resize());
 
     //TODO put somewhere else
-    let host = "http://localhost:8000";
+    //let host = "http://localhost:8000";
 
     loop {
         let hay: WorkerToDom = response.next().await.unwrap_throw();
@@ -297,6 +297,13 @@ pub enum GameType {
 pub async fn main_entry() {
     let search = gloo::utils::window().location().search().unwrap();
 
+    let prot = gloo::utils::window().location().protocol().unwrap();
+    let host = gloo::utils::window().location().host().unwrap();
+
+    let host = format!("{}//{}", prot, host);
+
+    console_dbg!("host", host);
+
     let k = search.as_str();
 
     let (a, k) = k.split_at(1);
@@ -354,7 +361,7 @@ pub async fn main_entry() {
     // let e=receiver.next().await;
     log!("FOO");
 
-    start_game(command).await;
+    start_game(command, &host).await;
 }
 fn resize() -> DomToWorker {
     let canvas = utils::get_by_id_canvas("mycanvas");
