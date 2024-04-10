@@ -203,6 +203,27 @@ pub async fn start_game(game_type: GameType, host: &str) {
             WorkerToDom::Ack => {
                 unreachable!();
             }
+            WorkerToDom::ReplayFinish => {
+                let body = gloo::utils::document().body().unwrap();
+
+                use std::fmt::Write;
+
+                let mut k = String::new();
+                write!(
+                    &mut k,
+                    r###"
+                <div id="gameover_popup" hidden="true">
+                
+                <text class="foo">replay finished!</text>
+                <a class="foo" href="{host}/index.html ">main menu</a>
+    
+              </div>
+              "###
+                )
+                .unwrap();
+
+                body.insert_adjacent_html("beforeend", &k).unwrap();
+            }
             WorkerToDom::CantParseReplay => {
                 let body = gloo::utils::document().body().unwrap();
 

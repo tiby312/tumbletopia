@@ -475,7 +475,11 @@ pub mod share {
     }
 }
 
-pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: JustMoveLog) {
+pub async fn replay(
+    world: &board::MyWorld,
+    mut doop: WorkerManager,
+    just_logs: JustMoveLog,
+) -> (GameOver, selection::MoveHistory) {
     let mut game = ace::game_init(world);
 
     let mut game_history = selection::MoveHistory::new();
@@ -487,11 +491,6 @@ pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: 
 
     for the_move in just_logs.inner {
         let team = team_gen.next().unwrap();
-
-        if let Some(g) = game.game_is_over(world, team) {
-            console_dbg!("Game over=", g);
-            todo!();
-        }
 
         let kk = the_move.as_move();
 
@@ -507,6 +506,12 @@ pub async fn replay(world: &board::MyWorld, mut doop: WorkerManager, just_logs: 
             .apply(team, &mut game, world);
 
         game_history.push((the_move, effect_m.combine(effect_a)));
+    }
+
+    if let Some(g) = game.game_is_over(world, team_gen.next().unwrap()) {
+        (g, game_history)
+    } else {
+        panic!("replay didnt end with game over state");
     }
 }
 

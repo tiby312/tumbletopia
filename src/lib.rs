@@ -43,6 +43,7 @@ enum WorkerToDom {
         result: GameOver,
     },
     CantParseReplay,
+    ReplayFinish,
     Ack,
 }
 
@@ -134,8 +135,9 @@ pub async fn worker_entry() {
         };
 
         if let Some(fff) = o {
-            ace::replay(&world, doop, fff).await;
-            unreachable!("Finished replaying");
+            let game_history = ace::replay(&world, doop, fff).await;
+
+            return game_history;
         }
 
         let mut game = ace::game_init(&world);
