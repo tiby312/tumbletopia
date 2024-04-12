@@ -1,0 +1,15 @@
+{
+    "name": "My PWA",
+    "short_name": "HackerWeb",
+    "icons": [
+      {
+        "src": "favicon.ico",
+        "type": "image/ico",
+        "sizes": "512x512"
+      }
+    ],
+    "start_url": ".",
+    "display": "fullscreen",
+    "description": "A readable Hacker News app.",
+    "background_color": "#fff"
+  }
