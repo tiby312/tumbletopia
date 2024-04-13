@@ -5,6 +5,7 @@ pub mod ai;
 pub mod selection;
 use crate::{CellSelection, GameState, UnitData};
 
+use collision::primitive::Cube;
 use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
@@ -413,7 +414,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
     //let fog = world.get_game_cells().clone();
-    let fog = BitField::new();
+    let fog = BitField::from_iter(Axial::zero().to_cube().range(2));
 
     let mut k = GameState {
         factions: Factions {
@@ -421,8 +422,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
             cats: Tribe { units: cats },
         },
         env: Environment {
-            land: BitField::from_iter([]),
-            forest: BitField::from_iter([]),
+            land: BitField::from_iter([] as [Axial;0]),
+            forest: BitField::from_iter([] as [Axial;0]),
             fog,
             powerups: powerups.into_iter().map(Axial::from_arr).collect(),
         },
