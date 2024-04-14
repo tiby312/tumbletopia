@@ -422,9 +422,11 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
             cats: Tribe { units: cats },
         },
         env: Environment {
-            land: BitField::from_iter([] as [Axial;0]),
-            forest: BitField::from_iter([] as [Axial;0]),
-            mountain: BitField::from_iter([] as [Axial;0]),
+            terrain: Terrain {
+                land: BitField::from_iter([] as [Axial; 0]),
+                forest: BitField::from_iter([] as [Axial; 0]),
+                mountain: BitField::from_iter([] as [Axial; 0]),
+            },
             fog,
             powerups: powerups.into_iter().map(Axial::from_arr).collect(),
         },
@@ -436,7 +438,6 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     k
 }
-
 
 pub mod share {
 

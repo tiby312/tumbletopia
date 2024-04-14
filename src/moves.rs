@@ -14,7 +14,7 @@ impl GameState {
         };
 
         is_world_cell
-            && !game.env.land.is_coord_set(a)
+            && !game.env.terrain.is_coord_set(a)
             && jjj
             && game.factions.dogs.find_slow(&a).is_none()
             && game.factions.cats.find_slow(&a).is_none()
@@ -39,7 +39,12 @@ impl GameState {
         {
             let a = a.to_axial();
 
-            if a != unit && game.check_if_occ(world, a, true) {
+            if a != unit
+                && world.get_game_cells().is_coord_set(a)
+                && !game.factions.contains(a)
+                && !game.env.terrain.is_coord_set(a)
+                && !game.env.fog.is_coord_set(a)
+            {
                 mesh.add(a.sub(&unit));
 
                 // for a in a.to_cube().ring(1) {
@@ -79,7 +84,7 @@ impl GameState {
                     }
                 }
             } else if let Type::Warrior { powerup: _ } = typ {
-                if game.env.land.is_coord_set(a) {
+                if game.env.terrain.land.is_coord_set(a) {
                     let check = a.advance(dir);
                     if a != unit && game.check_if_occ(world, check, true) {
                         mesh.add(a.sub(&unit));
@@ -123,7 +128,7 @@ impl GameState {
                 let second_mesh = state.generate_possible_moves_extra(world, &mmm, ttt, team);
 
                 for sm in second_mesh.iter_mesh(mm) {
-                    assert!(!state.env.land.is_coord_set(sm));
+                    assert!(!state.env.terrain.is_coord_set(sm));
 
                     let kkk = mmm.into_attack(sm);
 

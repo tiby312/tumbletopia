@@ -247,7 +247,7 @@ pub mod bitfield {
                 inner: FixedBitSet::with_capacity(1024),
             }
         }
-        pub fn from_iter<K:Into<Axial>>(a: impl IntoIterator<Item = K>) -> Self {
+        pub fn from_iter<K: Into<Axial>>(a: impl IntoIterator<Item = K>) -> Self {
             let mut k = BitField::new();
             for a in a {
                 k.set_coord(a.into(), true);

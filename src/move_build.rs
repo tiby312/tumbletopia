@@ -37,13 +37,13 @@ impl ExtraPhase {
             assert_eq!(unit, attackto);
             assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 2);
             for a in m.0.iter_mesh(unit) {
-                assert!(state.env.land.is_coord_set(a));
-                state.env.land.set_coord(a, false);
+                assert!(state.env.terrain.land.is_coord_set(a));
+                state.env.terrain.land.set_coord(a, false);
             }
-        } else if state.env.forest.is_coord_set(attackto) {
-            state.env.forest.set_coord(attackto, false);
-        } else if state.env.land.is_coord_set(attackto) {
-            state.env.land.set_coord(attackto, false);
+        } else if state.env.terrain.forest.is_coord_set(attackto) {
+            state.env.terrain.forest.set_coord(attackto, false);
+        } else if state.env.terrain.land.is_coord_set(attackto) {
+            state.env.terrain.land.set_coord(attackto, false);
         } else {
             unreachable!();
         }
@@ -73,7 +73,7 @@ impl ExtraPhase {
                 continue;
             }
 
-            if game.env.land.is_coord_set(a) {
+            if game.env.terrain.land.is_coord_set(a) {
                 continue;
             }
 
@@ -101,8 +101,8 @@ impl ExtraPhase {
             bb.apply(original, game);
             Some(bb)
         } else {
-            if !game.env.land.is_coord_set(target_cell) {
-                game.env.land.set_coord(target_cell, true)
+            if !game.env.terrain.land.is_coord_set(target_cell) {
+                game.env.terrain.land.set_coord(target_cell, true)
             } else {
                 // if !env.forest.is_coord_set(target_cell) {
                 //     env.forest.set_coord(target_cell, true);
@@ -160,7 +160,7 @@ impl ExtraPhase {
                         &mut gg,
                     )
                     .await;
-                    gg.env.land.set_coord(a.to_axial(), true);
+                    gg.env.terrain.land.set_coord(a.to_axial(), true);
                 }
             }
         } else {
@@ -175,7 +175,7 @@ impl ExtraPhase {
             )
             .await;
 
-            gg.env.land.set_coord(target, true);
+            gg.env.terrain.land.set_coord(target, true);
         }
 
         let fog = compute_fog(self.moveto, &state.env);
@@ -252,12 +252,12 @@ impl MovePhase {
             let mut e = PushInfo::None;
             match this_unit.typ {
                 Type::Warrior { .. } => {
-                    if state.env.land.is_coord_set(target_cell) {
+                    if state.env.terrain.land.is_coord_set(target_cell) {
                         e = PushInfo::PushedLand;
                     }
                 }
                 Type::Archer => {
-                    if state.env.land.is_coord_set(target_cell) {
+                    if state.env.terrain.land.is_coord_set(target_cell) {
                         e = PushInfo::PushedLand;
                     }
                 }
@@ -279,8 +279,8 @@ impl MovePhase {
             PushInfo::PushedLand => {
                 let dir = unit.position.dir_to(&end);
                 let k = unit.position.advance(dir);
-                assert!(ss.env.land.is_coord_set(k));
-                ss.env.land.set_coord(k, false);
+                assert!(ss.env.terrain.land.is_coord_set(k));
+                ss.env.terrain.land.set_coord(k, false);
             }
 
             PushInfo::None => {}
@@ -315,10 +315,10 @@ impl MovePhase {
             PushInfo::PushedLand => {
                 let dir = unit.dir_to(&moveto);
                 let t3 = moveto.advance(dir);
-                assert!(state.env.land.is_coord_set(t3));
-                state.env.land.set_coord(t3, false);
-                assert!(!state.env.land.is_coord_set(moveto));
-                state.env.land.set_coord(moveto, true);
+                assert!(state.env.terrain.land.is_coord_set(t3));
+                state.env.terrain.land.set_coord(t3, false);
+                assert!(!state.env.terrain.land.is_coord_set(moveto));
+                state.env.terrain.land.set_coord(moveto, true);
             }
 
             PushInfo::None => {}
@@ -334,14 +334,14 @@ impl MovePhase {
 
         match this_unit.typ {
             Type::Warrior { .. } => {
-                if env.land.is_coord_set(target_cell) {
+                if env.terrain.land.is_coord_set(target_cell) {
                     let dir = this_unit.position.dir_to(&target_cell);
 
-                    env.land.set_coord(target_cell, false);
+                    env.terrain.land.set_coord(target_cell, false);
 
                     let kk = target_cell.advance(dir);
 
-                    env.land.set_coord(kk, true);
+                    env.terrain.land.set_coord(kk, true);
 
                     e = PushInfo::PushedLand;
                 }
@@ -397,7 +397,7 @@ struct BombInfo(pub SmallMesh);
 impl BombInfo {
     fn apply(&self, original: Axial, game: &mut GameState) {
         for a in self.0.iter_mesh(Axial::zero()) {
-            game.env.land.set_coord(original.add(a), true);
+            game.env.terrain.land.set_coord(original.add(a), true);
         }
     }
 }
@@ -439,7 +439,7 @@ fn calculate_walls(position: Axial, state: &GameState) -> SmallMesh {
     for a in position.to_cube().range(2) {
         let a = a.to_axial();
         //TODO this is duplicated logic in selection function???
-        let cc = env.land.is_coord_set(a);
+        let cc = env.terrain.is_coord_set(a);
         if cc || (a != position && state.factions.contains(a)) {
             walls.add(a.sub(&position));
         }

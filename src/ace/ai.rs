@@ -23,7 +23,7 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
 
     let ship_allowed = {
         let water = {
-            let mut t = view.env.land.clone();
+            let mut t = view.env.terrain.gen_all_terrain();
             t.toggle_range(..);
             t
         };
@@ -37,14 +37,14 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
             .cats
             .iter()
             .map(|a| a.position)
-            .filter(|&a| !view.env.land.is_coord_set(a)),
+            .filter(|&a| !view.env.terrain.is_coord_set(a)),
     );
     let mut dog_ships = BitField::from_iter(
         view.factions
             .dogs
             .iter()
             .map(|a| a.position)
-            .filter(|&a| !view.env.land.is_coord_set(a)),
+            .filter(|&a| !view.env.terrain.is_coord_set(a)),
     );
 
     doop(7, &mut dog_ships, &mut cat_ships, &ship_allowed);

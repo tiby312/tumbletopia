@@ -98,15 +98,15 @@ pub struct Cube {
     pub s: i16,
 }
 
-impl From<Cube> for Axial{
+impl From<Cube> for Axial {
     fn from(value: Cube) -> Self {
         value.ax
     }
 }
 
-impl From<Axial> for Cube{
+impl From<Axial> for Cube {
     fn from(value: Axial) -> Self {
-        Cube::new(value.q,value.r)
+        Cube::new(value.q, value.r)
     }
 }
 

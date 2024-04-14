@@ -72,10 +72,26 @@ pub struct FactionRelative<T> {
 }
 
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct Environment {
+pub struct Terrain {
     pub land: BitField,
     pub forest: BitField,
     pub mountain: BitField,
+}
+impl Terrain {
+    pub fn is_coord_set(&self, a: Axial) -> bool {
+        self.land.is_coord_set(a) || self.forest.is_coord_set(a) || self.mountain.is_coord_set(a)
+    }
+    pub fn gen_all_terrain(&self) -> BitField {
+        let mut k = BitField::new();
+        k.union_with(&self.land);
+        k.union_with(&self.forest);
+        k.union_with(&self.mountain);
+        k
+    }
+}
+#[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
+pub struct Environment {
+    pub terrain: Terrain,
     pub fog: BitField,
     pub powerups: Vec<Axial>,
 }

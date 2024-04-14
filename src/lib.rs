@@ -329,7 +329,7 @@ async fn render_command(
 
     //TODO don't calculate 60 times a second?
     let visible_water = {
-        let mut g = game.env.land.clone();
+        let mut g = game.env.terrain.gen_all_terrain();
         g.union_with(&game.env.fog);
 
         g.toggle_range(..);
@@ -480,7 +480,12 @@ async fn render_command(
 
         {
             //Draw grass
-            let grass1 = game.env.land.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET));
+            let grass1 = game
+                .env
+                .terrain
+                .land
+                .iter_mesh()
+                .map(|e| grid_snap(e, LAND_OFFSET));
 
             let ani_grass = if let Some((zpos, _, gpos, k)) = &terrain_animation {
                 if let animation::TerrainType::Grass = k {
