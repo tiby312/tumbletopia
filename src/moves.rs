@@ -81,7 +81,7 @@ impl GameState {
             } else if let Type::Warrior { powerup: _ } = typ {
                 if game.env.land.is_coord_set(a) {
                     let check = a.advance(dir);
-                    if a != unit && game.check_if_occ(world, check, false) {
+                    if a != unit && game.check_if_occ(world, check, true) {
                         mesh.add(a.sub(&unit));
                     }
                 }
