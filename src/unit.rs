@@ -75,6 +75,7 @@ pub struct FactionRelative<T> {
 pub struct Environment {
     pub land: BitField,
     pub forest: BitField,
+    pub mountain: BitField,
     pub fog: BitField,
     pub powerups: Vec<Axial>,
 }

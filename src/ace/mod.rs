@@ -424,6 +424,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         env: Environment {
             land: BitField::from_iter([] as [Axial;0]),
             forest: BitField::from_iter([] as [Axial;0]),
+            mountain: BitField::from_iter([] as [Axial;0]),
             fog,
             powerups: powerups.into_iter().map(Axial::from_arr).collect(),
         },
@@ -436,27 +437,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     k
 }
 
+
 pub mod share {
-    // enum LoadError{
-    //     Decode(base64::DecodeError),
-    //     Decompres(miniz_oxide::inflate::DecompressError),
-    //     Serialize(postcard::Error)
-    // }
-    // impl From<postcard::Error> for LoadError {
-    //     fn from(e: postcard::Error) -> Self {
-    //         LoadError::Serialize(e)
-    //     }
-    // }
-    // impl From<base64::DecodeError> for LoadError {
-    //     fn from(e: base64::DecodeError) -> Self {
-    //         LoadError::Decode(e)
-    //     }
-    // }
-    // impl From<miniz_oxide::inflate::DecompressError> for LoadError {
-    //     fn from(e: miniz_oxide::inflate::DecompressError) -> Self {
-    //         LoadError::Decompres(e)
-    //     }
-    // }
 
     pub struct LoadError;
 
