@@ -37,14 +37,14 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
             .cats
             .iter()
             .map(|a| a.position)
-            .filter(|&a| !view.env.terrain.is_coord_set(a)),
+            .filter(|&a| !view.env.terrain.is_set(a)),
     );
     let mut dog_ships = BitField::from_iter(
         view.factions
             .dogs
             .iter()
             .map(|a| a.position)
-            .filter(|&a| !view.env.terrain.is_coord_set(a)),
+            .filter(|&a| !view.env.terrain.is_set(a)),
     );
 
     doop(7, &mut dog_ships, &mut cat_ships, &ship_allowed);
@@ -175,7 +175,7 @@ pub fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
 
     for a in workspace.iter_mesh() {
         for b in around(a) {
-            if mesh.contains_coord(b) {
+            if mesh.valid_coord(b) {
                 mesh.set_coord(b, true);
             }
         }

@@ -3,22 +3,22 @@ use super::*;
 use crate::mesh::small_mesh::SmallMesh;
 
 impl GameState {
-    fn check_if_occ(&self, world: &board::MyWorld, a: Axial, check_fog: bool) -> bool {
-        let game = self;
-        let is_world_cell = world.get_game_cells().is_coord_set(a);
+    // fn check_if_occ(&self, world: &board::MyWorld, a: Axial, check_fog: bool) -> bool {
+    //     let game = self;
+    //     let is_world_cell = world.get_game_cells().is_coord_set(a);
 
-        let jjj = if check_fog {
-            !game.env.fog.is_coord_set(a)
-        } else {
-            true
-        };
+    //     let jjj = if check_fog {
+    //         !game.env.fog.is_coord_set(a)
+    //     } else {
+    //         true
+    //     };
 
-        is_world_cell
-            && !game.env.terrain.is_coord_set(a)
-            && jjj
-            && game.factions.dogs.find_slow(&a).is_none()
-            && game.factions.cats.find_slow(&a).is_none()
-    }
+    //     is_world_cell
+    //         && !game.env.terrain.is_coord_set(a)
+    //         && jjj
+    //         && game.factions.dogs.find_slow(&a).is_none()
+    //         && game.factions.cats.find_slow(&a).is_none()
+    // }
 
     pub fn generate_possible_moves_extra(
         &self,
@@ -40,10 +40,10 @@ impl GameState {
             let a = a.to_axial();
 
             if a != unit
-                && world.get_game_cells().is_coord_set(a)
+                && world.get_game_cells().is_set(a)
                 && !game.factions.contains(a)
-                && !game.env.terrain.is_coord_set(a)
-                && !game.env.fog.is_coord_set(a)
+                && !game.env.terrain.is_set(a)
+                && !game.env.fog.is_set(a)
             {
                 mesh.add(a.sub(&unit));
 
@@ -67,26 +67,35 @@ impl GameState {
     ) -> SmallMesh {
         let game = self;
         let mut mesh = SmallMesh::new();
+
+        let check_empty = |a: Axial| {
+            world.get_game_cells().is_set(a)
+                && !game.factions.contains(a)
+                && !game.env.fog.is_set(a)
+        };
+
+        let terrain = &game.env.terrain;
+
         for a in unit.to_cube().ring(1) {
             let a = a.to_axial();
             let dir = unit.dir_to(&a);
 
-            if a != unit && game.check_if_occ(world, a, true) {
+            if a != unit && check_empty(a) && !terrain.is_set(a) {
                 mesh.add(a.sub(&unit));
-
+                console_dbg!("AOOOO");
                 if typ.is_warrior() {
                     for b in a.to_cube().ring(1) {
                         let b = b.to_axial();
 
-                        if b != unit && game.check_if_occ(world, b, true) {
+                        if b != unit && check_empty(b) && !terrain.is_set(b) {
                             mesh.add(b.sub(&unit));
                         }
                     }
                 }
             } else if let Type::Warrior { powerup: _ } = typ {
-                if game.env.terrain.land.is_coord_set(a) {
+                if terrain.land.is_set(a) {
                     let check = a.advance(dir);
-                    if a != unit && game.check_if_occ(world, check, true) {
+                    if check_empty(check) && (!terrain.is_set(check) || terrain.land.is_set(check)) {
                         mesh.add(a.sub(&unit));
                     }
                 }
@@ -128,7 +137,7 @@ impl GameState {
                 let second_mesh = state.generate_possible_moves_extra(world, &mmm, ttt, team);
 
                 for sm in second_mesh.iter_mesh(mm) {
-                    assert!(!state.env.terrain.is_coord_set(sm));
+                    assert!(!state.env.terrain.is_set(sm));
 
                     let kkk = mmm.into_attack(sm);
 

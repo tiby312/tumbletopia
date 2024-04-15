@@ -29,7 +29,7 @@ impl ExtraPhase {
         let attackto = self.target;
 
         for a in meta.fog.0.iter_mesh(moveto) {
-            assert!(!state.env.fog.is_coord_set(a));
+            assert!(!state.env.fog.is_set(a));
             state.env.fog.set_coord(a, true);
         }
 
@@ -37,12 +37,12 @@ impl ExtraPhase {
             assert_eq!(unit, attackto);
             assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 2);
             for a in m.0.iter_mesh(unit) {
-                assert!(state.env.terrain.land.is_coord_set(a));
+                assert!(state.env.terrain.land.is_set(a));
                 state.env.terrain.land.set_coord(a, false);
             }
-        } else if state.env.terrain.forest.is_coord_set(attackto) {
+        } else if state.env.terrain.forest.is_set(attackto) {
             state.env.terrain.forest.set_coord(attackto, false);
-        } else if state.env.terrain.land.is_coord_set(attackto) {
+        } else if state.env.terrain.land.is_set(attackto) {
             state.env.terrain.land.set_coord(attackto, false);
         } else {
             unreachable!();
@@ -65,7 +65,7 @@ impl ExtraPhase {
         let mut mesh = SmallMesh::new();
 
         for a in self.original.to_cube().range(2).map(|a| a.to_axial()) {
-            if !world.get_game_cells().is_coord_set(a) {
+            if !world.get_game_cells().is_set(a) {
                 continue;
             }
 
@@ -73,11 +73,11 @@ impl ExtraPhase {
                 continue;
             }
 
-            if game.env.terrain.land.is_coord_set(a) {
+            if game.env.terrain.land.is_set(a) {
                 continue;
             }
 
-            if game.env.fog.is_coord_set(a) {
+            if game.env.fog.is_set(a) {
                 continue;
             }
 
@@ -101,7 +101,7 @@ impl ExtraPhase {
             bb.apply(original, game);
             Some(bb)
         } else {
-            if !game.env.terrain.land.is_coord_set(target_cell) {
+            if !game.env.terrain.land.is_set(target_cell) {
                 game.env.terrain.land.set_coord(target_cell, true)
             } else {
                 // if !env.forest.is_coord_set(target_cell) {
@@ -252,12 +252,12 @@ impl MovePhase {
             let mut e = PushInfo::None;
             match this_unit.typ {
                 Type::Warrior { .. } => {
-                    if state.env.terrain.land.is_coord_set(target_cell) {
+                    if state.env.terrain.land.is_set(target_cell) {
                         e = PushInfo::PushedLand;
                     }
                 }
                 Type::Archer => {
-                    if state.env.terrain.land.is_coord_set(target_cell) {
+                    if state.env.terrain.land.is_set(target_cell) {
                         e = PushInfo::PushedLand;
                     }
                 }
@@ -279,7 +279,7 @@ impl MovePhase {
             PushInfo::PushedLand => {
                 let dir = unit.position.dir_to(&end);
                 let k = unit.position.advance(dir);
-                assert!(ss.env.terrain.land.is_coord_set(k));
+                assert!(ss.env.terrain.land.is_set(k));
                 ss.env.terrain.land.set_coord(k, false);
             }
 
@@ -315,9 +315,9 @@ impl MovePhase {
             PushInfo::PushedLand => {
                 let dir = unit.dir_to(&moveto);
                 let t3 = moveto.advance(dir);
-                assert!(state.env.terrain.land.is_coord_set(t3));
+                assert!(state.env.terrain.land.is_set(t3));
                 state.env.terrain.land.set_coord(t3, false);
-                assert!(!state.env.terrain.land.is_coord_set(moveto));
+                assert!(!state.env.terrain.land.is_set(moveto));
                 state.env.terrain.land.set_coord(moveto, true);
             }
 
@@ -334,7 +334,7 @@ impl MovePhase {
 
         match this_unit.typ {
             Type::Warrior { .. } => {
-                if env.terrain.land.is_coord_set(target_cell) {
+                if env.terrain.land.is_set(target_cell) {
                     let dir = this_unit.position.dir_to(&target_cell);
 
                     env.terrain.land.set_coord(target_cell, false);
@@ -425,7 +425,7 @@ impl FogInfo {
 pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
     let mut mesh = SmallMesh::new();
     for a in og.to_cube().range(1) {
-        if env.fog.is_coord_set(a.to_axial()) {
+        if env.fog.is_set(a.to_axial()) {
             mesh.add(a.to_axial().sub(&og));
         }
     }
@@ -439,7 +439,7 @@ fn calculate_walls(position: Axial, state: &GameState) -> SmallMesh {
     for a in position.to_cube().range(2) {
         let a = a.to_axial();
         //TODO this is duplicated logic in selection function???
-        let cc = env.terrain.is_coord_set(a);
+        let cc = env.terrain.is_set(a);
         if cc || (a != position && state.factions.contains(a)) {
             walls.add(a.sub(&position));
         }

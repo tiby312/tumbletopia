@@ -212,7 +212,7 @@ pub mod bitfield {
             dbg!("handling=k", k);
             m.set_coord(Axial::from_arr([k, k]), true);
 
-            assert!(m.is_coord_set(Axial::from_arr([k, k])), "boo={}", k);
+            assert!(m.is_set(Axial::from_arr([k, k])), "boo={}", k);
         }
     }
 
@@ -255,19 +255,19 @@ pub mod bitfield {
             k
         }
 
-        pub fn contains_coord(&self, a: Axial) -> bool {
+        pub fn valid_coord(&self, a: Axial) -> bool {
             (-16..16).contains(&a.q) && (-16..16).contains(&a.r)
         }
         pub fn set_coord(&mut self, a: Axial, val: bool) {
             let _x = a.q;
             let _y = a.r;
-            assert!(self.contains_coord(a), "val={:?}", a);
+            //assert!(self.contains_coord(a), "val={:?}", a);
 
             let ind = conv(a);
             self.inner.set(ind, val);
         }
 
-        pub fn is_coord_set(&self, a: Axial) -> bool {
+        pub fn is_set(&self, a: Axial) -> bool {
             let ind = conv(a);
 
             self.inner[ind]

@@ -78,8 +78,9 @@ pub struct Terrain {
     pub mountain: BitField,
 }
 impl Terrain {
-    pub fn is_coord_set(&self, a: Axial) -> bool {
-        self.land.is_coord_set(a) || self.forest.is_coord_set(a) || self.mountain.is_coord_set(a)
+    pub fn is_set(&self, a: Axial) -> bool {
+       // self.land.is_set(a) || self.forest.is_set(a) || self.mountain.is_set(a)
+       self.land.is_set(a)
     }
     pub fn gen_all_terrain(&self) -> BitField {
         let mut k = BitField::new();
