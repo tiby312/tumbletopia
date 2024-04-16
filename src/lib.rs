@@ -251,7 +251,7 @@ async fn render_command(
     //let fog_asset = &models.fog;
     let water = &models.water;
     let grass = &models.grass;
-    let _mountain_asset = &models.mountain;
+    let mountain_asset = &models.mountain;
     let snow = &models.snow;
     let select_model = &models.select_model;
     let attack_model = &models.attack;
@@ -286,6 +286,9 @@ async fn render_command(
                 let ff = match data {
                     move_build::PushInfo::PushedLand => {
                         Some(animation::land_delta(unit.position, end, grid_matrix))
+                    }
+                    move_build::PushInfo::UpgradedLand => {
+                        todo!("BLAP");
                     }
                     move_build::PushInfo::None => None,
                 };
@@ -523,6 +526,34 @@ async fn render_command(
                 .chain(push_grass.into_iter());
 
             draw_sys.batch(all_grass).build(grass);
+        }
+
+        {
+            //Draw forest
+            let grass1 = game
+                .env
+                .terrain
+                .forest
+                .iter_mesh()
+                .map(|e| grid_snap(e, LAND_OFFSET));
+
+            let all_grass = grass1;
+
+            draw_sys.batch(all_grass).build(mountain_asset);
+        }
+
+        {
+            //Draw mountain
+            let grass1 = game
+                .env
+                .terrain
+                .mountain
+                .iter_mesh()
+                .map(|e| grid_snap(e, 0.0));
+
+            let all_grass = grass1;
+
+            draw_sys.batch(all_grass).build(mountain_asset);
         }
 
         {

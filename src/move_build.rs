@@ -73,7 +73,7 @@ impl ExtraPhase {
                 continue;
             }
 
-            if game.env.terrain.land.is_set(a) {
+            if game.env.terrain.is_set(a) {
                 continue;
             }
 
@@ -282,6 +282,9 @@ impl MovePhase {
                 assert!(ss.env.terrain.land.is_set(k));
                 ss.env.terrain.land.set_coord(k, false);
             }
+            PushInfo::UpgradedLand => {
+                //TODO fooo
+            }
 
             PushInfo::None => {}
         }
@@ -312,13 +315,45 @@ impl MovePhase {
             .unwrap();
 
         match effect.pushpull {
-            PushInfo::PushedLand => {
+            PushInfo::UpgradedLand => {
+                assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
+
                 let dir = unit.dir_to(&moveto);
                 let t3 = moveto.advance(dir);
-                assert!(state.env.terrain.land.is_set(t3));
-                state.env.terrain.land.set_coord(t3, false);
-                assert!(!state.env.terrain.land.is_set(moveto));
-                state.env.terrain.land.set_coord(moveto, true);
+
+                if state.env.terrain.land.is_set(t3) {
+                    panic!("This is impossible!");
+                } else if state.env.terrain.forest.is_set(t3) {
+                    state.env.terrain.forest.set_coord(t3, false);
+                    state.env.terrain.land.set_coord(t3, true);
+                    state.env.terrain.land.set_coord(moveto, true);
+                } else if state.env.terrain.mountain.is_set(t3) {
+                    state.env.terrain.mountain.set_coord(t3, false);
+                    state.env.terrain.forest.set_coord(t3, true);
+                    state.env.terrain.forest.set_coord(moveto, true);
+                }
+            }
+            PushInfo::PushedLand => {
+                assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
+
+                let dir = unit.dir_to(&moveto);
+                let t3 = moveto.advance(dir);
+
+                if state.env.terrain.land.is_set(t3) {
+                    state.env.terrain.land.set_coord(t3, false);
+                    state.env.terrain.land.set_coord(moveto, true);
+                } else if state.env.terrain.forest.is_set(t3) {
+                    state.env.terrain.forest.set_coord(t3, false);
+                    state.env.terrain.forest.set_coord(moveto, true);
+                } else if state.env.terrain.mountain.is_set(t3) {
+                    state.env.terrain.mountain.set_coord(t3, false);
+                    state.env.terrain.mountain.set_coord(moveto, true);
+                }
+
+                // assert!(state.env.terrain.land.is_set(t3));
+                // state.env.terrain.land.set_coord(t3, false);
+                // assert!(!state.env.terrain.land.is_set(moveto));
+                // state.env.terrain.land.set_coord(moveto, true);
             }
 
             PushInfo::None => {}
@@ -334,16 +369,44 @@ impl MovePhase {
 
         match this_unit.typ {
             Type::Warrior { .. } => {
-                if env.terrain.land.is_set(target_cell) {
+                let terrain = &mut env.terrain;
+
+                if terrain.land.is_set(target_cell) {
                     let dir = this_unit.position.dir_to(&target_cell);
-
-                    env.terrain.land.set_coord(target_cell, false);
-
                     let kk = target_cell.advance(dir);
 
-                    env.terrain.land.set_coord(kk, true);
+                    terrain.land.set_coord(target_cell, false);
 
-                    e = PushInfo::PushedLand;
+                    if terrain.land.is_set(kk) {
+                        terrain.land.set_coord(kk, false);
+                        terrain.forest.set_coord(kk, true);
+
+                        e = PushInfo::UpgradedLand;
+                    } else {
+                        assert!(!terrain.is_set(kk));
+                        terrain.land.set_coord(kk, true);
+
+                        e = PushInfo::PushedLand;
+                    }
+                }
+
+                if terrain.forest.is_set(target_cell) {
+                    let dir = this_unit.position.dir_to(&target_cell);
+                    let kk = target_cell.advance(dir);
+
+                    terrain.forest.set_coord(target_cell, false);
+
+                    if terrain.forest.is_set(kk) {
+                        terrain.forest.set_coord(kk, false);
+                        terrain.mountain.set_coord(kk, true);
+
+                        e = PushInfo::UpgradedLand;
+                    } else {
+                        assert!(!terrain.is_set(kk));
+                        terrain.forest.set_coord(kk, true);
+
+                        e = PushInfo::PushedLand;
+                    }
                 }
             }
             Type::Archer => {
@@ -382,6 +445,7 @@ pub enum PowerupAction {
 
 #[derive(PartialOrd, Ord, Clone, Copy, Eq, PartialEq, Debug)]
 pub enum PushInfo {
+    UpgradedLand,
     PushedLand,
     None,
 }

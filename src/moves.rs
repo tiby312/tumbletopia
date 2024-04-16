@@ -82,7 +82,6 @@ impl GameState {
 
             if a != unit && check_empty(a) && !terrain.is_set(a) {
                 mesh.add(a.sub(&unit));
-                console_dbg!("AOOOO");
                 if typ.is_warrior() {
                     for b in a.to_cube().ring(1) {
                         let b = b.to_axial();
@@ -95,7 +94,17 @@ impl GameState {
             } else if let Type::Warrior { powerup: _ } = typ {
                 if terrain.land.is_set(a) {
                     let check = a.advance(dir);
-                    if check_empty(check) && (!terrain.is_set(check) || terrain.land.is_set(check)) {
+                    if check_empty(check) && (!terrain.is_set(check) || terrain.land.is_set(check))
+                    {
+                        mesh.add(a.sub(&unit));
+                    }
+                }
+
+                if terrain.forest.is_set(a) {
+                    let check = a.advance(dir);
+                    if check_empty(check)
+                        && (!terrain.is_set(check) || terrain.forest.is_set(check))
+                    {
                         mesh.add(a.sub(&unit));
                     }
                 }
