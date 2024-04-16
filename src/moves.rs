@@ -32,10 +32,8 @@ impl GameState {
         let original_pos = foo.original;
         let mut mesh = SmallMesh::new();
 
-        for a in unit
-            .to_cube()
-            .ring(1)
-            .chain(std::iter::once(original_pos.to_cube()))
+        for a in unit.to_cube().ring(1)
+        //.chain(std::iter::once(original_pos.to_cube()))
         {
             let a = a.to_axial();
 
@@ -111,9 +109,7 @@ impl GameState {
 
                 if terrain.mountain.is_set(a) {
                     let check = a.advance(dir);
-                    if check_empty(check)
-                        && (!terrain.is_set(check))
-                    {
+                    if check_empty(check) && (!terrain.is_set(check)) {
                         mesh.add(a.sub(&unit));
                     }
                 }
