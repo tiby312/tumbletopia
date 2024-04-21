@@ -236,7 +236,7 @@ impl MovePhase {
     ) -> &Self {
         let this_unit = self.original;
         let target = self.moveto;
-        let walls = calculate_walls(this_unit, state);
+        let walls = calculate_walls(this_unit, state,world);
 
         let unit = state
             .factions
@@ -496,7 +496,7 @@ pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
     FogInfo(mesh)
 }
 
-fn calculate_walls(position: Axial, state: &GameState) -> SmallMesh {
+fn calculate_walls(position: Axial, state: &GameState,world:&board::MyWorld) -> SmallMesh {
     let env = &state.env;
     let mut walls = SmallMesh::new();
 
@@ -504,7 +504,7 @@ fn calculate_walls(position: Axial, state: &GameState) -> SmallMesh {
         let a = a.to_axial();
         //TODO this is duplicated logic in selection function???
         let cc = env.terrain.is_set(a);
-        if cc || (a != position && state.factions.contains(a)) {
+        if cc || (a != position && state.factions.contains(a))  || !world.get_game_cells().is_set(a){
             walls.add(a.sub(&position));
         }
     }

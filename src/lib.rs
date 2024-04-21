@@ -592,24 +592,24 @@ async fn render_command(
                             .grey(*grey)
                             .build(select_model);
 
-                        if let Some(k) = hh {
-                            if k.the_move
-                                .original
-                                .to_cube()
-                                .dist(&k.the_move.moveto.to_cube())
-                                == 2
-                            {
-                                let a = k.the_move.original;
-                                let pos = grid_matrix.hex_axial_to_world(&a);
-                                let t = matrix::translation(pos.x, pos.y, 0.0);
-                                let m = my_matrix.chain(t).generate();
-                                draw_sys
-                                    .batch([m])
-                                    .no_lighting()
-                                    .grey(*grey)
-                                    .build(attack_model);
-                            }
-                        }
+                        // if let Some(k) = hh {
+                        //     if k.the_move
+                        //         .original
+                        //         .to_cube()
+                        //         .dist(&k.the_move.moveto.to_cube())
+                        //         == 2
+                        //     {
+                        //         let a = k.the_move.original;
+                        //         let pos = grid_matrix.hex_axial_to_world(&a);
+                        //         let t = matrix::translation(pos.x, pos.y, 0.0);
+                        //         let m = my_matrix.chain(t).generate();
+                        //         draw_sys
+                        //             .batch([m])
+                        //             .no_lighting()
+                        //             .grey(*grey)
+                        //             .build(attack_model);
+                        //     }
+                        // }
                     }
                     CellSelection::BuildSelection(_) => {}
                 }
