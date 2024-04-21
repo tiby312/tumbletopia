@@ -92,27 +92,27 @@ impl GameState {
             } else if let Type::Warrior { powerup: _ } = typ {
                 if terrain.land.is_set(a) {
                     let check = a.advance(dir);
-                    if check_empty(check) && (!terrain.is_set(check) || terrain.land.is_set(check))
+                    if check_empty(check) && (!terrain.is_set(check) /*|| terrain.land.is_set(check)*/)
                     {
                         mesh.add(a.sub(&unit));
                     }
                 }
 
-                if terrain.forest.is_set(a) {
-                    let check = a.advance(dir);
-                    if check_empty(check)
-                        && (!terrain.is_set(check) || terrain.forest.is_set(check))
-                    {
-                        mesh.add(a.sub(&unit));
-                    }
-                }
+                // if terrain.forest.is_set(a) {
+                //     let check = a.advance(dir);
+                //     if check_empty(check)
+                //         && (!terrain.is_set(check) || terrain.forest.is_set(check))
+                //     {
+                //         mesh.add(a.sub(&unit));
+                //     }
+                // }
 
-                if terrain.mountain.is_set(a) {
-                    let check = a.advance(dir);
-                    if check_empty(check) && (!terrain.is_set(check)) {
-                        mesh.add(a.sub(&unit));
-                    }
-                }
+                // if terrain.mountain.is_set(a) {
+                //     let check = a.advance(dir);
+                //     if check_empty(check) && (!terrain.is_set(check)) {
+                //         mesh.add(a.sub(&unit));
+                //     }
+                // }
             }
         }
         mesh
