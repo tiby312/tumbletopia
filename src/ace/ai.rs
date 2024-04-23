@@ -33,18 +33,10 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
     };
 
     let mut cat_ships = BitField::from_iter(
-        view.factions
-            .cats
-            .iter()
-            .map(|a| a.position)
-            //.filter(|&a| !view.env.terrain.is_set(a)),
+        view.factions.cats.iter().map(|a| a.position), //.filter(|&a| !view.env.terrain.is_set(a)),
     );
     let mut dog_ships = BitField::from_iter(
-        view.factions
-            .dogs
-            .iter()
-            .map(|a| a.position)
-            //.filter(|&a| !view.env.terrain.is_set(a)),
+        view.factions.dogs.iter().map(|a| a.position), //.filter(|&a| !view.env.terrain.is_set(a)),
     );
 
     doop(7, &mut dog_ships, &mut cat_ships, &ship_allowed);

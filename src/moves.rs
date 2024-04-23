@@ -61,7 +61,7 @@ impl GameState {
         world: &board::MyWorld,
         &unit: &Axial,
         typ: Type,
-        _team: ActiveTeam,
+        team: ActiveTeam,
     ) -> SmallMesh {
         let game = self;
         let mut mesh = SmallMesh::new();
@@ -89,15 +89,29 @@ impl GameState {
                         }
                     }
                 }
-            } else if let Type::Warrior { powerup: _ } = typ {
+            } else if let Type::Warrior = typ {
                 if terrain.land.is_set(a) {
                     let check = a.advance(dir);
-                    if check_empty(check) && (!terrain.is_set(check) /*|| terrain.land.is_set(check)*/)
+                    if check_empty(check)
+                        && (!terrain.is_set(check)/*|| terrain.land.is_set(check)*/)
                     {
                         mesh.add(a.sub(&unit));
                     }
                 }
 
+                if game
+                    .factions
+                    .relative(team)
+                    .that_team
+                    .iter()
+                    .find(|x| x.position == a)
+                    .is_some()
+                {
+                    let check = a.advance(dir);
+                    if terrain.is_set(check) {
+                        mesh.add(a.sub(&unit));
+                    }
+                }
                 // if terrain.forest.is_set(a) {
                 //     let check = a.advance(dir);
                 //     if check_empty(check)

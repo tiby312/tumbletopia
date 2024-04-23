@@ -135,11 +135,10 @@ impl GameState {
     }
 }
 
-#[derive(Eq, PartialEq, Hash, Debug, Clone)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Ord, PartialOrd)]
 pub struct UnitData {
     pub position: Axial,
     pub typ: Type,
-    pub has_powerup: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -157,9 +156,9 @@ impl Default for CellSelection {
     }
 }
 
-#[derive(Hash, Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Hash, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Type {
-    Warrior { powerup: bool },
+    Warrior,
     Archer,
 }
 

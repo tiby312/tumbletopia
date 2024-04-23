@@ -388,15 +388,12 @@ pub async fn reselect_loop(
 }
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
-    let powerup = true;
-
     let cats = world
         .cat_start()
         .iter()
         .map(|&position| UnitData {
             position,
-            typ: Type::Warrior { powerup },
-            has_powerup: false,
+            typ: Type::Warrior,
         })
         .collect();
 
@@ -406,8 +403,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         .iter()
         .map(|&position| UnitData {
             position,
-            typ: Type::Warrior { powerup },
-            has_powerup: false,
+            typ: Type::Warrior,
         })
         .collect();
 

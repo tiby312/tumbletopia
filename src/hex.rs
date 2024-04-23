@@ -326,6 +326,9 @@ pub struct Axial {
 }
 
 impl Axial {
+    pub fn index(&self) -> i32 {
+        ((self.q as i32) << 16) | self.r as i32
+    }
     pub fn q(&self) -> i16 {
         self.q
     }

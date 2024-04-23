@@ -204,6 +204,7 @@ impl ExtraPhase {
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
+    destroyed_unit: Option<usize>,
 }
 impl MoveEffect {
     pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
@@ -236,7 +237,7 @@ impl MovePhase {
     ) -> &Self {
         let this_unit = self.original;
         let target = self.moveto;
-        let walls = calculate_walls(this_unit, state,world);
+        let walls = calculate_walls(this_unit, state, world);
 
         let unit = state
             .factions
@@ -307,6 +308,18 @@ impl MovePhase {
     pub fn undo(&self, team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;
         let unit = self.original;
+
+        if let Some(index) = effect.destroyed_unit {
+            let j = &mut state.factions.relative_mut(team_index).that_team.units;
+            j.insert(
+                index,
+                UnitData {
+                    position: moveto,
+                    typ: Type::Warrior,
+                },
+            );
+        }
+
         let k = state
             .factions
             .relative_mut(team_index)
@@ -363,15 +376,33 @@ impl MovePhase {
 
     pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> MoveEffect {
         let env = &mut game.env;
-        let this_unit = game.factions.get_unit_mut(team, self.original);
         let target_cell = self.moveto;
         let mut e = PushInfo::None;
+
+        let mut destroyed_unit = None;
+        let foo = game.factions.relative_mut(team);
+
+        let this_unit = foo
+            .this_team
+            .units
+            .iter_mut()
+            .find(|x| x.position == self.original)
+            .unwrap();
 
         match this_unit.typ {
             Type::Warrior { .. } => {
                 let terrain = &mut env.terrain;
 
-                if terrain.land.is_set(target_cell) {
+                if let Some((index, _)) = foo
+                    .that_team
+                    .iter()
+                    .enumerate()
+                    .find(|(_, x)| x.position == target_cell)
+                {
+                    //foo.that_team.units.retain(|x|x.position!=target_cell);
+                    foo.that_team.units.remove(index);
+                    destroyed_unit = Some(index);
+                } else if terrain.land.is_set(target_cell) {
                     let dir = this_unit.position.dir_to(&target_cell);
                     let kk = target_cell.advance(dir);
 
@@ -390,24 +421,24 @@ impl MovePhase {
                     }
                 }
 
-                if terrain.forest.is_set(target_cell) {
-                    let dir = this_unit.position.dir_to(&target_cell);
-                    let kk = target_cell.advance(dir);
+                // if terrain.forest.is_set(target_cell) {
+                //     let dir = this_unit.position.dir_to(&target_cell);
+                //     let kk = target_cell.advance(dir);
 
-                    terrain.forest.set_coord(target_cell, false);
+                //     terrain.forest.set_coord(target_cell, false);
 
-                    if terrain.forest.is_set(kk) {
-                        terrain.forest.set_coord(kk, false);
-                        terrain.mountain.set_coord(kk, true);
+                //     if terrain.forest.is_set(kk) {
+                //         terrain.forest.set_coord(kk, false);
+                //         terrain.mountain.set_coord(kk, true);
 
-                        e = PushInfo::UpgradedLand;
-                    } else {
-                        assert!(!terrain.is_set(kk));
-                        terrain.forest.set_coord(kk, true);
+                //         e = PushInfo::UpgradedLand;
+                //     } else {
+                //         assert!(!terrain.is_set(kk));
+                //         terrain.forest.set_coord(kk, true);
 
-                        e = PushInfo::PushedLand;
-                    }
-                }
+                //         e = PushInfo::PushedLand;
+                //     }
+                // }
             }
             Type::Archer => {
                 unreachable!();
@@ -416,13 +447,14 @@ impl MovePhase {
 
         let powerup = if game.env.powerups.contains(&target_cell) {
             game.env.powerups.retain(|&a| a != target_cell);
-            if !this_unit.has_powerup {
-                this_unit.has_powerup = true;
-                PowerupAction::GotPowerup
-            } else {
-                // powerup is discarded
-                PowerupAction::DiscardedPowerup
-            }
+            unreachable!()
+            // if !this_unit.has_powerup {
+            //     this_unit.has_powerup = true;
+            //     PowerupAction::GotPowerup
+            // } else {
+            //     // powerup is discarded
+            //     PowerupAction::DiscardedPowerup
+            // }
         } else {
             PowerupAction::None
         };
@@ -432,6 +464,7 @@ impl MovePhase {
         MoveEffect {
             pushpull: e,
             powerup,
+            destroyed_unit,
         }
     }
 }
@@ -496,7 +529,7 @@ pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
     FogInfo(mesh)
 }
 
-fn calculate_walls(position: Axial, state: &GameState,world:&board::MyWorld) -> SmallMesh {
+fn calculate_walls(position: Axial, state: &GameState, world: &board::MyWorld) -> SmallMesh {
     let env = &state.env;
     let mut walls = SmallMesh::new();
 
@@ -504,7 +537,8 @@ fn calculate_walls(position: Axial, state: &GameState,world:&board::MyWorld) -> 
         let a = a.to_axial();
         //TODO this is duplicated logic in selection function???
         let cc = env.terrain.is_set(a);
-        if cc || (a != position && state.factions.contains(a))  || !world.get_game_cells().is_set(a){
+        if cc || (a != position && state.factions.contains(a)) || !world.get_game_cells().is_set(a)
+        {
             walls.add(a.sub(&position));
         }
     }
