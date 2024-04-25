@@ -373,7 +373,7 @@ pub async fn reselect_loop(
         let effect = mp
             .animate(selected_unit.team, game, world, doop)
             .await
-            .apply(selected_unit.team, game);
+            .apply(selected_unit.team, game,world);
 
         {
             *have_moved = Some(selection::HaveMoved {
@@ -478,7 +478,7 @@ pub async fn replay(
         let effect_m = kk
             .animate(team, &mut game, world, &mut doop)
             .await
-            .apply(team, &mut game);
+            .apply(team, &mut game,world);
 
         let effect_a = kk
             .into_attack(the_move.attackto)

@@ -108,7 +108,33 @@ impl GameState {
                     .is_some()
                 {
                     let check = a.advance(dir);
+                    //if you push an enemy unit into a wall, they die
+                    //if you push an enemy off the map, they die
+                    //if you push an enemy into water, they just move there.
                     if terrain.is_set(check) {
+                        mesh.add(a.sub(&unit));
+                    }
+
+                    if !world.get_game_cells().is_set(check) {
+                        mesh.add(a.sub(&unit));
+                    }
+
+                    if world.get_game_cells().is_set(check) && !game.env.fog.is_set(check) && !terrain.is_set(check) && !game.factions.contains(check){
+                        mesh.add(a.sub(&unit));
+                    }
+
+                }
+                if game
+                    .factions
+                    .relative(team)
+                    .this_team
+                    .iter()
+                    .find(|x| x.position == a)
+                    .is_some()
+                {
+                    let check = a.advance(dir);
+                    
+                    if world.get_game_cells().is_set(check) && !game.env.fog.is_set(check) && !terrain.is_set(check) && !game.factions.contains(check){
                         mesh.add(a.sub(&unit));
                     }
                 }
@@ -160,7 +186,7 @@ impl GameState {
                     original: pos,
                     moveto: mm,
                 };
-                let effect = mmm.apply(team, state);
+                let effect = mmm.apply(team, state,world);
 
                 let second_mesh = state.generate_possible_moves_extra(world, &mmm, ttt, team);
 

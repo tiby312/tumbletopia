@@ -286,6 +286,9 @@ impl MovePhase {
             PushInfo::UpgradedLand => {
                 //TODO fooo
             }
+            PushInfo::PushedUnit=>{
+                //TODO animate
+            }
 
             PushInfo::None => {}
         }
@@ -310,6 +313,7 @@ impl MovePhase {
         let unit = self.original;
 
         if let Some(index) = effect.destroyed_unit {
+            matches!(effect.pushpull,PushInfo::None);
             let j = &mut state.factions.relative_mut(team_index).that_team.units;
             j.insert(
                 index,
@@ -320,14 +324,9 @@ impl MovePhase {
             );
         }
 
-        let k = state
-            .factions
-            .relative_mut(team_index)
-            .this_team
-            .find_slow_mut(&moveto)
-            .unwrap();
-
+        
         match effect.pushpull {
+            
             PushInfo::UpgradedLand => {
                 assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
 
@@ -344,6 +343,20 @@ impl MovePhase {
                     state.env.terrain.mountain.set_coord(t3, false);
                     state.env.terrain.forest.set_coord(t3, true);
                     state.env.terrain.forest.set_coord(moveto, true);
+                }
+            }
+            PushInfo::PushedUnit=>{
+                assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
+                let dir = unit.dir_to(&moveto);
+                let t3 = moveto.advance(dir);
+
+                let tt=state.factions.relative_mut(team_index);
+                if let Some(a)=tt.this_team.units.iter_mut().find(|a|a.position==t3){
+                    a.position=moveto;
+                }else if let Some(a)=tt.that_team.units.iter_mut().find(|a|a.position==t3){
+                    a.position=moveto;
+                }else{
+                    unreachable!("PushedUnit enum error");
                 }
             }
             PushInfo::PushedLand => {
@@ -371,39 +384,67 @@ impl MovePhase {
 
             PushInfo::None => {}
         }
+        let k = state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .find_slow_mut(&moveto)
+            .unwrap();
+
+
         k.position = unit;
     }
 
-    pub fn apply(&self, team: ActiveTeam, game: &mut GameState) -> MoveEffect {
+    pub fn apply(&self, team: ActiveTeam, game: &mut GameState,world:&board::MyWorld) -> MoveEffect {
         let env = &mut game.env;
         let target_cell = self.moveto;
         let mut e = PushInfo::None;
 
         let mut destroyed_unit = None;
-        let foo = game.factions.relative_mut(team);
+        
+        // let this_unit=move |factions:&mut Factions|{
+        //     factions.relative_mut(team).this_team.units.iter_mut().find(|x|x.position==self.original).unwrap()
+        // };
 
-        let this_unit = foo
-            .this_team
-            .units
-            .iter_mut()
-            .find(|x| x.position == self.original)
-            .unwrap();
+        let this_unit_typ = game.factions.get_unit(team,self.original).typ;
 
-        match this_unit.typ {
+        match this_unit_typ {
             Type::Warrior { .. } => {
                 let terrain = &mut env.terrain;
 
+                let foo = game.factions.relative_mut(team);
+
                 if let Some((index, _)) = foo
                     .that_team
+                    .units
                     .iter()
                     .enumerate()
                     .find(|(_, x)| x.position == target_cell)
                 {
-                    //foo.that_team.units.retain(|x|x.position!=target_cell);
-                    foo.that_team.units.remove(index);
-                    destroyed_unit = Some(index);
-                } else if terrain.land.is_set(target_cell) {
-                    let dir = this_unit.position.dir_to(&target_cell);
+                    let dir = self.original.dir_to(&target_cell);
+                    let check = target_cell.advance(dir);
+
+                    if env.terrain.is_set(check) || !world.get_game_cells().is_set(check){
+                        foo.that_team.units.remove(index);
+                        destroyed_unit = Some(index);
+                    }else if world.get_game_cells().is_set(check) && !env.terrain.is_set(check) && !game.factions.contains(check){
+                        game.factions.get_unit_mut(team.not(),target_cell).position=check;
+                        e=PushInfo::PushedUnit;
+
+                    }
+                    
+                } else if game.factions.relative(team).this_team.units.iter().find(|x|x.position==target_cell).is_some(){
+                    let dir = self.original.dir_to(&target_cell);
+                    let check = target_cell.advance(dir);
+
+                    if world.get_game_cells().is_set(check) && !env.terrain.is_set(check) && !game.factions.contains(check){
+                        
+                        game.factions.get_unit_mut(team,target_cell).position=check;
+                        e=PushInfo::PushedUnit;
+                    }
+                } 
+                else if terrain.land.is_set(target_cell) {
+                    let dir = game.factions.get_unit(team,self.original).position.dir_to(&target_cell);
                     let kk = target_cell.advance(dir);
 
                     terrain.land.set_coord(target_cell, false);
@@ -459,7 +500,7 @@ impl MovePhase {
             PowerupAction::None
         };
 
-        this_unit.position = target_cell;
+        game.factions.get_unit_mut(team,self.original).position = target_cell;
 
         MoveEffect {
             pushpull: e,
@@ -480,6 +521,7 @@ pub enum PowerupAction {
 pub enum PushInfo {
     UpgradedLand,
     PushedLand,
+    PushedUnit,
     None,
 }
 

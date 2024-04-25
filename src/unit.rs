@@ -13,6 +13,7 @@ impl Factions {
             .map(|a| a.position)
             .any(|a| a == coord)
     }
+    
     pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
         self.relative_mut(team)
             .this_team

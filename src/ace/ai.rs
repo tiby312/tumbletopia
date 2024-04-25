@@ -419,7 +419,7 @@ impl<'a> AlphaBeta<'a> {
 
             let effect = {
                 let j = cand.as_move();
-                let k = j.apply(team, game_after_move);
+                let k = j.apply(team, game_after_move,world);
                 let j = j
                     .into_attack(cand.attackto)
                     .apply(team, game_after_move, world);

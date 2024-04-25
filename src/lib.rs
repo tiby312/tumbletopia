@@ -177,7 +177,7 @@ pub async fn worker_entry() {
                 let effect_m = kk
                     .animate(team, &mut game, &world, &mut doop)
                     .await
-                    .apply(team, &mut game);
+                    .apply(team, &mut game,&world);
 
                 let effect_a = kk
                     .into_attack(the_move.attackto)
@@ -290,6 +290,10 @@ async fn render_command(
                     move_build::PushInfo::UpgradedLand => {
                         todo!("BLAP");
                     }
+                    move_build::PushInfo::PushedUnit => {
+                        todo!("BLAP");
+                    }
+                    
                     move_build::PushInfo::None => None,
                 };
 
