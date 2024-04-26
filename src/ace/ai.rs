@@ -32,12 +32,9 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
         t
     };
 
-    let mut cat_ships = BitField::from_iter(
-        view.factions.cats.iter().map(|a| a.position), //.filter(|&a| !view.env.terrain.is_set(a)),
-    );
-    let mut dog_ships = BitField::from_iter(
-        view.factions.dogs.iter().map(|a| a.position), //.filter(|&a| !view.env.terrain.is_set(a)),
-    );
+    let mut cat_ships = view.factions.cats.units.clone();
+
+    let mut dog_ships = view.factions.dogs.units.clone();
 
     doop(7, &mut dog_ships, &mut cat_ships, &ship_allowed);
 
@@ -107,15 +104,15 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
     let dog_distance = view
         .factions
         .dogs
-        .iter()
-        .map(|a| a.position)
+        .units
+        .iter_mesh()
         .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
         .sum::<i64>();
     let cat_distance = view
         .factions
         .cats
-        .iter()
-        .map(|a| a.position)
+        .units
+        .iter_mesh()
         .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
         .sum::<i64>();
 

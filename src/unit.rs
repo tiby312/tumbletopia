@@ -6,23 +6,20 @@ pub struct Factions {
     pub cats: Tribe,
 }
 impl Factions {
-    pub fn contains(&self, coord: Axial) -> bool {
-        self.dogs
-            .iter()
-            .chain(self.cats.iter())
-            .map(|a| a.position)
-            .any(|a| a == coord)
+    pub fn has_a_set(&self, coord: Axial) -> bool {
+        self.dogs.units.is_set(coord) || self.cats.units.is_set(coord)
     }
     
-    pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
-        self.relative_mut(team)
-            .this_team
-            .find_slow_mut(&coord)
-            .unwrap()
-    }
-    pub fn get_unit(&self, team: ActiveTeam, coord: Axial) -> &UnitData {
-        self.relative(team).this_team.find_slow(&coord).unwrap()
-    }
+
+    // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
+    //     self.relative_mut(team)
+    //         .this_team
+    //         .find_slow_mut(&coord)
+    //         .unwrap()
+    // }
+    // pub fn get_unit(&self, team: ActiveTeam, coord: Axial) -> &UnitData {
+    //     self.relative(team).this_team.find_slow(&coord).unwrap()
+    // }
     pub fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
         match team {
             ActiveTeam::Cats => FactionRelative {
@@ -71,6 +68,18 @@ pub struct FactionRelative<T> {
     pub this_team: T,
     pub that_team: T,
 }
+impl FactionRelative<&mut Tribe>{
+    pub fn has_a_set(&self, coord: Axial) -> bool {
+        self.this_team.units.is_set(coord) || self.that_team.units.is_set(coord)
+    }
+}
+impl FactionRelative<&Tribe>{
+    pub fn has_a_set(&self, coord: Axial) -> bool {
+        self.this_team.units.is_set(coord) || self.that_team.units.is_set(coord)
+    }
+}
+
+
 
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Terrain {
@@ -115,9 +124,9 @@ pub enum GameOver {
 impl GameState {
     pub fn game_is_over(&self, world: &board::MyWorld, team: ActiveTeam) -> Option<GameOver> {
         let this_team_stuck = 'foo: {
-            for unit in self.factions.relative(team).this_team.units.iter() {
+            for unit in self.factions.relative(team).this_team.units.iter_mesh() {
                 let mesh =
-                    self.generate_possible_moves_movement(world, &unit.position, unit.typ, team);
+                    self.generate_possible_moves_movement(world, &unit, team);
                 if !mesh.is_empty() {
                     break 'foo false;
                 }
@@ -136,11 +145,11 @@ impl GameState {
     }
 }
 
-#[derive(Eq, PartialEq, Hash, Debug, Clone, Ord, PartialOrd)]
-pub struct UnitData {
-    pub position: Axial,
-    pub typ: Type,
-}
+// #[derive(Eq, PartialEq, Hash, Debug, Clone, Ord, PartialOrd)]
+// pub struct UnitData {
+//     pub position: Axial,
+//     pub typ: Type,
+// }
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
@@ -157,72 +166,49 @@ impl Default for CellSelection {
     }
 }
 
-#[derive(Hash, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
-pub enum Type {
-    Warrior,
-    Archer,
-}
+// #[derive(Hash, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+// pub enum Type {
+//     Warrior,
+//     Archer,
+// }
 
-impl Type {
-    pub fn is_warrior(&self) -> bool {
-        if let Type::Warrior { .. } = self {
-            true
-        } else {
-            false
-        }
-    }
-    pub fn is_archer(&self) -> bool {
-        if let Type::Archer = self {
-            true
-        } else {
-            false
-        }
-    }
-    pub fn type_index(&self) -> usize {
-        let a = self;
-        match a {
-            Type::Warrior { .. } => 0,
-            Type::Archer => 1,
-        }
-    }
-}
+// impl Type {
+//     pub fn is_warrior(&self) -> bool {
+//         if let Type::Warrior { .. } = self {
+//             true
+//         } else {
+//             false
+//         }
+//     }
+//     pub fn is_archer(&self) -> bool {
+//         if let Type::Archer = self {
+//             true
+//         } else {
+//             false
+//         }
+//     }
+//     pub fn type_index(&self) -> usize {
+//         let a = self;
+//         match a {
+//             Type::Warrior { .. } => 0,
+//             Type::Archer => 1,
+//         }
+//     }
+// }
 
-impl std::ops::Deref for Tribe {
-    type Target = [UnitData];
 
-    fn deref(&self) -> &Self::Target {
-        &self.units
-    }
-}
-
-#[derive(Default, Eq, PartialEq, Hash, Clone, Debug)]
+#[derive(Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub units: Vec<UnitData>,
+    pub units: BitField,
 }
-impl Tribe {
-    pub fn add(&mut self, a: UnitData) {
-        self.units.push(a);
-    }
 
-    #[must_use]
-    pub fn find_take(&mut self, a: &Axial) -> Option<UnitData> {
-        if let Some((i, _)) = self
-            .units
-            .iter()
-            .enumerate()
-            .find(|(_, b)| &b.position == a)
-        {
-            Some(self.units.remove(i))
-        } else {
-            None
+
+impl std::fmt::Debug for Tribe{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,"{}","tribe:[")?;
+        for pos in self.units.iter_mesh(){
+            write!(f,"{:?},",pos)?;
         }
-    }
-
-    pub fn find_slow(&self, a: &Axial) -> Option<&UnitData> {
-        self.units.iter().find(|b| &b.position == a)
-    }
-
-    pub fn find_slow_mut<'a>(&'a mut self, a: &Axial) -> Option<&'a mut UnitData> {
-        self.units.iter_mut().find(|b| &b.position == a)
+        write!(f,"{}","]")
     }
 }

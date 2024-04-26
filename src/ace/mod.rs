@@ -3,7 +3,7 @@ use self::selection::JustMoveLog;
 use super::*;
 pub mod ai;
 pub mod selection;
-use crate::{CellSelection, GameState, UnitData};
+use crate::{CellSelection, GameState};
 
 use collision::primitive::Cube;
 use futures::{
@@ -214,13 +214,11 @@ pub async fn reselect_loop(
 
     let unwrapped_selected_unit = selected_unit.coord;
 
-    let unit = game
+    assert!(game
         .factions
         .relative(selected_unit.team)
-        .this_team
-        .find_slow(&unwrapped_selected_unit)
-        .unwrap()
-        .clone();
+        .this_team.units.is_set(unwrapped_selected_unit));
+
 
     let grey = if selected_unit.team == team {
         //If we are in the middle of a extra attack move, make sure
@@ -240,7 +238,6 @@ pub async fn reselect_loop(
             game.generate_possible_moves_extra(
                 world,
                 &have_moved.the_move,
-                unit.typ,
                 selected_unit.team,
             )
         })
@@ -249,7 +246,7 @@ pub async fn reselect_loop(
     };
 
     let cca = cca.unwrap_or_else(|| {
-        game.generate_possible_moves_movement(world, &unit.position, unit.typ, selected_unit.team)
+        game.generate_possible_moves_movement(world, &unwrapped_selected_unit, selected_unit.team)
     });
 
     let mut cell = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
@@ -282,32 +279,32 @@ pub async fn reselect_loop(
     let contains = ss.is_set(target_cell.sub(&unwrapped_selected_unit));
 
     //If we select a friendly unit quick swap
-    if let Some(target) = game
+    if game
         .factions
         .relative(selected_unit.team)
         .this_team
-        .find_slow(&target_cell)
+        .units
+        .is_set(target_cell)
     {
-        let tt = target.position;
         if !contains {
             //it should be impossible for a unit to move onto a friendly
             //assert!(!contains);
-            selected_unit.coord = tt;
+            selected_unit.coord = target_cell;
             return LoopRes::Select(selected_unit);
         }
     }
 
     //If we select an enemy unit quick swap
-    if let Some(target) = game
+    if game
         .factions
         .relative(selected_unit.team)
         .that_team
-        .find_slow(&target_cell)
+        .units
+        .is_set(target_cell)
     {
-        let tt = target.position;
         if selected_unit.team != team || !contains {
             //If we select an enemy unit thats outside of our units range.
-            selected_unit.coord = tt;
+            selected_unit.coord = target_cell;
             selected_unit.team = selected_unit.team.not();
             return LoopRes::Select(selected_unit);
         }
@@ -354,19 +351,16 @@ pub async fn reselect_loop(
             effect,
         ))
     } else {
-        let p = unit.position;
-        let this_unit = game
+        assert!(game
             .factions
             .relative_mut(selected_unit.team)
-            .this_team
-            .find_slow_mut(&p)
-            .unwrap();
+            .this_team.units.is_set(unwrapped_selected_unit));
+
+        
         let c = target_cell;
-        let mut kk = this_unit.clone();
-        kk.position = target_cell;
 
         let mp = move_build::MovePhase {
-            original: p,
+            original: unwrapped_selected_unit,
             moveto: target_cell,
         };
 
@@ -388,24 +382,10 @@ pub async fn reselect_loop(
 }
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
-    let cats = world
-        .cat_start()
-        .iter()
-        .map(|&position| UnitData {
-            position,
-            typ: Type::Warrior,
-        })
-        .collect();
-
-    //player
-    let dogs = world
-        .dog_start()
-        .iter()
-        .map(|&position| UnitData {
-            position,
-            typ: Type::Warrior,
-        })
-        .collect();
+    let cats = BitField::from_iter(world.cat_start().iter().copied());
+    
+    let dogs = BitField::from_iter(world.dog_start().iter().copied());
+    
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
@@ -428,8 +408,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         },
     };
 
-    for a in k.factions.cats.iter().chain(k.factions.dogs.iter()) {
-        move_build::compute_fog(a.position, &mut k.env).apply(a.position, &mut k.env);
+    for a in k.factions.cats.units.iter_mesh().chain(k.factions.dogs.units.iter_mesh()) {
+        move_build::compute_fog(a, &mut k.env).apply(a, &mut k.env);
     }
 
     k
@@ -540,15 +520,15 @@ pub async fn handle_player(
                 }
             };
 
-            if let Some(unit) = game.factions.relative(team).this_team.find_slow(&cell) {
+            if game.factions.relative(team).this_team.units.is_set(cell) {
                 break SelectType {
-                    coord: unit.position,
+                    coord: cell,
                     team,
                 };
             }
-            if let Some(unit) = game.factions.relative(team).that_team.find_slow(&cell) {
+            if game.factions.relative(team).that_team.units.is_set(cell) {
                 break SelectType {
-                    coord: unit.position,
+                    coord: cell,
                     team: team.not(),
                 };
             }

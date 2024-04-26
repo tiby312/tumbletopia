@@ -24,7 +24,6 @@ impl GameState {
         &self,
         world: &board::MyWorld,
         foo: &move_build::MovePhase,
-        _typ: Type,
         _team: ActiveTeam,
     ) -> SmallMesh {
         let game = self;
@@ -39,7 +38,7 @@ impl GameState {
 
             if a != unit
                 && world.get_game_cells().is_set(a)
-                && !game.factions.contains(a)
+                && !game.factions.has_a_set(a)
                 && !game.env.terrain.is_set(a)
                 && !game.env.fog.is_set(a)
             {
@@ -60,7 +59,6 @@ impl GameState {
         &self,
         world: &board::MyWorld,
         &unit: &Axial,
-        typ: Type,
         team: ActiveTeam,
     ) -> SmallMesh {
         let game = self;
@@ -68,7 +66,7 @@ impl GameState {
 
         let check_empty = |a: Axial| {
             world.get_game_cells().is_set(a)
-                && !game.factions.contains(a)
+                && !game.factions.has_a_set(a)
                 && !game.env.fog.is_set(a)
         };
 
@@ -80,16 +78,16 @@ impl GameState {
 
             if a != unit && check_empty(a) && !terrain.is_set(a) {
                 mesh.add(a.sub(&unit));
-                if typ.is_warrior() {
-                    for b in a.to_cube().ring(1) {
-                        let b = b.to_axial();
+                
+                for b in a.to_cube().ring(1) {
+                    let b = b.to_axial();
 
-                        if b != unit && check_empty(b) && !terrain.is_set(b) {
-                            mesh.add(b.sub(&unit));
-                        }
+                    if b != unit && check_empty(b) && !terrain.is_set(b) {
+                        mesh.add(b.sub(&unit));
                     }
                 }
-            } else if let Type::Warrior = typ {
+            
+            } else {
                 if terrain.land.is_set(a) {
                     let check = a.advance(dir);
                     if check_empty(check)
@@ -103,9 +101,8 @@ impl GameState {
                     .factions
                     .relative(team)
                     .that_team
-                    .iter()
-                    .find(|x| x.position == a)
-                    .is_some()
+                    .units
+                    .is_set(a)
                 {
                     let check = a.advance(dir);
                     //if you push an enemy unit into a wall, they die
@@ -119,7 +116,7 @@ impl GameState {
                         mesh.add(a.sub(&unit));
                     }
 
-                    if world.get_game_cells().is_set(check) && !game.env.fog.is_set(check) && !terrain.is_set(check) && !game.factions.contains(check){
+                    if world.get_game_cells().is_set(check) && !game.env.fog.is_set(check) && !terrain.is_set(check) && !game.factions.has_a_set(check){
                         mesh.add(a.sub(&unit));
                     }
 
@@ -128,13 +125,12 @@ impl GameState {
                     .factions
                     .relative(team)
                     .this_team
-                    .iter()
-                    .find(|x| x.position == a)
-                    .is_some()
+                    .units
+                    .is_set(a)
                 {
                     let check = a.advance(dir);
                     
-                    if world.get_game_cells().is_set(check) && !game.env.fog.is_set(check) && !terrain.is_set(check) && !game.factions.contains(check){
+                    if world.get_game_cells().is_set(check) && !game.env.fog.is_set(check) && !terrain.is_set(check) && !game.factions.has_a_set(check){
                         mesh.add(a.sub(&unit));
                     }
                 }
@@ -174,11 +170,10 @@ impl GameState {
     ) -> Vec<moves::ActualMove> {
         let state = self;
         let mut movs = Vec::new();
-        for i in 0..state.factions.relative(team).this_team.units.len() {
-            let pos = state.factions.relative_mut(team).this_team.units[i].position;
-            let ttt = state.factions.relative_mut(team).this_team.units[i].typ;
-
-            let mesh = state.generate_possible_moves_movement(world, &pos, ttt, team);
+        //for i in 0..state.factions.relative(team).this_team.units.len() {
+        for pos in state.factions.relative(team).this_team.units.clone().iter_mesh(){
+            
+            let mesh = state.generate_possible_moves_movement(world, &pos, team);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
@@ -188,7 +183,7 @@ impl GameState {
                 };
                 let effect = mmm.apply(team, state,world);
 
-                let second_mesh = state.generate_possible_moves_extra(world, &mmm, ttt, team);
+                let second_mesh = state.generate_possible_moves_extra(world, &mmm, team);
 
                 for sm in second_mesh.iter_mesh(mm) {
                     assert!(!state.env.terrain.is_set(sm));

@@ -285,7 +285,7 @@ async fn render_command(
             } => {
                 let ff = match data {
                     move_build::PushInfo::PushedLand => {
-                        Some(animation::land_delta(unit.position, end, grid_matrix))
+                        Some(animation::land_delta(unit, end, grid_matrix))
                     }
                     move_build::PushInfo::UpgradedLand => {
                         todo!("BLAP");
@@ -297,7 +297,7 @@ async fn render_command(
                     move_build::PushInfo::None => None,
                 };
 
-                let it = animation::movement(unit.position, mesh, walls, end, grid_matrix);
+                let it = animation::movement(unit, mesh, walls, end, grid_matrix);
 
                 unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ff));
             }
@@ -627,9 +627,9 @@ async fn render_command(
             let shadows = game
                 .factions
                 .cats
-                .iter()
-                .map(|x| x.position)
-                .chain(game.factions.dogs.iter().map(|x| x.position))
+                .units
+                .iter_mesh()
+                .chain(game.factions.dogs.units.iter_mesh())
                 .map(|e| grid_snap(e, 1.0));
 
             let ani_drop_shadow = unit_animation.as_ref().map(|a| {
@@ -649,8 +649,8 @@ async fn render_command(
             let cats = game
                 .factions
                 .cats
-                .iter()
-                .map(|x| x.position)
+                .units
+                .iter_mesh()
                 .map(|e| grid_snap(e, 0.0));
 
             let ani_cat = unit_animation
@@ -673,8 +673,8 @@ async fn render_command(
             let dogs = game
                 .factions
                 .dogs
-                .iter()
-                .map(|x| x.position)
+                .units
+                .iter_mesh()
                 .map(|e| grid_snap(e, 0.0));
 
             let ani_dog = unit_animation

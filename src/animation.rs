@@ -49,7 +49,7 @@ pub fn attack(
 #[derive(Debug, Clone)]
 pub enum AnimationCommand {
     Movement {
-        unit: UnitData,
+        unit: Axial,
         mesh: mesh::small_mesh::SmallMesh,
         walls: mesh::small_mesh::SmallMesh,
         end: Axial,
