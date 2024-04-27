@@ -335,7 +335,7 @@ pub async fn reselect_loop(
             .into_attack(target_cell)
             .animate(selected_unit.team, game, world, doop)
             .await
-            .apply(selected_unit.team, game, world);
+            .apply(selected_unit.team, game, world, &e.effect);
 
         let effect = e.effect.combine(meta);
 
@@ -468,7 +468,7 @@ pub async fn replay(
             .into_attack(the_move.attackto)
             .animate(team, &mut game, world, &mut doop)
             .await
-            .apply(team, &mut game, world);
+            .apply(team, &mut game, world, &effect_m);
 
         game_history.push((the_move, effect_m.combine(effect_a)));
     }

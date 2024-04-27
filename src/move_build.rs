@@ -92,6 +92,7 @@ impl ExtraPhase {
         _team: ActiveTeam,
         game: &mut GameState,
         world: &board::MyWorld,
+        mov_eff: &MoveEffect,
     ) -> ExtraEffect {
         let original = self.original;
         let moveto = self.moveto;
@@ -129,7 +130,21 @@ impl ExtraPhase {
         //     None
         // };
 
-        let fog = compute_fog(moveto, &mut game.env);
+        let mut fog = compute_fog(moveto, &mut game.env);
+
+        if let PushInfo::PushedUnit = mov_eff.pushpull {
+            let dir = original.dir_to(&moveto);
+            let check = moveto.advance(dir);
+            let fog2 = compute_fog(check, &mut game.env);
+            //console_dbg!("HAAAAAY",fog,fog2);
+
+            for f in fog2.0.iter_mesh(check) {
+                fog.0.add(f.sub(&moveto));
+            }
+            //TODO put this in a function
+            //fog.0.inner|=fog2.0.inner;
+        }
+
         fog.apply(moveto, &mut game.env);
 
         ExtraEffect { fog, bomb: bb }

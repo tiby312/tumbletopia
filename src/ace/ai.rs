@@ -336,7 +336,7 @@ impl<'a> AlphaBeta<'a> {
                 let k = j.apply(team, game_after_move, world);
                 let j = j
                     .into_attack(cand.attackto)
-                    .apply(team, game_after_move, world);
+                    .apply(team, game_after_move, world, &k);
                 k.combine(j)
             };
 

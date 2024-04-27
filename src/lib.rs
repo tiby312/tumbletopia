@@ -183,7 +183,7 @@ pub async fn worker_entry() {
                     .into_attack(the_move.attackto)
                     .animate(team, &mut game, &world, &mut doop)
                     .await
-                    .apply(team, &mut game, &world);
+                    .apply(team, &mut game, &world, &effect_m);
 
                 game_history.push((the_move, effect_m.combine(effect_a)));
 

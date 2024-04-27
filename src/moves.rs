@@ -195,7 +195,7 @@ impl GameState {
 
                     let kkk = mmm.into_attack(sm);
 
-                    let k = kkk.apply(team, state, world);
+                    let k = kkk.apply(team, state, world, &effect);
 
                     let mmo = moves::ActualMove {
                         original: pos,
