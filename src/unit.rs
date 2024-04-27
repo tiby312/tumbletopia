@@ -9,7 +9,6 @@ impl Factions {
     pub fn has_a_set(&self, coord: Axial) -> bool {
         self.dogs.units.is_set(coord) || self.cats.units.is_set(coord)
     }
-    
 
     // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
     //     self.relative_mut(team)
@@ -68,18 +67,16 @@ pub struct FactionRelative<T> {
     pub this_team: T,
     pub that_team: T,
 }
-impl FactionRelative<&mut Tribe>{
+impl FactionRelative<&mut Tribe> {
     pub fn has_a_set(&self, coord: Axial) -> bool {
         self.this_team.units.is_set(coord) || self.that_team.units.is_set(coord)
     }
 }
-impl FactionRelative<&Tribe>{
+impl FactionRelative<&Tribe> {
     pub fn has_a_set(&self, coord: Axial) -> bool {
         self.this_team.units.is_set(coord) || self.that_team.units.is_set(coord)
     }
 }
-
-
 
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Terrain {
@@ -125,8 +122,7 @@ impl GameState {
     pub fn game_is_over(&self, world: &board::MyWorld, team: ActiveTeam) -> Option<GameOver> {
         let this_team_stuck = 'foo: {
             for unit in self.factions.relative(team).this_team.units.iter_mesh() {
-                let mesh =
-                    self.generate_possible_moves_movement(world, &unit, team);
+                let mesh = self.generate_possible_moves_movement(world, &unit, team);
                 if !mesh.is_empty() {
                     break 'foo false;
                 }
@@ -196,19 +192,17 @@ impl Default for CellSelection {
 //     }
 // }
 
-
 #[derive(Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
     pub units: BitField,
 }
 
-
-impl std::fmt::Debug for Tribe{
+impl std::fmt::Debug for Tribe {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,"{}","tribe:[")?;
-        for pos in self.units.iter_mesh(){
-            write!(f,"{:?},",pos)?;
+        write!(f, "{}", "tribe:[")?;
+        for pos in self.units.iter_mesh() {
+            write!(f, "{:?},", pos)?;
         }
-        write!(f,"{}","]")
+        write!(f, "{}", "]")
     }
 }

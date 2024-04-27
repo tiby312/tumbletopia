@@ -249,6 +249,8 @@ pub fn iterative_deepening(
     let mut results = Vec::new();
 
     let max_depth = 4;
+    //let max_depth = 2;
+
     let mut foo1 = PrincipalVariation {
         a: std::collections::BTreeMap::new(),
     };
@@ -380,8 +382,12 @@ impl<'a> AlphaBeta<'a> {
             let moves = game_after_move.for_all_moves_fast(team, world);
 
             if !moves.is_empty() {
+                //TODO remove asserts
+                assert!(game_after_move.game_is_over(world, team).is_none());
                 Some(moves)
             } else {
+                assert!(game_after_move.game_is_over(world, team).is_some());
+
                 None
             }
         };
@@ -414,9 +420,11 @@ impl<'a> AlphaBeta<'a> {
         for cand in moves {
             let new_depth = depth - 1;
 
+            let mut blap = game_after_move.clone();
+
             let effect = {
                 let j = cand.as_move();
-                let k = j.apply(team, game_after_move,world);
+                let k = j.apply(team, game_after_move, world);
                 let j = j
                     .into_attack(cand.attackto)
                     .apply(team, game_after_move, world);
@@ -442,6 +450,12 @@ impl<'a> AlphaBeta<'a> {
                     game_after_move,
                 );
             }
+
+            assert_eq!(
+                &blap, game_after_move,
+                "mov_failure:{:?}, effect:{:?}",
+                mov, effect
+            );
 
             let (keep_going, consider_good_move) = kk.consider(&mov, eval);
 

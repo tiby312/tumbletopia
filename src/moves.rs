@@ -78,7 +78,7 @@ impl GameState {
 
             if a != unit && check_empty(a) && !terrain.is_set(a) {
                 mesh.add(a.sub(&unit));
-                
+
                 for b in a.to_cube().ring(1) {
                     let b = b.to_axial();
 
@@ -86,7 +86,6 @@ impl GameState {
                         mesh.add(b.sub(&unit));
                     }
                 }
-            
             } else {
                 if terrain.land.is_set(a) {
                     let check = a.advance(dir);
@@ -97,40 +96,40 @@ impl GameState {
                     }
                 }
 
-                if game
-                    .factions
-                    .relative(team)
-                    .that_team
-                    .units
-                    .is_set(a)
-                {
+                if game.factions.relative(team).that_team.units.is_set(a) {
                     let check = a.advance(dir);
                     //if you push an enemy unit into a wall, they die
                     //if you push an enemy off the map, they die
                     //if you push an enemy into water, they just move there.
                     if terrain.is_set(check) {
+                        assert!(!game.factions.has_a_set(check));
+                        assert!(world.get_game_cells().is_set(check));
                         mesh.add(a.sub(&unit));
                     }
 
                     if !world.get_game_cells().is_set(check) {
+                        assert!(!terrain.is_set(check));
+                        assert!(!game.factions.has_a_set(check));
+
                         mesh.add(a.sub(&unit));
                     }
 
-                    if world.get_game_cells().is_set(check) && !game.env.fog.is_set(check) && !terrain.is_set(check) && !game.factions.has_a_set(check){
+                    if world.get_game_cells().is_set(check)
+                        && !game.env.fog.is_set(check)
+                        && !terrain.is_set(check)
+                        && !game.factions.has_a_set(check)
+                    {
                         mesh.add(a.sub(&unit));
                     }
-
                 }
-                if game
-                    .factions
-                    .relative(team)
-                    .this_team
-                    .units
-                    .is_set(a)
-                {
+                if game.factions.relative(team).this_team.units.is_set(a) {
                     let check = a.advance(dir);
-                    
-                    if world.get_game_cells().is_set(check) && !game.env.fog.is_set(check) && !terrain.is_set(check) && !game.factions.has_a_set(check){
+
+                    if world.get_game_cells().is_set(check)
+                        && !game.env.fog.is_set(check)
+                        && !terrain.is_set(check)
+                        && !game.factions.has_a_set(check)
+                    {
                         mesh.add(a.sub(&unit));
                     }
                 }
@@ -171,8 +170,14 @@ impl GameState {
         let state = self;
         let mut movs = Vec::new();
         //for i in 0..state.factions.relative(team).this_team.units.len() {
-        for pos in state.factions.relative(team).this_team.units.clone().iter_mesh(){
-            
+        for pos in state
+            .factions
+            .relative(team)
+            .this_team
+            .units
+            .clone()
+            .iter_mesh()
+        {
             let mesh = state.generate_possible_moves_movement(world, &pos, team);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.
@@ -181,7 +186,7 @@ impl GameState {
                     original: pos,
                     moveto: mm,
                 };
-                let effect = mmm.apply(team, state,world);
+                let effect = mmm.apply(team, state, world);
 
                 let second_mesh = state.generate_possible_moves_extra(world, &mmm, team);
 
@@ -205,6 +210,17 @@ impl GameState {
 
                 //revert it back just the movement component.
                 mmm.undo(team, &effect, state);
+            }
+        }
+
+        {
+            for a in movs.iter() {
+                assert!(state
+                    .factions
+                    .relative(team)
+                    .this_team
+                    .units
+                    .is_set(a.original));
             }
         }
         movs

@@ -238,23 +238,22 @@ impl MovePhase {
         let target = self.moveto;
         let walls = calculate_walls(self.original, state, world);
 
-
         assert!(state
             .factions
             .relative(team)
-            .this_team.units.is_set(self.original));
+            .this_team
+            .units
+            .is_set(self.original));
 
-        let mesh = state.generate_possible_moves_movement(world, &self.original,team);
+        let mesh = state.generate_possible_moves_movement(world, &self.original, team);
 
         let info = {
-            
             let target_cell = self.moveto;
             let mut e = PushInfo::None;
-           
+
             if state.env.terrain.land.is_set(target_cell) {
                 e = PushInfo::PushedLand;
             }
-    
 
             e
         };
@@ -262,8 +261,11 @@ impl MovePhase {
 
         let mut ss = state.clone();
 
-        ss.factions.relative_mut(team).this_team.units.set_coord(self.original,false);
-
+        ss.factions
+            .relative_mut(team)
+            .this_team
+            .units
+            .set_coord(self.original, false);
 
         let end = target;
         match info {
@@ -276,7 +278,7 @@ impl MovePhase {
             PushInfo::UpgradedLand => {
                 //TODO fooo
             }
-            PushInfo::PushedUnit=>{
+            PushInfo::PushedUnit => {
                 //TODO animate
             }
 
@@ -302,17 +304,18 @@ impl MovePhase {
         let moveto = self.moveto;
         let unit = self.original;
 
+        let jj = &mut state.factions.relative_mut(team_index).this_team.units;
+        jj.set_coord(moveto, false);
+        jj.set_coord(unit, true);
+
         if let Some(fooo) = effect.destroyed_unit {
-            matches!(effect.pushpull,PushInfo::None);
+            matches!(effect.pushpull, PushInfo::None);
             let j = &mut state.factions.relative_mut(team_index).that_team.units;
-            assert_eq!(fooo,moveto);
-            j.set_coord(moveto,true);
-            
+            assert_eq!(fooo, moveto);
+            j.set_coord(moveto, true);
         }
 
-        
         match effect.pushpull {
-            
             PushInfo::UpgradedLand => {
                 assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
 
@@ -331,19 +334,19 @@ impl MovePhase {
                     state.env.terrain.forest.set_coord(moveto, true);
                 }
             }
-            PushInfo::PushedUnit=>{
+            PushInfo::PushedUnit => {
                 assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
                 let dir = unit.dir_to(&moveto);
                 let t3 = moveto.advance(dir);
 
-                let tt=state.factions.relative_mut(team_index);
-                if tt.this_team.units.is_set(t3){
-                    tt.this_team.units.set_coord(t3,false);
-                    tt.this_team.units.set_coord(moveto,true);
-                }else if tt.that_team.units.is_set(t3){
-                    tt.that_team.units.set_coord(t3,false);
-                    tt.that_team.units.set_coord(moveto,true);
-                }else{
+                let tt = state.factions.relative_mut(team_index);
+                if tt.this_team.units.is_set(t3) {
+                    tt.this_team.units.set_coord(t3, false);
+                    tt.this_team.units.set_coord(moveto, true);
+                } else if tt.that_team.units.is_set(t3) {
+                    tt.that_team.units.set_coord(t3, false);
+                    tt.that_team.units.set_coord(moveto, true);
+                } else {
                     unreachable!("PushedUnit enum error");
                 }
             }
@@ -372,97 +375,98 @@ impl MovePhase {
 
             PushInfo::None => {}
         }
-
-
-        let jj=&mut state
-        .factions
-        .relative_mut(team_index)
-        .this_team.units;
-        jj.set_coord(moveto,false);
-        jj.set_coord(unit,true);
     }
 
-    pub fn apply(&self, team: ActiveTeam, game: &mut GameState,world:&board::MyWorld) -> MoveEffect {
+    pub fn apply(
+        &self,
+        team: ActiveTeam,
+        game: &mut GameState,
+        world: &board::MyWorld,
+    ) -> MoveEffect {
         let env = &mut game.env;
         let target_cell = self.moveto;
         let mut e = PushInfo::None;
 
         let mut destroyed_unit = None;
-        
+
         // let this_unit=move |factions:&mut Factions|{
         //     factions.relative_mut(team).this_team.units.iter_mut().find(|x|x.position==self.original).unwrap()
         // };
 
         {
-                let terrain = &mut env.terrain;
+            let terrain = &mut env.terrain;
 
-                let foo = game.factions.relative_mut(team);
+            let foo = game.factions.relative_mut(team);
 
+            if foo.that_team.units.is_set(target_cell) {
+                let dir = self.original.dir_to(&target_cell);
+                let check = target_cell.advance(dir);
 
-                if foo.that_team.units.is_set(target_cell){
-                    let dir = self.original.dir_to(&target_cell);
-                    let check = target_cell.advance(dir);
+                if env.terrain.is_set(check) || !world.get_game_cells().is_set(check) {
+                    assert!(!env.fog.is_set(target_cell));
+                    assert!(!env.fog.is_set(check));
 
-                    if env.terrain.is_set(check) || !world.get_game_cells().is_set(check){
-                        foo.that_team.units.set_coord(target_cell,false);
-                        destroyed_unit = Some(target_cell);
-                    }else if world.get_game_cells().is_set(check) && !env.terrain.is_set(check) && !foo.has_a_set(check){
-                        foo.that_team.units.set_coord(target_cell,false);
-                        foo.that_team.units.set_coord(check,true);
-                        e=PushInfo::PushedUnit;
-
-                    }
-                    
-                } else if foo.this_team.units.is_set(target_cell){
-                    let dir = self.original.dir_to(&target_cell);
-                    let check = target_cell.advance(dir);
-
-                    if world.get_game_cells().is_set(check) && !env.terrain.is_set(check) && !foo.has_a_set(check){
-                        
-                        foo.this_team.units.set_coord(target_cell,false);
-                        foo.this_team.units.set_coord(check,true);
-
-                        e=PushInfo::PushedUnit;
-                    }
-                } 
-                else if terrain.land.is_set(target_cell) {
-                    let dir = self.original.dir_to(&target_cell);
-                    let kk = target_cell.advance(dir);
-
-                    terrain.land.set_coord(target_cell, false);
-
-                    if terrain.land.is_set(kk) {
-                        terrain.land.set_coord(kk, false);
-                        terrain.forest.set_coord(kk, true);
-
-                        e = PushInfo::UpgradedLand;
-                    } else {
-                        assert!(!terrain.is_set(kk));
-                        terrain.land.set_coord(kk, true);
-
-                        e = PushInfo::PushedLand;
-                    }
+                    foo.that_team.units.set_coord(target_cell, false);
+                    destroyed_unit = Some(target_cell);
+                } else if world.get_game_cells().is_set(check)
+                    && !env.terrain.is_set(check)
+                    && !foo.has_a_set(check)
+                {
+                    foo.that_team.units.set_coord(target_cell, false);
+                    foo.that_team.units.set_coord(check, true);
+                    e = PushInfo::PushedUnit;
                 }
+            } else if foo.this_team.units.is_set(target_cell) {
+                let dir = self.original.dir_to(&target_cell);
+                let check = target_cell.advance(dir);
 
-                // if terrain.forest.is_set(target_cell) {
-                //     let dir = this_unit.position.dir_to(&target_cell);
-                //     let kk = target_cell.advance(dir);
+                if world.get_game_cells().is_set(check)
+                    && !env.terrain.is_set(check)
+                    && !foo.has_a_set(check)
+                {
+                    foo.this_team.units.set_coord(target_cell, false);
+                    foo.this_team.units.set_coord(check, true);
 
-                //     terrain.forest.set_coord(target_cell, false);
+                    e = PushInfo::PushedUnit;
+                }
+            } else if terrain.land.is_set(target_cell) {
+                let dir = self.original.dir_to(&target_cell);
+                let kk = target_cell.advance(dir);
 
-                //     if terrain.forest.is_set(kk) {
-                //         terrain.forest.set_coord(kk, false);
-                //         terrain.mountain.set_coord(kk, true);
+                terrain.land.set_coord(target_cell, false);
 
-                //         e = PushInfo::UpgradedLand;
-                //     } else {
-                //         assert!(!terrain.is_set(kk));
-                //         terrain.forest.set_coord(kk, true);
+                if terrain.land.is_set(kk) {
+                    terrain.land.set_coord(kk, false);
+                    terrain.forest.set_coord(kk, true);
 
-                //         e = PushInfo::PushedLand;
-                //     }
-                // }
-        }  
+                    e = PushInfo::UpgradedLand;
+                } else {
+                    assert!(!terrain.is_set(kk));
+                    terrain.land.set_coord(kk, true);
+
+                    e = PushInfo::PushedLand;
+                }
+            }
+
+            // if terrain.forest.is_set(target_cell) {
+            //     let dir = this_unit.position.dir_to(&target_cell);
+            //     let kk = target_cell.advance(dir);
+
+            //     terrain.forest.set_coord(target_cell, false);
+
+            //     if terrain.forest.is_set(kk) {
+            //         terrain.forest.set_coord(kk, false);
+            //         terrain.mountain.set_coord(kk, true);
+
+            //         e = PushInfo::UpgradedLand;
+            //     } else {
+            //         assert!(!terrain.is_set(kk));
+            //         terrain.forest.set_coord(kk, true);
+
+            //         e = PushInfo::PushedLand;
+            //     }
+            // }
+        }
 
         let powerup = if game.env.powerups.contains(&target_cell) {
             game.env.powerups.retain(|&a| a != target_cell);
@@ -478,9 +482,17 @@ impl MovePhase {
             PowerupAction::None
         };
 
-        game.factions.relative_mut(team).this_team.units.set_coord(self.original,false);
-        game.factions.relative_mut(team).this_team.units.set_coord(target_cell,true);
-        
+        game.factions
+            .relative_mut(team)
+            .this_team
+            .units
+            .set_coord(self.original, false);
+        game.factions
+            .relative_mut(team)
+            .this_team
+            .units
+            .set_coord(target_cell, true);
+
         MoveEffect {
             pushpull: e,
             powerup,

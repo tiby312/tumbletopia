@@ -217,8 +217,9 @@ pub async fn reselect_loop(
     assert!(game
         .factions
         .relative(selected_unit.team)
-        .this_team.units.is_set(unwrapped_selected_unit));
-
+        .this_team
+        .units
+        .is_set(unwrapped_selected_unit));
 
     let grey = if selected_unit.team == team {
         //If we are in the middle of a extra attack move, make sure
@@ -235,11 +236,7 @@ pub async fn reselect_loop(
 
     let cca = if let Some(have_moved) = have_moved {
         (selected_unit.coord == have_moved.the_move.moveto).then(|| {
-            game.generate_possible_moves_extra(
-                world,
-                &have_moved.the_move,
-                selected_unit.team,
-            )
+            game.generate_possible_moves_extra(world, &have_moved.the_move, selected_unit.team)
         })
     } else {
         None
@@ -354,9 +351,10 @@ pub async fn reselect_loop(
         assert!(game
             .factions
             .relative_mut(selected_unit.team)
-            .this_team.units.is_set(unwrapped_selected_unit));
+            .this_team
+            .units
+            .is_set(unwrapped_selected_unit));
 
-        
         let c = target_cell;
 
         let mp = move_build::MovePhase {
@@ -367,7 +365,7 @@ pub async fn reselect_loop(
         let effect = mp
             .animate(selected_unit.team, game, world, doop)
             .await
-            .apply(selected_unit.team, game,world);
+            .apply(selected_unit.team, game, world);
 
         {
             *have_moved = Some(selection::HaveMoved {
@@ -383,14 +381,14 @@ pub async fn reselect_loop(
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
     let cats = BitField::from_iter(world.cat_start().iter().copied());
-    
+
     let dogs = BitField::from_iter(world.dog_start().iter().copied());
-    
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
     //let fog = world.get_game_cells().clone();
     let fog = BitField::from_iter(Axial::zero().to_cube().range(2));
+    //let fog = BitField::new();
 
     let mut k = GameState {
         factions: Factions {
@@ -408,7 +406,13 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         },
     };
 
-    for a in k.factions.cats.units.iter_mesh().chain(k.factions.dogs.units.iter_mesh()) {
+    for a in k
+        .factions
+        .cats
+        .units
+        .iter_mesh()
+        .chain(k.factions.dogs.units.iter_mesh())
+    {
         move_build::compute_fog(a, &mut k.env).apply(a, &mut k.env);
     }
 
@@ -458,7 +462,7 @@ pub async fn replay(
         let effect_m = kk
             .animate(team, &mut game, world, &mut doop)
             .await
-            .apply(team, &mut game,world);
+            .apply(team, &mut game, world);
 
         let effect_a = kk
             .into_attack(the_move.attackto)
@@ -521,10 +525,7 @@ pub async fn handle_player(
             };
 
             if game.factions.relative(team).this_team.units.is_set(cell) {
-                break SelectType {
-                    coord: cell,
-                    team,
-                };
+                break SelectType { coord: cell, team };
             }
             if game.factions.relative(team).that_team.units.is_set(cell) {
                 break SelectType {
