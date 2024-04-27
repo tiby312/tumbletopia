@@ -420,8 +420,7 @@ impl<'a> AlphaBeta<'a> {
         for cand in moves {
             let new_depth = depth - 1;
 
-            let mut blap = game_after_move.clone();
-
+            
             let effect = {
                 let j = cand.as_move();
                 let k = j.apply(team, game_after_move, world);
@@ -450,12 +449,6 @@ impl<'a> AlphaBeta<'a> {
                     game_after_move,
                 );
             }
-
-            assert_eq!(
-                &blap, game_after_move,
-                "mov_failure:{:?}, effect:{:?}",
-                mov, effect
-            );
 
             let (keep_going, consider_good_move) = kk.consider(&mov, eval);
 
