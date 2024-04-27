@@ -32,74 +32,17 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
         t
     };
 
-    let mut cat_ships = view.factions.cats.units.clone();
+    let num_cats = view.factions.cats.units.count_ones(..) as i64;
+    let num_dogs = view.factions.dogs.units.count_ones(..) as i64;
 
-    let mut dog_ships = view.factions.dogs.units.clone();
+    let mut cat_influence = view.factions.cats.units.clone();
 
-    doop(7, &mut dog_ships, &mut cat_ships, &ship_allowed);
+    let mut dog_influence = view.factions.dogs.units.clone();
 
-    // let foot_snow = {
-    //     let mut land = view.env.land.snow.clone();
-    //     let mut t = view.env.forest.clone();
-    //     t.toggle_range(..);
-    //     land.intersect_with(&t);
-    //     land
-    // };
-    // let mut cat_foot_snow = BitField::from_iter(
-    //     view.factions
-    //         .cats
-    //         .iter()
-    //         .filter(|a| a.typ == Type::Snow)
-    //         .map(|a| a.position)
-    //         .filter(|&a| view.env.land.snow.is_coord_set(a)),
-    // );
-    // let mut dog_foot_snow = BitField::from_iter(
-    //     view.factions
-    //         .dogs
-    //         .iter()
-    //         .filter(|a| a.typ == Type::Snow)
-    //         .map(|a| a.position)
-    //         .filter(|&a| view.env.land.snow.is_coord_set(a)),
-    // );
+    doop(7, &mut dog_influence, &mut cat_influence, &ship_allowed);
 
-    //doop(7, &mut dog_foot_snow, &mut cat_foot_snow, &foot_snow);
-
-    // let foot_grass = {
-    //     let mut land = view.env.land.clone();
-    //     let mut t = view.env.forest.clone();
-    //     t.toggle_range(..);
-    //     land.intersect_with(&t);
-
-    //     let mut land2 = land.clone();
-    //     for a in land.iter_mesh(GridCoord::zero()) {
-    //         if !moves::has_adjacent_water(view, a) {
-    //             land2.set_coord(a, false);
-    //         }
-    //     }
-    //     land2
-    // };
-    // let mut cat_foot_grass = BitField::from_iter(
-    //     view.factions
-    //         .cats
-    //         .iter()
-    //         //.filter(|a| a.typ.is_ship())
-    //         .map(|a| a.position)
-    //         .filter(|&a| view.env.land.is_coord_set(a)),
-    // );
-    // let mut dog_foot_grass = BitField::from_iter(
-    //     view.factions
-    //         .dogs
-    //         .iter()
-    //         //.filter(|a| a.typ.is_ship())
-    //         .map(|a| a.position)
-    //         .filter(|&a| view.env.land.is_coord_set(a)),
-    // );
-
-    //doop(7, &mut dog_foot_grass, &mut cat_foot_grass, &foot_grass);
-
-    let s = cat_ships.count_ones(..) as i64 - dog_ships.count_ones(..) as i64;
-    //let r = cat_foot_snow.count_ones(..) as i64 - dog_foot_snow.count_ones(..) as i64;
-    //let t = cat_foot_grass.count_ones(..) as i64 - dog_foot_grass.count_ones(..) as i64;
+    let num_cat_influence = cat_influence.count_ones(..) as i64;
+    let num_dog_influence = dog_influence.count_ones(..) as i64;
 
     let dog_distance = view
         .factions
@@ -116,42 +59,10 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
         .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
         .sum::<i64>();
 
-    // let dog_powerups = view
-    //     .factions
-    //     .dogs
-    //     .iter()
-    //     .map(|a| {
-    //         if let Type::Warrior { powerup } = a.typ {
-    //             if powerup {
-    //                 1
-    //             } else {
-    //                 0
-    //             }
-    //         } else {
-    //             0
-    //         }
-    //     })
-    //     .fold(0, |a, b| a + b);
-
-    // let cat_powerups = view
-    //     .factions
-    //     .cats
-    //     .iter()
-    //     .map(|a| {
-    //         if let Type::Warrior { powerup } = a.typ {
-    //             if powerup {
-    //                 1
-    //             } else {
-    //                 0
-    //             }
-    //         } else {
-    //             0
-    //         }
-    //     })
-    //     .fold(0, |a, b| a + b);
-
     //The AI will try to avoid the center.
-    100 * s + cat_distance - dog_distance
+    (num_cat_influence - num_dog_influence) * 100
+        + (cat_distance - dog_distance) * 1
+        + (num_cats - num_dogs) * 200
 }
 
 fn around(point: Axial) -> impl Iterator<Item = Axial> {
@@ -420,7 +331,6 @@ impl<'a> AlphaBeta<'a> {
         for cand in moves {
             let new_depth = depth - 1;
 
-            
             let effect = {
                 let j = cand.as_move();
                 let k = j.apply(team, game_after_move, world);
