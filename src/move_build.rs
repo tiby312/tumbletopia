@@ -136,13 +136,10 @@ impl ExtraPhase {
             let dir = original.dir_to(&moveto);
             let check = moveto.advance(dir);
             let fog2 = compute_fog(check, &mut game.env);
-            //console_dbg!("HAAAAAY",fog,fog2);
-
+ 
             for f in fog2.0.iter_mesh(check) {
                 fog.0.add(f.sub(&moveto));
             }
-            //TODO put this in a function
-            //fog.0.inner|=fog2.0.inner;
         }
 
         fog.apply(moveto, &mut game.env);

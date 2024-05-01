@@ -97,7 +97,15 @@ impl WorldSeed {
 
 impl MyWorld {
     pub fn new(seed: WorldSeed) -> MyWorld {
-        let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(3).map(|x| x.to_axial()));
+        let size=4;
+        let j=
+        [[2, -4], [-2, -2], [-4, 2], [-2, 4], [2, 2], [4, -2]];
+
+        //for size 3 use this
+        //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
+        
+
+        let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
 
         //3*3*2*5*4 = 360 choices!!!
 
@@ -135,10 +143,6 @@ impl MyWorld {
         let mut cat_start = [[-d, d], [0, -d], [d, 0]].map(Axial::from_arr);
         let mut dog_start = [[d, -d], [-d, 0], [0, d]].map(Axial::from_arr);
 
-        // let lll=
-        // [[2, -4], [-2, -2], [-4, 2], [-2, 4], [2, 2], [4, -2]];
-
-        let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
         let world_missing = j.map(Axial::from_arr);
 
         w.set_coord(cat_start[cat_long], true);
