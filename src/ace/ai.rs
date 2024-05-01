@@ -62,7 +62,7 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
     //The AI will try to avoid the center.
     (num_cat_influence - num_dog_influence) * 100
         + (cat_distance - dog_distance) * 1
-        + (num_cats - num_dogs) * 300
+        + (num_cats - num_dogs) * 400
 }
 
 fn around(point: Axial) -> impl Iterator<Item = Axial> {
