@@ -33,6 +33,7 @@ impl ExtraPhase {
             state.env.fog.set_coord(a, true);
         }
 
+        if moveto!=attackto{
         if let Some(m) = &meta.bomb {
             assert_eq!(unit, attackto);
             assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 2);
@@ -47,6 +48,7 @@ impl ExtraPhase {
         } else {
             unreachable!();
         }
+    }
 
         MovePhase {
             original: self.original,
@@ -98,6 +100,11 @@ impl ExtraPhase {
         let moveto = self.moveto;
         let target_cell = self.target;
 
+        if self.moveto==self.target{
+            return ExtraEffect{fog:compute_fog(moveto, &mut game.env),bomb:None};
+        }
+        
+
         let bb = if let Some(bb) = self.compute_bomb(game, world) {
             bb.apply(original, game);
             Some(bb)
@@ -112,6 +119,7 @@ impl ExtraPhase {
             }
             None
         };
+    
 
         // let bb = if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
         //     //if false{
@@ -216,7 +224,7 @@ impl ExtraPhase {
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
-    destroyed_unit: Option<Axial>,
+    pub destroyed_unit: Option<Axial>,
 }
 impl MoveEffect {
     pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
@@ -409,25 +417,32 @@ impl MovePhase {
             let terrain = &mut env.terrain;
 
             let foo = game.factions.relative_mut(team);
+            if foo.that_team.units.is_set(target_cell) && self.original.to_cube().dist(&target_cell.to_cube())==2{
+                
+                foo.that_team.units.set_coord(target_cell, false);
+                destroyed_unit = Some(target_cell);
 
-            if foo.that_team.units.is_set(target_cell) {
-                let dir = self.original.dir_to(&target_cell);
-                let check = target_cell.advance(dir);
+            }else if foo.that_team.units.is_set(target_cell) && self.original.to_cube().dist(&target_cell.to_cube())==1{
+                
+                foo.that_team.units.set_coord(target_cell, false);
+                destroyed_unit = Some(target_cell);
+                // let dir = self.original.dir_to(&target_cell);
+                // let check = target_cell.advance(dir);
 
-                if env.terrain.is_set(check) || !world.get_game_cells().is_set(check) {
-                    assert!(!env.fog.is_set(target_cell));
-                    assert!(!env.fog.is_set(check));
+                // if env.terrain.is_set(check) || !world.get_game_cells().is_set(check) {
+                //     assert!(!env.fog.is_set(target_cell));
+                //     assert!(!env.fog.is_set(check));
 
-                    foo.that_team.units.set_coord(target_cell, false);
-                    destroyed_unit = Some(target_cell);
-                } else if world.get_game_cells().is_set(check)
-                    && !env.terrain.is_set(check)
-                    && !foo.has_a_set(check)
-                {
-                    foo.that_team.units.set_coord(target_cell, false);
-                    foo.that_team.units.set_coord(check, true);
-                    e = PushInfo::PushedUnit;
-                }
+                //     foo.that_team.units.set_coord(target_cell, false);
+                //     destroyed_unit = Some(target_cell);
+                // } else if world.get_game_cells().is_set(check)
+                //     && !env.terrain.is_set(check)
+                //     && !foo.has_a_set(check)
+                // {
+                //     foo.that_team.units.set_coord(target_cell, false);
+                //     foo.that_team.units.set_coord(check, true);
+                //     e = PushInfo::PushedUnit;
+                // }
             } else if foo.this_team.units.is_set(target_cell) {
                 let dir = self.original.dir_to(&target_cell);
                 let check = target_cell.advance(dir);

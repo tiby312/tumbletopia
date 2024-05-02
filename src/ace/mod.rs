@@ -236,7 +236,7 @@ pub async fn reselect_loop(
 
     let cca = if let Some(have_moved) = have_moved {
         (selected_unit.coord == have_moved.the_move.moveto).then(|| {
-            game.generate_possible_moves_extra(world, &have_moved.the_move, selected_unit.team)
+            game.generate_possible_moves_extra(world, &have_moved.the_move, &have_moved.effect,selected_unit.team)
         })
     } else {
         None
@@ -268,12 +268,12 @@ pub async fn reselect_loop(
         unreachable!()
     };
 
+    let contains = ss.is_set(target_cell.sub(&unwrapped_selected_unit));
+
     //If we just clicked on ourselves, just deselect.
-    if target_cell == unwrapped_selected_unit {
+    if target_cell == unwrapped_selected_unit && !contains{
         return LoopRes::Deselect;
     }
-
-    let contains = ss.is_set(target_cell.sub(&unwrapped_selected_unit));
 
     //If we select a friendly unit quick swap
     if game

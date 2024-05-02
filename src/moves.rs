@@ -24,6 +24,7 @@ impl GameState {
         &self,
         world: &board::MyWorld,
         foo: &move_build::MovePhase,
+        effect:&move_build::MoveEffect,
         _team: ActiveTeam,
     ) -> SmallMesh {
         let game = self;
@@ -31,8 +32,11 @@ impl GameState {
         let original_pos = foo.original;
         let mut mesh = SmallMesh::new();
 
+        if effect.destroyed_unit.is_some(){
+            mesh.add(Axial::zero())
+        }else{
+
         for a in unit.to_cube().ring(1)
-        //.chain(std::iter::once(original_pos.to_cube()))
         {
             let a = a.to_axial();
 
@@ -53,6 +57,7 @@ impl GameState {
                 // }
             }
         }
+    }
         mesh
     }
     pub fn generate_possible_moves_movement(
@@ -81,10 +86,38 @@ impl GameState {
 
                 for b in a.to_cube().ring(1) {
                     let b = b.to_axial();
+                    let dir = a.dir_to(&b);
 
                     if b != unit && check_empty(b) && !terrain.is_set(b) {
                         mesh.add(b.sub(&unit));
                     }
+
+                    if game.factions.relative(team).that_team.units.is_set(b) {
+                        
+                        let check = b.advance(dir);
+                        //if you push an enemy unit into a wall, they die
+                        //if you push an enemy off the map, they die
+                        //if you push an enemy into water, they just move there.
+                        if terrain.is_set(check) {
+                            assert!(!game.factions.has_a_set(check));
+                            assert!(world.get_game_cells().is_set(check));
+                            mesh.add(b.sub(&unit));
+                        }
+    
+                        if game.factions.relative(team).this_team.units.is_set(check) {
+                            //assert!(!game.factions.has_a_set(check));
+                            //assert!(world.get_game_cells().is_set(check));
+                            mesh.add(b.sub(&unit));
+                        }
+    
+                        if !world.get_game_cells().is_set(check) {
+                            assert!(!terrain.is_set(check));
+                            assert!(!game.factions.has_a_set(check));
+    
+                            mesh.add(b.sub(&unit));
+                        }
+    
+                    } 
                 }
             } else {
                 if terrain.land.is_set(a) {
@@ -96,58 +129,49 @@ impl GameState {
                     }
                 }
 
-                if game.factions.relative(team).that_team.units.is_set(a) {
-                    let check = a.advance(dir);
-                    //if you push an enemy unit into a wall, they die
-                    //if you push an enemy off the map, they die
-                    //if you push an enemy into water, they just move there.
-                    if terrain.is_set(check) {
-                        assert!(!game.factions.has_a_set(check));
-                        assert!(world.get_game_cells().is_set(check));
-                        mesh.add(a.sub(&unit));
-                    }
+                // if game.factions.relative(team).that_team.units.is_set(a) {
+                //     let check = a.advance(dir);
+                //     //if you push an enemy unit into a wall, they die
+                //     //if you push an enemy off the map, they die
+                //     //if you push an enemy into water, they just move there.
+                //     if terrain.is_set(check) {
+                //         assert!(!game.factions.has_a_set(check));
+                //         assert!(world.get_game_cells().is_set(check));
+                //         mesh.add(a.sub(&unit));
+                //     }
 
-                    if !world.get_game_cells().is_set(check) {
-                        assert!(!terrain.is_set(check));
-                        assert!(!game.factions.has_a_set(check));
+                //     if game.factions.relative(team).this_team.units.is_set(check) {
+                //         //assert!(!game.factions.has_a_set(check));
+                //         //assert!(world.get_game_cells().is_set(check));
+                //         mesh.add(a.sub(&unit));
+                //     }
 
-                        mesh.add(a.sub(&unit));
-                    }
+                //     if !world.get_game_cells().is_set(check) {
+                //         assert!(!terrain.is_set(check));
+                //         assert!(!game.factions.has_a_set(check));
 
-                    if world.get_game_cells().is_set(check)
-                        && !game.env.fog.is_set(check)
-                        && !terrain.is_set(check)
-                        && !game.factions.has_a_set(check)
-                    {
-                        mesh.add(a.sub(&unit));
-                    }
-                }
+                //         mesh.add(a.sub(&unit));
+                //     }
+
+                //     // if world.get_game_cells().is_set(check)
+                //     //     && !game.env.fog.is_set(check)
+                //     //     && !terrain.is_set(check)
+                //     //     && !game.factions.has_a_set(check)
+                //     // {
+                //     //     mesh.add(a.sub(&unit));
+                //     // }
+                // }
                 if game.factions.relative(team).this_team.units.is_set(a) {
-                    let check = a.advance(dir);
+                    // let check = a.advance(dir);
 
-                    if world.get_game_cells().is_set(check)
-                        && !game.env.fog.is_set(check)
-                        && !terrain.is_set(check)
-                        && !game.factions.has_a_set(check)
-                    {
-                        mesh.add(a.sub(&unit));
-                    }
+                    // if world.get_game_cells().is_set(check)
+                    //     && !game.env.fog.is_set(check)
+                    //     && !terrain.is_set(check)
+                    //     && !game.factions.has_a_set(check)
+                    // {
+                    //     mesh.add(a.sub(&unit));
+                    // }
                 }
-                // if terrain.forest.is_set(a) {
-                //     let check = a.advance(dir);
-                //     if check_empty(check)
-                //         && (!terrain.is_set(check) || terrain.forest.is_set(check))
-                //     {
-                //         mesh.add(a.sub(&unit));
-                //     }
-                // }
-
-                // if terrain.mountain.is_set(a) {
-                //     let check = a.advance(dir);
-                //     if check_empty(check) && (!terrain.is_set(check)) {
-                //         mesh.add(a.sub(&unit));
-                //     }
-                // }
             }
         }
         mesh
@@ -188,7 +212,7 @@ impl GameState {
                 };
                 let effect = mmm.apply(team, state, world);
 
-                let second_mesh = state.generate_possible_moves_extra(world, &mmm, team);
+                let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect,team);
 
                 for sm in second_mesh.iter_mesh(mm) {
                     assert!(!state.env.terrain.is_set(sm));
