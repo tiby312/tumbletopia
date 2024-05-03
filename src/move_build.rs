@@ -417,6 +417,12 @@ impl MovePhase {
             let terrain = &mut env.terrain;
 
             let foo = game.factions.relative_mut(team);
+            if foo.that_team.units.is_set(target_cell) && self.original.to_cube().dist(&target_cell.to_cube())==3{
+                
+                foo.that_team.units.set_coord(target_cell, false);
+                destroyed_unit = Some(target_cell);
+
+            }else
             if foo.that_team.units.is_set(target_cell) && self.original.to_cube().dist(&target_cell.to_cube())==2{
                 
                 foo.that_team.units.set_coord(target_cell, false);

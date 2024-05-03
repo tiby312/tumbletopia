@@ -77,6 +77,41 @@ impl GameState {
 
         let terrain = &game.env.terrain;
 
+        let kll=|mesh:&mut SmallMesh,a:Axial,dir:hex::HDir|{
+            if game.factions.relative(team).that_team.units.is_set(a) {
+                let check = a.advance(dir);
+                //if you push an enemy unit into a wall, they die
+                //if you push an enemy off the map, they die
+                //if you push an enemy into water, they just move there.
+                if terrain.is_set(check) {
+                    assert!(!game.factions.has_a_set(check));
+                    assert!(world.get_game_cells().is_set(check));
+                    mesh.add(a.sub(&unit));
+                }
+
+                if game.factions.relative(team).this_team.units.is_set(check) {
+                    //assert!(!game.factions.has_a_set(check));
+                    //assert!(world.get_game_cells().is_set(check));
+                    mesh.add(a.sub(&unit));
+                }
+
+                if !world.get_game_cells().is_set(check) {
+                    assert!(!terrain.is_set(check));
+                    assert!(!game.factions.has_a_set(check));
+
+                    mesh.add(a.sub(&unit));
+                }
+
+                // if world.get_game_cells().is_set(check)
+                //     && !game.env.fog.is_set(check)
+                //     && !terrain.is_set(check)
+                //     && !game.factions.has_a_set(check)
+                // {
+                //     mesh.add(a.sub(&unit));
+                // }
+            }
+        };
+
         for a in unit.to_cube().ring(1) {
             let a = a.to_axial();
             let dir = unit.dir_to(&a);
@@ -90,34 +125,25 @@ impl GameState {
 
                     if b != unit && check_empty(b) && !terrain.is_set(b) {
                         mesh.add(b.sub(&unit));
+
+                        for c in b.to_cube().ring(1){
+                            let c=c.to_axial();
+                            let dir=b.dir_to(&c);
+
+
+                            if c.to_cube().dist(&unit.to_cube()) > b.to_cube().dist(&unit.to_cube()){
+                                kll(&mut mesh,c,dir);
+                            }
+    
+                        }
                     }
 
-                    if game.factions.relative(team).that_team.units.is_set(b) {
-                        
-                        let check = b.advance(dir);
-                        //if you push an enemy unit into a wall, they die
-                        //if you push an enemy off the map, they die
-                        //if you push an enemy into water, they just move there.
-                        if terrain.is_set(check) {
-                            assert!(!game.factions.has_a_set(check));
-                            assert!(world.get_game_cells().is_set(check));
-                            mesh.add(b.sub(&unit));
-                        }
-    
-                        if game.factions.relative(team).this_team.units.is_set(check) {
-                            //assert!(!game.factions.has_a_set(check));
-                            //assert!(world.get_game_cells().is_set(check));
-                            mesh.add(b.sub(&unit));
-                        }
-    
-                        if !world.get_game_cells().is_set(check) {
-                            assert!(!terrain.is_set(check));
-                            assert!(!game.factions.has_a_set(check));
-    
-                            mesh.add(b.sub(&unit));
-                        }
-    
-                    } 
+                    if b.to_cube().dist(&unit.to_cube()) > a.to_cube().dist(&unit.to_cube()){
+                        kll(&mut mesh,b,dir);
+                    }
+
+                    
+                
                 }
             } else {
                 if terrain.land.is_set(a) {
@@ -129,38 +155,8 @@ impl GameState {
                     }
                 }
 
-                // if game.factions.relative(team).that_team.units.is_set(a) {
-                //     let check = a.advance(dir);
-                //     //if you push an enemy unit into a wall, they die
-                //     //if you push an enemy off the map, they die
-                //     //if you push an enemy into water, they just move there.
-                //     if terrain.is_set(check) {
-                //         assert!(!game.factions.has_a_set(check));
-                //         assert!(world.get_game_cells().is_set(check));
-                //         mesh.add(a.sub(&unit));
-                //     }
-
-                //     if game.factions.relative(team).this_team.units.is_set(check) {
-                //         //assert!(!game.factions.has_a_set(check));
-                //         //assert!(world.get_game_cells().is_set(check));
-                //         mesh.add(a.sub(&unit));
-                //     }
-
-                //     if !world.get_game_cells().is_set(check) {
-                //         assert!(!terrain.is_set(check));
-                //         assert!(!game.factions.has_a_set(check));
-
-                //         mesh.add(a.sub(&unit));
-                //     }
-
-                //     // if world.get_game_cells().is_set(check)
-                //     //     && !game.env.fog.is_set(check)
-                //     //     && !terrain.is_set(check)
-                //     //     && !game.factions.has_a_set(check)
-                //     // {
-                //     //     mesh.add(a.sub(&unit));
-                //     // }
-                // }
+                kll(&mut mesh,a,dir);
+                
                 if game.factions.relative(team).this_team.units.is_set(a) {
                     // let check = a.advance(dir);
 
