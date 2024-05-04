@@ -137,26 +137,30 @@ impl TouchController {
     pub fn on_new_touch(&mut self, touches: &Touches) {
         match self.foo {
             Foo::OneTouchActive { touch_id } => {
-                let second_touch_id = touches.select_lowest_touch_excluding(touch_id).unwrap();
+                if let Some(second_touch_id)=touches.select_lowest_touch_excluding(touch_id){
+                    let (dis, middle, rot) = compute_middle(touches, touch_id, second_touch_id);
 
-                let (dis, middle, rot) = compute_middle(touches, touch_id, second_touch_id);
-
-                //we don't want to propogate this click to the user.
-                let _ = self.inner.handle_mouse_up();
-                self.inner.handle_mouse_down(middle);
-
-                self.foo = Foo::TwoTouchActive {
-                    zoom: ZoomDelta {
-                        starting_distance: dis,
-                        current_distance: dis,
-                    },
-                    rot: RotDelta {
-                        starting_rot: rot,
-                        current_rot: rot,
-                    },
-                    first_touch_id: touch_id,
-                    second_touch_id,
+                    //we don't want to propogate this click to the user.
+                    let _ = self.inner.handle_mouse_up();
+                    self.inner.handle_mouse_down(middle);
+    
+                    self.foo = Foo::TwoTouchActive {
+                        zoom: ZoomDelta {
+                            starting_distance: dis,
+                            current_distance: dis,
+                        },
+                        rot: RotDelta {
+                            starting_rot: rot,
+                            current_rot: rot,
+                        },
+                        first_touch_id: touch_id,
+                        second_touch_id,
+                    }
+                }else{
+                    //TODO what to do here???
+                    //This case rarely happens
                 }
+                
             }
             Foo::TwoTouchActive { .. } => {
                 //ignore new touches. do nothing.

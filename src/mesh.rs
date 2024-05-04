@@ -142,61 +142,62 @@ pub fn path(
     a: Axial,
     walls: &small_mesh::SmallMesh,
 ) -> impl Iterator<Item = HDir> {
-    let mesh_iter = {
-        assert!(small_mesh::SmallMesh::validate_rel(a));
+    return [].into_iter()
+    // let mesh_iter = {
+    //     assert!(small_mesh::SmallMesh::validate_rel(a));
 
-        let x = a.q;
-        let y = a.r;
-        let first = if Axial::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
-            Some([Axial::from_arr([0, 0]).dir_to(&a)])
-        } else {
-            None
-        };
+    //     let x = a.q;
+    //     let y = a.r;
+    //     let first = if Axial::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
+    //         Some([Axial::from_arr([0, 0]).dir_to(&a)])
+    //     } else {
+    //         None
+    //     };
 
-        //diagonal
-        let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
-            //TODO inefficient
-            let mut k = Axial::from_arr([0, 0])
-                .to_cube()
-                .neighbours()
-                .filter(|x| x.dist(&a.to_cube()) == 1);
-            let first = k.next().unwrap().to_axial();
-            let second = k.next().unwrap().to_axial();
+    //     //diagonal
+    //     let second = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
+    //         //TODO inefficient
+    //         let mut k = Axial::from_arr([0, 0])
+    //             .to_cube()
+    //             .neighbours()
+    //             .filter(|x| x.dist(&a.to_cube()) == 1);
+    //         let first = k.next().unwrap().to_axial();
+    //         let second = k.next().unwrap().to_axial();
 
-            if
-            /*self.is_set(first)||*/
-            !walls.is_set(first) {
-                Some([Axial::from_arr([0, 0]).dir_to(&first), first.dir_to(&a)])
-            } else {
-                Some([Axial::from_arr([0, 0]).dir_to(&second), second.dir_to(&a)])
-            }
-        } else {
-            None
-        };
+    //         if
+    //         /*self.is_set(first)||*/
+    //         !walls.is_set(first) {
+    //             Some([Axial::from_arr([0, 0]).dir_to(&first), first.dir_to(&a)])
+    //         } else {
+    //             Some([Axial::from_arr([0, 0]).dir_to(&second), second.dir_to(&a)])
+    //         }
+    //     } else {
+    //         None
+    //     };
 
-        let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2) {
-            let h = Axial::from_arr([0, 0]).dir_to(&a);
-            Some([h, h])
-        } else {
-            None
-        };
+    //     let third = if first.is_none() && second.is_none() && (x.abs() == 2 || y.abs() == 2) {
+    //         let h = Axial::from_arr([0, 0]).dir_to(&a);
+    //         Some([h, h])
+    //     } else {
+    //         None
+    //     };
 
-        // size 3 spokes
-        let fourth = if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
-            let h = Axial::from_arr([0, 0]).dir_to(&a);
-            Some([h, h, h])
-        } else {
-            None
-        };
+    //     // size 3 spokes
+    //     let fourth = if first.is_none() && second.is_none() && (x.abs() == 3 || y.abs() == 3) {
+    //         let h = Axial::from_arr([0, 0]).dir_to(&a);
+    //         Some([h, h, h])
+    //     } else {
+    //         None
+    //     };
 
-        let a = first.into_iter().flatten();
-        let b = second.into_iter().flatten();
-        let c = third.into_iter().flatten();
-        let d = fourth.into_iter().flatten();
-        a.chain(b).chain(c).chain(d)
-    };
+    //     let a = first.into_iter().flatten();
+    //     let b = second.into_iter().flatten();
+    //     let c = third.into_iter().flatten();
+    //     let d = fourth.into_iter().flatten();
+    //     a.chain(b).chain(c).chain(d)
+    // };
 
-    mesh_iter.into_iter()
+    // mesh_iter.into_iter()
 }
 
 pub mod bitfield {
