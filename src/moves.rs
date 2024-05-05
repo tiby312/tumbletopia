@@ -200,6 +200,7 @@ impl GameState {
                     original: pos,
                     moveto: mm,
                 };
+
                 let effect = mmm.apply(team, state, world);
 
                 let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
