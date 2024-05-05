@@ -278,9 +278,8 @@ async fn render_command(
         ace::Command::Animate(ak) => match ak {
             animation::AnimationCommand::Movement {
                 unit,
-                mesh,
-                walls,
                 end,
+                path,
                 data,
             } => {
                 let ff = match data {
@@ -297,8 +296,7 @@ async fn render_command(
                     move_build::PushInfo::None => None,
                 };
 
-                let it =
-                    animation::movement(unit, mesh, walls, end, game, team, world, grid_matrix);
+                let it = path.animation_iter(unit, grid_matrix);
 
                 unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ff));
             }

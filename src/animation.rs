@@ -50,9 +50,8 @@ pub fn attack(
 pub enum AnimationCommand {
     Movement {
         unit: Axial,
-        mesh: mesh::small_mesh::SmallMesh,
-        walls: mesh::small_mesh::SmallMesh,
         end: Axial,
+        path: mesh::MyPath,
         data: PushInfo,
     },
     Terrain {
@@ -97,25 +96,18 @@ pub fn land_delta(start: Axial, end: Axial, v: &grids::HexConverter) -> Vector2<
     let e = v.hex_axial_to_world(&end);
     e - s
 }
-pub fn movement(
-    start: Axial,
-    path: mesh::small_mesh::SmallMesh,
-    walls: mesh::small_mesh::SmallMesh,
-    end: Axial,
-    game: &GameState,
-    team: ActiveTeam,
-    world: &board::MyWorld,
-    v: &grids::HexConverter,
-) -> impl Iterator<Item = Vector2<f32>> {
-    let v = v.clone();
-    let mut counter = v.hex_axial_to_world(&start);
-    let mut cc = start;
 
-    let capturing = game.factions.has_a_set(end);
+impl mesh::MyPath {
+    pub fn animation_iter(
+        self,
+        start: Axial,
+        v: &grids::HexConverter,
+    ) -> impl Iterator<Item = Vector2<f32>> {
+        let v = v.clone();
+        let mut counter = v.hex_axial_to_world(&start);
+        let mut cc = start;
 
-    mesh::path(&path, start, end, &walls, game, team, world, capturing)
-        .into_iter()
-        .flat_map(move |m| {
+        self.into_iter().flat_map(move |m| {
             let a = m.to_relative();
             cc.q += a.q;
             cc.r += a.r;
@@ -125,7 +117,7 @@ pub fn movement(
             let old = counter;
             counter = k;
 
-            Interpolate {
+            animation::Interpolate {
                 curr: 0.0,
                 target: dis,
                 tt: 0.2,
@@ -133,4 +125,43 @@ pub fn movement(
             }
             .map(move |val| old + dir * val)
         })
+    }
 }
+
+// pub fn movement(
+//     start: Axial,
+//     path: mesh::small_mesh::SmallMesh,
+//     walls: mesh::small_mesh::SmallMesh,
+//     end: Axial,
+//     game: &GameState,
+//     team: ActiveTeam,
+//     world: &board::MyWorld,
+//     v: &grids::HexConverter,
+// ) -> impl Iterator<Item = Vector2<f32>> {
+//     let v = v.clone();
+//     let mut counter = v.hex_axial_to_world(&start);
+//     let mut cc = start;
+
+//     let capturing = game.factions.has_a_set(end);
+
+//     mesh::path(&path, start, end, &walls, game, team, world, capturing)
+//         .into_iter()
+//         .flat_map(move |m| {
+//             let a = m.to_relative();
+//             cc.q += a.q;
+//             cc.r += a.r;
+//             let k = v.hex_axial_to_world(&cc);
+//             let dis = (k - counter).magnitude();
+//             let dir = (k - counter).normalize();
+//             let old = counter;
+//             counter = k;
+
+//             Interpolate {
+//                 curr: 0.0,
+//                 target: dis,
+//                 tt: 0.2,
+//                 max: 4.0,
+//             }
+//             .map(move |val| old + dir * val)
+//         })
+// }

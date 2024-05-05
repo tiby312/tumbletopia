@@ -306,11 +306,22 @@ impl MovePhase {
             PushInfo::None => {}
         }
 
+        let capturing = state.factions.relative(team).that_team.units.is_set(end);
+        let path = mesh::path(
+            &mesh,
+            self.original,
+            self.moveto,
+            &walls,
+            state,
+            team,
+            world,
+            capturing,
+        );
+
         data.wait_animation(
             animation::AnimationCommand::Movement {
                 unit: self.original,
-                mesh,
-                walls,
+                path,
                 end,
                 data: info,
             },

@@ -137,6 +137,7 @@ pub mod small_mesh {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct MyPath([Option<HDir>; 3]);
 
 impl IntoIterator for MyPath {
