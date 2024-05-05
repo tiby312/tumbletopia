@@ -139,11 +139,12 @@ pub mod small_mesh {
 
 pub fn path(
     _mesh: &small_mesh::SmallMesh,
+    unit: Axial,
     target: Axial,
     walls: &small_mesh::SmallMesh,
+    game: &GameState,
+    capturing: bool,
 ) -> impl Iterator<Item = HDir> {
-    let unit = Axial::zero();
-
     let neighbours = |a: &Axial| {
         let mut k = a.to_cube().neighbours2();
         k.sort_unstable_by_key(|a| a.dist(&target.to_cube()));
@@ -151,13 +152,13 @@ pub fn path(
     };
 
     let k = 'foo: {
-        if walls.is_set(target) {
-            assert_eq!(Axial::zero().to_cube().dist(&target.to_cube()), 1);
+        if walls.is_set(target.sub(&unit)) {
+            assert_eq!(unit.to_cube().dist(&target.to_cube()), 1);
             break 'foo [Some(unit.dir_to(&target)), None, None];
         }
 
         for (a, adir) in neighbours(&unit) {
-            if walls.is_set(a) {
+            if walls.is_set(a.sub(&unit)) {
                 continue;
             }
 
@@ -166,16 +167,19 @@ pub fn path(
             }
 
             for (b, bdir) in neighbours(&a) {
-                if walls.is_set(b) {
+                if walls.is_set(b.sub(&unit)) {
                     continue;
                 }
 
                 if b == target {
+                    if capturing {
+                        //TODO
+                    }
                     break 'foo [Some(adir), Some(bdir), None];
                 }
 
                 for (c, cdir) in neighbours(&b) {
-                    if walls.is_set(c) {
+                    if walls.is_set(c.sub(&unit)) {
                         continue;
                     }
 

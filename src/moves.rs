@@ -3,6 +3,15 @@ use super::*;
 use crate::mesh::small_mesh::SmallMesh;
 
 impl GameState {
+    pub fn is_trap(&self, team: ActiveTeam, world: &board::MyWorld, check: Axial) -> bool {
+        //if you push an enemy unit into a wall, they die
+        //if you push an enemy off the map, they die
+        //if you push an enemy into one of your teamates they die
+        self.env.terrain.is_set(check)
+            || self.factions.relative(team).this_team.units.is_set(check)
+            || !world.get_game_cells().is_set(check)
+    }
+
     // fn check_if_occ(&self, world: &board::MyWorld, a: Axial, check_fog: bool) -> bool {
     //     let game = self;
     //     let is_world_cell = world.get_game_cells().is_coord_set(a);
@@ -78,35 +87,10 @@ impl GameState {
         let kll = |mesh: &mut SmallMesh, a: Axial, dir: hex::HDir| {
             if game.factions.relative(team).that_team.units.is_set(a) {
                 let check = a.advance(dir);
-                //if you push an enemy unit into a wall, they die
-                //if you push an enemy off the map, they die
-                //if you push an enemy into water, they just move there.
-                if terrain.is_set(check) {
-                    assert!(!game.factions.has_a_set(check));
-                    assert!(world.get_game_cells().is_set(check));
+
+                if game.is_trap(team, world, check) {
                     mesh.add(a.sub(&unit));
                 }
-
-                if game.factions.relative(team).this_team.units.is_set(check) {
-                    //assert!(!game.factions.has_a_set(check));
-                    //assert!(world.get_game_cells().is_set(check));
-                    mesh.add(a.sub(&unit));
-                }
-
-                if !world.get_game_cells().is_set(check) {
-                    assert!(!terrain.is_set(check));
-                    assert!(!game.factions.has_a_set(check));
-
-                    mesh.add(a.sub(&unit));
-                }
-
-                // if world.get_game_cells().is_set(check)
-                //     && !game.env.fog.is_set(check)
-                //     && !terrain.is_set(check)
-                //     && !game.factions.has_a_set(check)
-                // {
-                //     mesh.add(a.sub(&unit));
-                // }
             }
         };
 
