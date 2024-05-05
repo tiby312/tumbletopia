@@ -391,9 +391,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
-    //let fog = world.get_game_cells().clone();
-    let fog = BitField::from_iter(Axial::zero().to_cube().range(3));
-    //let fog = BitField::new();
+    //let fog = BitField::from_iter(Axial::zero().to_cube().range(3));
+    let fog = BitField::new();
 
     let mut k = GameState {
         factions: Factions {
@@ -410,6 +409,12 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
             powerups: powerups.into_iter().map(Axial::from_arr).collect(),
         },
     };
+
+    let starting_land=[[0,-3],[-3,0],[-3,3],[0,3],[3,0],[3,-3]];
+
+    for a in starting_land{
+        k.env.terrain.land.set_coord(Axial::from_arr(a), true);
+    }
 
     for a in k
         .factions
