@@ -257,7 +257,7 @@ impl MovePhase {
         data: &mut ace::WorkerManager,
     ) -> &Self {
         let target = self.moveto;
-        let walls = calculate_walls(self.original, state, world);
+        let walls = calculate_walls(self.original, self.moveto,state, world);
 
         assert!(state
             .factions
@@ -596,7 +596,7 @@ pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
     FogInfo(mesh)
 }
 
-fn calculate_walls(position: Axial, state: &GameState, world: &board::MyWorld) -> SmallMesh {
+fn calculate_walls(position: Axial, target:Axial,state: &GameState, world: &board::MyWorld) -> SmallMesh {
     let env = &state.env;
     let mut walls = SmallMesh::new();
 
@@ -606,9 +606,12 @@ fn calculate_walls(position: Axial, state: &GameState, world: &board::MyWorld) -
         let cc = env.terrain.is_set(a);
         if cc || (a != position && state.factions.has_a_set(a)) || !world.get_game_cells().is_set(a)
         {
-            walls.add(a.sub(&position));
+            if a!=target{
+                walls.add(a.sub(&position));
+            }
         }
     }
+
 
     walls
 }

@@ -150,9 +150,8 @@ pub fn path(
         k
     };
 
-    if walls.is_set(target) {
-        //This assert not true because it can include the enemy.
-        //assert_eq!(Axial::zero().to_cube().dist(&target.to_cube()), 1);
+    if walls.is_set(target){
+        assert_eq!(Axial::zero().to_cube().dist(&target.to_cube()),1);
         return [Some(unit.dir_to(&target)), None, None]
             .into_iter()
             .flatten();
