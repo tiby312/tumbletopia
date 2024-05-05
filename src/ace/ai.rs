@@ -293,12 +293,9 @@ impl<'a> AlphaBeta<'a> {
             let moves = game_after_move.for_all_moves_fast(team, world);
 
             if !moves.is_empty() {
-                //TODO remove asserts
-                assert!(game_after_move.game_is_over(world, team).is_none());
                 Some(moves)
             } else {
-                assert!(game_after_move.game_is_over(world, team).is_some());
-
+                
                 None
             }
         };
