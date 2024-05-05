@@ -137,6 +137,18 @@ pub mod small_mesh {
     }
 }
 
+pub struct MyPath([Option<HDir>; 3]);
+
+impl IntoIterator for MyPath {
+    type Item = HDir;
+
+    type IntoIter = std::iter::Flatten<std::array::IntoIter<Option<HDir>, 3>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter().flatten()
+    }
+}
+
 pub fn path(
     _mesh: &small_mesh::SmallMesh,
     unit: Axial,
@@ -146,7 +158,7 @@ pub fn path(
     team: ActiveTeam,
     world: &board::MyWorld,
     capturing: bool,
-) -> impl Iterator<Item = HDir> {
+) -> MyPath {
     let neighbours = |a: &Axial| {
         let mut k = a.to_cube().neighbours2();
         k.sort_unstable_by_key(|a| a.dist(&target.to_cube()));
@@ -203,7 +215,7 @@ pub fn path(
         );
     };
 
-    return k.into_iter().flatten();
+    return MyPath(k);
 }
 
 pub fn path_old(

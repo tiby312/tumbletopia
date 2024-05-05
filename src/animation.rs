@@ -113,22 +113,24 @@ pub fn movement(
 
     let capturing = game.factions.has_a_set(end);
 
-    mesh::path(&path, start, end, &walls, game, team, world, capturing).flat_map(move |m| {
-        let a = m.to_relative();
-        cc.q += a.q;
-        cc.r += a.r;
-        let k = v.hex_axial_to_world(&cc);
-        let dis = (k - counter).magnitude();
-        let dir = (k - counter).normalize();
-        let old = counter;
-        counter = k;
+    mesh::path(&path, start, end, &walls, game, team, world, capturing)
+        .into_iter()
+        .flat_map(move |m| {
+            let a = m.to_relative();
+            cc.q += a.q;
+            cc.r += a.r;
+            let k = v.hex_axial_to_world(&cc);
+            let dis = (k - counter).magnitude();
+            let dir = (k - counter).normalize();
+            let old = counter;
+            counter = k;
 
-        Interpolate {
-            curr: 0.0,
-            target: dis,
-            tt: 0.2,
-            max: 4.0,
-        }
-        .map(move |val| old + dir * val)
-    })
+            Interpolate {
+                curr: 0.0,
+                target: dis,
+                tt: 0.2,
+                max: 4.0,
+            }
+            .map(move |val| old + dir * val)
+        })
 }
