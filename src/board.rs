@@ -6,6 +6,7 @@ use super::*;
 pub struct MyWorld {
     pub seed: WorldSeed,
     w: BitField,
+    pub land:BitField,
     dog_start: Vec<Axial>,
     cat_start: Vec<Axial>,
 }
@@ -168,8 +169,18 @@ impl MyWorld {
         // increase_mag(&mut j.r);
         // dog_start.push(j);
 
-        w.set_coord(world_missing[world_missing_index1], false);
-        w.set_coord(world_missing[world_missing_index2], false);
+        let mut land=BitField::new();
+        land.set_coord(world_missing[world_missing_index1],true);
+        land.set_coord(world_missing[world_missing_index2],true);
+        
+        let starting_land=[[0,-3],[-3,0],[-3,3],[0,3],[3,0],[3,-3]];
+
+        for a in starting_land{
+            land.set_coord(Axial::from_arr(a), true);
+        }
+
+        //w.set_coord(world_missing[world_missing_index1], false);
+        //w.set_coord(world_missing[world_missing_index2], false);
 
         for &a in cat_start.iter() {
             w.set_coord(a, true);
@@ -181,6 +192,7 @@ impl MyWorld {
 
         MyWorld {
             seed,
+            land,
             w,
             dog_start,
             cat_start,

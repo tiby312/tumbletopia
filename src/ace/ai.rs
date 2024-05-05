@@ -62,7 +62,7 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
     //The AI will try to avoid the center.
     //The more influlence is at stake, the more precious each piece is
     (num_cat_influence - num_dog_influence) * 100 + (cat_distance - dog_distance) * 1
-    + (num_cats - num_dogs) * 800
+    + (num_cats - num_dogs) * 2000
 }
 
 fn around(point: Axial) -> impl Iterator<Item = Axial> {

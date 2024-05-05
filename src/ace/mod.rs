@@ -401,7 +401,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         },
         env: Environment {
             terrain: Terrain {
-                land: BitField::from_iter([] as [Axial; 0]),
+                land: world.land.clone(),
                 forest: BitField::from_iter([] as [Axial; 0]),
                 mountain: BitField::from_iter([] as [Axial; 0]),
             },
@@ -410,12 +410,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         },
     };
 
-    let starting_land=[[0,-3],[-3,0],[-3,3],[0,3],[3,0],[3,-3]];
-
-    for a in starting_land{
-        k.env.terrain.land.set_coord(Axial::from_arr(a), true);
-    }
-
+    
     for a in k
         .factions
         .cats
