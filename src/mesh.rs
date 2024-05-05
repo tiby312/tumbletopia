@@ -150,6 +150,13 @@ pub fn path(
         k
     };
 
+    if walls.is_set(target) {
+        assert_eq!(Axial::zero().to_cube().dist(&target.to_cube()), 1);
+        return [Some(unit.dir_to(&target)), None, None]
+            .into_iter()
+            .flatten();
+    }
+
     for a in neighbours(&unit.to_cube()) {
         let a = a.to_axial();
         let adir = unit.dir_to(&a);
@@ -187,13 +194,13 @@ pub fn path(
         }
     }
 
-    // unreachable!(
-    //     "could not find path {:?}:{:?}:{:?}",
-    //     target,
-    //     Axial::zero().to_cube().dist(&target.to_cube()),
-    //     walls.is_set(target)
-    // );
-    return [None;3].into_iter().flatten()
+    unreachable!(
+        "could not find path {:?}:{:?}:{:?}",
+        target,
+        Axial::zero().to_cube().dist(&target.to_cube()),
+        walls.is_set(target)
+    );
+    //return [None;3].into_iter().flatten()
 }
 
 pub fn path_old(
