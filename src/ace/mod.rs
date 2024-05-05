@@ -391,7 +391,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
-    //let fog = BitField::from_iter(Axial::zero().to_cube().range(3));
+    //let fog = BitField::from_iter(Axial::zero().to_cube().range(1));
     let fog = BitField::new();
 
     let mut k = GameState {
