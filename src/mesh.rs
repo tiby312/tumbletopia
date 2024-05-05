@@ -147,20 +147,17 @@ pub fn path(
     let neighbours = |a: &hex::Cube| {
         let mut k = a.neighbours2();
         k.sort_by_key(|a| a.dist(&target.to_cube()));
-        k
+        k.map(|x| (x.to_axial(), a.dir_to(&x)))
     };
 
-    if walls.is_set(target){
-        assert_eq!(Axial::zero().to_cube().dist(&target.to_cube()),1);
+    if walls.is_set(target) {
+        assert_eq!(Axial::zero().to_cube().dist(&target.to_cube()), 1);
         return [Some(unit.dir_to(&target)), None, None]
             .into_iter()
             .flatten();
     }
 
-    for a in neighbours(&unit.to_cube()) {
-        let a = a.to_axial();
-        let adir = unit.dir_to(&a);
-
+    for (a, adir) in neighbours(&unit.to_cube()) {
         if walls.is_set(a) {
             continue;
         }
@@ -169,9 +166,7 @@ pub fn path(
             return [Some(adir), None, None].into_iter().flatten();
         }
 
-        for b in neighbours(&a.to_cube()) {
-            let b = b.to_axial();
-            let bdir = a.dir_to(&b);
+        for (b, bdir) in neighbours(&a.to_cube()) {
             if walls.is_set(b) {
                 continue;
             }
@@ -180,9 +175,7 @@ pub fn path(
                 return [Some(adir), Some(bdir), None].into_iter().flatten();
             }
 
-            for c in neighbours(&b.to_cube()) {
-                let c = c.to_axial();
-                let cdir = b.dir_to(&c);
+            for (c, cdir) in neighbours(&b.to_cube()) {
                 if walls.is_set(c) {
                     continue;
                 }
