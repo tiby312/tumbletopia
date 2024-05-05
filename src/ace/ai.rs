@@ -182,7 +182,7 @@ pub fn iterative_deepening(
         };
 
         let mut kk = game.clone();
-        let res = aaaa.alpha_beta(&mut kk, world, ABAB::new(), team, depth, 0);
+        let res = aaaa.alpha_beta(&mut kk, world, ABAB::new(), team, isize::try_from(depth).unwrap(), 0);
         assert_eq!(&kk, game);
 
         let mov = foo1.a.get(&[] as &[_]).cloned().unwrap();
@@ -282,28 +282,28 @@ impl<'a> AlphaBeta<'a> {
         world: &board::MyWorld,
         mut ab: ABAB,
         team: ActiveTeam,
-        depth: usize,
+        depth: isize,
         ext: usize,
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        let foo = if depth == 0 {
-            None
-        } else {
-            let moves = game_after_move.for_all_moves_fast(team, world);
+        let mut moves = game_after_move.for_all_moves_fast(team, world);
 
-            if !moves.is_empty() {
-                Some(moves)
-            } else {
-                
-                None
-            }
-        };
+        if depth<=0{
+            moves.retain(|a|{
+                game_after_move.factions.relative(team).that_team.units.is_set(a.attackto)
+            });
+        }
 
-        let Some(mut moves) = foo else {
+
+        if moves.is_empty(){
+            //TODO if there are no moves should imediately return fail condition.
+            //not the board evaluation heuristic.
             self.calls.add_eval();
-            return absolute_evaluate(game_after_move, world, false);
-        };
+            return absolute_evaluate(game_after_move, world,false)
+        }
+        
+
 
         let mut num_sorted = 0;
         if let Some(p) = self.prev_cache.get_best_prev_move(self.path) {
@@ -313,7 +313,8 @@ impl<'a> AlphaBeta<'a> {
             num_sorted += 1;
         }
 
-        for a in self.killer_moves.get(depth) {
+        if depth>=0{
+        for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
             if let Some((x, _)) = moves[num_sorted..]
                 .iter()
                 .enumerate()
@@ -323,6 +324,7 @@ impl<'a> AlphaBeta<'a> {
                 num_sorted += 1;
             }
         }
+    }
 
         let mut kk = ab.ab_iter(team == ActiveTeam::Cats);
         for cand in moves {
@@ -360,7 +362,9 @@ impl<'a> AlphaBeta<'a> {
             let (keep_going, consider_good_move) = kk.consider(&mov, eval);
 
             if consider_good_move {
-                self.killer_moves.consider(depth, mov);
+                if depth>=0{
+                    self.killer_moves.consider(usize::try_from(depth).unwrap(), mov);
+                }
             }
             if !keep_going {
                 break;
