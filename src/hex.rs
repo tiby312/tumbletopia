@@ -292,6 +292,11 @@ impl Cube {
             })
     }
 
+    pub fn neighbours2(&self) -> [Cube; 6] {
+        let k = self.clone();
+        OFFSETS.map(move |a| k.add(Cube::from_arr(a)))
+    }
+
     //TODO implement using ring??
     pub fn neighbours(&self) -> impl Iterator<Item = Cube> + Clone {
         self.ring(1)

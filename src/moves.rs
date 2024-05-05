@@ -24,7 +24,7 @@ impl GameState {
         &self,
         world: &board::MyWorld,
         foo: &move_build::MovePhase,
-        effect:&move_build::MoveEffect,
+        effect: &move_build::MoveEffect,
         _team: ActiveTeam,
     ) -> SmallMesh {
         let game = self;
@@ -32,32 +32,30 @@ impl GameState {
         let original_pos = foo.original;
         let mut mesh = SmallMesh::new();
 
-        if effect.destroyed_unit.is_some(){
+        if effect.destroyed_unit.is_some() {
             mesh.add(Axial::zero())
-        }else{
+        } else {
+            for a in unit.to_cube().ring(1) {
+                let a = a.to_axial();
 
-        for a in unit.to_cube().ring(1)
-        {
-            let a = a.to_axial();
+                if a != unit
+                    && world.get_game_cells().is_set(a)
+                    && !game.factions.has_a_set(a)
+                    && !game.env.terrain.is_set(a)
+                    && !game.env.fog.is_set(a)
+                {
+                    mesh.add(a.sub(&unit));
 
-            if a != unit
-                && world.get_game_cells().is_set(a)
-                && !game.factions.has_a_set(a)
-                && !game.env.terrain.is_set(a)
-                && !game.env.fog.is_set(a)
-            {
-                mesh.add(a.sub(&unit));
+                    // for a in a.to_cube().ring(1) {
+                    //     let a = a.to_axial();
 
-                // for a in a.to_cube().ring(1) {
-                //     let a = a.to_axial();
-
-                //     if check_if_occ(a, true) {
-                //         mesh.add(a.sub(&unit));
-                //     }
-                // }
+                    //     if check_if_occ(a, true) {
+                    //         mesh.add(a.sub(&unit));
+                    //     }
+                    // }
+                }
             }
         }
-    }
         mesh
     }
     pub fn generate_possible_moves_movement(
@@ -77,7 +75,7 @@ impl GameState {
 
         let terrain = &game.env.terrain;
 
-        let kll=|mesh:&mut SmallMesh,a:Axial,dir:hex::HDir|{
+        let kll = |mesh: &mut SmallMesh, a: Axial, dir: hex::HDir| {
             if game.factions.relative(team).that_team.units.is_set(a) {
                 let check = a.advance(dir);
                 //if you push an enemy unit into a wall, they die
@@ -126,24 +124,20 @@ impl GameState {
                     if b != unit && check_empty(b) && !terrain.is_set(b) {
                         mesh.add(b.sub(&unit));
 
-                        for c in b.to_cube().ring(1){
-                            let c=c.to_axial();
-                            let dir=b.dir_to(&c);
+                        for c in b.to_cube().ring(1) {
+                            let c = c.to_axial();
+                            let dir = b.dir_to(&c);
 
-
-                            if c.to_cube().dist(&unit.to_cube()) > b.to_cube().dist(&unit.to_cube()){
-                                kll(&mut mesh,c,dir);
+                            if c.to_cube().dist(&unit.to_cube()) > b.to_cube().dist(&unit.to_cube())
+                            {
+                                kll(&mut mesh, c, dir);
                             }
-    
                         }
                     }
 
-                    if b.to_cube().dist(&unit.to_cube()) > a.to_cube().dist(&unit.to_cube()){
-                        kll(&mut mesh,b,dir);
+                    if b.to_cube().dist(&unit.to_cube()) > a.to_cube().dist(&unit.to_cube()) {
+                        kll(&mut mesh, b, dir);
                     }
-
-                    
-                
                 }
             } else {
                 if terrain.land.is_set(a) {
@@ -155,8 +149,8 @@ impl GameState {
                     }
                 }
 
-                kll(&mut mesh,a,dir);
-                
+                kll(&mut mesh, a, dir);
+
                 if game.factions.relative(team).this_team.units.is_set(a) {
                     // let check = a.advance(dir);
 
@@ -208,7 +202,7 @@ impl GameState {
                 };
                 let effect = mmm.apply(team, state, world);
 
-                let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect,team);
+                let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
 
                 for sm in second_mesh.iter_mesh(mm) {
                     assert!(!state.env.terrain.is_set(sm));
