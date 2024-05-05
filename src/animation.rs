@@ -107,7 +107,7 @@ impl mesh::MyPath {
         let mut counter = v.hex_axial_to_world(&start);
         let mut cc = start;
 
-        self.into_iter().flat_map(move |m| {
+        self.0.into_iter().flatten().flat_map(move |m| {
             let a = m.to_relative();
             cc.q += a.q;
             cc.r += a.r;

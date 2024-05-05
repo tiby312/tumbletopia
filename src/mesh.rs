@@ -138,17 +138,8 @@ pub mod small_mesh {
 }
 
 #[derive(Debug, Clone)]
-pub struct MyPath([Option<HDir>; 3]);
+pub struct MyPath(pub [Option<HDir>; 3]);
 
-impl IntoIterator for MyPath {
-    type Item = HDir;
-
-    type IntoIter = std::iter::Flatten<std::array::IntoIter<Option<HDir>, 3>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter().flatten()
-    }
-}
 
 pub fn path(
     _mesh: &small_mesh::SmallMesh,
