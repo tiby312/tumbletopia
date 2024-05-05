@@ -144,56 +144,57 @@ pub fn path(
 ) -> impl Iterator<Item = HDir> {
     let unit = Axial::zero();
 
-    let neighbours = |a: &hex::Cube| {
-        let mut k = a.neighbours2();
-        k.sort_by_key(|a| a.dist(&target.to_cube()));
+    let neighbours = |a: &Axial| {
+        let mut k = a.to_cube().neighbours2();
+        k.sort_unstable_by_key(|a| a.dist(&target.to_cube()));
         k.map(|x| (x.to_axial(), a.dir_to(&x)))
     };
 
-    if walls.is_set(target) {
-        assert_eq!(Axial::zero().to_cube().dist(&target.to_cube()), 1);
-        return [Some(unit.dir_to(&target)), None, None]
-            .into_iter()
-            .flatten();
-    }
-
-    for (a, adir) in neighbours(&unit.to_cube()) {
-        if walls.is_set(a) {
-            continue;
+    let k = 'foo: {
+        if walls.is_set(target) {
+            assert_eq!(Axial::zero().to_cube().dist(&target.to_cube()), 1);
+            break 'foo [Some(unit.dir_to(&target)), None, None];
         }
 
-        if a == target {
-            return [Some(adir), None, None].into_iter().flatten();
-        }
-
-        for (b, bdir) in neighbours(&a.to_cube()) {
-            if walls.is_set(b) {
+        for (a, adir) in neighbours(&unit) {
+            if walls.is_set(a) {
                 continue;
             }
 
-            if b == target {
-                return [Some(adir), Some(bdir), None].into_iter().flatten();
+            if a == target {
+                break 'foo [Some(adir), None, None];
             }
 
-            for (c, cdir) in neighbours(&b.to_cube()) {
-                if walls.is_set(c) {
+            for (b, bdir) in neighbours(&a) {
+                if walls.is_set(b) {
                     continue;
                 }
 
-                if c == target {
-                    return [Some(adir), Some(bdir), Some(cdir)].into_iter().flatten();
+                if b == target {
+                    break 'foo [Some(adir), Some(bdir), None];
+                }
+
+                for (c, cdir) in neighbours(&b) {
+                    if walls.is_set(c) {
+                        continue;
+                    }
+
+                    if c == target {
+                        break 'foo [Some(adir), Some(bdir), Some(cdir)];
+                    }
                 }
             }
         }
-    }
 
-    unreachable!(
-        "could not find path {:?}:{:?}:{:?}",
-        target,
-        Axial::zero().to_cube().dist(&target.to_cube()),
-        walls.is_set(target)
-    );
-    //return [None;3].into_iter().flatten()
+        unreachable!(
+            "could not find path {:?}:{:?}:{:?}",
+            target,
+            Axial::zero().to_cube().dist(&target.to_cube()),
+            walls.is_set(target)
+        );
+    };
+
+    return k.into_iter().flatten();
 }
 
 pub fn path_old(
