@@ -103,6 +103,8 @@ pub fn movement(
     walls: mesh::small_mesh::SmallMesh,
     end: Axial,
     game: &GameState,
+    team: ActiveTeam,
+    world: &board::MyWorld,
     v: &grids::HexConverter,
 ) -> impl Iterator<Item = Vector2<f32>> {
     let v = v.clone();
@@ -111,7 +113,7 @@ pub fn movement(
 
     let capturing = game.factions.has_a_set(end);
 
-    mesh::path(&path, start, end, &walls, game, capturing).flat_map(move |m| {
+    mesh::path(&path, start, end, &walls, game, team, world, capturing).flat_map(move |m| {
         let a = m.to_relative();
         cc.q += a.q;
         cc.r += a.r;

@@ -143,6 +143,8 @@ pub fn path(
     target: Axial,
     walls: &small_mesh::SmallMesh,
     game: &GameState,
+    team: ActiveTeam,
+    world: &board::MyWorld,
     capturing: bool,
 ) -> impl Iterator<Item = HDir> {
     let neighbours = |a: &Axial| {
@@ -172,8 +174,8 @@ pub fn path(
                 }
 
                 if b == target {
-                    if capturing {
-                        //TODO
+                    if capturing && !game.is_trap(team, world, b.advance(bdir)) {
+                        continue;
                     }
                     break 'foo [Some(adir), Some(bdir), None];
                 }
@@ -184,6 +186,9 @@ pub fn path(
                     }
 
                     if c == target {
+                        if capturing && !game.is_trap(team, world, c.advance(cdir)) {
+                            continue;
+                        }
                         break 'foo [Some(adir), Some(bdir), Some(cdir)];
                     }
                 }
