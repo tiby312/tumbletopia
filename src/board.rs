@@ -6,8 +6,8 @@ use super::*;
 pub struct MyWorld {
     pub seed: WorldSeed,
     w: BitField,
-    dog_start: [Axial; 3],
-    cat_start: [Axial; 3],
+    dog_start: Vec<Axial>,
+    cat_start: Vec<Axial>,
 }
 
 // impl Default for MyWorld {
@@ -90,7 +90,7 @@ impl Default for WorldSeed {
 impl WorldSeed {
     pub fn new() -> Self {
         use rand::Rng;
-        let num = rand::thread_rng().gen_range(0..360);
+        let num = rand::thread_rng().gen_range(0..180);
         WorldSeed { foo: num }
     }
 }
@@ -105,7 +105,7 @@ impl MyWorld {
 
         let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
 
-        //3*3*2*5*4 = 360 choices!!!
+        //3*3*5*4 = 180 choices!!!
 
         let mut i: usize = seed.foo.try_into().unwrap();
 
@@ -113,56 +113,69 @@ impl MyWorld {
         i /= 3;
         let dog_long = i % 3;
         i /= 3;
-        let mut dog_long2 = i % 2;
-        i /= 2;
+        // let mut dog_long2 = i % 2;
+        // i /= 2;
         let world_missing_index1 = i % 5;
         i /= 5;
         let mut world_missing_index2 = i % 4;
         i /= 4;
         assert_eq!(i, 0);
 
-        if dog_long == dog_long2 {
-            dog_long2 = (dog_long2 + 1) % 3
-        }
+        // if dog_long == dog_long2 {
+        //     dog_long2 = (dog_long2 + 1) % 3
+        // }
 
         if world_missing_index1 == world_missing_index2 {
             world_missing_index2 = (world_missing_index2 + 1) % 5
         }
-        assert_ne!(dog_long, dog_long2);
+        //assert_ne!(dog_long, dog_long2);
         assert_ne!(world_missing_index1, world_missing_index2);
         assert!((0..3).contains(&cat_long), "uhoh:{}", cat_long);
         assert!((0..3).contains(&dog_long));
-        assert!((0..3).contains(&dog_long2));
+        //assert!((0..3).contains(&dog_long2));
         assert!((0..6).contains(&world_missing_index1));
         assert!((0..6).contains(&world_missing_index2));
 
         let d = 4;
 
-        let mut cat_start = [[-d, d], [0, -d], [d, 0]].map(Axial::from_arr);
-        let mut dog_start = [[d, -d], [-d, 0], [0, d]].map(Axial::from_arr);
+        let mut cat_start: Vec<_> = [[-d, d], [0, -d], [d, 0]].map(Axial::from_arr).into();
+        let mut dog_start: Vec<_> = [[d, -d], [-d, 0], [0, d]].map(Axial::from_arr).into();
 
         let world_missing = j.map(Axial::from_arr);
 
-        w.set_coord(cat_start[cat_long], true);
-        increase_mag(&mut cat_start[cat_long].q);
-        increase_mag(&mut cat_start[cat_long].r);
+        for a in 0..3{
+            if a==cat_long{
+                continue;
+            }
+            let mut j = cat_start[a];
+            increase_mag(&mut j.q);
+            increase_mag(&mut j.r);
+            cat_start.push(j);
+        }
 
-        w.set_coord(dog_start[dog_long], true);
-        increase_mag(&mut dog_start[dog_long].q);
-        increase_mag(&mut dog_start[dog_long].r);
+        for a in 0..3{
+            if a==dog_long{
+                continue;
+            }
+            let mut j = dog_start[a];
+            increase_mag(&mut j.q);
+            increase_mag(&mut j.r);
+            dog_start.push(j);
+        }
 
-        w.set_coord(dog_start[dog_long2], true);
-        increase_mag(&mut dog_start[dog_long2].q);
-        increase_mag(&mut dog_start[dog_long2].r);
+        // let mut j=dog_start[dog_long2];
+        // increase_mag(&mut j.q);
+        // increase_mag(&mut j.r);
+        // dog_start.push(j);
 
         w.set_coord(world_missing[world_missing_index1], false);
         w.set_coord(world_missing[world_missing_index2], false);
 
-        for a in cat_start {
+        for &a in cat_start.iter() {
             w.set_coord(a, true);
         }
 
-        for a in dog_start {
+        for &a in dog_start.iter() {
             w.set_coord(a, true);
         }
 

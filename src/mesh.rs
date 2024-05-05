@@ -140,7 +140,6 @@ pub mod small_mesh {
 #[derive(Debug, Clone)]
 pub struct MyPath(pub [Option<HDir>; 3]);
 
-
 pub fn path(
     _mesh: &small_mesh::SmallMesh,
     unit: Axial,
