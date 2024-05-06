@@ -410,7 +410,6 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         },
     };
 
-    
     for a in k
         .factions
         .cats

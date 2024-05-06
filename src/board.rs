@@ -6,7 +6,7 @@ use super::*;
 pub struct MyWorld {
     pub seed: WorldSeed,
     w: BitField,
-    pub land:BitField,
+    pub land: BitField,
     dog_start: Vec<Axial>,
     cat_start: Vec<Axial>,
 }
@@ -144,8 +144,8 @@ impl MyWorld {
 
         let world_missing = j.map(Axial::from_arr);
 
-        for a in 0..3{
-            if a==cat_long{
+        for a in 0..3 {
+            if a == cat_long {
                 continue;
             }
             let mut j = cat_start[a];
@@ -154,8 +154,8 @@ impl MyWorld {
             cat_start.push(j);
         }
 
-        for a in 0..3{
-            if a==dog_long{
+        for a in 0..3 {
+            if a == dog_long {
                 continue;
             }
             let mut j = dog_start[a];
@@ -169,18 +169,15 @@ impl MyWorld {
         // increase_mag(&mut j.r);
         // dog_start.push(j);
 
-        let mut land=BitField::new();
-        land.set_coord(world_missing[world_missing_index1],true);
-        land.set_coord(world_missing[world_missing_index2],true);
-        
-        let starting_land=[[0,-3],[-3,0],[-3,3],[0,3],[3,0],[3,-3]];
+        let mut land = BitField::new();
+        land.set_coord(world_missing[world_missing_index1], true);
+        land.set_coord(world_missing[world_missing_index2], true);
 
-        for a in starting_land{
-            land.set_coord(Axial::from_arr(a), true);
-        }
+        // let starting_land=[[0,-3],[-3,0],[-3,3],[0,3],[3,0],[3,-3]];
 
-        //w.set_coord(world_missing[world_missing_index1], false);
-        //w.set_coord(world_missing[world_missing_index2], false);
+        // for a in starting_land{
+        //     land.set_coord(Axial::from_arr(a), true);
+        // }
 
         for &a in cat_start.iter() {
             w.set_coord(a, true);

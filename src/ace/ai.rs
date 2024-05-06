@@ -61,8 +61,9 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
 
     //The AI will try to avoid the center.
     //The more influlence is at stake, the more precious each piece is
-    (num_cat_influence - num_dog_influence) * 100 + (cat_distance - dog_distance) * 1
-    + (num_cats - num_dogs) * 2000
+    (num_cat_influence - num_dog_influence) * 100
+        + (cat_distance - dog_distance) * 1
+        + (num_cats - num_dogs) * 2000
 }
 
 fn around(point: Axial) -> impl Iterator<Item = Axial> {
@@ -159,18 +160,18 @@ pub fn iterative_deepening(
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
-    let max_depth = 4;
+    let max_iterative_depth = 4;
     //let max_depth = 2;
 
     let mut foo1 = PrincipalVariation {
         a: std::collections::BTreeMap::new(),
     };
     //TODO stop searching if we found a game ending move.
-    for depth in 1..max_depth {
+    for depth in 1..max_iterative_depth {
         console_dbg!("searching", depth);
 
         //TODO should this be outside the loop?
-        let mut k = KillerMoves::new(max_depth);
+        let mut k = KillerMoves::new(max_iterative_depth + 4 + 4);
 
         let mut aaaa = ai::AlphaBeta {
             //table: &mut table,
@@ -182,7 +183,7 @@ pub fn iterative_deepening(
         };
 
         let mut kk = game.clone();
-        let res = aaaa.alpha_beta(&mut kk, world, ABAB::new(), team, isize::try_from(depth).unwrap(), 0);
+        let res = aaaa.alpha_beta(&mut kk, world, ABAB::new(), team, 0, depth, 0);
         assert_eq!(&kk, game);
 
         let mov = foo1.a.get(&[] as &[_]).cloned().unwrap();
@@ -282,28 +283,36 @@ impl<'a> AlphaBeta<'a> {
         world: &board::MyWorld,
         mut ab: ABAB,
         team: ActiveTeam,
-        depth: isize,
+        depth: usize,
+        max_depth: usize,
         ext: usize,
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
         let mut moves = game_after_move.for_all_moves_fast(team, world);
 
-        if depth<=0{
-            moves.retain(|a|{
-                game_after_move.factions.relative(team).that_team.units.is_set(a.attackto)
+        if depth > max_depth + 2 {
+            self.calls.add_eval();
+            return absolute_evaluate(game_after_move, world, false);
+        }
+
+        if depth >= max_depth {
+            moves.retain(|a| {
+                game_after_move
+                    .factions
+                    .relative(team)
+                    .that_team
+                    .units
+                    .is_set(a.attackto)
             });
         }
 
-
-        if moves.is_empty(){
+        if moves.is_empty() {
             //TODO if there are no moves should imediately return fail condition.
             //not the board evaluation heuristic.
             self.calls.add_eval();
-            return absolute_evaluate(game_after_move, world,false)
+            return absolute_evaluate(game_after_move, world, false);
         }
-        
-
 
         let mut num_sorted = 0;
         if let Some(p) = self.prev_cache.get_best_prev_move(self.path) {
@@ -313,7 +322,6 @@ impl<'a> AlphaBeta<'a> {
             num_sorted += 1;
         }
 
-        if depth>=0{
         for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
             if let Some((x, _)) = moves[num_sorted..]
                 .iter()
@@ -324,11 +332,10 @@ impl<'a> AlphaBeta<'a> {
                 num_sorted += 1;
             }
         }
-    }
 
         let mut kk = ab.ab_iter(team == ActiveTeam::Cats);
         for cand in moves {
-            let new_depth = depth - 1;
+            let new_depth = depth + 1;
 
             let effect = {
                 let j = cand.as_move();
@@ -346,6 +353,7 @@ impl<'a> AlphaBeta<'a> {
                 kk.clone_ab_values(),
                 team.not(),
                 new_depth,
+                max_depth,
                 ext,
             );
 
@@ -362,9 +370,7 @@ impl<'a> AlphaBeta<'a> {
             let (keep_going, consider_good_move) = kk.consider(&mov, eval);
 
             if consider_good_move {
-                if depth>=0{
-                    self.killer_moves.consider(usize::try_from(depth).unwrap(), mov);
-                }
+                self.killer_moves.consider(depth, mov);
             }
             if !keep_going {
                 break;
