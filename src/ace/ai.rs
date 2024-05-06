@@ -291,12 +291,14 @@ impl<'a> AlphaBeta<'a> {
 
         let mut moves = game_after_move.for_all_moves_fast(team, world);
 
-        if depth > max_depth + 2 {
+        if depth >= max_depth + 2 {
+            //console_dbg!(depth);
             self.calls.add_eval();
             return absolute_evaluate(game_after_move, world, false);
         }
 
         if depth >= max_depth {
+            //let bb=moves.len();
             moves.retain(|a| {
                 game_after_move
                     .factions
@@ -305,6 +307,7 @@ impl<'a> AlphaBeta<'a> {
                     .units
                     .is_set(a.attackto)
             });
+            //console_dbg!(bb,moves.len());
         }
 
         if moves.is_empty() {
