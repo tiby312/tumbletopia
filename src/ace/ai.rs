@@ -44,25 +44,25 @@ pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool)
     let num_cat_influence = cat_influence.count_ones(..) as i64;
     let num_dog_influence = dog_influence.count_ones(..) as i64;
 
-    let dog_distance = view
-        .factions
-        .dogs
-        .units
-        .iter_mesh()
-        .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-        .sum::<i64>();
-    let cat_distance = view
-        .factions
-        .cats
-        .units
-        .iter_mesh()
-        .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-        .sum::<i64>();
+    // let dog_distance = view
+    //     .factions
+    //     .dogs
+    //     .units
+    //     .iter_mesh()
+    //     .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
+    //     .sum::<i64>();
+    // let cat_distance = view
+    //     .factions
+    //     .cats
+    //     .units
+    //     .iter_mesh()
+    //     .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
+    //     .sum::<i64>();
 
     //The AI will try to avoid the center.
     //The more influlence is at stake, the more precious each piece is
     (num_cat_influence - num_dog_influence) * 100
-        + (cat_distance - dog_distance) * 1
+        //+ (cat_distance - dog_distance) * 1
         + (num_cats - num_dogs) * 2000
 }
 
