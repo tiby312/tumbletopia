@@ -331,8 +331,13 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-
-        let mut moves = game_after_move.for_all_moves_fast(team, world,|_,_,_|true);
+        let mut quiet_position = true;
+        let mut moves = game_after_move.for_all_moves_fast(team, world, |e, _, _| {
+            if e.destroyed_unit.is_some() {
+                quiet_position = false;
+            }
+            true
+        });
 
         if depth >= max_depth + 2 {
             //console_dbg!(depth);
@@ -341,7 +346,10 @@ impl<'a> AlphaBeta<'a> {
         }
 
         if depth >= max_depth {
-            //let bb=moves.len();
+            if quiet_position {
+                self.calls.add_eval();
+                return evaluator.absolute_evaluate(game_after_move, world, false);
+            }
             moves.retain(|a| {
                 game_after_move
                     .factions
@@ -353,7 +361,7 @@ impl<'a> AlphaBeta<'a> {
             //console_dbg!(bb,moves.len());
         }
 
-        if moves.is_empty() {
+        if moves.is_empty() && depth < max_depth {
             //TODO if there are no moves should imediately return fail condition.
             //not the board evaluation heuristic.
             self.calls.add_eval();
