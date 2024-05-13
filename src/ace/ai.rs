@@ -5,18 +5,25 @@ use super::*;
 pub type Eval = i64;
 const MATE: i64 = 1_000_000;
 
-pub struct Evaluator{
-    workspace:BitField
+pub struct Evaluator {
+    workspace: BitField,
 }
-impl Default for Evaluator{
+impl Default for Evaluator {
     fn default() -> Self {
-        Self { workspace: Default::default() }
+        Self {
+            workspace: Default::default(),
+        }
     }
 }
-impl Evaluator{
+impl Evaluator {
     //cats maximizing
     //dogs minimizing
-    pub fn absolute_evaluate(&mut self,view: &GameState, world: &board::MyWorld, _debug: bool) -> Eval {
+    pub fn absolute_evaluate(
+        &mut self,
+        view: &GameState,
+        world: &board::MyWorld,
+        _debug: bool,
+    ) -> Eval {
         // Doesnt seem that important that the AI knows exactly when it is winning.
         // (There doesnt seem to be many tactical combinations near the end of the game).
         // match view.game_is_over() {
@@ -31,11 +38,12 @@ impl Evaluator{
         // }
 
         let ship_allowed = {
-            self.workspace.clear();
-            self.workspace.union_with(&view.env.terrain.land);
-            self.workspace.toggle_range(..);
-            self.workspace.intersect_with(world.get_game_cells());
-            &mut self.workspace
+            let temp = &mut self.workspace;
+            temp.clear();
+            temp.union_with(&view.env.terrain.land);
+            temp.toggle_range(..);
+            temp.intersect_with(world.get_game_cells());
+            temp
         };
 
         let num_cats = view.factions.cats.units.count_ones(..) as i64;
@@ -97,20 +105,18 @@ fn doop(iteration: usize, dogs: &mut BitField, cats: &mut BitField, allowed_cell
         return;
     }
 
-    let mut nomans = BitField::new();
-    let mut w = BitField::new();
-    let mut contested = BitField::new();
+    let mut cache2 = BitField::new();
 
     let mut cache = BitField::new();
 
     for _i in 0..iteration {
         cache.clear();
         cache.union_with(dogs);
-        expand_mesh(dogs, &mut w);
+        expand_mesh(dogs, &mut cache2);
         let dogs_changed = &cache != dogs;
         cache.clear();
         cache.union_with(cats);
-        expand_mesh(cats, &mut w);
+        expand_mesh(cats, &mut cache2);
         let cats_changed = &cache != cats;
         if !dogs_changed && !cats_changed {
             break;
@@ -118,10 +124,10 @@ fn doop(iteration: usize, dogs: &mut BitField, cats: &mut BitField, allowed_cell
         dogs.intersect_with(allowed_cells);
         cats.intersect_with(allowed_cells);
 
-        contested.clear();
+        cache2.clear();
+        let contested = &mut cache2;
         contested.union_with(dogs);
         contested.intersect_with(cats);
-        nomans.union_with(&contested);
 
         contested.toggle_range(..);
 
@@ -173,7 +179,7 @@ pub fn iterative_deepening(
     let mut foo1 = PrincipalVariation {
         a: std::collections::BTreeMap::new(),
     };
-    let mut evaluator=Evaluator::default();
+    let mut evaluator = Evaluator::default();
 
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_iterative_depth {
@@ -192,7 +198,16 @@ pub fn iterative_deepening(
         };
 
         let mut kk = game.clone();
-        let res = aaaa.alpha_beta(&mut kk, world, ABAB::new(), team, 0, depth, 0,&mut evaluator);
+        let res = aaaa.alpha_beta(
+            &mut kk,
+            world,
+            ABAB::new(),
+            team,
+            0,
+            depth,
+            0,
+            &mut evaluator,
+        );
         assert_eq!(&kk, game);
 
         let mov = foo1.a.get(&[] as &[_]).cloned().unwrap();
@@ -295,7 +310,7 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
         max_depth: usize,
         ext: usize,
-        evaluator:&mut Evaluator
+        evaluator: &mut Evaluator,
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
@@ -368,7 +383,7 @@ impl<'a> AlphaBeta<'a> {
                 new_depth,
                 max_depth,
                 ext,
-                evaluator
+                evaluator,
             );
 
             let mov = self.path.pop().unwrap();
