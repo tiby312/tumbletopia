@@ -7,11 +7,15 @@ const MATE: i64 = 1_000_000;
 
 pub struct Evaluator {
     workspace: BitField,
+    workspace2: BitField,
+    workspace3: BitField,
 }
 impl Default for Evaluator {
     fn default() -> Self {
         Self {
             workspace: Default::default(),
+            workspace2: Default::default(),
+            workspace3: Default::default(),
         }
     }
 }
@@ -53,7 +57,14 @@ impl Evaluator {
 
         let mut dog_influence = view.factions.dogs.units.clone();
 
-        doop(7, &mut dog_influence, &mut cat_influence, &ship_allowed);
+        doop(
+            7,
+            &mut dog_influence,
+            &mut cat_influence,
+            &ship_allowed,
+            &mut self.workspace2,
+            &mut self.workspace3,
+        );
 
         let num_cat_influence = cat_influence.count_ones(..) as i64;
         let num_dog_influence = dog_influence.count_ones(..) as i64;
@@ -98,26 +109,32 @@ pub fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
     }
 }
 
-fn doop(iteration: usize, dogs: &mut BitField, cats: &mut BitField, allowed_cells: &BitField) {
+fn doop(
+    iteration: usize,
+    dogs: &mut BitField,
+    cats: &mut BitField,
+    allowed_cells: &BitField,
+    cache: &mut BitField,
+    mut cache2: &mut BitField,
+) {
     dogs.intersect_with(allowed_cells);
     cats.intersect_with(allowed_cells);
     if dogs.count_ones(..) == 0 && cats.count_ones(..) == 0 {
         return;
     }
 
-    let mut cache2 = BitField::new();
-
-    let mut cache = BitField::new();
+    // let mut cache2 = BitField::new();
+    // let mut cache = BitField::new();
 
     for _i in 0..iteration {
         cache.clear();
         cache.union_with(dogs);
-        expand_mesh(dogs, &mut cache2);
-        let dogs_changed = &cache != dogs;
+        expand_mesh(dogs, cache2);
+        let dogs_changed = cache != dogs;
         cache.clear();
         cache.union_with(cats);
-        expand_mesh(cats, &mut cache2);
-        let cats_changed = &cache != cats;
+        expand_mesh(cats, cache2);
+        let cats_changed = cache != cats;
         if !dogs_changed && !cats_changed {
             break;
         }
