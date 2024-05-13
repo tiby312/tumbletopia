@@ -331,20 +331,48 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        let mut moves = game_after_move.for_all_moves_fast(team, world, |c, _, _| {
-            if depth >= max_depth {
-                c.destroyed_unit.is_some()
-            } else {
-                true
-            }
-        });
 
-        if depth >= max_depth + 2 || moves.is_empty() {
+        let mut moves = game_after_move.for_all_moves_fast(team, world,|_,_,_|true);
+
+        if depth >= max_depth + 2 {
+            //console_dbg!(depth);
+            self.calls.add_eval();
+            return evaluator.absolute_evaluate(game_after_move, world, false);
+        }
+
+        if depth >= max_depth {
+            //let bb=moves.len();
+            moves.retain(|a| {
+                game_after_move
+                    .factions
+                    .relative(team)
+                    .that_team
+                    .units
+                    .is_set(a.attackto)
+            });
+            //console_dbg!(bb,moves.len());
+        }
+
+        if moves.is_empty() {
             //TODO if there are no moves should imediately return fail condition.
             //not the board evaluation heuristic.
             self.calls.add_eval();
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
+        // let mut moves = game_after_move.for_all_moves_fast(team, world, |c, _, _| {
+        //     if depth >= max_depth {
+        //         c.destroyed_unit.is_some()
+        //     } else {
+        //         true
+        //     }
+        // });
+
+        // if depth >= max_depth + 2 || (moves.is_empty() && depth<max_depth) {
+        //     //TODO if there are no moves should imediately return fail condition.
+        //     //not the board evaluation heuristic.
+        //     self.calls.add_eval();
+        //     return evaluator.absolute_evaluate(game_after_move, world, false);
+        // }
 
         let mut num_sorted = 0;
         if let Some(p) = self.prev_cache.get_best_prev_move(self.path) {
