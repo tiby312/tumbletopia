@@ -164,6 +164,11 @@ impl GameState {
         &mut self,
         team: ActiveTeam,
         world: &board::MyWorld,
+        mut func: impl FnMut(
+            &move_build::MoveEffect,
+            &move_build::ExtraEffect,
+            &moves::ActualMove,
+        ) -> bool,
     ) -> Vec<moves::ActualMove> {
         let state = self;
         let mut movs = Vec::new();
@@ -202,7 +207,9 @@ impl GameState {
                         attackto: sm,
                     };
 
-                    movs.push(mmo);
+                    if func(&effect, &k, &mmo) {
+                        movs.push(mmo);
+                    }
 
                     mmm = kkk.undo(&k, state);
                 }
