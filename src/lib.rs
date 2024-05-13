@@ -193,7 +193,8 @@ pub async fn worker_entry() {
             let r = ace::handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
             game_history.push(r);
 
-            ace::ai::absolute_evaluate(&mut game, &world, true);
+            let mut e=ace::ai::Evaluator::default();
+            e.absolute_evaluate(&mut game, &world, true);
         }
     };
 

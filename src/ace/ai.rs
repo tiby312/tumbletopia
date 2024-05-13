@@ -5,65 +5,72 @@ use super::*;
 pub type Eval = i64;
 const MATE: i64 = 1_000_000;
 
-//cats maximizing
-//dogs minimizing
-pub fn absolute_evaluate(view: &GameState, world: &board::MyWorld, _debug: bool) -> Eval {
-    // Doesnt seem that important that the AI knows exactly when it is winning.
-    // (There doesnt seem to be many tactical combinations near the end of the game).
-    // match view.game_is_over() {
-    //     Some(GameOver::CatWon) => {
-    //         return MATE;
-    //     }
-    //     Some(GameOver::DogWon) => {
-    //         return -MATE;
-    //     }
-    //     Some(GameOver::Tie) => {}
-    //     None => {}
-    // }
+pub struct Evaluator{
+    workspace:BitField
+}
+impl Default for Evaluator{
+    fn default() -> Self {
+        Self { workspace: Default::default() }
+    }
+}
+impl Evaluator{
+    //cats maximizing
+    //dogs minimizing
+    pub fn absolute_evaluate(&mut self,view: &GameState, world: &board::MyWorld, _debug: bool) -> Eval {
+        // Doesnt seem that important that the AI knows exactly when it is winning.
+        // (There doesnt seem to be many tactical combinations near the end of the game).
+        // match view.game_is_over() {
+        //     Some(GameOver::CatWon) => {
+        //         return MATE;
+        //     }
+        //     Some(GameOver::DogWon) => {
+        //         return -MATE;
+        //     }
+        //     Some(GameOver::Tie) => {}
+        //     None => {}
+        // }
 
-    let ship_allowed = {
-        let water = {
-            let mut t = view.env.terrain.gen_all_terrain();
-            t.toggle_range(..);
-            t
+        let ship_allowed = {
+            self.workspace.clear();
+            self.workspace.union_with(&view.env.terrain.land);
+            self.workspace.toggle_range(..);
+            self.workspace.intersect_with(world.get_game_cells());
+            &mut self.workspace
         };
-        let mut t = world.get_game_cells().clone();
-        t.intersect_with(&water);
-        t
-    };
 
-    let num_cats = view.factions.cats.units.count_ones(..) as i64;
-    let num_dogs = view.factions.dogs.units.count_ones(..) as i64;
+        let num_cats = view.factions.cats.units.count_ones(..) as i64;
+        let num_dogs = view.factions.dogs.units.count_ones(..) as i64;
 
-    let mut cat_influence = view.factions.cats.units.clone();
+        let mut cat_influence = view.factions.cats.units.clone();
 
-    let mut dog_influence = view.factions.dogs.units.clone();
+        let mut dog_influence = view.factions.dogs.units.clone();
 
-    doop(7, &mut dog_influence, &mut cat_influence, &ship_allowed);
+        doop(7, &mut dog_influence, &mut cat_influence, &ship_allowed);
 
-    let num_cat_influence = cat_influence.count_ones(..) as i64;
-    let num_dog_influence = dog_influence.count_ones(..) as i64;
+        let num_cat_influence = cat_influence.count_ones(..) as i64;
+        let num_dog_influence = dog_influence.count_ones(..) as i64;
 
-    let dog_distance = view
-        .factions
-        .dogs
-        .units
-        .iter_mesh()
-        .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-        .sum::<i64>();
-    let cat_distance = view
-        .factions
-        .cats
-        .units
-        .iter_mesh()
-        .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-        .sum::<i64>();
+        let dog_distance = view
+            .factions
+            .dogs
+            .units
+            .iter_mesh()
+            .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
+            .sum::<i64>();
+        let cat_distance = view
+            .factions
+            .cats
+            .units
+            .iter_mesh()
+            .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
+            .sum::<i64>();
 
-    //The AI will try to avoid the center.
-    //The more influlence is at stake, the more precious each piece is
-    (num_cat_influence - num_dog_influence) * 100
-        + (-cat_distance + dog_distance) * 1
-        + (num_cats - num_dogs) * 2000
+        //The AI will try to avoid the center.
+        //The more influlence is at stake, the more precious each piece is
+        (num_cat_influence - num_dog_influence) * 100
+            + (-cat_distance + dog_distance) * 1
+            + (num_cats - num_dogs) * 2000
+    }
 }
 
 fn around(point: Axial) -> impl Iterator<Item = Axial> {
@@ -166,6 +173,8 @@ pub fn iterative_deepening(
     let mut foo1 = PrincipalVariation {
         a: std::collections::BTreeMap::new(),
     };
+    let mut evaluator=Evaluator::default();
+
     //TODO stop searching if we found a game ending move.
     for depth in 1..max_iterative_depth {
         console_dbg!("searching", depth);
@@ -183,7 +192,7 @@ pub fn iterative_deepening(
         };
 
         let mut kk = game.clone();
-        let res = aaaa.alpha_beta(&mut kk, world, ABAB::new(), team, 0, depth, 0);
+        let res = aaaa.alpha_beta(&mut kk, world, ABAB::new(), team, 0, depth, 0,&mut evaluator);
         assert_eq!(&kk, game);
 
         let mov = foo1.a.get(&[] as &[_]).cloned().unwrap();
@@ -286,6 +295,7 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
         max_depth: usize,
         ext: usize,
+        evaluator:&mut Evaluator
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
@@ -294,7 +304,7 @@ impl<'a> AlphaBeta<'a> {
         if depth >= max_depth + 2 {
             //console_dbg!(depth);
             self.calls.add_eval();
-            return absolute_evaluate(game_after_move, world, false);
+            return evaluator.absolute_evaluate(game_after_move, world, false);
         }
 
         if depth >= max_depth {
@@ -314,7 +324,7 @@ impl<'a> AlphaBeta<'a> {
             //TODO if there are no moves should imediately return fail condition.
             //not the board evaluation heuristic.
             self.calls.add_eval();
-            return absolute_evaluate(game_after_move, world, false);
+            return evaluator.absolute_evaluate(game_after_move, world, false);
         }
 
         let mut num_sorted = 0;
@@ -358,6 +368,7 @@ impl<'a> AlphaBeta<'a> {
                 new_depth,
                 max_depth,
                 ext,
+                evaluator
             );
 
             let mov = self.path.pop().unwrap();
