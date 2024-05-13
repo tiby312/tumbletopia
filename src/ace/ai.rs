@@ -332,11 +332,13 @@ impl<'a> AlphaBeta<'a> {
         self.max_ext = self.max_ext.max(ext);
 
         let mut quiet_position = true;
-        let mut moves = game_after_move.for_all_moves_fast(team, world, |e, _, _| {
+        let mut moves=vec!();
+
+        game_after_move.for_all_moves_fast(team, world, |e, _, m| {
             if e.destroyed_unit.is_some() {
                 quiet_position = false;
             }
-            true
+            moves.push(m.clone());
         });
 
         if depth >= max_depth + 2 {

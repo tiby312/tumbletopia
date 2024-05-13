@@ -168,10 +168,10 @@ impl GameState {
             &move_build::MoveEffect,
             &move_build::ExtraEffect,
             &moves::ActualMove,
-        ) -> bool,
-    ) -> Vec<moves::ActualMove> {
+        ) ,
+    )  {
         let state = self;
-        let mut movs = Vec::new();
+        //let mut movs = Vec::new();
         //for i in 0..state.factions.relative(team).this_team.units.len() {
         for pos in state
             .factions
@@ -207,9 +207,8 @@ impl GameState {
                         attackto: sm,
                     };
 
-                    if func(&effect, &k, &mmo) {
-                        movs.push(mmo);
-                    }
+                    func(&effect, &k, &mmo);
+                    
 
                     mmm = kkk.undo(&k, state);
                 }
@@ -219,16 +218,16 @@ impl GameState {
             }
         }
 
-        {
-            for a in movs.iter() {
-                assert!(state
-                    .factions
-                    .relative(team)
-                    .this_team
-                    .units
-                    .is_set(a.original));
-            }
-        }
-        movs
+        // {
+        //     for a in movs.iter() {
+        //         assert!(state
+        //             .factions
+        //             .relative(team)
+        //             .this_team
+        //             .units
+        //             .is_set(a.original));
+        //     }
+        // }
+        // movs
     }
 }
