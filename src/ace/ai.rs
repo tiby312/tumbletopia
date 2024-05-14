@@ -331,15 +331,6 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        let mut quiet_position = true;
-        let mut moves=vec!();
-
-        game_after_move.for_all_moves_fast(team, world, |e, _, m| {
-            if e.destroyed_unit.is_some() {
-                quiet_position = false;
-            }
-            moves.push(m.clone());
-        });
 
         if depth >= max_depth + 2 {
             //console_dbg!(depth);
@@ -347,20 +338,29 @@ impl<'a> AlphaBeta<'a> {
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
 
+        let mut quiet_position = true;
+        let mut moves=vec!();
+
+        game_after_move.for_all_moves_fast(team, world, |e, _, m| {
+            if e.destroyed_unit.is_some() {
+                quiet_position = false;
+            }
+
+            if depth<max_depth{
+                moves.push(m.clone());
+            }else{
+                if e.destroyed_unit.is_some(){
+                    moves.push(m.clone())
+                }
+            }
+        });
+
+
         if depth >= max_depth {
             if quiet_position {
                 self.calls.add_eval();
                 return evaluator.absolute_evaluate(game_after_move, world, false);
             }
-            moves.retain(|a| {
-                game_after_move
-                    .factions
-                    .relative(team)
-                    .that_team
-                    .units
-                    .is_set(a.attackto)
-            });
-            //console_dbg!(bb,moves.len());
         }
 
         if moves.is_empty() && depth < max_depth {
@@ -369,20 +369,7 @@ impl<'a> AlphaBeta<'a> {
             self.calls.add_eval();
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
-        // let mut moves = game_after_move.for_all_moves_fast(team, world, |c, _, _| {
-        //     if depth >= max_depth {
-        //         c.destroyed_unit.is_some()
-        //     } else {
-        //         true
-        //     }
-        // });
-
-        // if depth >= max_depth + 2 || (moves.is_empty() && depth<max_depth) {
-        //     //TODO if there are no moves should imediately return fail condition.
-        //     //not the board evaluation heuristic.
-        //     self.calls.add_eval();
-        //     return evaluator.absolute_evaluate(game_after_move, world, false);
-        // }
+        
 
         let mut num_sorted = 0;
         if let Some(p) = self.prev_cache.get_best_prev_move(self.path) {
