@@ -20,6 +20,12 @@ impl Default for Evaluator {
     }
 }
 impl Evaluator {
+    pub fn cant_move(&mut self,team:ActiveTeam)->Eval{
+        match team{
+            ActiveTeam::Cats => -MATE,
+            ActiveTeam::Dogs => MATE,
+        }
+    }
     //cats maximizing
     //dogs minimizing
     pub fn absolute_evaluate(
@@ -361,8 +367,7 @@ impl<'a> AlphaBeta<'a> {
         }
 
         if moves.is_empty() && depth < max_depth {
-            self.calls.add_eval();
-            return evaluator.absolute_evaluate(game_after_move, world, false);
+            return evaluator.cant_move(team);
         }
 
 
