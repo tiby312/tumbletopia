@@ -346,16 +346,16 @@ impl<'a> AlphaBeta<'a> {
         let mut quiet_position = true;
         let mut moves=vec!();
 
-        game_after_move.for_all_moves_fast(team, world, |e, _, m| {
-            if e.destroyed_unit.is_some() {
+        game_after_move.for_all_moves_fast(team, world, |e, m| {
+            if e.move_effect.destroyed_unit.is_some() {
                 quiet_position = false;
             }
 
             if depth<max_depth{
-                moves.push(m.clone());
+                moves.push(m);
             }else{
-                if e.destroyed_unit.is_some(){
-                    moves.push(m.clone())
+                if e.move_effect.destroyed_unit.is_some(){
+                    moves.push(m)
                 }
             }
         });

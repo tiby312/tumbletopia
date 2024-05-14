@@ -165,9 +165,8 @@ impl GameState {
         team: ActiveTeam,
         world: &board::MyWorld,
         mut func: impl FnMut(
-            &move_build::MoveEffect,
-            &move_build::ExtraEffect,
-            &moves::ActualMove,
+            move_build::CombinedEffect,
+            moves::ActualMove,
         ) ,
     )  {
         let state = self;
@@ -190,7 +189,7 @@ impl GameState {
                     moveto: mm,
                 };
 
-                let effect = mmm.apply(team, state, world);
+                let mut effect = mmm.apply(team, state, world);
 
                 let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
 
@@ -207,10 +206,13 @@ impl GameState {
                         attackto: sm,
                     };
 
-                    func(&effect, &k, &mmo);
+                    let jjj=effect.combine(k);
+
+                    func(jjj.clone(), mmo);
                     
 
-                    mmm = kkk.undo(&k, state);
+                    mmm = kkk.undo(&jjj.extra_effect, state);
+                    effect=jjj.move_effect;
                 }
 
                 //revert it back just the movement component.
