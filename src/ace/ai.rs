@@ -333,7 +333,6 @@ impl<'a> AlphaBeta<'a> {
 
 
         if depth >= max_depth + 2 {
-            //console_dbg!(depth);
             self.calls.add_eval();
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
@@ -356,20 +355,16 @@ impl<'a> AlphaBeta<'a> {
         });
 
 
-        if depth >= max_depth {
-            if quiet_position {
-                self.calls.add_eval();
-                return evaluator.absolute_evaluate(game_after_move, world, false);
-            }
-        }
-
-        if moves.is_empty() && depth < max_depth {
-            //TODO if there are no moves should imediately return fail condition.
-            //not the board evaluation heuristic.
+        if depth >= max_depth && quiet_position{
             self.calls.add_eval();
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
-        
+
+        if moves.is_empty() && depth < max_depth {
+            self.calls.add_eval();
+            return evaluator.absolute_evaluate(game_after_move, world, false);
+        }
+
 
         let mut num_sorted = 0;
         if let Some(p) = self.prev_cache.get_best_prev_move(self.path) {
