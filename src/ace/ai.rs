@@ -161,30 +161,30 @@ fn doop(
 
 //TODO use bump allocator!!!!!
 struct PrincipalVariation {
-    a: std::collections::BTreeMap<Vec<moves::ActualMove>, moves::ActualMove>,
+    a: std::collections::BTreeMap<Vec<moves::ActualMove>, (moves::ActualMove,Eval)>,
 }
 impl PrincipalVariation {
-    pub fn get_best_prev_move(&self, path: &[moves::ActualMove]) -> Option<&moves::ActualMove> {
+    pub fn get_best_prev_move(&self, path: &[moves::ActualMove]) -> Option<&(moves::ActualMove,Eval)> {
         self.a.get(path)
     }
     pub fn get_best_prev_move_mut(
         &mut self,
         path: &[moves::ActualMove],
-    ) -> Option<&mut moves::ActualMove> {
+    ) -> Option<&mut (moves::ActualMove,Eval)> {
         self.a.get_mut(path)
     }
 
-    pub fn update(&mut self, path: &[moves::ActualMove], aaa: &moves::ActualMove) {
+    pub fn update(&mut self, path: &[moves::ActualMove], aaa: &moves::ActualMove,eval:Eval) {
         //if let Some(aaa) = &ret {
         if let Some(foo) = self.get_best_prev_move_mut(path) {
-            *foo = aaa.clone();
+            *foo = (aaa.clone(),eval);
         } else {
-            self.insert(path, aaa.clone());
+            self.insert(path, aaa.clone(),eval);
         }
         //}
     }
-    pub fn insert(&mut self, path: &[moves::ActualMove], m: moves::ActualMove) {
-        self.a.insert(path.to_vec(), m);
+    pub fn insert(&mut self, path: &[moves::ActualMove], m: moves::ActualMove,eval:Eval) {
+        self.a.insert(path.to_vec(), (m,eval));
     }
 }
 
@@ -268,7 +268,7 @@ pub fn iterative_deepening(
 
     console_dbg!("AI MOVE::", m.mov, m.eval);
 
-    m.mov
+    m.mov.0
 }
 
 #[derive(Debug)]
@@ -370,13 +370,45 @@ impl<'a> AlphaBeta<'a> {
 
         let mut num_sorted = 0;
         //TODO principal variation does not seem to be helping much
-        if let Some(p) = self.prev_cache.get_best_prev_move(self.path) {
-            let f = moves.iter().enumerate().find(|(_, x)| **x == *p).unwrap();
-            let swap_ind = f.0;
-            moves.swap(0, swap_ind);
-            num_sorted += 1;
+        // if let Some(p) = self.prev_cache.get_best_prev_move(self.path) {
+        //     let f = moves.iter().enumerate().find(|(_, x)| **x == *p).unwrap();
+        //     let swap_ind = f.0;
+        //     moves.swap(0, swap_ind);
+        //     num_sorted += 1;
+        // }
+        
+
+        {
+            let ind=if team==ActiveTeam::Cats{
+                moves[num_sorted..].iter().enumerate().max_by_key(|&(_,x)|{
+                    let mut num=0;
+                    self.path.push(x.clone());
+                    if let Some((_,k))=self.prev_cache.get_best_prev_move(&self.path){
+                        num=*k;
+                    }
+                    self.path.pop();
+                    num
+                })
+            }else{
+                moves[num_sorted..].iter().enumerate().min_by_key(|&(_,x)|{
+                    let mut num=0;
+                    self.path.push(x.clone());
+                    if let Some((_,k))=self.prev_cache.get_best_prev_move(&self.path){
+                        num=*k;
+                    }
+                    self.path.pop();
+                    num
+                })
+            };
+
+            if let Some((ind,_))=ind{
+            
+                moves.swap(ind,num_sorted);
+                num_sorted+=1;
+            }
         }
 
+        
         for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
             if let Some((x, _)) = moves[num_sorted..]
                 .iter()
@@ -387,6 +419,10 @@ impl<'a> AlphaBeta<'a> {
                 num_sorted += 1;
             }
         }
+
+
+
+
 
         let (eval, m) = if team == ActiveTeam::Cats {
             self.floopy(
@@ -417,7 +453,7 @@ impl<'a> AlphaBeta<'a> {
         };
 
         if let Some(kk) = m {
-            self.prev_cache.update(self.path, &kk);
+            self.prev_cache.update(self.path, &kk,eval);
         }
         eval
     }
