@@ -472,6 +472,7 @@ impl<'a> AlphaBeta<'a> {
 
             if consider_good_move {
                 self.killer_moves.consider(depth, mov);
+                
             }
             if !keep_going {
                 break;
