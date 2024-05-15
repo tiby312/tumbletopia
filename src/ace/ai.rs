@@ -389,14 +389,7 @@ impl<'a> AlphaBeta<'a> {
         }
 
         let mut num_sorted = 0;
-        //TODO principal variation does not seem to be helping much
-        // if let Some(p) = self.prev_cache.get_best_prev_move(self.path) {
-        //     let f = moves.iter().enumerate().find(|(_, x)| **x == *p).unwrap();
-        //     let swap_ind = f.0;
-        //     moves.swap(0, swap_ind);
-        //     num_sorted += 1;
-        // }
-
+        
         for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
             if let Some((x, _)) = moves[num_sorted..]
                 .iter()
@@ -443,7 +436,7 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
-        // console_dbg!(moves.iter().map(|&(_,x)|{
+        // console_dbg!(team,moves.iter().map(|&(_,x)|{
         //     let mut num = None;
         //     //self.path.push(x.clone());
         //     if let Some((_, k)) = self.prev_cache.a.get(&x) {
