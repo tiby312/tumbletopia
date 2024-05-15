@@ -435,7 +435,7 @@ impl<'a> AlphaBeta<'a> {
         doop: D,
         moves: Vec<moves::ActualMove>,
     ) -> (i64, Option<moves::ActualMove>) {
-        let mut kk = ab.ab_iter(doop);
+        let mut ab_iter = ab.ab_iter(doop);
         for cand in moves {
             let effect = {
                 let j = cand.as_move();
@@ -450,7 +450,7 @@ impl<'a> AlphaBeta<'a> {
             let eval = self.alpha_beta(
                 game_after_move,
                 world,
-                kk.clone_ab_values(),
+                ab_iter.clone_ab_values(),
                 team.not(),
                 depth + 1,
                 max_depth,
@@ -468,17 +468,14 @@ impl<'a> AlphaBeta<'a> {
                 );
             }
 
-            let (keep_going, consider_good_move) = kk.consider(&mov, eval);
-
-            if consider_good_move {
-                self.killer_moves.consider(depth, mov);
-                
-            }
+            let keep_going = ab_iter.consider(&mov, eval);
+            
             if !keep_going {
+                self.killer_moves.consider(depth, mov);
                 break;
             }
         }
-        kk.finish()
+        ab_iter.finish()
     }
 }
 
@@ -522,7 +519,7 @@ mod abab {
         pub fn clone_ab_values(&self) -> ABAB {
             self.a.clone()
         }
-        pub fn consider(&mut self, t: &T, eval: Eval) -> (bool, bool) {
+        pub fn consider(&mut self, t: &T, eval: Eval) -> bool {
             let mut found_something = false;
 
             //TODO should be less than or equal instead maybe?
@@ -543,6 +540,7 @@ mod abab {
             };
 
             if cond {
+                assert!(mmm);
                 self.keep_going = false;
                 found_something = true;
             }
@@ -552,8 +550,8 @@ mod abab {
             } else {
                 self.a.beta = self.a.beta.min(self.value);
             }
-
-            (self.keep_going, found_something)
+            assert_eq!(self.keep_going,!found_something);
+            self.keep_going //, found_something)
         }
     }
 
