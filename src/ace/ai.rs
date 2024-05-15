@@ -395,27 +395,29 @@ impl<'a> AlphaBeta<'a> {
                 moves[num_sorted..]
                     .iter()
                     .enumerate()
-                    .max_by_key(|&(_, x)| {
-                        let mut num = None;
-                        //self.path.push(x.clone());
+                    .filter_map(|(i,x)|{
                         if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-                            num = Some(*k);
+                            Some((i,k))
+                        }else{
+                            None
                         }
-                        //self.path.pop();
-                        num
+                    })
+                    .max_by_key(|&(_, x)| {
+                        x
                     })
             } else {
                 moves[num_sorted..]
                     .iter()
                     .enumerate()
-                    .min_by_key(|&(_, x)| {
-                        let mut num = None;
-                        //self.path.push(x.clone());
+                    .filter_map(|(i,x)|{
                         if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-                            num = Some(*k);
+                            Some((i,k))
+                        }else{
+                            None
                         }
-                        //self.path.pop();
-                        num
+                    })
+                    .min_by_key(|&(_, x)| {
+                        x
                     })
             };
 
@@ -436,16 +438,16 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
-        // if team==ActiveTeam::Cats{
-        //     console_dbg!(team,moves.iter().map(|&(_,x)|{
-        //         let mut num = None;
-        //         //self.path.push(x.clone());
-        //         if let Some((_, k)) = self.prev_cache.a.get(&x) {
-        //             num = Some(*k);
-        //         }
-        //         num
-        //     }).collect::<Vec<_>>());
-        // }
+        if team==ActiveTeam::Cats{
+            console_dbg!(team,moves.iter().map(|&(_,x)|{
+                let mut num = None;
+                //self.path.push(x.clone());
+                if let Some((_, k)) = self.prev_cache.a.get(&x) {
+                    num = Some(*k);
+                }
+                num
+            }).collect::<Vec<_>>());
+        }
 
         let moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
 
