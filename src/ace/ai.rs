@@ -520,8 +520,7 @@ mod abab {
             self.a.clone()
         }
         pub fn consider(&mut self, t: &T, eval: Eval) -> bool {
-            let mut found_something = false;
-
+            
             //TODO should be less than or equal instead maybe?
             let mmm = if self.doop.maximizing() {
                 eval > self.value
@@ -542,7 +541,6 @@ mod abab {
             if cond {
                 assert!(mmm);
                 self.keep_going = false;
-                found_something = true;
             }
 
             if self.doop.maximizing() {
@@ -550,8 +548,8 @@ mod abab {
             } else {
                 self.a.beta = self.a.beta.min(self.value);
             }
-            assert_eq!(self.keep_going,!found_something);
-            self.keep_going //, found_something)
+
+            self.keep_going
         }
     }
 
