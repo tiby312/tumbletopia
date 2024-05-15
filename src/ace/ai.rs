@@ -161,30 +161,33 @@ fn doop(
 
 //TODO use bump allocator!!!!!
 struct PrincipalVariation {
-    a: std::collections::BTreeMap<Vec<moves::ActualMove>, (moves::ActualMove,Eval)>,
+    a: std::collections::BTreeMap<Vec<moves::ActualMove>, (moves::ActualMove, Eval)>,
 }
 impl PrincipalVariation {
-    pub fn get_best_prev_move(&self, path: &[moves::ActualMove]) -> Option<&(moves::ActualMove,Eval)> {
+    pub fn get_best_prev_move(
+        &self,
+        path: &[moves::ActualMove],
+    ) -> Option<&(moves::ActualMove, Eval)> {
         self.a.get(path)
     }
     pub fn get_best_prev_move_mut(
         &mut self,
         path: &[moves::ActualMove],
-    ) -> Option<&mut (moves::ActualMove,Eval)> {
+    ) -> Option<&mut (moves::ActualMove, Eval)> {
         self.a.get_mut(path)
     }
 
-    pub fn update(&mut self, path: &[moves::ActualMove], aaa: &moves::ActualMove,eval:Eval) {
+    pub fn update(&mut self, path: &[moves::ActualMove], aaa: &moves::ActualMove, eval: Eval) {
         //if let Some(aaa) = &ret {
         if let Some(foo) = self.get_best_prev_move_mut(path) {
-            *foo = (aaa.clone(),eval);
+            *foo = (aaa.clone(), eval);
         } else {
-            self.insert(path, aaa.clone(),eval);
+            self.insert(path, aaa.clone(), eval);
         }
         //}
     }
-    pub fn insert(&mut self, path: &[moves::ActualMove], m: moves::ActualMove,eval:Eval) {
-        self.a.insert(path.to_vec(), (m,eval));
+    pub fn insert(&mut self, path: &[moves::ActualMove], m: moves::ActualMove, eval: Eval) {
+        self.a.insert(path.to_vec(), (m, eval));
     }
 }
 
@@ -376,39 +379,7 @@ impl<'a> AlphaBeta<'a> {
         //     moves.swap(0, swap_ind);
         //     num_sorted += 1;
         // }
-        
 
-        {
-            let ind=if team==ActiveTeam::Cats{
-                moves[num_sorted..].iter().enumerate().max_by_key(|&(_,x)|{
-                    let mut num=0;
-                    self.path.push(x.clone());
-                    if let Some((_,k))=self.prev_cache.get_best_prev_move(&self.path){
-                        num=*k;
-                    }
-                    self.path.pop();
-                    num
-                })
-            }else{
-                moves[num_sorted..].iter().enumerate().min_by_key(|&(_,x)|{
-                    let mut num=0;
-                    self.path.push(x.clone());
-                    if let Some((_,k))=self.prev_cache.get_best_prev_move(&self.path){
-                        num=*k;
-                    }
-                    self.path.pop();
-                    num
-                })
-            };
-
-            if let Some((ind,_))=ind{
-            
-                moves.swap(ind,num_sorted);
-                num_sorted+=1;
-            }
-        }
-
-        
         for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
             if let Some((x, _)) = moves[num_sorted..]
                 .iter()
@@ -420,9 +391,40 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
+        {
+            let ind = if team == ActiveTeam::Cats {
+                moves[num_sorted..]
+                    .iter()
+                    .enumerate()
+                    .max_by_key(|&(_, x)| {
+                        let mut num = 0;
+                        self.path.push(x.clone());
+                        if let Some((_, k)) = self.prev_cache.get_best_prev_move(&self.path) {
+                            num = *k;
+                        }
+                        self.path.pop();
+                        num
+                    })
+            } else {
+                moves[num_sorted..]
+                    .iter()
+                    .enumerate()
+                    .min_by_key(|&(_, x)| {
+                        let mut num = 0;
+                        self.path.push(x.clone());
+                        if let Some((_, k)) = self.prev_cache.get_best_prev_move(&self.path) {
+                            num = *k;
+                        }
+                        self.path.pop();
+                        num
+                    })
+            };
 
-
-
+            if let Some((ind, _)) = ind {
+                moves.swap(ind, num_sorted);
+                num_sorted += 1;
+            }
+        }
 
         let (eval, m) = if team == ActiveTeam::Cats {
             self.floopy(
@@ -453,7 +455,7 @@ impl<'a> AlphaBeta<'a> {
         };
 
         if let Some(kk) = m {
-            self.prev_cache.update(self.path, &kk,eval);
+            self.prev_cache.update(self.path, &kk, eval);
         }
         eval
     }
@@ -505,7 +507,7 @@ impl<'a> AlphaBeta<'a> {
             }
 
             let keep_going = ab_iter.consider(&mov, eval);
-            
+
             if !keep_going {
                 self.killer_moves.consider(depth, mov);
                 break;
@@ -556,7 +558,6 @@ mod abab {
             self.a.clone()
         }
         pub fn consider(&mut self, t: &T, eval: Eval) -> bool {
-            
             //TODO should be less than or equal instead maybe?
             let mmm = if self.doop.maximizing() {
                 eval > self.value
