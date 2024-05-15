@@ -114,8 +114,8 @@ pub mod small_mesh {
                     let x = a / 13;
                     let y = a % 13;
                     point.add(Axial::from_arr([
-                        x as hex::CoordNum - 6,
-                        y as hex::CoordNum - 6,
+                        (x - 6) as hex::CoordNum,
+                        (y - 6) as hex::CoordNum,
                     ]))
                 }) //.chain(skip_moves)
         }
@@ -129,7 +129,7 @@ pub mod small_mesh {
         //     // -3 -2 -1 0 1 2 3
         //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
         // ind as usize
-        ((q + 6) * 13 + (r + 6)) as usize
+        ((q as isize + 6) * 13 + (r as isize + 6)) as usize
 
         // TABLE
         //     .iter()
