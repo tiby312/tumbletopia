@@ -164,11 +164,8 @@ impl GameState {
         &mut self,
         team: ActiveTeam,
         world: &board::MyWorld,
-        mut func: impl FnMut(
-            move_build::CombinedEffect,
-            moves::ActualMove,
-        ) ,
-    )  {
+        mut func: impl FnMut(move_build::CombinedEffect, moves::ActualMove),
+    ) {
         let state = self;
         //let mut movs = Vec::new();
         //for i in 0..state.factions.relative(team).this_team.units.len() {
@@ -206,13 +203,12 @@ impl GameState {
                         attackto: sm,
                     };
 
-                    let jjj=effect.combine(k);
+                    let jjj = effect.combine(k);
 
                     func(jjj.clone(), mmo);
-                    
 
                     mmm = kkk.undo(&jjj.extra_effect, state);
-                    effect=jjj.move_effect;
+                    effect = jjj.move_effect;
                 }
 
                 //revert it back just the movement component.
