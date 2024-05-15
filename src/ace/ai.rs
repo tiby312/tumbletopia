@@ -562,26 +562,7 @@ mod abab {
                 beta: Eval::MAX,
             }
         }
-        pub fn ab_iter_max<T: Clone>(&mut self) -> ABIter<T, Maximizer> {
-            let value = i64::MIN;
-            ABIter {
-                value,
-                a: self,
-                mm: None,
-                keep_going: true,
-                doop: Maximizer,
-            }
-        }
-        pub fn ab_iter_min<T: Clone>(&mut self) -> ABIter<T, Minimizer> {
-            let value = i64::MAX;
-            ABIter {
-                value,
-                a: self,
-                mm: None,
-                keep_going: true,
-                doop: Minimizer,
-            }
-        }
+
 
         pub fn ab_iter<T: Clone, D: Doop>(&mut self, doop: D) -> ABIter<T, D> {
             let value = if doop.maximizing() {
