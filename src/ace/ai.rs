@@ -443,6 +443,17 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
+        // console_dbg!(moves.iter().map(|&(_,x)|{
+        //     let mut num = None;
+        //     //self.path.push(x.clone());
+        //     if let Some((_, k)) = self.prev_cache.a.get(&x) {
+        //         num = Some(*k);
+        //     }
+        //     num
+        // }).collect::<Vec<_>>());
+
+        let moves:Vec<_>=moves.drain(..).map(|x|x.0).collect();
+
         let (eval, m) = if team == ActiveTeam::Cats {
             self.floopy(
                 depth,
@@ -488,10 +499,10 @@ impl<'a> AlphaBeta<'a> {
         world: &board::MyWorld,
         mut ab: ABAB,
         doop: D,
-        moves: Vec<(moves::ActualMove, u64)>,
+        moves: Vec<moves::ActualMove>,
     ) -> (i64, Option<moves::ActualMove>) {
         let mut ab_iter = ab.ab_iter(doop);
-        for (cand, _) in moves {
+        for cand in moves {
             let effect = {
                 let j = cand.as_move();
                 let k = j.apply(team, game_after_move, world);
