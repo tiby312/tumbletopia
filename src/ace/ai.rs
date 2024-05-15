@@ -438,7 +438,7 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
-        // if team==ActiveTeam::Cats{
+        // if team==ActiveTeam::Dogs && num_sorted == 3{
         //     console_dbg!(team,moves.iter().map(|&(_,x)|{
         //         let mut num = None;
         //         //self.path.push(x.clone());
