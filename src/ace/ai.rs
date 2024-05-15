@@ -369,6 +369,7 @@ impl<'a> AlphaBeta<'a> {
         }
 
         let mut num_sorted = 0;
+        //TODO principal variation does not seem to be helping much
         if let Some(p) = self.prev_cache.get_best_prev_move(self.path) {
             let f = moves.iter().enumerate().find(|(_, x)| **x == *p).unwrap();
             let swap_ind = f.0;
