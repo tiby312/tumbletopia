@@ -119,6 +119,13 @@ pub enum GameOver {
 }
 
 impl GameState {
+    pub fn hash_me(&self) -> u64 {
+        use std::hash::Hash;
+        use std::hash::Hasher;
+        let mut hasher = std::hash::DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
     pub fn game_is_over(&self, world: &board::MyWorld, team: ActiveTeam) -> Option<GameOver> {
         let this_team_stuck = 'foo: {
             for unit in self.factions.relative(team).this_team.units.iter_mesh() {

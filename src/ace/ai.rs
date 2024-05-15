@@ -159,37 +159,54 @@ fn doop(
     }
 }
 
-//TODO use bump allocator!!!!!
-struct PrincipalVariation {
-    a: std::collections::BTreeMap<Vec<moves::ActualMove>, (moves::ActualMove, Eval)>,
+struct TranspositionTable {
+    a: std::collections::BTreeMap<u64, (moves::ActualMove, Eval)>,
 }
-impl PrincipalVariation {
-    pub fn get_best_prev_move(
-        &self,
-        path: &[moves::ActualMove],
-    ) -> Option<&(moves::ActualMove, Eval)> {
-        self.a.get(path)
-    }
-    pub fn get_best_prev_move_mut(
-        &mut self,
-        path: &[moves::ActualMove],
-    ) -> Option<&mut (moves::ActualMove, Eval)> {
-        self.a.get_mut(path)
-    }
-
-    pub fn update(&mut self, path: &[moves::ActualMove], aaa: &moves::ActualMove, eval: Eval) {
-        //if let Some(aaa) = &ret {
-        if let Some(foo) = self.get_best_prev_move_mut(path) {
-            *foo = (aaa.clone(), eval);
+impl TranspositionTable {
+    pub fn update(&mut self, a: &GameState, m: moves::ActualMove, eval: Eval) {
+        let k = a.hash_me();
+        if let Some(foo) = self.a.get_mut(&k) {
+            *foo = (m, eval);
         } else {
-            self.insert(path, aaa.clone(), eval);
+            self.a.insert(k, (m, eval));
         }
-        //}
     }
-    pub fn insert(&mut self, path: &[moves::ActualMove], m: moves::ActualMove, eval: Eval) {
-        self.a.insert(path.to_vec(), (m, eval));
+    pub fn get(&self, a: &GameState) -> Option<&(moves::ActualMove, Eval)> {
+        self.a.get(&a.hash_me())
     }
 }
+
+// //TODO use bump allocator!!!!!
+// struct PrincipalVariation {
+//     a: std::collections::BTreeMap<Vec<moves::ActualMove>, (moves::ActualMove, Eval)>,
+// }
+// impl PrincipalVariation {
+//     pub fn get_best_prev_move(
+//         &self,
+//         path: &[moves::ActualMove],
+//     ) -> Option<&(moves::ActualMove, Eval)> {
+//         self.a.get(path)
+//     }
+//     pub fn get_best_prev_move_mut(
+//         &mut self,
+//         path: &[moves::ActualMove],
+//     ) -> Option<&mut (moves::ActualMove, Eval)> {
+//         self.a.get_mut(path)
+//     }
+
+//     pub fn update(&mut self, path: &[moves::ActualMove], aaa: &moves::ActualMove, eval: Eval) {
+//         //if let Some(aaa) = &ret {
+//         if let Some(foo) = self.get_best_prev_move_mut(path) {
+//             *foo = (aaa.clone(), eval);
+//         } else {
+//             self.insert(path, aaa.clone(), eval);
+//         }
+//         //}
+//     }
+//     pub fn insert(&mut self, path: &[moves::ActualMove], m: moves::ActualMove, eval: Eval) {
+//         self.a.insert(path.to_vec(), (m, eval));
+//     }
+// }
 
 pub fn iterative_deepening(
     game: &GameState,
@@ -202,7 +219,7 @@ pub fn iterative_deepening(
     let max_iterative_depth = 4;
     //let max_depth = 2;
 
-    let mut foo1 = PrincipalVariation {
+    let mut foo1 = TranspositionTable {
         a: std::collections::BTreeMap::new(),
     };
     let mut evaluator = Evaluator::default();
@@ -236,7 +253,7 @@ pub fn iterative_deepening(
         );
         assert_eq!(&kk, game);
 
-        let mov = foo1.a.get(&[] as &[_]).cloned().unwrap();
+        let mov = foo1.get(game).cloned().unwrap();
         let res = EvalRet { mov, eval: res };
 
         let eval = res.eval;
@@ -286,7 +303,7 @@ impl Counter {
 
 struct AlphaBeta<'a> {
     //table: &'a mut LeafTranspositionTable,
-    prev_cache: &'a mut PrincipalVariation,
+    prev_cache: &'a mut TranspositionTable,
     calls: &'a mut Counter,
     path: &'a mut Vec<moves::ActualMove>,
     killer_moves: &'a mut KillerMoves,
@@ -348,16 +365,16 @@ impl<'a> AlphaBeta<'a> {
         let mut quiet_position = true;
         let mut moves = vec![];
 
-        game_after_move.for_all_moves_fast(team, world, |e, m| {
+        game_after_move.for_all_moves_fast(team, world, |e, m, stat| {
             if e.move_effect.destroyed_unit.is_some() {
                 quiet_position = false;
             }
 
             if depth < max_depth {
-                moves.push(m);
+                moves.push((m, stat.hash_me()));
             } else {
                 if e.move_effect.destroyed_unit.is_some() {
-                    moves.push(m)
+                    moves.push((m, stat.hash_me()));
                 }
             }
         });
@@ -384,7 +401,7 @@ impl<'a> AlphaBeta<'a> {
             if let Some((x, _)) = moves[num_sorted..]
                 .iter()
                 .enumerate()
-                .find(|(_, x)| *x == a)
+                .find(|(_, x)| x.0 == *a)
             {
                 moves.swap(x, num_sorted);
                 num_sorted += 1;
@@ -398,11 +415,11 @@ impl<'a> AlphaBeta<'a> {
                     .enumerate()
                     .max_by_key(|&(_, x)| {
                         let mut num = 0;
-                        self.path.push(x.clone());
-                        if let Some((_, k)) = self.prev_cache.get_best_prev_move(&self.path) {
+                        //self.path.push(x.clone());
+                        if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
                             num = *k;
                         }
-                        self.path.pop();
+                        //self.path.pop();
                         num
                     })
             } else {
@@ -411,11 +428,11 @@ impl<'a> AlphaBeta<'a> {
                     .enumerate()
                     .min_by_key(|&(_, x)| {
                         let mut num = 0;
-                        self.path.push(x.clone());
-                        if let Some((_, k)) = self.prev_cache.get_best_prev_move(&self.path) {
+                        //self.path.push(x.clone());
+                        if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
                             num = *k;
                         }
-                        self.path.pop();
+                        //self.path.pop();
                         num
                     })
             };
@@ -455,7 +472,7 @@ impl<'a> AlphaBeta<'a> {
         };
 
         if let Some(kk) = m {
-            self.prev_cache.update(self.path, &kk, eval);
+            self.prev_cache.update(game_after_move, kk, eval);
         }
         eval
     }
@@ -471,10 +488,10 @@ impl<'a> AlphaBeta<'a> {
         world: &board::MyWorld,
         mut ab: ABAB,
         doop: D,
-        moves: Vec<moves::ActualMove>,
+        moves: Vec<(moves::ActualMove, u64)>,
     ) -> (i64, Option<moves::ActualMove>) {
         let mut ab_iter = ab.ab_iter(doop);
-        for cand in moves {
+        for (cand, _) in moves {
             let effect = {
                 let j = cand.as_move();
                 let k = j.apply(team, game_after_move, world);

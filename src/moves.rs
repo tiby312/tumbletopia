@@ -164,7 +164,7 @@ impl GameState {
         &mut self,
         team: ActiveTeam,
         world: &board::MyWorld,
-        mut func: impl FnMut(move_build::CombinedEffect, moves::ActualMove),
+        mut func: impl FnMut(move_build::CombinedEffect, moves::ActualMove, &GameState),
     ) {
         let state = self;
         //let mut movs = Vec::new();
@@ -205,7 +205,7 @@ impl GameState {
 
                     let jjj = effect.combine(k);
 
-                    func(jjj.clone(), mmo);
+                    func(jjj.clone(), mmo, state);
 
                     mmm = kkk.undo(&jjj.extra_effect, state);
                     effect = jjj.move_effect;
