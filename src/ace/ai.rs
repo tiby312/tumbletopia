@@ -438,16 +438,16 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
-        if team==ActiveTeam::Cats{
-            console_dbg!(team,moves.iter().map(|&(_,x)|{
-                let mut num = None;
-                //self.path.push(x.clone());
-                if let Some((_, k)) = self.prev_cache.a.get(&x) {
-                    num = Some(*k);
-                }
-                num
-            }).collect::<Vec<_>>());
-        }
+        // if team==ActiveTeam::Cats{
+        //     console_dbg!(team,moves.iter().map(|&(_,x)|{
+        //         let mut num = None;
+        //         //self.path.push(x.clone());
+        //         if let Some((_, k)) = self.prev_cache.a.get(&x) {
+        //             num = Some(*k);
+        //         }
+        //         num
+        //     }).collect::<Vec<_>>());
+        // }
 
         let moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
 
