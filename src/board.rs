@@ -17,7 +17,7 @@ pub struct MyWorld {
 //     }
 // }
 
-fn increase_mag(a: &mut i16) {
+fn increase_mag(a: &mut hex::CoordNum) {
     if *a == 0 {
         return;
     }

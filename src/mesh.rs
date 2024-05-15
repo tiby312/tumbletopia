@@ -13,8 +13,8 @@ pub mod small_mesh {
         })
     }
 
+    use crate::hex;
     use crate::hex::HDir;
-
     #[test]
     fn test_mesh() {
         let k1 = Axial::from_arr([2, 0]);
@@ -108,12 +108,15 @@ pub mod small_mesh {
             //     .filter(move |(x, _)| inner & (1 << x) != 0)
             //     .map(move |(_, x)| point.add(GridCoord(*x)))
 
-            (0..128)
+            (0usize..128)
                 .filter(move |x| inner & (1 << x) != 0)
                 .map(move |a| {
                     let x = a / 13;
                     let y = a % 13;
-                    point.add(Axial::from_arr([x - 6, y - 6]))
+                    point.add(Axial::from_arr([
+                        x as hex::CoordNum - 6,
+                        y as hex::CoordNum - 6,
+                    ]))
                 }) //.chain(skip_moves)
         }
     }
@@ -267,9 +270,9 @@ pub fn path_old(
 }
 
 pub mod bitfield {
-    use std::ops::{Deref, DerefMut};
-
     use super::Axial;
+    use crate::hex;
+    use std::ops::{Deref, DerefMut};
 
     #[test]
     fn bitfield() {
@@ -343,12 +346,12 @@ pub mod bitfield {
             self.inner.ones().map(move |a| {
                 let x = a / 32;
                 let y = a % 32;
-                Axial::from_arr([x as i16 - 16, y as i16 - 16])
+                Axial::from_arr([(x - 16) as hex::CoordNum, (y - 16) as hex::CoordNum])
             })
         }
     }
     fn conv(a: Axial) -> usize {
         let Axial { q, r } = a;
-        ((q + 16) * 32 + (r + 16)) as usize
+        ((q as isize + 16) * 32 + (r as isize + 16)) as usize
     }
 }

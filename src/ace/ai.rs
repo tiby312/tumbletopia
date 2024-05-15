@@ -563,7 +563,6 @@ mod abab {
             }
         }
 
-
         pub fn ab_iter<T: Clone, D: Doop>(&mut self, doop: D) -> ABIter<T, D> {
             let value = if doop.maximizing() {
                 i64::MIN

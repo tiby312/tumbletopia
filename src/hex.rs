@@ -7,7 +7,9 @@
 //     [-1, 1, 0],
 // ];
 
-pub const OFFSETS: [[i16; 3]; 6] = [
+pub type CoordNum = i8;
+
+pub const OFFSETS: [[CoordNum; 3]; 6] = [
     [1, 0, -1],
     [1, -1, 0],
     [0, -1, 1],
@@ -95,7 +97,7 @@ pub const HEX_PROJ_FLAT: cgmath::Matrix2<f32> =
 #[derive(Copy, Clone, Debug)]
 pub struct Cube {
     pub ax: Axial,
-    pub s: i16,
+    pub s: CoordNum,
 }
 
 impl From<Cube> for Axial {
@@ -118,7 +120,7 @@ impl std::ops::Deref for Cube {
 }
 
 impl Cube {
-    pub fn s(&self) -> i16 {
+    pub fn s(&self) -> CoordNum {
         self.s
     }
 
@@ -147,13 +149,13 @@ impl Cube {
     //     Cube::new(new_q, new_r)
     // }
 
-    pub const fn from_arr([q, r, s]: [i16; 3]) -> Self {
+    pub const fn from_arr([q, r, s]: [CoordNum; 3]) -> Self {
         Cube {
             ax: Axial { q, r },
             s,
         }
     }
-    pub const fn new(q: i16, r: i16) -> Self {
+    pub const fn new(q: CoordNum, r: CoordNum) -> Self {
         Cube::from_arr([q, r, -q - r])
     }
     pub fn rotate_60_right(self) -> Cube {
@@ -196,9 +198,9 @@ impl Cube {
     //     }
     // }
     pub fn round(frac: [f32; 3]) -> Cube {
-        let mut q = frac[0].round() as i16;
-        let mut r = frac[1].round() as i16;
-        let mut s = frac[2].round() as i16;
+        let mut q = frac[0].round() as CoordNum;
+        let mut r = frac[1].round() as CoordNum;
+        let mut s = frac[2].round() as CoordNum;
 
         let q_diff = (q as f32 - frac[0]).abs();
         let r_diff = (r as f32 - frac[1]).abs();
@@ -260,7 +262,7 @@ impl Cube {
     // }
 
     //clockwise
-    pub fn ring(&self, n: i16) -> impl Iterator<Item = Cube> + Clone {
+    pub fn ring(&self, n: CoordNum) -> impl Iterator<Item = Cube> + Clone {
         let mut hex = self.add(Cube::direction(HDir::Top).scale(n));
 
         let k = std::iter::repeat(()).take(n as usize);
@@ -275,14 +277,14 @@ impl Cube {
             })
     }
 
-    pub fn scale(mut self, n: i16) -> Cube {
+    pub fn scale(mut self, n: CoordNum) -> Cube {
         self.ax.q *= n;
         self.ax.r *= n;
         self.s *= n;
         self
     }
 
-    pub fn range(&self, n: i16) -> impl Iterator<Item = Cube> + Clone {
+    pub fn range(&self, n: CoordNum) -> impl Iterator<Item = Cube> + Clone {
         let o = *self;
         (-n..n + 1)
             .flat_map(move |q| ((-n).max(-q - n)..n.min(-q + n) + 1).map(move |r| (q, r)))
@@ -312,13 +314,14 @@ impl Cube {
         // })
     }
 
-    pub fn dist(&self, other: &Cube) -> i16 {
+    pub fn dist(&self, other: &Cube) -> CoordNum {
         let b = other;
         let a = self;
         // https://www.redblobgames.com/grids/hexagons/#distances-cube
         ((b.q() - a.q()).abs() + (b.r() - a.r()).abs() + (b.s() - a.s()).abs()) / 2
     }
 }
+
 use serde::Deserialize;
 use serde::Serialize;
 #[derive(
@@ -326,21 +329,21 @@ use serde::Serialize;
 )]
 #[must_use]
 pub struct Axial {
-    pub q: i16,
-    pub r: i16,
+    pub q: CoordNum,
+    pub r: CoordNum,
 }
 
 impl Axial {
     pub fn index(&self) -> i32 {
         ((self.q as i32) << 16) | self.r as i32
     }
-    pub fn q(&self) -> i16 {
+    pub fn q(&self) -> CoordNum {
         self.q
     }
-    pub fn r(&self) -> i16 {
+    pub fn r(&self) -> CoordNum {
         self.r
     }
-    pub const fn from_arr([q, r]: [i16; 2]) -> Self {
+    pub const fn from_arr([q, r]: [CoordNum; 2]) -> Self {
         Axial { q, r }
     }
     pub fn zero() -> Axial {
