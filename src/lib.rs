@@ -308,7 +308,7 @@ async fn render_command(
             } => {
                 let (a, b) = match dir {
                     animation::AnimationDirection::Up => (-5., 0.),
-                    animation::AnimationDirection::Down => (0., -5.),
+                    animation::AnimationDirection::Down => (0., -6.), //TODO 6 to make sure there is a frame with it gone
                 };
                 let it = animation::terrain_create(a, b);
                 terrain_animation = Some((0.0, it, pos, terrain_type));
