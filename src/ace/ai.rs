@@ -389,28 +389,17 @@ impl<'a> AlphaBeta<'a> {
         }
 
         let mut num_sorted = 0;
-        
-        for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
-            if let Some((x, _)) = moves[num_sorted..]
-                .iter()
-                .enumerate()
-                .find(|(_, x)| x.0 == *a)
-            {
-                moves.swap(x, num_sorted);
-                num_sorted += 1;
-            }
-        }
 
-        {
+        for _ in 0..2 {
             let ind = if team == ActiveTeam::Cats {
                 moves[num_sorted..]
                     .iter()
                     .enumerate()
                     .max_by_key(|&(_, x)| {
-                        let mut num = 0;
+                        let mut num = None;
                         //self.path.push(x.clone());
                         if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-                            num = *k;
+                            num = Some(*k);
                         }
                         //self.path.pop();
                         num
@@ -420,10 +409,10 @@ impl<'a> AlphaBeta<'a> {
                     .iter()
                     .enumerate()
                     .min_by_key(|&(_, x)| {
-                        let mut num = 0;
+                        let mut num = None;
                         //self.path.push(x.clone());
                         if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-                            num = *k;
+                            num = Some(*k);
                         }
                         //self.path.pop();
                         num
@@ -431,21 +420,34 @@ impl<'a> AlphaBeta<'a> {
             };
 
             if let Some((ind, _)) = ind {
-                moves.swap(ind, num_sorted);
+                moves.swap(num_sorted + ind, num_sorted);
                 num_sorted += 1;
             }
         }
 
-        // console_dbg!(team,moves.iter().map(|&(_,x)|{
-        //     let mut num = None;
-        //     //self.path.push(x.clone());
-        //     if let Some((_, k)) = self.prev_cache.a.get(&x) {
-        //         num = Some(*k);
-        //     }
-        //     num
-        // }).collect::<Vec<_>>());
+        for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
+            if let Some((x, _)) = moves[num_sorted..]
+                .iter()
+                .enumerate()
+                .find(|(_, x)| x.0 == *a)
+            {
+                moves.swap(num_sorted + x, num_sorted);
+                num_sorted += 1;
+            }
+        }
 
-        let moves:Vec<_>=moves.drain(..).map(|x|x.0).collect();
+        // if team==ActiveTeam::Cats{
+        //     console_dbg!(team,moves.iter().map(|&(_,x)|{
+        //         let mut num = None;
+        //         //self.path.push(x.clone());
+        //         if let Some((_, k)) = self.prev_cache.a.get(&x) {
+        //             num = Some(*k);
+        //         }
+        //         num
+        //     }).collect::<Vec<_>>());
+        // }
+
+        let moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
 
         let (eval, m) = if team == ActiveTeam::Cats {
             self.floopy(
