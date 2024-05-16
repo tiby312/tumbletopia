@@ -12,6 +12,7 @@ use shader_sys::ShaderSystem;
 use shogo::utils;
 use wasm_bindgen::prelude::*;
 
+pub mod worker;
 pub mod animation;
 pub mod board;
 pub mod dom;
@@ -47,6 +48,14 @@ enum WorkerToDom {
     Ack,
 }
 
+
+#[wasm_bindgen]
+pub async fn worker_entry2() {
+    let (mut worker,mut response)=worker::EngineWorker::<usize,usize>::new();
+    worker.post_message(1);
+    assert_eq!(response.next().await.unwrap(),2);
+    worker.post_message(3);
+}
 #[wasm_bindgen]
 pub async fn worker_entry() {
     console_error_panic_hook::set_once();
@@ -67,6 +76,15 @@ pub async fn worker_entry() {
 
     let scroll_manager = scroll::TouchController::new([0., 0.].into());
     use cgmath::SquareMatrix;
+
+
+    let (mut worker, mut response) =
+        worker::EngineMain::<usize,usize>::new("./gridlock_worker2.js").await;
+    
+    assert_eq!(response.next().await.unwrap(),1);
+    worker.post_message(2);
+    assert_eq!(response.next().await.unwrap(),3);
+    
 
     let last_matrix = cgmath::Matrix4::identity();
     let ctx = &utils::get_context_webgl2_offscreen(&wr.canvas());
