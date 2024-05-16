@@ -273,7 +273,8 @@ pub mod bitfield {
     use super::Axial;
     use crate::hex;
     use std::ops::{Deref, DerefMut};
-
+    use serde::*;
+    
     #[test]
     fn bitfield() {
         let mut m = BitField::new();
@@ -288,7 +289,7 @@ pub mod bitfield {
 
     use fixedbitset::FixedBitSet;
 
-    #[derive(Clone, Debug, Hash, Eq, PartialEq)]
+    #[derive(Serialize, Deserialize,Clone, Debug, Hash, Eq, PartialEq)]
     pub struct BitField {
         pub inner: FixedBitSet,
     }

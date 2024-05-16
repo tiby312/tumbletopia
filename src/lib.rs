@@ -6,6 +6,7 @@ use gloo::console::log;
 use hex::Axial;
 use mesh::bitfield::BitField;
 use model::matrix::{self, MyMatrix};
+use moves::ActualMove;
 use serde::{Deserialize, Serialize};
 use shader_sys::ShaderSystem;
 
@@ -51,11 +52,32 @@ enum WorkerToDom {
 
 #[wasm_bindgen]
 pub async fn worker_entry2() {
-    let (mut worker,mut response)=worker::EngineWorker::<usize,usize>::new();
-    worker.post_message(1);
-    assert_eq!(response.next().await.unwrap(),2);
-    worker.post_message(3);
+    let (mut worker,mut response)=worker::EngineWorker::<AiCommand,AiResponse>::new();
+    
+    loop{
+        let mut res=response.next().await.unwrap();
+        let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
+        worker.post_message(AiResponse{the_move});
+    }
 }
+
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct AiCommand{
+    game:GameState,
+    world:board::MyWorld,
+    team:ActiveTeam
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct AiResponse{
+    the_move:ActualMove
+}
+
+
+
 #[wasm_bindgen]
 pub async fn worker_entry() {
     console_error_panic_hook::set_once();
@@ -78,12 +100,12 @@ pub async fn worker_entry() {
     use cgmath::SquareMatrix;
 
 
-    let (mut worker, mut response) =
-        worker::EngineMain::<usize,usize>::new("./gridlock_worker2.js").await;
+    let (mut ai_worker, mut ai_response) =
+        worker::EngineMain::<AiCommand,AiResponse>::new("./gridlock_worker2.js").await;
     
-    assert_eq!(response.next().await.unwrap(),1);
-    worker.post_message(2);
-    assert_eq!(response.next().await.unwrap(),3);
+    //assert_eq!(ai_response.next().await.unwrap(),1);
+    //ai_worker.post_message(2);
+    //assert_eq!(ai_response.next().await.unwrap(),3);
     
 
     let last_matrix = cgmath::Matrix4::identity();
@@ -185,11 +207,13 @@ pub async fn worker_entry() {
             };
 
             if foo {
-                //{
-                //doop.send_popup("AI Thinking", team, &mut game).await;
-                let the_move = ace::ai::iterative_deepening(&mut game, &world, team);
-                //doop.send_popup("", team, &mut game).await;
 
+                
+                ai_worker.post_message(AiCommand{game:game.clone(),world:world.clone(),team});
+                let the_move = ai_response.next().await.unwrap().the_move;
+
+                //let the_move = ace::ai::iterative_deepening(&mut game, &world, team);
+                
                 let kk = the_move.as_move();
 
                 let effect_m = kk

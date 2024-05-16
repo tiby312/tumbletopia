@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize,Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Factions {
     pub dogs: Tribe,
     pub cats: Tribe,
@@ -45,8 +45,9 @@ impl Factions {
     }
 }
 
+
 #[must_use]
-#[derive(Hash, Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize,Hash, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ActiveTeam {
     Cats = 0,
     Dogs = 1,
@@ -78,7 +79,7 @@ impl FactionRelative<&Tribe> {
     }
 }
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize,Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Terrain {
     pub land: BitField,
     pub forest: BitField,
@@ -96,7 +97,7 @@ impl Terrain {
         k
     }
 }
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize,Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Environment {
     pub terrain: Terrain,
     pub fog: BitField,
@@ -104,7 +105,7 @@ pub struct Environment {
 }
 
 //Additionally removes need to special case animation.
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize,Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
     pub factions: Factions,
     pub env: Environment,
@@ -199,7 +200,7 @@ impl Default for CellSelection {
 //     }
 // }
 
-#[derive(Default, Eq, PartialEq, Hash, Clone)]
+#[derive(Serialize, Deserialize,Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
     pub units: BitField,
 }

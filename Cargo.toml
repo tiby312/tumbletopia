@@ -23,7 +23,7 @@ model={path="model"}
 collision={git="https://github.com/rustgd/collision-rs"}
 cgmath="0.18.0"
 smallvec = "1.11.0"
-fixedbitset = "0.4.2"
+fixedbitset = {version="0.4.2",features=["serde"]}
 base64 = "0.21.7"
 byteorder = "1.5.0"
 miniz_oxide = "0.7.1"
