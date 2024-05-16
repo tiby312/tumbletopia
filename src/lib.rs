@@ -52,7 +52,7 @@ enum WorkerToDom {
 
 #[wasm_bindgen]
 pub async fn worker_entry2() {
-    let (mut worker,mut response)=worker::EngineWorker::<AiCommand,AiResponse>::new();
+    let (mut worker,mut response)=worker::Worker::<AiCommand,AiResponse>::new();
     
     loop{
         let mut res=response.next().await.unwrap();
@@ -101,7 +101,7 @@ pub async fn worker_entry() {
 
 
     let (mut ai_worker, mut ai_response) =
-        worker::EngineMain::<AiCommand,AiResponse>::new("./gridlock_worker2.js").await;
+        worker::WorkerInterface::<AiCommand,AiResponse>::new("./gridlock_worker2.js").await;
     
     //assert_eq!(ai_response.next().await.unwrap(),1);
     //ai_worker.post_message(2);

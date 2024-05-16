@@ -5,13 +5,13 @@ use wasm_bindgen::UnwrapThrowExt;
 use gloo::utils::format::JsValueSerdeExt;
 
 
-pub struct EngineMain<MW, WM> {
+pub struct WorkerInterface<MW, WM> {
     worker: std::rc::Rc<std::cell::RefCell<web_sys::Worker>>,
     _handle: gloo::events::EventListener,
     _p: PhantomData<(MW, WM)>,
 }
 
-impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> EngineMain<MW, WM> {
+impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInterface<MW, WM> {
     ///
     /// Create the engine. Blocks until the worker thread reports that
     /// it is ready to receive the offscreen canvas.
@@ -68,7 +68,7 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> EngineMain<
         //     .unwrap_throw();
 
         (
-            EngineMain {
+            WorkerInterface {
                 worker,
                 _handle,
                 _p: PhantomData,
@@ -132,15 +132,15 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> EngineMain<
 }
 
 
-pub struct EngineWorker<MW, WM> {
+pub struct Worker<MW, WM> {
     _handle: gloo::events::EventListener,
     _p: PhantomData<(MW, WM)>,
 }
 
-impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> EngineWorker<MW, WM> {
+impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> Worker<MW, WM> {
     
     pub fn new() -> (
-        EngineWorker<MW, WM>,
+        Worker<MW, WM>,
         futures::channel::mpsc::UnboundedReceiver<MW>,
     ) {
         let scope = shogo::utils::get_worker_global_context();
@@ -178,7 +178,7 @@ impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> EngineWorker<MW, WM> 
         scope.post_message(&data).unwrap_throw();
 
         (
-            EngineWorker {
+            Worker {
                 _handle,
                 _p: PhantomData,
             },
