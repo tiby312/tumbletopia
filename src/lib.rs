@@ -13,7 +13,6 @@ use shader_sys::ShaderSystem;
 use shogo::utils;
 use wasm_bindgen::prelude::*;
 
-pub mod worker;
 pub mod animation;
 pub mod board;
 pub mod dom;
@@ -26,6 +25,7 @@ pub mod projection;
 pub mod scroll;
 pub mod shader_sys;
 pub mod util;
+pub mod worker;
 use dom::DomToWorker;
 use projection::*;
 pub mod ace;
@@ -49,37 +49,31 @@ enum WorkerToDom {
     Ack,
 }
 
-
 #[wasm_bindgen]
 pub async fn worker_entry2() {
-    let (mut worker,mut response)=worker::Worker::<AiCommand,AiResponse>::new();
-    
-    loop{
+    let (mut worker, mut response) = worker::Worker::<AiCommand, AiResponse>::new();
+
+    loop {
         console_dbg!("worker:waiting");
-        let mut res=response.next().await.unwrap();
+        let mut res = response.next().await.unwrap();
         console_dbg!("worker:processing");
         let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
         console_dbg!("worker:finished processing");
-        worker.post_message(AiResponse{the_move});
+        worker.post_message(AiResponse { the_move });
     }
 }
 
-
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct AiCommand{
-    game:GameState,
-    world:board::MyWorld,
-    team:ActiveTeam
+struct AiCommand {
+    game: GameState,
+    world: board::MyWorld,
+    team: ActiveTeam,
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct AiResponse{
-    the_move:ActualMove
+struct AiResponse {
+    the_move: ActualMove,
 }
-
-
 
 #[wasm_bindgen]
 pub async fn worker_entry() {
@@ -102,11 +96,9 @@ pub async fn worker_entry() {
     let scroll_manager = scroll::TouchController::new([0., 0.].into());
     use cgmath::SquareMatrix;
 
-
     let (mut ai_worker, mut ai_response) =
-        worker::WorkerInterface::<AiCommand,AiResponse>::new("./gridlock_worker2.js").await;
+        worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;
     console_dbg!("created ai worker");
-    
 
     let last_matrix = cgmath::Matrix4::identity();
     let ctx = &utils::get_context_webgl2_offscreen(&wr.canvas());
@@ -151,14 +143,18 @@ pub async fn worker_entry() {
         }) = command_recv.next().await
         {
             //if let Command::
-            let data=if let ace::Command::WaitAI = data{
+            let data = if let ace::Command::WaitAI = data {
                 console_dbg!("render:sending ai");
                 //send ai worker game
-                ai_worker.post_message(AiCommand{game:game.clone(),world:world.clone(),team});
+                ai_worker.post_message(AiCommand {
+                    game: game.clone(),
+                    world: world.clone(),
+                    team,
+                });
                 //select on both
                 use futures::FutureExt;
 
-                let aaa=async{
+                let aaa = async {
                     render_command(
                         data,
                         &mut game,
@@ -170,14 +166,13 @@ pub async fn worker_entry() {
                     )
                     .await
                 };
-                let k=futures::select!(
+                let k = futures::select!(
                     _ = aaa.fuse()=>unreachable!(),
                     x = ai_response.next() => x
                 );
                 console_dbg!("render:finished ai");
                 ace::Response::AiFinish(k.unwrap().the_move)
-            }else{
-
+            } else {
                 render_command(
                     data,
                     &mut game,
@@ -237,11 +232,9 @@ pub async fn worker_entry() {
             };
 
             if foo {
-
-                
                 //ai_worker.post_message(AiCommand{game:game.clone(),world:world.clone(),team});
                 console_dbg!("game:Sending ai command");
-                let the_move=doop.wait_ai(team, &mut game).await;
+                let the_move = doop.wait_ai(team, &mut game).await;
                 console_dbg!("game:finished");
                 // use futures::FutureExt;
                 // let mut jj=game.clone();
@@ -255,14 +248,14 @@ pub async fn worker_entry() {
                 //let the_move = k.unwrap().the_move;
 
                 //let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
-                
+
                 let kk = the_move.as_move();
-                
+
                 let effect_m = kk
                     .animate(team, &mut game, &world, &mut doop)
                     .await
                     .apply(team, &mut game, &world);
-                
+
                 let effect_a = kk
                     .into_attack(the_move.attackto)
                     .animate(team, &mut game, &world, &mut doop)
@@ -349,7 +342,7 @@ async fn render_command(
     let mut poking = 0;
 
     let mut waiting_engine_ack = false;
-    
+
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(WorkerToDom::HideUndo);
@@ -403,9 +396,7 @@ async fn render_command(
             get_mouse_input = Some(Some((selection, grey)));
         }
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
-        ace::Command::WaitAI => {
-            
-        }
+        ace::Command::WaitAI => {}
         ace::Command::Popup(_str) => {
             todo!();
             // if str.is_empty() {

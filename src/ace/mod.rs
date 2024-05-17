@@ -132,20 +132,15 @@ impl WorkerManager {
     //     };
     // }
 
-    pub async fn wait_ai(&mut self,team: ActiveTeam, game: &mut GameState) -> ActualMove{
-        let data=self.send_command(team, game, Command::WaitAI)
-            .await;
+    pub async fn wait_ai(&mut self, team: ActiveTeam, game: &mut GameState) -> ActualMove {
+        let data = self.send_command(team, game, Command::WaitAI).await;
 
         let Response::AiFinish(the_move) = data else {
             unreachable!();
         };
         console_dbg!("woke up");
         the_move
-
     }
-
-
-
 
     //TODO use
     async fn send_command(

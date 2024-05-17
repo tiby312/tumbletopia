@@ -272,9 +272,9 @@ pub fn path_old(
 pub mod bitfield {
     use super::Axial;
     use crate::hex;
-    use std::ops::{Deref, DerefMut};
     use serde::*;
-    
+    use std::ops::{Deref, DerefMut};
+
     #[test]
     fn bitfield() {
         let mut m = BitField::new();
@@ -289,7 +289,7 @@ pub mod bitfield {
 
     use fixedbitset::FixedBitSet;
 
-    #[derive(Serialize, Deserialize,Clone, Debug, Hash, Eq, PartialEq)]
+    #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
     pub struct BitField {
         pub inner: FixedBitSet,
     }

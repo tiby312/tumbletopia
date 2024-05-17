@@ -1,9 +1,8 @@
-use std::{cell::RefCell, marker::PhantomData, rc::Rc};
-use wasm_bindgen::{JsCast, JsValue};
-use serde::{Deserialize, Serialize};
-use wasm_bindgen::UnwrapThrowExt;
 use gloo::utils::format::JsValueSerdeExt;
-
+use serde::{Deserialize, Serialize};
+use std::{cell::RefCell, marker::PhantomData, rc::Rc};
+use wasm_bindgen::UnwrapThrowExt;
+use wasm_bindgen::{JsCast, JsValue};
 
 pub struct WorkerInterface<MW, WM> {
     worker: std::rc::Rc<std::cell::RefCell<web_sys::Worker>>,
@@ -19,12 +18,11 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInter
     pub async fn new(
         web_worker_url: &str,
     ) -> (Self, futures::channel::mpsc::UnboundedReceiver<WM>) {
-        
         let (fs, fr) = futures::channel::oneshot::channel();
         let mut fs = Some(fs);
 
         let (ks, kr) = futures::channel::mpsc::unbounded();
-        
+
         let mut options = web_sys::WorkerOptions::new();
         options.type_(web_sys::WorkerType::Module);
 
@@ -32,29 +30,28 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInter
             web_sys::Worker::new_with_options(web_worker_url, &options).unwrap_throw(),
         ));
 
-        let _handle =
-            gloo::events::EventListener::new(&worker.borrow(), "message", move |event| {
-                //log!("waaa");
-                let event = event.dyn_ref::<web_sys::MessageEvent>().unwrap_throw();
-                let data = event.data();
+        let _handle = gloo::events::EventListener::new(&worker.borrow(), "message", move |event| {
+            //log!("waaa");
+            let event = event.dyn_ref::<web_sys::MessageEvent>().unwrap_throw();
+            let data = event.data();
 
-                let data: js_sys::Array = data.dyn_into().unwrap_throw();
-                let m = data.get(0);
-                let k = data.get(1);
+            let data: js_sys::Array = data.dyn_into().unwrap_throw();
+            let m = data.get(0);
+            let k = data.get(1);
 
-                if !m.is_null() {
-                    if let Some(s) = m.as_string() {
-                        if s == "ready" {
-                            if let Some(f) = fs.take() {
-                                f.send(()).unwrap_throw();
-                            }
+            if !m.is_null() {
+                if let Some(s) = m.as_string() {
+                    if s == "ready" {
+                        if let Some(f) = fs.take() {
+                            f.send(()).unwrap_throw();
                         }
                     }
-                } else {
-                    let a = k.into_serde().unwrap_throw();
-                    ks.unbounded_send(a).unwrap_throw();
                 }
-            });
+            } else {
+                let a = k.into_serde().unwrap_throw();
+                ks.unbounded_send(a).unwrap_throw();
+            }
+        });
 
         let _ = fr.await.unwrap_throw();
 
@@ -79,7 +76,6 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInter
             kr,
         )
     }
-
 
     pub fn post_message(&mut self, val: MW) {
         let a = JsValue::from_serde(&val).unwrap_throw();
@@ -129,11 +125,7 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInter
     //         }
     //     })
     // }
-
-
-
 }
-
 
 pub struct Worker<MW, WM> {
     _handle: gloo::events::EventListener,
@@ -141,7 +133,6 @@ pub struct Worker<MW, WM> {
 }
 
 impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> Worker<MW, WM> {
-    
     pub fn new() -> (
         Worker<MW, WM>,
         futures::channel::mpsc::UnboundedReceiver<MW>,

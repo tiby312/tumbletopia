@@ -395,30 +395,26 @@ impl<'a> AlphaBeta<'a> {
                 moves[num_sorted..]
                     .iter()
                     .enumerate()
-                    .filter_map(|(i,x)|{
+                    .filter_map(|(i, x)| {
                         if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-                            Some((i,k))
-                        }else{
+                            Some((i, k))
+                        } else {
                             None
                         }
                     })
-                    .max_by_key(|&(_, x)| {
-                        x
-                    })
+                    .max_by_key(|&(_, x)| x)
             } else {
                 moves[num_sorted..]
                     .iter()
                     .enumerate()
-                    .filter_map(|(i,x)|{
+                    .filter_map(|(i, x)| {
                         if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-                            Some((i,k))
-                        }else{
+                            Some((i, k))
+                        } else {
                             None
                         }
                     })
-                    .min_by_key(|&(_, x)| {
-                        x
-                    })
+                    .min_by_key(|&(_, x)| x)
             };
 
             if let Some((ind, _)) = ind {

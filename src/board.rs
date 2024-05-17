@@ -2,7 +2,7 @@ use crate::mesh::bitfield::BitField;
 
 use super::*;
 
-#[derive(Serialize, Deserialize,Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct MyWorld {
     pub seed: WorldSeed,
     w: BitField,
