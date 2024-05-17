@@ -159,19 +159,23 @@ pub fn path(
         k.map(|x| (x.to_axial(), a.dir_to(&x)))
     };
 
-    let k = 'foo: {
-        if walls.is_set(target.sub(&unit)) {
-            assert_eq!(unit.to_cube().dist(&target.to_cube()), 1);
-            break 'foo [Some(unit.dir_to(&target)), None, None];
-        }
+    if walls.is_set(target.sub(&unit)) {
+        assert_eq!(unit.to_cube().dist(&target.to_cube()), 1);
+        return MyPath([Some(unit.dir_to(&target)), None, None]);
+    }
 
+    let find = |depth: usize| {
         for (a, adir) in neighbours(&unit) {
             if walls.is_set(a.sub(&unit)) {
                 continue;
             }
 
             if a == target {
-                break 'foo [Some(adir), None, None];
+                return Some(MyPath([Some(adir), None, None]));
+            }
+
+            if depth == 1 {
+                continue;
             }
 
             for (b, bdir) in neighbours(&a) {
@@ -183,7 +187,11 @@ pub fn path(
                     if capturing && !game.is_trap(team, world, b.advance(bdir)) {
                         continue;
                     }
-                    break 'foo [Some(adir), Some(bdir), None];
+                    return Some(MyPath([Some(adir), Some(bdir), None]));
+                }
+
+                if depth == 2 {
+                    continue;
                 }
 
                 for (c, cdir) in neighbours(&b) {
@@ -195,21 +203,29 @@ pub fn path(
                         if capturing && !game.is_trap(team, world, c.advance(cdir)) {
                             continue;
                         }
-                        break 'foo [Some(adir), Some(bdir), Some(cdir)];
+                        return Some(MyPath([Some(adir), Some(bdir), Some(cdir)]));
                     }
                 }
             }
         }
 
-        unreachable!(
-            "could not find path {:?}:{:?}:{:?}",
-            target,
-            Axial::zero().to_cube().dist(&target.to_cube()),
-            walls.is_set(target)
-        );
+        None
     };
 
-    return MyPath(k);
+    //similar to iterative deepening. We have to make sure we check for paths
+    //at smaller depths before trying larger depths because dfs has no order.
+    for a in 0..3 {
+        if let Some(a) = find(a + 1) {
+            return a;
+        }
+    }
+
+    unreachable!(
+        "could not find path {:?}:{:?}:{:?}",
+        target,
+        Axial::zero().to_cube().dist(&target.to_cube()),
+        walls.is_set(target)
+    );
 }
 
 pub fn path_old(
