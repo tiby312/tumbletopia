@@ -55,8 +55,11 @@ pub async fn worker_entry2() {
     let (mut worker,mut response)=worker::Worker::<AiCommand,AiResponse>::new();
     
     loop{
+        console_dbg!("worker:waiting");
         let mut res=response.next().await.unwrap();
+        console_dbg!("worker:processing");
         let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
+        console_dbg!("worker:finished processing");
         worker.post_message(AiResponse{the_move});
     }
 }
@@ -102,10 +105,7 @@ pub async fn worker_entry() {
 
     let (mut ai_worker, mut ai_response) =
         worker::WorkerInterface::<AiCommand,AiResponse>::new("./gridlock_worker2.js").await;
-    
-    //assert_eq!(ai_response.next().await.unwrap(),1);
-    //ai_worker.post_message(2);
-    //assert_eq!(ai_response.next().await.unwrap(),3);
+    console_dbg!("created ai worker");
     
 
     let last_matrix = cgmath::Matrix4::identity();
@@ -150,21 +150,51 @@ pub async fn worker_entry() {
             team,
         }) = command_recv.next().await
         {
-            let data = render_command(
-                data,
-                &mut game,
-                team,
-                &mut render,
-                &world,
-                &mut frame_timer,
-                &mut wr,
-            )
-            .await;
+            //if let Command::
+            let data=if let ace::Command::WaitAI = data{
+                console_dbg!("render:sending ai");
+                //send ai worker game
+                ai_worker.post_message(AiCommand{game:game.clone(),world:world.clone(),team});
+                //select on both
+                use futures::FutureExt;
+
+                let aaa=async{
+                    render_command(
+                        data,
+                        &mut game,
+                        team,
+                        &mut render,
+                        &world,
+                        &mut frame_timer,
+                        &mut wr,
+                    )
+                    .await
+                };
+                let k=futures::select!(
+                    _ = aaa.fuse()=>unreachable!(),
+                    x = ai_response.next() => x
+                );
+                console_dbg!("render:finished ai");
+                ace::Response::AiFinish(k.unwrap().the_move)
+            }else{
+
+                render_command(
+                    data,
+                    &mut game,
+                    team,
+                    &mut render,
+                    &world,
+                    &mut frame_timer,
+                    &mut wr,
+                )
+                .await
+            };
 
             response_sender
                 .send(ace::GameWrap { game, data, team })
                 .await
                 .unwrap();
+            console_dbg!("send response!");
         }
     };
 
@@ -209,18 +239,30 @@ pub async fn worker_entry() {
             if foo {
 
                 
-                ai_worker.post_message(AiCommand{game:game.clone(),world:world.clone(),team});
-                let the_move = ai_response.next().await.unwrap().the_move;
+                //ai_worker.post_message(AiCommand{game:game.clone(),world:world.clone(),team});
+                console_dbg!("game:Sending ai command");
+                let the_move=doop.wait_ai(team, &mut game).await;
+                console_dbg!("game:finished");
+                // use futures::FutureExt;
+                // let mut jj=game.clone();
+                // let k=futures::select!(
+                //     _ = doop.do_nothing( team, &mut jj).fuse()=>unreachable!(),
+                //     x = ai_response.next() => x
+                // );
+                // console_dbg!("GOT RESPONSEEEE");
 
-                //let the_move = ace::ai::iterative_deepening(&mut game, &world, team);
+                //let k=ai_response.next().await;
+                //let the_move = k.unwrap().the_move;
+
+                //let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
                 
                 let kk = the_move.as_move();
-
+                
                 let effect_m = kk
                     .animate(team, &mut game, &world, &mut doop)
                     .await
                     .apply(team, &mut game, &world);
-
+                
                 let effect_a = kk
                     .into_attack(the_move.attackto)
                     .animate(team, &mut game, &world, &mut doop)
@@ -307,6 +349,7 @@ async fn render_command(
     let mut poking = 0;
 
     let mut waiting_engine_ack = false;
+    
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(WorkerToDom::HideUndo);
@@ -360,7 +403,9 @@ async fn render_command(
             get_mouse_input = Some(Some((selection, grey)));
         }
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
-        ace::Command::Nothing => {}
+        ace::Command::WaitAI => {
+            
+        }
         ace::Command::Popup(_str) => {
             todo!();
             // if str.is_empty() {

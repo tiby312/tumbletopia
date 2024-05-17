@@ -34,7 +34,7 @@ pub enum Command {
         grey: bool,
     },
     GetMouseInputNoSelect,
-    Nothing,
+    WaitAI,
     ShowUndo,
     HideUndo,
     Popup(String),
@@ -46,6 +46,7 @@ pub enum Response {
     MouseWithSelection(CellSelection, MouseEvent<Axial>),
     Mouse(MouseEvent<Axial>),
     AnimationFinish,
+    AiFinish(ActualMove),
     Ack,
 }
 
@@ -131,38 +132,20 @@ impl WorkerManager {
     //     };
     // }
 
-    async fn send_popup(&mut self, str: &str, team: ActiveTeam, game: &mut GameState) {
-        self.send_command(team, game, Command::Popup(str.into()))
+    pub async fn wait_ai(&mut self,team: ActiveTeam, game: &mut GameState) -> ActualMove{
+        let data=self.send_command(team, game, Command::WaitAI)
             .await;
 
-        let GameWrap { data, .. } = self.receiver.next().await.unwrap();
-
-        let Response::Ack = data else {
+        let Response::AiFinish(the_move) = data else {
             unreachable!();
         };
+        console_dbg!("woke up");
+        the_move
+
     }
 
-    // TODO do this
-    // async fn send_command_mut(
-    //     &mut self,
-    //     team: ActiveTeam,
-    //     game: &mut GameState,
-    //     co: Command,
-    // ) -> Response {
 
-    //     self.sender
-    //         .send(GameWrap {
-    //             game,
-    //             data: co,
-    //             team,
-    //         })
-    //         .await
-    //         .unwrap();
 
-    //     let GameWrapResponse { game, data } = self.receiver.next().await.unwrap();
-
-    //     (game, data)
-    // }
 
     //TODO use
     async fn send_command(

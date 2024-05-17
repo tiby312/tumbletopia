@@ -19,16 +19,19 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInter
     pub async fn new(
         web_worker_url: &str,
     ) -> (Self, futures::channel::mpsc::UnboundedReceiver<WM>) {
+        
+        let (fs, fr) = futures::channel::oneshot::channel();
+        let mut fs = Some(fs);
+
+        let (ks, kr) = futures::channel::mpsc::unbounded();
+        
         let mut options = web_sys::WorkerOptions::new();
         options.type_(web_sys::WorkerType::Module);
+
         let worker = Rc::new(RefCell::new(
             web_sys::Worker::new_with_options(web_worker_url, &options).unwrap_throw(),
         ));
 
-        // let (fs, fr) = futures::channel::oneshot::channel();
-        // let mut fs = Some(fs);
-
-        let (ks, kr) = futures::channel::mpsc::unbounded();
         let _handle =
             gloo::events::EventListener::new(&worker.borrow(), "message", move |event| {
                 //log!("waaa");
@@ -40,20 +43,20 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInter
                 let k = data.get(1);
 
                 if !m.is_null() {
-                    // if let Some(s) = m.as_string() {
-                    //     if s == "ready" {
-                    //         if let Some(f) = fs.take() {
-                    //             f.send(()).unwrap_throw();
-                    //         }
-                    //     }
-                    // }
+                    if let Some(s) = m.as_string() {
+                        if s == "ready" {
+                            if let Some(f) = fs.take() {
+                                f.send(()).unwrap_throw();
+                            }
+                        }
+                    }
                 } else {
                     let a = k.into_serde().unwrap_throw();
                     ks.unbounded_send(a).unwrap_throw();
                 }
             });
 
-        //let _ = fr.await.unwrap_throw();
+        let _ = fr.await.unwrap_throw();
 
         // let arr = js_sys::Array::new_with_length(1);
         // arr.set(0, canvas.clone().into());
