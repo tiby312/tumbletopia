@@ -8,7 +8,7 @@ impl GameState {
         //if you push an enemy off the map, they die
         //if you push an enemy into one of your teamates they die
         self.env.terrain.is_set(check)
-            || self.factions.relative(team).this_team.units.is_set(check)
+            || self.factions.relative(team).this_team.is_set(check)
             || !world.get_game_cells().is_set(check)
     }
 
@@ -73,6 +73,9 @@ impl GameState {
         &unit: &Axial,
         team: ActiveTeam,
     ) -> SmallMesh {
+        //TODO use
+        let typ = self.factions.relative(team).this_team.get_type(unit);
+
         let game = self;
         let mut mesh = SmallMesh::new();
 
@@ -85,7 +88,7 @@ impl GameState {
         let terrain = &game.env.terrain;
 
         let kll = |mesh: &mut SmallMesh, a: Axial, dir: hex::HDir| {
-            if game.factions.relative(team).that_team.units.is_set(a) {
+            if game.factions.relative(team).that_team.is_set(a) {
                 let check = a.advance(dir);
 
                 if game.is_trap(team, world, check) {
@@ -135,7 +138,7 @@ impl GameState {
 
                 kll(&mut mesh, a, dir);
 
-                if game.factions.relative(team).this_team.units.is_set(a) {
+                if game.factions.relative(team).this_team.is_set(a) {
                     // let check = a.advance(dir);
 
                     // if world.get_game_cells().is_set(check)
@@ -169,14 +172,7 @@ impl GameState {
         let state = self;
         //let mut movs = Vec::new();
         //for i in 0..state.factions.relative(team).this_team.units.len() {
-        for pos in state
-            .factions
-            .relative(team)
-            .this_team
-            .units
-            .clone()
-            .iter_mesh()
-        {
+        for pos in state.factions.relative(team).this_team.clone().iter_mesh() {
             let mesh = state.generate_possible_moves_movement(world, &pos, team);
             for mm in mesh.iter_mesh(pos) {
                 //Temporarily move the player in the game world.

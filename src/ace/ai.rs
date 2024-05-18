@@ -56,12 +56,13 @@ impl Evaluator {
             temp
         };
 
-        let num_cats = view.factions.cats.units.count_ones(..) as i64;
-        let num_dogs = view.factions.dogs.units.count_ones(..) as i64;
+        let num_cats = view.factions.cats.count_ones() as i64;
+        let num_dogs = view.factions.dogs.count_ones() as i64;
 
-        let mut cat_influence = view.factions.cats.units.clone();
+        //TODO remove this allocation
+        let mut cat_influence = view.factions.cats.all_alloc();
 
-        let mut dog_influence = view.factions.dogs.units.clone();
+        let mut dog_influence = view.factions.dogs.all_alloc();
 
         doop(
             7,
@@ -78,14 +79,12 @@ impl Evaluator {
         let dog_distance = view
             .factions
             .dogs
-            .units
             .iter_mesh()
             .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
             .sum::<i64>();
         let cat_distance = view
             .factions
             .cats
-            .units
             .iter_mesh()
             .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
             .sum::<i64>();

@@ -7,7 +7,7 @@ pub struct Factions {
 }
 impl Factions {
     pub fn has_a_set(&self, coord: Axial) -> bool {
-        self.dogs.units.is_set(coord) || self.cats.units.is_set(coord)
+        self.dogs.is_set(coord) || self.cats.is_set(coord)
     }
 
     // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
@@ -69,12 +69,12 @@ pub struct FactionRelative<T> {
 }
 impl FactionRelative<&mut Tribe> {
     pub fn has_a_set(&self, coord: Axial) -> bool {
-        self.this_team.units.is_set(coord) || self.that_team.units.is_set(coord)
+        self.this_team.is_set(coord) || self.that_team.is_set(coord)
     }
 }
 impl FactionRelative<&Tribe> {
     pub fn has_a_set(&self, coord: Axial) -> bool {
-        self.this_team.units.is_set(coord) || self.that_team.units.is_set(coord)
+        self.this_team.is_set(coord) || self.that_team.is_set(coord)
     }
 }
 
@@ -128,7 +128,7 @@ impl GameState {
     }
     pub fn game_is_over(&self, world: &board::MyWorld, team: ActiveTeam) -> Option<GameOver> {
         let this_team_stuck = 'foo: {
-            for unit in self.factions.relative(team).this_team.units.iter_mesh() {
+            for unit in self.factions.relative(team).this_team.iter_mesh() {
                 let mesh = self.generate_possible_moves_movement(world, &unit, team);
                 if !mesh.is_empty() {
                     break 'foo false;
@@ -199,17 +199,87 @@ impl Default for CellSelection {
 //     }
 // }
 
-#[derive(Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub units: BitField,
+    pub units1: BitField,
+    pub units2: BitField,
 }
 
-impl std::fmt::Debug for Tribe {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "tribe:[")?;
-        for pos in self.units.iter_mesh() {
-            write!(f, "{:?},", pos)?;
+impl Tribe {
+    pub fn all_alloc(&self) -> BitField {
+        let mut j = self.units1.clone();
+        j.union_with(&self.units2);
+        j
+    }
+    pub fn count_ones(&self) -> usize {
+        self.units1.count_ones(..) + self.units2.count_ones(..)
+    }
+    pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
+        self.units1.iter_mesh().chain(self.units2.iter_mesh())
+    }
+    pub fn is_set(&self, a: Axial) -> bool {
+        self.units1.is_set(a) || self.units2.is_set(a)
+    }
+
+    pub fn move_unit(&mut self, a: Axial, b: Axial) {
+        if self.units1.is_set(a) {
+            self.units1.set_coord(a, false);
+            self.units1.set_coord(b, true);
+            return;
         }
-        write!(f, "{}", "]")
+        if self.units2.is_set(a) {
+            self.units2.set_coord(a, false);
+            self.units2.set_coord(b, true);
+            return;
+        }
+
+        unreachable!("Can't move")
+    }
+
+    pub fn get_mut(&mut self, a: UnitType) -> &mut BitField {
+        match a {
+            UnitType::Type1 => &mut self.units1,
+            UnitType::Type2 => &mut self.units2,
+        }
+    }
+
+    pub fn clear(&mut self, a: Axial) -> UnitType {
+        if self.units1.is_set(a) {
+            self.units1.set_coord(a, false);
+            return UnitType::Type1;
+        }
+        if self.units2.is_set(a) {
+            self.units2.set_coord(a, false);
+            return UnitType::Type2;
+        }
+
+        unreachable!("coord isnt set in first place.")
+    }
+    pub fn get_type(&self, a: Axial) -> UnitType {
+        if self.units1.is_set(a) {
+            return UnitType::Type1;
+        }
+
+        if self.units2.is_set(a) {
+            return UnitType::Type2;
+        }
+
+        unreachable!("Could not find unit at position");
     }
 }
+
+#[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
+pub enum UnitType {
+    Type1,
+    Type2,
+}
+
+// impl std::fmt::Debug for Tribe {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{}", "tribe:[")?;
+//         for pos in self.warrior.iter_mesh() {
+//             write!(f, "{:?},", pos)?;
+//         }
+//         write!(f, "{}", "]")
+//     }
+// }

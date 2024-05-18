@@ -225,7 +225,7 @@ impl ExtraPhase {
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
-    pub destroyed_unit: Option<Axial>,
+    pub destroyed_unit: Option<(Axial, UnitType)>,
 }
 impl MoveEffect {
     pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
@@ -263,7 +263,6 @@ impl MovePhase {
             .factions
             .relative(team)
             .this_team
-            .units
             .is_set(self.original));
 
         let mesh = state.generate_possible_moves_movement(world, &self.original, team);
@@ -285,8 +284,7 @@ impl MovePhase {
         ss.factions
             .relative_mut(team)
             .this_team
-            .units
-            .set_coord(self.original, false);
+            .clear(self.original);
 
         let end = target;
         match info {
@@ -306,7 +304,7 @@ impl MovePhase {
             PushInfo::None => {}
         }
 
-        let capturing = state.factions.relative(team).that_team.units.is_set(end);
+        let capturing = state.factions.relative(team).that_team.is_set(end);
         let path = mesh::path(
             &mesh,
             self.original,
@@ -336,15 +334,24 @@ impl MovePhase {
         let moveto = self.moveto;
         let unit = self.original;
 
-        let jj = &mut state.factions.relative_mut(team_index).this_team.units;
-        jj.set_coord(moveto, false);
-        jj.set_coord(unit, true);
+        state
+            .factions
+            .relative_mut(team_index)
+            .this_team
+            .move_unit(moveto, unit);
 
-        if let Some(fooo) = effect.destroyed_unit {
+        if let Some((fooo, typ)) = effect.destroyed_unit {
             matches!(effect.pushpull, PushInfo::None);
-            let j = &mut state.factions.relative_mut(team_index).that_team.units;
+            state
+                .factions
+                .relative_mut(team_index)
+                .that_team
+                .get_mut(typ)
+                .set_coord(moveto, true);
+
+            //let j = &mut state.factions.relative_mut(team_index).that_team.units;
             assert_eq!(fooo, moveto);
-            j.set_coord(moveto, true);
+            //j.set_coord(moveto, true);
         }
 
         match effect.pushpull {
@@ -367,20 +374,21 @@ impl MovePhase {
                 }
             }
             PushInfo::PushedUnit => {
-                assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
-                let dir = unit.dir_to(&moveto);
-                let t3 = moveto.advance(dir);
+                todo!()
+                // assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
+                // let dir = unit.dir_to(&moveto);
+                // let t3 = moveto.advance(dir);
 
-                let tt = state.factions.relative_mut(team_index);
-                if tt.this_team.units.is_set(t3) {
-                    tt.this_team.units.set_coord(t3, false);
-                    tt.this_team.units.set_coord(moveto, true);
-                } else if tt.that_team.units.is_set(t3) {
-                    tt.that_team.units.set_coord(t3, false);
-                    tt.that_team.units.set_coord(moveto, true);
-                } else {
-                    unreachable!("PushedUnit enum error");
-                }
+                // let tt = state.factions.relative_mut(team_index);
+                // if tt.this_team.units.is_set(t3) {
+                //     tt.this_team.units.set_coord(t3, false);
+                //     tt.this_team.units.set_coord(moveto, true);
+                // } else if tt.that_team.units.is_set(t3) {
+                //     tt.that_team.units.set_coord(t3, false);
+                //     tt.that_team.units.set_coord(moveto, true);
+                // } else {
+                //     unreachable!("PushedUnit enum error");
+                // }
             }
             PushInfo::PushedLand => {
                 assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
@@ -429,21 +437,21 @@ impl MovePhase {
             let terrain = &mut env.terrain;
 
             let foo = game.factions.relative_mut(team);
-            if foo.that_team.units.is_set(target_cell)
+            if foo.that_team.is_set(target_cell)
                 && self.original.to_cube().dist(&target_cell.to_cube()) == 3
             {
-                foo.that_team.units.set_coord(target_cell, false);
-                destroyed_unit = Some(target_cell);
-            } else if foo.that_team.units.is_set(target_cell)
+                let k = foo.that_team.clear(target_cell);
+                destroyed_unit = Some((target_cell, k));
+            } else if foo.that_team.is_set(target_cell)
                 && self.original.to_cube().dist(&target_cell.to_cube()) == 2
             {
-                foo.that_team.units.set_coord(target_cell, false);
-                destroyed_unit = Some(target_cell);
-            } else if foo.that_team.units.is_set(target_cell)
+                let k = foo.that_team.clear(target_cell);
+                destroyed_unit = Some((target_cell, k));
+            } else if foo.that_team.is_set(target_cell)
                 && self.original.to_cube().dist(&target_cell.to_cube()) == 1
             {
-                foo.that_team.units.set_coord(target_cell, false);
-                destroyed_unit = Some(target_cell);
+                let k = foo.that_team.clear(target_cell);
+                destroyed_unit = Some((target_cell, k));
                 // let dir = self.original.dir_to(&target_cell);
                 // let check = target_cell.advance(dir);
 
@@ -461,19 +469,20 @@ impl MovePhase {
                 //     foo.that_team.units.set_coord(check, true);
                 //     e = PushInfo::PushedUnit;
                 // }
-            } else if foo.this_team.units.is_set(target_cell) {
-                let dir = self.original.dir_to(&target_cell);
-                let check = target_cell.advance(dir);
+            } else if foo.this_team.is_set(target_cell) {
+                todo!()
+                // let dir = self.original.dir_to(&target_cell);
+                // let check = target_cell.advance(dir);
 
-                if world.get_game_cells().is_set(check)
-                    && !env.terrain.is_set(check)
-                    && !foo.has_a_set(check)
-                {
-                    foo.this_team.units.set_coord(target_cell, false);
-                    foo.this_team.units.set_coord(check, true);
+                // if world.get_game_cells().is_set(check)
+                //     && !env.terrain.is_set(check)
+                //     && !foo.has_a_set(check)
+                // {
+                //     foo.this_team.units.set_coord(target_cell, false);
+                //     foo.this_team.units.set_coord(check, true);
 
-                    e = PushInfo::PushedUnit;
-                }
+                //     e = PushInfo::PushedUnit;
+                // }
             } else if terrain.land.is_set(target_cell) {
                 let dir = self.original.dir_to(&target_cell);
                 let kk = target_cell.advance(dir);
@@ -530,13 +539,7 @@ impl MovePhase {
         game.factions
             .relative_mut(team)
             .this_team
-            .units
-            .set_coord(self.original, false);
-        game.factions
-            .relative_mut(team)
-            .this_team
-            .units
-            .set_coord(target_cell, true);
+            .move_unit(self.original, target_cell);
 
         MoveEffect {
             pushpull: e,

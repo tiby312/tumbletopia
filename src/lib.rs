@@ -705,9 +705,8 @@ async fn render_command(
             let shadows = game
                 .factions
                 .cats
-                .units
                 .iter_mesh()
-                .chain(game.factions.dogs.units.iter_mesh())
+                .chain(game.factions.dogs.iter_mesh())
                 .map(|e| grid_snap(e, 1.0));
 
             let ani_drop_shadow = unit_animation.as_ref().map(|a| {
@@ -724,12 +723,7 @@ async fn render_command(
 
         {
             //Draw cats
-            let cats = game
-                .factions
-                .cats
-                .units
-                .iter_mesh()
-                .map(|e| grid_snap(e, 0.0));
+            let cats = game.factions.cats.iter_mesh().map(|e| grid_snap(e, 0.0));
 
             let ani_cat = unit_animation
                 .as_ref()
@@ -748,12 +742,7 @@ async fn render_command(
 
         {
             //Draw dogs
-            let dogs = game
-                .factions
-                .dogs
-                .units
-                .iter_mesh()
-                .map(|e| grid_snap(e, 0.0));
+            let dogs = game.factions.dogs.iter_mesh().map(|e| grid_snap(e, 0.0));
 
             let ani_dog = unit_animation
                 .as_ref()

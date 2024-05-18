@@ -196,7 +196,6 @@ pub async fn reselect_loop(
         .factions
         .relative(selected_unit.team)
         .this_team
-        .units
         .is_set(unwrapped_selected_unit));
 
     let grey = if selected_unit.team == team {
@@ -263,7 +262,6 @@ pub async fn reselect_loop(
         .factions
         .relative(selected_unit.team)
         .this_team
-        .units
         .is_set(target_cell)
     {
         if !contains {
@@ -279,7 +277,6 @@ pub async fn reselect_loop(
         .factions
         .relative(selected_unit.team)
         .that_team
-        .units
         .is_set(target_cell)
     {
         if selected_unit.team != team || !contains {
@@ -335,7 +332,6 @@ pub async fn reselect_loop(
             .factions
             .relative_mut(selected_unit.team)
             .this_team
-            .units
             .is_set(unwrapped_selected_unit));
 
         let c = target_cell;
@@ -374,8 +370,14 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let mut k = GameState {
         factions: Factions {
-            dogs: Tribe { units: dogs },
-            cats: Tribe { units: cats },
+            dogs: Tribe {
+                units1: dogs,
+                units2: BitField::new(),
+            },
+            cats: Tribe {
+                units1: cats,
+                units2: BitField::new(),
+            },
         },
         env: Environment {
             terrain: Terrain {
@@ -391,9 +393,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     for a in k
         .factions
         .cats
-        .units
         .iter_mesh()
-        .chain(k.factions.dogs.units.iter_mesh())
+        .chain(k.factions.dogs.iter_mesh())
     {
         move_build::compute_fog(a, &mut k.env).apply(a, &mut k.env);
     }
@@ -506,10 +507,10 @@ pub async fn handle_player(
                 }
             };
 
-            if game.factions.relative(team).this_team.units.is_set(cell) {
+            if game.factions.relative(team).this_team.is_set(cell) {
                 break SelectType { coord: cell, team };
             }
-            if game.factions.relative(team).that_team.units.is_set(cell) {
+            if game.factions.relative(team).that_team.is_set(cell) {
                 break SelectType {
                     coord: cell,
                     team: team.not(),
