@@ -916,7 +916,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             (include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
             (include_bytes!("../assets/fog.glb"), RESIZE, None),
             (include_bytes!("../assets/attack.glb"), 1, None),
-            (include_bytes!("../assets/donut.glb"), RESIZE, None),
+            (include_bytes!("../assets/pawn.glb"), RESIZE, None),
             (include_bytes!("../assets/cat_final.glb"), RESIZE, None),
             (include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
             (include_bytes!("../assets/snow.glb"), RESIZE, None),
