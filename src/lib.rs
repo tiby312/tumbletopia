@@ -698,6 +698,7 @@ async fn render_command(
             }
         }
 
+        let zzzz=-9.0;
         {
             // Draw shadows
             let _d = DepthDisabler::new(ctx);
@@ -707,12 +708,12 @@ async fn render_command(
                 .cats
                 .iter_mesh()
                 .chain(game.factions.dogs.iter_mesh())
-                .map(|e| grid_snap(e, 1.0));
+                .map(|e| grid_snap(e, zzzz));
 
             let ani_drop_shadow = unit_animation.as_ref().map(|a| {
                 let pos = a.0;
                 my_matrix
-                    .chain(matrix::translation(pos.x, pos.y, 1.0))
+                    .chain(matrix::translation(pos.x, pos.y, zzzz))
                     .generate()
             });
 
@@ -721,15 +722,17 @@ async fn render_command(
             draw_sys.batch(all_shadows).build(drop_shadow);
         }
 
+
+        let zzzz=-10.0;
         {
             //Draw cats
-            let cats = game.factions.cats.iter_mesh().map(|e| grid_snap(e, 0.0));
+            let cats = game.factions.cats.iter_mesh().map(|e| grid_snap(e, zzzz));
 
             let ani_cat = unit_animation
                 .as_ref()
                 .map(|(pos, _, _unit, _data)| {
                     my_matrix
-                        .chain(matrix::translation(pos.x, pos.y, 0.0))
+                        .chain(matrix::translation(pos.x, pos.y, zzzz))
                         .chain(matrix::scale(1.0, 1.0, 1.0))
                         .generate()
                 })
@@ -742,13 +745,13 @@ async fn render_command(
 
         {
             //Draw dogs
-            let dogs = game.factions.dogs.iter_mesh().map(|e| grid_snap(e, 0.0));
+            let dogs = game.factions.dogs.iter_mesh().map(|e| grid_snap(e, zzzz));
 
             let ani_dog = unit_animation
                 .as_ref()
                 .map(|(pos, _, _unit, _data)| {
                     my_matrix
-                        .chain(matrix::translation(pos.x, pos.y, 0.0))
+                        .chain(matrix::translation(pos.x, pos.y,zzzz))
                         .chain(matrix::scale(1.0, 1.0, 1.0))
                         .generate()
                 })
@@ -917,7 +920,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             (include_bytes!("../assets/fog.glb"), RESIZE, None),
             (include_bytes!("../assets/attack.glb"), 1, None),
             (include_bytes!("../assets/pawn.glb"), RESIZE, None),
-            (include_bytes!("../assets/cat_final.glb"), RESIZE, None),
+            (include_bytes!("../assets/pawn2.glb"), RESIZE, None),
             (include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
             (include_bytes!("../assets/snow.glb"), RESIZE, None),
             (include_bytes!("../assets/water.glb"), RESIZE, None),
