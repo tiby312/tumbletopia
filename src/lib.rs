@@ -897,6 +897,11 @@ use web_sys::{OffscreenCanvas, WebGl2RenderingContext};
 use crate::ace::MouseEvent;
 use crate::model_parse::{Foo, ModelGpu, TextureGpu};
 
+
+//purple #6d32e7
+//orange #ff8100
+
+
 //TODO move this to a seperate crate
 pub struct Models<T> {
     select_model: T,
@@ -919,8 +924,8 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             (include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
             (include_bytes!("../assets/fog.glb"), RESIZE, None),
             (include_bytes!("../assets/attack.glb"), 1, None),
-            (include_bytes!("../assets/pawn.glb"), RESIZE, None),
-            (include_bytes!("../assets/pawn2.glb"), RESIZE, None),
+            (include_bytes!("../assets/cake_orange.glb"), RESIZE, None),
+            (include_bytes!("../assets/spider_purple.glb"), RESIZE, None),
             (include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
             (include_bytes!("../assets/snow.glb"), RESIZE, None),
             (include_bytes!("../assets/water.glb"), RESIZE, None),
