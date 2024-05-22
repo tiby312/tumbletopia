@@ -663,11 +663,12 @@ async fn render_command(
             draw_sys.batch(all_fog).build(snow);
         }
 
+        let zzzz = -8.0;
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
-                        let cells = mesh.iter_mesh(*point).map(|e| grid_snap(e, 0.0));
+                        let cells = mesh.iter_mesh(*point).map(|e| grid_snap(e, zzzz));
                         draw_sys
                             .batch(cells)
                             .no_lighting()
@@ -698,7 +699,7 @@ async fn render_command(
             }
         }
 
-        let zzzz=-9.0;
+        let zzzz = -9.0;
         {
             // Draw shadows
             let _d = DepthDisabler::new(ctx);
@@ -722,8 +723,7 @@ async fn render_command(
             draw_sys.batch(all_shadows).build(drop_shadow);
         }
 
-
-        let zzzz=-10.0;
+        let zzzz = -10.0;
         {
             //Draw cats
             let cats = game.factions.cats.iter_mesh().map(|e| grid_snap(e, zzzz));
@@ -751,7 +751,7 @@ async fn render_command(
                 .as_ref()
                 .map(|(pos, _, _unit, _data)| {
                     my_matrix
-                        .chain(matrix::translation(pos.x, pos.y,zzzz))
+                        .chain(matrix::translation(pos.x, pos.y, zzzz))
                         .chain(matrix::scale(1.0, 1.0, 1.0))
                         .generate()
                 })
@@ -897,10 +897,8 @@ use web_sys::{OffscreenCanvas, WebGl2RenderingContext};
 use crate::ace::MouseEvent;
 use crate::model_parse::{Foo, ModelGpu, TextureGpu};
 
-
 //purple #6d32e7
 //orange #ff8100
-
 
 //TODO move this to a seperate crate
 pub struct Models<T> {
