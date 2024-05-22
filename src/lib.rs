@@ -663,12 +663,20 @@ async fn render_command(
             draw_sys.batch(all_fog).build(snow);
         }
 
-        let zzzz = -8.0;
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
-                        let cells = mesh.iter_mesh(*point).map(|e| grid_snap(e, zzzz));
+                        let cells = mesh.iter_mesh(*point).map(|e| {
+                            let zzzz=if game.env.terrain.is_set(e){
+                                0.0
+                            }else{
+                                -8.0
+                            };
+                        
+
+                            grid_snap(e, zzzz)
+                        });
                         draw_sys
                             .batch(cells)
                             .no_lighting()
