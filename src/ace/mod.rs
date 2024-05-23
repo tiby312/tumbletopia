@@ -359,9 +359,9 @@ pub async fn reselect_loop(
 }
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
-    let cats = BitField::from_iter(world.cat_start().iter().copied());
+    let white = BitField::from_iter(world.white_start().iter().copied());
 
-    let dogs = BitField::from_iter(world.dog_start().iter().copied());
+    let dog = BitField::from_iter(world.black_start().iter().copied());
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
@@ -370,12 +370,12 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let mut k = GameState {
         factions: Factions {
-            dogs: Tribe {
-                units1: dogs,
+            black: Tribe {
+                units1: dog,
                 units2: BitField::new(),
             },
-            cats: Tribe {
-                units1: cats,
+            white: Tribe {
+                units1: white,
                 units2: BitField::new(),
             },
         },
@@ -392,9 +392,9 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     for a in k
         .factions
-        .cats
+        .white
         .iter_mesh()
-        .chain(k.factions.dogs.iter_mesh())
+        .chain(k.factions.black.iter_mesh())
     {
         move_build::compute_fog(a, &mut k.env).apply(a, &mut k.env);
     }
@@ -432,9 +432,9 @@ pub async fn replay(
 
     let mut game_history = selection::MoveHistory::new();
 
-    let mut team_gen = ActiveTeam::Dogs.iter();
+    let mut team_gen = ActiveTeam::Black.iter();
 
-    doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo)
+    doop.send_command(ActiveTeam::Black, &mut game, Command::HideUndo)
         .await;
 
     for the_move in just_logs.inner {

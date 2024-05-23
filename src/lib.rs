@@ -209,7 +209,7 @@ pub async fn worker_entry() {
 
         let mut game_history = ace::selection::MoveHistory::new();
 
-        let mut team_gen = ActiveTeam::Dogs.iter();
+        let mut team_gen = ActiveTeam::Black.iter();
 
         //doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
 
@@ -225,7 +225,7 @@ pub async fn worker_entry() {
 
             //Add AIIIIII.
             let foo = match game_type {
-                dom::GameType::SinglePlayer => team == ActiveTeam::Cats,
+                dom::GameType::SinglePlayer => team == ActiveTeam::White,
                 dom::GameType::PassPlay => false,
                 dom::GameType::AIBattle => true,
                 dom::GameType::Replay(_) => todo!(),
@@ -324,8 +324,8 @@ async fn render_command(
     let mut viewport = [canvas.width() as f32, canvas.height() as f32];
 
     let drop_shadow = &models.drop_shadow;
-    let dog = &models.dog;
-    let cat = &models.cat;
+    let black_cake = &models.black_cake;
+    let white_cake = &models.white_cake;
     //let fog_asset = &models.fog;
     let water = &models.water;
     let grass = &models.grass;
@@ -668,12 +668,11 @@ async fn render_command(
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
                         let cells = mesh.iter_mesh(*point).map(|e| {
-                            let zzzz=if game.env.terrain.is_set(e){
+                            let zzzz = if game.env.terrain.is_set(e) {
                                 0.0
-                            }else{
+                            } else {
                                 -8.0
                             };
-                        
 
                             grid_snap(e, zzzz)
                         });
@@ -714,9 +713,9 @@ async fn render_command(
 
             let shadows = game
                 .factions
-                .cats
+                .white
                 .iter_mesh()
-                .chain(game.factions.dogs.iter_mesh())
+                .chain(game.factions.black.iter_mesh())
                 .map(|e| grid_snap(e, zzzz));
 
             let ani_drop_shadow = unit_animation.as_ref().map(|a| {
@@ -733,10 +732,15 @@ async fn render_command(
 
         let zzzz = -10.0;
         {
-            //Draw cats
-            let cats = game.factions.cats.iter_mesh().map(|e| grid_snap(e, zzzz));
+            //Draw white
+            let white = game
+                .factions
+                .white
+                .units1
+                .iter_mesh()
+                .map(|e| grid_snap(e, zzzz));
 
-            let ani_cat = unit_animation
+            let ani_white = unit_animation
                 .as_ref()
                 .map(|(pos, _, _unit, _data)| {
                     my_matrix
@@ -744,18 +748,18 @@ async fn render_command(
                         .chain(matrix::scale(1.0, 1.0, 1.0))
                         .generate()
                 })
-                .filter(|_| team == ActiveTeam::Cats);
+                .filter(|_| team == ActiveTeam::White);
 
-            let all_cats = cats.chain(ani_cat.into_iter());
+            let all_white = white.chain(ani_white.into_iter());
 
-            draw_sys.batch(all_cats).build(cat);
+            draw_sys.batch(all_white).build(white_cake);
         }
 
         {
-            //Draw dogs
-            let dogs = game.factions.dogs.iter_mesh().map(|e| grid_snap(e, zzzz));
+            //Draw black
+            let black = game.factions.black.iter_mesh().map(|e| grid_snap(e, zzzz));
 
-            let ani_dog = unit_animation
+            let ani_black = unit_animation
                 .as_ref()
                 .map(|(pos, _, _unit, _data)| {
                     my_matrix
@@ -763,11 +767,11 @@ async fn render_command(
                         .chain(matrix::scale(1.0, 1.0, 1.0))
                         .generate()
                 })
-                .filter(|_| team == ActiveTeam::Dogs);
+                .filter(|_| team == ActiveTeam::Black);
 
-            let all_dogs = dogs.chain(ani_dog.into_iter());
+            let all_black = black.chain(ani_black.into_iter());
 
-            draw_sys.batch(all_dogs).build(dog);
+            draw_sys.batch(all_black).build(black_cake);
         }
 
         // let d = DepthDisabler::new(ctx);
@@ -914,8 +918,8 @@ pub struct Models<T> {
     drop_shadow: T,
     fog: T,
     attack: T,
-    cat: T,
-    dog: T,
+    white_cake: T,
+    black_cake: T,
     grass: T,
     snow: T,
     water: T,
@@ -931,7 +935,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             (include_bytes!("../assets/fog.glb"), RESIZE, None),
             (include_bytes!("../assets/attack.glb"), 1, None),
             (include_bytes!("../assets/cake_orange.glb"), RESIZE, None),
-            (include_bytes!("../assets/spider_purple.glb"), RESIZE, None),
+            (include_bytes!("../assets/cake_purple.glb"), RESIZE, None),
             (include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
             (include_bytes!("../assets/snow.glb"), RESIZE, None),
             (include_bytes!("../assets/water.glb"), RESIZE, None),
@@ -959,8 +963,8 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             drop_shadow: qq(1),
             fog: qq(2),
             attack: qq(3),
-            cat: qq(4),
-            dog: qq(5),
+            white_cake: qq(4),
+            black_cake: qq(5),
             grass: qq(6),
             snow: qq(7),
             water: qq(8),

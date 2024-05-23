@@ -2,12 +2,12 @@ use super::*;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Factions {
-    pub dogs: Tribe,
-    pub cats: Tribe,
+    pub black: Tribe,
+    pub white: Tribe,
 }
 impl Factions {
     pub fn has_a_set(&self, coord: Axial) -> bool {
-        self.dogs.is_set(coord) || self.cats.is_set(coord)
+        self.black.is_set(coord) || self.white.is_set(coord)
     }
 
     // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
@@ -21,25 +21,25 @@ impl Factions {
     // }
     pub fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
         match team {
-            ActiveTeam::Cats => FactionRelative {
-                this_team: &mut self.cats,
-                that_team: &mut self.dogs,
+            ActiveTeam::White => FactionRelative {
+                this_team: &mut self.white,
+                that_team: &mut self.black,
             },
-            ActiveTeam::Dogs => FactionRelative {
-                this_team: &mut self.dogs,
-                that_team: &mut self.cats,
+            ActiveTeam::Black => FactionRelative {
+                this_team: &mut self.black,
+                that_team: &mut self.white,
             },
         }
     }
     pub fn relative(&self, team: ActiveTeam) -> FactionRelative<&Tribe> {
         match team {
-            ActiveTeam::Cats => FactionRelative {
-                this_team: &self.cats,
-                that_team: &self.dogs,
+            ActiveTeam::White => FactionRelative {
+                this_team: &self.white,
+                that_team: &self.black,
             },
-            ActiveTeam::Dogs => FactionRelative {
-                this_team: &self.dogs,
-                that_team: &self.cats,
+            ActiveTeam::Black => FactionRelative {
+                this_team: &self.black,
+                that_team: &self.white,
             },
         }
     }
@@ -48,8 +48,8 @@ impl Factions {
 #[must_use]
 #[derive(Serialize, Deserialize, Hash, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ActiveTeam {
-    Cats = 0,
-    Dogs = 1,
+    White = 0,
+    Black = 1,
 }
 impl ActiveTeam {
     pub fn iter(&self) -> impl Iterator<Item = Self> {
@@ -57,8 +57,8 @@ impl ActiveTeam {
     }
     pub fn not(&self) -> Self {
         match self {
-            ActiveTeam::Cats => ActiveTeam::Dogs,
-            ActiveTeam::Dogs => ActiveTeam::Cats,
+            ActiveTeam::White => ActiveTeam::Black,
+            ActiveTeam::Black => ActiveTeam::White,
         }
     }
 }
@@ -113,8 +113,8 @@ pub struct GameState {
 #[must_use]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum GameOver {
-    CatWon,
-    DogWon,
+    WhiteWon,
+    BlackWon,
     Tie,
 }
 
@@ -139,8 +139,8 @@ impl GameState {
 
         if this_team_stuck {
             match team {
-                ActiveTeam::Cats => Some(GameOver::DogWon),
-                ActiveTeam::Dogs => Some(GameOver::CatWon),
+                ActiveTeam::White => Some(GameOver::BlackWon),
+                ActiveTeam::Black => Some(GameOver::WhiteWon),
             }
         } else {
             None

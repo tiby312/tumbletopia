@@ -22,31 +22,18 @@ impl Default for Evaluator {
 impl Evaluator {
     pub fn cant_move(&mut self, team: ActiveTeam) -> Eval {
         match team {
-            ActiveTeam::Cats => -MATE,
-            ActiveTeam::Dogs => MATE,
+            ActiveTeam::White => -MATE,
+            ActiveTeam::Black => MATE,
         }
     }
-    //cats maximizing
-    //dogs minimizing
+    //white maximizing
+    //black minimizing
     pub fn absolute_evaluate(
         &mut self,
         view: &GameState,
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-        // Doesnt seem that important that the AI knows exactly when it is winning.
-        // (There doesnt seem to be many tactical combinations near the end of the game).
-        // match view.game_is_over() {
-        //     Some(GameOver::CatWon) => {
-        //         return MATE;
-        //     }
-        //     Some(GameOver::DogWon) => {
-        //         return -MATE;
-        //     }
-        //     Some(GameOver::Tie) => {}
-        //     None => {}
-        // }
-
         let ship_allowed = {
             let temp = &mut self.workspace;
             temp.clear();
@@ -56,44 +43,44 @@ impl Evaluator {
             temp
         };
 
-        let num_cats = view.factions.cats.count_ones() as i64;
-        let num_dogs = view.factions.dogs.count_ones() as i64;
+        let num_white = view.factions.white.count_ones() as i64;
+        let num_black = view.factions.black.count_ones() as i64;
 
         //TODO remove this allocation
-        let mut cat_influence = view.factions.cats.all_alloc();
+        let mut white_influence = view.factions.white.all_alloc();
 
-        let mut dog_influence = view.factions.dogs.all_alloc();
+        let mut black_influence = view.factions.black.all_alloc();
 
         doop(
             7,
-            &mut dog_influence,
-            &mut cat_influence,
+            &mut black_influence,
+            &mut white_influence,
             &ship_allowed,
             &mut self.workspace2,
             &mut self.workspace3,
         );
 
-        let num_cat_influence = cat_influence.count_ones(..) as i64;
-        let num_dog_influence = dog_influence.count_ones(..) as i64;
+        let num_white_influence = white_influence.count_ones(..) as i64;
+        let num_black_influence = black_influence.count_ones(..) as i64;
 
-        let dog_distance = view
+        let black_distance = view
             .factions
-            .dogs
+            .black
             .iter_mesh()
             .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
             .sum::<i64>();
-        let cat_distance = view
+        let white_distance = view
             .factions
-            .cats
+            .white
             .iter_mesh()
             .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
             .sum::<i64>();
 
         //The AI will try to avoid the center.
         //The more influlence is at stake, the more precious each piece is
-        (num_cat_influence - num_dog_influence) * 100
-            + (-cat_distance + dog_distance) * 1
-            + (num_cats - num_dogs) * 2000
+        (num_white_influence - num_black_influence) * 100
+            + (-white_distance + black_distance) * 1
+            + (num_white - num_black) * 2000
     }
 }
 
@@ -116,15 +103,15 @@ pub fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
 
 fn doop(
     iteration: usize,
-    dogs: &mut BitField,
-    cats: &mut BitField,
+    black: &mut BitField,
+    white: &mut BitField,
     allowed_cells: &BitField,
     cache: &mut BitField,
     mut cache2: &mut BitField,
 ) {
-    dogs.intersect_with(allowed_cells);
-    cats.intersect_with(allowed_cells);
-    if dogs.count_ones(..) == 0 && cats.count_ones(..) == 0 {
+    black.intersect_with(allowed_cells);
+    white.intersect_with(allowed_cells);
+    if black.count_ones(..) == 0 && white.count_ones(..) == 0 {
         return;
     }
 
@@ -133,28 +120,28 @@ fn doop(
 
     for _i in 0..iteration {
         cache.clear();
-        cache.union_with(dogs);
-        expand_mesh(dogs, cache2);
-        let dogs_changed = cache != dogs;
+        cache.union_with(black);
+        expand_mesh(black, cache2);
+        let black_changed = cache != black;
         cache.clear();
-        cache.union_with(cats);
-        expand_mesh(cats, cache2);
-        let cats_changed = cache != cats;
-        if !dogs_changed && !cats_changed {
+        cache.union_with(white);
+        expand_mesh(white, cache2);
+        let white_changed = cache != white;
+        if !black_changed && !white_changed {
             break;
         }
-        dogs.intersect_with(allowed_cells);
-        cats.intersect_with(allowed_cells);
+        black.intersect_with(allowed_cells);
+        white.intersect_with(allowed_cells);
 
         cache2.clear();
         let contested = &mut cache2;
-        contested.union_with(dogs);
-        contested.intersect_with(cats);
+        contested.union_with(black);
+        contested.intersect_with(white);
 
         contested.toggle_range(..);
 
-        dogs.intersect_with(&contested);
-        cats.intersect_with(&contested);
+        black.intersect_with(&contested);
+        white.intersect_with(&contested);
     }
 }
 
@@ -390,7 +377,7 @@ impl<'a> AlphaBeta<'a> {
         let mut num_sorted = 0;
 
         for _ in 0..2 {
-            let ind = if team == ActiveTeam::Cats {
+            let ind = if team == ActiveTeam::White {
                 moves[num_sorted..]
                     .iter()
                     .enumerate()
@@ -446,7 +433,7 @@ impl<'a> AlphaBeta<'a> {
 
         let moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
 
-        let (eval, m) = if team == ActiveTeam::Cats {
+        let (eval, m) = if team == ActiveTeam::White {
             self.floopy(
                 depth,
                 max_depth,

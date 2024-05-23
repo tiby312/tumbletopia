@@ -7,8 +7,8 @@ pub struct MyWorld {
     pub seed: WorldSeed,
     w: BitField,
     pub land: BitField,
-    dog_start: Vec<Axial>,
-    cat_start: Vec<Axial>,
+    black_start: Vec<Axial>,
+    white_start: Vec<Axial>,
 }
 
 // impl Default for MyWorld {
@@ -32,20 +32,20 @@ fn increase_mag(a: &mut hex::CoordNum) {
 #[test]
 fn foo() {
     //let i=234314;
-    let mut cat_long_buffer = 0;
-    let mut dog_long_buffer = 0;
-    let mut dog_long2_buffer = 0;
+    let mut white_long_buffer = 0;
+    let mut black_long_buffer = 0;
+    let mut black_long2_buffer = 0;
     let mut world_missing_index1_buffer = 0;
     let mut world_missing_index2_buffer = 0;
 
     //3*3*2*5*4 = 360 choices!!!
 
     for mut i in 0..360 {
-        let cat_long = i % 3;
+        let white_long = i % 3;
         i /= 3;
-        let dog_long = i % 3;
+        let black_long = i % 3;
         i /= 3;
-        let dog_long2 = i % 2;
+        let black_long2 = i % 2;
         i /= 2;
         let world_missing_index1 = i % 5;
         i /= 5;
@@ -60,17 +60,17 @@ fn foo() {
         // let world_missing_index1 = (i/(3*3*3))%5; //0,1,2,3,4,5 //3 bits
         // let world_missing_index2 = (i/(3*3*3*5))%5; //0,1,2,3,4,5 //3 bits
 
-        cat_long_buffer |= cat_long;
-        dog_long_buffer |= dog_long;
-        dog_long2_buffer |= dog_long2;
+        white_long_buffer |= white_long;
+        black_long_buffer |= black_long;
+        black_long2_buffer |= black_long2;
         world_missing_index1_buffer |= world_missing_index1;
         world_missing_index2_buffer |= world_missing_index2;
     }
 
     dbg!(
-        cat_long_buffer,
-        dog_long_buffer,
-        dog_long2_buffer,
+        white_long_buffer,
+        black_long_buffer,
+        black_long2_buffer,
         world_missing_index1_buffer,
         world_missing_index2_buffer
     );
@@ -111,9 +111,9 @@ impl MyWorld {
 
         let mut i: usize = seed.foo.try_into().unwrap();
 
-        let cat_long = i % 3;
+        let white_long = i % 3;
         i /= 3;
-        let dog_long = i % 3;
+        let black_long = i % 3;
         i /= 3;
         // let mut dog_long2 = i % 2;
         // i /= 2;
@@ -132,37 +132,37 @@ impl MyWorld {
         }
         //assert_ne!(dog_long, dog_long2);
         assert_ne!(world_missing_index1, world_missing_index2);
-        assert!((0..3).contains(&cat_long), "uhoh:{}", cat_long);
-        assert!((0..3).contains(&dog_long));
+        assert!((0..3).contains(&white_long), "uhoh:{}", white_long);
+        assert!((0..3).contains(&black_long));
         //assert!((0..3).contains(&dog_long2));
         assert!((0..6).contains(&world_missing_index1));
         assert!((0..6).contains(&world_missing_index2));
 
         let d = 4;
 
-        let mut cat_start: Vec<_> = [[-d, d], [0, -d], [d, 0]].map(Axial::from_arr).into();
-        let mut dog_start: Vec<_> = [[d, -d], [-d, 0], [0, d]].map(Axial::from_arr).into();
+        let mut white_start: Vec<_> = [[-d, d], [0, -d], [d, 0]].map(Axial::from_arr).into();
+        let mut black_start: Vec<_> = [[d, -d], [-d, 0], [0, d]].map(Axial::from_arr).into();
 
         let world_missing = j.map(Axial::from_arr);
 
         for a in 0..3 {
-            if a == cat_long {
+            if a == white_long {
                 continue;
             }
-            let mut j = cat_start[a];
+            let mut j = white_start[a];
             increase_mag(&mut j.q);
             increase_mag(&mut j.r);
-            cat_start.push(j);
+            white_start.push(j);
         }
 
         for a in 0..3 {
-            if a == dog_long {
+            if a == black_long {
                 continue;
             }
-            let mut j = dog_start[a];
+            let mut j = black_start[a];
             increase_mag(&mut j.q);
             increase_mag(&mut j.r);
-            dog_start.push(j);
+            black_start.push(j);
         }
 
         // let mut j=dog_start[dog_long2];
@@ -180,11 +180,11 @@ impl MyWorld {
         //     land.set_coord(Axial::from_arr(a), true);
         // }
 
-        for &a in cat_start.iter() {
+        for &a in white_start.iter() {
             w.set_coord(a, true);
         }
 
-        for &a in dog_start.iter() {
+        for &a in black_start.iter() {
             w.set_coord(a, true);
         }
 
@@ -192,15 +192,15 @@ impl MyWorld {
             seed,
             land,
             w,
-            dog_start,
-            cat_start,
+            black_start,
+            white_start,
         }
     }
-    pub fn cat_start(&self) -> &[Axial] {
-        &self.cat_start
+    pub fn white_start(&self) -> &[Axial] {
+        &self.white_start
     }
-    pub fn dog_start(&self) -> &[Axial] {
-        &self.dog_start
+    pub fn black_start(&self) -> &[Axial] {
+        &self.black_start
     }
 
     pub fn get_game_cells(&self) -> &BitField {
