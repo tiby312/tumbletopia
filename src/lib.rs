@@ -735,7 +735,7 @@ async fn render_command(
             let white = game
                 .factions
                 .white
-                .units1
+                .mouse
                 .iter_mesh()
                 .map(|e| grid_snap(e, zzzz));
 
@@ -931,6 +931,7 @@ pub struct Models<T> {
 impl Models<Foo<TextureGpu, ModelGpu>> {
     pub fn new(grid_matrix: &grids::HexConverter, shader: &ShaderSystem) -> Self {
         
+        
         let quick_load = |name, res, alpha| {
             let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
 
@@ -943,7 +944,9 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
         };
 
         pub const RESIZE: usize = 10;
+        
 
+        
         Models {
             select_model: quick_load(include_bytes!("../assets/select_model.glb"),1,None),
             drop_shadow: quick_load(include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),

@@ -201,35 +201,35 @@ impl Default for CellSelection {
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub units1: BitField,
-    pub units2: BitField,
+    pub mouse: BitField,
+    pub rabbit: BitField,
 }
 
 impl Tribe {
     pub fn all_alloc(&self) -> BitField {
-        let mut j = self.units1.clone();
-        j.union_with(&self.units2);
+        let mut j = self.mouse.clone();
+        j.union_with(&self.rabbit);
         j
     }
     pub fn count_ones(&self) -> usize {
-        self.units1.count_ones(..) + self.units2.count_ones(..)
+        self.mouse.count_ones(..) + self.rabbit.count_ones(..)
     }
     pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
-        self.units1.iter_mesh().chain(self.units2.iter_mesh())
+        self.mouse.iter_mesh().chain(self.rabbit.iter_mesh())
     }
     pub fn is_set(&self, a: Axial) -> bool {
-        self.units1.is_set(a) || self.units2.is_set(a)
+        self.mouse.is_set(a) || self.rabbit.is_set(a)
     }
 
     pub fn move_unit(&mut self, a: Axial, b: Axial) {
-        if self.units1.is_set(a) {
-            self.units1.set_coord(a, false);
-            self.units1.set_coord(b, true);
+        if self.mouse.is_set(a) {
+            self.mouse.set_coord(a, false);
+            self.mouse.set_coord(b, true);
             return;
         }
-        if self.units2.is_set(a) {
-            self.units2.set_coord(a, false);
-            self.units2.set_coord(b, true);
+        if self.rabbit.is_set(a) {
+            self.rabbit.set_coord(a, false);
+            self.rabbit.set_coord(b, true);
             return;
         }
 
@@ -238,29 +238,29 @@ impl Tribe {
 
     pub fn get_mut(&mut self, a: UnitType) -> &mut BitField {
         match a {
-            UnitType::Type1 => &mut self.units1,
-            UnitType::Type2 => &mut self.units2,
+            UnitType::Type1 => &mut self.mouse,
+            UnitType::Type2 => &mut self.rabbit,
         }
     }
 
     pub fn clear(&mut self, a: Axial) -> UnitType {
-        if self.units1.is_set(a) {
-            self.units1.set_coord(a, false);
+        if self.mouse.is_set(a) {
+            self.mouse.set_coord(a, false);
             return UnitType::Type1;
         }
-        if self.units2.is_set(a) {
-            self.units2.set_coord(a, false);
+        if self.rabbit.is_set(a) {
+            self.rabbit.set_coord(a, false);
             return UnitType::Type2;
         }
 
         unreachable!("coord isnt set in first place.")
     }
     pub fn get_type(&self, a: Axial) -> UnitType {
-        if self.units1.is_set(a) {
+        if self.mouse.is_set(a) {
             return UnitType::Type1;
         }
 
-        if self.units2.is_set(a) {
+        if self.rabbit.is_set(a) {
             return UnitType::Type2;
         }
 

@@ -359,24 +359,28 @@ pub async fn reselect_loop(
 }
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
-    let white = BitField::from_iter(world.white_start().iter().copied());
+    let white_mouse = BitField::from_iter(&world.white_start()[0..1]);
 
-    let dog = BitField::from_iter(world.black_start().iter().copied());
+    let black_mouse = BitField::from_iter(&world.black_start()[0..1]);
+
+    let white_rabbit = BitField::from_iter(&world.white_start()[1..]);
+
+    let black_rabbit = BitField::from_iter(&world.black_start()[1..]);
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
-    let fog = BitField::from_iter(Axial::zero().to_cube().range(4));
-    //let fog = BitField::new();
-
+    let fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x|x.ax));
+    
+    
     let mut k = GameState {
         factions: Factions {
             black: Tribe {
-                units1: dog,
-                units2: BitField::new(),
+                mouse: black_mouse,
+                rabbit: black_rabbit,
             },
             white: Tribe {
-                units1: white,
-                units2: BitField::new(),
+                mouse: white_mouse,
+                rabbit: white_rabbit,
             },
         },
         env: Environment {
