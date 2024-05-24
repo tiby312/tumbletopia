@@ -34,7 +34,6 @@ pub mod unit;
 
 use unit::*;
 
-pub const RESIZE: usize = 10;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum WorkerToDom {
@@ -324,8 +323,8 @@ async fn render_command(
     let mut viewport = [canvas.width() as f32, canvas.height() as f32];
 
     let drop_shadow = &models.drop_shadow;
-    let black_cake = &models.black_cake;
-    let white_cake = &models.white_cake;
+    let black_cake = &models.black_mouse;
+    let white_cake = &models.white_mouse;
     //let fog_asset = &models.fog;
     let water = &models.water;
     let grass = &models.grass;
@@ -918,8 +917,10 @@ pub struct Models<T> {
     drop_shadow: T,
     fog: T,
     attack: T,
-    white_cake: T,
-    black_cake: T,
+    white_mouse: T,
+    black_mouse: T,
+    white_rabbit: T,
+    black_rabbit: T,
     grass: T,
     snow: T,
     water: T,
@@ -941,14 +942,17 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             }
         };
 
+        pub const RESIZE: usize = 10;
 
         Models {
             select_model: quick_load(include_bytes!("../assets/select_model.glb"),1,None),
             drop_shadow: quick_load(include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
             fog: quick_load(include_bytes!("../assets/fog.glb"), RESIZE, None),
             attack: quick_load(include_bytes!("../assets/attack.glb"), 1, None),
-            white_cake: quick_load(include_bytes!("../assets/white_mouse.glb"), RESIZE, None),
-            black_cake: quick_load(include_bytes!("../assets/black_mouse.glb"), RESIZE, None),
+            white_mouse: quick_load(include_bytes!("../assets/white_mouse.glb"), RESIZE, None),
+            black_mouse: quick_load(include_bytes!("../assets/black_mouse.glb"), RESIZE, None),
+            white_rabbit: quick_load(include_bytes!("../assets/white_rabbit.glb"), RESIZE, None),
+            black_rabbit: quick_load(include_bytes!("../assets/black_rabbit.glb"), RESIZE, None),
             grass: quick_load(include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
             snow: quick_load(include_bytes!("../assets/snow.glb"), RESIZE, None),
             water: quick_load(include_bytes!("../assets/water.glb"), RESIZE, None),
