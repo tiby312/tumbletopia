@@ -929,19 +929,7 @@ pub struct Models<T> {
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
     pub fn new(grid_matrix: &grids::HexConverter, shader: &ShaderSystem) -> Self {
-        const ASSETS: &[(&[u8], usize, Option<f64>)] = &[
-            (include_bytes!("../assets/select_model.glb"), 1, None),
-            (include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
-            (include_bytes!("../assets/fog.glb"), RESIZE, None),
-            (include_bytes!("../assets/attack.glb"), 1, None),
-            (include_bytes!("../assets/white_rabbit.glb"), RESIZE, None),
-            (include_bytes!("../assets/black_rabbit.glb"), RESIZE, None),
-            (include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
-            (include_bytes!("../assets/snow.glb"), RESIZE, None),
-            (include_bytes!("../assets/water.glb"), RESIZE, None),
-            (include_bytes!("../assets/direction.glb"), 1, None),
-            (include_bytes!("../assets/mountain.glb"), 1, None),
-        ];
+        
         let quick_load = |name, res, alpha| {
             let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
 
@@ -953,23 +941,19 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             }
         };
 
-        let qq = |num| {
-            let (b, c, d) = ASSETS[num];
-            quick_load(b, c, d)
-        };
 
         Models {
-            select_model: qq(0),
-            drop_shadow: qq(1),
-            fog: qq(2),
-            attack: qq(3),
-            white_cake: qq(4),
-            black_cake: qq(5),
-            grass: qq(6),
-            snow: qq(7),
-            water: qq(8),
-            direction: qq(9),
-            mountain: qq(10),
+            select_model: quick_load(include_bytes!("../assets/select_model.glb"),1,None),
+            drop_shadow: quick_load(include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
+            fog: quick_load(include_bytes!("../assets/fog.glb"), RESIZE, None),
+            attack: quick_load(include_bytes!("../assets/attack.glb"), 1, None),
+            white_cake: quick_load(include_bytes!("../assets/white_mouse.glb"), RESIZE, None),
+            black_cake: quick_load(include_bytes!("../assets/black_mouse.glb"), RESIZE, None),
+            grass: quick_load(include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
+            snow: quick_load(include_bytes!("../assets/snow.glb"), RESIZE, None),
+            water: quick_load(include_bytes!("../assets/water.glb"), RESIZE, None),
+            direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
+            mountain: quick_load(include_bytes!("../assets/mountain.glb"), 1, None),
         }
     }
 }
