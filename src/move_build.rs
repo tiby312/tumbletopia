@@ -281,7 +281,8 @@ impl MovePhase {
 
         let mut ss = state.clone();
 
-        ss.factions
+        let ttt = ss
+            .factions
             .relative_mut(team)
             .this_team
             .clear(self.original);
@@ -319,6 +320,7 @@ impl MovePhase {
         data.wait_animation(
             animation::AnimationCommand::Movement {
                 unit: self.original,
+                ttt,
                 path,
                 end,
                 data: info,

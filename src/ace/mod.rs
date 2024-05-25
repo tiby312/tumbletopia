@@ -369,9 +369,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
-    let fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x|x.ax));
-    
-    
+    let fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x| x.ax));
+
     let mut k = GameState {
         factions: Factions {
             black: Tribe {

@@ -238,30 +238,30 @@ impl Tribe {
 
     pub fn get_mut(&mut self, a: UnitType) -> &mut BitField {
         match a {
-            UnitType::Type1 => &mut self.mouse,
-            UnitType::Type2 => &mut self.rabbit,
+            UnitType::Mouse => &mut self.mouse,
+            UnitType::Rabbit => &mut self.rabbit,
         }
     }
 
     pub fn clear(&mut self, a: Axial) -> UnitType {
         if self.mouse.is_set(a) {
             self.mouse.set_coord(a, false);
-            return UnitType::Type1;
+            return UnitType::Mouse;
         }
         if self.rabbit.is_set(a) {
             self.rabbit.set_coord(a, false);
-            return UnitType::Type2;
+            return UnitType::Rabbit;
         }
 
         unreachable!("coord isnt set in first place.")
     }
     pub fn get_type(&self, a: Axial) -> UnitType {
         if self.mouse.is_set(a) {
-            return UnitType::Type1;
+            return UnitType::Mouse;
         }
 
         if self.rabbit.is_set(a) {
-            return UnitType::Type2;
+            return UnitType::Rabbit;
         }
 
         unreachable!("Could not find unit at position");
@@ -270,8 +270,8 @@ impl Tribe {
 
 #[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum UnitType {
-    Type1,
-    Type2,
+    Mouse,
+    Rabbit,
 }
 
 // impl std::fmt::Debug for Tribe {

@@ -34,7 +34,6 @@ pub mod unit;
 
 use unit::*;
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum WorkerToDom {
     ShowUndo,
@@ -323,8 +322,11 @@ async fn render_command(
     let mut viewport = [canvas.width() as f32, canvas.height() as f32];
 
     let drop_shadow = &models.drop_shadow;
-    let black_cake = &models.black_mouse;
-    let white_cake = &models.white_mouse;
+    let black_mouse = &models.black_mouse;
+    let white_mouse = &models.white_mouse;
+    let black_rabbit = &models.black_rabbit;
+    let white_rabbit = &models.white_rabbit;
+
     //let fog_asset = &models.fog;
     let water = &models.water;
     let grass = &models.grass;
@@ -356,6 +358,7 @@ async fn render_command(
         ace::Command::Animate(ak) => match ak {
             animation::AnimationCommand::Movement {
                 unit,
+                ttt,
                 end,
                 path,
                 data,
@@ -376,7 +379,7 @@ async fn render_command(
 
                 let it = path.animation_iter(unit, grid_matrix);
 
-                unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ff));
+                unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ttt, ff));
             }
             animation::AnimationCommand::Terrain {
                 pos,
@@ -538,7 +541,7 @@ async fn render_command(
                 return ace::Response::AnimationFinish;
             }
         }
-        if let Some((lpos, a, _, _data)) = &mut unit_animation {
+        if let Some((lpos, a, _, _, _data)) = &mut unit_animation {
             if let Some(pos) = a.next() {
                 *lpos = pos;
             } else {
@@ -587,7 +590,7 @@ async fn render_command(
                 None
             };
 
-            let push_grass = if let Some((pos, _, _unit, data)) = &unit_animation {
+            let push_grass = if let Some((pos, _, _unit, _, data)) = &unit_animation {
                 if let Some(f) = data {
                     let kk = pos + f;
                     let m = my_matrix
@@ -730,48 +733,56 @@ async fn render_command(
         }
 
         let zzzz = -10.0;
-        {
-            //Draw white
-            let white = game
-                .factions
-                .white
-                .mouse
-                .iter_mesh()
-                .map(|e| grid_snap(e, zzzz));
+        let mut draw_unit_type =
+            |mytype: UnitType,
+             my_team: ActiveTeam,
+             foo: &BitField,
+             model: &Foo<TextureGpu, ModelGpu>| {
+                let color = foo.iter_mesh().map(|e| grid_snap(e, zzzz));
 
-            let ani_white = unit_animation
-                .as_ref()
-                .map(|(pos, _, _unit, _data)| {
-                    my_matrix
-                        .chain(matrix::translation(pos.x, pos.y, zzzz))
-                        .chain(matrix::scale(1.0, 1.0, 1.0))
-                        .generate()
-                })
-                .filter(|_| team == ActiveTeam::White);
+                let ani = unit_animation
+                    .as_ref()
+                    .filter(|(pos, _, unit, ttt, _data)| {
+                        *ttt == mytype && team == my_team
+                        //foo.is_set(*unit)
+                    })
+                    .map(|(pos, _, unit, _, _data)| {
+                        my_matrix
+                            .chain(matrix::translation(pos.x, pos.y, zzzz))
+                            .chain(matrix::scale(1.0, 1.0, 1.0))
+                            .generate()
+                    });
 
-            let all_white = white.chain(ani_white.into_iter());
+                let k = color.chain(ani.into_iter());
 
-            draw_sys.batch(all_white).build(white_cake);
-        }
+                draw_sys.batch(k).build(model)
+            };
 
-        {
-            //Draw black
-            let black = game.factions.black.iter_mesh().map(|e| grid_snap(e, zzzz));
+        draw_unit_type(
+            UnitType::Mouse,
+            ActiveTeam::White,
+            &game.factions.white.mouse,
+            white_mouse,
+        );
+        draw_unit_type(
+            UnitType::Rabbit,
+            ActiveTeam::White,
+            &game.factions.white.rabbit,
+            white_rabbit,
+        );
 
-            let ani_black = unit_animation
-                .as_ref()
-                .map(|(pos, _, _unit, _data)| {
-                    my_matrix
-                        .chain(matrix::translation(pos.x, pos.y, zzzz))
-                        .chain(matrix::scale(1.0, 1.0, 1.0))
-                        .generate()
-                })
-                .filter(|_| team == ActiveTeam::Black);
-
-            let all_black = black.chain(ani_black.into_iter());
-
-            draw_sys.batch(all_black).build(black_cake);
-        }
+        draw_unit_type(
+            UnitType::Mouse,
+            ActiveTeam::Black,
+            &game.factions.black.mouse,
+            black_mouse,
+        );
+        draw_unit_type(
+            UnitType::Rabbit,
+            ActiveTeam::Black,
+            &game.factions.black.rabbit,
+            black_rabbit,
+        );
 
         // let d = DepthDisabler::new(ctx);
 
@@ -930,8 +941,6 @@ pub struct Models<T> {
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
     pub fn new(grid_matrix: &grids::HexConverter, shader: &ShaderSystem) -> Self {
-        
-        
         let quick_load = |name, res, alpha| {
             let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
 
@@ -944,11 +953,9 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
         };
 
         pub const RESIZE: usize = 10;
-        
 
-        
         Models {
-            select_model: quick_load(include_bytes!("../assets/select_model.glb"),1,None),
+            select_model: quick_load(include_bytes!("../assets/select_model.glb"), 1, None),
             drop_shadow: quick_load(include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
             fog: quick_load(include_bytes!("../assets/fog.glb"), RESIZE, None),
             attack: quick_load(include_bytes!("../assets/attack.glb"), 1, None),
