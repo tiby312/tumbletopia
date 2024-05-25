@@ -3,11 +3,15 @@ use super::*;
 use crate::mesh::small_mesh::SmallMesh;
 
 impl GameState {
-    pub fn is_trap(&self, team: ActiveTeam, world: &board::MyWorld, check: Axial) -> bool {
+    pub fn is_trap(&self, team: ActiveTeam, world: &board::MyWorld, check: Axial,typ:UnitType) -> bool {
+        let k=match typ{
+            UnitType::Mouse=>self.env.terrain.is_set(check),
+            UnitType::Rabbit=>!self.env.terrain.is_set(check) && world.get_game_cells().is_set(check)
+        };
         //if you push an enemy unit into a wall, they die
         //if you push an enemy off the map, they die
         //if you push an enemy into one of your teamates they die
-        self.env.terrain.is_set(check)
+        k
             || self.factions.relative(team).this_team.is_set(check)
             || !world.get_game_cells().is_set(check)
     }
@@ -91,7 +95,7 @@ impl GameState {
             if game.factions.relative(team).that_team.is_set(a) {
                 let check = a.advance(dir);
 
-                if game.is_trap(team, world, check) {
+                if game.is_trap(team, world, check,typ) {
                     mesh.add(a.sub(&unit));
                 }
             }

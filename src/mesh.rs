@@ -164,6 +164,8 @@ pub fn path(
         return MyPath([Some(unit.dir_to(&target)), None, None]);
     }
 
+    let typ=game.factions.relative(team).this_team.get_type(unit);
+
     let find = |depth: usize| {
         for (a, adir) in neighbours(&unit) {
             if walls.is_set(a.sub(&unit)) {
@@ -184,7 +186,7 @@ pub fn path(
                 }
 
                 if b == target {
-                    if capturing && !game.is_trap(team, world, b.advance(bdir)) {
+                    if capturing && !game.is_trap(team, world, b.advance(bdir),typ) {
                         continue;
                     }
                     return Some(MyPath([Some(adir), Some(bdir), None]));
@@ -200,7 +202,7 @@ pub fn path(
                     }
 
                     if c == target {
-                        if capturing && !game.is_trap(team, world, c.advance(cdir)) {
+                        if capturing && !game.is_trap(team, world, c.advance(cdir),typ) {
                             continue;
                         }
                         return Some(MyPath([Some(adir), Some(bdir), Some(cdir)]));
@@ -228,62 +230,62 @@ pub fn path(
     );
 }
 
-pub fn path_old(
-    _mesh: &small_mesh::SmallMesh,
-    a: Axial,
-    walls: &small_mesh::SmallMesh,
-) -> impl Iterator<Item = HDir> {
-    let mesh_iter = {
-        assert!(small_mesh::SmallMesh::validate_rel(a));
+// pub fn path_old(
+//     _mesh: &small_mesh::SmallMesh,
+//     a: Axial,
+//     walls: &small_mesh::SmallMesh,
+// ) -> impl Iterator<Item = HDir> {
+//     let mesh_iter = {
+//         assert!(small_mesh::SmallMesh::validate_rel(a));
 
-        let x = a.q;
-        let y = a.r;
-        let first = if Axial::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
-            Some([Axial::from_arr([0, 0]).dir_to(&a)])
-        } else {
-            None
-        };
+//         let x = a.q;
+//         let y = a.r;
+//         let first = if Axial::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 1 {
+//             Some([Axial::from_arr([0, 0]).dir_to(&a)])
+//         } else {
+//             None
+//         };
 
-        let second = if Axial::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 2 {
-            //diagonal
-            let diag = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
-                //TODO inefficient
-                let mut k = Axial::from_arr([0, 0])
-                    .to_cube()
-                    .neighbours()
-                    .filter(|x| x.dist(&a.to_cube()) == 1);
-                let first = k.next().unwrap().to_axial();
-                let second = k.next().unwrap().to_axial();
+//         let second = if Axial::from_arr([0, 0]).to_cube().dist(&a.to_cube()) == 2 {
+//             //diagonal
+//             let diag = if first.is_none() && (x.abs() == 1 || y.abs() == 1) {
+//                 //TODO inefficient
+//                 let mut k = Axial::from_arr([0, 0])
+//                     .to_cube()
+//                     .neighbours()
+//                     .filter(|x| x.dist(&a.to_cube()) == 1);
+//                 let first = k.next().unwrap().to_axial();
+//                 let second = k.next().unwrap().to_axial();
 
-                if
-                /*self.is_set(first)||*/
-                !walls.is_set(first) {
-                    Some([Axial::from_arr([0, 0]).dir_to(&first), first.dir_to(&a)])
-                } else {
-                    Some([Axial::from_arr([0, 0]).dir_to(&second), second.dir_to(&a)])
-                }
-            } else {
-                None
-            };
+//                 if
+//                 /*self.is_set(first)||*/
+//                 !walls.is_set(first) {
+//                     Some([Axial::from_arr([0, 0]).dir_to(&first), first.dir_to(&a)])
+//                 } else {
+//                     Some([Axial::from_arr([0, 0]).dir_to(&second), second.dir_to(&a)])
+//                 }
+//             } else {
+//                 None
+//             };
 
-            let orth = if first.is_none() && diag.is_none() && (x.abs() == 2 || y.abs() == 2) {
-                let h = Axial::from_arr([0, 0]).dir_to(&a);
-                Some([h, h])
-            } else {
-                None
-            };
+//             let orth = if first.is_none() && diag.is_none() && (x.abs() == 2 || y.abs() == 2) {
+//                 let h = Axial::from_arr([0, 0]).dir_to(&a);
+//                 Some([h, h])
+//             } else {
+//                 None
+//             };
 
-            Some(diag.into_iter().flatten().chain(orth.into_iter().flatten()))
-        } else {
-            None
-        };
+//             Some(diag.into_iter().flatten().chain(orth.into_iter().flatten()))
+//         } else {
+//             None
+//         };
 
-        let a = first.into_iter().flatten();
-        a.chain(second.into_iter().flatten())
-    };
+//         let a = first.into_iter().flatten();
+//         a.chain(second.into_iter().flatten())
+//     };
 
-    mesh_iter.into_iter()
-}
+//     mesh_iter.into_iter()
+// }
 
 pub mod bitfield {
     use super::Axial;
