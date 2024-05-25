@@ -105,7 +105,7 @@ impl MyWorld {
         //for size 3 use this
         //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
 
-        let w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
+        let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
         //w.set_coord(Axial::zero(), false);
         //3*3*5*4 = 180 choices!!!
 
