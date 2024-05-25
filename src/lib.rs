@@ -207,7 +207,7 @@ pub async fn worker_entry() {
 
         let mut game_history = ace::selection::MoveHistory::new();
 
-        let mut team_gen = ActiveTeam::Black.iter();
+        let mut team_gen = ActiveTeam::White.iter();
 
         //doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
 

@@ -252,8 +252,8 @@ pub async fn start_game(game_type: GameType, host: &str) {
                 let body = gloo::utils::document().body().unwrap();
 
                 let team_str = match result {
-                    GameOver::WhiteWon => "Cat Won!",
-                    GameOver::BlackWon => "Dog Won!",
+                    GameOver::WhiteWon => "White Won!",
+                    GameOver::BlackWon => "Black Won!",
                     GameOver::Tie => "Its a tie!",
                 };
                 use std::fmt::Write;
