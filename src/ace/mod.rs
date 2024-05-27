@@ -359,7 +359,8 @@ pub async fn reselect_loop(
 }
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
-    let a=2;
+    let a=world.white_start().len();
+    
     let white_mouse = BitField::from_iter(&world.white_start()[0..a]);
 
     let black_mouse = BitField::from_iter(&world.black_start()[0..a]);
@@ -437,9 +438,10 @@ pub async fn replay(
 
     let mut game_history = selection::MoveHistory::new();
 
-    let mut team_gen = ActiveTeam::Black.iter();
+    let start_team=ActiveTeam::White;
+    let mut team_gen = start_team.iter();
 
-    doop.send_command(ActiveTeam::Black, &mut game, Command::HideUndo)
+    doop.send_command(start_team, &mut game, Command::HideUndo)
         .await;
 
     for the_move in just_logs.inner {
