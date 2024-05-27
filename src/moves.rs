@@ -1,5 +1,9 @@
 use super::*;
 
+
+
+
+
 use crate::mesh::small_mesh::SmallMesh;
 
 impl GameState {
@@ -119,6 +123,9 @@ impl GameState {
                             let c = c.to_axial();
                             let dir = b.dir_to(&c);
 
+                            if c != unit && check_empty(c) && !terrain.is_set(c) {
+                                mesh.add(c.sub(&unit));
+                            }
                             if c.to_cube().dist(&unit.to_cube()) > b.to_cube().dist(&unit.to_cube())
                             {
                                 kll(&mut mesh, c, dir);
