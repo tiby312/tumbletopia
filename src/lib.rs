@@ -223,7 +223,7 @@ pub async fn worker_entry() {
 
             //Add AIIIIII.
             let foo = match game_type {
-                dom::GameType::SinglePlayer => team == ActiveTeam::White,
+                dom::GameType::SinglePlayer => team == ActiveTeam::Black,
                 dom::GameType::PassPlay => false,
                 dom::GameType::AIBattle => true,
                 dom::GameType::Replay(_) => todo!(),
