@@ -16,7 +16,7 @@ impl GameState {
         //if you push an enemy off the map, they die
         //if you push an enemy into one of your teamates they die
         k
-            || self.factions.relative(team).this_team.is_set(check)
+            || self.factions.has_a_set(check)
             || !world.get_game_cells().is_set(check)
     }
 
