@@ -48,7 +48,7 @@ impl GameState {
         if effect.destroyed_unit.is_some() {
             mesh.add(Axial::zero())
         } else {
-            for a in unit.to_cube().ring(1) {
+            for a in unit.to_cube().neighbours2() {
                 let a = a.to_axial();
 
                 if a != unit
@@ -148,7 +148,7 @@ impl GameState {
 }
 
 fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
-    for a in unit.to_cube().ring(1) {
+    for a in unit.to_cube().neighbours2() {
         let a = a.to_axial();
         let dir = unit.dir_to(&a);
 
@@ -156,7 +156,7 @@ fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
             continue;
         }
 
-        for b in a.to_cube().ring(1) {
+        for b in a.to_cube().neighbours2() {
             let b = b.to_axial();
             let dir2 = a.dir_to(&b);
 
@@ -168,7 +168,7 @@ fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
                 continue;
             }
 
-            for c in b.to_cube().ring(1) {
+            for c in b.to_cube().neighbours2() {
                 let c = c.to_axial();
                 let dir3 = b.dir_to(&c);
 
