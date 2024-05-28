@@ -83,21 +83,9 @@ impl GameState {
         let game = self;
         let mut mesh = SmallMesh::new();
 
-        let check_empty = |a: Axial| {
-            world.get_game_cells().is_set(a)
-                && !game.factions.has_a_set(a)
-                && !game.env.fog.is_set(a)
-        };
-
+   
         let terrain = &game.env.terrain;
 
-        let kll = |mesh: &mut SmallMesh, a: Axial, dir: hex::HDir| {
-            if game.factions.relative(team).that_team.is_set(a) {
-                let check = a.advance(dir);
-
-                mesh.add(a.sub(&unit));
-            }
-        };
 
         fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
             for a in unit.to_cube().ring(1) {
