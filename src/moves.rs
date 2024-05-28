@@ -83,137 +83,104 @@ impl GameState {
         let game = self;
         let mut mesh = SmallMesh::new();
 
-   
         let terrain = &game.env.terrain;
 
+        match typ {
+            UnitType::Mouse => for_every_cell(unit, |a, pp| {
+                if pp.len() == 1 {
+                    let dir = pp[0];
+                    if terrain.land.is_set(a) {
+                        let check = a.advance(dir);
+                        if world.get_game_cells().is_set(check)
+                            && !game.factions.has_a_set(check)
+                            && !game.env.fog.is_set(check)
+                            && (!terrain.is_set(check)/*|| terrain.land.is_set(check)*/)
+                        {
+                            mesh.add(a.sub(&unit));
+                        }
+                        return true;
+                    }
+                }
+                if a != unit
+                    && world.get_game_cells().is_set(a)
+                    && !game.factions.relative(team).this_team.is_set(a)
+                    && !game.env.fog.is_set(a)
+                    && !terrain.is_set(a)
+                {
+                    mesh.add(a.sub(&unit));
+                    if game.factions.relative(team).that_team.is_set(a) {
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    true
+                }
+            }),
+            UnitType::Rabbit => for_every_cell(unit, |a, pp| {
+                if a != unit
+                    && world.get_game_cells().is_set(a)
+                    && !game.factions.relative(team).this_team.is_set(a)
+                    && !game.env.fog.is_set(a)
+                    && !terrain.is_set(a)
+                {
+                    mesh.add(a.sub(&unit));
+                    if !terrain.is_set(a) {
+                        return true;
+                    }
+                    if game.factions.relative(team).that_team.is_set(a) {
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    if terrain.is_set(a) {
+                        false
+                    } else {
+                        true
+                    }
+                }
+            }),
+        };
 
-        fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
-            for a in unit.to_cube().ring(1) {
-                let a = a.to_axial();
-                let dir = unit.dir_to(&a);
+        mesh
+    }
+}
 
-                if func(a, &[dir]) {
+fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
+    for a in unit.to_cube().ring(1) {
+        let a = a.to_axial();
+        let dir = unit.dir_to(&a);
+
+        if func(a, &[dir]) {
+            continue;
+        }
+
+        for b in a.to_cube().ring(1) {
+            let b = b.to_axial();
+            let dir2 = a.dir_to(&b);
+
+            if b.to_cube().dist(&unit.to_cube()) < a.to_cube().dist(&unit.to_cube()) {
+                continue;
+            }
+
+            if func(b, &[dir, dir2]) {
+                continue;
+            }
+
+            for c in b.to_cube().ring(1) {
+                let c = c.to_axial();
+                let dir3 = b.dir_to(&c);
+
+                if c.to_cube().dist(&unit.to_cube()) < b.to_cube().dist(&unit.to_cube()) {
                     continue;
                 }
 
-                for b in a.to_cube().ring(1) {
-                    let b = b.to_axial();
-                    let dir2 = a.dir_to(&b);
-
-                    if b.to_cube().dist(&unit.to_cube()) < a.to_cube().dist(&unit.to_cube()) {
-                        continue;
-                    }
-
-                    if func(b, &[dir, dir2]) {
-                        continue;
-                    }
-
-                    for c in b.to_cube().ring(1) {
-                        let c = c.to_axial();
-                        let dir3 = b.dir_to(&c);
-
-                        if c.to_cube().dist(&unit.to_cube()) < b.to_cube().dist(&unit.to_cube()) {
-                            continue;
-                        }
-
-                        if func(c, &[dir, dir2, dir3]) {
-                            continue;
-                        }
-                    }
+                if func(c, &[dir, dir2, dir3]) {
+                    continue;
                 }
             }
         }
-
-        for_every_cell(unit, |a, pp| {
-            if pp.len() == 1 {
-                let dir = pp[0];
-                if terrain.land.is_set(a) {
-                    let check = a.advance(dir);
-                    if world.get_game_cells().is_set(check)
-                        && !game.factions.has_a_set(check)
-                        && !game.env.fog.is_set(check)
-                        && (!terrain.is_set(check)/*|| terrain.land.is_set(check)*/)
-                    {
-                        mesh.add(a.sub(&unit));
-                    }
-                    return true;
-                }
-            }
-            if a != unit
-                && world.get_game_cells().is_set(a)
-                && !game.factions.relative(team).this_team.is_set(a)
-                && !game.env.fog.is_set(a)
-                && !terrain.is_set(a)
-            {
-                mesh.add(a.sub(&unit));
-                if game.factions.relative(team).that_team.is_set(a) {
-                    true
-                } else {
-                    false
-                }
-            } else {
-                true
-            }
-        });
-
-        // for a in unit.to_cube().ring(1) {
-        //     let a = a.to_axial();
-        //     let dir = unit.dir_to(&a);
-
-        //     if a != unit && check_empty(a) && !terrain.is_set(a) {
-        //         mesh.add(a.sub(&unit));
-
-        //         for b in a.to_cube().ring(1) {
-        //             let b = b.to_axial();
-        //             let dir = a.dir_to(&b);
-
-        //             if b != unit && check_empty(b) && !terrain.is_set(b) {
-        //                 mesh.add(b.sub(&unit));
-
-        //                 for c in b.to_cube().ring(1) {
-        //                     let c = c.to_axial();
-        //                     let dir = b.dir_to(&c);
-
-        //                     if c != unit && check_empty(c) && !terrain.is_set(c) {
-        //                         mesh.add(c.sub(&unit));
-        //                     }
-        //                     if c.to_cube().dist(&unit.to_cube()) > b.to_cube().dist(&unit.to_cube())
-        //                     {
-        //                         kll(&mut mesh, c, dir);
-        //                     }
-        //                 }
-        //             }
-
-        //             if b.to_cube().dist(&unit.to_cube()) > a.to_cube().dist(&unit.to_cube()) {
-        //                 kll(&mut mesh, b, dir);
-        //             }
-        //         }
-        //     } else {
-        //         if terrain.land.is_set(a) {
-        //             let check = a.advance(dir);
-        //             if check_empty(check)
-        //                 && (!terrain.is_set(check)/*|| terrain.land.is_set(check)*/)
-        //             {
-        //                 mesh.add(a.sub(&unit));
-        //             }
-        //         }
-
-        //         kll(&mut mesh, a, dir);
-
-        //         if game.factions.relative(team).this_team.is_set(a) {
-        //             // let check = a.advance(dir);
-
-        //             // if world.get_game_cells().is_set(check)
-        //             //     && !game.env.fog.is_set(check)
-        //             //     && !terrain.is_set(check)
-        //             //     && !game.factions.has_a_set(check)
-        //             // {
-        //             //     mesh.add(a.sub(&unit));
-        //             // }
-        //         }
-        //     }
-        // }
-        mesh
     }
 }
 
