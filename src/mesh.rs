@@ -164,7 +164,7 @@ pub fn path(
         return MyPath([Some(unit.dir_to(&target)), None, None]);
     }
 
-    let typ=game.factions.relative(team).this_team.get_type(unit);
+    let typ = game.factions.relative(team).this_team.get_type(unit);
 
     let find = |depth: usize| {
         for (a, adir) in neighbours(&unit) {
@@ -186,9 +186,9 @@ pub fn path(
                 }
 
                 if b == target {
-                    if capturing && !game.is_trap(team, world, b.advance(bdir),typ) {
-                        continue;
-                    }
+                    // if capturing && !game.is_trap(team, world, b.advance(bdir),typ) {
+                    //     continue;
+                    // }
                     return Some(MyPath([Some(adir), Some(bdir), None]));
                 }
 
@@ -202,9 +202,9 @@ pub fn path(
                     }
 
                     if c == target {
-                        if capturing && !game.is_trap(team, world, c.advance(cdir),typ) {
-                            continue;
-                        }
+                        // if capturing && !game.is_trap(team, world, c.advance(cdir),typ) {
+                        //     continue;
+                        // }
                         return Some(MyPath([Some(adir), Some(bdir), Some(cdir)]));
                     }
                 }

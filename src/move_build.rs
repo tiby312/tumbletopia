@@ -624,8 +624,11 @@ fn calculate_walls(
     for a in position.to_cube().range(2) {
         let a = a.to_axial();
         //TODO this is duplicated logic in selection function???
-        
-        if env.fog.is_set(a) || env.terrain.is_set(a) || (a != position && state.factions.has_a_set(a)) || !world.get_game_cells().is_set(a)
+
+        if env.fog.is_set(a)
+            || env.terrain.is_set(a)
+            || (a != position && state.factions.has_a_set(a))
+            || !world.get_game_cells().is_set(a)
         {
             if a != target {
                 walls.add(a.sub(&position));
