@@ -186,7 +186,6 @@ pub fn path(
                 }
 
                 if b == target {
-                    
                     return Some(MyPath([Some(adir), Some(bdir), None]));
                 }
 

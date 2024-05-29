@@ -59,34 +59,35 @@ impl ExtraPhase {
     //that were fog before this function was called,
     //and were then unfogged.
     fn compute_bomb(&self, game: &GameState, world: &board::MyWorld) -> Option<BombInfo> {
-        if self.target != self.original || self.original.to_cube().dist(&self.moveto.to_cube()) != 2
-        {
-            return None;
-        }
+        // if self.target != self.original || self.original.to_cube().dist(&self.moveto.to_cube()) != 2
+        // {
+        //     return None;
+        // }
 
-        let mut mesh = SmallMesh::new();
+        // let mut mesh = SmallMesh::new();
 
-        for a in self.original.to_cube().range(2).map(|a| a.to_axial()) {
-            if !world.get_game_cells().is_set(a) {
-                continue;
-            }
+        // for a in self.original.to_cube().range(2).map(|a| a.to_axial()) {
+        //     if !world.get_game_cells().is_set(a) {
+        //         continue;
+        //     }
 
-            if game.factions.has_a_set(a) {
-                continue;
-            }
+        //     if game.factions.has_a_set(a) {
+        //         continue;
+        //     }
 
-            if game.env.terrain.is_set(a) {
-                continue;
-            }
+        //     if game.env.terrain.is_set(a) {
+        //         continue;
+        //     }
 
-            if game.env.fog.is_set(a) {
-                continue;
-            }
+        //     if game.env.fog.is_set(a) {
+        //         continue;
+        //     }
 
-            mesh.add(a.sub(&self.original));
-        }
+        //     mesh.add(a.sub(&self.original));
+        // }
 
-        Some(BombInfo(mesh))
+        // Some(BombInfo(mesh))
+        return None;
     }
 
     pub fn apply(
@@ -612,67 +613,54 @@ pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
     FogInfo(mesh)
 }
 
-
-
-
-
 fn calculate_paths(
     position: Axial,
     target: Axial,
     state: &GameState,
     world: &board::MyWorld,
 ) -> SmallMesh {
-    
-    let typ=state.factions.has_a_set_type(position).unwrap();
+    let typ = state.factions.has_a_set_type(position).unwrap();
 
     let env = &state.env;
     let mut paths = SmallMesh::new();
 
-
-    
-    match typ{
+    match typ {
         UnitType::Mouse => {
-
             paths.add(target.sub(&position));
 
             for a in position.to_cube().range(2) {
                 let a = a.to_axial();
                 //TODO this is duplicated logic in selection function???
-        
+
                 if !env.fog.is_set(a)
                     && !env.terrain.is_set(a)
-                    && a != position 
+                    && a != position
                     && !state.factions.has_a_set(a)
                     && world.get_game_cells().is_set(a)
-                    
                 {
                     //if a != target {
-                        paths.add(a.sub(&position));
+                    paths.add(a.sub(&position));
                     //}
                 }
             }
-
-            
-        },
+        }
         UnitType::Rabbit => {
             paths.add(target.sub(&position));
 
             for a in position.to_cube().range(2) {
                 let a = a.to_axial();
                 //TODO this is duplicated logic in selection function???
-        
-                //if env.terrain.is_set(a)
-                {
-                        paths.add(a.sub(&position));
+
+                if env.terrain.is_set(a) {
+                    paths.add(a.sub(&position));
                 }
             }
 
-            let pos:Vec<_>=paths.iter_mesh(position).collect();
+            let pos: Vec<_> = paths.iter_mesh(position).collect();
 
-            console_dbg!("walls size={}",pos);
-        },
+            console_dbg!("walls size={}", pos);
+        }
     }
-
 
     paths
 }

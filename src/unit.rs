@@ -10,10 +10,9 @@ impl Factions {
         self.black.is_set(coord) || self.white.is_set(coord)
     }
 
-    pub fn has_a_set_type(&self,coord:Axial)->Option<UnitType>{
-        
-        if let Some(a)=self.black.try_get_type(coord){
-            return Some(a)
+    pub fn has_a_set_type(&self, coord: Axial) -> Option<UnitType> {
+        if let Some(a) = self.black.try_get_type(coord) {
+            return Some(a);
         }
 
         self.white.try_get_type(coord)

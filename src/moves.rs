@@ -48,25 +48,32 @@ impl GameState {
         if effect.destroyed_unit.is_some() {
             mesh.add(Axial::zero())
         } else {
-            for a in unit.to_cube().neighbours2() {
-                let a = a.to_axial();
+            let tt = self.factions.has_a_set_type(unit).unwrap();
 
-                if a != unit
-                    && world.get_game_cells().is_set(a)
-                    && !game.factions.has_a_set(a)
-                    && !game.env.terrain.is_set(a)
-                    && !game.env.fog.is_set(a)
-                {
-                    mesh.add(a.sub(&unit));
+            match tt {
+                UnitType::Mouse => {
+                    for a in unit.to_cube().neighbours2() {
+                        let a = a.to_axial();
 
-                    // for a in a.to_cube().ring(1) {
-                    //     let a = a.to_axial();
+                        if a != unit
+                            && world.get_game_cells().is_set(a)
+                            && !game.factions.has_a_set(a)
+                            && !game.env.terrain.is_set(a)
+                            && !game.env.fog.is_set(a)
+                        {
+                            mesh.add(a.sub(&unit));
 
-                    //     if check_if_occ(a, true) {
-                    //         mesh.add(a.sub(&unit));
-                    //     }
-                    // }
+                            // for a in a.to_cube().ring(1) {
+                            //     let a = a.to_axial();
+
+                            //     if check_if_occ(a, true) {
+                            //         mesh.add(a.sub(&unit));
+                            //     }
+                            // }
+                        }
+                    }
                 }
+                UnitType::Rabbit => mesh.add(foo.original.sub(&unit)),
             }
         }
         mesh
