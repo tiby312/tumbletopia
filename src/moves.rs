@@ -94,6 +94,9 @@ impl GameState {
 
         match typ {
             UnitType::Mouse => for_every_cell(unit, |a, pp| {
+                if pp.len()==3{
+                    return false;
+                }
                 if pp.len() == 1 {
                     let dir = pp[0];
                     if terrain.land.is_set(a) {
