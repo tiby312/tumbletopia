@@ -258,7 +258,7 @@ impl MovePhase {
         data: &mut ace::WorkerManager,
     ) -> &Self {
         let target = self.moveto;
-        let walls = calculate_paths(self.original, self.moveto, state, world);
+        let paths = calculate_paths(self.original, self.moveto, state, world);
 
         assert!(state
             .factions
@@ -311,7 +311,7 @@ impl MovePhase {
             &mesh,
             self.original,
             self.moveto,
-            &walls,
+            &paths,
             state,
             team,
             world,

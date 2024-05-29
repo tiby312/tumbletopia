@@ -213,8 +213,8 @@ pub fn path(
 
     //similar to iterative deepening. We have to make sure we check for paths
     //at smaller depths before trying larger depths because dfs has no order.
-    for a in 0..3 {
-        if let Some(a) = find(a + 1) {
+    for a in 1..4 {
+        if let Some(a) = find(a) {
             return a;
         }
     }
