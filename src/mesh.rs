@@ -147,7 +147,7 @@ pub fn path(
     _mesh: &small_mesh::SmallMesh,
     unit: Axial,
     target: Axial,
-    walls: &small_mesh::SmallMesh,
+    pathable: &small_mesh::SmallMesh,
     game: &GameState,
     team: ActiveTeam,
     world: &board::MyWorld,
@@ -159,16 +159,16 @@ pub fn path(
         k.map(|x| (x.to_axial(), a.dir_to(&x)))
     };
 
-    if walls.is_set(target.sub(&unit)) {
-        assert_eq!(unit.to_cube().dist(&target.to_cube()), 1);
-        return MyPath([Some(unit.dir_to(&target)), None, None]);
-    }
+    // if walls.is_set(target.sub(&unit)) {
+    //     assert_eq!(unit.to_cube().dist(&target.to_cube()), 1);
+    //     return MyPath([Some(unit.dir_to(&target)), None, None]);
+    // }
 
-    let typ = game.factions.relative(team).this_team.get_type(unit);
+    //let typ = game.factions.relative(team).this_team.get_type(unit);
 
     let find = |depth: usize| {
         for (a, adir) in neighbours(&unit) {
-            if walls.is_set(a.sub(&unit)) {
+            if !pathable.is_set(a.sub(&unit)) {
                 continue;
             }
 
@@ -181,14 +181,12 @@ pub fn path(
             }
 
             for (b, bdir) in neighbours(&a) {
-                if walls.is_set(b.sub(&unit)) {
+                if !pathable.is_set(b.sub(&unit)) {
                     continue;
                 }
 
                 if b == target {
-                    // if capturing && !game.is_trap(team, world, b.advance(bdir),typ) {
-                    //     continue;
-                    // }
+                    
                     return Some(MyPath([Some(adir), Some(bdir), None]));
                 }
 
@@ -197,7 +195,7 @@ pub fn path(
                 }
 
                 for (c, cdir) in neighbours(&b) {
-                    if walls.is_set(c.sub(&unit)) {
+                    if !pathable.is_set(c.sub(&unit)) {
                         continue;
                     }
 
@@ -226,7 +224,7 @@ pub fn path(
         "could not find path {:?}:{:?}:{:?}",
         target,
         Axial::zero().to_cube().dist(&target.to_cube()),
-        walls.is_set(target)
+        pathable.is_set(target)
     );
 }
 

@@ -10,6 +10,15 @@ impl Factions {
         self.black.is_set(coord) || self.white.is_set(coord)
     }
 
+    pub fn has_a_set_type(&self,coord:Axial)->Option<UnitType>{
+        
+        if let Some(a)=self.black.try_get_type(coord){
+            return Some(a)
+        }
+
+        self.white.try_get_type(coord)
+    }
+
     // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
     //     self.relative_mut(team)
     //         .this_team
@@ -254,6 +263,17 @@ impl Tribe {
         }
 
         unreachable!("coord isnt set in first place.")
+    }
+    pub fn try_get_type(&self, a: Axial) -> Option<UnitType> {
+        if self.mouse.is_set(a) {
+            return Some(UnitType::Mouse);
+        }
+
+        if self.rabbit.is_set(a) {
+            return Some(UnitType::Rabbit);
+        }
+
+        return None;
     }
     pub fn get_type(&self, a: Axial) -> UnitType {
         if self.mouse.is_set(a) {

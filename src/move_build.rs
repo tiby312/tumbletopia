@@ -257,7 +257,7 @@ impl MovePhase {
         data: &mut ace::WorkerManager,
     ) -> &Self {
         let target = self.moveto;
-        let walls = calculate_walls(self.original, self.moveto, state, world);
+        let walls = calculate_paths(self.original, self.moveto, state, world);
 
         assert!(state
             .factions
@@ -612,29 +612,67 @@ pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
     FogInfo(mesh)
 }
 
-fn calculate_walls(
+
+
+
+
+fn calculate_paths(
     position: Axial,
     target: Axial,
     state: &GameState,
     world: &board::MyWorld,
 ) -> SmallMesh {
+    
+    let typ=state.factions.has_a_set_type(position).unwrap();
+
     let env = &state.env;
-    let mut walls = SmallMesh::new();
+    let mut paths = SmallMesh::new();
 
-    for a in position.to_cube().range(2) {
-        let a = a.to_axial();
-        //TODO this is duplicated logic in selection function???
 
-        if env.fog.is_set(a)
-            || env.terrain.is_set(a)
-            || (a != position && state.factions.has_a_set(a))
-            || !world.get_game_cells().is_set(a)
-        {
-            if a != target {
-                walls.add(a.sub(&position));
+    
+    match typ{
+        UnitType::Mouse => {
+
+            paths.add(target.sub(&position));
+
+            for a in position.to_cube().range(2) {
+                let a = a.to_axial();
+                //TODO this is duplicated logic in selection function???
+        
+                if !env.fog.is_set(a)
+                    && !env.terrain.is_set(a)
+                    && a != position 
+                    && !state.factions.has_a_set(a)
+                    && world.get_game_cells().is_set(a)
+                    
+                {
+                    //if a != target {
+                        paths.add(a.sub(&position));
+                    //}
+                }
             }
-        }
+
+            
+        },
+        UnitType::Rabbit => {
+            paths.add(target.sub(&position));
+
+            for a in position.to_cube().range(2) {
+                let a = a.to_axial();
+                //TODO this is duplicated logic in selection function???
+        
+                //if env.terrain.is_set(a)
+                {
+                        paths.add(a.sub(&position));
+                }
+            }
+
+            let pos:Vec<_>=paths.iter_mesh(position).collect();
+
+            console_dbg!("walls size={}",pos);
+        },
     }
 
-    walls
+
+    paths
 }
