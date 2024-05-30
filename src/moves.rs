@@ -134,7 +134,9 @@ impl GameState {
                     && !game.env.fog.is_set(a)
                     && !terrain.is_set(a)
                 {
-                    mesh.add(a.sub(&unit));
+                    //if pp.len()>1{
+                        mesh.add(a.sub(&unit));
+                    //}
                     if !terrain.is_set(a) {
                         return true;
                     }

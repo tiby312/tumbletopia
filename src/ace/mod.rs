@@ -373,6 +373,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let mut fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x| x.ax));
     fog.intersect_with(&world.get_game_cells());
+    //let fog=BitField::new();
 
     let mut k = GameState {
         factions: Factions {
