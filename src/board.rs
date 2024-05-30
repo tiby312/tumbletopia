@@ -91,8 +91,8 @@ impl Default for WorldSeed {
 impl WorldSeed {
     pub fn new() -> Self {
         use rand::Rng;
-        //let num = rand::thread_rng().gen_range(0..180);
-        let num = 0;
+        let num = rand::thread_rng().gen_range(0..180);
+        //let num = 0;
         WorldSeed { foo: num }
     }
 }
