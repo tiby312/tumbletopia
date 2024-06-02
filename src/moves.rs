@@ -129,26 +129,26 @@ impl GameState {
         match typ {
             UnitType::Mouse => {
                 'foo: for (i, h) in hex::OFFSETS.into_iter().enumerate() {
-                    for a in unit
-                        .to_cube()
-                        .ray_from_vector(hex::Cube::from_arr(h))
-                        .take(2)
-                    {
-                        assert!(unit != a.to_axial());
-                        let a = a.ax;
-                        if !world.get_game_cells().is_set(a)
-                            || game.env.fog.is_set(a)
-                            || terrain.is_set(a)
-                            || game.factions.has_a_set(a)
-                        {
-                            continue 'foo;
-                        }
+                    // for a in unit
+                    //     .to_cube()
+                    //     .ray_from_vector(hex::Cube::from_arr(h))
+                    //     .take(2)
+                    // {
+                    //     assert!(unit != a.to_axial());
+                    //     let a = a.ax;
+                    //     if !world.get_game_cells().is_set(a)
+                    //         || game.env.fog.is_set(a)
+                    //         || terrain.is_set(a)
+                    //         || game.factions.has_a_set(a)
+                    //     {
+                    //         continue 'foo;
+                    //     }
 
-                        //if game.factions.relative(team).that_team.is_set(a) {
-                        //    mesh.add(a.sub(&unit));
-                        //    continue 'foo;
-                        //}
-                    }
+                    //     //if game.factions.relative(team).that_team.is_set(a) {
+                    //     //    mesh.add(a.sub(&unit));
+                    //     //    continue 'foo;
+                    //     //}
+                    // }
 
                     let point = unit
                         .to_cube()
