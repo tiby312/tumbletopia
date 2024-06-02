@@ -307,30 +307,30 @@ impl MovePhase {
         }
 
         let capturing = state.factions.relative(team).that_team.is_set(end);
-        if !capturing{
-        let path = mesh::path(
-            &mesh,
-            self.original,
-            self.moveto,
-            &paths,
-            state,
-            team,
-            world,
-            capturing,
-        );
+        if !capturing {
+            let path = mesh::path(
+                &mesh,
+                self.original,
+                self.moveto,
+                &paths,
+                state,
+                team,
+                world,
+                capturing,
+            );
 
-        data.wait_animation(
-            animation::AnimationCommand::Movement {
-                unit: self.original,
-                ttt,
-                path,
-                end,
-                data: info,
-            },
-            team,
-            &mut ss,
-        )
-        .await;
+            data.wait_animation(
+                animation::AnimationCommand::Movement {
+                    unit: self.original,
+                    ttt,
+                    path,
+                    end,
+                    data: info,
+                },
+                team,
+                &mut ss,
+            )
+            .await;
         }
         self
     }
