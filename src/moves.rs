@@ -93,67 +93,92 @@ impl GameState {
 
         let terrain = &game.env.terrain;
 
-        match typ {
-            UnitType::Mouse => for_every_cell(unit, |a, pp| {
-                // if pp.len()==3{
-                //     return false;
-                // }
-                if pp.len() == 1 {
-                    let dir = pp[0];
-                    if terrain.land.is_set(a) {
-                        let check = a.advance(dir);
-                        if world.get_game_cells().is_set(check)
-                            && !game.factions.has_a_set(check)
-                            && !game.env.fog.is_set(check)
-                            && (!terrain.is_set(check)/*|| terrain.land.is_set(check)*/)
-                        {
-                            mesh.add(a.sub(&unit));
-                        }
-                        return true;
-                    }
-                }
-                if a != unit
-                    && world.get_game_cells().is_set(a)
-                    && !game.factions.relative(team).this_team.is_set(a)
-                    && !game.env.fog.is_set(a)
-                    && !terrain.is_set(a)
-                {
-                    mesh.add(a.sub(&unit));
-                    if game.factions.relative(team).that_team.is_set(a) {
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    true
-                }
-            }),
-            UnitType::Rabbit => for_every_cell(unit, |a, pp| {
-                if a != unit
-                    && world.get_game_cells().is_set(a)
-                    && !game.factions.relative(team).this_team.is_set(a)
-                    && !game.env.fog.is_set(a)
-                    && !terrain.is_set(a)
-                {
-                    //if pp.len()>1{
+        for_every_cell(unit, |a, pp| {
+            if pp.len() == 1 {
+                let dir = pp[0];
+                if terrain.land.is_set(a) {
+                    let check = a.advance(dir);
+                    if world.get_game_cells().is_set(check)
+                        && !game.factions.has_a_set(check)
+                        && !game.env.fog.is_set(check)
+                        && (!terrain.is_set(check)/*|| terrain.land.is_set(check)*/)
+                    {
                         mesh.add(a.sub(&unit));
-                    //}
-                    if !terrain.is_set(a) {
-                        return true;
                     }
-                    if game.factions.relative(team).that_team.is_set(a) {
-                        true
-                    } else {
-                        false
-                    }
+                    return true;
+                }
+            }
+            if a != unit
+                && world.get_game_cells().is_set(a)
+                //&& !game.factions.relative(team).this_team.is_set(a)
+                && !game.factions.has_a_set(a)
+                && !game.env.fog.is_set(a)
+                && !terrain.is_set(a)
+            {
+                mesh.add(a.sub(&unit));
+                if game.factions.relative(team).that_team.is_set(a) {
+                    true
                 } else {
-                    if terrain.is_set(a) {
-                        false
-                    } else {
-                        true
+                    false
+                }
+            } else {
+                true
+            }
+        });
+
+
+        match typ {
+            UnitType::Mouse => {
+                
+
+                
+                for h in HDir::all(){
+                    for (a,_) in unit.to_cube().ray(h).skip(1).take(3){
+                        assert!(unit!=a.to_axial());
+                        let a=a.ax;
+                        if !world.get_game_cells().is_set(a)  ||
+                            game.env.fog.is_set(a) ||
+                            terrain.is_set(a) ||
+                            game.factions.relative(team).this_team.is_set(a)
+                            {
+                                console_dbg!("FOOOO");
+                            break;
+                        }
+
+                    
+                        if game.factions.relative(team).that_team.is_set(a){
+                            mesh.add(a.sub(&unit));
+                            break;
+                        }
+
+                    }
+
+
+                }
+                
+            },
+            UnitType::Rabbit => {
+                for a in hex::DIAG_OFFSETS{
+                    for a in unit.to_cube().ray_from_vector(hex::Cube::from_arr(a)).take(3){
+                        assert!(unit!=a.to_axial());
+                        let a=a.ax;
+                        if !world.get_game_cells().is_set(a)  ||
+                            game.env.fog.is_set(a) ||
+                            terrain.is_set(a) ||
+                            game.factions.relative(team).this_team.is_set(a)
+                            {
+                                console_dbg!("FOOOO");
+                            break;
+                        }
+
+                    
+                        if game.factions.relative(team).that_team.is_set(a){
+                            mesh.add(a.sub(&unit));
+                            break;
+                        }
                     }
                 }
-            }),
+            },
         };
 
         mesh
