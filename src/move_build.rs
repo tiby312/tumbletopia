@@ -624,43 +624,60 @@ fn calculate_paths(
     let env = &state.env;
     let mut paths = SmallMesh::new();
 
-    match typ {
-        UnitType::Mouse => {
-            paths.add(target.sub(&position));
+    paths.add(target.sub(&position));
 
-            for a in position.to_cube().range(2) {
-                let a = a.to_axial();
-                //TODO this is duplicated logic in selection function???
+    for a in position.to_cube().range(2) {
+        let a = a.to_axial();
+        //TODO this is duplicated logic in selection function???
 
-                if !env.fog.is_set(a)
-                    && !env.terrain.is_set(a)
-                    && a != position
-                    && !state.factions.has_a_set(a)
-                    && world.get_game_cells().is_set(a)
-                {
-                    //if a != target {
-                    paths.add(a.sub(&position));
-                    //}
-                }
-            }
-        }
-        UnitType::Rabbit => {
-            paths.add(target.sub(&position));
-
-            for a in position.to_cube().range(2) {
-                let a = a.to_axial();
-                //TODO this is duplicated logic in selection function???
-
-                if env.terrain.is_set(a) {
-                    paths.add(a.sub(&position));
-                }
-            }
-
-            let pos: Vec<_> = paths.iter_mesh(position).collect();
-
-            console_dbg!("walls size={}", pos);
+        if !env.fog.is_set(a)
+            && !env.terrain.is_set(a)
+            && a != position
+            && !state.factions.has_a_set(a)
+            && world.get_game_cells().is_set(a)
+        {
+            //if a != target {
+            paths.add(a.sub(&position));
+            //}
         }
     }
+    // match typ {
+    //     UnitType::Mouse => {
+    //         paths.add(target.sub(&position));
+
+    //         for a in position.to_cube().range(2) {
+    //             let a = a.to_axial();
+    //             //TODO this is duplicated logic in selection function???
+
+    //             if !env.fog.is_set(a)
+    //                 && !env.terrain.is_set(a)
+    //                 && a != position
+    //                 && !state.factions.has_a_set(a)
+    //                 && world.get_game_cells().is_set(a)
+    //             {
+    //                 //if a != target {
+    //                 paths.add(a.sub(&position));
+    //                 //}
+    //             }
+    //         }
+    //     }
+    //     UnitType::Rabbit => {
+    //         paths.add(target.sub(&position));
+
+    //         for a in position.to_cube().range(2) {
+    //             let a = a.to_axial();
+    //             //TODO this is duplicated logic in selection function???
+
+    //             if env.terrain.is_set(a) {
+    //                 paths.add(a.sub(&position));
+    //             }
+    //         }
+
+    //         let pos: Vec<_> = paths.iter_mesh(position).collect();
+
+    //         console_dbg!("walls size={}", pos);
+    //     }
+    // }
 
     paths
 }
