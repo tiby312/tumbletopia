@@ -359,7 +359,7 @@ pub async fn reselect_loop(
 }
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
-    let a = 0;//world.white_start().len();
+    let a = 3; //world.white_start().len();
 
     let white_mouse = BitField::from_iter(&world.white_start()[0..a]);
 

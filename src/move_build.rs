@@ -307,6 +307,7 @@ impl MovePhase {
         }
 
         let capturing = state.factions.relative(team).that_team.is_set(end);
+        if !capturing{
         let path = mesh::path(
             &mesh,
             self.original,
@@ -330,6 +331,7 @@ impl MovePhase {
             &mut ss,
         )
         .await;
+        }
         self
     }
 

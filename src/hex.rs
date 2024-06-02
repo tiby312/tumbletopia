@@ -18,7 +18,6 @@ pub const OFFSETS: [[CoordNum; 3]; 6] = [
     [0, 1, -1],
 ];
 
-
 pub const DIAG_OFFSETS: [[CoordNum; 3]; 6] = [
     [2, -1, -1],
     [1, -2, 1],
@@ -28,12 +27,10 @@ pub const DIAG_OFFSETS: [[CoordNum; 3]; 6] = [
     [1, 1, -2],
 ];
 
-
 // var cube_diagonal_vectors = [
-//     Cube(+2, -1, -1), Cube(+1, -2, +1), Cube(-1, -1, +2), 
-//     Cube(-2, +1, +1), Cube(-1, +2, -1), Cube(+1, +1, -2), 
+//     Cube(+2, -1, -1), Cube(+1, -2, +1), Cube(-1, -1, +2),
+//     Cube(-2, +1, +1), Cube(-1, +2, -1), Cube(+1, +1, -2),
 // ]
-
 
 // pub enum MovDir{
 //     Inner(HDir),
@@ -236,10 +233,10 @@ impl Cube {
     pub const fn to_axial(&self) -> Axial {
         self.ax
     }
-    pub fn ray_from_vector(&self, v:Cube) -> impl Iterator<Item = Cube> {
+    pub fn ray_from_vector(&self, v: Cube) -> impl Iterator<Item = Cube> {
         let mut c = *self;
         std::iter::repeat_with(move || {
-            c=c.add(v);
+            c = c.add(v);
             c
         })
     }
