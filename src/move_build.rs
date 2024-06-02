@@ -102,8 +102,12 @@ impl ExtraPhase {
         let target_cell = self.target;
 
         if self.moveto == self.target {
+            let fog = compute_fog(moveto, &mut game.env);
+
+            fog.apply(moveto, &mut game.env);
+
             return ExtraEffect {
-                fog: compute_fog(moveto, &mut game.env),
+                fog,
                 bomb: None,
             };
         }
