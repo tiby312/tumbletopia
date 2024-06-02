@@ -447,20 +447,11 @@ impl MovePhase {
 
             let foo = game.factions.relative_mut(team);
             if foo.that_team.is_set(target_cell)
-                && self.original.to_cube().dist(&target_cell.to_cube()) == 3
+                
             {
                 let k = foo.that_team.clear(target_cell);
                 destroyed_unit = Some((target_cell, k));
-            } else if foo.that_team.is_set(target_cell)
-                && self.original.to_cube().dist(&target_cell.to_cube()) == 2
-            {
-                let k = foo.that_team.clear(target_cell);
-                destroyed_unit = Some((target_cell, k));
-            } else if foo.that_team.is_set(target_cell)
-                && self.original.to_cube().dist(&target_cell.to_cube()) == 1
-            {
-                let k = foo.that_team.clear(target_cell);
-                destroyed_unit = Some((target_cell, k));
+            
                 // let dir = self.original.dir_to(&target_cell);
                 // let check = target_cell.advance(dir);
 

@@ -192,7 +192,7 @@ impl GameState {
                     for a in unit
                         .to_cube()
                         .ray_from_vector(hex::Cube::from_arr(a))
-                        .take(1)
+                        .take(2)
                     {
                         assert!(unit != a.to_axial());
                         let a = a.ax;

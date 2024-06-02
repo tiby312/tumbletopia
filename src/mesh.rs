@@ -45,12 +45,12 @@ pub mod small_mesh {
 
     #[derive(Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
     pub struct SmallMesh {
-        pub inner: u128,
+        pub inner: [u64;4],
     }
 
     impl SmallMesh {
         pub fn new() -> SmallMesh {
-            SmallMesh { inner: 0 }
+            SmallMesh { inner: [0;4] }
         }
         pub fn from_iter(it: impl Iterator<Item = Axial>) -> SmallMesh {
             let mut m = SmallMesh::new();
@@ -64,7 +64,7 @@ pub mod small_mesh {
         pub fn validate_rel(a: Axial) -> bool {
             let ind = conv(a);
 
-            ind < 128
+            ind < 256
 
             // let x = a.q;
             // let y = a.r;
@@ -78,15 +78,23 @@ pub mod small_mesh {
             assert!(Self::validate_rel(a));
 
             let ind = conv(a);
-            self.inner |= 1 << ind;
+            let (a,b)=ind_to_foo(ind);
+            self.inner[a]|=1<<b;
+            //self.inner |= 1 << ind;
+
         }
         pub fn remove(&mut self, a: Axial) {
             assert!(Self::validate_rel(a));
             let ind = conv(a);
-            self.inner &= !(1 << ind);
+            let (a,b)=ind_to_foo(ind);
+            self.inner[a] &= !(1 << b);
         }
         pub fn is_empty(&self) -> bool {
-            self.inner == 0
+            self.inner[0] == 0 &&
+            self.inner[1] == 0 &&
+            self.inner[2] == 0 &&
+            self.inner[3] == 0
+            
         }
         pub fn is_set(&self, a: Axial) -> bool {
             if !Self::validate_rel(a) {
@@ -94,8 +102,10 @@ pub mod small_mesh {
             }
 
             let ind = conv(a);
+            let (a,b)=ind_to_foo(ind);
+            
 
-            self.inner & (1 << ind) != 0
+            self.inner[a] & (1 << b) != 0
         }
         pub fn iter_mesh(&self, point: Axial) -> impl Iterator<Item = Axial> {
             let inner = self.inner;
@@ -108,14 +118,18 @@ pub mod small_mesh {
             //     .filter(move |(x, _)| inner & (1 << x) != 0)
             //     .map(move |(_, x)| point.add(GridCoord(*x)))
 
-            (0usize..128)
-                .filter(move |x| inner & (1 << x) != 0)
+            (0usize..256)
+                .filter(move |&x| {
+                    let (a,b)=ind_to_foo(x);
+            
+                    inner[a] & (1 << b) != 0
+                })
                 .map(move |a| {
-                    let x = a / 13;
-                    let y = a % 13;
+                    let x = a / 16;
+                    let y = a % 16;
                     point.add(Axial::from_arr([
-                        (x - 6) as hex::CoordNum,
-                        (y - 6) as hex::CoordNum,
+                        (x - 8) as hex::CoordNum,
+                        (y - 8) as hex::CoordNum,
                     ]))
                 }) //.chain(skip_moves)
         }
@@ -123,13 +137,27 @@ pub mod small_mesh {
 
     use super::Axial;
 
+    fn ind_to_foo(a:usize)->(usize,usize){
+        assert!(a>=0 && a< 256);
+        
+        // 0
+        // 64
+        // 128
+        // 192
+        // 256
+
+        let block = a/64;
+        let block_ind=a%64;
+        (block,block_ind)
+    }
+
     fn conv(a: Axial) -> usize {
         let Axial { q, r } = a;
         //     let ind=x/7+y%7;
         //     // -3 -2 -1 0 1 2 3
         //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
         // ind as usize
-        ((q as isize + 6) * 13 + (r as isize + 6)) as usize
+        ((q as isize + 8) * 16 + (r as isize + 8)) as usize
 
         // TABLE
         //     .iter()
