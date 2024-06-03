@@ -45,12 +45,12 @@ pub mod small_mesh {
 
     #[derive(Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
     pub struct SmallMesh {
-        pub inner: [u64;4],
+        pub inner: [u64; 4],
     }
 
     impl SmallMesh {
         pub fn new() -> SmallMesh {
-            SmallMesh { inner: [0;4] }
+            SmallMesh { inner: [0; 4] }
         }
         pub fn from_iter(it: impl Iterator<Item = Axial>) -> SmallMesh {
             let mut m = SmallMesh::new();
@@ -78,23 +78,18 @@ pub mod small_mesh {
             assert!(Self::validate_rel(a));
 
             let ind = conv(a);
-            let (a,b)=ind_to_foo(ind);
-            self.inner[a]|=1<<b;
+            let (a, b) = ind_to_foo(ind);
+            self.inner[a] |= 1 << b;
             //self.inner |= 1 << ind;
-
         }
         pub fn remove(&mut self, a: Axial) {
             assert!(Self::validate_rel(a));
             let ind = conv(a);
-            let (a,b)=ind_to_foo(ind);
+            let (a, b) = ind_to_foo(ind);
             self.inner[a] &= !(1 << b);
         }
         pub fn is_empty(&self) -> bool {
-            self.inner[0] == 0 &&
-            self.inner[1] == 0 &&
-            self.inner[2] == 0 &&
-            self.inner[3] == 0
-            
+            self.inner[0] == 0 && self.inner[1] == 0 && self.inner[2] == 0 && self.inner[3] == 0
         }
         pub fn is_set(&self, a: Axial) -> bool {
             if !Self::validate_rel(a) {
@@ -102,8 +97,7 @@ pub mod small_mesh {
             }
 
             let ind = conv(a);
-            let (a,b)=ind_to_foo(ind);
-            
+            let (a, b) = ind_to_foo(ind);
 
             self.inner[a] & (1 << b) != 0
         }
@@ -120,8 +114,8 @@ pub mod small_mesh {
 
             (0usize..256)
                 .filter(move |&x| {
-                    let (a,b)=ind_to_foo(x);
-            
+                    let (a, b) = ind_to_foo(x);
+
                     inner[a] & (1 << b) != 0
                 })
                 .map(move |a| {
@@ -137,18 +131,18 @@ pub mod small_mesh {
 
     use super::Axial;
 
-    fn ind_to_foo(a:usize)->(usize,usize){
-        assert!(a>=0 && a< 256);
-        
+    fn ind_to_foo(a: usize) -> (usize, usize) {
+        assert!(a >= 0 && a < 256);
+
         // 0
         // 64
         // 128
         // 192
         // 256
 
-        let block = a/64;
-        let block_ind=a%64;
-        (block,block_ind)
+        let block = a / 64;
+        let block_ind = a % 64;
+        (block, block_ind)
     }
 
     fn conv(a: Axial) -> usize {

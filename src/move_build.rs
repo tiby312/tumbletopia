@@ -106,10 +106,7 @@ impl ExtraPhase {
 
             fog.apply(moveto, &mut game.env);
 
-            return ExtraEffect {
-                fog,
-                bomb: None,
-            };
+            return ExtraEffect { fog, bomb: None };
         }
 
         let bb = if let Some(bb) = self.compute_bomb(game, world) {
@@ -446,12 +443,10 @@ impl MovePhase {
             let terrain = &mut env.terrain;
 
             let foo = game.factions.relative_mut(team);
-            if foo.that_team.is_set(target_cell)
-                
-            {
+            if foo.that_team.is_set(target_cell) {
                 let k = foo.that_team.clear(target_cell);
                 destroyed_unit = Some((target_cell, k));
-            
+
                 // let dir = self.original.dir_to(&target_cell);
                 // let check = target_cell.advance(dir);
 

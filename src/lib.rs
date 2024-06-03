@@ -322,10 +322,10 @@ async fn render_command(
     let mut viewport = [canvas.width() as f32, canvas.height() as f32];
 
     let drop_shadow = &models.drop_shadow;
-    let black_mouse = &models.black_mouse;
-    let white_mouse = &models.white_mouse;
-    let black_rabbit = &models.black_rabbit;
-    let white_rabbit = &models.white_rabbit;
+    let black_rook = &models.black_rook;
+    let white_rook = &models.white_rook;
+    let black_knight = &models.black_knight;
+    let white_knight = &models.white_knight;
 
     //let fog_asset = &models.fog;
     let water = &models.water;
@@ -762,26 +762,26 @@ async fn render_command(
             UnitType::Mouse,
             ActiveTeam::White,
             &game.factions.white.mouse,
-            white_mouse,
+            white_rook,
         );
         draw_unit_type(
             UnitType::Rabbit,
             ActiveTeam::White,
             &game.factions.white.rabbit,
-            white_rabbit,
+            white_knight,
         );
 
         draw_unit_type(
             UnitType::Mouse,
             ActiveTeam::Black,
             &game.factions.black.mouse,
-            black_mouse,
+            black_rook,
         );
         draw_unit_type(
             UnitType::Rabbit,
             ActiveTeam::Black,
             &game.factions.black.rabbit,
-            black_rabbit,
+            black_knight,
         );
 
         // let d = DepthDisabler::new(ctx);
@@ -928,10 +928,12 @@ pub struct Models<T> {
     drop_shadow: T,
     fog: T,
     attack: T,
-    white_mouse: T,
-    black_mouse: T,
-    white_rabbit: T,
-    black_rabbit: T,
+    white_rook: T,
+    black_rook: T,
+    white_knight: T,
+    black_knight: T,
+    white_bishop: T,
+    black_bishop: T,
     grass: T,
     snow: T,
     water: T,
@@ -959,10 +961,12 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             drop_shadow: quick_load(include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
             fog: quick_load(include_bytes!("../assets/fog.glb"), RESIZE, None),
             attack: quick_load(include_bytes!("../assets/attack.glb"), 1, None),
-            white_mouse: quick_load(include_bytes!("../assets/white_mouse.glb"), RESIZE, None),
-            black_mouse: quick_load(include_bytes!("../assets/black_mouse.glb"), RESIZE, None),
-            white_rabbit: quick_load(include_bytes!("../assets/white_rabbit.glb"), RESIZE, None),
-            black_rabbit: quick_load(include_bytes!("../assets/black_rabbit.glb"), RESIZE, None),
+            white_rook: quick_load(include_bytes!("../assets/white_rook.glb"), RESIZE, None),
+            black_rook: quick_load(include_bytes!("../assets/black_rook.glb"), RESIZE, None),
+            white_knight: quick_load(include_bytes!("../assets/white_knight.glb"), RESIZE, None),
+            black_knight: quick_load(include_bytes!("../assets/black_knight.glb"), RESIZE, None),
+            white_bishop: quick_load(include_bytes!("../assets/white_bishop.glb"), RESIZE, None),
+            black_bishop: quick_load(include_bytes!("../assets/black_bishop.glb"), RESIZE, None),
             grass: quick_load(include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
             snow: quick_load(include_bytes!("../assets/snow.glb"), RESIZE, None),
             water: quick_load(include_bytes!("../assets/water.glb"), RESIZE, None),

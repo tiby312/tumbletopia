@@ -169,7 +169,7 @@ impl GameState {
                 // }
 
                 for h in HDir::all() {
-                    for (a, _) in unit.to_cube().ray(h).skip(1).take(3) {
+                    for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
                         assert!(unit != a.to_axial());
                         let a = a.ax;
                         if !world.get_game_cells().is_set(a)
