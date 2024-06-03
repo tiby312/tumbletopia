@@ -130,62 +130,62 @@ impl GameState {
 
         match typ {
             UnitType::Mouse => {
-                'foo: for (i, h) in hex::OFFSETS.into_iter().enumerate() {
-                    // for a in unit
-                    //     .to_cube()
-                    //     .ray_from_vector(hex::Cube::from_arr(h))
-                    //     .take(2)
-                    // {
-                    //     assert!(unit != a.to_axial());
-                    //     let a = a.ax;
-                    //     if !world.get_game_cells().is_set(a)
-                    //         || game.env.fog.is_set(a)
-                    //         || terrain.is_set(a)
-                    //         || game.factions.has_a_set(a)
-                    //     {
-                    //         continue 'foo;
-                    //     }
+                // 'foo: for (i, h) in hex::OFFSETS.into_iter().enumerate() {
+                //     // for a in unit
+                //     //     .to_cube()
+                //     //     .ray_from_vector(hex::Cube::from_arr(h))
+                //     //     .take(2)
+                //     // {
+                //     //     assert!(unit != a.to_axial());
+                //     //     let a = a.ax;
+                //     //     if !world.get_game_cells().is_set(a)
+                //     //         || game.env.fog.is_set(a)
+                //     //         || terrain.is_set(a)
+                //     //         || game.factions.has_a_set(a)
+                //     //     {
+                //     //         continue 'foo;
+                //     //     }
 
-                    //     //if game.factions.relative(team).that_team.is_set(a) {
-                    //     //    mesh.add(a.sub(&unit));
-                    //     //    continue 'foo;
-                    //     //}
-                    // }
+                //     //     //if game.factions.relative(team).that_team.is_set(a) {
+                //     //     //    mesh.add(a.sub(&unit));
+                //     //     //    continue 'foo;
+                //     //     //}
+                //     // }
 
-                    let point = unit
-                        .to_cube()
-                        .ray_from_vector(hex::Cube::from_arr(h))
-                        .nth(1)
-                        .unwrap();
+                //     let point = unit
+                //         .to_cube()
+                //         .ray_from_vector(hex::Cube::from_arr(h))
+                //         .nth(1)
+                //         .unwrap();
 
-                    let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
+                //     let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
 
-                    for a in diags {
-                        let a = point.add(hex::Cube::from_arr(a)).ax;
-                        if game.factions.relative(team).that_team.is_set(a) {
-                            mesh.add(a.sub(&unit));
-                        }
-                    }
-                }
-
-                // for h in HDir::all() {
-                //     for (a, _) in unit.to_cube().ray(h).skip(1).take(3) {
-                //         assert!(unit != a.to_axial());
-                //         let a = a.ax;
-                //         if !world.get_game_cells().is_set(a)
-                //             || game.env.fog.is_set(a)
-                //             || terrain.is_set(a)
-                //             || game.factions.relative(team).this_team.is_set(a)
-                //         {
-                //             break;
-                //         }
-
+                //     for a in diags {
+                //         let a = point.add(hex::Cube::from_arr(a)).ax;
                 //         if game.factions.relative(team).that_team.is_set(a) {
                 //             mesh.add(a.sub(&unit));
-                //             break;
                 //         }
                 //     }
                 // }
+
+                for h in HDir::all() {
+                    for (a, _) in unit.to_cube().ray(h).skip(1).take(3) {
+                        assert!(unit != a.to_axial());
+                        let a = a.ax;
+                        if !world.get_game_cells().is_set(a)
+                            || game.env.fog.is_set(a)
+                            || terrain.is_set(a)
+                            || game.factions.relative(team).this_team.is_set(a)
+                        {
+                            break;
+                        }
+
+                        if game.factions.relative(team).that_team.is_set(a) {
+                            mesh.add(a.sub(&unit));
+                            break;
+                        }
+                    }
+                }
             }
             UnitType::Rabbit => {
                 for a in hex::DIAG_OFFSETS {
