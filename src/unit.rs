@@ -209,88 +209,105 @@ impl Default for CellSelection {
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub mouse: BitField,
-    pub rabbit: BitField,
+    pub rook: BitField,
+    pub bishop: BitField,
+    pub knight:BitField
 }
 
 impl Tribe {
     pub fn all_alloc(&self) -> BitField {
-        let mut j = self.mouse.clone();
-        j.union_with(&self.rabbit);
+        let mut j = self.rook.clone();
+        j.union_with(&self.bishop);
+        j.union_with(&self.knight);
         j
     }
     pub fn count_ones(&self) -> usize {
-        self.mouse.count_ones(..) + self.rabbit.count_ones(..)
+        self.rook.count_ones(..) + self.bishop.count_ones(..) + self.knight.count_ones(..)
     }
     pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
-        self.mouse.iter_mesh().chain(self.rabbit.iter_mesh())
+        self.rook.iter_mesh().chain(self.bishop.iter_mesh()).chain(self.knight.iter_mesh())
     }
     pub fn is_set(&self, a: Axial) -> bool {
-        self.mouse.is_set(a) || self.rabbit.is_set(a)
+        self.rook.is_set(a) || self.bishop.is_set(a) || self.knight.is_set(a)
     }
 
     pub fn move_unit(&mut self, a: Axial, b: Axial) {
-        if self.mouse.is_set(a) {
-            self.mouse.set_coord(a, false);
-            self.mouse.set_coord(b, true);
+        if self.rook.is_set(a) {
+            self.rook.set_coord(a, false);
+            self.rook.set_coord(b, true);
             return;
         }
-        if self.rabbit.is_set(a) {
-            self.rabbit.set_coord(a, false);
-            self.rabbit.set_coord(b, true);
+        if self.bishop.is_set(a) {
+            self.bishop.set_coord(a, false);
+            self.bishop.set_coord(b, true);
             return;
         }
-
+        if self.knight.is_set(a) {
+            self.knight.set_coord(a, false);
+            self.knight.set_coord(b, true);
+            return;
+        }
         unreachable!("Can't move")
     }
 
     pub fn get_mut(&mut self, a: UnitType) -> &mut BitField {
         match a {
-            UnitType::Mouse => &mut self.mouse,
-            UnitType::Rabbit => &mut self.rabbit,
+            UnitType::Rook => &mut self.rook,
+            UnitType::Bishop => &mut self.bishop,
+            UnitType::Knight => &mut self.knight
         }
     }
 
     pub fn clear(&mut self, a: Axial) -> UnitType {
-        if self.mouse.is_set(a) {
-            self.mouse.set_coord(a, false);
-            return UnitType::Mouse;
+        if self.rook.is_set(a) {
+            self.rook.set_coord(a, false);
+            return UnitType::Rook;
         }
-        if self.rabbit.is_set(a) {
-            self.rabbit.set_coord(a, false);
-            return UnitType::Rabbit;
+        if self.bishop.is_set(a) {
+            self.bishop.set_coord(a, false);
+            return UnitType::Bishop;
         }
-
+        if self.knight.is_set(a) {
+            self.knight.set_coord(a, false);
+            return UnitType::Knight;
+        }
         unreachable!("coord isnt set in first place.")
     }
     pub fn try_get_type(&self, a: Axial) -> Option<UnitType> {
-        if self.mouse.is_set(a) {
-            return Some(UnitType::Mouse);
+        if self.rook.is_set(a) {
+            return Some(UnitType::Rook);
         }
 
-        if self.rabbit.is_set(a) {
-            return Some(UnitType::Rabbit);
+        if self.bishop.is_set(a) {
+            return Some(UnitType::Bishop);
         }
 
+        if self.knight.is_set(a) {
+            return Some(UnitType::Knight);
+        }
         return None;
     }
     pub fn get_type(&self, a: Axial) -> UnitType {
-        if self.mouse.is_set(a) {
-            return UnitType::Mouse;
+        if self.rook.is_set(a) {
+            return UnitType::Rook;
         }
 
-        if self.rabbit.is_set(a) {
-            return UnitType::Rabbit;
+        if self.bishop.is_set(a) {
+            return UnitType::Bishop;
         }
 
+        if self.knight.is_set(a) {
+            return UnitType::Knight;
+        }
         unreachable!("Could not find unit at position");
     }
 }
 
 #[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum UnitType {
-    Mouse,
-    Rabbit,
+    Rook,
+    Bishop,
+    Knight
 }
 
 // impl std::fmt::Debug for Tribe {

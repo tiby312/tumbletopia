@@ -326,6 +326,9 @@ async fn render_command(
     let white_rook = &models.white_rook;
     let black_knight = &models.black_knight;
     let white_knight = &models.white_knight;
+    let black_bishop = &models.black_bishop;
+    let white_bishop = &models.white_bishop;
+
 
     //let fog_asset = &models.fog;
     let water = &models.water;
@@ -759,28 +762,40 @@ async fn render_command(
             };
 
         draw_unit_type(
-            UnitType::Mouse,
+            UnitType::Rook,
             ActiveTeam::White,
-            &game.factions.white.mouse,
+            &game.factions.white.rook,
             white_rook,
         );
         draw_unit_type(
-            UnitType::Rabbit,
+            UnitType::Bishop,
             ActiveTeam::White,
-            &game.factions.white.rabbit,
+            &game.factions.white.bishop,
+            white_bishop,
+        );
+        draw_unit_type(
+            UnitType::Knight,
+            ActiveTeam::White,
+            &game.factions.white.knight,
             white_knight,
         );
 
         draw_unit_type(
-            UnitType::Mouse,
+            UnitType::Rook,
             ActiveTeam::Black,
-            &game.factions.black.mouse,
+            &game.factions.black.rook,
             black_rook,
         );
         draw_unit_type(
-            UnitType::Rabbit,
+            UnitType::Bishop,
             ActiveTeam::Black,
-            &game.factions.black.rabbit,
+            &game.factions.black.bishop,
+            black_bishop,
+        );
+        draw_unit_type(
+            UnitType::Knight,
+            ActiveTeam::Black,
+            &game.factions.black.knight,
             black_knight,
         );
 

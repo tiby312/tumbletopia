@@ -359,15 +359,21 @@ pub async fn reselect_loop(
 }
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
-    let a = 3; //world.white_start().len();
+    let a = 2; //world.white_start().len();
+    let b=4;
 
-    let white_mouse = BitField::from_iter(&world.white_start()[0..a]);
+    let white_rook = BitField::from_iter(&world.white_start()[0..a]);
 
-    let black_mouse = BitField::from_iter(&world.black_start()[0..a]);
+    let black_rook = BitField::from_iter(&world.black_start()[0..a]);
 
-    let white_rabbit = BitField::from_iter(&world.white_start()[a..]);
+    let white_knight = BitField::from_iter(&world.white_start()[a..b]);
 
-    let black_rabbit = BitField::from_iter(&world.black_start()[a..]);
+    let black_knight = BitField::from_iter(&world.black_start()[a..b]);
+
+
+    let white_bishop = BitField::from_iter(&world.white_start()[b..]);
+
+    let black_bishop = BitField::from_iter(&world.black_start()[b..]);
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
@@ -378,12 +384,14 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let mut k = GameState {
         factions: Factions {
             black: Tribe {
-                mouse: black_mouse,
-                rabbit: black_rabbit,
+                rook: black_rook,
+                bishop: black_bishop,
+                knight: black_knight
             },
             white: Tribe {
-                mouse: white_mouse,
-                rabbit: white_rabbit,
+                rook: white_rook,
+                bishop: white_bishop,
+                knight:white_knight
             },
         },
         env: Environment {
