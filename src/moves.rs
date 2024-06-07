@@ -81,52 +81,11 @@ impl GameState {
         // }
         mesh
     }
-    pub fn generate_possible_moves_movement(
-        &self,
-        world: &board::MyWorld,
-        &unit: &Axial,
-        team: ActiveTeam,
-    ) -> SmallMesh {
-        //TODO use
+
+    pub fn attack_mesh_add(&self,mesh:&mut SmallMesh,world:&board::MyWorld,&unit:&Axial,team:ActiveTeam){
         let typ = self.factions.relative(team).this_team.get_type(unit);
-
-        let game = self;
-        let mut mesh = SmallMesh::new();
-
+        let game=self;
         let terrain = &game.env.terrain;
-
-        for_every_cell(unit, |a, pp| {
-            if pp.len() == 1 {
-                let dir = pp[0];
-                if terrain.land.is_set(a) {
-                    let check = a.advance(dir);
-                    if world.get_game_cells().is_set(check)
-                        && !game.factions.has_a_set(check)
-                        && !game.env.fog.is_set(check)
-                        && (!terrain.is_set(check)/*|| terrain.land.is_set(check)*/)
-                    {
-                        mesh.add(a.sub(&unit));
-                    }
-                    return true;
-                }
-            }
-            if a != unit
-                && world.get_game_cells().is_set(a)
-                //&& !game.factions.relative(team).this_team.is_set(a)
-                && !game.factions.has_a_set(a)
-                && !game.env.fog.is_set(a)
-                && !terrain.is_set(a)
-            {
-                mesh.add(a.sub(&unit));
-                if game.factions.relative(team).that_team.is_set(a) {
-                    true
-                } else {
-                    false
-                }
-            } else {
-                true
-            }
-        });
 
         match typ {
             UnitType::Knight=>{
@@ -196,6 +155,55 @@ impl GameState {
             }
         };
 
+    }
+    pub fn generate_possible_moves_movement(
+        &self,
+        world: &board::MyWorld,
+        &unit: &Axial,
+        team: ActiveTeam,
+    ) -> SmallMesh {
+        //TODO use
+        let typ = self.factions.relative(team).this_team.get_type(unit);
+
+        let game = self;
+        let mut mesh = SmallMesh::new();
+
+        let terrain = &game.env.terrain;
+
+        for_every_cell(unit, |a, pp| {
+            if pp.len() == 1 {
+                let dir = pp[0];
+                if terrain.land.is_set(a) {
+                    let check = a.advance(dir);
+                    if world.get_game_cells().is_set(check)
+                        && !game.factions.has_a_set(check)
+                        && !game.env.fog.is_set(check)
+                        && (!terrain.is_set(check)/*|| terrain.land.is_set(check)*/)
+                    {
+                        mesh.add(a.sub(&unit));
+                    }
+                    return true;
+                }
+            }
+            if a != unit
+                && world.get_game_cells().is_set(a)
+                //&& !game.factions.relative(team).this_team.is_set(a)
+                && !game.factions.has_a_set(a)
+                && !game.env.fog.is_set(a)
+                && !terrain.is_set(a)
+            {
+                mesh.add(a.sub(&unit));
+                if game.factions.relative(team).that_team.is_set(a) {
+                    true
+                } else {
+                    false
+                }
+            } else {
+                true
+            }
+        });
+
+        self.attack_mesh_add(&mut mesh,world,&unit,team);
         mesh
     }
 }
