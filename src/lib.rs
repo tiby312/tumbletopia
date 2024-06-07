@@ -673,19 +673,31 @@ async fn render_command(
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
                         let cells = mesh.iter_mesh(*point).map(|e| {
-                            let zzzz = if game.env.terrain.is_set(e) {
-                                0.0
-                            } else {
-                                -8.0
-                            };
+                            
 
-                            grid_snap(e, zzzz)
+                            grid_snap(e, -8.0)
                         });
                         draw_sys
                             .batch(cells)
                             .no_lighting()
                             .grey(*grey)
                             .build(select_model);
+
+                        {
+                            let mut mesh=mesh::small_mesh::SmallMesh::new();
+                            game.attack_mesh_add(&mut mesh, world, point, team,true);
+                            //console_dbg!(mesh.iter_mesh(*point).count());
+                            let cells = mesh.iter_mesh(*point).filter(|d|world.get_game_cells().is_set(*d)).map(|e| {
+                                
+    
+                                grid_snap(e, -8.0)
+                            });
+                            draw_sys
+                                .batch(cells)
+                                .no_lighting()
+                                .grey(*grey)
+                                .build(attack_model);
+                        }
 
                         // if let Some(k) = hh {
                         //     if k.the_move

@@ -82,15 +82,16 @@ impl GameState {
         mesh
     }
 
-    pub fn attack_mesh_add(&self,mesh:&mut SmallMesh,world:&board::MyWorld,&unit:&Axial,team:ActiveTeam){
+    pub fn attack_mesh_add(&self, mesh:&mut SmallMesh, world:&board::MyWorld, &unit:&Axial, team:ActiveTeam,for_show:bool)
+    {
         let typ = self.factions.relative(team).this_team.get_type(unit);
-        let game=self;
+        let game = self;
         let terrain = &game.env.terrain;
 
         match typ {
             UnitType::Knight=>{
-                for (i, h) in hex::OFFSETS.into_iter().enumerate() {
- 
+                for (i, h) in hex::OFFSETS.into_iter().enumerate()
+                {
                     let point = unit
                         .to_cube()
                         .ray_from_vector(hex::Cube::from_arr(h))
@@ -99,14 +100,14 @@ impl GameState {
 
                     let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
 
-                    for a in diags {
+                    for a in diags
+                    {
                         let a = point.add(hex::Cube::from_arr(a)).ax;
-                        if game.factions.relative(team).that_team.is_set(a) {
+                        if for_show || game.factions.relative(team).that_team.is_set(a) {
                             mesh.add(a.sub(&unit));
                         }
                     }
                 }
-                
             }
             UnitType::Rook => {
                 
@@ -122,8 +123,12 @@ impl GameState {
                             break;
                         }
 
-                        if game.factions.relative(team).that_team.is_set(a) {
+                        if for_show || game.factions.relative(team).that_team.is_set(a) {
                             mesh.add(a.sub(&unit));
+                        }
+                            
+                        if game.factions.relative(team).that_team.is_set(a) {
+                            
                             break;
                         }
                     }
@@ -146,8 +151,11 @@ impl GameState {
                             break;
                         }
 
-                        if game.factions.relative(team).that_team.is_set(a) {
+                        if for_show || game.factions.relative(team).that_team.is_set(a) {
                             mesh.add(a.sub(&unit));
+                            
+                        }
+                        if game.factions.relative(team).that_team.is_set(a) {
                             break;
                         }
                     }
@@ -203,7 +211,7 @@ impl GameState {
             }
         });
 
-        self.attack_mesh_add(&mut mesh,world,&unit,team);
+        self.attack_mesh_add(&mut mesh,world,&unit,team,false);
         mesh
     }
 }
