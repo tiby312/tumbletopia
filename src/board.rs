@@ -99,7 +99,7 @@ impl WorldSeed {
 
 impl MyWorld {
     pub fn new(seed: WorldSeed) -> MyWorld {
-        let size = 6;
+        let size = 5;
         let j = [[2, -4], [-2, -2], [-4, 2], [-2, 4], [2, 2], [4, -2]];
 
         //for size 3 use this
@@ -175,11 +175,11 @@ impl MyWorld {
         //land.set_coord(world_missing[world_missing_index2], true);
         
 
-        let starting_land=[[1,-2],[1,-3],[-1,1],[-2,3],[-4,4],[-5,5],[4,-4],[-2,-3],[0,4]];
+        // let starting_land=[[1,-2],[1,-3],[-1,1],[-2,3],[-4,4],[-5,5],[4,-4],[-2,-3],[0,4]];
 
-        for a in starting_land{
-            land.set_coord(Axial::from_arr(a), true);
-        }
+        // for a in starting_land{
+        //     land.set_coord(Axial::from_arr(a), true);
+        // }
 
         for &a in white_start.iter() {
             w.set_coord(a, true);

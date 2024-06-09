@@ -367,8 +367,9 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
 
     let populate=|start:Axial|{
-        let pawn=BitField::from_iter(start.to_cube().ring(2).map(|x|x.to_axial()));
-
+        //let pawn=BitField::from_iter(start.to_cube().ring(2).map(|x|x.to_axial()));
+        let pawn=BitField::new();
+        
         let nes=start.to_cube().neighbours2().map(|x|x.to_axial());
 
         let rook=BitField::from_iter(&nes[0..2]);

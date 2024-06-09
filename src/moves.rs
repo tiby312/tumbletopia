@@ -89,81 +89,73 @@ impl GameState {
         let game = self;
         let terrain = &game.env.terrain;
 
-        match typ {
-            UnitType::Pawn=>{}
+        let i=match typ {
+            UnitType::Pawn=>{
+                todo!()
+            }
             UnitType::Knight=>{
-                for (i, h) in hex::OFFSETS.into_iter().enumerate()
-                {
-                    let point = unit
-                        .to_cube()
-                        .ray_from_vector(hex::Cube::from_arr(h))
-                        .nth(1)
-                        .unwrap();
+                // for (i, h) in hex::OFFSETS.into_iter().enumerate()
+                // {
+                //     let point = unit
+                //         .to_cube()
+                //         .ray_from_vector(hex::Cube::from_arr(h))
+                //         .nth(1)
+                //         .unwrap();
 
-                    let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
+                //     let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
 
-                    for a in diags
-                    {
-                        let a = point.add(hex::Cube::from_arr(a)).ax;
-                        if for_show || game.factions.relative(team).that_team.is_set(a) {
-                            mesh.add(a.sub(&unit));
-                        }
-                    }
-                }
+                //     for a in diags
+                //     {
+                //         let a = point.add(hex::Cube::from_arr(a)).ax;
+                //         if for_show || game.factions.relative(team).that_team.is_set(a) {
+                //             mesh.add(a.sub(&unit));
+                //         }
+                //     }
+                // }
+                2
             }
             UnitType::Rook => {
-                
-                for h in HDir::all() {
-                    for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
-                        assert!(unit != a.to_axial());
-                        let a = a.ax;
-                        if !world.get_game_cells().is_set(a)
-                            || game.env.fog.is_set(a)
-                            || terrain.is_set(a)
-                            || game.factions.relative(team).this_team.is_set(a)
-                        {
-                            break;
-                        }
+                0
 
-                        if for_show || game.factions.relative(team).that_team.is_set(a) {
-                            mesh.add(a.sub(&unit));
-                        }
-                            
-                        if game.factions.relative(team).that_team.is_set(a) {
-                            
-                            break;
-                        }
-                    }
-                }
             }
             UnitType::Bishop => {
-                for a in hex::DIAG_OFFSETS {
-                    for a in unit
-                        .to_cube()
-                        .ray_from_vector(hex::Cube::from_arr(a))
-                        .take(1)
-                    {
-                        assert!(unit != a.to_axial());
-                        let a = a.ax;
-                        if !world.get_game_cells().is_set(a)
-                            || game.env.fog.is_set(a)
-                            || terrain.is_set(a)
-                            || game.factions.relative(team).this_team.is_set(a)
-                        {
-                            break;
-                        }
-
-                        if for_show || game.factions.relative(team).that_team.is_set(a) {
-                            mesh.add(a.sub(&unit));
-                            
-                        }
-                        if game.factions.relative(team).that_team.is_set(a) {
-                            break;
-                        }
-                    }
-                }
+                1
             }
         };
+
+        let j=i+1;
+        let k = [hex::OFFSETS[i], hex::OFFSETS[(i+3) % 6],hex::DIAG_OFFSETS[j],hex::DIAG_OFFSETS[(j+3) % 6]].map(hex::Cube::from_arr);
+
+
+
+        for h in k {
+            for a in unit
+                .to_cube()
+                .ray_from_vector(h)
+                .take(3)
+            {
+            //for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
+                assert!(unit != a.to_axial());
+                let a = a.ax;
+                if !world.get_game_cells().is_set(a)
+                    || game.env.fog.is_set(a)
+                    || terrain.is_set(a)
+                    || game.factions.relative(team).this_team.is_set(a)
+                {
+                    break;
+                }
+
+                if for_show || game.factions.relative(team).that_team.is_set(a) {
+                    mesh.add(a.sub(&unit));
+                }
+                    
+                if game.factions.relative(team).that_team.is_set(a) {
+                    
+                    break;
+                }
+            }
+        }
+
 
     }
     pub fn generate_possible_moves_movement(
@@ -195,54 +187,54 @@ impl GameState {
 
         //console_dbg!("enemy cover size= {}",enemy_cover.count_ones(..));
 
-        for_every_cell(unit, |a, pp| {
-            let max_range=match typ{
-                UnitType::Pawn=>1,
-                UnitType::Rook => 2,
-                UnitType::Bishop => 3,
-                UnitType::Knight => 1,
-            };
+        // for_every_cell(unit, |a, pp| {
+        //     let max_range=match typ{
+        //         UnitType::Pawn=>1,
+        //         UnitType::Rook => 2,
+        //         UnitType::Bishop => 3,
+        //         UnitType::Knight => 1,
+        //     };
 
-            if pp.len()>max_range{
-                return false;
-            }
+        //     if pp.len()>max_range{
+        //         return false;
+        //     }
 
-            // if pp.len() == 1 {
-            //     let dir = pp[0];
-            //     if terrain.land.is_set(a) {
-            //         let check = a.advance(dir);
-            //         if world.get_game_cells().is_set(check)
-            //             && !game.factions.has_a_set(check)
-            //             && !game.env.fog.is_set(check)
-            //             && (!terrain.is_set(check)/*|| terrain.land.is_set(check)*/)
-            //         {
-            //             mesh.add(a.sub(&unit));
-            //         }
-            //         return true;
-            //     }
-            // }
-            if a != unit
-                && world.get_game_cells().is_set(a)
-                && !game.factions.has_a_set(a)
-                && !game.env.fog.is_set(a)
-                && !terrain.is_set(a)
+        //     // if pp.len() == 1 {
+        //     //     let dir = pp[0];
+        //     //     if terrain.land.is_set(a) {
+        //     //         let check = a.advance(dir);
+        //     //         if world.get_game_cells().is_set(check)
+        //     //             && !game.factions.has_a_set(check)
+        //     //             && !game.env.fog.is_set(check)
+        //     //             && (!terrain.is_set(check)/*|| terrain.land.is_set(check)*/)
+        //     //         {
+        //     //             mesh.add(a.sub(&unit));
+        //     //         }
+        //     //         return true;
+        //     //     }
+        //     // }
+        //     if a != unit
+        //         && world.get_game_cells().is_set(a)
+        //         && !game.factions.has_a_set(a)
+        //         && !game.env.fog.is_set(a)
+        //         && !terrain.is_set(a)
                 
-            {
-                mesh.add(a.sub(&unit));
+        //     {
+        //         mesh.add(a.sub(&unit));
                 
-                if enemy_cover.is_set(a){
-                    true
-                }else{
-                    false
-                }
+        //         if enemy_cover.is_set(a){
+        //             true
+        //         }else{
+        //             false
+        //         }
 
-                //false
-            } else {
-                true
-            }
-        });
+        //         //false
+        //     } else {
+        //         true
+        //     }
+        // });
 
-        self.attack_mesh_add(&mut mesh,world,&unit,team,false);
+        self.attack_mesh_add(&mut mesh,world,&unit,team,true);
         mesh
     }
 }

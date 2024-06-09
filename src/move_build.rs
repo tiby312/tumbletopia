@@ -258,6 +258,8 @@ impl MovePhase {
         world: &board::MyWorld,
         data: &mut ace::WorkerManager,
     ) -> &Self {
+        //TODO remove
+        return self;
         let target = self.moveto;
         let paths = calculate_paths(self.original, self.moveto, state, world);
 
