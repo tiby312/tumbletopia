@@ -99,7 +99,7 @@ impl WorldSeed {
 
 impl MyWorld {
     pub fn new(seed: WorldSeed) -> MyWorld {
-        let size = 4;
+        let size = 5;
         let j = [[2, -4], [-2, -2], [-4, 2], [-2, 4], [2, 2], [4, -2]];
 
         //for size 3 use this
@@ -171,8 +171,8 @@ impl MyWorld {
         // dog_start.push(j);
 
         let mut land = BitField::new();
-        land.set_coord(world_missing[world_missing_index1], true);
-        land.set_coord(world_missing[world_missing_index2], true);
+        //land.set_coord(world_missing[world_missing_index1], true);
+        //land.set_coord(world_missing[world_missing_index2], true);
 
         // let starting_land=[[0,-3],[-3,0],[-3,3],[0,3],[3,0],[3,-3]];
 
