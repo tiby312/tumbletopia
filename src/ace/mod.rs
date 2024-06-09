@@ -362,22 +362,27 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let a = 2; //world.white_start().len();
     let b=4;
 
-    let white_rook = BitField::from_iter(&world.white_start()[0..a]);
-
-    let black_rook = BitField::from_iter(&world.black_start()[0..a]);
-
-    let white_knight = BitField::from_iter(&world.white_start()[a..b]);
-
-    let black_knight = BitField::from_iter(&world.black_start()[a..b]);
+    let white_start=Axial::from_arr([4,0]);
+    let black_start=Axial::from_arr([-4,0]);
 
 
-    let white_bishop = BitField::from_iter(&world.white_start()[b..]);
+    let populate=|start:Axial|{
+        let pawn=BitField::from_iter(start.to_cube().ring(2).map(|x|x.to_axial()));
 
-    let black_bishop = BitField::from_iter(&world.black_start()[b..]);
+        let nes=start.to_cube().neighbours2().map(|x|x.to_axial());
 
-    let white_pawn=BitField::from_iter([Axial::from_arr([2,2])]);
-    let black_pawn=BitField::from_iter([Axial::from_arr([-2,2])]);
-
+        let rook=BitField::from_iter(&nes[0..2]);
+        let knight=BitField::from_iter(&nes[2..4]);
+        let bishop=BitField::from_iter(&nes[4..6]);
+        
+        Tribe{
+            pawn,
+            rook,
+            knight,
+            bishop
+        }
+    };
+    
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
@@ -387,18 +392,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let mut k = GameState {
         factions: Factions {
-            black: Tribe {
-                rook: black_rook,
-                bishop: black_bishop,
-                knight: black_knight,
-                pawn:black_pawn
-            },
-            white: Tribe {
-                rook: white_rook,
-                bishop: white_bishop,
-                knight:white_knight,
-                pawn:white_pawn
-            },
+            black: populate(black_start),
+            white: populate(white_start),
         },
         env: Environment {
             terrain: Terrain {
