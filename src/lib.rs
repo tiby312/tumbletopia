@@ -3,7 +3,7 @@ use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
 use gloo::console::log;
-use hex::Axial;
+use hex::{Axial, HDir};
 use mesh::bitfield::BitField;
 use model::matrix::{self, MyMatrix};
 use moves::ActualMove;
@@ -434,6 +434,8 @@ async fn render_command(
         g
     };
 
+    let mut rrr=0.0;
+
     loop {
         if poking == 1 {
             console_dbg!("we poked!");
@@ -560,11 +562,15 @@ async fn render_command(
         draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
 
         pub const LAND_OFFSET: f32 = -10.0;
-
+        rrr+=0.01;
+        
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
-            my_matrix.chain(t).generate()
+
+
+            my_matrix.chain(t).chain(matrix::z_rotation(rrr)).
+            generate()
         };
 
         draw_sys
@@ -889,6 +895,8 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
         self
     }
 }
+
+
 impl Doop for ShaderSystem {
     fn batch<K: MyMatrix, I>(&mut self, ff: I) -> BatchBuilder<'_, I::IntoIter>
     where
@@ -903,6 +911,8 @@ impl Doop for ShaderSystem {
     }
 }
 
+
+//TODO get rid of this interface??
 pub trait Doop {
     fn batch<K: MyMatrix, I>(&mut self, ff: I) -> BatchBuilder<'_, I::IntoIter>
     where

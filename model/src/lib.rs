@@ -80,8 +80,9 @@ impl Doop {
         let (mut m, tex) = self.gen(foo, custom_alpha);
 
         let v = ss;
-        let s = matrix::translation(v / 2.0, v / 2.0, 0.0)
-            .chain(x_rotation(PI / 2.0))
+        let s = //matrix::translation(v / 2.0, v / 2.0, 0.0)
+            //.chain()
+            x_rotation(PI / 2.0)
             .chain(matrix::scale(v, v, v))
             .generate();
 
@@ -179,8 +180,12 @@ impl Doop {
             panic!("no texture!");
         };
 
+
+
         for mesh in self.document.meshes() {
+            
             for p in mesh.primitives() {
+                
                 //only support triangles
                 assert_eq!(p.mode(), gltf::mesh::Mode::Triangles);
 
@@ -248,10 +253,28 @@ impl Doop {
         // use matrix::*;
         // let matrix=s.chain(t).chain(rot).generate();// rot.chain(t).chain(s).generate();
 
-        let positions = positions
-            .into_iter()
-            .map(|p| matrix.transform_point(p.into()).into())
-            .collect();
+        let cc=|x:&f32,y:&f32|x.partial_cmp(y).unwrap();
+    
+        let min=[
+            positions.iter().map(|x|x[0]).min_by(cc).unwrap(),
+            positions.iter().map(|x|x[1]).min_by(cc).unwrap(),
+            positions.iter().map(|x|x[2]).min_by(cc).unwrap()
+        ];
+        
+        let max=[
+            positions.iter().map(|x|x[0]).max_by(cc).unwrap(),
+            positions.iter().map(|x|x[1]).max_by(cc).unwrap(),
+            positions.iter().map(|x|x[2]).max_by(cc).unwrap()
+        ];
+
+        //panic!("{:?}",(min,max));
+
+        //console_dbg!("min {} max {}",min,max);
+        
+        // let positions = positions
+        //     .into_iter()
+        //     .map(|p| matrix.transform_point(p.into()).into())
+        //     .collect();
 
         let normals = normals
             .into_iter()
