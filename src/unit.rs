@@ -211,7 +211,8 @@ impl Default for CellSelection {
 pub struct Tribe {
     pub rook: BitField,
     pub bishop: BitField,
-    pub knight:BitField
+    pub knight:BitField,
+    pub pawn:BitField
 }
 
 impl Tribe {
@@ -219,16 +220,19 @@ impl Tribe {
         let mut j = self.rook.clone();
         j.union_with(&self.bishop);
         j.union_with(&self.knight);
+        j.union_with(&self.pawn);
+        
         j
     }
     pub fn count_ones(&self) -> usize {
-        self.rook.count_ones(..) + self.bishop.count_ones(..) + self.knight.count_ones(..)
+        self.rook.count_ones(..) + self.bishop.count_ones(..) + self.knight.count_ones(..) + self.pawn.count_ones(..)
     }
+    
     pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
-        self.rook.iter_mesh().chain(self.bishop.iter_mesh()).chain(self.knight.iter_mesh())
+        self.rook.iter_mesh().chain(self.bishop.iter_mesh()).chain(self.knight.iter_mesh()).chain(self.pawn.iter_mesh())
     }
     pub fn is_set(&self, a: Axial) -> bool {
-        self.rook.is_set(a) || self.bishop.is_set(a) || self.knight.is_set(a)
+        self.rook.is_set(a) || self.bishop.is_set(a) || self.knight.is_set(a) || self.pawn.is_set(a)
     }
 
     pub fn move_unit(&mut self, a: Axial, b: Axial) {
@@ -247,6 +251,12 @@ impl Tribe {
             self.knight.set_coord(b, true);
             return;
         }
+
+        if self.pawn.is_set(a) {
+            self.pawn.set_coord(a, false);
+            self.pawn.set_coord(b, true);
+            return;
+        }
         unreachable!("Can't move")
     }
 
@@ -254,7 +264,9 @@ impl Tribe {
         match a {
             UnitType::Rook => &mut self.rook,
             UnitType::Bishop => &mut self.bishop,
-            UnitType::Knight => &mut self.knight
+            UnitType::Knight => &mut self.knight,
+            UnitType::Pawn => &mut self.pawn
+            
         }
     }
 
@@ -271,6 +283,10 @@ impl Tribe {
             self.knight.set_coord(a, false);
             return UnitType::Knight;
         }
+        if self.pawn.is_set(a) {
+            self.pawn.set_coord(a, false);
+            return UnitType::Pawn;
+        }
         unreachable!("coord isnt set in first place.")
     }
     pub fn try_get_type(&self, a: Axial) -> Option<UnitType> {
@@ -284,6 +300,10 @@ impl Tribe {
 
         if self.knight.is_set(a) {
             return Some(UnitType::Knight);
+        }
+
+        if self.pawn.is_set(a) {
+            return Some(UnitType::Pawn);
         }
         return None;
     }
@@ -299,6 +319,10 @@ impl Tribe {
         if self.knight.is_set(a) {
             return UnitType::Knight;
         }
+
+        if self.pawn.is_set(a) {
+            return UnitType::Pawn;
+        }
         unreachable!("Could not find unit at position");
     }
 }
@@ -307,7 +331,8 @@ impl Tribe {
 pub enum UnitType {
     Rook,
     Bishop,
-    Knight
+    Knight,
+    Pawn
 }
 
 // impl std::fmt::Debug for Tribe {

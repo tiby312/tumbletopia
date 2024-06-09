@@ -329,6 +329,9 @@ async fn render_command(
     let black_bishop = &models.black_bishop;
     let white_bishop = &models.white_bishop;
 
+    let black_pawn = &models.black_pawn;
+    let white_pawn = &models.white_pawn;
+
 
     //let fog_asset = &models.fog;
     let water = &models.water;
@@ -774,6 +777,20 @@ async fn render_command(
             };
 
         draw_unit_type(
+            UnitType::Pawn,
+            ActiveTeam::White,
+            &game.factions.white.pawn,
+            white_pawn,
+        );
+        draw_unit_type(
+            UnitType::Pawn,
+            ActiveTeam::Black,
+            &game.factions.black.pawn,
+            black_pawn,
+        );
+            
+
+        draw_unit_type(
             UnitType::Rook,
             ActiveTeam::White,
             &game.factions.white.rook,
@@ -957,6 +974,8 @@ pub struct Models<T> {
     attack: T,
     white_rook: T,
     black_rook: T,
+    white_pawn: T,
+    black_pawn: T,
     white_knight: T,
     black_knight: T,
     white_bishop: T,
@@ -994,6 +1013,8 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             black_knight: quick_load(include_bytes!("../assets/black_knight.glb"), RESIZE, None),
             white_bishop: quick_load(include_bytes!("../assets/white_bishop.glb"), RESIZE, None),
             black_bishop: quick_load(include_bytes!("../assets/black_bishop.glb"), RESIZE, None),
+            white_pawn: quick_load(include_bytes!("../assets/white_pawn.glb"), RESIZE, None),
+            black_pawn: quick_load(include_bytes!("../assets/black_pawn.glb"), RESIZE, None),
             grass: quick_load(include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
             snow: quick_load(include_bytes!("../assets/snow.glb"), RESIZE, None),
             water: quick_load(include_bytes!("../assets/water.glb"), RESIZE, None),

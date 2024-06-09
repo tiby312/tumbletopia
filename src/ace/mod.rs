@@ -375,6 +375,10 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let black_bishop = BitField::from_iter(&world.black_start()[b..]);
 
+    let white_pawn=BitField::from_iter([Axial::from_arr([2,2])]);
+    let black_pawn=BitField::from_iter([Axial::from_arr([-2,2])]);
+
+
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
     // let mut fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x| x.ax));
@@ -386,12 +390,14 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
             black: Tribe {
                 rook: black_rook,
                 bishop: black_bishop,
-                knight: black_knight
+                knight: black_knight,
+                pawn:black_pawn
             },
             white: Tribe {
                 rook: white_rook,
                 bishop: white_bishop,
-                knight:white_knight
+                knight:white_knight,
+                pawn:white_pawn
             },
         },
         env: Environment {

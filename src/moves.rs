@@ -89,6 +89,7 @@ impl GameState {
         let terrain = &game.env.terrain;
 
         match typ {
+            UnitType::Pawn=>{}
             UnitType::Knight=>{
                 for (i, h) in hex::OFFSETS.into_iter().enumerate()
                 {
@@ -180,6 +181,7 @@ impl GameState {
 
         for_every_cell(unit, |a, pp| {
             let max_range=match typ{
+                UnitType::Pawn=>1,
                 UnitType::Rook => 2,
                 UnitType::Bishop => 3,
                 UnitType::Knight => 1,
