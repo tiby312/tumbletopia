@@ -84,6 +84,7 @@ impl GameState {
 
     pub fn attack_mesh_add(&self, mesh:&mut SmallMesh, world:&board::MyWorld, &unit:&Axial, team:ActiveTeam,for_show:bool)
     {
+
         let typ = self.factions.relative(team).this_team.get_type(unit);
         let game = self;
         let terrain = &game.env.terrain;
@@ -179,6 +180,21 @@ impl GameState {
 
         let terrain = &game.env.terrain;
 
+        let enemy_cover={
+            //TODO use a workspace instead
+            let mut total=BitField::new();
+            for a in self.factions.relative(team).that_team.iter_mesh(){
+                let mut mesh=SmallMesh::new();
+                self.attack_mesh_add(&mut mesh,world,&a,team.not(),true);
+                for m in mesh.iter_mesh(a){
+                    total.set_coord(m,true);
+                }
+            }
+            total
+        };
+
+        //console_dbg!("enemy cover size= {}",enemy_cover.count_ones(..));
+
         for_every_cell(unit, |a, pp| {
             let max_range=match typ{
                 UnitType::Pawn=>1,
@@ -207,17 +223,20 @@ impl GameState {
             // }
             if a != unit
                 && world.get_game_cells().is_set(a)
-                //&& !game.factions.relative(team).this_team.is_set(a)
                 && !game.factions.has_a_set(a)
                 && !game.env.fog.is_set(a)
                 && !terrain.is_set(a)
+                
             {
                 mesh.add(a.sub(&unit));
-                if game.factions.relative(team).that_team.is_set(a) {
+                
+                if enemy_cover.is_set(a){
                     true
-                } else {
+                }else{
                     false
                 }
+
+                //false
             } else {
                 true
             }
