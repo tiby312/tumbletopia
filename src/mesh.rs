@@ -43,7 +43,7 @@ pub mod small_mesh {
         )
     }
 
-    #[derive(Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
+    #[derive(Default, PartialOrd, Ord, PartialEq, Eq, Debug,Clone)]
     pub struct SmallMesh {
         pub inner: [u64; 4],
     }

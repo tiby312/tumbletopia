@@ -831,17 +831,19 @@ async fn render_command(
         // );
             
 
+
+
         draw_unit_type(
             UnitType::Rook,
             ActiveTeam::White,
             &game.factions.white.rook,
-            white_rook,
+            white_knight,
         );
         draw_unit_type(
             UnitType::Bishop,
             ActiveTeam::White,
             &game.factions.white.bishop,
-            white_bishop,
+            white_knight,
         );
         draw_unit_type(
             UnitType::Knight,
@@ -854,13 +856,13 @@ async fn render_command(
             UnitType::Rook,
             ActiveTeam::Black,
             &game.factions.black.rook,
-            black_rook,
+            black_knight,
         );
         draw_unit_type(
             UnitType::Bishop,
             ActiveTeam::Black,
             &game.factions.black.bishop,
-            black_bishop,
+            black_knight,
         );
         draw_unit_type(
             UnitType::Knight,
