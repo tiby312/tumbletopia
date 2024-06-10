@@ -30,11 +30,11 @@ impl HexConverter {
         let s = -k.x - k.y;
         hex::Cube::round([q, r, s]).to_axial()
     }
-    pub fn center_world_to_hex(&self, mut pos: cgmath::Vector2<f32>) -> Axial {
-        pos.x -= EPSILON * self.spacing() / FOO;
-        pos.y -= EPSILON * self.spacing() / FOO;
-        self.world_to_hex(pos)
-    }
+    // pub fn center_world_to_hex(&self, mut pos: cgmath::Vector2<f32>) -> Axial {
+    //     //pos.x -= EPSILON * self.spacing() / FOO;
+    //     //pos.y -= EPSILON * self.spacing() / FOO;
+    //     self.world_to_hex(pos)
+    // }
 
     pub fn hex_axial_to_world(&self, coord: &Axial) -> cgmath::Vector2<f32> {
         let v = cgmath::Vector2::new(coord.q as f32, coord.r as f32);

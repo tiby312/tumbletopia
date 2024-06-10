@@ -528,7 +528,7 @@ async fn render_command(
                 };
                 //return ace::Response::Mouse(MouseEvent::Undo);
             } else if on_select {
-                let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
+                let mouse: Axial = grid_matrix.world_to_hex(mouse_world.into());
                 log!(format!("pos:{:?}", mouse));
 
                 let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
