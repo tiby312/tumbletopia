@@ -561,13 +561,13 @@ async fn render_command(
         draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
 
         pub const LAND_OFFSET: f32 = -10.0;
-        rr+=0.01;
+        //rr+=0.01;
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
 
 
-            my_matrix.chain(t).chain(matrix::z_rotation(rr)).
+            my_matrix.chain(t).//.chain(matrix::z_rotation(rr)).
             generate()
         };
 
@@ -776,7 +776,28 @@ async fn render_command(
              my_team: ActiveTeam,
              foo: &BitField,
              model: &Foo<TextureGpu, ModelGpu>| {
-                let color = foo.iter_mesh().map(|e| grid_snap(e, zzzz));
+
+                let i=match mytype{
+                    UnitType::Rook => 2,
+                    UnitType::Bishop => 1,
+                    UnitType::Knight => 0,
+                    UnitType::Pawn => 0,
+                };
+
+                let rr=(std::f32::consts::TAU/6.0)*i as f32;
+
+                let color = foo.iter_mesh().map(|e| {
+                    //grid_snap(e, zzzz)
+                    let c=e;
+                    let cc=zzzz;
+                    let pos = grid_matrix.hex_axial_to_world(&c);
+                    let t = matrix::translation(pos.x, pos.y, cc);
+
+
+                    my_matrix.chain(t).chain(matrix::z_rotation(rr)).
+                    generate()
+                    
+                });
 
                 let ani = unit_animation
                     .as_ref()
@@ -796,18 +817,18 @@ async fn render_command(
                 draw_sys.batch(k).build(model)
             };
 
-        draw_unit_type(
-            UnitType::Pawn,
-            ActiveTeam::White,
-            &game.factions.white.pawn,
-            white_pawn,
-        );
-        draw_unit_type(
-            UnitType::Pawn,
-            ActiveTeam::Black,
-            &game.factions.black.pawn,
-            black_pawn,
-        );
+        // draw_unit_type(
+        //     UnitType::Pawn,
+        //     ActiveTeam::White,
+        //     &game.factions.white.pawn,
+        //     white_pawn,
+        // );
+        // draw_unit_type(
+        //     UnitType::Pawn,
+        //     ActiveTeam::Black,
+        //     &game.factions.black.pawn,
+        //     black_pawn,
+        // );
             
 
         draw_unit_type(
