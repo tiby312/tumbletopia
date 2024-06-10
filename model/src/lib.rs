@@ -81,7 +81,7 @@ impl Doop {
 
         let v = ss;
         let s = //matrix::translation(v / 2.0, v / 2.0, 0.0)
-            //.chain()
+            //.chain(x_rotation(PI / 2.0))
             x_rotation(PI / 2.0)
             .chain(matrix::scale(v, v, v))
             .generate();
@@ -271,10 +271,10 @@ impl Doop {
 
         //console_dbg!("min {} max {}",min,max);
         
-        // let positions = positions
-        //     .into_iter()
-        //     .map(|p| matrix.transform_point(p.into()).into())
-        //     .collect();
+        let positions = positions
+            .into_iter()
+            .map(|p| matrix.transform_point(p.into()).into())
+            .collect();
 
         let normals = normals
             .into_iter()

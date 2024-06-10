@@ -349,7 +349,7 @@ async fn render_command(
     let mut poking = 0;
 
     let mut waiting_engine_ack = false;
-
+    let mut rr=0.0;
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(WorkerToDom::HideUndo);
@@ -434,7 +434,6 @@ async fn render_command(
         g
     };
 
-    let mut rrr=0.0;
 
     loop {
         if poking == 1 {
@@ -562,14 +561,13 @@ async fn render_command(
         draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
 
         pub const LAND_OFFSET: f32 = -10.0;
-        rrr+=0.01;
-        
+        rr+=0.01;
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
 
 
-            my_matrix.chain(t).chain(matrix::z_rotation(rrr)).
+            my_matrix.chain(t).chain(matrix::z_rotation(rr)).
             generate()
         };
 
@@ -730,6 +728,22 @@ async fn render_command(
                     CellSelection::BuildSelection(_) => {}
                 }
             }
+        }
+
+
+        {
+            let pos=mouse_world;
+
+            let t = matrix::translation(pos[0], pos[1], -8.0);
+
+
+            let m=my_matrix.chain(t).//.chain(matrix::z_rotation(std::f32::consts::TAU/6.0)).
+                generate();
+
+            draw_sys
+            .batch([m])
+            .no_lighting()
+            .build(attack_model);
         }
 
         let zzzz = -9.0;
