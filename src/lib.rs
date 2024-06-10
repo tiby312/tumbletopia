@@ -734,7 +734,7 @@ async fn render_command(
         {
             let pos=mouse_world;
 
-            let t = matrix::translation(pos[0], pos[1], -8.0);
+            let t = matrix::translation(pos[0], pos[1], -1.0);
 
 
             let m=my_matrix.chain(t).//.chain(matrix::z_rotation(std::f32::consts::TAU/6.0)).

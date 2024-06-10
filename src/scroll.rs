@@ -475,7 +475,7 @@ pub fn mouse_to_world(mouse: [f32; 2], view_projection: &Matrix4<f32>, dim: [f32
     let clip_y = mouse[1] / dim[1] * -2. + 1.;
 
     //TODO why this necessary to get the model to show up exactly where mouse is?????
-    let clip_y=clip_y+0.1;
+    //let clip_y=clip_y+0.1;
     
     clip_to_world([clip_x, clip_y], view_projection)
 }
