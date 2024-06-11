@@ -173,7 +173,6 @@ impl MyWorld {
         let mut land = BitField::new();
         //land.set_coord(world_missing[world_missing_index1], true);
         //land.set_coord(world_missing[world_missing_index2], true);
-        
 
         // let starting_land=[[1,-2],[1,-3],[-1,1],[-2,3],[-4,4],[-5,5],[4,-4],[-2,-3],[0,4]];
 

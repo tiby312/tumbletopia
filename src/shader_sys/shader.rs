@@ -48,8 +48,7 @@ void main() {
 }
 "#;
 
-
-//TODO do lighting right using 
+//TODO do lighting right using
 //https://webgl2fundamentals.org/webgl/lessons/webgl-3d-lighting-directional.html
 
 const VERT_SHADER_STR: &str = r#"#version 300 es

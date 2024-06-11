@@ -211,8 +211,8 @@ impl Default for CellSelection {
 pub struct Tribe {
     pub rook: BitField,
     pub bishop: BitField,
-    pub knight:BitField,
-    pub pawn:BitField
+    pub knight: BitField,
+    pub pawn: BitField,
 }
 
 impl Tribe {
@@ -221,15 +221,22 @@ impl Tribe {
         j.union_with(&self.bishop);
         j.union_with(&self.knight);
         j.union_with(&self.pawn);
-        
+
         j
     }
     pub fn count_ones(&self) -> usize {
-        self.rook.count_ones(..) + self.bishop.count_ones(..) + self.knight.count_ones(..) + self.pawn.count_ones(..)
+        self.rook.count_ones(..)
+            + self.bishop.count_ones(..)
+            + self.knight.count_ones(..)
+            + self.pawn.count_ones(..)
     }
-    
+
     pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
-        self.rook.iter_mesh().chain(self.bishop.iter_mesh()).chain(self.knight.iter_mesh()).chain(self.pawn.iter_mesh())
+        self.rook
+            .iter_mesh()
+            .chain(self.bishop.iter_mesh())
+            .chain(self.knight.iter_mesh())
+            .chain(self.pawn.iter_mesh())
     }
     pub fn is_set(&self, a: Axial) -> bool {
         self.rook.is_set(a) || self.bishop.is_set(a) || self.knight.is_set(a) || self.pawn.is_set(a)
@@ -265,8 +272,7 @@ impl Tribe {
             UnitType::Rook => &mut self.rook,
             UnitType::Bishop => &mut self.bishop,
             UnitType::Knight => &mut self.knight,
-            UnitType::Pawn => &mut self.pawn
-            
+            UnitType::Pawn => &mut self.pawn,
         }
     }
 
@@ -332,7 +338,7 @@ pub enum UnitType {
     Rook,
     Bishop,
     Knight,
-    Pawn
+    Pawn,
 }
 
 // impl std::fmt::Debug for Tribe {

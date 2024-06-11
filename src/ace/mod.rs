@@ -250,7 +250,7 @@ pub async fn reselect_loop(
         unreachable!()
     };
 
-    let contains = ss.is_set(target_cell.sub(&unwrapped_selected_unit));
+    let contains = ss.is_set(target_cell /*.sub(&unwrapped_selected_unit)*/);
 
     //If we just clicked on ourselves, just deselect.
     if target_cell == unwrapped_selected_unit && !contains {
@@ -360,36 +360,34 @@ pub async fn reselect_loop(
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
     let a = 2; //world.white_start().len();
-    let b=4;
+    let b = 4;
 
-    let white_start=Axial::from_arr([4,0]);
-    let black_start=Axial::from_arr([-4,0]);
+    let white_start = Axial::from_arr([4, 0]);
+    let black_start = Axial::from_arr([-4, 0]);
 
-
-    let populate=|start:Axial|{
+    let populate = |start: Axial| {
         //let pawn=BitField::from_iter(start.to_cube().ring(2).map(|x|x.to_axial()));
-        let pawn=BitField::new();
-        
-        let nes=start.to_cube().neighbours2().map(|x|x.to_axial());
+        let pawn = BitField::new();
 
-        let rook=BitField::from_iter(&nes[0..2]);
-        let knight=BitField::from_iter(&nes[2..4]);
-        let bishop=BitField::from_iter(&nes[4..6]);
-        
-        Tribe{
+        let nes = start.to_cube().neighbours2().map(|x| x.to_axial());
+
+        let rook = BitField::from_iter(&nes[0..2]);
+        let knight = BitField::from_iter(&nes[2..4]);
+        let bishop = BitField::from_iter(&nes[4..6]);
+
+        Tribe {
             pawn,
             rook,
             knight,
-            bishop
+            bishop,
         }
     };
-    
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
     // let mut fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x| x.ax));
     // fog.intersect_with(&world.get_game_cells());
-    let fog=BitField::new();
+    let fog = BitField::new();
 
     let mut k = GameState {
         factions: Factions {

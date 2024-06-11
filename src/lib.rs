@@ -332,7 +332,6 @@ async fn render_command(
     let black_pawn = &models.black_pawn;
     let white_pawn = &models.white_pawn;
 
-
     //let fog_asset = &models.fog;
     let water = &models.water;
     let grass = &models.grass;
@@ -349,7 +348,7 @@ async fn render_command(
     let mut poking = 0;
 
     let mut waiting_engine_ack = false;
-    let mut rr=0.0;
+    let mut rr = 0.0;
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(WorkerToDom::HideUndo);
@@ -433,7 +432,6 @@ async fn render_command(
 
         g
     };
-
 
     loop {
         if poking == 1 {
@@ -566,7 +564,6 @@ async fn render_command(
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
 
-
             my_matrix.chain(t).//.chain(matrix::z_rotation(rr)).
             generate()
         };
@@ -679,32 +676,27 @@ async fn render_command(
             if let Some((selection, grey)) = a {
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
-                        let cells = mesh.iter_mesh(*point).map(|e| {
-                            
-
-                            grid_snap(e, -8.0)
-                        });
+                        let cells = mesh.iter_mesh(Axial::zero()).map(|e| grid_snap(e, -8.0));
                         draw_sys
                             .batch(cells)
                             .no_lighting()
                             .grey(*grey)
                             .build(select_model);
 
-                        {
-                            let mut mesh=mesh::small_mesh::SmallMesh::new();
-                            game.attack_mesh_add(&mut mesh, world, point, team,true);
-                            //console_dbg!(mesh.iter_mesh(*point).count());
-                            let cells = mesh.iter_mesh(*point).filter(|d|world.get_game_cells().is_set(*d)).map(|e| {
-                                
-    
-                                grid_snap(e, -8.0)
-                            });
-                            draw_sys
-                                .batch(cells)
-                                .no_lighting()
-                                .grey(*grey)
-                                .build(attack_model);
-                        }
+                        // {
+                        //     let mut mesh=mesh::small_mesh::SmallMesh::new();
+                        //     game.attack_mesh_add(&mut mesh, world, point, team,true);
+                        //     //console_dbg!(mesh.iter_mesh(*point).count());
+                        //     let cells = mesh.iter_mesh(*point).filter(|d|world.get_game_cells().is_set(*d)).map(|e| {
+
+                        //         grid_snap(e, -8.0)
+                        //     });
+                        //     draw_sys
+                        //         .batch(cells)
+                        //         .no_lighting()
+                        //         .grey(*grey)
+                        //         .build(attack_model);
+                        // }
 
                         // if let Some(k) = hh {
                         //     if k.the_move
@@ -730,20 +722,15 @@ async fn render_command(
             }
         }
 
-
         {
-            let pos=mouse_world;
+            let pos = mouse_world;
 
             let t = matrix::translation(pos[0], pos[1], -1.0);
 
-
-            let m=my_matrix.chain(t).//.chain(matrix::z_rotation(std::f32::consts::TAU/6.0)).
+            let m = my_matrix.chain(t).//.chain(matrix::z_rotation(std::f32::consts::TAU/6.0)).
                 generate();
 
-            draw_sys
-            .batch([m])
-            .no_lighting()
-            .build(attack_model);
+            draw_sys.batch([m]).no_lighting().build(attack_model);
         }
 
         let zzzz = -9.0;
@@ -776,27 +763,23 @@ async fn render_command(
              my_team: ActiveTeam,
              foo: &BitField,
              model: &Foo<TextureGpu, ModelGpu>| {
-
-                let i=match mytype{
+                let i = match mytype {
                     UnitType::Rook => 2,
                     UnitType::Bishop => 1,
                     UnitType::Knight => 0,
                     UnitType::Pawn => 0,
                 };
 
-                let rr=(std::f32::consts::TAU/6.0)*i as f32;
+                let rr = (std::f32::consts::TAU / 6.0) * i as f32;
 
                 let color = foo.iter_mesh().map(|e| {
                     //grid_snap(e, zzzz)
-                    let c=e;
-                    let cc=zzzz;
+                    let c = e;
+                    let cc = zzzz;
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, cc);
 
-
-                    my_matrix.chain(t).chain(matrix::z_rotation(rr)).
-                    generate()
-                    
+                    my_matrix.chain(t).chain(matrix::z_rotation(rr)).generate()
                 });
 
                 let ani = unit_animation
@@ -829,9 +812,6 @@ async fn render_command(
         //     &game.factions.black.pawn,
         //     black_pawn,
         // );
-            
-
-
 
         draw_unit_type(
             UnitType::Rook,
@@ -933,7 +913,6 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
     }
 }
 
-
 impl Doop for ShaderSystem {
     fn batch<K: MyMatrix, I>(&mut self, ff: I) -> BatchBuilder<'_, I::IntoIter>
     where
@@ -947,7 +926,6 @@ impl Doop for ShaderSystem {
         }
     }
 }
-
 
 //TODO get rid of this interface??
 pub trait Doop {

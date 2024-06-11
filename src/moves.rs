@@ -45,7 +45,7 @@ impl GameState {
         let original_pos = foo.original;
         let mut mesh = SmallMesh::new();
 
-        mesh.add(Axial::zero());
+        mesh.add(unit);
 
         // if effect.destroyed_unit.is_some() {
         //     mesh.add(Axial::zero())
@@ -82,18 +82,23 @@ impl GameState {
         mesh
     }
 
-    pub fn attack_mesh_add(&self, mesh:&mut SmallMesh, world:&board::MyWorld, &unit:&Axial, team:ActiveTeam,for_show:bool)
-    {
-
+    pub fn attack_mesh_add(
+        &self,
+        mesh: &mut SmallMesh,
+        world: &board::MyWorld,
+        &unit: &Axial,
+        team: ActiveTeam,
+        for_show: bool,
+    ) {
         let typ = self.factions.relative(team).this_team.get_type(unit);
         let game = self;
         let terrain = &game.env.terrain;
 
-        let i=match typ {
-            UnitType::Pawn=>{
+        let i = match typ {
+            UnitType::Pawn => {
                 todo!()
             }
-            UnitType::Knight=>{
+            UnitType::Knight => {
                 // for (i, h) in hex::OFFSETS.into_iter().enumerate()
                 // {
                 //     let point = unit
@@ -114,27 +119,22 @@ impl GameState {
                 // }
                 2
             }
-            UnitType::Rook => {
-                0
-
-            }
-            UnitType::Bishop => {
-                1
-            }
+            UnitType::Rook => 0,
+            UnitType::Bishop => 1,
         };
 
-        let j=i+1;
-        let k = [hex::OFFSETS[i], hex::OFFSETS[(i+3) % 6],hex::DIAG_OFFSETS[j],hex::DIAG_OFFSETS[(j+3) % 6]].map(hex::Cube::from_arr);
-
-
+        let j = i + 1;
+        let k = [
+            hex::OFFSETS[i],
+            hex::OFFSETS[(i + 3) % 6],
+            hex::DIAG_OFFSETS[j],
+            hex::DIAG_OFFSETS[(j + 3) % 6],
+        ]
+        .map(hex::Cube::from_arr);
 
         for h in k {
-            for a in unit
-                .to_cube()
-                .ray_from_vector(h)
-                .take(3)
-            {
-            //for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
+            for a in unit.to_cube().ray_from_vector(h).take(15) {
+                //for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
                 assert!(unit != a.to_axial());
                 let a = a.ax;
                 if !world.get_game_cells().is_set(a)
@@ -146,17 +146,15 @@ impl GameState {
                 }
 
                 if for_show || game.factions.relative(team).that_team.is_set(a) {
-                    mesh.add(a.sub(&unit));
+                    //mesh.add(a.sub(&unit));
+                    mesh.add(a);
                 }
-                    
+
                 if game.factions.relative(team).that_team.is_set(a) {
-                    
                     break;
                 }
             }
         }
-
-
     }
     pub fn generate_possible_moves_movement(
         &self,
@@ -172,14 +170,14 @@ impl GameState {
 
         let terrain = &game.env.terrain;
 
-        let enemy_cover={
+        let enemy_cover = {
             //TODO use a workspace instead
-            let mut total=BitField::new();
-            for a in self.factions.relative(team).that_team.iter_mesh(){
-                let mut mesh=SmallMesh::new();
-                self.attack_mesh_add(&mut mesh,world,&a,team.not(),true);
-                for m in mesh.iter_mesh(a){
-                    total.set_coord(m,true);
+            let mut total = BitField::new();
+            for a in self.factions.relative(team).that_team.iter_mesh() {
+                let mut mesh = SmallMesh::new();
+                self.attack_mesh_add(&mut mesh, world, &a, team.not(), true);
+                for m in mesh.iter_mesh(a) {
+                    total.set_coord(m, true);
                 }
             }
             total
@@ -218,10 +216,10 @@ impl GameState {
         //         && !game.factions.has_a_set(a)
         //         && !game.env.fog.is_set(a)
         //         && !terrain.is_set(a)
-                
+
         //     {
         //         mesh.add(a.sub(&unit));
-                
+
         //         if enemy_cover.is_set(a){
         //             true
         //         }else{
@@ -234,7 +232,7 @@ impl GameState {
         //     }
         // });
 
-        self.attack_mesh_add(&mut mesh,world,&unit,team,true);
+        self.attack_mesh_add(&mut mesh, world, &unit, team, true);
         mesh
     }
 }
@@ -295,7 +293,7 @@ impl GameState {
         //for i in 0..state.factions.relative(team).this_team.units.len() {
         for pos in state.factions.relative(team).this_team.clone().iter_mesh() {
             let mesh = state.generate_possible_moves_movement(world, &pos, team);
-            for mm in mesh.iter_mesh(pos) {
+            for mm in mesh.iter_mesh(Axial::zero()) {
                 //Temporarily move the player in the game world.
                 //We do this so that the mesh generated for extra is accurate.
                 let mut mmm = move_build::MovePhase {
@@ -307,7 +305,7 @@ impl GameState {
 
                 let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
 
-                for sm in second_mesh.iter_mesh(mm) {
+                for sm in second_mesh.iter_mesh(Axial::zero()) {
                     assert!(!state.env.terrain.is_set(sm));
 
                     let kkk = mmm.into_attack(sm);
