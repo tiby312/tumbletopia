@@ -117,10 +117,11 @@ impl GameState {
                 //         }
                 //     }
                 // }
-                2
+                todo!()
             }
-            UnitType::Rook => 0,
-            UnitType::Bishop => 1,
+            UnitType::Rook1 => 0,
+            UnitType::Rook2 => 1,
+            UnitType::Rook3 => 2,
         };
 
         let j = i + 1;

@@ -209,136 +209,101 @@ impl Default for CellSelection {
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub rook: BitField,
-    pub bishop: BitField,
-    pub knight: BitField,
-    pub pawn: BitField,
+    pub fields: [BitField; 4],
+    // pub bishop: BitField,
+    // pub knight: BitField,
+    //pub pawn: BitField,
 }
 
 impl Tribe {
     pub fn all_alloc(&self) -> BitField {
-        let mut j = self.rook.clone();
-        j.union_with(&self.bishop);
-        j.union_with(&self.knight);
-        j.union_with(&self.pawn);
+        let mut j = BitField::new();
+        for a in self.fields.iter() {
+            j.union_with(&a);
+        }
+
+        // j.union_with(&self.bishop);
+        // j.union_with(&self.knight);
+        // j.union_with(&self.pawn);
 
         j
     }
     pub fn count_ones(&self) -> usize {
-        self.rook.count_ones(..)
-            + self.bishop.count_ones(..)
-            + self.knight.count_ones(..)
-            + self.pawn.count_ones(..)
+        self.fields.iter().fold(0, |acc, a| acc + a.count_ones(..))
     }
 
     pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
-        self.rook
-            .iter_mesh()
-            .chain(self.bishop.iter_mesh())
-            .chain(self.knight.iter_mesh())
-            .chain(self.pawn.iter_mesh())
+        self.fields.iter().map(|x| x.iter_mesh()).flatten()
     }
     pub fn is_set(&self, a: Axial) -> bool {
-        self.rook.is_set(a) || self.bishop.is_set(a) || self.knight.is_set(a) || self.pawn.is_set(a)
+        self.fields.iter().fold(false, |acc, x| acc || x.is_set(a))
     }
 
     pub fn move_unit(&mut self, a: Axial, b: Axial) {
-        if self.rook.is_set(a) {
-            self.rook.set_coord(a, false);
-            self.rook.set_coord(b, true);
-            return;
-        }
-        if self.bishop.is_set(a) {
-            self.bishop.set_coord(a, false);
-            self.bishop.set_coord(b, true);
-            return;
-        }
-        if self.knight.is_set(a) {
-            self.knight.set_coord(a, false);
-            self.knight.set_coord(b, true);
-            return;
+        for arr in self.fields.iter_mut() {
+            if arr.is_set(a) {
+                arr.set_coord(a, false);
+                arr.set_coord(b, true);
+                return;
+            }
         }
 
-        if self.pawn.is_set(a) {
-            self.pawn.set_coord(a, false);
-            self.pawn.set_coord(b, true);
-            return;
-        }
         unreachable!("Can't move")
     }
 
     pub fn get_mut(&mut self, a: UnitType) -> &mut BitField {
-        match a {
-            UnitType::Rook => &mut self.rook,
-            UnitType::Bishop => &mut self.bishop,
-            UnitType::Knight => &mut self.knight,
-            UnitType::Pawn => &mut self.pawn,
-        }
+        &mut self.fields[a as usize]
     }
 
+    pub fn get(&self, a: UnitType) -> &BitField {
+        &self.fields[a as usize]
+    }
     pub fn clear(&mut self, a: Axial) -> UnitType {
-        if self.rook.is_set(a) {
-            self.rook.set_coord(a, false);
-            return UnitType::Rook;
+        for (i, arr) in self.fields.iter_mut().enumerate() {
+            if arr.is_set(a) {
+                arr.set_coord(a, false);
+                return UnitType::from_int(i);
+            }
         }
-        if self.bishop.is_set(a) {
-            self.bishop.set_coord(a, false);
-            return UnitType::Bishop;
-        }
-        if self.knight.is_set(a) {
-            self.knight.set_coord(a, false);
-            return UnitType::Knight;
-        }
-        if self.pawn.is_set(a) {
-            self.pawn.set_coord(a, false);
-            return UnitType::Pawn;
-        }
+
         unreachable!("coord isnt set in first place.")
     }
     pub fn try_get_type(&self, a: Axial) -> Option<UnitType> {
-        if self.rook.is_set(a) {
-            return Some(UnitType::Rook);
+        for (i, arr) in self.fields.iter().enumerate() {
+            if arr.is_set(a) {
+                return Some(UnitType::from_int(i));
+            }
         }
 
-        if self.bishop.is_set(a) {
-            return Some(UnitType::Bishop);
-        }
-
-        if self.knight.is_set(a) {
-            return Some(UnitType::Knight);
-        }
-
-        if self.pawn.is_set(a) {
-            return Some(UnitType::Pawn);
-        }
         return None;
     }
+
     pub fn get_type(&self, a: Axial) -> UnitType {
-        if self.rook.is_set(a) {
-            return UnitType::Rook;
-        }
-
-        if self.bishop.is_set(a) {
-            return UnitType::Bishop;
-        }
-
-        if self.knight.is_set(a) {
-            return UnitType::Knight;
-        }
-
-        if self.pawn.is_set(a) {
-            return UnitType::Pawn;
-        }
-        unreachable!("Could not find unit at position");
+        self.try_get_type(a)
+            .expect("Could not find unit at position")
     }
 }
 
 #[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum UnitType {
-    Rook,
-    Bishop,
-    Knight,
-    Pawn,
+    Rook1 = 0,
+    Rook2 = 1,
+    Rook3 = 2,
+    Knight = 3,
+    Pawn = 4,
+}
+impl UnitType {
+    pub fn from_int(a: usize) -> UnitType {
+        use UnitType::*;
+        match a {
+            0 => Rook1,
+            1 => Rook2,
+            2 => Rook3,
+            3 => Knight,
+            4 => Pawn,
+            _ => unreachable!(),
+        }
+    }
 }
 
 // impl std::fmt::Debug for Tribe {

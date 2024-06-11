@@ -371,15 +371,12 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
         let nes = start.to_cube().neighbours2().map(|x| x.to_axial());
 
-        let rook = BitField::from_iter(&nes[0..2]);
-        let knight = BitField::from_iter(&nes[2..4]);
-        let bishop = BitField::from_iter(&nes[4..6]);
+        let book1 = BitField::from_iter(&nes[0..2]);
+        let book2 = BitField::from_iter(&nes[2..4]);
+        let book3 = BitField::from_iter(&nes[4..6]);
 
         Tribe {
-            pawn,
-            rook,
-            knight,
-            bishop,
+            fields: [book1, book2, book3, pawn],
         }
     };
 

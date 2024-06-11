@@ -759,15 +759,19 @@ async fn render_command(
 
         let zzzz = -10.0;
         let mut draw_unit_type =
-            |mytype: UnitType,
-             my_team: ActiveTeam,
-             foo: &BitField,
-             model: &Foo<TextureGpu, ModelGpu>| {
+            |mytype: UnitType, my_team: ActiveTeam, model: &Foo<TextureGpu, ModelGpu>| {
                 let i = match mytype {
-                    UnitType::Rook => 2,
-                    UnitType::Bishop => 1,
-                    UnitType::Knight => 0,
+                    UnitType::Rook1 => 2,
+                    UnitType::Rook2 => 1,
+                    UnitType::Rook3 => 0,
                     UnitType::Pawn => 0,
+                    UnitType::Knight => 0,
+                };
+
+                let foo = if let ActiveTeam::White = my_team {
+                    game.factions.white.get(mytype)
+                } else {
+                    game.factions.black.get(mytype)
                 };
 
                 let rr = (std::f32::consts::TAU / 6.0) * i as f32;
@@ -813,43 +817,13 @@ async fn render_command(
         //     black_pawn,
         // );
 
-        draw_unit_type(
-            UnitType::Rook,
-            ActiveTeam::White,
-            &game.factions.white.rook,
-            white_knight,
-        );
-        draw_unit_type(
-            UnitType::Bishop,
-            ActiveTeam::White,
-            &game.factions.white.bishop,
-            white_knight,
-        );
-        draw_unit_type(
-            UnitType::Knight,
-            ActiveTeam::White,
-            &game.factions.white.knight,
-            white_knight,
-        );
+        draw_unit_type(UnitType::Rook1, ActiveTeam::White, white_knight);
+        draw_unit_type(UnitType::Rook2, ActiveTeam::White, white_knight);
+        draw_unit_type(UnitType::Rook3, ActiveTeam::White, white_knight);
 
-        draw_unit_type(
-            UnitType::Rook,
-            ActiveTeam::Black,
-            &game.factions.black.rook,
-            black_knight,
-        );
-        draw_unit_type(
-            UnitType::Bishop,
-            ActiveTeam::Black,
-            &game.factions.black.bishop,
-            black_knight,
-        );
-        draw_unit_type(
-            UnitType::Knight,
-            ActiveTeam::Black,
-            &game.factions.black.knight,
-            black_knight,
-        );
+        draw_unit_type(UnitType::Rook1, ActiveTeam::Black, black_knight);
+        draw_unit_type(UnitType::Rook2, ActiveTeam::Black, black_knight);
+        draw_unit_type(UnitType::Rook3, ActiveTeam::Black, black_knight);
 
         // let d = DepthDisabler::new(ctx);
 
