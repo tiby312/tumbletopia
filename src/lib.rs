@@ -818,11 +818,9 @@ async fn render_command(
         // );
 
         draw_unit_type(UnitType::Pawn, ActiveTeam::White, white_bishop);
-        
-    
+
         draw_unit_type(UnitType::Pawn, ActiveTeam::Black, black_bishop);
 
-        
         //TODO combine into one draw call
         draw_unit_type(UnitType::Rook1, ActiveTeam::White, white_knight);
         draw_unit_type(UnitType::Rook2, ActiveTeam::White, white_knight);

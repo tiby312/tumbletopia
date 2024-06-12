@@ -96,19 +96,16 @@ impl GameState {
 
         let i = match typ {
             UnitType::Pawn => {
-                let dd=if let ActiveTeam::White = team{
-                    3
-                }else{
-                    0
-                };
-                let k=unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax);
+                let dd = if let ActiveTeam::White = team { 3 } else { 0 };
+                let k = unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax);
 
-                if world.get_game_cells().is_set(k) &&
-                    !game.env.fog.is_set(k) &&
-                    !terrain.is_set(k) &&
-                    !game.factions.has_a_set(k){
+                if world.get_game_cells().is_set(k)
+                    && !game.env.fog.is_set(k)
+                    && !terrain.is_set(k)
+                    && !game.factions.has_a_set(k)
+                {
                     mesh.add(k);
-                    }
+                }
                 return;
             }
             UnitType::Knight => {
