@@ -99,7 +99,7 @@ impl WorldSeed {
 
 impl MyWorld {
     pub fn new(seed: WorldSeed) -> MyWorld {
-        let size = 5;
+        let size = 4;
         let j = [[2, -4], [-2, -2], [-4, 2], [-2, 4], [2, 2], [4, -2]];
 
         //for size 3 use this
@@ -145,25 +145,25 @@ impl MyWorld {
 
         let world_missing = j.map(Axial::from_arr);
 
-        for a in 0..3 {
-            if a == white_long {
-                continue;
-            }
-            let mut j = white_start[a];
-            increase_mag(&mut j.q);
-            increase_mag(&mut j.r);
-            white_start.push(j);
-        }
+        // for a in 0..3 {
+        //     if a == white_long {
+        //         continue;
+        //     }
+        //     let mut j = white_start[a];
+        //     increase_mag(&mut j.q);
+        //     increase_mag(&mut j.r);
+        //     white_start.push(j);
+        // }
 
-        for a in 0..3 {
-            if a == black_long {
-                continue;
-            }
-            let mut j = black_start[a];
-            increase_mag(&mut j.q);
-            increase_mag(&mut j.r);
-            black_start.push(j);
-        }
+        // for a in 0..3 {
+        //     if a == black_long {
+        //         continue;
+        //     }
+        //     let mut j = black_start[a];
+        //     increase_mag(&mut j.q);
+        //     increase_mag(&mut j.r);
+        //     black_start.push(j);
+        // }
 
         // let mut j=dog_start[dog_long2];
         // increase_mag(&mut j.q);

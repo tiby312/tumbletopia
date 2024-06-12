@@ -106,6 +106,15 @@ impl GameState {
                 {
                     mesh.add(k);
                 }
+
+                for o in [hex::DIAG_OFFSETS[dd],hex::DIAG_OFFSETS[(dd+5) % 6]]{
+                    let k=unit.add(hex::Cube::from_arr(o).ax);
+                    if game.factions.relative(team).that_team.is_set(k){
+                        mesh.add(k);
+                    }
+                }
+
+
                 return;
             }
             UnitType::Knight => {

@@ -366,7 +366,9 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let black_start = Axial::from_arr([-3, 0]);
 
     let populate = |start: Axial| {
-        let pawn = BitField::from_iter(start.to_cube().ring(2).map(|x| x.to_axial()));
+        let mut pawn = BitField::from_iter(start.to_cube().ring(2).map(|x| x.to_axial()));
+        pawn.intersect_with(&world.get_game_cells());
+
         //let pawn = BitField::new();
 
         let nes = start.to_cube().neighbours2().map(|x| x.to_axial());
