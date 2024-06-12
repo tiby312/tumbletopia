@@ -366,14 +366,18 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let black_start = Axial::from_arr([-3, 0]);
 
 
-    let white_pawns=[[1,0],[2,-1],[3,-2],[4,-3],[4,-4],[1,1],[1,2],[1,3],[0,4]];
+    let white_pawns=[[2,0],[3,-1],[3,-2],[4,-3],[4,-4],[2,1],[1,2],[1,3],[0,4]];
 
     let black_pawns=white_pawns.map(|[x,y]|[-x,-y]);
 
     let white_pawns=white_pawns.map(Axial::from_arr);
     let black_pawns=black_pawns.map(Axial::from_arr);
     
+//25 empty
+//18*2=36 covered
 
+
+//15*2 = 30 covered
 
 
     let populate = |start: Axial,pawn:BitField| {
