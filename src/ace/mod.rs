@@ -365,9 +365,20 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let white_start = Axial::from_arr([3, 0]);
     let black_start = Axial::from_arr([-3, 0]);
 
-    let populate = |start: Axial| {
-        let mut pawn = BitField::from_iter(start.to_cube().ring(2).map(|x| x.to_axial()));
-        pawn.intersect_with(&world.get_game_cells());
+
+    let white_pawns=[[1,0],[2,-1],[3,-2],[4,-3],[4,-4],[1,1],[1,2],[1,3],[0,4]];
+
+    let black_pawns=white_pawns.map(|[x,y]|[-x,-y]);
+
+    let white_pawns=white_pawns.map(Axial::from_arr);
+    let black_pawns=black_pawns.map(Axial::from_arr);
+    
+
+
+
+    let populate = |start: Axial,pawn:BitField| {
+        // let mut pawn = BitField::from_iter(start.to_cube().ring(2).map(|x| x.to_axial()));
+        // pawn.intersect_with(&world.get_game_cells());
 
         //let pawn = BitField::new();
 
@@ -390,8 +401,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let mut k = GameState {
         factions: Factions {
-            black: populate(black_start),
-            white: populate(white_start),
+            black: populate(black_start,BitField::from_iter(black_pawns)),
+            white: populate(white_start,BitField::from_iter(white_pawns)),
         },
         env: Environment {
             terrain: Terrain {
