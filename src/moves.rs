@@ -101,7 +101,14 @@ impl GameState {
                 }else{
                     0
                 };
-                mesh.add(unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax));
+                let k=unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax);
+
+                if world.get_game_cells().is_set(k) &&
+                    !game.env.fog.is_set(k) &&
+                    !terrain.is_set(k) &&
+                    !game.factions.has_a_set(k){
+                    mesh.add(k);
+                    }
                 return;
             }
             UnitType::Knight => {
