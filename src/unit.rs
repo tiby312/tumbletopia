@@ -289,8 +289,9 @@ pub enum UnitType {
     Rook1 = 0,
     Rook2 = 1,
     Rook3 = 2,
-    Knight = 3,
-    Pawn = 4,
+    Pawn = 3,
+    Knight = 4,
+    
 }
 impl UnitType {
     pub fn from_int(a: usize) -> UnitType {
@@ -299,8 +300,8 @@ impl UnitType {
             0 => Rook1,
             1 => Rook2,
             2 => Rook3,
-            3 => Knight,
-            4 => Pawn,
+            3 => Pawn,
+            4 => Knight,
             _ => unreachable!(),
         }
     }

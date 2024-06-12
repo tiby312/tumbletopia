@@ -96,7 +96,13 @@ impl GameState {
 
         let i = match typ {
             UnitType::Pawn => {
-                todo!()
+                let dd=if let ActiveTeam::White = team{
+                    3
+                }else{
+                    0
+                };
+                mesh.add(unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax));
+                return;
             }
             UnitType::Knight => {
                 // for (i, h) in hex::OFFSETS.into_iter().enumerate()
