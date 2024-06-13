@@ -97,6 +97,9 @@ impl WorldSeed {
     }
 }
 
+//9*2*2=35
+//31 covered
+
 impl MyWorld {
     pub fn new(seed: WorldSeed) -> MyWorld {
         let size = 4;
@@ -106,6 +109,21 @@ impl MyWorld {
         //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
 
         let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
+
+        // let j=[[2,3],[5,-3],[5,-4],[1,4]];
+
+        // for j in j{
+        //     w.set_coord(Axial::from_arr(j),true);
+        //     w.set_coord(Axial::from_arr([-j[0],-j[1]]),true);
+        // }
+
+        // let off=[[4,0]];
+        // for off in off{
+        //     w.set_coord(Axial::from_arr(off),false);
+        //     w.set_coord(Axial::from_arr([-off[0],-off[1]]),false);
+            
+        // }
+
         //w.set_coord(Axial::zero(), false);
         //3*3*5*4 = 180 choices!!!
 
@@ -180,13 +198,13 @@ impl MyWorld {
         //     land.set_coord(Axial::from_arr(a), true);
         // }
 
-        for &a in white_start.iter() {
-            w.set_coord(a, true);
-        }
+        // for &a in white_start.iter() {
+        //     w.set_coord(a, true);
+        // }
 
-        for &a in black_start.iter() {
-            w.set_coord(a, true);
-        }
+        // for &a in black_start.iter() {
+        //     w.set_coord(a, true);
+        // }
 
         MyWorld {
             seed,
