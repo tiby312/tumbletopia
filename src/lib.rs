@@ -766,6 +766,7 @@ async fn render_command(
                     UnitType::Rook3 => 0,
                     UnitType::Pawn => 0,
                     UnitType::Knight => 0,
+                    UnitType::King=>0
                 };
 
                 let foo = if let ActiveTeam::White = my_team {
@@ -820,6 +821,11 @@ async fn render_command(
         draw_unit_type(UnitType::Pawn, ActiveTeam::White, white_bishop);
 
         draw_unit_type(UnitType::Pawn, ActiveTeam::Black, black_bishop);
+
+        draw_unit_type(UnitType::Knight, ActiveTeam::White, white_rook);
+
+        draw_unit_type(UnitType::Knight, ActiveTeam::Black, black_rook);
+
 
         //TODO combine into one draw call
         draw_unit_type(UnitType::Rook1, ActiveTeam::White, white_knight);

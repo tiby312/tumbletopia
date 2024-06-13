@@ -400,8 +400,11 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         let book2 = BitField::from_iter([m[1],m[3]]);
         let book3 = BitField::from_iter([m[5],m[2]]);
 
+        let knight = BitField::from_iter([m[7]]);
+        let king = BitField::from_iter([m[6]]);
+
         Tribe {
-            fields: [book1, book2, book3, pawn],
+            fields: [book1, book2, book3, pawn,knight,king],
         }
     };
 

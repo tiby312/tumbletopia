@@ -209,7 +209,7 @@ impl Default for CellSelection {
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub fields: [BitField; 4],
+    pub fields: [BitField; 6],
     // pub bishop: BitField,
     // pub knight: BitField,
     //pub pawn: BitField,
@@ -291,6 +291,7 @@ pub enum UnitType {
     Rook3 = 2,
     Pawn = 3,
     Knight = 4,
+    King = 5
 }
 impl UnitType {
     pub fn from_int(a: usize) -> UnitType {
@@ -301,6 +302,7 @@ impl UnitType {
             2 => Rook3,
             3 => Pawn,
             4 => Knight,
+            5=>King,
             _ => unreachable!(),
         }
     }
