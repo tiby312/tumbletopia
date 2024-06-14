@@ -95,7 +95,7 @@ impl GameState {
         let terrain = &game.env.terrain;
 
         let i = match typ {
-            UnitType::King=>{
+            UnitType::King => {
                 return;
             }
             UnitType::Pawn => {
@@ -120,8 +120,7 @@ impl GameState {
                 return;
             }
             UnitType::Knight => {
-                for (i, h) in hex::OFFSETS.into_iter().enumerate()
-                {
+                for (i, h) in hex::OFFSETS.into_iter().enumerate() {
                     let point = unit
                         .to_cube()
                         .ray_from_vector(hex::Cube::from_arr(h))
@@ -130,13 +129,13 @@ impl GameState {
 
                     let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
 
-                    for a in diags
-                    {
+                    for a in diags {
                         let a = point.add(hex::Cube::from_arr(a)).ax;
                         if world.get_game_cells().is_set(a)
-                        && !game.env.fog.is_set(a)
-                        && !terrain.is_set(a) 
-                        && !game.factions.relative(team).this_team.is_set(a){
+                            && !game.env.fog.is_set(a)
+                            && !terrain.is_set(a)
+                            && !game.factions.relative(team).this_team.is_set(a)
+                        {
                             mesh.add(a);
                         }
                     }

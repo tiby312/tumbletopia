@@ -121,7 +121,7 @@ impl MyWorld {
         // for off in off{
         //     w.set_coord(Axial::from_arr(off),false);
         //     w.set_coord(Axial::from_arr([-off[0],-off[1]]),false);
-            
+
         // }
 
         //w.set_coord(Axial::zero(), false);

@@ -365,29 +365,44 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let white_start = Axial::from_arr([3, 0]);
     let black_start = Axial::from_arr([-3, 0]);
 
+    let white_pawns = [
+        [1, 0],
+        [2, -1],
+        [3, -2],
+        [4, -3],
+        [1, 1],
+        [1, 2],
+        [1, 3], /*[0,4],[4,-4]*/
+    ];
 
-    let white_pawns=[[2,0],[3,-1],[3,-2],[4,-3],[4,-4],[2,1],[1,2],/*[1,3],[0,4]*/];
+    let black_pawns = white_pawns.map(|[x, y]| [-x, -y]);
 
-    let black_pawns=white_pawns.map(|[x,y]|[-x,-y]);
+    let white_pawns = white_pawns.map(Axial::from_arr);
+    let black_pawns = black_pawns.map(Axial::from_arr);
 
-    let white_pawns=white_pawns.map(Axial::from_arr);
-    let black_pawns=black_pawns.map(Axial::from_arr);
-    
+    let minor_spots_white = [
+        [4, -2],
+        [4, -1],
+        [3, 0],
+        [4, 0],
+        [3, 1],
+        [3, -1],
+        [2, 1],
+        [2, 2],
+        [1, 3],
+        [0, 4],
+    ];
+    let minor_spots_black = minor_spots_white.map(|[x, y]| [-x, -y]);
+    let minor_spots_white = minor_spots_white.map(Axial::from_arr);
+    let minor_spots_black = minor_spots_black.map(Axial::from_arr);
 
-    let minor_spots_white=[[4,-2],[4,-1],[3,0],[4,0],[3,1],[2,2],[1,3],[0,4]];
-    let minor_spots_black=minor_spots_white.map(|[x,y]|[-x,-y]);
-    let minor_spots_white=minor_spots_white.map(Axial::from_arr);
-    let minor_spots_black=minor_spots_black.map(Axial::from_arr);
+    //25 empty
+    //18*2=36 covered
 
-//25 empty
-//18*2=36 covered
+    //15*2 = 30 covered
+    // 31 uncovered
 
-
-//15*2 = 30 covered
-// 31 uncovered
-
-
-    let populate = |start: Axial,pawn:BitField,minor_spots: [Axial; 8]| {
+    let populate = |start: Axial, pawn: BitField, minor_spots: [Axial; 10]| {
         // let mut pawn = BitField::from_iter(start.to_cube().ring(2).map(|x| x.to_axial()));
         // pawn.intersect_with(&world.get_game_cells());
 
@@ -395,16 +410,19 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
         let nes = start.to_cube().neighbours2().map(|x| x.to_axial());
 
-        let m=minor_spots;
-        let book1 = BitField::from_iter([m[0],m[4]]);
-        let book2 = BitField::from_iter([m[1],m[3]]);
-        let book3 = BitField::from_iter([m[5],m[2]]);
+        let m = minor_spots;
+        let book1 = BitField::from_iter([m[0], m[4]]);
+        let book2 = BitField::from_iter([m[1], m[3]]);
+        let book3 = BitField::from_iter([m[5], m[2]]);
+        // let book1 = BitField::from_iter([m[0],m[1]]);
+        // let book2 = BitField::new();
+        // let book3 = BitField::new();
 
         let knight = BitField::from_iter([m[7]]);
         let king = BitField::from_iter([m[6]]);
 
         Tribe {
-            fields: [book1, book2, book3, pawn,knight,king],
+            fields: [book1, book2, book3, pawn, knight, king],
         }
     };
 
@@ -416,8 +434,16 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let mut k = GameState {
         factions: Factions {
-            black: populate(black_start,BitField::from_iter(black_pawns),minor_spots_black),
-            white: populate(white_start,BitField::from_iter(white_pawns),minor_spots_white),
+            black: populate(
+                black_start,
+                BitField::from_iter(black_pawns),
+                minor_spots_black,
+            ),
+            white: populate(
+                white_start,
+                BitField::from_iter(white_pawns),
+                minor_spots_white,
+            ),
         },
         env: Environment {
             terrain: Terrain {
