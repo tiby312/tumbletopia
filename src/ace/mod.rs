@@ -365,16 +365,25 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let white_start = Axial::from_arr([3, 0]);
     let black_start = Axial::from_arr([-3, 0]);
 
+    // let white_pawns = [
+    //     [1, 0],
+    //     [2, -1],
+    //     [3, -2],
+    //     [4, -3],
+    //     [1, 1],
+    //     [1, 2],
+    //     [1, 3], /*[0,4],[4,-4]*/
+    // ];
+
     let white_pawns = [
-        [1, 0],
+        [2, 0],
         [2, -1],
         [3, -2],
-        [4, -3],
+        [3, -3],
         [1, 1],
         [1, 2],
-        [1, 3], /*[0,4],[4,-4]*/
+        [0, 3], /*[0,4],[4,-4]*/
     ];
-
     let black_pawns = white_pawns.map(|[x, y]| [-x, -y]);
 
     let white_pawns = white_pawns.map(Axial::from_arr);
