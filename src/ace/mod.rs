@@ -376,13 +376,13 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     // ];
 
     let white_pawns = [
-        [2, 0],
+        [1, 0],
         [2, -1],
         [3, -2],
-        [3, -3],
+        [4, -3],
         [1, 1],
         [1, 2],
-        [0, 3], /*[0,4],[4,-4]*/
+        [1, 3], /*[0,4],[4,-4]*/
     ];
     let black_pawns = white_pawns.map(|[x, y]| [-x, -y]);
 
@@ -390,7 +390,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let black_pawns = black_pawns.map(Axial::from_arr);
 
     let minor_spots_white = [
-        [4,-3],
+        //[4,-3],
         [4, -2],
         [4, -1],
         [3, 0],
@@ -399,8 +399,9 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         [3, -1],
         [2, 1],
         [2, 2],
-        [1, 3],
-        [0, 4],
+        [2,0],
+        //[1, 3],
+        //[0, 4],
     ];
     let minor_spots_black = minor_spots_white.map(|[x, y]| [-x, -y]);
     let minor_spots_white = minor_spots_white.map(Axial::from_arr);
@@ -412,7 +413,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     //15*2 = 30 covered
     // 31 uncovered
 
-    let populate = |start: Axial, pawn: BitField, minor_spots: [Axial; 11]| {
+    let populate = |start: Axial, pawn: BitField, minor_spots: [Axial; 9]| {
         // let mut pawn = BitField::from_iter(start.to_cube().ring(2).map(|x| x.to_axial()));
         // pawn.intersect_with(&world.get_game_cells());
 
@@ -428,7 +429,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         // let book2 = BitField::new();
         // let book3 = BitField::new();
 
-        let knight = BitField::from_iter([m[7],m[8]]);
+        let knight = BitField::from_iter([m[7]]);
         let king = BitField::from_iter([m[6]]);
         
         Tribe {
