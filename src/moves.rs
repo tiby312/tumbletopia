@@ -96,6 +96,16 @@ impl GameState {
 
         let i = match typ {
             UnitType::King => {
+                for k in unit.to_cube().ring(1).map(|x|x.to_axial()){
+                        if world.get_game_cells().is_set(k)
+                        && !game.env.fog.is_set(k)
+                        && !terrain.is_set(k)
+                        && !game.factions.relative(team).this_team.is_set(k)
+                    {
+                        mesh.add(k)
+                    }
+                }
+
                 return;
             }
             UnitType::Pawn => {
