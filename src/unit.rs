@@ -136,7 +136,7 @@ impl GameState {
         self.hash(&mut hasher);
         hasher.finish()
     }
-    pub fn game_is_over(&self, world: &board::MyWorld, team: ActiveTeam) -> Option<GameOver> {
+    pub fn game_is_over(&self, world: &board::MyWorld) -> Option<GameOver> {
         if self.factions.white.get(UnitType::King).count_ones(..)==0{
             return Some(GameOver::BlackWon)
         }
@@ -144,6 +144,7 @@ impl GameState {
             return Some(GameOver::WhiteWon)
         }
         None
+
         // let this_team_stuck = 'foo: {
         //     for unit in self.factions.relative(team).this_team.iter_mesh() {
         //         let mesh = self.generate_possible_moves_movement(world, &unit, team);

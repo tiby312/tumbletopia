@@ -20,12 +20,21 @@ impl Default for Evaluator {
     }
 }
 impl Evaluator {
-    pub fn cant_move(&mut self, team: ActiveTeam) -> Eval {
-        match team {
-            ActiveTeam::White => -MATE,
-            ActiveTeam::Black => MATE,
-        }
-    }
+    // pub fn check_mate(&mut self, view:&GameState,team: ActiveTeam) -> Option<Eval> {
+    //     match team{
+    //         ActiveTeam::White=>{
+    //             if view.factions.white.get(UnitType::King).count_ones(..)==0{
+    //                 return Some(-MATE)
+    //             }
+    //         },
+    //         ActiveTeam::Black=>{
+    //             if view.factions.black.get(UnitType::King).count_ones(..)==0{
+    //                 return Some(-MATE)
+    //             }
+    //         }
+    //     }
+    //     None
+    // }
     //white maximizing
     //black minimizing
     pub fn absolute_evaluate(
@@ -34,6 +43,15 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
+
+        if let Some(k)=view.game_is_over(world){
+            match k{
+                GameOver::WhiteWon => return MATE,
+                GameOver::BlackWon => return -MATE,
+                GameOver::Tie => {},
+            }
+        }
+
         let ship_allowed = {
             let temp = &mut self.workspace;
             temp.clear();
@@ -343,6 +361,14 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
+        if let Some(k)=game_after_move.game_is_over(world){
+            match k{
+                GameOver::WhiteWon => return MATE,
+                GameOver::BlackWon => return -MATE,
+                GameOver::Tie => {},
+            }
+        }
+
         if depth >= max_depth + 2 {
             self.calls.add_eval();
             return evaluator.absolute_evaluate(game_after_move, world, false);
@@ -370,9 +396,9 @@ impl<'a> AlphaBeta<'a> {
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
 
-        if moves.is_empty() && depth < max_depth {
-            return evaluator.cant_move(team);
-        }
+        // if moves.is_empty() && depth < max_depth {
+        //     return evaluator.check_mate(team);
+        // }
 
         let mut num_sorted = 0;
 

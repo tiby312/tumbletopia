@@ -532,7 +532,7 @@ pub async fn replay(
         game_history.push((the_move, effect_m.combine(effect_a)));
     }
 
-    if let Some(g) = game.game_is_over(world, team_gen.next().unwrap()) {
+    if let Some(g) = game.game_is_over(world) {
         (g, game_history)
     } else {
         panic!("replay didnt end with game over state");

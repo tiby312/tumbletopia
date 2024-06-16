@@ -215,7 +215,7 @@ pub async fn worker_entry() {
         loop {
             let team = team_gen.next().unwrap();
 
-            if let Some(g) = game.game_is_over(&world, team) {
+            if let Some(g) = game.game_is_over(&world) {
                 console_dbg!("Game over=", g);
                 break (g, game_history);
                 //break 'game_loop;
