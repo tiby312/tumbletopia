@@ -137,11 +137,11 @@ impl GameState {
         hasher.finish()
     }
     pub fn game_is_over(&self, world: &board::MyWorld) -> Option<GameOver> {
-        if self.factions.white.get(UnitType::King).count_ones(..)==0{
-            return Some(GameOver::BlackWon)
+        if self.factions.white.get(UnitType::King).count_ones(..) == 0 {
+            return Some(GameOver::BlackWon);
         }
-        if self.factions.black.get(UnitType::King).count_ones(..)==0{
-            return Some(GameOver::WhiteWon)
+        if self.factions.black.get(UnitType::King).count_ones(..) == 0 {
+            return Some(GameOver::WhiteWon);
         }
         None
 
@@ -302,7 +302,7 @@ pub enum UnitType {
     Pawn = 3,
     Knight = 4,
     King = 5,
-    Rook = 6
+    Rook = 6,
 }
 impl UnitType {
     pub fn from_int(a: usize) -> UnitType {

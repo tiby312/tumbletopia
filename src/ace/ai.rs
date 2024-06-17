@@ -43,12 +43,11 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-
-        if let Some(k)=view.game_is_over(world){
-            match k{
+        if let Some(k) = view.game_is_over(world) {
+            match k {
                 GameOver::WhiteWon => return MATE,
                 GameOver::BlackWon => return -MATE,
-                GameOver::Tie => {},
+                GameOver::Tie => {}
             }
         }
 
@@ -361,11 +360,11 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        if let Some(k)=game_after_move.game_is_over(world){
-            match k{
+        if let Some(k) = game_after_move.game_is_over(world) {
+            match k {
                 GameOver::WhiteWon => return MATE,
                 GameOver::BlackWon => return -MATE,
-                GameOver::Tie => {},
+                GameOver::Tie => {}
             }
         }
 

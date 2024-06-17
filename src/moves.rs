@@ -95,12 +95,9 @@ impl GameState {
         let terrain = &game.env.terrain;
 
         let i = match typ {
-            UnitType::Rook =>{
+            UnitType::Rook => {
                 for (i, h) in hex::OFFSETS.into_iter().enumerate() {
-                    for a in  unit
-                        .to_cube()
-                        .ray_from_vector(hex::Cube::from_arr(h))
-                    {
+                    for a in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
                         assert!(unit != a.to_axial());
                         let a = a.ax;
                         if !world.get_game_cells().is_set(a)
@@ -119,16 +116,13 @@ impl GameState {
                         if game.factions.relative(team).that_team.is_set(a) {
                             break;
                         }
-
                     }
-                        
-
                 }
                 return;
             }
             UnitType::King => {
-                for k in unit.to_cube().ring(1).map(|x|x.to_axial()){
-                        if world.get_game_cells().is_set(k)
+                for k in unit.to_cube().ring(1).map(|x| x.to_axial()) {
+                    if world.get_game_cells().is_set(k)
                         && !game.env.fog.is_set(k)
                         && !terrain.is_set(k)
                         && !game.factions.relative(team).this_team.is_set(k)
@@ -151,7 +145,7 @@ impl GameState {
                     mesh.add(k);
                 }
 
-                for o in [hex::OFFSETS[dd+1], hex::OFFSETS[(dd + 5) % 6]] {
+                for o in [hex::OFFSETS[dd + 1], hex::OFFSETS[(dd + 5) % 6]] {
                     let k = unit.add(hex::Cube::from_arr(o).ax);
                     if game.factions.relative(team).that_team.is_set(k) {
                         mesh.add(k);
