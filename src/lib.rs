@@ -761,12 +761,13 @@ async fn render_command(
         let mut draw_unit_type =
             |mytype: UnitType, my_team: ActiveTeam, model: &Foo<TextureGpu, ModelGpu>| {
                 let i = match mytype {
-                    UnitType::Rook1 => 2,
-                    UnitType::Rook2 => 1,
-                    UnitType::Rook3 => 0,
+                    UnitType::Book1 => 2,
+                    UnitType::Book2 => 1,
+                    UnitType::Book3 => 0,
                     UnitType::Pawn => 0,
                     UnitType::Knight => 0,
                     UnitType::King => 0,
+                    UnitType::Rook => 0
                 };
 
                 let foo = if let ActiveTeam::White = my_team {
@@ -818,22 +819,27 @@ async fn render_command(
         //     black_pawn,
         // );
 
-        draw_unit_type(UnitType::Pawn, ActiveTeam::White, white_bishop);
 
-        draw_unit_type(UnitType::Pawn, ActiveTeam::Black, black_bishop);
+        draw_unit_type(UnitType::Rook, ActiveTeam::White, white_bishop);
+
+        draw_unit_type(UnitType::Rook, ActiveTeam::Black, black_bishop);
+
+        draw_unit_type(UnitType::Pawn, ActiveTeam::White, white_pawn);
+
+        draw_unit_type(UnitType::Pawn, ActiveTeam::Black, black_pawn);
 
         draw_unit_type(UnitType::Knight, ActiveTeam::White, white_rook);
 
         draw_unit_type(UnitType::Knight, ActiveTeam::Black, black_rook);
 
         //TODO combine into one draw call
-        draw_unit_type(UnitType::Rook1, ActiveTeam::White, white_knight);
-        draw_unit_type(UnitType::Rook2, ActiveTeam::White, white_knight);
-        draw_unit_type(UnitType::Rook3, ActiveTeam::White, white_knight);
+        draw_unit_type(UnitType::Book1, ActiveTeam::White, white_knight);
+        draw_unit_type(UnitType::Book2, ActiveTeam::White, white_knight);
+        draw_unit_type(UnitType::Book3, ActiveTeam::White, white_knight);
 
-        draw_unit_type(UnitType::Rook1, ActiveTeam::Black, black_knight);
-        draw_unit_type(UnitType::Rook2, ActiveTeam::Black, black_knight);
-        draw_unit_type(UnitType::Rook3, ActiveTeam::Black, black_knight);
+        draw_unit_type(UnitType::Book1, ActiveTeam::Black, black_knight);
+        draw_unit_type(UnitType::Book2, ActiveTeam::Black, black_knight);
+        draw_unit_type(UnitType::Book3, ActiveTeam::Black, black_knight);
 
         // let d = DepthDisabler::new(ctx);
 
@@ -1016,10 +1022,10 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             drop_shadow: quick_load(include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
             fog: quick_load(include_bytes!("../assets/fog.glb"), RESIZE, None),
             attack: quick_load(include_bytes!("../assets/attack.glb"), 1, None),
-            white_rook: quick_load(include_bytes!("../assets/white_rook.glb"), RESIZE, None),
-            black_rook: quick_load(include_bytes!("../assets/black_rook.glb"), RESIZE, None),
-            white_knight: quick_load(include_bytes!("../assets/white_knight.glb"), RESIZE, None),
-            black_knight: quick_load(include_bytes!("../assets/black_knight.glb"), RESIZE, None),
+            white_rook: quick_load(include_bytes!("../assets/white_chess_rook.glb"), RESIZE, None),
+            black_rook: quick_load(include_bytes!("../assets/black_chess_rook.glb"), RESIZE, None),
+            white_knight: quick_load(include_bytes!("../assets/chess_white_knight.glb"), RESIZE, None),
+            black_knight: quick_load(include_bytes!("../assets/chess_black_knight.glb"), RESIZE, None),
             white_bishop: quick_load(include_bytes!("../assets/white_bishop.glb"), RESIZE, None),
             black_bishop: quick_load(include_bytes!("../assets/black_bishop.glb"), RESIZE, None),
             white_pawn: quick_load(include_bytes!("../assets/white_pawn.glb"), RESIZE, None),

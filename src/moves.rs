@@ -95,6 +95,37 @@ impl GameState {
         let terrain = &game.env.terrain;
 
         let i = match typ {
+            UnitType::Rook =>{
+                for (i, h) in hex::OFFSETS.into_iter().enumerate() {
+                    for a in  unit
+                        .to_cube()
+                        .ray_from_vector(hex::Cube::from_arr(h))
+                    {
+                        assert!(unit != a.to_axial());
+                        let a = a.ax;
+                        if !world.get_game_cells().is_set(a)
+                            || game.env.fog.is_set(a)
+                            || terrain.is_set(a)
+                            || game.factions.relative(team).this_team.is_set(a)
+                        {
+                            break;
+                        }
+
+                        if for_show || game.factions.relative(team).that_team.is_set(a) {
+                            //mesh.add(a.sub(&unit));
+                            mesh.add(a);
+                        }
+
+                        if game.factions.relative(team).that_team.is_set(a) {
+                            break;
+                        }
+
+                    }
+                        
+
+                }
+                return;
+            }
             UnitType::King => {
                 for k in unit.to_cube().ring(1).map(|x|x.to_axial()){
                         if world.get_game_cells().is_set(k)
@@ -152,9 +183,9 @@ impl GameState {
                 }
                 return;
             }
-            UnitType::Rook1 => 0,
-            UnitType::Rook2 => 1,
-            UnitType::Rook3 => 2,
+            UnitType::Book1 => 0,
+            UnitType::Book2 => 1,
+            UnitType::Book3 => 2,
         };
 
         let j = i + 1;
