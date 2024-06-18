@@ -219,7 +219,7 @@ pub fn iterative_deepening(
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
-    let max_iterative_depth = 4;
+    let max_iterative_depth = 6;
     //let max_depth = 2;
 
     let mut foo1 = TranspositionTable {
@@ -260,8 +260,7 @@ pub fn iterative_deepening(
         let res = EvalRet { mov, eval: res };
 
         let eval = res.eval;
-        console_dbg!(eval);
-
+        
         results.push(res);
 
         if eval.abs() == MATE {
@@ -272,10 +271,10 @@ pub fn iterative_deepening(
         //doop.poke(team, game.clone()).await;
     }
 
-    console_dbg!(count);
-    console_dbg!(&results);
+    //console_dbg!(count);
+    //console_dbg!(&results);
 
-    let _target_eval = results.last().unwrap().eval;
+    //let _target_eval = results.last().unwrap().eval;
     // let mov = if let Some(a) = results
     //     .iter()
     //     .rev()
@@ -360,15 +359,9 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        if let Some(k) = game_after_move.game_is_over(world) {
-            match k {
-                GameOver::WhiteWon => return MATE,
-                GameOver::BlackWon => return -MATE,
-                GameOver::Tie => {}
-            }
-        }
 
-        if depth >= max_depth + 2 {
+
+        if depth >= max_depth /*+ 2*/ {
             self.calls.add_eval();
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
@@ -390,10 +383,10 @@ impl<'a> AlphaBeta<'a> {
             }
         });
 
-        if depth >= max_depth && quiet_position {
-            self.calls.add_eval();
-            return evaluator.absolute_evaluate(game_after_move, world, false);
-        }
+        // if depth >= max_depth && quiet_position {
+        //     self.calls.add_eval();
+        //     return evaluator.absolute_evaluate(game_after_move, world, false);
+        // }
 
         // if moves.is_empty() && depth < max_depth {
         //     return evaluator.check_mate(team);
