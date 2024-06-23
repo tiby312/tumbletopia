@@ -382,7 +382,9 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         [4, -3],
         [2, 1],
         [1, 2],
-        [1, 3], /*[0,4],[4,-4]*/
+        [1, 3], 
+        [0,4],
+        [4,-4]
     ];
     let black_pawns = white_pawns.map(|[x, y]| [-x, -y]);
 
