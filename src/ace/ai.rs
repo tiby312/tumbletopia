@@ -263,8 +263,13 @@ pub fn iterative_deepening(
 
         results.push(res);
 
-        //TODO only shortcircuit if we've found a WINNING mate.
-        if eval.abs() == MATE {
+        let short_target = if team == ActiveTeam::White {
+            MATE
+        } else {
+            -MATE
+        };
+
+        if eval == short_target {
             console_dbg!("found a mate");
             break;
         }
