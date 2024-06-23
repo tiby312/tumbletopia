@@ -422,14 +422,14 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         let nes = start.to_cube().neighbours2().map(|x| x.to_axial());
 
         let m = minor_spots;
-        let book1 = BitField::from_iter([m[0], m[4]]);
-        let book2 = BitField::from_iter([m[1], m[3]]);
+        let book1 = BitField::from_iter([m[0]]);
+        let book2 = BitField::from_iter([m[1]]);
         let book3 = BitField::new();
         // let book1 = BitField::from_iter([m[0],m[1]]);
         // let book2 = BitField::new();
         // let book3 = BitField::new();
 
-        let knight = BitField::from_iter([m[7]]);
+        let knight = BitField::from_iter([m[7],m[4]]);
         let king = BitField::from_iter([m[6]]);
         let rook = BitField::from_iter([m[8]]);
 
