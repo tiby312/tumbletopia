@@ -109,7 +109,6 @@ impl GameState {
                         }
 
                         if for_show || game.factions.relative(team).that_team.is_set(a) {
-                            //mesh.add(a.sub(&unit));
                             mesh.add(a);
                         }
 
@@ -122,9 +121,6 @@ impl GameState {
             }
             UnitType::King => {
                 for k in unit.to_cube().ring(1).map(|x| x.to_axial()) {
-                // for k in hex::OFFSETS.into_iter().chain(hex::DIAG_OFFSETS.into_iter()) {
-                //     let k=hex::Cube::from_arr(k).to_axial();
-                //     let k=unit.add(k);
                     if world.get_game_cells().is_set(k)
                         && !game.env.fog.is_set(k)
                         && !terrain.is_set(k)
@@ -157,7 +153,7 @@ impl GameState {
 
                 return;
             }
-            UnitType::Knight => {
+            UnitType::Knight1 | UnitType::Knight2 => {
                 // for (i, h) in hex::OFFSETS.into_iter().enumerate() {
                 //     let point = unit
                 //         .to_cube()
@@ -189,16 +185,15 @@ impl GameState {
                 // {
                 //     mesh.add(k);
                 // }
-                let i=0;
+                let i = 0;
                 let k = [
-                hex::OFFSETS[i],
-                hex::OFFSETS[(i + 2) % 6],
-                hex::OFFSETS[(i + 4) % 6],
-                
-                // hex::DIAG_OFFSETS[j],
-                // hex::DIAG_OFFSETS[(j + 3) % 6],
-            ];
-        
+                    hex::OFFSETS[i],
+                    hex::OFFSETS[(i + 2) % 6],
+                    hex::OFFSETS[(i + 4) % 6],
+                    // hex::DIAG_OFFSETS[j],
+                    // hex::DIAG_OFFSETS[(j + 3) % 6],
+                ];
+
                 for &a in k.iter().chain(hex::DIAG_OFFSETS.iter()) {
                     let a = unit.add(hex::Cube::from_arr(a).ax);
                     if world.get_game_cells().is_set(a)
@@ -213,7 +208,6 @@ impl GameState {
             }
             UnitType::Book1 => 0,
             UnitType::Book2 => 1,
-            UnitType::Book3 => 2,
         };
 
         let j = i + 1;
@@ -221,7 +215,6 @@ impl GameState {
             hex::OFFSETS[i],
             hex::OFFSETS[(i + 2) % 6],
             hex::OFFSETS[(i + 4) % 6],
-            
             // hex::DIAG_OFFSETS[j],
             // hex::DIAG_OFFSETS[(j + 3) % 6],
         ]

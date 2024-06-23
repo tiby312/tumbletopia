@@ -763,9 +763,9 @@ async fn render_command(
                 let i = match mytype {
                     UnitType::Book1 => 2,
                     UnitType::Book2 => 1,
-                    UnitType::Book3 => 0,
                     UnitType::Pawn => 0,
-                    UnitType::Knight => 0,
+                    UnitType::Knight1 => 1,
+                    UnitType::Knight2 => 2,
                     UnitType::King => 0,
                     UnitType::Rook => 0,
                 };
@@ -827,9 +827,11 @@ async fn render_command(
 
         draw_unit_type(UnitType::Pawn, ActiveTeam::Black, black_pawn);
 
-        draw_unit_type(UnitType::Knight, ActiveTeam::White, white_knight);
+        draw_unit_type(UnitType::Knight1, ActiveTeam::White, white_knight);
+        draw_unit_type(UnitType::Knight1, ActiveTeam::Black, black_knight);
 
-        draw_unit_type(UnitType::Knight, ActiveTeam::Black, black_knight);
+        draw_unit_type(UnitType::Knight2, ActiveTeam::White, white_knight);
+        draw_unit_type(UnitType::Knight2, ActiveTeam::Black, black_knight);
 
         draw_unit_type(UnitType::King, ActiveTeam::White, &models.white_king);
 
@@ -838,11 +840,9 @@ async fn render_command(
         //TODO combine into one draw call
         draw_unit_type(UnitType::Book1, ActiveTeam::White, white_bishop);
         draw_unit_type(UnitType::Book2, ActiveTeam::White, white_bishop);
-        draw_unit_type(UnitType::Book3, ActiveTeam::White, white_bishop);
 
         draw_unit_type(UnitType::Book1, ActiveTeam::Black, black_bishop);
         draw_unit_type(UnitType::Book2, ActiveTeam::Black, black_bishop);
-        draw_unit_type(UnitType::Book3, ActiveTeam::Black, black_bishop);
 
         // let d = DepthDisabler::new(ctx);
 

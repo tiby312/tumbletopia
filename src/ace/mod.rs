@@ -382,9 +382,9 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         [4, -3],
         [2, 1],
         [1, 2],
-        [1, 3], 
-        [0,4],
-        [4,-4]
+        [1, 3],
+        [0, 4],
+        [4, -4],
     ];
     let black_pawns = white_pawns.map(|[x, y]| [-x, -y]);
 
@@ -421,23 +421,25 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         let nes = start.to_cube().neighbours2().map(|x| x.to_axial());
 
         let m = minor_spots;
-        let book1 = BitField::from_iter([m[1]]);
-        let book2 = BitField::from_iter([m[2]]);
+        let book1 = BitField::from_iter([m[2]]);
+        let book2 = BitField::from_iter([m[1]]);
         let book3 = BitField::new();
         // let book1 = BitField::from_iter([m[0],m[1]]);
         // let book2 = BitField::new();
         // let book3 = BitField::new();
 
-        let knight = BitField::from_iter([m[4],m[3]]);
+        let knight1 = BitField::from_iter([m[3]]);
+        let knight2 = BitField::from_iter([m[4]]);
+
         let king = BitField::from_iter([m[5]]);
         let rook = BitField::from_iter([m[0]]);
 
         Tribe {
-            fields: [book1, book2, book3, pawn, knight, king, rook],
+            fields: [book1, book2, knight1, knight2, pawn, king, rook],
         }
     };
 
-    let white_tribe={
+    let white_tribe = {
         populate(
             white_start,
             BitField::from_iter(white_pawns),
@@ -445,7 +447,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         )
     };
 
-    let black_tribe={
+    let black_tribe = {
         populate(
             black_start,
             BitField::from_iter(black_pawns),
@@ -466,7 +468,6 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     //     t.get_mut(UnitType::Knight).set_coord(Axial::from_arr([-1,-2]), true);
     //     t
     // };
-
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 

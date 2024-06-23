@@ -260,9 +260,10 @@ pub fn iterative_deepening(
         let res = EvalRet { mov, eval: res };
 
         let eval = res.eval;
-        
+
         results.push(res);
 
+        //TODO only shortcircuit if we've found a WINNING mate.
         if eval.abs() == MATE {
             console_dbg!("found a mate");
             break;
@@ -359,9 +360,9 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-
-
-        if depth >= max_depth /*+ 2*/ {
+        if depth >= max_depth
+        /*+ 2*/
+        {
             self.calls.add_eval();
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }

@@ -226,8 +226,10 @@ pub struct Tribe {
 }
 
 impl Tribe {
-    pub fn new()->Tribe{
-        Tribe{fields:[();7].map(|_|BitField::new())}
+    pub fn new() -> Tribe {
+        Tribe {
+            fields: [(); 7].map(|_| BitField::new()),
+        }
     }
 
     pub fn all_alloc(&self) -> BitField {
@@ -302,9 +304,9 @@ impl Tribe {
 pub enum UnitType {
     Book1 = 0,
     Book2 = 1,
-    Book3 = 2,
-    Pawn = 3,
-    Knight = 4,
+    Knight1 = 2,
+    Knight2 = 3,
+    Pawn = 4,
     King = 5,
     Rook = 6,
 }
@@ -314,9 +316,9 @@ impl UnitType {
         match a {
             0 => Book1,
             1 => Book2,
-            2 => Book3,
-            3 => Pawn,
-            4 => Knight,
+            2 => Knight1,
+            3 => Knight2,
+            4 => Pawn,
             5 => King,
             6 => Rook,
             _ => unreachable!(),
