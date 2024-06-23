@@ -179,7 +179,7 @@ impl GameState {
                 //     }
                 // }
                 //let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
-                let dd = if let ActiveTeam::White = team { 3 } else { 0 };
+                let dd = if let ActiveTeam::White = team { 0} else { 3 };
                 let k = unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax);
 
                 if world.get_game_cells().is_set(k)
