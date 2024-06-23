@@ -268,11 +268,11 @@ impl Tribe {
     }
 
     pub fn get_mut(&mut self, a: UnitType) -> &mut BitField {
-        &mut self.fields[a as usize]
+        &mut self.fields[a.to_int()]
     }
 
     pub fn get(&self, a: UnitType) -> &BitField {
-        &self.fields[a as usize]
+        &self.fields[a.to_int()]
     }
     pub fn clear(&mut self, a: Axial) -> UnitType {
         for (i, arr) in self.fields.iter_mut().enumerate() {
@@ -301,23 +301,39 @@ impl Tribe {
 }
 
 #[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
+
+pub enum Parity {
+    One,
+    Two,
+}
+
+#[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum UnitType {
-    Book1 = 0,
-    Book2 = 1,
-    Knight1 = 2,
-    Knight2 = 3,
-    Pawn = 4,
-    King = 5,
-    Rook = 6,
+    Book(Parity),
+    Knight(Parity),
+    Pawn,
+    King,
+    Rook,
 }
 impl UnitType {
+    pub fn to_int(&self) -> usize {
+        match self {
+            UnitType::Book(Parity::One) => 0,
+            UnitType::Book(Parity::Two) => 1,
+            UnitType::Knight(Parity::One) => 2,
+            UnitType::Knight(Parity::Two) => 3,
+            UnitType::Pawn => 4,
+            UnitType::King => 5,
+            UnitType::Rook => 6,
+        }
+    }
     pub fn from_int(a: usize) -> UnitType {
         use UnitType::*;
         match a {
-            0 => Book1,
-            1 => Book2,
-            2 => Knight1,
-            3 => Knight2,
+            0 => Book(Parity::One),
+            1 => Book(Parity::Two),
+            2 => Knight(Parity::One),
+            3 => Knight(Parity::Two),
             4 => Pawn,
             5 => King,
             6 => Rook,
