@@ -376,13 +376,13 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     // ];
 
     let white_pawns = [
-        [1, 0],
-        [2, -1],
-        [2, -2],
-        [3, -3],
-        [1, 1],
-        [0, 2],
-        [0, 3], /*[0,4],[4,-4]*/
+        [2, 0],
+        [3, -1],
+        [3, -2],
+        [4, -3],
+        [2, 1],
+        [1, 2],
+        [1, 3], /*[0,4],[4,-4]*/
     ];
     let black_pawns = white_pawns.map(|[x, y]| [-x, -y]);
 
@@ -390,14 +390,14 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let black_pawns = black_pawns.map(Axial::from_arr);
 
     let minor_spots_white = [
-        [3, -2],
-        [3, -1],
-        [2, 0],
+        [4, -2],
+        [4, -1],
         [3, 0],
-        [2, 1],
+        [4, 0],
+        [3, 1],
         // [3, -1],
         // [2, 1],
-        [1, 2],
+        [2, 2],
         //[2, 0],
     ];
     let minor_spots_black = minor_spots_white.map(|[x, y]| [-x, -y]);
@@ -419,16 +419,16 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         let nes = start.to_cube().neighbours2().map(|x| x.to_axial());
 
         let m = minor_spots;
-        let book1 = BitField::from_iter([m[0]]);
+        let book1 = BitField::from_iter([m[1]]);
         let book2 = BitField::from_iter([m[2]]);
         let book3 = BitField::new();
         // let book1 = BitField::from_iter([m[0],m[1]]);
         // let book2 = BitField::new();
         // let book3 = BitField::new();
 
-        let knight = BitField::from_iter([m[4],m[1]]);
+        let knight = BitField::from_iter([m[4],m[3]]);
         let king = BitField::from_iter([m[5]]);
-        let rook = BitField::from_iter([m[3]]);
+        let rook = BitField::from_iter([m[0]]);
 
         Tribe {
             fields: [book1, book2, book3, pawn, knight, king, rook],
