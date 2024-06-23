@@ -102,7 +102,7 @@ impl WorldSeed {
 
 impl MyWorld {
     pub fn new(seed: WorldSeed) -> MyWorld {
-        let size = 4;
+        let size = 3;
         let j = [[2, -4], [-2, -2], [-4, 2], [-2, 4], [2, 2], [4, -2]];
 
         //for size 3 use this
