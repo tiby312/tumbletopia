@@ -122,6 +122,9 @@ impl GameState {
             }
             UnitType::King => {
                 for k in unit.to_cube().ring(1).map(|x| x.to_axial()) {
+                // for k in hex::OFFSETS.into_iter().chain(hex::DIAG_OFFSETS.into_iter()) {
+                //     let k=hex::Cube::from_arr(k).to_axial();
+                //     let k=unit.add(k);
                     if world.get_game_cells().is_set(k)
                         && !game.env.fog.is_set(k)
                         && !terrain.is_set(k)
@@ -155,24 +158,46 @@ impl GameState {
                 return;
             }
             UnitType::Knight => {
-                for (i, h) in hex::OFFSETS.into_iter().enumerate() {
-                    let point = unit
-                        .to_cube()
-                        .ray_from_vector(hex::Cube::from_arr(h))
-                        .nth(1)
-                        .unwrap();
+                // for (i, h) in hex::OFFSETS.into_iter().enumerate() {
+                //     let point = unit
+                //         .to_cube()
+                //         .ray_from_vector(hex::Cube::from_arr(h))
+                //         .nth(1)
+                //         .unwrap();
 
-                    let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
+                //     let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
 
-                    for a in diags {
-                        let a = point.add(hex::Cube::from_arr(a)).ax;
-                        if world.get_game_cells().is_set(a)
-                            && !game.env.fog.is_set(a)
-                            && !terrain.is_set(a)
-                            && !game.factions.relative(team).this_team.is_set(a)
-                        {
-                            mesh.add(a);
-                        }
+                //     for a in diags {
+                //         let a = point.add(hex::Cube::from_arr(a)).ax;
+                //         if world.get_game_cells().is_set(a)
+                //             && !game.env.fog.is_set(a)
+                //             && !terrain.is_set(a)
+                //             && !game.factions.relative(team).this_team.is_set(a)
+                //         {
+                //             mesh.add(a);
+                //         }
+                //     }
+                // }
+                //let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
+                let dd = if let ActiveTeam::White = team { 3 } else { 0 };
+                let k = unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax);
+
+                if world.get_game_cells().is_set(k)
+                && !game.env.fog.is_set(k)
+                && !terrain.is_set(k)
+                && !game.factions.has_a_set(k)
+                {
+                    mesh.add(k);
+                }
+                
+                for a in hex::DIAG_OFFSETS {
+                    let a = unit.add(hex::Cube::from_arr(a).ax);
+                    if world.get_game_cells().is_set(a)
+                        && !game.env.fog.is_set(a)
+                        && !terrain.is_set(a)
+                        && !game.factions.relative(team).this_team.is_set(a)
+                    {
+                        mesh.add(a);
                     }
                 }
                 return;
@@ -185,9 +210,11 @@ impl GameState {
         let j = i + 1;
         let k = [
             hex::OFFSETS[i],
-            hex::OFFSETS[(i + 3) % 6],
-            hex::DIAG_OFFSETS[j],
-            hex::DIAG_OFFSETS[(j + 3) % 6],
+            hex::OFFSETS[(i + 2) % 6],
+            hex::OFFSETS[(i + 4) % 6],
+            
+            // hex::DIAG_OFFSETS[j],
+            // hex::DIAG_OFFSETS[(j + 3) % 6],
         ]
         .map(hex::Cube::from_arr);
 

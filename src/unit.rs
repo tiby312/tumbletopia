@@ -226,6 +226,10 @@ pub struct Tribe {
 }
 
 impl Tribe {
+    pub fn new()->Tribe{
+        Tribe{fields:[();7].map(|_|BitField::new())}
+    }
+
     pub fn all_alloc(&self) -> BitField {
         let mut j = BitField::new();
         for a in self.fields.iter() {

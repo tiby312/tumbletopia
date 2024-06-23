@@ -424,7 +424,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         let m = minor_spots;
         let book1 = BitField::from_iter([m[0], m[4]]);
         let book2 = BitField::from_iter([m[1], m[3]]);
-        let book3 = BitField::from_iter([m[5], m[2]]);
+        let book3 = BitField::new();
         // let book1 = BitField::from_iter([m[0],m[1]]);
         // let book2 = BitField::new();
         // let book3 = BitField::new();
@@ -438,6 +438,37 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         }
     };
 
+    let white_tribe={
+        populate(
+            white_start,
+            BitField::from_iter(white_pawns),
+            minor_spots_white,
+        )
+    };
+
+    let black_tribe={
+        populate(
+            black_start,
+            BitField::from_iter(black_pawns),
+            minor_spots_black,
+        )
+    };
+
+    // let black_tribe={
+    //     let mut t=Tribe::new();
+    //     t.get_mut(UnitType::King).set_coord(Axial::from_arr([1,1]), true);
+    //     t
+    // };
+
+    // let white_tribe={
+
+    //     let mut t=Tribe::new();
+    //     t.get_mut(UnitType::King).set_coord(Axial::from_arr([-1,-1]), true);
+    //     t.get_mut(UnitType::Book1).set_coord(Axial::from_arr([-1,-2]), true);
+    //     t
+    // };
+
+
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
     // let mut fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x| x.ax));
@@ -446,16 +477,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let mut k = GameState {
         factions: Factions {
-            black: populate(
-                black_start,
-                BitField::from_iter(black_pawns),
-                minor_spots_black,
-            ),
-            white: populate(
-                white_start,
-                BitField::from_iter(white_pawns),
-                minor_spots_white,
-            ),
+            black: black_tribe,
+            white: white_tribe,
         },
         env: Environment {
             terrain: Terrain {
