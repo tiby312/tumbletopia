@@ -420,15 +420,15 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
         let m = minor_spots;
         let book1 = BitField::from_iter([m[0]]);
-        let book2 = BitField::from_iter([m[5]]);
+        let book2 = BitField::from_iter([m[2]]);
         let book3 = BitField::new();
         // let book1 = BitField::from_iter([m[0],m[1]]);
         // let book2 = BitField::new();
         // let book3 = BitField::new();
 
         let knight = BitField::from_iter([m[4],m[1]]);
-        let king = BitField::from_iter([m[3]]);
-        let rook = BitField::from_iter([m[2]]);
+        let king = BitField::from_iter([m[5]]);
+        let rook = BitField::from_iter([m[3]]);
 
         Tribe {
             fields: [book1, book2, book3, pawn, knight, king, rook],
