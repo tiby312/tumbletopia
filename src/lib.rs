@@ -763,10 +763,15 @@ async fn render_command(
                 let i = match mytype {
                     UnitType::Book(Parity::One) => 2,
                     UnitType::Book(Parity::Two) => 1,
-                    UnitType::Pawn => 0,
+                    UnitType::Pawn | UnitType::King => {
+                        if let ActiveTeam::White = my_team {
+                            2
+                        } else {
+                            5
+                        }
+                    }
                     UnitType::Knight(Parity::One) => 2,
                     UnitType::Knight(Parity::Two) => 1,
-                    UnitType::King => 0,
                     UnitType::Rook => 0,
                 };
 
