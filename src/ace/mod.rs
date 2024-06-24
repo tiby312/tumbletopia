@@ -466,7 +466,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         let mut t = Tribe::new();
         t.get_mut(UnitType::King)
             .set_coord(Axial::from_arr([-1, -1]), true);
-        t.get_mut(UnitType::Book(Parity::One))
+        t.get_mut(UnitType::Knight(Parity::One))
             .set_coord(Axial::from_arr([-1, -2]), true);
         t
     };

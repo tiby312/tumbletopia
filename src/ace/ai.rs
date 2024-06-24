@@ -365,6 +365,15 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
+        //TODO necessary?
+        // if let Some(f)=game_after_move.game_is_over(world){
+        //     return match f{
+        //         GameOver::WhiteWon => MATE,
+        //         GameOver::BlackWon => -MATE,
+        //         GameOver::Tie => 0,
+        //     };
+        // }
+
         if depth >= max_depth
         /*+ 2*/
         {
