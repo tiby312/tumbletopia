@@ -386,6 +386,18 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         //[0, 4],
         //[4, -4],
     ];
+
+    let white_pawns = [
+        [3, -4],
+        [3, -3],
+        [3, -2],
+        [3, -1],
+        [3, 0],
+        [2, 1],
+        [1, 2],
+        [0, 3],
+        [-1, 4],
+    ];
     let black_pawns = white_pawns.map(|[x, y]| [-x, -y]);
 
     let white_pawns = white_pawns.map(Axial::from_arr);
@@ -401,6 +413,19 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         [2, 1],
         [2, 2],
         [2, 0],
+    ];
+
+
+    let minor_spots_white = [
+        [4, -4],
+        [4, -3],
+        [4, -2],
+        [4, -1],
+        [4, 0],
+        [3, 1],
+        [2, 2],
+        [1, 3],
+        [0, 4],
     ];
     let minor_spots_black = minor_spots_white.map(|[x, y]| [-x, -y]);
     let minor_spots_white = minor_spots_white.map(Axial::from_arr);
@@ -499,7 +524,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         },
     };
 
-    
+
 
     for a in k
         .factions
