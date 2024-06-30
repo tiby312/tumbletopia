@@ -219,7 +219,7 @@ impl Default for CellSelection {
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub fields: [BitField; 7],
+    pub fields: [BitField; 10],
     // pub bishop: BitField,
     // pub knight: BitField,
     //pub pawn: BitField,
@@ -228,7 +228,7 @@ pub struct Tribe {
 impl Tribe {
     pub fn new() -> Tribe {
         Tribe {
-            fields: [(); 7].map(|_| BitField::new()),
+            fields: [(); 10].map(|_| BitField::new()),
         }
     }
 
@@ -308,12 +308,21 @@ pub enum Parity {
 }
 
 #[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
+
+pub enum TrookParity {
+    One,
+    Two,
+    Three,
+}
+
+#[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum UnitType {
     Book(Parity),
     Knight(Parity),
     Pawn,
     King,
     Rook,
+    Trook(TrookParity),
 }
 impl UnitType {
     pub fn to_int(&self) -> usize {
@@ -325,6 +334,9 @@ impl UnitType {
             UnitType::Pawn => 4,
             UnitType::King => 5,
             UnitType::Rook => 6,
+            UnitType::Trook(TrookParity::One) => 7,
+            UnitType::Trook(TrookParity::Two) => 8,
+            UnitType::Trook(TrookParity::Three) => 9,
         }
     }
     pub fn from_int(a: usize) -> UnitType {
@@ -337,6 +349,10 @@ impl UnitType {
             4 => Pawn,
             5 => King,
             6 => Rook,
+            7 => Trook(TrookParity::One),
+            8 => Trook(TrookParity::Two),
+            9 => Trook(TrookParity::Three),
+
             _ => unreachable!(),
         }
     }

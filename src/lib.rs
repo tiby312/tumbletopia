@@ -773,6 +773,9 @@ async fn render_command(
                     UnitType::Knight(Parity::One) => 2,
                     UnitType::Knight(Parity::Two) => 1,
                     UnitType::Rook => 0,
+                    UnitType::Trook(TrookParity::One) => 3,
+                    UnitType::Trook(TrookParity::Two) => 2,
+                    UnitType::Trook(TrookParity::Three) => 1,
                 };
 
                 let foo = if let ActiveTeam::White = my_team {
@@ -864,6 +867,38 @@ async fn render_command(
 
         draw_unit_type(UnitType::Book(Parity::One), ActiveTeam::Black, black_bishop);
         draw_unit_type(UnitType::Book(Parity::Two), ActiveTeam::Black, black_bishop);
+
+        draw_unit_type(
+            UnitType::Trook(TrookParity::One),
+            ActiveTeam::Black,
+            &models.black_trook,
+        );
+        draw_unit_type(
+            UnitType::Trook(TrookParity::Two),
+            ActiveTeam::Black,
+            &models.black_trook,
+        );
+        draw_unit_type(
+            UnitType::Trook(TrookParity::Three),
+            ActiveTeam::Black,
+            &models.black_trook,
+        );
+
+        draw_unit_type(
+            UnitType::Trook(TrookParity::One),
+            ActiveTeam::White,
+            &models.white_trook,
+        );
+        draw_unit_type(
+            UnitType::Trook(TrookParity::Two),
+            ActiveTeam::White,
+            &models.white_trook,
+        );
+        draw_unit_type(
+            UnitType::Trook(TrookParity::Three),
+            ActiveTeam::White,
+            &models.white_trook,
+        );
 
         // let d = DepthDisabler::new(ctx);
 
@@ -1026,6 +1061,8 @@ pub struct Models<T> {
     water: T,
     direction: T,
     mountain: T,
+    black_trook: T,
+    white_trook: T,
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
@@ -1079,6 +1116,8 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             water: quick_load(include_bytes!("../assets/water.glb"), RESIZE, None),
             direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
             mountain: quick_load(include_bytes!("../assets/mountain.glb"), 1, None),
+            black_trook: quick_load(include_bytes!("../assets/trook_black.glb"), RESIZE, None),
+            white_trook: quick_load(include_bytes!("../assets/trook_white.glb"), RESIZE, None),
         }
     }
 }
