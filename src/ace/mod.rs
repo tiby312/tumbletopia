@@ -446,8 +446,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         //let nes = start.to_cube().neighbours2().map(|x| x.to_axial());
 
         let m = minor_spots;
-        let book1 = BitField::from_iter([m[2]]);
-        let book2 = BitField::from_iter([m[1]]);
+        let book1 = BitField::from_iter([m[0]]);
+        let book2 = BitField::from_iter([m[8]]);
         
         let (book1,book2)=if swap{
             (book2,book1)
@@ -458,7 +458,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
 
         let knight1 = BitField::from_iter([m[3]]);
-        let knight2 = BitField::from_iter([m[4]]);
+        let knight2 = BitField::from_iter([m[5]]);
 
         let (knight1,knight2) = if swap{
             (knight2,knight1)
@@ -466,12 +466,12 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
             (knight1,knight2)
         };
 
-        let king = BitField::from_iter([m[5]]);
-        let rook = BitField::from_iter([m[0]]);
+        let king = BitField::from_iter([m[7]]);
+        let rook = BitField::from_iter([m[1]]);
 
-        let trook1 = BitField::from_iter([m[6]]);
-        let trook2 = BitField::from_iter([m[7]]);
-        let trook3 = BitField::from_iter([m[8]]);
+        let trook1 = BitField::from_iter([m[2]]);
+        let trook2 = BitField::from_iter([m[4]]);
+        let trook3 = BitField::from_iter([m[6]]);
 
         Tribe {
             fields: [
