@@ -108,8 +108,13 @@ impl MyWorld {
         //for size 3 use this
         //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
 
-        let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
-
+        //let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
+        let mut w=BitField::new();
+        for i in 0..8{
+            for j in 0..8{
+                w.set_coord(Axial{q:i,r:j},true);
+            }
+        }
         // let j=[[2,3],[5,-3],[5,-4],[1,4]];
 
         // for j in j{

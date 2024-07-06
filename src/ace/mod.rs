@@ -501,21 +501,21 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
 
 
-    // let black_tribe = {
-    //     let mut t = Tribe::new();
-    //     t.get_mut(UnitType::King)
-    //         .set_coord(Axial::from_arr([1, 1]), true);
-    //     t
-    // };
+    let black_tribe = {
+        let mut t = Tribe::new();
+        t.get_mut(UnitType::King)
+            .set_coord(Axial::from_arr([1, 1]), true);
+        t
+    };
 
-    // let white_tribe = {
-    //     let mut t = Tribe::new();
-    //     t.get_mut(UnitType::King)
-    //         .set_coord(Axial::from_arr([-1, -1]), true);
-    //     t.get_mut(UnitType::Trook(TrookParity::One))
-    //         .set_coord(Axial::from_arr([-1, -2]), true);
-    //     t
-    // };
+    let white_tribe = {
+        let mut t = Tribe::new();
+        t.get_mut(UnitType::King)
+            .set_coord(Axial::from_arr([4, 4]), true);
+        // t.get_mut(UnitType::Trook(TrookParity::One))
+        //     .set_coord(Axial::from_arr([-1, -2]), true);
+        t
+    };
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
