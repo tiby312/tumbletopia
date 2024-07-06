@@ -415,7 +415,6 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         [2, 0],
     ];
 
-
     let minor_spots_white = [
         [4, -4],
         [4, -3],
@@ -437,7 +436,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     //15*2 = 30 covered
     // 31 uncovered
 
-    let populate = |start: Axial, pawn: BitField, minor_spots: [Axial; 9],swap:bool| {
+    let populate = |start: Axial, pawn: BitField, minor_spots: [Axial; 9], swap: bool| {
         // let mut pawn = BitField::from_iter(start.to_cube().ring(2).map(|x| x.to_axial()));
         // pawn.intersect_with(&world.get_game_cells());
 
@@ -448,22 +447,16 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         let m = minor_spots;
         let book1 = BitField::from_iter([m[0]]);
         let book2 = BitField::from_iter([m[8]]);
-        
-        let (book1,book2)=if swap{
-            (book2,book1)
-        }else{
-            (book1,book2)
-        };
 
-
+        let (book1, book2) = if swap { (book2, book1) } else { (book1, book2) };
 
         let knight1 = BitField::from_iter([m[3]]);
         let knight2 = BitField::from_iter([m[5]]);
 
-        let (knight1,knight2) = if swap{
-            (knight2,knight1)
-        }else{
-            (knight1,knight2)
+        let (knight1, knight2) = if swap {
+            (knight2, knight1)
+        } else {
+            (knight1, knight2)
         };
 
         let king = BitField::from_iter([m[7]]);
@@ -485,7 +478,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
             white_start,
             BitField::from_iter(white_pawns),
             minor_spots_white,
-            false
+            false,
         )
     };
 
@@ -494,12 +487,9 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
             black_start,
             BitField::from_iter(black_pawns),
             minor_spots_black,
-            true
+            true,
         )
     };
-
-
-
 
     let black_tribe = {
         let mut t = Tribe::new();
@@ -538,8 +528,6 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
             powerups: powerups.into_iter().map(Axial::from_arr).collect(),
         },
     };
-
-
 
     for a in k
         .factions

@@ -119,17 +119,19 @@ impl GameState {
                 }
             }
             UnitType::King => {
-                for q in [-1,0,1]{
-                    for r in [-1,0,1]{
-                        if q==0 && r==0 {continue};
-                        let k=unit.add(Axial{q,r});
+                for q in [-1, 0, 1] {
+                    for r in [-1, 0, 1] {
+                        if q == 0 && r == 0 {
+                            continue;
+                        };
+                        let k = unit.add(Axial { q, r });
                         if world.get_game_cells().is_set(k)
-                                && !game.env.fog.is_set(k)
-                                && !terrain.is_set(k)
-                                && !game.factions.relative(team).this_team.is_set(k)
-                            {
-                                mesh.add(k)
-                            } 
+                            && !game.env.fog.is_set(k)
+                            && !terrain.is_set(k)
+                            && !game.factions.relative(team).this_team.is_set(k)
+                        {
+                            mesh.add(k)
+                        }
                     }
                 }
                 // for k in unit.to_cube().ring(1).map(|x| x.to_axial()) {
@@ -141,7 +143,6 @@ impl GameState {
                 //         mesh.add(k)
                 //     }
                 // }
-
             }
             UnitType::Pawn => {
                 let dd = if let ActiveTeam::White = team { 3 } else { 0 };
@@ -161,7 +162,6 @@ impl GameState {
                         mesh.add(k);
                     }
                 }
-
             }
             UnitType::Knight(parity) => {
                 let i = match parity {
@@ -214,7 +214,6 @@ impl GameState {
                 //         }
                 //     }
                 // }
-
             }
             UnitType::Book(parity) => {
                 let i = match parity {
