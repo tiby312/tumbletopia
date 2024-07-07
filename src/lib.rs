@@ -427,8 +427,9 @@ async fn render_command(
         g.toggle_range(..);
 
         ace::ai::expand_mesh(&mut g, &mut BitField::new());
+        let k=BitField::from_iter(world.get_game_cells().iter_mesh(Axial::zero()));
 
-        g.intersect_with(world.get_game_cells());
+        g.intersect_with(&k);
 
         g
     };

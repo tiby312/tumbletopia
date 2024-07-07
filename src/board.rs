@@ -1,3 +1,5 @@
+use mesh::small_mesh::SmallMesh;
+
 use crate::mesh::bitfield::BitField;
 
 use super::*;
@@ -5,7 +7,7 @@ use super::*;
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct MyWorld {
     pub seed: WorldSeed,
-    w: BitField,
+    w: SmallMesh,
     pub land: BitField,
     black_start: Vec<Axial>,
     white_start: Vec<Axial>,
@@ -109,11 +111,11 @@ impl MyWorld {
         //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
 
         //let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
-        let mut w = BitField::new();
+        let mut w = SmallMesh::new();
         for i in 0..16 {
             let i = i - 8;
             for j in 0..8 {
-                w.set_coord(Axial { q: i, r: j }, true);
+                w.add(Axial { q: i, r: j });
             }
         }
         // let j=[[2,3],[5,-3],[5,-4],[1,4]];
@@ -227,7 +229,7 @@ impl MyWorld {
         &self.black_start
     }
 
-    pub fn get_game_cells(&self) -> &BitField {
+    pub fn get_game_cells(&self) -> &SmallMesh {
         &self.w
     }
 }

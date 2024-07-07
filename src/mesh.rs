@@ -13,6 +13,8 @@ pub mod small_mesh {
         })
     }
 
+    use serde::{Deserialize, Serialize};
+
     use crate::hex;
     use crate::hex::HDir;
     #[test]
@@ -43,7 +45,7 @@ pub mod small_mesh {
         )
     }
 
-    #[derive(Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
+    #[derive(Serialize,Deserialize,Default,Hash, PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
     pub struct SmallMesh {
         pub inner: [u64; 4],
     }

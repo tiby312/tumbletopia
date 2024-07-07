@@ -56,7 +56,9 @@ impl Evaluator {
             temp.clear();
             temp.union_with(&view.env.terrain.land);
             temp.toggle_range(..);
-            temp.intersect_with(world.get_game_cells());
+            let k=BitField::from_iter(world.get_game_cells().iter_mesh(Axial::zero()));
+
+            temp.intersect_with(&k);
             temp
         };
 
