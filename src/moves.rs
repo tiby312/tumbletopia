@@ -132,13 +132,13 @@ impl GameState {
                     !game.factions.has_a_set(tt)
                 };
 
-                let game_cells=|pos:Axial|{
-                    if pos.q>=0{
-                        world.get_game_cells().get_just_index(3).is_set(pos)
-                    }else{
-                        world.get_game_cells().get_just_index(0).is_set(pos)
-                    }
-                };
+                // let game_cells=|pos:Axial|{
+                //     if pos.q>=0{
+                //         world.get_game_cells().get_just_index(3).is_set(pos)
+                //     }else{
+                //         world.get_game_cells().get_just_index(0).is_set(pos)
+                //     }
+                // };
 
                 for q in [-1, 0, 1] {
                     for r in [-1, 0, 1] {
@@ -146,8 +146,8 @@ impl GameState {
                             continue;
                         };
                         let k = unit.add(Axial { q, r });
-                        if //world.get_game_cells().is_set(k)
-                            game_cells(k)
+                        if world.get_game_cells().is_set(k)
+                            //game_cells(k)
                             && !game.factions.relative(team).this_team.is_set(k)
                             && is_other_board_empty(k)
                         {

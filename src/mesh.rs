@@ -70,7 +70,10 @@ pub mod small_mesh {
         pub fn union(&self,other:&SingleMesh)->SingleMesh{
             SingleMesh(self.0|other.0)
         }
+        pub fn union_with(&mut self,other:&SingleMesh){
+            self.0|=other.0
 
+        }
         pub fn intersect(&self,other:&SingleMesh)->SingleMesh{
             SingleMesh(self.0|other.0)
         }
@@ -85,6 +88,9 @@ pub mod small_mesh {
 
             let ind=q*8+r;
             self.0 &= !(1<<ind);
+        }
+        pub fn count_ones(&self)->usize{
+            self.0.count_ones().try_into().unwrap()
         }
         pub fn iter_mesh(&self)->impl Iterator<Item=Axial>{
 
@@ -109,13 +115,28 @@ pub mod small_mesh {
         pub inner:[SingleMesh;2]
     }
     impl DualMesh{
+        pub fn new() -> DualMesh {
+            DualMesh { inner: [SingleMesh::new(),SingleMesh::new()] }
+        }
+        pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> DualMesh {
+            let mut m = DualMesh::new();
+            for a in it {
+                m.add(a);
+            }
+            m
+        }
         pub fn not(&self) -> DualMesh {
             DualMesh{inner:[self.inner[0].not(),self.inner[1].not()]}
         }
-        pub fn union(&self,other:DualMesh)->DualMesh{
+        pub fn union(&self,other:&DualMesh)->DualMesh{
             DualMesh{inner:[self.inner[0].union(&other.inner[0]),self.inner[1].union(&other.inner[1])]}
         }
-        pub fn intersect(&self,other:DualMesh)->DualMesh{
+        pub fn union_with(&mut self, other: &DualMesh) {
+            self.inner[0].union_with(&other.inner[0]);
+            self.inner[1].union_with(&other.inner[1]);
+
+        }
+        pub fn intersect(&self,other:&DualMesh)->DualMesh{
             DualMesh{inner:[self.inner[0].intersect(&other.inner[0]),self.inner[1].intersect(&other.inner[1])]}
         }
 
@@ -144,7 +165,11 @@ pub mod small_mesh {
         }
 
         pub fn iter_mesh(&self)->impl Iterator<Item=Axial>{
-            self.inner[0].iter_mesh().chain(self.inner[1].iter_mesh().map(|mut x|{x.q+=8;x}))
+            self.inner[0].iter_mesh().chain(self.inner[1].iter_mesh().map(|mut x|{x.q-=8;x}))
+        }
+        pub fn count_ones(&self) -> usize { 
+            self.inner[0].count_ones()
+                + self.inner[1].count_ones()
         }
 
 
