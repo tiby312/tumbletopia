@@ -110,7 +110,8 @@ impl MyWorld {
 
         //let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
         let mut w = BitField::new();
-        for i in 0..8 {
+        for i in 0..16 {
+            let i = i - 8;
             for j in 0..8 {
                 w.set_coord(Axial { q: i, r: j }, true);
             }

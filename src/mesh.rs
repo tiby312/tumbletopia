@@ -75,7 +75,7 @@ pub mod small_mesh {
             //assert!(x != 0 || y != 0);
         }
         pub fn add(&mut self, a: Axial) {
-            assert!(Self::validate_rel(a));
+            assert!(Self::validate_rel(a), "fail{:?}", a);
 
             let ind = conv(a);
             let (a, b) = ind_to_foo(ind);

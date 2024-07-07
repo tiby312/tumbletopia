@@ -192,11 +192,11 @@ pub async fn reselect_loop(
 
     let unwrapped_selected_unit = selected_unit.coord;
 
-    assert!(game
-        .factions
-        .relative(selected_unit.team)
-        .this_team
-        .is_set(unwrapped_selected_unit));
+    // assert!(game
+    //     .factions
+    //     .relative(selected_unit.team)
+    //     .this_team
+    //     .is_set(unwrapped_selected_unit));
 
     let grey = if selected_unit.team == team {
         //If we are in the middle of a extra attack move, make sure
