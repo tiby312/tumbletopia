@@ -24,26 +24,132 @@ pub mod small_mesh {
         let k3 = Axial::from_arr([-2, 1]);
 
         let mut mesh = SmallMesh::new();
-        mesh.add(k1);
-        mesh.add(k2);
-        mesh.add(k3);
+        for i in 0..8{
+            for j in 0..8{
+                mesh.add(Axial{q:i,r:j});
+            }
+        }
+        // mesh.add(k1);
+        // mesh.add(k2);
+        // mesh.add(k3);
 
-        assert!(mesh.is_set(k1));
-        assert!(mesh.is_set(k2));
-        assert!(mesh.is_set(k3));
-        assert!(!mesh.is_set(Axial::from_arr([-2, 2])));
+        println!("{:#x}",mesh.inner[0]);
+        println!("{:#x}",mesh.inner[1]);
+        println!("{:#x}",mesh.inner[2]);
+        println!("{:#x}",mesh.inner[3]);
+        panic!();
+        // assert!(mesh.is_set(k1));
+        // assert!(mesh.is_set(k2));
+        // assert!(mesh.is_set(k3));
+        // assert!(!mesh.is_set(Axial::from_arr([-2, 2])));
 
-        let res: Vec<_> = mesh.iter_mesh(Axial::from_arr([0; 2])).collect();
+        // let res: Vec<_> = mesh.iter_mesh(Axial::from_arr([0; 2])).collect();
 
-        assert_eq!(
-            res,
-            vec!(
-                Axial::from_arr([-2, 1]),
-                Axial::from_arr([2, -2]),
-                Axial::from_arr([2, 0])
-            )
-        )
+        // assert_eq!(
+        //     res,
+        //     vec!(
+        //         Axial::from_arr([-2, 1]),
+        //         Axial::from_arr([2, -2]),
+        //         Axial::from_arr([2, 0])
+        //     )
+        // )
     }
+
+
+
+
+    pub struct SingleMesh(u64);
+
+    impl SingleMesh{
+        pub fn new()->SingleMesh{
+            SingleMesh(0)
+        }
+        pub fn not(&self) -> SingleMesh {
+            SingleMesh(!self.0)
+        }
+        pub fn union(&self,other:&SingleMesh)->SingleMesh{
+            SingleMesh(self.0|other.0)
+        }
+
+        pub fn intersect(&self,other:&SingleMesh)->SingleMesh{
+            SingleMesh(self.0|other.0)
+        }
+        pub fn add(&mut self,Axial{q,r}:Axial){
+            assert!(q>=0 && q<8 &&r>=0 &&r<8);
+            
+            let ind=q*8+r;
+            self.0|=1<<ind;
+        }
+        pub fn remove(&mut self,Axial{q,r}:Axial){
+            assert!(q>=0 && q<8 &&r>=0 &&r<8);
+
+            let ind=q*8+r;
+            self.0 &= !(1<<ind);
+        }
+        pub fn iter_mesh(&self)->impl Iterator<Item=Axial>{
+
+            let inner=self.0;
+            (0usize..64)
+                .filter(move |&b| {
+                    inner& (1 << b) != 0
+                })
+                .map(move |a| {
+                    let x = a / 8;
+                    let y = a % 8;
+                    Axial::from_arr([
+                        (x) as hex::CoordNum,
+                        (y) as hex::CoordNum,
+                    ])
+                })
+        }
+    }
+
+
+    pub struct DualMesh{
+        pub inner:[SingleMesh;2]
+    }
+    impl DualMesh{
+        pub fn not(&self) -> DualMesh {
+            DualMesh{inner:[self.inner[0].not(),self.inner[1].not()]}
+        }
+        pub fn union(&self,other:DualMesh)->DualMesh{
+            DualMesh{inner:[self.inner[0].union(&other.inner[0]),self.inner[1].union(&other.inner[1])]}
+        }
+        pub fn intersect(&self,other:DualMesh)->DualMesh{
+            DualMesh{inner:[self.inner[0].intersect(&other.inner[0]),self.inner[1].intersect(&other.inner[1])]}
+        }
+
+        pub fn positive_mesh(&self)->&SingleMesh{
+            &self.inner[0]
+        }
+
+        pub fn negative_mesh(&self)->&SingleMesh{
+            &self.inner[0]
+        }
+
+        pub fn add(&mut self,a:Axial){
+            if a.q>=0{
+                self.inner[0].add(a);
+            }else{
+                self.inner[1].add(a.add(Axial::from_arr([8,0])));
+            }
+        }
+
+        pub fn remove(&mut self,a:Axial){
+            if a.q>=0{
+                self.inner[0].remove(a);
+            }else{
+                self.inner[1].remove(a.add(Axial::from_arr([8,0])));
+            }
+        }
+
+        pub fn iter_mesh(&self)->impl Iterator<Item=Axial>{
+            self.inner[0].iter_mesh().chain(self.inner[1].iter_mesh().map(|mut x|{x.q+=8;x}))
+        }
+
+
+    }
+
 
     #[derive(
         Serialize, Deserialize, Default, Hash, PartialOrd, Ord, PartialEq, Eq, Debug, Clone,
@@ -63,6 +169,10 @@ pub mod small_mesh {
             }
             m
         }
+
+        
+
+
         pub fn not(&self) -> SmallMesh {
             SmallMesh {
                 inner: [
