@@ -427,7 +427,7 @@ async fn render_command(
         g.toggle_range(..);
 
         ace::ai::expand_mesh(&mut g, &mut BitField::new());
-        let k=BitField::from_iter(world.get_game_cells().iter_mesh(Axial::zero()));
+        let k = BitField::from_iter(world.get_game_cells().iter_mesh(Axial::zero()));
 
         g.intersect_with(&k);
 
@@ -787,7 +787,7 @@ async fn render_command(
 
                 let rr = (std::f32::consts::TAU / 6.0) * i as f32;
 
-                let color = foo.iter_mesh().map(|e| {
+                let color = foo.iter_mesh(Axial::zero()).map(|e| {
                     //grid_snap(e, zzzz)
                     let c = e;
                     let cc = zzzz;

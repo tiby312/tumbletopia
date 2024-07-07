@@ -1,5 +1,7 @@
 use std::num::NonZeroUsize;
 
+use mesh::small_mesh::SmallMesh;
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
@@ -137,10 +139,10 @@ impl GameState {
         hasher.finish()
     }
     pub fn game_is_over(&self, world: &board::MyWorld) -> Option<GameOver> {
-        if self.factions.white.get(UnitType::King).count_ones(..) == 0 {
+        if self.factions.white.get(UnitType::King).count_ones() == 0 {
             return Some(GameOver::BlackWon);
         }
-        if self.factions.black.get(UnitType::King).count_ones(..) == 0 {
+        if self.factions.black.get(UnitType::King).count_ones() == 0 {
             return Some(GameOver::WhiteWon);
         }
         None
@@ -219,7 +221,7 @@ impl Default for CellSelection {
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub fields: [BitField; 10],
+    pub fields: [SmallMesh; 10],
     // pub bishop: BitField,
     // pub knight: BitField,
     //pub pawn: BitField,
@@ -228,12 +230,12 @@ pub struct Tribe {
 impl Tribe {
     pub fn new() -> Tribe {
         Tribe {
-            fields: [(); 10].map(|_| BitField::new()),
+            fields: [(); 10].map(|_| SmallMesh::new()),
         }
     }
 
-    pub fn all_alloc(&self) -> BitField {
-        let mut j = BitField::new();
+    pub fn all_alloc(&self) -> SmallMesh {
+        let mut j = SmallMesh::new();
         for a in self.fields.iter() {
             j.union_with(&a);
         }
@@ -245,22 +247,24 @@ impl Tribe {
         j
     }
     pub fn count_ones(&self) -> usize {
-        self.fields.iter().fold(0, |acc, a| acc + a.count_ones(..))
+        self.fields.iter().fold(0, |acc, a| acc + a.count_ones())
     }
 
     pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
-        self.fields.iter().map(|x| x.iter_mesh()).flatten()
+        self.fields
+            .iter()
+            .map(|x| x.iter_mesh(Axial::zero()))
+            .flatten()
     }
     pub fn is_set(&self, a: Axial) -> bool {
         self.fields.iter().fold(false, |acc, x| acc || x.is_set(a))
     }
 
     pub fn move_unit(&mut self, a: Axial, b: Axial) {
-        
         for arr in self.fields.iter_mut() {
             if arr.is_set(a) {
-                arr.set_coord(a, false);
-                arr.set_coord(b, true);
+                arr.remove(a);
+                arr.add(b);
                 return;
             }
         }
@@ -268,17 +272,17 @@ impl Tribe {
         unreachable!("Can't move")
     }
 
-    pub fn get_mut(&mut self, a: UnitType) -> &mut BitField {
+    pub fn get_mut(&mut self, a: UnitType) -> &mut SmallMesh {
         &mut self.fields[a.to_int()]
     }
 
-    pub fn get(&self, a: UnitType) -> &BitField {
+    pub fn get(&self, a: UnitType) -> &SmallMesh {
         &self.fields[a.to_int()]
     }
     pub fn clear(&mut self, a: Axial) -> UnitType {
         for (i, arr) in self.fields.iter_mut().enumerate() {
             if arr.is_set(a) {
-                arr.set_coord(a, false);
+                arr.remove(a);
                 return UnitType::from_int(i);
             }
         }

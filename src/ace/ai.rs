@@ -56,7 +56,7 @@ impl Evaluator {
             temp.clear();
             temp.union_with(&view.env.terrain.land);
             temp.toggle_range(..);
-            let k=BitField::from_iter(world.get_game_cells().iter_mesh(Axial::zero()));
+            let k = BitField::from_iter(world.get_game_cells().iter_mesh(Axial::zero()));
 
             temp.intersect_with(&k);
             temp
@@ -69,6 +69,9 @@ impl Evaluator {
         let mut white_influence = view.factions.white.all_alloc();
 
         let mut black_influence = view.factions.black.all_alloc();
+
+        let mut white_influence = BitField::from_iter(white_influence.iter_mesh(Axial::zero()));
+        let mut black_influence = BitField::from_iter(black_influence.iter_mesh(Axial::zero()));
 
         doop(
             7,

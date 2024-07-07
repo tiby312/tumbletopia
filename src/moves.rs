@@ -119,13 +119,12 @@ impl GameState {
                 }
             }
             UnitType::King => {
-
-                let is_other_board_empty=|pos:Axial|{
-                    let mut tt=pos;
-                    if pos.q>=0{
-                        tt.q-=8;
-                    }else{
-                        tt.q+=8;
+                let is_other_board_empty = |pos: Axial| {
+                    let mut tt = pos;
+                    if pos.q >= 0 {
+                        tt.q -= 8;
+                    } else {
+                        tt.q += 8;
                     }
 
                     //TODO only check other board??
@@ -137,7 +136,6 @@ impl GameState {
                 //         world.get_game_cells().
                 //     }
                 // }
-
 
                 for q in [-1, 0, 1] {
                     for r in [-1, 0, 1] {
