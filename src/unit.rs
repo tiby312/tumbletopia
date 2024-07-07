@@ -256,6 +256,7 @@ impl Tribe {
     }
 
     pub fn move_unit(&mut self, a: Axial, b: Axial) {
+        
         for arr in self.fields.iter_mut() {
             if arr.is_set(a) {
                 arr.set_coord(a, false);

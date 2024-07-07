@@ -119,6 +119,26 @@ impl GameState {
                 }
             }
             UnitType::King => {
+
+                let is_other_board_empty=|pos:Axial|{
+                    let mut tt=pos;
+                    if pos.q>=0{
+                        tt.q-=8;
+                    }else{
+                        tt.q+=8;
+                    }
+
+                    //TODO only check other board??
+                    !game.factions.has_a_set(tt)
+                };
+
+                // let game_cells=|pos:Axial|{
+                //     if pos.q>=0{
+                //         world.get_game_cells().
+                //     }
+                // }
+
+
                 for q in [-1, 0, 1] {
                     for r in [-1, 0, 1] {
                         if q == 0 && r == 0 {
@@ -129,6 +149,7 @@ impl GameState {
                             && !game.env.fog.is_set(k)
                             && !terrain.is_set(k)
                             && !game.factions.relative(team).this_team.is_set(k)
+                            && is_other_board_empty(k)
                         {
                             mesh.add(k)
                         }

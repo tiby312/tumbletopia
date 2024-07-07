@@ -342,6 +342,10 @@ impl MovePhase {
         let moveto = self.moveto;
         let unit = self.original;
 
+
+        undo_transfer_other_board(state,team_index,moveto);
+
+
         state
             .factions
             .relative_mut(team_index)
@@ -535,16 +539,14 @@ impl MovePhase {
 
         let mut target_cell = target_cell;
 
-        if target_cell.q >= 0 {
-            target_cell.q -= 8;
-        } else {
-            target_cell.q += 8;
-        }
+        
 
         game.factions
             .relative_mut(team)
             .this_team
             .move_unit(self.original, target_cell);
+
+        transfer_other_board(game,team,target_cell);
 
         MoveEffect {
             pushpull: e,
@@ -553,6 +555,31 @@ impl MovePhase {
         }
     }
 }
+
+
+fn undo_transfer_other_board(game:&mut GameState,team:ActiveTeam,mut orig:Axial){
+    let orig2=orig;
+    if orig.q >= 0 {
+        orig.q -= 8;
+    } else {
+        orig.q += 8;
+    }
+    game.factions.relative_mut(team).this_team.move_unit(orig,orig2);
+}
+
+
+fn transfer_other_board(game:&mut GameState,team:ActiveTeam,orig:Axial){
+    let mut target_cell=orig;
+    if target_cell.q >= 0 {
+        target_cell.q -= 8;
+    } else {
+        target_cell.q += 8;
+    }
+    game.factions.relative_mut(team).this_team.move_unit(orig,target_cell);
+}
+
+
+
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub enum PowerupAction {
