@@ -111,6 +111,8 @@ impl MyWorld {
         //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
 
         //let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
+        
+        
         let mut w = SmallMesh::new();
         for i in 0..16 {
             let i = i - 8;
@@ -118,6 +120,8 @@ impl MyWorld {
                 w.add(Axial { q: i, r: j });
             }
         }
+
+
         // let j=[[2,3],[5,-3],[5,-4],[1,4]];
 
         // for j in j{

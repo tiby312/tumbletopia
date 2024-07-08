@@ -132,13 +132,19 @@ impl GameState {
                     !game.factions.has_a_set(tt)
                 };
 
-                // let game_cells=|pos:Axial|{
-                //     if pos.q>=0{
-                //         world.get_game_cells().get_just_index(3).is_set(pos)
-                //     }else{
-                //         world.get_game_cells().get_just_index(0).is_set(pos)
-                //     }
-                // };
+                let game_cells=|pos:Axial|{
+                    //if world.get_game_cells().is_set(pos){
+                        if unit.q>=0{
+                            //world.get_game_cells().positive_mesh().is_set(pos)
+                            pos.q>=0 && pos.q<8 && pos.r>=0 && pos.r<8
+                        }else{
+                            pos.q>=-8 && pos.q<0 && pos.r>=0 && pos.r<8
+                            //world.get_game_cells().negative_mesh().is_set(pos.add(Axial{q:8,r:0}))
+                        }
+                    // }else{
+                    //     false
+                    // }
+                };
 
                 for q in [-1, 0, 1] {
                     for r in [-1, 0, 1] {
@@ -146,11 +152,12 @@ impl GameState {
                             continue;
                         };
                         let k = unit.add(Axial { q, r });
-                        if world.get_game_cells().is_set(k)
-                            //game_cells(k)
+                        if //world.get_game_cells().is_set(k)
+                            game_cells(k)
                             && !game.factions.relative(team).this_team.is_set(k)
                             && is_other_board_empty(k)
                         {
+                            console_dbg!(k,game_cells(k));
                             mesh.add(k)
                         }
                     }
@@ -331,18 +338,18 @@ impl GameState {
 
         let terrain = &game.env.terrain;
 
-        let enemy_cover = {
-            //TODO use a workspace instead
-            let mut total = BitField::new();
-            for a in self.factions.relative(team).that_team.iter_mesh() {
-                let mut mesh = SmallMesh::new();
-                self.attack_mesh_add(&mut mesh, world, &a, team.not(), true);
-                for m in mesh.iter_mesh(a) {
-                    total.set_coord(m, true);
-                }
-            }
-            total
-        };
+        // let enemy_cover = {
+        //     //TODO use a workspace instead
+        //     let mut total = BitField::new();
+        //     for a in self.factions.relative(team).that_team.iter_mesh() {
+        //         let mut mesh = SmallMesh::new();
+        //         self.attack_mesh_add(&mut mesh, world, &a, team.not(), true);
+        //         for m in mesh.iter_mesh(a) {
+        //             total.set_coord(m, true);
+        //         }
+        //     }
+        //     total
+        // };
 
         //console_dbg!("enemy cover size= {}",enemy_cover.count_ones(..));
 

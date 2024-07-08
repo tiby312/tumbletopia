@@ -474,23 +474,23 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         }
     };
 
-    let white_tribe = {
-        populate(
-            white_start,
-            SmallMesh::from_iter(white_pawns),
-            minor_spots_white,
-            false,
-        )
-    };
+    // let white_tribe = {
+    //     populate(
+    //         white_start,
+    //         SmallMesh::from_iter(white_pawns),
+    //         minor_spots_white,
+    //         false,
+    //     )
+    // };
 
-    let black_tribe = {
-        populate(
-            black_start,
-            SmallMesh::from_iter(black_pawns),
-            minor_spots_black,
-            true,
-        )
-    };
+    // let black_tribe = {
+    //     populate(
+    //         black_start,
+    //         SmallMesh::from_iter(black_pawns),
+    //         minor_spots_black,
+    //         true,
+    //     )
+    // };
 
     let black_tribe = {
         let mut t = Tribe::new();
@@ -528,14 +528,14 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         },
     };
 
-    for a in k
-        .factions
-        .white
-        .iter_mesh()
-        .chain(k.factions.black.iter_mesh())
-    {
-        move_build::compute_fog(a, &mut k.env).apply(a, &mut k.env);
-    }
+    // for a in k
+    //     .factions
+    //     .white
+    //     .iter_mesh()
+    //     .chain(k.factions.black.iter_mesh())
+    // {
+    //     move_build::compute_fog(a, &mut k.env).apply(a, &mut k.env);
+    // }
 
     k
 }

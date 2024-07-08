@@ -23,7 +23,7 @@ pub mod small_mesh {
         let k2 = Axial::from_arr([2, -2]);
         let k3 = Axial::from_arr([-2, 1]);
 
-        let mut mesh = SmallMesh::new();
+        let mut mesh = SmallMeshOld::new();
         for i in 0..8{
             for j in 0..8{
                 mesh.add(Axial{q:i,r:j});
@@ -58,6 +58,9 @@ pub mod small_mesh {
 
 
 
+    #[derive(
+        Serialize, Deserialize, Default, Hash, PartialOrd, Ord, PartialEq, Eq, Debug, Clone,
+    )]
     pub struct SingleMesh(u64);
 
     impl SingleMesh{
@@ -92,6 +95,17 @@ pub mod small_mesh {
         pub fn count_ones(&self)->usize{
             self.0.count_ones().try_into().unwrap()
         }
+        pub fn is_set(&self,Axial{q,r}:Axial)->bool{
+            //assert!(q>=0 && q<8 &&r>=0 &&r<8);
+
+            
+            if q<0 || r<0 || q>=8 || r>=8{
+                return false;
+            }
+            let ind=q*8+r;
+            
+            (self.0 & 1<<ind) != 0
+        }
         pub fn iter_mesh(&self)->impl Iterator<Item=Axial>{
 
             let inner=self.0;
@@ -111,33 +125,36 @@ pub mod small_mesh {
     }
 
 
-    pub struct DualMesh{
+    #[derive(
+        Serialize, Deserialize, Default, Hash, PartialOrd, Ord, PartialEq, Eq, Debug, Clone,
+    )]
+    pub struct SmallMesh{
         pub inner:[SingleMesh;2]
     }
-    impl DualMesh{
-        pub fn new() -> DualMesh {
-            DualMesh { inner: [SingleMesh::new(),SingleMesh::new()] }
+    impl SmallMesh{
+        pub fn new() -> SmallMesh {
+            SmallMesh { inner: [SingleMesh::new(),SingleMesh::new()] }
         }
-        pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> DualMesh {
-            let mut m = DualMesh::new();
+        pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SmallMesh {
+            let mut m = SmallMesh::new();
             for a in it {
                 m.add(a);
             }
             m
         }
-        pub fn not(&self) -> DualMesh {
-            DualMesh{inner:[self.inner[0].not(),self.inner[1].not()]}
+        pub fn not(&self) -> SmallMesh {
+            SmallMesh{inner:[self.inner[0].not(),self.inner[1].not()]}
         }
-        pub fn union(&self,other:&DualMesh)->DualMesh{
-            DualMesh{inner:[self.inner[0].union(&other.inner[0]),self.inner[1].union(&other.inner[1])]}
+        pub fn union(&self,other:&SmallMesh)->SmallMesh{
+            SmallMesh{inner:[self.inner[0].union(&other.inner[0]),self.inner[1].union(&other.inner[1])]}
         }
-        pub fn union_with(&mut self, other: &DualMesh) {
+        pub fn union_with(&mut self, other: &SmallMesh) {
             self.inner[0].union_with(&other.inner[0]);
             self.inner[1].union_with(&other.inner[1]);
 
         }
-        pub fn intersect(&self,other:&DualMesh)->DualMesh{
-            DualMesh{inner:[self.inner[0].intersect(&other.inner[0]),self.inner[1].intersect(&other.inner[1])]}
+        pub fn intersect(&self,other:&SmallMesh)->SmallMesh{
+            SmallMesh{inner:[self.inner[0].intersect(&other.inner[0]),self.inner[1].intersect(&other.inner[1])]}
         }
 
         pub fn positive_mesh(&self)->&SingleMesh{
@@ -150,9 +167,13 @@ pub mod small_mesh {
 
         pub fn add(&mut self,a:Axial){
             if a.q>=0{
+                crate::console_dbg!(a,"hay");
+                
                 self.inner[0].add(a);
             }else{
-                self.inner[1].add(a.add(Axial::from_arr([8,0])));
+                let j=a.add(Axial::from_arr([8,0]));
+                crate::console_dbg!(a,j);
+                self.inner[1].add(j);
             }
         }
 
@@ -164,12 +185,26 @@ pub mod small_mesh {
             }
         }
 
-        pub fn iter_mesh(&self)->impl Iterator<Item=Axial>{
-            self.inner[0].iter_mesh().chain(self.inner[1].iter_mesh().map(|mut x|{x.q-=8;x}))
+        pub fn iter_mesh(&self,pos:Axial)->impl Iterator<Item=Axial>{
+            //assert_eq!(pos,Axial::zero());
+            self.inner[0].iter_mesh().chain(self.inner[1].iter_mesh().map(|mut x|{x.q-=8;x})).map(move |x|pos.add(x))
         }
         pub fn count_ones(&self) -> usize { 
             self.inner[0].count_ones()
                 + self.inner[1].count_ones()
+        }
+        pub fn is_set(&self, a: Axial) -> bool {
+            if a.q>=0{
+                self.inner[0].is_set(a)
+            }else if a.q>=-8{
+                
+                let kk=a.add(Axial::from_arr([8,0]));
+                crate::console_dbg!(a,kk);
+                self.inner[1].is_set(kk)
+            }else{
+                false
+            }
+            
         }
 
 
@@ -179,16 +214,16 @@ pub mod small_mesh {
     #[derive(
         Serialize, Deserialize, Default, Hash, PartialOrd, Ord, PartialEq, Eq, Debug, Clone,
     )]
-    pub struct SmallMesh {
+    pub struct SmallMeshOld {
         pub inner: [u64; 4],
     }
 
-    impl SmallMesh {
-        pub fn new() -> SmallMesh {
-            SmallMesh { inner: [0; 4] }
+    impl SmallMeshOld {
+        pub fn new() -> SmallMeshOld {
+            SmallMeshOld { inner: [0; 4] }
         }
-        pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SmallMesh {
-            let mut m = SmallMesh::new();
+        pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SmallMeshOld {
+            let mut m = SmallMeshOld::new();
             for a in it {
                 m.add(a);
             }
@@ -198,8 +233,8 @@ pub mod small_mesh {
         
 
 
-        pub fn not(&self) -> SmallMesh {
-            SmallMesh {
+        pub fn not(&self) -> SmallMeshOld {
+            SmallMeshOld {
                 inner: [
                     !self.inner[0],
                     !self.inner[1],
@@ -209,8 +244,8 @@ pub mod small_mesh {
             }
         }
 
-        pub fn intersect(&self, other: &SmallMesh) -> SmallMesh {
-            SmallMesh {
+        pub fn intersect(&self, other: &SmallMeshOld) -> SmallMeshOld {
+            SmallMeshOld {
                 inner: [
                     self.inner[0] & other.inner[0],
                     self.inner[1] & other.inner[1],
@@ -219,6 +254,7 @@ pub mod small_mesh {
                 ],
             }
         }
+        
 
         pub fn count_ones(&self) -> usize {
             let k = self.inner[0].count_ones()
@@ -228,8 +264,8 @@ pub mod small_mesh {
             k.try_into().unwrap()
         }
 
-        pub fn union(&self, other: &SmallMesh) -> SmallMesh {
-            SmallMesh {
+        pub fn union(&self, other: &SmallMeshOld) -> SmallMeshOld {
+            SmallMeshOld {
                 inner: [
                     self.inner[0] | other.inner[0],
                     self.inner[1] | other.inner[1],
@@ -238,7 +274,7 @@ pub mod small_mesh {
                 ],
             }
         }
-        pub fn union_with(&mut self, other: &SmallMesh) {
+        pub fn union_with(&mut self, other: &SmallMeshOld) {
             self.inner[0] |= other.inner[0];
             self.inner[1] |= other.inner[1];
             self.inner[2] |= other.inner[2];
