@@ -21,7 +21,7 @@ impl HexConverter {
         // let scale = cgmath::Matrix2::new(sc, 0.0, 0.0, sc);
         // scale * hex::HEX_PROJ_FLAT
         //self.spacing()
-        let sc = self.spacing();
+        let sc = self.spacing();//*std::f32::consts::FRAC_1_SQRT_2;
         let scale = cgmath::Matrix2::new(sc, 0.0, 0.0, sc);
         scale
     }

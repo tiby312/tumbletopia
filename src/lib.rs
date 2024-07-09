@@ -1143,7 +1143,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
 
             snow: quick_load(include_bytes!("../assets/snow.glb"), RESIZE, None),
             //water: quick_load(include_bytes!("../assets/water.glb"), RESIZE, None),
-            water: quick_load(include_bytes!("../assets/square_grass.glb"), RESIZE, None),
+            water: quick_load(include_bytes!("../assets/chess_cell.glb"), RESIZE, None),
 
             direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
             mountain: quick_load(include_bytes!("../assets/mountain.glb"), 1, None),
