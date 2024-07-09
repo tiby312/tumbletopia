@@ -342,13 +342,17 @@ impl MovePhase {
         let moveto = self.moveto;
         let unit = self.original;
 
-        undo_transfer_other_board(state, team_index, moveto);
+        //undo_transfer_other_board(state, team_index, moveto);
 
         state
             .factions
             .relative_mut(team_index)
             .this_team
             .move_unit(moveto, unit);
+
+        let curr = state.factions.parity.is_set(moveto);
+        state.factions.parity.set(unit, !curr);
+        state.factions.parity.remove(moveto);
 
         if let Some((fooo, typ)) = effect.destroyed_unit {
             matches!(effect.pushpull, PushInfo::None);
@@ -542,7 +546,12 @@ impl MovePhase {
             .this_team
             .move_unit(self.original, target_cell);
 
-        transfer_other_board(game, team, target_cell);
+        let curr = game.factions.parity.is_set(self.original);
+        game.factions.parity.set(target_cell, !curr);
+        game.factions.parity.remove(self.original);
+
+        //transfer_other_board(game, team, target_cell);
+        //game.factions.relative_mut(team).this_team.f
 
         MoveEffect {
             pushpull: e,
@@ -552,31 +561,31 @@ impl MovePhase {
     }
 }
 
-fn undo_transfer_other_board(game: &mut GameState, team: ActiveTeam, mut orig: Axial) {
-    let orig2 = orig;
-    if orig.q >= 0 {
-        orig.q -= 8;
-    } else {
-        orig.q += 8;
-    }
-    game.factions
-        .relative_mut(team)
-        .this_team
-        .move_unit(orig, orig2);
-}
+// fn undo_transfer_other_board(game: &mut GameState, team: ActiveTeam, mut orig: Axial) {
+//     let orig2 = orig;
+//     if orig.q >= 0 {
+//         orig.q -= 8;
+//     } else {
+//         orig.q += 8;
+//     }
+//     game.factions
+//         .relative_mut(team)
+//         .this_team
+//         .move_unit(orig, orig2);
+// }
 
-fn transfer_other_board(game: &mut GameState, team: ActiveTeam, orig: Axial) {
-    let mut target_cell = orig;
-    if target_cell.q >= 0 {
-        target_cell.q -= 8;
-    } else {
-        target_cell.q += 8;
-    }
-    game.factions
-        .relative_mut(team)
-        .this_team
-        .move_unit(orig, target_cell);
-}
+// fn transfer_other_board(game: &mut GameState, team: ActiveTeam, orig: Axial) {
+//     let mut target_cell = orig;
+//     if target_cell.q >= 0 {
+//         target_cell.q -= 8;
+//     } else {
+//         target_cell.q += 8;
+//     }
+//     game.factions
+//         .relative_mut(team)
+//         .this_team
+//         .move_unit(orig, target_cell);
+// }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub enum PowerupAction {

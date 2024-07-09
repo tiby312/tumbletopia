@@ -1,6 +1,6 @@
 use std::num::NonZeroUsize;
 
-use mesh::small_mesh::SmallMesh;
+use mesh::small_mesh::{SingleMesh, SmallMesh};
 
 use super::*;
 
@@ -8,6 +8,7 @@ use super::*;
 pub struct Factions {
     pub black: Tribe,
     pub white: Tribe,
+    pub parity: SingleMesh,
 }
 impl Factions {
     pub fn has_a_set(&self, coord: Axial) -> bool {
@@ -221,7 +222,7 @@ impl Default for CellSelection {
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub fields: [SmallMesh; 10],
+    pub fields: [SingleMesh; 10],
     // pub bishop: BitField,
     // pub knight: BitField,
     //pub pawn: BitField,
@@ -230,14 +231,14 @@ pub struct Tribe {
 impl Tribe {
     pub fn new() -> Tribe {
         Tribe {
-            fields: [(); 10].map(|_| SmallMesh::new()),
+            fields: [(); 10].map(|_| SingleMesh::new()),
         }
     }
 
-    pub fn all_alloc(&self) -> SmallMesh {
-        let mut j = SmallMesh::new();
+    pub fn all_alloc(&self) -> SingleMesh {
+        let mut j = SingleMesh::new();
         for a in self.fields.iter() {
-            j.union_with(&a);
+            j.union_with(a);
         }
 
         // j.union_with(&self.bishop);
@@ -251,10 +252,7 @@ impl Tribe {
     }
 
     pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
-        self.fields
-            .iter()
-            .map(|x| x.iter_mesh(Axial::zero()))
-            .flatten()
+        self.fields.iter().map(|x| x.iter_mesh()).flatten()
     }
     pub fn is_set(&self, a: Axial) -> bool {
         self.fields.iter().fold(false, |acc, x| acc || x.is_set(a))
@@ -265,6 +263,13 @@ impl Tribe {
             if arr.is_set(a) {
                 arr.remove(a);
                 arr.add(b);
+
+                // if arr.parity.is_set(a){
+                //     arr.parity.remove(a);
+
+                // }else{
+                //     arr.parity.add(b);
+                // }
                 return;
             }
         }
@@ -272,11 +277,11 @@ impl Tribe {
         unreachable!("Can't move")
     }
 
-    pub fn get_mut(&mut self, a: UnitType) -> &mut SmallMesh {
+    pub fn get_mut(&mut self, a: UnitType) -> &mut SingleMesh {
         &mut self.fields[a.to_int()]
     }
 
-    pub fn get(&self, a: UnitType) -> &SmallMesh {
+    pub fn get(&self, a: UnitType) -> &SingleMesh {
         &self.fields[a.to_int()]
     }
     pub fn clear(&mut self, a: Axial) -> UnitType {

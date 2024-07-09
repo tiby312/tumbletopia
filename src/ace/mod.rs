@@ -10,7 +10,7 @@ use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
 };
-use mesh::small_mesh::SmallMesh;
+use mesh::small_mesh::SingleMesh;
 
 pub struct GameWrap<T> {
     pub game: GameState,
@@ -437,7 +437,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     //15*2 = 30 covered
     // 31 uncovered
 
-    let populate = |start: Axial, pawn: SmallMesh, minor_spots: [Axial; 9], swap: bool| {
+    let populate = |start: Axial, pawn: SingleMesh, minor_spots: [Axial; 9], swap: bool| {
         // let mut pawn = BitField::from_iter(start.to_cube().ring(2).map(|x| x.to_axial()));
         // pawn.intersect_with(&world.get_game_cells());
 
@@ -446,13 +446,13 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         //let nes = start.to_cube().neighbours2().map(|x| x.to_axial());
 
         let m = minor_spots;
-        let book1 = SmallMesh::from_iter([m[0]]);
-        let book2 = SmallMesh::from_iter([m[8]]);
+        let book1 = SingleMesh::from_iter([m[0]]);
+        let book2 = SingleMesh::from_iter([m[8]]);
 
         let (book1, book2) = if swap { (book2, book1) } else { (book1, book2) };
 
-        let knight1 = SmallMesh::from_iter([m[3]]);
-        let knight2 = SmallMesh::from_iter([m[5]]);
+        let knight1 = SingleMesh::from_iter([m[3]]);
+        let knight2 = SingleMesh::from_iter([m[5]]);
 
         let (knight1, knight2) = if swap {
             (knight2, knight1)
@@ -460,12 +460,12 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
             (knight1, knight2)
         };
 
-        let king = SmallMesh::from_iter([m[7]]);
-        let rook = SmallMesh::from_iter([m[1]]);
+        let king = SingleMesh::from_iter([m[7]]);
+        let rook = SingleMesh::from_iter([m[1]]);
 
-        let trook1 = SmallMesh::from_iter([m[2]]);
-        let trook2 = SmallMesh::from_iter([m[4]]);
-        let trook3 = SmallMesh::from_iter([m[6]]);
+        let trook1 = SingleMesh::from_iter([m[2]]);
+        let trook2 = SingleMesh::from_iter([m[4]]);
+        let trook3 = SingleMesh::from_iter([m[6]]);
 
         Tribe {
             fields: [
@@ -477,7 +477,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     // let white_tribe = {
     //     populate(
     //         white_start,
-    //         SmallMesh::from_iter(white_pawns),
+    //         SingleMesh::from_iter(white_pawns),
     //         minor_spots_white,
     //         false,
     //     )
@@ -486,7 +486,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     // let black_tribe = {
     //     populate(
     //         black_start,
-    //         SmallMesh::from_iter(black_pawns),
+    //         SingleMesh::from_iter(black_pawns),
     //         minor_spots_black,
     //         true,
     //     )
@@ -516,6 +516,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         factions: Factions {
             black: black_tribe,
             white: white_tribe,
+            parity: SingleMesh::new(),
         },
         env: Environment {
             terrain: Terrain {

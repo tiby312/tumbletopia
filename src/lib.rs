@@ -421,17 +421,18 @@ async fn render_command(
 
     //TODO don't calculate 60 times a second?
     let visible_water = {
-        let mut g = game.env.terrain.gen_all_terrain();
-        g.union_with(&game.env.fog);
+        // let mut g = game.env.terrain.gen_all_terrain();
+        // g.union_with(&game.env.fog);
 
-        g.toggle_range(..);
+        // g.toggle_range(..);
 
-        ace::ai::expand_mesh(&mut g, &mut BitField::new());
-        let k = BitField::from_iter(world.get_game_cells().iter_mesh(Axial::zero()));
+        // ace::ai::expand_mesh(&mut g, &mut BitField::new());
+        // let k = BitField::from_iter(world.get_game_cells().iter_mesh(Axial::zero()));
 
-        g.intersect_with(&k);
+        // g.intersect_with(&k);
 
-        g
+        // g
+        world.get_game_cells()
     };
 
     loop {
@@ -785,16 +786,31 @@ async fn render_command(
                     game.factions.black.get(mytype)
                 };
 
-                let rr = (std::f32::consts::TAU / 6.0) * i as f32;
+                //let rr = (std::f32::consts::TAU / 6.0) * i as f32;
 
-                let color = foo.iter_mesh(Axial::zero()).map(|e| {
-                    //grid_snap(e, zzzz)
+                let color = foo.iter_mesh().map(|e| {
+                    // let rr=if e.q>=0{
+                    //     0.0
+                    // }else{
+                    //     std::f32::consts::PI
+                    // };
                     let c = e;
+
+                    let rr = if game.factions.parity.is_set(e) {
+                        std::f32::consts::PI
+                    } else {
+                        0.0
+                    };
+                    // let c = if e.q>=0{
+                    //     e
+                    // }else{
+                    //     e.add(Axial{q:8,r:0})
+                    // };
                     let cc = zzzz;
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, cc);
 
-                    my_matrix.chain(t).chain(matrix::z_rotation(rr)).generate()
+                    my_matrix.chain(t).chain(matrix::x_rotation(rr)).generate()
                 });
 
                 let ani = unit_animation
