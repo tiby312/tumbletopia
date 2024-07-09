@@ -501,7 +501,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let white_tribe = {
         let mut t = Tribe::new();
         t.get_mut(UnitType::King).add(Axial::from_arr([4, 4]));
-        // t.get_mut(UnitType::Trook(TrookParity::One))
+        t.get_mut(UnitType::Rook);
         //     .set_coord(Axial::from_arr([-1, -2]), true);
         t
     };

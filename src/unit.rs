@@ -8,12 +8,13 @@ use super::*;
 pub struct Factions {
     pub black: Tribe,
     pub white: Tribe,
-    pub parity: SingleMesh,
+    pub parity:SingleMesh
 }
 impl Factions {
     pub fn has_a_set(&self, coord: Axial) -> bool {
         self.black.is_set(coord) || self.white.is_set(coord)
     }
+
 
     pub fn has_a_set_type(&self, coord: Axial) -> Option<UnitType> {
         if let Some(a) = self.black.try_get_type(coord) {
@@ -252,11 +253,15 @@ impl Tribe {
     }
 
     pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
-        self.fields.iter().map(|x| x.iter_mesh()).flatten()
+        self.fields
+            .iter()
+            .map(|x| x.iter_mesh())
+            .flatten()
     }
     pub fn is_set(&self, a: Axial) -> bool {
         self.fields.iter().fold(false, |acc, x| acc || x.is_set(a))
     }
+
 
     pub fn move_unit(&mut self, a: Axial, b: Axial) {
         for arr in self.fields.iter_mut() {
@@ -264,9 +269,10 @@ impl Tribe {
                 arr.remove(a);
                 arr.add(b);
 
+
                 // if arr.parity.is_set(a){
                 //     arr.parity.remove(a);
-
+                    
                 // }else{
                 //     arr.parity.add(b);
                 // }

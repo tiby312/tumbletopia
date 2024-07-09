@@ -119,26 +119,7 @@ impl GameState {
                 }
             }
             UnitType::King => {
-                // let is_other_board_empty = |pos: Axial| {
-                //     let mut tt = pos;
-                //     if pos.q >= 0 {
-                //         tt.q -= 8;
-                //     } else {
-                //         tt.q += 8;
-                //     }
-
-                //     //TODO only check other board??
-                //     !game.factions.has_a_set(tt)
-                // };
-
-                // let game_cells=|pos:Axial|
-                // {
-                //     if unit.q>=0{
-                //         pos.q>=0 && pos.q<8 && pos.r>=0 && pos.r<8
-                //     }else{
-                //         pos.q>=-8 && pos.q<0 && pos.r>=0 && pos.r<8
-                //     }
-                // };
+                
 
                 let is_empty = |x: Axial| !game.factions.has_a_set(x);
 
@@ -147,6 +128,7 @@ impl GameState {
                         && game.factions.parity.is_set(x) == game.factions.parity.is_set(unit)
                 };
 
+
                 for q in [-1, 0, 1] {
                     for r in [-1, 0, 1] {
                         if q == 0 && r == 0 {
@@ -154,7 +136,6 @@ impl GameState {
                         };
                         let k = unit.add(Axial { q, r });
                         if world.get_game_cells().is_set(k)
-                            //&& !game.factions.relative(team).this_team.is_set(k)
                             && (is_empty(k) || is_enemy_same_parity(k))
                         {
                             //console_dbg!(k,game_cells(k));
@@ -162,15 +143,6 @@ impl GameState {
                         }
                     }
                 }
-                // for k in unit.to_cube().ring(1).map(|x| x.to_axial()) {
-                //     if world.get_game_cells().is_set(k)
-                //         && !game.env.fog.is_set(k)
-                //         && !terrain.is_set(k)
-                //         && !game.factions.relative(team).this_team.is_set(k)
-                //     {
-                //         mesh.add(k)
-                //     }
-                // }
             }
             UnitType::Pawn => {
                 let dd = if let ActiveTeam::White = team { 3 } else { 0 };
