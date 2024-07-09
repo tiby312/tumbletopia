@@ -5,6 +5,7 @@ use futures::{SinkExt, StreamExt};
 use gloo::console::log;
 use hex::{Axial, HDir};
 use mesh::bitfield::BitField;
+use mesh::small_mesh::SingleMesh;
 use model::matrix::{self, MyMatrix};
 use moves::ActualMove;
 use serde::{Deserialize, Serialize};
@@ -432,7 +433,16 @@ async fn render_command(
         // g.intersect_with(&k);
 
         // g
-        world.get_game_cells()
+        //world.get_game_cells();
+        let mut foo = SingleMesh::new();
+        for q in 0..8 {
+            for r in 0..8 {
+                if q % 2 == 0 && r % 2 == 0 || q % 2 == 1 && r % 2 == 1 {
+                    foo.add(Axial { q, r })
+                }
+            }
+        }
+        foo
     };
 
     loop {
@@ -558,7 +568,7 @@ async fn render_command(
 
         scroll_manager.step();
 
-        draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
+        draw_sys.draw_clear([0.5, 0.5, 0.5, 0.0]);
 
         pub const LAND_OFFSET: f32 = -10.0;
         //rr+=0.01;
@@ -569,7 +579,7 @@ async fn render_command(
             my_matrix.chain(t).//.chain(matrix::z_rotation(rr)).
             generate()
         };
-
+        let mut foo = false;
         draw_sys
             .batch(visible_water.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET)))
             .build(water);
