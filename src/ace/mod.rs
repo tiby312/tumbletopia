@@ -515,9 +515,24 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         parity: SingleMesh::new(),
     };
 
-    factions.add_piece(Axial { q: 4, r: 4 }, ActiveTeam::White, UnitType::King);
-    factions.add_piece(Axial { q: 5, r: 2 }, ActiveTeam::White, UnitType::Rook);
-    factions.add_piece(Axial { q: 1, r: 1 }, ActiveTeam::Black, UnitType::King);
+    factions.add_piece(
+        Axial { q: 4, r: 4 },
+        ActiveTeam::White,
+        UnitType::King,
+        OParity::Normal,
+    );
+    factions.add_piece(
+        Axial { q: 5, r: 2 },
+        ActiveTeam::White,
+        UnitType::Rook,
+        OParity::Normal,
+    );
+    factions.add_piece(
+        Axial { q: 1, r: 1 },
+        ActiveTeam::Black,
+        UnitType::King,
+        OParity::Normal,
+    );
 
     let mut k = GameState {
         factions,

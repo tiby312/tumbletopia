@@ -227,7 +227,7 @@ impl ExtraPhase {
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
-    pub destroyed_unit: Option<(Axial, UnitType)>,
+    pub destroyed_unit: Option<(Axial, UnitType, OParity)>,
 }
 impl MoveEffect {
     pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
@@ -281,7 +281,7 @@ impl MovePhase {
 
         let mut ss = state.clone();
 
-        let ttt = ss.factions.remove(self.original);
+        let (ttt, pp) = ss.factions.remove(self.original);
 
         let end = target;
         match info {
@@ -342,10 +342,12 @@ impl MovePhase {
         state.factions.parity.set(unit, !curr);
         state.factions.parity.remove(moveto);
 
-        if let Some((fooo, typ)) = effect.destroyed_unit {
+        if let Some((fooo, typ, oparity)) = effect.destroyed_unit {
             matches!(effect.pushpull, PushInfo::None);
             //TODO need to store parity of taken piece!!!!
-            state.factions.add_piece(moveto, team_index.not(), typ);
+            state
+                .factions
+                .add_piece(moveto, team_index.not(), typ, oparity);
 
             //let j = &mut state.factions.relative_mut(team_index).that_team.units;
             assert_eq!(fooo, moveto);
@@ -439,8 +441,8 @@ impl MovePhase {
             let that_team = game.factions.get_all_team(team.not());
 
             if that_team.is_set(target_cell) {
-                let k = game.factions.remove(target_cell);
-                destroyed_unit = Some((target_cell, k));
+                let (k, pp) = game.factions.remove(target_cell);
+                destroyed_unit = Some((target_cell, k, pp));
 
                 // let dir = self.original.dir_to(&target_cell);
                 // let check = target_cell.advance(dir);

@@ -4,6 +4,21 @@ use mesh::small_mesh::{SingleMesh, SmallMesh};
 
 use super::*;
 
+#[derive(Copy, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+
+pub enum OParity {
+    Normal,
+    Upsidedown,
+}
+impl OParity {
+    fn as_bool(&self) -> bool {
+        match self {
+            OParity::Normal => false,
+            OParity::Upsidedown => true,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Factions {
     pub units: Tribe,
@@ -35,11 +50,17 @@ impl Factions {
     //     None
     // }
 
-    pub fn remove(&mut self, coord: Axial) -> UnitType {
+    pub fn remove(&mut self, coord: Axial) -> (UnitType, OParity) {
+        let pp = if self.parity.is_set(coord) {
+            OParity::Upsidedown
+        } else {
+            OParity::Normal
+        };
+
         self.team.remove(coord);
 
         self.parity.remove(coord);
-        self.units.clear(coord)
+        (self.units.clear(coord), pp)
     }
 
     pub fn move_unit(&mut self, coord: Axial, to: Axial) {
@@ -49,13 +70,14 @@ impl Factions {
         self.team.set(to, team);
     }
 
-    pub fn add_piece(&mut self, coord: Axial, team: ActiveTeam, typ: UnitType) {
+    pub fn add_piece(&mut self, coord: Axial, team: ActiveTeam, typ: UnitType, parity: OParity) {
         assert!(!self.units.is_set(coord));
         assert!(!self.parity.is_set(coord));
         assert!(!self.team.is_set(coord));
 
         self.team.set(coord, team.is_white());
         self.units.get_mut(typ).add(coord);
+        self.parity.set(coord, parity.as_bool());
     }
 
     pub fn get_all_team(&self, team: ActiveTeam) -> SingleMesh {
