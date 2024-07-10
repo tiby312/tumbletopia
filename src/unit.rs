@@ -4,24 +4,75 @@ use mesh::small_mesh::{SingleMesh, SmallMesh};
 
 use super::*;
 
+
+
+
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Factions {
-    pub black: Tribe,
-    pub white: Tribe,
+    pub units: Tribe,
     pub parity: SingleMesh,
+    pub team:SingleMesh
 }
 impl Factions {
-    pub fn has_a_set(&self, coord: Axial) -> bool {
-        self.black.is_set(coord) || self.white.is_set(coord)
-    }
 
-    pub fn has_a_set_type(&self, coord: Axial) -> Option<UnitType> {
-        if let Some(a) = self.black.try_get_type(coord) {
-            return Some(a);
+    pub fn specific_unit(&self,typ:UnitType,team:ActiveTeam)->SingleMesh{
+        let k=self.units.get(typ);
+        if team.is_white(){
+            self.team.intersect(k)
+        }else{
+            self.team.not().intersect(k)
         }
-
-        self.white.try_get_type(coord)
     }
+
+    // pub fn get_typ(&self,coord:Axial)->UnitType{
+    //     self.units.get_type(coord)
+    // }
+
+    // pub fn has_a_set(&self, coord: Axial) -> bool {
+    //     self.units.is_set(coord)
+    // }
+
+    // pub fn has_a_set_type(&self, coord: Axial) -> Option<UnitType> {
+    //     if let Some(a) = self.units.try_get_type(coord) {
+    //         return Some(a);
+    //     }
+    //     None
+    // }
+
+    pub fn remove(&mut self,coord:Axial)->UnitType{
+        self.team.remove(coord);
+        
+        self.parity.remove(coord);
+        self.units.clear(coord)
+    }
+
+    pub fn move_unit(&mut self,coord:Axial,to:Axial){
+        let team=self.team.is_set(coord);
+        self.units.move_unit(coord, to);
+        self.team.remove(coord);
+        self.team.set(to,team);
+    }
+
+    pub fn add_piece(&mut self,coord:Axial,team:ActiveTeam,typ:UnitType){
+        assert!(!self.units.is_set(coord));
+        assert!(!self.parity.is_set(coord));
+        assert!(!self.team.is_set(coord));
+
+        self.team.set(coord,team.is_white());
+        self.units.get_mut(typ).add(coord);
+    }
+
+
+    pub fn get_all_team(&self,team:ActiveTeam)->SingleMesh{
+        let all=self.units.all_units();
+
+        if team.is_white(){
+            self.team.intersect(&all)
+        }else{
+            self.team.not().intersect(&all)
+        }
+    }
+
 
     // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
     //     self.relative_mut(team)
@@ -32,30 +83,30 @@ impl Factions {
     // pub fn get_unit(&self, team: ActiveTeam, coord: Axial) -> &UnitData {
     //     self.relative(team).this_team.find_slow(&coord).unwrap()
     // }
-    pub fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
-        match team {
-            ActiveTeam::White => FactionRelative {
-                this_team: &mut self.white,
-                that_team: &mut self.black,
-            },
-            ActiveTeam::Black => FactionRelative {
-                this_team: &mut self.black,
-                that_team: &mut self.white,
-            },
-        }
-    }
-    pub fn relative(&self, team: ActiveTeam) -> FactionRelative<&Tribe> {
-        match team {
-            ActiveTeam::White => FactionRelative {
-                this_team: &self.white,
-                that_team: &self.black,
-            },
-            ActiveTeam::Black => FactionRelative {
-                this_team: &self.black,
-                that_team: &self.white,
-            },
-        }
-    }
+    // pub fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
+    //     match team {
+    //         ActiveTeam::White => FactionRelative {
+    //             this_team: &mut self.white,
+    //             that_team: &mut self.black,
+    //         },
+    //         ActiveTeam::Black => FactionRelative {
+    //             this_team: &mut self.black,
+    //             that_team: &mut self.white,
+    //         },
+    //     }
+    // }
+    // pub fn relative(&self, team: ActiveTeam) -> FactionRelative<&Tribe> {
+    //     match team {
+    //         ActiveTeam::White => FactionRelative {
+    //             this_team: &self.white,
+    //             that_team: &self.black,
+    //         },
+    //         ActiveTeam::Black => FactionRelative {
+    //             this_team: &self.black,
+    //             that_team: &self.white,
+    //         },
+    //     }
+    //}
 }
 
 #[must_use]
@@ -65,6 +116,9 @@ pub enum ActiveTeam {
     Black = 1,
 }
 impl ActiveTeam {
+    pub fn is_white(&self)->bool{
+        matches!(self,ActiveTeam::White)
+    }
     pub fn iter(&self) -> impl Iterator<Item = Self> {
         [*self, self.not()].into_iter().cycle()
     }
@@ -140,10 +194,10 @@ impl GameState {
         hasher.finish()
     }
     pub fn game_is_over(&self, world: &board::MyWorld) -> Option<GameOver> {
-        if self.factions.white.get(UnitType::King).count_ones() == 0 {
+        if self.factions.specific_unit(UnitType::King,ActiveTeam::White).count_ones() == 0 {
             return Some(GameOver::BlackWon);
         }
-        if self.factions.black.get(UnitType::King).count_ones() == 0 {
+        if self.factions.specific_unit(UnitType::King,ActiveTeam::Black).count_ones() == 0 {
             return Some(GameOver::WhiteWon);
         }
         None
@@ -235,7 +289,7 @@ impl Tribe {
         }
     }
 
-    pub fn all_alloc(&self) -> SingleMesh {
+    pub fn all_units(&self) -> SingleMesh {
         let mut j = SingleMesh::new();
         for a in self.fields.iter() {
             j.union_with(a);

@@ -265,9 +265,7 @@ impl MovePhase {
 
         assert!(state
             .factions
-            .relative(team)
-            .this_team
-            .is_set(self.original));
+            .get_all_team(team).is_set(self.original));
 
         let mesh = state.generate_possible_moves_movement(world, &self.original, team);
 
@@ -287,9 +285,7 @@ impl MovePhase {
 
         let ttt = ss
             .factions
-            .relative_mut(team)
-            .this_team
-            .clear(self.original);
+            .remove(self.original);
 
         let end = target;
         match info {
@@ -309,7 +305,7 @@ impl MovePhase {
             PushInfo::None => {}
         }
 
-        let capturing = state.factions.relative(team).that_team.is_set(end);
+        let capturing = state.factions.get_all_team(team.not()).is_set(end);
         if !capturing {
             let path = mesh::path(
                 &mesh,
@@ -346,8 +342,6 @@ impl MovePhase {
 
         state
             .factions
-            .relative_mut(team_index)
-            .this_team
             .move_unit(moveto, unit);
 
         let curr = state.factions.parity.is_set(moveto);
@@ -356,12 +350,10 @@ impl MovePhase {
 
         if let Some((fooo, typ)) = effect.destroyed_unit {
             matches!(effect.pushpull, PushInfo::None);
+            //TODO need to store parity of taken piece!!!!
             state
                 .factions
-                .relative_mut(team_index)
-                .that_team
-                .get_mut(typ)
-                .add(moveto);
+                .add_piece(moveto, team_index.not(), typ);
 
             //let j = &mut state.factions.relative_mut(team_index).that_team.units;
             assert_eq!(fooo, moveto);
@@ -450,9 +442,12 @@ impl MovePhase {
         {
             let terrain = &mut env.terrain;
 
-            let foo = game.factions.relative_mut(team);
-            if foo.that_team.is_set(target_cell) {
-                let k = foo.that_team.clear(target_cell);
+            //let foo = game.factions.relative_mut(team);
+            let this_team=game.factions.get_all_team(team);
+            let that_team=game.factions.get_all_team(team.not());
+
+            if that_team.is_set(target_cell) {
+                let k=game.factions.remove(target_cell);
                 destroyed_unit = Some((target_cell, k));
 
                 // let dir = self.original.dir_to(&target_cell);
@@ -472,7 +467,7 @@ impl MovePhase {
                 //     foo.that_team.units.set_coord(check, true);
                 //     e = PushInfo::PushedUnit;
                 // }
-            } else if foo.this_team.is_set(target_cell) {
+            } else if this_team.is_set(target_cell) {
                 todo!()
                 // let dir = self.original.dir_to(&target_cell);
                 // let check = target_cell.advance(dir);
@@ -542,8 +537,6 @@ impl MovePhase {
         let mut target_cell = target_cell;
 
         game.factions
-            .relative_mut(team)
-            .this_team
             .move_unit(self.original, target_cell);
 
         let curr = game.factions.parity.is_set(self.original);
@@ -654,7 +647,7 @@ fn calculate_paths(
     state: &GameState,
     world: &board::MyWorld,
 ) -> SmallMesh {
-    let typ = state.factions.has_a_set_type(position).unwrap();
+    let typ = state.factions.units.get_type(position);
 
     let env = &state.env;
     let mut paths = SmallMesh::new();
@@ -668,7 +661,7 @@ fn calculate_paths(
         if !env.fog.is_set(a)
             && !env.terrain.is_set(a)
             && a != position
-            && !state.factions.has_a_set(a)
+            && !state.factions.units.is_set(a)
             && world.get_game_cells().is_set(a)
         {
             //if a != target {

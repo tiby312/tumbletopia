@@ -90,26 +90,29 @@ impl GameState {
         team: ActiveTeam,
         for_show: bool,
     ) {
-        let typ = self.factions.relative(team).this_team.get_type(unit);
+        let typ = self.factions.units.get_type(unit);
         let game = self;
         let terrain = &game.env.terrain;
 
+        let this_team=game.factions.get_all_team(team);
+        let that_team=game.factions.get_all_team(team.not());
+        
         let other_side_occupied = |x: Axial| {
-            game.factions.relative(team).has_a_set(x)
+            game.factions.units.is_set(x)
                 && game.factions.parity.is_set(x) != game.factions.parity.is_set(unit)
         };
 
         let is_enemy_same_parity = |x: Axial| {
-            game.factions.relative(team).that_team.is_set(x)
+            that_team.is_set(x)
                 && game.factions.parity.is_set(x) == game.factions.parity.is_set(unit)
         };
 
         let is_friendly_same_parity = |x: Axial| {
-            game.factions.relative(team).this_team.is_set(x)
+            this_team.is_set(x)
                 && game.factions.parity.is_set(x) == game.factions.parity.is_set(unit)
         };
         let is_friendly_different_parity = |x: Axial| {
-            game.factions.relative(team).this_team.is_set(x)
+            this_team.is_set(x)
                 && game.factions.parity.is_set(x) != game.factions.parity.is_set(unit)
         };
 
@@ -167,154 +170,127 @@ impl GameState {
                 }
             }
             UnitType::Pawn => {
-                let dd = if let ActiveTeam::White = team { 3 } else { 0 };
-                let k = unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax);
+                // let dd = if let ActiveTeam::White = team { 3 } else { 0 };
+                // let k = unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax);
 
-                if world.get_game_cells().is_set(k)
-                    && !game.env.fog.is_set(k)
-                    && !terrain.is_set(k)
-                    && !game.factions.has_a_set(k)
-                {
-                    mesh.add(k);
-                }
+                // if world.get_game_cells().is_set(k)
+                //     && !game.env.fog.is_set(k)
+                //     && !terrain.is_set(k)
+                //     && !game.factions.has_a_set(k)
+                // {
+                //     mesh.add(k);
+                // }
 
-                for o in [hex::OFFSETS[dd + 1], hex::OFFSETS[(dd + 5) % 6]] {
-                    let k = unit.add(hex::Cube::from_arr(o).ax);
-                    if game.factions.relative(team).that_team.is_set(k) {
-                        mesh.add(k);
-                    }
-                }
+                // for o in [hex::OFFSETS[dd + 1], hex::OFFSETS[(dd + 5) % 6]] {
+                //     let k = unit.add(hex::Cube::from_arr(o).ax);
+                //     if game.factions.relative(team).that_team.is_set(k) {
+                //         mesh.add(k);
+                //     }
+                // }
             }
             UnitType::Knight(parity) => {
-                let i = match parity {
-                    unit::Parity::One => 0,
-                    unit::Parity::Two => 1,
-                };
+//                 let i = match parity {
+//                     unit::Parity::One => 0,
+//                     unit::Parity::Two => 1,
+//                 };
 
-                let k = [
-                    hex::OFFSETS[i],
-                    hex::OFFSETS[(i + 2) % 6],
-                    hex::OFFSETS[(i + 4) % 6],
-                ];
+//                 let k = [
+//                     hex::OFFSETS[i],
+//                     hex::OFFSETS[(i + 2) % 6],
+//                     hex::OFFSETS[(i + 4) % 6],
+//                 ];
 
-                for a in k.iter().chain(hex::DIAG_OFFSETS.iter()) {
-                    let a = unit.add(hex::Cube::from_arr(*a).ax);
-                    if world.get_game_cells().is_set(a)
-                        && !game.env.fog.is_set(a)
-                        && !terrain.is_set(a)
-                        && !game.factions.relative(team).this_team.is_set(a)
-                    {
-                        mesh.add(a);
-                    }
-                }
+//                 for a in k.iter().chain(hex::DIAG_OFFSETS.iter()) {
+//                     let a = unit.add(hex::Cube::from_arr(*a).ax);
+//                     if world.get_game_cells().is_set(a)
+//                         && !game.env.fog.is_set(a)
+//                         && !terrain.is_set(a)
+//                         && !game.factions.relative(team).this_team.is_set(a)
+//                     {
+//                         mesh.add(a);
+//                     }
+//                 }
+// }
+                
+            }
+            UnitType::Book(parity) => {
+                // let i = match parity {
+                //     unit::Parity::One => 0,
+                //     unit::Parity::Two => 1,
+                // };
 
-                // for (i, k) in k.iter() {
-                //     let pos = unit.add(hex::Cube::from_arr(*k).ax);
+                // let j = i + 1;
+                // let k = [
+                //     hex::OFFSETS[i],
+                //     hex::OFFSETS[(i + 2) % 6],
+                //     hex::OFFSETS[(i + 4) % 6],
+                //     // hex::DIAG_OFFSETS[j],
+                //     // hex::DIAG_OFFSETS[(j + 3) % 6],
+                // ]
+                // .map(hex::Cube::from_arr);
 
-                //     if !world.get_game_cells().is_set(pos)
-                //         || game.env.fog.is_set(pos)
-                //         || terrain.is_set(pos)
-                //         || game.factions.relative(team).this_team.is_set(pos)
-                //     {
-                //         continue;
-                //     }
-
-                //     mesh.add(pos);
-                //     if game.factions.relative(team).that_team.is_set(pos) {
-                //         continue;
-                //     }
-                //     let diags = [hex::OFFSETS[(i + 1) % 6], hex::OFFSETS[(i + 5) % 6]];
-
-                //     for a in diags {
-                //         let a = pos.add(hex::Cube::from_arr(a).ax);
-                //         if world.get_game_cells().is_set(a)
-                //             && !game.env.fog.is_set(a)
-                //             && !terrain.is_set(a)
-                //             && !game.factions.relative(team).this_team.is_set(a)
+                // for h in k {
+                //     for a in unit.to_cube().ray_from_vector(h).take(15) {
+                //         //for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
+                //         assert!(unit != a.to_axial());
+                //         let a = a.ax;
+                //         if !world.get_game_cells().is_set(a)
+                //             || game.env.fog.is_set(a)
+                //             || terrain.is_set(a)
+                //             || game.factions.relative(team).this_team.is_set(a)
                 //         {
+                //             break;
+                //         }
+
+                //         if for_show || game.factions.relative(team).that_team.is_set(a) {
+                //             //mesh.add(a.sub(&unit));
                 //             mesh.add(a);
+                //         }
+
+                //         if game.factions.relative(team).that_team.is_set(a) {
+                //             break;
                 //         }
                 //     }
                 // }
             }
-            UnitType::Book(parity) => {
-                let i = match parity {
-                    unit::Parity::One => 0,
-                    unit::Parity::Two => 1,
-                };
-
-                let j = i + 1;
-                let k = [
-                    hex::OFFSETS[i],
-                    hex::OFFSETS[(i + 2) % 6],
-                    hex::OFFSETS[(i + 4) % 6],
-                    // hex::DIAG_OFFSETS[j],
-                    // hex::DIAG_OFFSETS[(j + 3) % 6],
-                ]
-                .map(hex::Cube::from_arr);
-
-                for h in k {
-                    for a in unit.to_cube().ray_from_vector(h).take(15) {
-                        //for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
-                        assert!(unit != a.to_axial());
-                        let a = a.ax;
-                        if !world.get_game_cells().is_set(a)
-                            || game.env.fog.is_set(a)
-                            || terrain.is_set(a)
-                            || game.factions.relative(team).this_team.is_set(a)
-                        {
-                            break;
-                        }
-
-                        if for_show || game.factions.relative(team).that_team.is_set(a) {
-                            //mesh.add(a.sub(&unit));
-                            mesh.add(a);
-                        }
-
-                        if game.factions.relative(team).that_team.is_set(a) {
-                            break;
-                        }
-                    }
-                }
-            }
             UnitType::Trook(a) => {
-                let i = match a {
-                    TrookParity::One => 0,
-                    TrookParity::Two => 1,
-                    TrookParity::Three => 2,
-                };
+                // let i = match a {
+                //     TrookParity::One => 0,
+                //     TrookParity::Two => 1,
+                //     TrookParity::Three => 2,
+                // };
 
-                let k = [
-                    hex::OFFSETS[i],
-                    hex::OFFSETS[(i + 1) % 6],
-                    hex::OFFSETS[(i + 3) % 6],
-                    hex::OFFSETS[(i + 4) % 6],
-                ]
-                .map(hex::Cube::from_arr);
+                // let k = [
+                //     hex::OFFSETS[i],
+                //     hex::OFFSETS[(i + 1) % 6],
+                //     hex::OFFSETS[(i + 3) % 6],
+                //     hex::OFFSETS[(i + 4) % 6],
+                // ]
+                // .map(hex::Cube::from_arr);
 
-                for h in k {
-                    for a in unit.to_cube().ray_from_vector(h).take(15) {
-                        //for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
-                        assert!(unit != a.to_axial());
-                        let a = a.ax;
-                        if !world.get_game_cells().is_set(a)
-                            || game.env.fog.is_set(a)
-                            || terrain.is_set(a)
-                            || game.factions.relative(team).this_team.is_set(a)
-                        {
-                            break;
-                        }
+                // for h in k {
+                //     for a in unit.to_cube().ray_from_vector(h).take(15) {
+                //         //for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
+                //         assert!(unit != a.to_axial());
+                //         let a = a.ax;
+                //         if !world.get_game_cells().is_set(a)
+                //             || game.env.fog.is_set(a)
+                //             || terrain.is_set(a)
+                //             || game.factions.relative(team).this_team.is_set(a)
+                //         {
+                //             break;
+                //         }
 
-                        if for_show || game.factions.relative(team).that_team.is_set(a) {
-                            //mesh.add(a.sub(&unit));
-                            mesh.add(a);
-                        }
+                //         if for_show || game.factions.relative(team).that_team.is_set(a) {
+                //             //mesh.add(a.sub(&unit));
+                //             mesh.add(a);
+                //         }
 
-                        if game.factions.relative(team).that_team.is_set(a) {
-                            break;
-                        }
-                    }
-                }
+                //         if game.factions.relative(team).that_team.is_set(a) {
+                //             break;
+                //         }
+                //     }
+                // }
             }
         };
     }
@@ -325,7 +301,7 @@ impl GameState {
         team: ActiveTeam,
     ) -> SmallMesh {
         //TODO use
-        let typ = self.factions.relative(team).this_team.get_type(unit);
+        let typ = self.factions.units.get_type(unit);
 
         let game = self;
         let mut mesh = SmallMesh::new();
@@ -453,7 +429,7 @@ impl GameState {
         let state = self;
         //let mut movs = Vec::new();
         //for i in 0..state.factions.relative(team).this_team.units.len() {
-        for pos in state.factions.relative(team).this_team.clone().iter_mesh() {
+        for pos in state.factions.get_all_team(team).iter_mesh() {
             let mesh = state.generate_possible_moves_movement(world, &pos, team);
             for mm in mesh.iter_mesh(Axial::zero()) {
                 //Temporarily move the player in the game world.

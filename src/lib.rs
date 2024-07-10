@@ -752,9 +752,8 @@ async fn render_command(
 
             let shadows = game
                 .factions
-                .white
+                .units
                 .iter_mesh()
-                .chain(game.factions.black.iter_mesh())
                 .map(|e| grid_snap(e, zzzz));
 
             let ani_drop_shadow = unit_animation.as_ref().map(|a| {
@@ -790,11 +789,8 @@ async fn render_command(
                     UnitType::Trook(TrookParity::Three) => 1,
                 };
 
-                let foo = if let ActiveTeam::White = my_team {
-                    game.factions.white.get(mytype)
-                } else {
-                    game.factions.black.get(mytype)
-                };
+                let foo=game.factions.specific_unit(mytype,my_team);
+
 
                 //let rr = (std::f32::consts::TAU / 6.0) * i as f32;
 

@@ -261,8 +261,7 @@ pub async fn reselect_loop(
     //If we select a friendly unit quick swap
     if game
         .factions
-        .relative(selected_unit.team)
-        .this_team
+        .get_all_team(selected_unit.team)
         .is_set(target_cell)
     {
         if !contains {
@@ -276,8 +275,7 @@ pub async fn reselect_loop(
     //If we select an enemy unit quick swap
     if game
         .factions
-        .relative(selected_unit.team)
-        .that_team
+        .get_all_team(selected_unit.team.not())
         .is_set(target_cell)
     {
         if selected_unit.team != team || !contains {
