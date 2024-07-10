@@ -120,27 +120,31 @@ impl GameState {
             })
         };
 
+        let ray2 = |uni: Axial, mesh: &mut SmallMesh, num: usize| {
+            for a in ray(unit, uni).take(num) {
+                if !world.get_game_cells().is_set(a) {
+                    break;
+                }
+
+                if is_friendly_same_parity(a) {
+                    break;
+                }
+
+                if !other_side_occupied(a) {
+                    mesh.add(a);
+                }
+
+                if is_enemy_same_parity(a) {
+                    break;
+                }
+            }
+        };
+
         let i = match typ {
             UnitType::Rook => {
                 for [q, r] in [[1, 0], [-1, 0], [0, 1], [0, -1]] {
                     let uni = Axial { q, r };
-                    for a in ray(unit, uni) {
-                        if !world.get_game_cells().is_set(a) {
-                            break;
-                        }
-
-                        if is_friendly_same_parity(a) {
-                            break;
-                        }
-
-                        if !other_side_occupied(a) {
-                            mesh.add(a);
-                        }
-
-                        if is_enemy_same_parity(a) {
-                            break;
-                        }
-                    }
+                    ray2(uni, mesh, 8);
                 }
             }
             UnitType::King => {
@@ -149,13 +153,16 @@ impl GameState {
                         if q == 0 && r == 0 {
                             continue;
                         };
-                        let k = unit.add(Axial { q, r });
-                        if world.get_game_cells().is_set(k)
-                            && (!other_side_occupied(k) || is_enemy_same_parity(k))
-                        {
-                            //console_dbg!(k,game_cells(k));
-                            mesh.add(k)
-                        }
+                        let k = Axial { q, r };
+
+                        ray2(k, mesh, 1);
+
+                        // if world.get_game_cells().is_set(k)
+                        //     && (!other_side_occupied(k) || is_enemy_same_parity(k))
+                        // {
+                        //     //console_dbg!(k,game_cells(k));
+                        //     mesh.add(k)
+                        // }
                     }
                 }
             }
