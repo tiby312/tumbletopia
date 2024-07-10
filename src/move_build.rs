@@ -263,9 +263,7 @@ impl MovePhase {
         let target = self.moveto;
         let paths = calculate_paths(self.original, self.moveto, state, world);
 
-        assert!(state
-            .factions
-            .get_all_team(team).is_set(self.original));
+        assert!(state.factions.get_all_team(team).is_set(self.original));
 
         let mesh = state.generate_possible_moves_movement(world, &self.original, team);
 
@@ -283,9 +281,7 @@ impl MovePhase {
 
         let mut ss = state.clone();
 
-        let ttt = ss
-            .factions
-            .remove(self.original);
+        let ttt = ss.factions.remove(self.original);
 
         let end = target;
         match info {
@@ -340,9 +336,7 @@ impl MovePhase {
 
         //undo_transfer_other_board(state, team_index, moveto);
 
-        state
-            .factions
-            .move_unit(moveto, unit);
+        state.factions.move_unit(moveto, unit);
 
         let curr = state.factions.parity.is_set(moveto);
         state.factions.parity.set(unit, !curr);
@@ -351,9 +345,7 @@ impl MovePhase {
         if let Some((fooo, typ)) = effect.destroyed_unit {
             matches!(effect.pushpull, PushInfo::None);
             //TODO need to store parity of taken piece!!!!
-            state
-                .factions
-                .add_piece(moveto, team_index.not(), typ);
+            state.factions.add_piece(moveto, team_index.not(), typ);
 
             //let j = &mut state.factions.relative_mut(team_index).that_team.units;
             assert_eq!(fooo, moveto);
@@ -443,11 +435,11 @@ impl MovePhase {
             let terrain = &mut env.terrain;
 
             //let foo = game.factions.relative_mut(team);
-            let this_team=game.factions.get_all_team(team);
-            let that_team=game.factions.get_all_team(team.not());
+            let this_team = game.factions.get_all_team(team);
+            let that_team = game.factions.get_all_team(team.not());
 
             if that_team.is_set(target_cell) {
-                let k=game.factions.remove(target_cell);
+                let k = game.factions.remove(target_cell);
                 destroyed_unit = Some((target_cell, k));
 
                 // let dir = self.original.dir_to(&target_cell);
@@ -536,8 +528,7 @@ impl MovePhase {
 
         let mut target_cell = target_cell;
 
-        game.factions
-            .move_unit(self.original, target_cell);
+        game.factions.move_unit(self.original, target_cell);
 
         let curr = game.factions.parity.is_set(self.original);
         game.factions.parity.set(target_cell, !curr);

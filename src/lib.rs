@@ -750,11 +750,7 @@ async fn render_command(
             // Draw shadows
             let _d = DepthDisabler::new(ctx);
 
-            let shadows = game
-                .factions
-                .units
-                .iter_mesh()
-                .map(|e| grid_snap(e, zzzz));
+            let shadows = game.factions.units.iter_mesh().map(|e| grid_snap(e, zzzz));
 
             let ani_drop_shadow = unit_animation.as_ref().map(|a| {
                 let pos = a.0;
@@ -789,8 +785,7 @@ async fn render_command(
                     UnitType::Trook(TrookParity::Three) => 1,
                 };
 
-                let foo=game.factions.specific_unit(mytype,my_team);
-
+                let foo = game.factions.specific_unit(mytype, my_team);
 
                 //let rr = (std::f32::consts::TAU / 6.0) * i as f32;
 

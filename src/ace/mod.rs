@@ -329,8 +329,7 @@ pub async fn reselect_loop(
     } else {
         assert!(game
             .factions
-            .relative_mut(selected_unit.team)
-            .this_team
+            .get_all_team(selected_unit.team)
             .is_set(unwrapped_selected_unit));
 
         let c = target_cell;
@@ -490,19 +489,19 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     //     )
     // };
 
-    let black_tribe = {
-        let mut t = Tribe::new();
-        t.get_mut(UnitType::King).add(Axial::from_arr([1, 1]));
-        t
-    };
+    // let black_tribe = {
+    //     let mut t = Tribe::new();
+    //     t.get_mut(UnitType::King).add(Axial::from_arr([1, 1]));
+    //     t
+    // };
 
-    let white_tribe = {
-        let mut t = Tribe::new();
-        t.get_mut(UnitType::King).add(Axial::from_arr([4, 4]));
-        t.get_mut(UnitType::Rook).add(Axial::from_arr([5, 2]));
-        //     .set_coord(Axial::from_arr([-1, -2]), true);
-        t
-    };
+    // let white_tribe = {
+    //     let mut t = Tribe::new();
+    //     t.get_mut(UnitType::King).add(Axial::from_arr([4, 4]));
+    //     t.get_mut(UnitType::Rook).add(Axial::from_arr([5, 2]));
+    //     //     .set_coord(Axial::from_arr([-1, -2]), true);
+    //     t
+    // };
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
@@ -510,12 +509,18 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     // fog.intersect_with(&world.get_game_cells());
     let fog = BitField::new();
 
+    let mut factions = Factions {
+        units: Tribe::new(),
+        team: SingleMesh::new(),
+        parity: SingleMesh::new(),
+    };
+
+    factions.add_piece(Axial { q: 4, r: 4 }, ActiveTeam::White, UnitType::King);
+    factions.add_piece(Axial { q: 5, r: 2 }, ActiveTeam::White, UnitType::Rook);
+    factions.add_piece(Axial { q: 1, r: 1 }, ActiveTeam::Black, UnitType::King);
+
     let mut k = GameState {
-        factions: Factions {
-            black: black_tribe,
-            white: white_tribe,
-            parity: SingleMesh::new(),
-        },
+        factions,
         env: Environment {
             terrain: Terrain {
                 land: world.land.clone(),
@@ -645,10 +650,10 @@ pub async fn handle_player(
                 }
             };
 
-            if game.factions.relative(team).this_team.is_set(cell) {
+            if game.factions.get_all_team(team).is_set(cell) {
                 break SelectType { coord: cell, team };
             }
-            if game.factions.relative(team).that_team.is_set(cell) {
+            if game.factions.get_all_team(team.not()).is_set(cell) {
                 break SelectType {
                     coord: cell,
                     team: team.not(),

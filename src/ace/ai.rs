@@ -51,58 +51,58 @@ impl Evaluator {
             }
         }
 
-        let ship_allowed = {
-            let temp = &mut self.workspace;
-            temp.clear();
-            temp.union_with(&view.env.terrain.land);
-            temp.toggle_range(..);
-            let k = BitField::from_iter(world.get_game_cells().iter_mesh());
+        // let ship_allowed = {
+        //     let temp = &mut self.workspace;
+        //     temp.clear();
+        //     temp.union_with(&view.env.terrain.land);
+        //     temp.toggle_range(..);
+        //     let k = BitField::from_iter(world.get_game_cells().iter_mesh());
 
-            temp.intersect_with(&k);
-            temp
-        };
+        //     temp.intersect_with(&k);
+        //     temp
+        // };
 
-        let num_white = view.factions.white.count_ones() as i64;
-        let num_black = view.factions.black.count_ones() as i64;
+        let num_white = view.factions.get_all_team(ActiveTeam::White).count_ones() as i64;
+        let num_black = view.factions.get_all_team(ActiveTeam::Black).count_ones() as i64;
 
         //TODO remove this allocation
-        let mut white_influence = view.factions.white.all_alloc();
+        // let mut white_influence = view.factions.white.all_alloc();
 
-        let mut black_influence = view.factions.black.all_alloc();
+        // let mut black_influence = view.factions.black.all_alloc();
 
-        let mut white_influence = BitField::from_iter(white_influence.iter_mesh());
-        let mut black_influence = BitField::from_iter(black_influence.iter_mesh());
+        // let mut white_influence = BitField::from_iter(white_influence.iter_mesh());
+        // let mut black_influence = BitField::from_iter(black_influence.iter_mesh());
 
-        doop(
-            7,
-            &mut black_influence,
-            &mut white_influence,
-            &ship_allowed,
-            &mut self.workspace2,
-            &mut self.workspace3,
-        );
+        // doop(
+        //     7,
+        //     &mut black_influence,
+        //     &mut white_influence,
+        //     &ship_allowed,
+        //     &mut self.workspace2,
+        //     &mut self.workspace3,
+        // );
 
-        let num_white_influence = white_influence.count_ones(..) as i64;
-        let num_black_influence = black_influence.count_ones(..) as i64;
+        // let num_white_influence = white_influence.count_ones(..) as i64;
+        // let num_black_influence = black_influence.count_ones(..) as i64;
 
-        let black_distance = view
-            .factions
-            .black
-            .iter_mesh()
-            .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-            .sum::<i64>();
-        let white_distance = view
-            .factions
-            .white
-            .iter_mesh()
-            .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-            .sum::<i64>();
+        // let black_distance = view
+        //     .factions
+        //     .black
+        //     .iter_mesh()
+        //     .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
+        //     .sum::<i64>();
+        // let white_distance = view
+        //     .factions
+        //     .white
+        //     .iter_mesh()
+        //     .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
+        //     .sum::<i64>();
 
-        //The AI will try to avoid the center.
-        //The more influlence is at stake, the more precious each piece is
-        (num_white_influence - num_black_influence) * 100
-            + (-white_distance + black_distance) * 1
-            + (num_white - num_black) * 2000
+        // //The AI will try to avoid the center.
+        // //The more influlence is at stake, the more precious each piece is
+        // (num_white_influence - num_black_influence) * 100
+        //     + (-white_distance + black_distance) * 1
+        (num_white - num_black) * 2000
     }
 }
 

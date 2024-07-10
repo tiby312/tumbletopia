@@ -94,9 +94,9 @@ impl GameState {
         let game = self;
         let terrain = &game.env.terrain;
 
-        let this_team=game.factions.get_all_team(team);
-        let that_team=game.factions.get_all_team(team.not());
-        
+        let this_team = game.factions.get_all_team(team);
+        let that_team = game.factions.get_all_team(team.not());
+
         let other_side_occupied = |x: Axial| {
             game.factions.units.is_set(x)
                 && game.factions.parity.is_set(x) != game.factions.parity.is_set(unit)
@@ -189,29 +189,28 @@ impl GameState {
                 // }
             }
             UnitType::Knight(parity) => {
-//                 let i = match parity {
-//                     unit::Parity::One => 0,
-//                     unit::Parity::Two => 1,
-//                 };
+                //                 let i = match parity {
+                //                     unit::Parity::One => 0,
+                //                     unit::Parity::Two => 1,
+                //                 };
 
-//                 let k = [
-//                     hex::OFFSETS[i],
-//                     hex::OFFSETS[(i + 2) % 6],
-//                     hex::OFFSETS[(i + 4) % 6],
-//                 ];
+                //                 let k = [
+                //                     hex::OFFSETS[i],
+                //                     hex::OFFSETS[(i + 2) % 6],
+                //                     hex::OFFSETS[(i + 4) % 6],
+                //                 ];
 
-//                 for a in k.iter().chain(hex::DIAG_OFFSETS.iter()) {
-//                     let a = unit.add(hex::Cube::from_arr(*a).ax);
-//                     if world.get_game_cells().is_set(a)
-//                         && !game.env.fog.is_set(a)
-//                         && !terrain.is_set(a)
-//                         && !game.factions.relative(team).this_team.is_set(a)
-//                     {
-//                         mesh.add(a);
-//                     }
-//                 }
-// }
-                
+                //                 for a in k.iter().chain(hex::DIAG_OFFSETS.iter()) {
+                //                     let a = unit.add(hex::Cube::from_arr(*a).ax);
+                //                     if world.get_game_cells().is_set(a)
+                //                         && !game.env.fog.is_set(a)
+                //                         && !terrain.is_set(a)
+                //                         && !game.factions.relative(team).this_team.is_set(a)
+                //                     {
+                //                         mesh.add(a);
+                //                     }
+                //                 }
+                // }
             }
             UnitType::Book(parity) => {
                 // let i = match parity {

@@ -81,7 +81,7 @@ pub mod small_mesh {
             self.0 |= other.0
         }
         pub fn intersect(&self, other: &SingleMesh) -> SingleMesh {
-            SingleMesh(self.0 | other.0)
+            SingleMesh(self.0 & other.0)
         }
         pub fn add(&mut self, Axial { q, r }: Axial) {
             assert!(q >= 0 && q < 8 && r >= 0 && r < 8);
