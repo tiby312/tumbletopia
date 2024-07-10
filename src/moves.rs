@@ -94,41 +94,56 @@ impl GameState {
         let game = self;
         let terrain = &game.env.terrain;
 
+        let other_side_occupied = |x: Axial| {
+            game.factions.relative(team).has_a_set(x)
+                && game.factions.parity.is_set(x) != game.factions.parity.is_set(unit)
+        };
+
+        let is_enemy_same_parity = |x: Axial| {
+            game.factions.relative(team).that_team.is_set(x)
+                && game.factions.parity.is_set(x) == game.factions.parity.is_set(unit)
+        };
+
+        let is_friendly_same_parity = |x: Axial| {
+            game.factions.relative(team).this_team.is_set(x)
+                && game.factions.parity.is_set(x) == game.factions.parity.is_set(unit)
+        };
+        let is_friendly_different_parity = |x: Axial| {
+            game.factions.relative(team).this_team.is_set(x)
+                && game.factions.parity.is_set(x) != game.factions.parity.is_set(unit)
+        };
+
+        let ray = |mut c: Axial, v: Axial| {
+            std::iter::repeat_with(move || {
+                c = c.add(v);
+                c
+            })
+        };
+
         let i = match typ {
             UnitType::Rook => {
-                for (i, h) in hex::OFFSETS.into_iter().enumerate() {
-                    for a in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
-                        assert!(unit != a.to_axial());
-                        let a = a.ax;
-                        if !world.get_game_cells().is_set(a)
-                            || game.env.fog.is_set(a)
-                            || terrain.is_set(a)
-                            || game.factions.relative(team).this_team.is_set(a)
-                        {
+                for [q, r] in [[1, 0], [-1, 0], [0, 1], [0, -1]] {
+                    let uni = Axial { q, r };
+                    for a in ray(unit, uni) {
+                        if !world.get_game_cells().is_set(a) {
                             break;
                         }
 
-                        if for_show || game.factions.relative(team).that_team.is_set(a) {
+                        if is_friendly_same_parity(a) {
+                            break;
+                        }
+
+                        if !other_side_occupied(a) {
                             mesh.add(a);
                         }
 
-                        if game.factions.relative(team).that_team.is_set(a) {
+                        if is_enemy_same_parity(a) {
                             break;
                         }
                     }
                 }
             }
             UnitType::King => {
-                
-
-                let is_empty = |x: Axial| !game.factions.has_a_set(x);
-
-                let is_enemy_same_parity = |x: Axial| {
-                    game.factions.relative(team).that_team.is_set(x)
-                        && game.factions.parity.is_set(x) == game.factions.parity.is_set(unit)
-                };
-
-
                 for q in [-1, 0, 1] {
                     for r in [-1, 0, 1] {
                         if q == 0 && r == 0 {
@@ -136,7 +151,7 @@ impl GameState {
                         };
                         let k = unit.add(Axial { q, r });
                         if world.get_game_cells().is_set(k)
-                            && (is_empty(k) || is_enemy_same_parity(k))
+                            && (!other_side_occupied(k) || is_enemy_same_parity(k))
                         {
                             //console_dbg!(k,game_cells(k));
                             mesh.add(k)
