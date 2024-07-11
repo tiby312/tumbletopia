@@ -48,8 +48,19 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInter
                     }
                 }
             } else {
-                let a = k.into_serde().unwrap_throw();
-                ks.unbounded_send(a).unwrap_throw();
+                let payload: js_sys::JsString = k.into();
+                let payload: String = payload.into();
+
+                let e = match serde_json::from_str(&payload) {
+                    Ok(e) => e,
+                    Err(f) => {
+                        crate::console_dbg!("ERRRR", f);
+                        crate::console_dbg!(payload);
+                        panic!();
+                    }
+                };
+
+                ks.unbounded_send(e).unwrap_throw();
             }
         });
 
@@ -160,13 +171,12 @@ impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> Worker<MW, WM> {
             crate::console_dbg!("working got something");
             let event = event.dyn_ref::<web_sys::MessageEvent>().unwrap_throw();
             let data = event.data();
-            
+
             let data: js_sys::Array = data.dyn_into().unwrap_throw();
-            
+
             //let offscreen = data.get(0);
             let payload = data.get(1);
 
-            
             // if !offscreen.is_null() {
             //     let offscreen: web_sys::OffscreenCanvas = offscreen.dyn_into().unwrap_throw();
             //     if let Some(fs) = fs.take() {
@@ -174,7 +184,6 @@ impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> Worker<MW, WM> {
             //     }
             // }
 
-            
             if !payload.is_null() {
                 let payload: js_sys::JsString = payload.into();
                 let payload: String = payload.into();
@@ -227,11 +236,16 @@ impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> Worker<MW, WM> {
     }
 
     pub fn post_message(&mut self, a: WM) {
+        let stest = serde_json::to_string(&a).unwrap();
+        //crate::console_dbg!("tttest",stest);
+
+        let a: js_sys::JsString = stest.into();
+
         let scope = shogo::utils::get_worker_global_context();
 
         let data = js_sys::Array::new();
         data.set(0, JsValue::null());
-        data.set(1, JsValue::from_serde(&a).unwrap_throw());
+        data.set(1, a.into());
 
         scope.post_message(&data).unwrap_throw();
     }

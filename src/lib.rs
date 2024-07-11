@@ -176,12 +176,11 @@ pub async fn worker_entry() {
                     .await
                 };
 
-                
                 let k = futures::select!(
                     _ = aaa.fuse()=>unreachable!(),
                     x = ai_response.next() => x
                 );
-                
+
                 console_dbg!("render:finished ai");
                 ace::Response::AiFinish(k.expect("AI workerresponse error?").the_move)
             } else {
