@@ -78,17 +78,25 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInter
     }
 
     pub fn post_message(&mut self, val: MW) {
-        let a = JsValue::from_serde(&val).expect("Couldn't put it into json!!!!");
+        let stest = serde_json::to_string(&val).unwrap();
+        //crate::console_dbg!("tttest",stest);
 
-        if a.is_null(){
+        let a: js_sys::JsString = stest.into();
+
+        //let a = JsValue::from_serde(&val).expect("Couldn't put it into json!!!!");
+
+        if a.is_null() {
             crate::console_dbg!("FAILED TO PACK PAYLOAD INTO JSON");
         }
 
         let data = js_sys::Array::new();
         data.set(0, JsValue::null());
-        data.set(1, a);
+        data.set(1, a.into());
 
-        self.worker.borrow().post_message(&data).expect("Could not post message!");
+        self.worker
+            .borrow()
+            .post_message(&data)
+            .expect("Could not post message!");
     }
 
     // ///
@@ -152,15 +160,11 @@ impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> Worker<MW, WM> {
             crate::console_dbg!("working got something");
             let event = event.dyn_ref::<web_sys::MessageEvent>().unwrap_throw();
             let data = event.data();
-            crate::console_dbg!("a");
             
             let data: js_sys::Array = data.dyn_into().unwrap_throw();
-            crate::console_dbg!("a");
             
             //let offscreen = data.get(0);
             let payload = data.get(1);
-
-            crate::console_dbg!("a");
 
             
             // if !offscreen.is_null() {
@@ -170,24 +174,39 @@ impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> Worker<MW, WM> {
             //     }
             // }
 
-            crate::console_dbg!("a");
             
             if !payload.is_null() {
-                crate::console_dbg!("a");
-                crate::console_dbg!(payload);
-                let e=match payload.into_serde(){
+                let payload: js_sys::JsString = payload.into();
+                let payload: String = payload.into();
+
+                // crate::console_dbg!("a");
+                // //crate::console_dbg!(payload);
+
+                // let k=js_sys::JSON::stringify(&payload)
+                // .map(String::from)
+                // .unwrap_throw();
+                // crate::console_dbg!(k);
+
+                let e = match serde_json::from_str(&payload) {
                     Ok(e) => e,
                     Err(f) => {
-                        crate::console_dbg!("ERRRR",f);
+                        crate::console_dbg!("ERRRR", f);
                         crate::console_dbg!(payload);
                         panic!();
-                    },
+                    }
                 };
+
+                // let e=match payload.into_serde(){
+                //     Ok(e) => e,
+                //     Err(f) => {
+                //         crate::console_dbg!("ERRRR",f);
+                //         crate::console_dbg!(payload);
+                //         panic!();
+                //     },
+                // };
                 //let e = payload.into_serde().unwrap_throw();
-                crate::console_dbg!("Doopp1");
                 bags.unbounded_send(e).unwrap_throw();
-                crate::console_dbg!("Doopp2");
-            }else{
+            } else {
                 crate::console_dbg!("THE PAYLOAD IS NULL");
             }
         });

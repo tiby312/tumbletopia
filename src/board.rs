@@ -120,6 +120,8 @@ impl MyWorld {
             }
         }
 
+        console_dbg!("World=", w.0);
+
         // let j=[[2,3],[5,-3],[5,-4],[1,4]];
 
         // for j in j{

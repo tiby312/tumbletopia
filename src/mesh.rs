@@ -58,7 +58,7 @@ pub mod small_mesh {
     #[derive(
         Serialize, Deserialize, Default, Hash, PartialOrd, Ord, PartialEq, Eq, Debug, Clone,
     )]
-    pub struct SingleMesh(u64);
+    pub struct SingleMesh(pub u64);
 
     impl SingleMesh {
         pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SingleMesh {
