@@ -78,13 +78,17 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInter
     }
 
     pub fn post_message(&mut self, val: MW) {
-        let a = JsValue::from_serde(&val).unwrap_throw();
+        let a = JsValue::from_serde(&val).expect("Couldn't put it into json!!!!");
+
+        if a.is_null(){
+            crate::console_dbg!("FAILED TO PACK PAYLOAD INTO JSON");
+        }
 
         let data = js_sys::Array::new();
         data.set(0, JsValue::null());
         data.set(1, a);
 
-        self.worker.borrow().post_message(&data).unwrap_throw();
+        self.worker.borrow().post_message(&data).expect("Could not post message!");
     }
 
     // ///
@@ -145,13 +149,20 @@ impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> Worker<MW, WM> {
         let (bags, bagf) = futures::channel::mpsc::unbounded();
 
         let _handle = gloo::events::EventListener::new(&scope, "message", move |event| {
+            crate::console_dbg!("working got something");
             let event = event.dyn_ref::<web_sys::MessageEvent>().unwrap_throw();
             let data = event.data();
-
+            crate::console_dbg!("a");
+            
             let data: js_sys::Array = data.dyn_into().unwrap_throw();
+            crate::console_dbg!("a");
+            
             //let offscreen = data.get(0);
             let payload = data.get(1);
 
+            crate::console_dbg!("a");
+
+            
             // if !offscreen.is_null() {
             //     let offscreen: web_sys::OffscreenCanvas = offscreen.dyn_into().unwrap_throw();
             //     if let Some(fs) = fs.take() {
@@ -159,9 +170,25 @@ impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> Worker<MW, WM> {
             //     }
             // }
 
+            crate::console_dbg!("a");
+            
             if !payload.is_null() {
-                let e = payload.into_serde().unwrap_throw();
+                crate::console_dbg!("a");
+                crate::console_dbg!(payload);
+                let e=match payload.into_serde(){
+                    Ok(e) => e,
+                    Err(f) => {
+                        crate::console_dbg!("ERRRR",f);
+                        crate::console_dbg!(payload);
+                        panic!();
+                    },
+                };
+                //let e = payload.into_serde().unwrap_throw();
+                crate::console_dbg!("Doopp1");
                 bags.unbounded_send(e).unwrap_throw();
+                crate::console_dbg!("Doopp2");
+            }else{
+                crate::console_dbg!("THE PAYLOAD IS NULL");
             }
         });
 

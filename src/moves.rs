@@ -92,7 +92,7 @@ impl GameState {
     ) {
         let typ = self.factions.units.get_type(unit);
         let game = self;
-        let terrain = &game.env.terrain;
+        //let terrain = &game.env.terrain;
 
         let this_team = game.factions.get_all_team(team);
         let that_team = game.factions.get_all_team(team.not());
@@ -305,7 +305,7 @@ impl GameState {
         let game = self;
         let mut mesh = SmallMesh::new();
 
-        let terrain = &game.env.terrain;
+        //let terrain = &game.env.terrain;
 
         // let enemy_cover = {
         //     //TODO use a workspace instead
@@ -443,7 +443,7 @@ impl GameState {
                 let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
 
                 for sm in second_mesh.iter_mesh(Axial::zero()) {
-                    assert!(!state.env.terrain.is_set(sm));
+                    //assert!(!state.env.terrain.is_set(sm));
 
                     let kkk = mmm.into_attack(sm);
 

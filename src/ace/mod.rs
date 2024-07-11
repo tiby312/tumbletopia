@@ -150,7 +150,10 @@ impl WorkerManager {
         game1: &mut GameState,
         co: Command,
     ) -> Response {
+        console_dbg!("aaa");
+
         let game2 = std::mem::take(game1);
+        
         self.sender
             .send(GameWrap {
                 game: game2,
@@ -158,9 +161,12 @@ impl WorkerManager {
                 team,
             })
             .await
-            .unwrap();
+            .expect("got a send error???");
 
-        let GameWrap { mut game, data, .. } = self.receiver.next().await.unwrap();
+            console_dbg!("bbb");
+
+        let GameWrap { mut game, data, .. } = self.receiver.next().await.expect("Didnt get response??");
+        console_dbg!("ccc");
 
         std::mem::swap(&mut game, game1);
 
