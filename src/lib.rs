@@ -54,16 +54,9 @@ pub async fn worker_entry2() {
 
     loop {
         console_dbg!("worker:waiting");
-        let mut res = response.next().await;
-        //let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
+        let mut res = response.next().await.unwrap();
+        let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
         console_dbg!("worker:processing");
-
-        let res = res.unwrap();
-        let the_move = ActualMove {
-            original: Axial::zero(),
-            moveto: Axial::zero(),
-            attackto: Axial::zero(),
-        };
 
         console_dbg!("worker:finished processing");
         worker.post_message(AiResponse { the_move });
