@@ -54,9 +54,14 @@ pub async fn worker_entry2() {
 
     loop {
         console_dbg!("worker:waiting");
-        let mut res = response.next().await.unwrap();
+        let mut res = response.next().await;
+        //let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
         console_dbg!("worker:processing");
-        let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
+        
+        let res=res.unwrap();
+        let the_move=ActualMove{ original: Axial::zero(), moveto: Axial::zero(), attackto: Axial::zero() };
+
+        
         console_dbg!("worker:finished processing");
         worker.post_message(AiResponse { the_move });
     }
@@ -97,6 +102,7 @@ pub async fn worker_entry() {
 
     let (mut ai_worker, mut ai_response) =
         worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;
+
     console_dbg!("created ai worker");
 
     let last_matrix = cgmath::Matrix4::identity();
@@ -144,33 +150,53 @@ pub async fn worker_entry() {
             //if let Command::
             let data = if let ace::Command::WaitAI = data {
                 console_dbg!("render:sending ai");
+
+                console_dbg!("foooo");
+
                 //send ai worker game
                 ai_worker.post_message(AiCommand {
                     game: game.clone(),
                     world: world.clone(),
                     team,
                 });
+                console_dbg!("foooo333");
+
+                futures::future::pending::<()>().await;
+
+                console_dbg!("foooo555");
+
                 //select on both
                 use futures::FutureExt;
 
+                
                 let aaa = async {
-                    render_command(
-                        data,
-                        &mut game,
-                        team,
-                        &mut render,
-                        &world,
-                        &mut frame_timer,
-                        &mut wr,
-                    )
-                    .await
+                    futures::future::pending::<()>().await;
+                    // render_command(
+                    //     data,
+                    //     &mut game,
+                    //     team,
+                    //     &mut render,
+                    //     &world,
+                    //     &mut frame_timer,
+                    //     &mut wr,
+                    // )
+                    // .await
                 };
-                let k = futures::select!(
-                    _ = aaa.fuse()=>unreachable!(),
-                    x = ai_response.next() => x
-                );
+
+                console_dbg!("foooo");
+                
+                // let k = futures::select!(
+                //     _ = aaa.fuse()=>unreachable!(),
+                //     x = ai_response.next() => x
+                // );
+                let k=ai_response.next();
+
+                console_dbg!("fo2");
+                
+                let k=k.await;
+
                 console_dbg!("render:finished ai");
-                ace::Response::AiFinish(k.unwrap().the_move)
+                ace::Response::AiFinish(k.expect("AI workerresponse error?").the_move)
             } else {
                 render_command(
                     data,
@@ -233,7 +259,12 @@ pub async fn worker_entry() {
             if foo {
                 //ai_worker.post_message(AiCommand{game:game.clone(),world:world.clone(),team});
                 console_dbg!("game:Sending ai command");
+                
                 let the_move = doop.wait_ai(team, &mut game).await;
+                //let the_move = ace::ai::iterative_deepening(&mut game, &world, team);
+        
+                //let the_move=
+
                 console_dbg!("game:finished");
                 // use futures::FutureExt;
                 // let mut jj=game.clone();
