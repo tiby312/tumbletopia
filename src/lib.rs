@@ -591,9 +591,9 @@ async fn render_command(
             generate()
         };
         let mut foo = false;
-        draw_sys
-            .batch(visible_water.iter_mesh().map(|e| grid_snap(e, 0.0)))
-            .build(water);
+        // draw_sys
+        //     .batch(visible_water.iter_mesh().map(|e| grid_snap(e, 0.0)))
+        //     .build(water);
 
         {
             //Draw grass
@@ -935,6 +935,10 @@ async fn render_command(
             ActiveTeam::White,
             &models.white_trook,
         );
+
+        draw_sys
+            .batch(visible_water.iter_mesh().map(|e| grid_snap(e, 0.0)))
+            .build(water);
 
         // let d = DepthDisabler::new(ctx);
 

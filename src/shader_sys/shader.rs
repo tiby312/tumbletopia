@@ -23,7 +23,7 @@ void main() {
         out_color = o ;
     }else{
         out_color = o ; 
-
+        
         // because v_normal is a varying it's interpolated
         // so it will not be a unit vector. Normalizing it
         // will make it a unit vector again
@@ -35,6 +35,7 @@ void main() {
         // Lets multiply just the color portion (not the alpha)
         // by the light
         out_color.rgb *= light;
+        
     }
 
     if(grayscale==1){
