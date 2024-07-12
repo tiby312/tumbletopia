@@ -581,17 +581,18 @@ async fn render_command(
         draw_sys.draw_clear([0.5, 0.5, 0.5, 0.0]);
 
         pub const LAND_OFFSET: f32 = -10.0;
-        //rr+=0.01;
+        rr += 0.01;
+
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
-
+            //let r=matrix::z_rotation(1.0);
             my_matrix.chain(t).//.chain(matrix::z_rotation(rr)).
             generate()
         };
         let mut foo = false;
         draw_sys
-            .batch(visible_water.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET)))
+            .batch(visible_water.iter_mesh().map(|e| grid_snap(e, 0.0)))
             .build(water);
 
         {
@@ -698,7 +699,7 @@ async fn render_command(
             if let Some((selection, grey)) = a {
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
-                        let cells = mesh.iter_mesh(Axial::zero()).map(|e| grid_snap(e, -8.0));
+                        let cells = mesh.iter_mesh(Axial::zero()).map(|e| grid_snap(e, 2.0));
                         draw_sys
                             .batch(cells)
                             .no_lighting()
@@ -747,7 +748,7 @@ async fn render_command(
         {
             let pos = mouse_world;
 
-            let t = matrix::translation(pos[0], pos[1], -1.0);
+            let t = matrix::translation(pos[0], pos[1], 2.0);
 
             let m = my_matrix.chain(t).//.chain(matrix::z_rotation(std::f32::consts::TAU/6.0)).
                 generate();
@@ -755,7 +756,14 @@ async fn render_command(
             draw_sys.batch([m]).no_lighting().build(attack_model);
         }
 
-        let zzzz = -9.0;
+        // {
+        //     let mouse: Axial = grid_matrix.world_to_hex(mouse_world.into());
+        //     let m=grid_snap(mouse,-9.0);
+
+        //     draw_sys.batch([m]).no_lighting().build(water);
+        // }
+
+        let zzzz = 1.;
         {
             // Draw shadows
             let _d = DepthDisabler::new(ctx);
@@ -774,7 +782,7 @@ async fn render_command(
             draw_sys.batch(all_shadows).build(drop_shadow);
         }
 
-        let zzzz = -10.0;
+        let zzzz = 0.;
         let mut draw_unit_type =
             |mytype: UnitType, my_team: ActiveTeam, model: &Foo<TextureGpu, ModelGpu>| {
                 let i = match mytype {

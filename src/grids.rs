@@ -26,18 +26,23 @@ impl HexConverter {
         scale
     }
 
-    pub fn world_to_hex(&self, pos: cgmath::Vector2<f32>) -> Axial {
+    pub fn world_to_hex(&self, mut pos: cgmath::Vector2<f32>) -> Axial {
         use cgmath::SquareMatrix;
         let k = self.hex_axial_to_square_matrix().invert().unwrap() * pos;
-        let q = k.x;
-        let r = k.y;
-        let s = -k.x - k.y;
-        hex::Cube::round([q, r, s]).to_axial()
+
+        // let q = k.x;
+        // let r = k.y;
+        // let s = -k.x - k.y;
+        // hex::Cube::round([q, r, s]).to_axial()
+
+        let q = (k.x).round() as i8;
+        let r = (k.y).round() as i8;
+        Axial { q, r }
     }
 
     pub fn hex_axial_to_world(&self, coord: &Axial) -> cgmath::Vector2<f32> {
         let v = cgmath::Vector2::new(coord.q as f32, coord.r as f32);
-        self.hex_axial_to_square_matrix() * v
+        (self.hex_axial_to_square_matrix() * v)
     }
 
     pub fn new() -> Self {
