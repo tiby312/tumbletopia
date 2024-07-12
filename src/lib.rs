@@ -768,7 +768,13 @@ async fn render_command(
             // Draw shadows
             let _d = DepthDisabler::new(ctx);
 
-            let shadows = game.factions.units.iter_mesh().map(|e| grid_snap(e, zzzz));
+            let shadows = game
+                .factions
+                .units
+                .all_units()
+                .intersect(&game.factions.parity.not())
+                .iter_mesh()
+                .map(|e| grid_snap(e, zzzz));
 
             let ani_drop_shadow = unit_animation.as_ref().map(|a| {
                 let pos = a.0;
@@ -815,17 +821,17 @@ async fn render_command(
                     // };
                     let c = e;
 
-                    let rr = if game.factions.parity.is_set(e) {
-                        std::f32::consts::PI
+                    let (cc, rr) = if game.factions.parity.is_set(e) {
+                        (-1.0, std::f32::consts::PI)
                     } else {
-                        0.0
+                        (1.0, 0.0)
                     };
                     // let c = if e.q>=0{
                     //     e
                     // }else{
                     //     e.add(Axial{q:8,r:0})
                     // };
-                    let cc = zzzz;
+                    //let cc = zzzz;
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, cc);
 
