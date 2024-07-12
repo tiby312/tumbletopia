@@ -391,58 +391,34 @@ impl Tribe {
 }
 
 #[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
-
-pub enum Parity {
-    One,
-    Two,
-}
-
-#[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
-
-pub enum TrookParity {
-    One,
-    Two,
-    Three,
-}
-
-#[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum UnitType {
-    Book(Parity),
-    Knight(Parity),
-    Pawn,
     King,
+    Queen,
     Rook,
-    Trook(TrookParity),
+    Bishop,
+    Knight,
+    Pawn,
 }
 impl UnitType {
     pub fn to_int(&self) -> usize {
         match self {
-            UnitType::Book(Parity::One) => 0,
-            UnitType::Book(Parity::Two) => 1,
-            UnitType::Knight(Parity::One) => 2,
-            UnitType::Knight(Parity::Two) => 3,
-            UnitType::Pawn => 4,
-            UnitType::King => 5,
-            UnitType::Rook => 6,
-            UnitType::Trook(TrookParity::One) => 7,
-            UnitType::Trook(TrookParity::Two) => 8,
-            UnitType::Trook(TrookParity::Three) => 9,
+            UnitType::King => 0,
+            UnitType::Queen => 1,
+            UnitType::Rook => 2,
+            UnitType::Bishop => 3,
+            UnitType::Knight => 4,
+            UnitType::Pawn => 5,
         }
     }
     pub fn from_int(a: usize) -> UnitType {
         use UnitType::*;
         match a {
-            0 => Book(Parity::One),
-            1 => Book(Parity::Two),
-            2 => Knight(Parity::One),
-            3 => Knight(Parity::Two),
-            4 => Pawn,
-            5 => King,
-            6 => Rook,
-            7 => Trook(TrookParity::One),
-            8 => Trook(TrookParity::Two),
-            9 => Trook(TrookParity::Three),
-
+            0 => King,
+            1 => Queen,
+            2 => Rook,
+            3 => Bishop,
+            4 => Knight,
+            5 => Pawn,
             _ => unreachable!(),
         }
     }

@@ -159,13 +159,6 @@ impl GameState {
                         let k = Axial { q, r };
 
                         ray2(k, mesh, 1);
-
-                        // if world.get_game_cells().is_set(k)
-                        //     && (!other_side_occupied(k) || is_enemy_same_parity(k))
-                        // {
-                        //     //console_dbg!(k,game_cells(k));
-                        //     mesh.add(k)
-                        // }
                     }
                 }
             }
@@ -188,108 +181,41 @@ impl GameState {
                 //     }
                 // }
             }
-            UnitType::Knight(parity) => {
-                //                 let i = match parity {
-                //                     unit::Parity::One => 0,
-                //                     unit::Parity::Two => 1,
-                //                 };
-
-                //                 let k = [
-                //                     hex::OFFSETS[i],
-                //                     hex::OFFSETS[(i + 2) % 6],
-                //                     hex::OFFSETS[(i + 4) % 6],
-                //                 ];
-
-                //                 for a in k.iter().chain(hex::DIAG_OFFSETS.iter()) {
-                //                     let a = unit.add(hex::Cube::from_arr(*a).ax);
-                //                     if world.get_game_cells().is_set(a)
-                //                         && !game.env.fog.is_set(a)
-                //                         && !terrain.is_set(a)
-                //                         && !game.factions.relative(team).this_team.is_set(a)
-                //                     {
-                //                         mesh.add(a);
-                //                     }
-                //                 }
-                // }
+            UnitType::Knight => {
+                for [q, r] in [
+                    [2, 1],
+                    [2, -1],
+                    [-2, 1],
+                    [-2, -1],
+                    [1, 2],
+                    [-1, 2],
+                    [1, -2],
+                    [-1, -2],
+                ] {
+                    let uni = Axial { q, r };
+                    ray2(uni, mesh, 1);
+                }
             }
-            UnitType::Book(parity) => {
-                // let i = match parity {
-                //     unit::Parity::One => 0,
-                //     unit::Parity::Two => 1,
-                // };
-
-                // let j = i + 1;
-                // let k = [
-                //     hex::OFFSETS[i],
-                //     hex::OFFSETS[(i + 2) % 6],
-                //     hex::OFFSETS[(i + 4) % 6],
-                //     // hex::DIAG_OFFSETS[j],
-                //     // hex::DIAG_OFFSETS[(j + 3) % 6],
-                // ]
-                // .map(hex::Cube::from_arr);
-
-                // for h in k {
-                //     for a in unit.to_cube().ray_from_vector(h).take(15) {
-                //         //for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
-                //         assert!(unit != a.to_axial());
-                //         let a = a.ax;
-                //         if !world.get_game_cells().is_set(a)
-                //             || game.env.fog.is_set(a)
-                //             || terrain.is_set(a)
-                //             || game.factions.relative(team).this_team.is_set(a)
-                //         {
-                //             break;
-                //         }
-
-                //         if for_show || game.factions.relative(team).that_team.is_set(a) {
-                //             //mesh.add(a.sub(&unit));
-                //             mesh.add(a);
-                //         }
-
-                //         if game.factions.relative(team).that_team.is_set(a) {
-                //             break;
-                //         }
-                //     }
-                // }
+            UnitType::Bishop => {
+                for [q, r] in [[1, 1], [-1, -1], [-1, 1], [1, -1]] {
+                    let uni = Axial { q, r };
+                    ray2(uni, mesh, 8);
+                }
             }
-            UnitType::Trook(a) => {
-                // let i = match a {
-                //     TrookParity::One => 0,
-                //     TrookParity::Two => 1,
-                //     TrookParity::Three => 2,
-                // };
-
-                // let k = [
-                //     hex::OFFSETS[i],
-                //     hex::OFFSETS[(i + 1) % 6],
-                //     hex::OFFSETS[(i + 3) % 6],
-                //     hex::OFFSETS[(i + 4) % 6],
-                // ]
-                // .map(hex::Cube::from_arr);
-
-                // for h in k {
-                //     for a in unit.to_cube().ray_from_vector(h).take(15) {
-                //         //for (a, _) in unit.to_cube().ray(h).skip(1).take(2) {
-                //         assert!(unit != a.to_axial());
-                //         let a = a.ax;
-                //         if !world.get_game_cells().is_set(a)
-                //             || game.env.fog.is_set(a)
-                //             || terrain.is_set(a)
-                //             || game.factions.relative(team).this_team.is_set(a)
-                //         {
-                //             break;
-                //         }
-
-                //         if for_show || game.factions.relative(team).that_team.is_set(a) {
-                //             //mesh.add(a.sub(&unit));
-                //             mesh.add(a);
-                //         }
-
-                //         if game.factions.relative(team).that_team.is_set(a) {
-                //             break;
-                //         }
-                //     }
-                // }
+            UnitType::Queen => {
+                for [q, r] in [
+                    [1, 1],
+                    [-1, -1],
+                    [-1, 1],
+                    [1, -1],
+                    [1, 0],
+                    [-1, 0],
+                    [0, 1],
+                    [0, -1],
+                ] {
+                    let uni = Axial { q, r };
+                    ray2(uni, mesh, 8);
+                }
             }
         };
     }

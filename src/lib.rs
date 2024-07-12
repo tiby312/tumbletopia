@@ -791,23 +791,23 @@ async fn render_command(
         let zzzz = 0.;
         let mut draw_unit_type =
             |mytype: UnitType, my_team: ActiveTeam, model: &Foo<TextureGpu, ModelGpu>| {
-                let i = match mytype {
-                    UnitType::Book(Parity::One) => 2,
-                    UnitType::Book(Parity::Two) => 1,
-                    UnitType::Pawn | UnitType::King => {
-                        if let ActiveTeam::White = my_team {
-                            2
-                        } else {
-                            5
-                        }
-                    }
-                    UnitType::Knight(Parity::One) => 2,
-                    UnitType::Knight(Parity::Two) => 1,
-                    UnitType::Rook => 0,
-                    UnitType::Trook(TrookParity::One) => 3,
-                    UnitType::Trook(TrookParity::Two) => 2,
-                    UnitType::Trook(TrookParity::Three) => 1,
-                };
+                // let i = match mytype {
+                //     UnitType::Book(Parity::One) => 2,
+                //     UnitType::Book(Parity::Two) => 1,
+                //     UnitType::Pawn | UnitType::King => {
+                //         if let ActiveTeam::White = my_team {
+                //             2
+                //         } else {
+                //             5
+                //         }
+                //     }
+                //     UnitType::Knight(Parity::One) => 2,
+                //     UnitType::Knight(Parity::Two) => 1,
+                //     UnitType::Rook => 0,
+                //     UnitType::Trook(TrookParity::One) => 3,
+                //     UnitType::Trook(TrookParity::Two) => 2,
+                //     UnitType::Trook(TrookParity::Three) => 1,
+                // };
 
                 let foo = game.factions.specific_unit(mytype, my_team);
 
@@ -856,91 +856,25 @@ async fn render_command(
                 draw_sys.batch(k).build(model)
             };
 
-        // draw_unit_type(
-        //     UnitType::Pawn,
-        //     ActiveTeam::White,
-        //     &game.factions.white.pawn,
-        //     white_pawn,
-        // );
-        // draw_unit_type(
-        //     UnitType::Pawn,
-        //     ActiveTeam::Black,
-        //     &game.factions.black.pawn,
-        //     black_pawn,
-        // );
+        //TODO combine into one draw call
 
         draw_unit_type(UnitType::Rook, ActiveTeam::White, white_rook);
-
         draw_unit_type(UnitType::Rook, ActiveTeam::Black, black_rook);
 
         draw_unit_type(UnitType::Pawn, ActiveTeam::White, white_pawn);
-
         draw_unit_type(UnitType::Pawn, ActiveTeam::Black, black_pawn);
 
-        draw_unit_type(
-            UnitType::Knight(Parity::One),
-            ActiveTeam::White,
-            white_knight,
-        );
-        draw_unit_type(
-            UnitType::Knight(Parity::One),
-            ActiveTeam::Black,
-            black_knight,
-        );
+        draw_unit_type(UnitType::Knight, ActiveTeam::White, white_knight);
+        draw_unit_type(UnitType::Knight, ActiveTeam::Black, black_knight);
 
-        draw_unit_type(
-            UnitType::Knight(Parity::Two),
-            ActiveTeam::White,
-            white_knight,
-        );
-        draw_unit_type(
-            UnitType::Knight(Parity::Two),
-            ActiveTeam::Black,
-            black_knight,
-        );
+        draw_unit_type(UnitType::Bishop, ActiveTeam::White, white_bishop);
+        draw_unit_type(UnitType::Bishop, ActiveTeam::White, white_bishop);
 
         draw_unit_type(UnitType::King, ActiveTeam::White, &models.white_king);
-
         draw_unit_type(UnitType::King, ActiveTeam::Black, &models.black_king);
 
-        //TODO combine into one draw call
-        draw_unit_type(UnitType::Book(Parity::One), ActiveTeam::White, white_bishop);
-        draw_unit_type(UnitType::Book(Parity::Two), ActiveTeam::White, white_bishop);
-
-        draw_unit_type(UnitType::Book(Parity::One), ActiveTeam::Black, black_bishop);
-        draw_unit_type(UnitType::Book(Parity::Two), ActiveTeam::Black, black_bishop);
-
-        draw_unit_type(
-            UnitType::Trook(TrookParity::One),
-            ActiveTeam::Black,
-            &models.black_trook,
-        );
-        draw_unit_type(
-            UnitType::Trook(TrookParity::Two),
-            ActiveTeam::Black,
-            &models.black_trook,
-        );
-        draw_unit_type(
-            UnitType::Trook(TrookParity::Three),
-            ActiveTeam::Black,
-            &models.black_trook,
-        );
-
-        draw_unit_type(
-            UnitType::Trook(TrookParity::One),
-            ActiveTeam::White,
-            &models.white_trook,
-        );
-        draw_unit_type(
-            UnitType::Trook(TrookParity::Two),
-            ActiveTeam::White,
-            &models.white_trook,
-        );
-        draw_unit_type(
-            UnitType::Trook(TrookParity::Three),
-            ActiveTeam::White,
-            &models.white_trook,
-        );
+        draw_unit_type(UnitType::Queen, ActiveTeam::Black, &models.black_trook);
+        draw_unit_type(UnitType::Queen, ActiveTeam::White, &models.white_trook);
 
         draw_sys
             .batch(visible_water.iter_mesh().map(|e| grid_snap(e, 0.0)))

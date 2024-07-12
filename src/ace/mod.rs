@@ -535,6 +535,18 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         OParity::Normal,
     );
     factions.add_piece(
+        Axial { q: 5, r: 3 },
+        ActiveTeam::White,
+        UnitType::Bishop,
+        OParity::Normal,
+    );
+    factions.add_piece(
+        Axial { q: 5, r: 4 },
+        ActiveTeam::White,
+        UnitType::Knight,
+        OParity::Normal,
+    );
+    factions.add_piece(
         Axial { q: 1, r: 1 },
         ActiveTeam::Black,
         UnitType::King,
