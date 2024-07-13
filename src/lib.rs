@@ -832,7 +832,7 @@ async fn render_command(
                     let c = e;
 
                     let (cc, rr) = if game.factions.parity.is_set(e) {
-                        (1.0, std::f32::consts::PI)
+                        (-1.0, std::f32::consts::PI)
                     } else {
                         (1.0, 0.0)
                     };
