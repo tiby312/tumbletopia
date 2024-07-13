@@ -788,6 +788,20 @@ async fn render_command(
             draw_sys.batch(all_shadows).build(drop_shadow);
         }
 
+
+        // draw_sys
+        //     .batch(game.factions.parity.iter_mesh().map(|c| {
+        //         let pos = grid_matrix.hex_axial_to_world(&c);
+        //         let t = matrix::translation(pos.x, pos.y, 0.0);
+        //         //let r=matrix::z_rotation(1.0);
+        //         my_matrix.chain(t).chain(matrix::scale(0.5,0.5,0.5)).//.chain(matrix::z_rotation(rr)).
+        //         generate()
+        //     }))
+        //     .build(grass);
+
+        
+
+
         let zzzz = 0.;
         let mut draw_unit_type =
             |mytype: UnitType, my_team: ActiveTeam, model: &Foo<TextureGpu, ModelGpu>| {
@@ -822,7 +836,7 @@ async fn render_command(
                     let c = e;
 
                     let (cc, rr) = if game.factions.parity.is_set(e) {
-                        (10.0, 0.0)
+                        (1.0, std::f32::consts::PI)
                     } else {
                         (1.0, 0.0)
                     };
@@ -879,6 +893,8 @@ async fn render_command(
         draw_sys
             .batch(visible_water.iter_mesh().map(|e| grid_snap(e, 0.0)))
             .build(water);
+
+
 
         // let d = DepthDisabler::new(ctx);
 
