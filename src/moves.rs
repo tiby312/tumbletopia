@@ -123,13 +123,17 @@ impl GameState {
             })
         };
 
-        let ray2 = |uni: Axial, mesh: &mut SmallMesh, num: usize| {
+        let ray2 = |uni: Axial, mesh: &mut SmallMesh, num: usize, attacking: bool| {
             for a in ray(unit, uni).take(num) {
                 if !world.get_game_cells().is_set(a) {
                     break;
                 }
 
                 if is_friendly_same_parity(a) {
+                    break;
+                }
+
+                if !attacking && is_enemy_same_parity(a) {
                     break;
                 }
 
@@ -147,7 +151,7 @@ impl GameState {
             UnitType::Rook => {
                 for [q, r] in [[1, 0], [-1, 0], [0, 1], [0, -1]] {
                     let uni = Axial { q, r };
-                    ray2(uni, mesh, 8);
+                    ray2(uni, mesh, 8, true);
                 }
             }
             UnitType::King => {
@@ -158,12 +162,27 @@ impl GameState {
                         };
                         let k = Axial { q, r };
 
-                        ray2(k, mesh, 1);
+                        ray2(k, mesh, 1, true);
                     }
                 }
             }
             UnitType::Pawn => {
-                // let dd = if let ActiveTeam::White = team { 3 } else { 0 };
+                let (forward, diag) = if let ActiveTeam::Black = team {
+                    ([1, 0], [[1, -1], [1, 1]])
+                } else {
+                    ([-1, 0], [[-1, -1], [-1, 1]])
+                };
+
+                ray2(Axial::from_arr(forward), mesh, 1, false);
+
+                for diag in diag {
+                    let j = Axial::from_arr(diag);
+
+                    if is_enemy_same_parity(unit.add(j)) {
+                        ray2(j, mesh, 1, true);
+                    }
+                }
+
                 // let k = unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax);
 
                 // if world.get_game_cells().is_set(k)
@@ -193,13 +212,13 @@ impl GameState {
                     [-1, -2],
                 ] {
                     let uni = Axial { q, r };
-                    ray2(uni, mesh, 1);
+                    ray2(uni, mesh, 1, true);
                 }
             }
             UnitType::Bishop => {
                 for [q, r] in [[1, 1], [-1, -1], [-1, 1], [1, -1]] {
                     let uni = Axial { q, r };
-                    ray2(uni, mesh, 8);
+                    ray2(uni, mesh, 8, true);
                 }
             }
             UnitType::Queen => {
@@ -214,7 +233,7 @@ impl GameState {
                     [0, -1],
                 ] {
                     let uni = Axial { q, r };
-                    ray2(uni, mesh, 8);
+                    ray2(uni, mesh, 8, true);
                 }
             }
         };

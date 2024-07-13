@@ -553,6 +553,18 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         OParity::Normal,
     );
 
+    factions.add_piece(
+        Axial { q: 2, r: 2 },
+        ActiveTeam::Black,
+        UnitType::Pawn,
+        OParity::Normal,
+    );
+    factions.add_piece(
+        Axial { q: 6, r: 2 },
+        ActiveTeam::White,
+        UnitType::Pawn,
+        OParity::Normal,
+    );
     let mut k = GameState {
         factions,
         env: Environment {

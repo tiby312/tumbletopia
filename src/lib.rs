@@ -788,7 +788,6 @@ async fn render_command(
             draw_sys.batch(all_shadows).build(drop_shadow);
         }
 
-
         // draw_sys
         //     .batch(game.factions.parity.iter_mesh().map(|c| {
         //         let pos = grid_matrix.hex_axial_to_world(&c);
@@ -798,9 +797,6 @@ async fn render_command(
         //         generate()
         //     }))
         //     .build(grass);
-
-        
-
 
         let zzzz = 0.;
         let mut draw_unit_type =
@@ -893,8 +889,6 @@ async fn render_command(
         draw_sys
             .batch(visible_water.iter_mesh().map(|e| grid_snap(e, 0.0)))
             .build(water);
-
-
 
         // let d = DepthDisabler::new(ctx);
 
