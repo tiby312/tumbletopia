@@ -785,12 +785,22 @@ async fn render_command(
                 .iter_mesh()
                 .map(|e| grid_snap(e, zzzz));
 
-            let ani_drop_shadow = unit_animation.as_ref().map(|a| {
-                let pos = a.0;
-                my_matrix
-                    .chain(matrix::translation(pos.x, pos.y, zzzz))
-                    .generate()
-            });
+            let ani_drop_shadow = unit_animation
+                .as_ref()
+                .filter(|(_, _, _, _, _, parity)| {
+                    if let OParity::Normal = parity {
+                        true
+                    } else {
+                        false
+                    }
+                })
+                .map(|(a, _, _, _, _, _)| {
+                    let pos = a;
+
+                    my_matrix
+                        .chain(matrix::translation(pos.x, pos.y, zzzz))
+                        .generate()
+                });
 
             let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
 
