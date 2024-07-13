@@ -376,8 +376,8 @@ async fn render_command(
                 unit,
                 ttt,
                 end,
-                path,
                 data,
+                parity,
             } => {
                 let ff = match data {
                     move_build::PushInfo::PushedLand => {
@@ -393,9 +393,18 @@ async fn render_command(
                     move_build::PushInfo::None => None,
                 };
 
-                let it = path.animation_iter(unit, grid_matrix);
+                let it = {
+                    let a = grid_matrix.hex_axial_to_world(&unit);
+                    let b = grid_matrix.hex_axial_to_world(&end);
 
-                unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ttt, ff));
+                    (0..100).map(move |c| {
+                        let counter = c as f32 / 100.0;
+                        use cgmath::VectorSpace;
+                        a.lerp(b, counter)
+                    })
+                };
+
+                unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ttt, ff, parity));
             }
             animation::AnimationCommand::Terrain {
                 pos,
@@ -568,7 +577,7 @@ async fn render_command(
                 return ace::Response::AnimationFinish;
             }
         }
-        if let Some((lpos, a, _, _, _data)) = &mut unit_animation {
+        if let Some((lpos, a, _, _, _data, _)) = &mut unit_animation {
             if let Some(pos) = a.next() {
                 *lpos = pos;
             } else {
@@ -620,7 +629,7 @@ async fn render_command(
                 None
             };
 
-            let push_grass = if let Some((pos, _, _unit, _, data)) = &unit_animation {
+            let push_grass = if let Some((pos, _, _unit, _, data, _)) = &unit_animation {
                 if let Some(f) = data {
                     let kk = pos + f;
                     let m = my_matrix
@@ -823,6 +832,14 @@ async fn render_command(
 
                 //let rr = (std::f32::consts::TAU / 6.0) * i as f32;
 
+                let dddam = |parity: OParity| {
+                    if let OParity::Upsidedown = parity {
+                        (-1.0, std::f32::consts::PI)
+                    } else {
+                        (1.0, 0.0)
+                    }
+                };
+
                 let color = foo.iter_mesh().map(|e| {
                     // let rr=if e.q>=0{
                     //     0.0
@@ -831,11 +848,12 @@ async fn render_command(
                     // };
                     let c = e;
 
-                    let (cc, rr) = if game.factions.parity.is_set(e) {
-                        (-1.0, std::f32::consts::PI)
+                    let (cc, rr) = dddam(if game.factions.parity.is_set(e) {
+                        OParity::Upsidedown
                     } else {
-                        (1.0, 0.0)
-                    };
+                        OParity::Normal
+                    });
+
                     // let c = if e.q>=0{
                     //     e
                     // }else{
@@ -850,14 +868,16 @@ async fn render_command(
 
                 let ani = unit_animation
                     .as_ref()
-                    .filter(|(pos, _, unit, ttt, _data)| {
+                    .filter(|(pos, _, unit, ttt, _data, _)| {
                         *ttt == mytype && team == my_team
                         //foo.is_set(*unit)
                     })
-                    .map(|(pos, _, unit, _, _data)| {
+                    .map(|(pos, _, unit, _, _data, parity)| {
+                        let (cc, rr) = dddam(*parity);
+
                         my_matrix
-                            .chain(matrix::translation(pos.x, pos.y, zzzz))
-                            .chain(matrix::scale(1.0, 1.0, 1.0))
+                            .chain(matrix::translation(pos.x, pos.y, cc))
+                            .chain(matrix::x_rotation(rr))
                             .generate()
                     });
 

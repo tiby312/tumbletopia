@@ -51,8 +51,8 @@ pub enum AnimationCommand {
     Movement {
         unit: Axial,
         ttt: UnitType,
+        parity: OParity,
         end: Axial,
-        path: mesh::MyPath,
         data: PushInfo,
     },
     Terrain {

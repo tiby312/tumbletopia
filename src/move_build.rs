@@ -259,13 +259,13 @@ impl MovePhase {
         data: &mut ace::WorkerManager,
     ) -> &Self {
         //TODO remove
-        return self;
+
         let target = self.moveto;
-        let paths = calculate_paths(self.original, self.moveto, state, world);
+        //let paths = calculate_paths(self.original, self.moveto, state, world);
 
-        assert!(state.factions.get_all_team(team).is_set(self.original));
+        //assert!(state.factions.get_all_team(team).is_set(self.original));
 
-        let mesh = state.generate_possible_moves_movement(world, &self.original, team);
+        //let mesh = state.generate_possible_moves_movement(world, &self.original, team);
 
         let info = {
             let target_cell = self.moveto;
@@ -301,32 +301,32 @@ impl MovePhase {
             PushInfo::None => {}
         }
 
-        let capturing = state.factions.get_all_team(team.not()).is_set(end);
-        if !capturing {
-            let path = mesh::path(
-                &mesh,
-                self.original,
-                self.moveto,
-                &paths,
-                state,
-                team,
-                world,
-                capturing,
-            );
+        //let capturing = state.factions.get_all_team(team.not()).is_set(end);
+        //if !capturing {
+        // let path = mesh::path(
+        //     &mesh,
+        //     self.original,
+        //     self.moveto,
+        //     &paths,
+        //     state,
+        //     team,
+        //     world,
+        //     capturing,
+        // );
 
-            data.wait_animation(
-                animation::AnimationCommand::Movement {
-                    unit: self.original,
-                    ttt,
-                    path,
-                    end,
-                    data: info,
-                },
-                team,
-                &mut ss,
-            )
-            .await;
-        }
+        data.wait_animation(
+            animation::AnimationCommand::Movement {
+                unit: self.original,
+                ttt,
+                end,
+                data: info,
+                parity: pp,
+            },
+            team,
+            &mut ss,
+        )
+        .await;
+        //}
         self
     }
 
