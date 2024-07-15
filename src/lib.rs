@@ -361,11 +361,12 @@ async fn render_command(
     let mut waiting_engine_ack = false;
     let mut rr = 0.0;
 
-    struct AnimationInfo<I: Iterator<Item = Vector2<f32>>> {
+    struct AnimationInfo<I: Iterator<Item = Vector2<f32>>, I2: Iterator<Item = f32>> {
         unit: Axial,
         ttt: UnitType,
         parity: OParity,
         pos: util::CurrIterator<I>,
+        rot: util::CurrIterator<I2>,
     }
 
     match command {
@@ -419,6 +420,10 @@ async fn render_command(
                     pos: util::CurrIterator {
                         it,
                         curr: Vector2::new(0.0, 0.0),
+                    },
+                    rot: util::CurrIterator {
+                        it: { (0..100).map(|x| (x as f32 / 100.0) * std::f32::consts::PI) },
+                        curr: 0.0,
                     },
                 });
 
@@ -597,7 +602,9 @@ async fn render_command(
         }
         if let Some(f) = &mut unit_animation {
             if !f.pos.update() {
-                return ace::Response::AnimationFinish;
+                if !f.rot.update() {
+                    return ace::Response::AnimationFinish;
+                }
             }
         }
 
@@ -903,7 +910,7 @@ async fn render_command(
                         let pos = f.pos.curr();
                         my_matrix
                             .chain(matrix::translation(pos.x, pos.y, cc))
-                            .chain(matrix::x_rotation(rr))
+                            .chain(matrix::x_rotation(rr + f.rot.curr()))
                             .generate()
                     });
 
