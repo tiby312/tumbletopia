@@ -1,3 +1,22 @@
+pub struct CurrIterator<I: Iterator> {
+    pub it: I,
+    pub curr: I::Item,
+}
+
+impl<I: Iterator> CurrIterator<I> {
+    pub fn curr(&self) -> &I::Item {
+        &self.curr
+    }
+    pub fn update(&mut self) -> bool {
+        if let Some(a) = self.it.next() {
+            self.curr = a;
+            true
+        } else {
+            false
+        }
+    }
+}
+
 // pub fn remove_common<T: Ord>(a: &mut Vec<T>, b: &mut Vec<T>) {
 //     use std::collections::BTreeSet;
 

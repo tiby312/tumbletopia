@@ -360,6 +360,14 @@ async fn render_command(
 
     let mut waiting_engine_ack = false;
     let mut rr = 0.0;
+
+    struct AnimationInfo<I: Iterator<Item = Vector2<f32>>> {
+        unit: Axial,
+        ttt: UnitType,
+        parity: OParity,
+        pos: util::CurrIterator<I>,
+    }
+
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(WorkerToDom::HideUndo);
@@ -404,7 +412,17 @@ async fn render_command(
                     })
                 };
 
-                unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ttt, ff, parity));
+                unit_animation = Some(AnimationInfo {
+                    unit,
+                    ttt,
+                    parity,
+                    pos: util::CurrIterator {
+                        it,
+                        curr: Vector2::new(0.0, 0.0),
+                    },
+                });
+
+                //unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ttt, ff, parity));
             }
             animation::AnimationCommand::Terrain {
                 pos,
@@ -577,10 +595,8 @@ async fn render_command(
                 return ace::Response::AnimationFinish;
             }
         }
-        if let Some((lpos, a, _, _, _data, _)) = &mut unit_animation {
-            if let Some(pos) = a.next() {
-                *lpos = pos;
-            } else {
+        if let Some(f) = &mut unit_animation {
+            if !f.pos.update() {
                 return ace::Response::AnimationFinish;
             }
         }
@@ -604,52 +620,52 @@ async fn render_command(
         //     .batch(visible_water.iter_mesh().map(|e| grid_snap(e, 0.0)))
         //     .build(water);
 
-        {
-            //Draw grass
-            let grass1 = game
-                .env
-                .terrain
-                .land
-                .iter_mesh()
-                .map(|e| grid_snap(e, LAND_OFFSET));
+        // {
+        //     //Draw grass
+        //     let grass1 = game
+        //         .env
+        //         .terrain
+        //         .land
+        //         .iter_mesh()
+        //         .map(|e| grid_snap(e, LAND_OFFSET));
 
-            let ani_grass = if let Some((zpos, _, gpos, k)) = &terrain_animation {
-                if let animation::TerrainType::Grass = k {
-                    let gpos = *gpos;
+        //     let ani_grass = if let Some((zpos, _, gpos, k)) = &terrain_animation {
+        //         if let animation::TerrainType::Grass = k {
+        //             let gpos = *gpos;
 
-                    let pos = grid_matrix.hex_axial_to_world(&gpos);
+        //             let pos = grid_matrix.hex_axial_to_world(&gpos);
 
-                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET + *zpos);
-                    let m = my_matrix.chain(t).generate();
-                    Some(m)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
+        //             let t = matrix::translation(pos.x, pos.y, LAND_OFFSET + *zpos);
+        //             let m = my_matrix.chain(t).generate();
+        //             Some(m)
+        //         } else {
+        //             None
+        //         }
+        //     } else {
+        //         None
+        //     };
 
-            let push_grass = if let Some((pos, _, _unit, _, data, _)) = &unit_animation {
-                if let Some(f) = data {
-                    let kk = pos + f;
-                    let m = my_matrix
-                        .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
-                        .chain(matrix::scale(1.0, 1.0, 1.0))
-                        .generate();
-                    Some(m)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
+        //     let push_grass = if let Some((pos, _, _unit, _, data, _)) = &unit_animation {
+        //         if let Some(f) = data {
+        //             let kk = pos + f;
+        //             let m = my_matrix
+        //                 .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
+        //                 .chain(matrix::scale(1.0, 1.0, 1.0))
+        //                 .generate();
+        //             Some(m)
+        //         } else {
+        //             None
+        //         }
+        //     } else {
+        //         None
+        //     };
 
-            let all_grass = grass1
-                .chain(ani_grass.into_iter())
-                .chain(push_grass.into_iter());
+        //     let all_grass = grass1
+        //         .chain(ani_grass.into_iter())
+        //         .chain(push_grass.into_iter());
 
-            draw_sys.batch(all_grass).build(grass);
-        }
+        //     draw_sys.batch(all_grass).build(grass);
+        // }
 
         {
             //Draw forest
@@ -787,15 +803,15 @@ async fn render_command(
 
             let ani_drop_shadow = unit_animation
                 .as_ref()
-                .filter(|(_, _, _, _, _, parity)| {
-                    if let OParity::Normal = parity {
+                .filter(|f| {
+                    if let OParity::Normal = f.parity {
                         true
                     } else {
                         false
                     }
                 })
-                .map(|(a, _, _, _, _, _)| {
-                    let pos = a;
+                .map(|f| {
+                    let pos = f.pos.curr();
 
                     my_matrix
                         .chain(matrix::translation(pos.x, pos.y, zzzz))
@@ -878,13 +894,13 @@ async fn render_command(
 
                 let ani = unit_animation
                     .as_ref()
-                    .filter(|(pos, _, unit, ttt, _data, _)| {
-                        *ttt == mytype && team == my_team
+                    .filter(|f| {
+                        f.ttt == mytype && team == my_team
                         //foo.is_set(*unit)
                     })
-                    .map(|(pos, _, unit, _, _data, parity)| {
-                        let (cc, rr) = dddam(*parity);
-
+                    .map(|f| {
+                        let (cc, rr) = dddam(f.parity);
+                        let pos = f.pos.curr();
                         my_matrix
                             .chain(matrix::translation(pos.x, pos.y, cc))
                             .chain(matrix::x_rotation(rr))
