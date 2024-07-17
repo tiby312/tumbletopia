@@ -390,14 +390,14 @@ impl<'a> AlphaBeta<'a> {
         let mut moves = vec![];
 
         game_after_move.for_all_moves_fast(team, world, |e, m, stat| {
-            if e.move_effect.destroyed_unit.is_some() {
+            if e.destroyed_unit.is_some() {
                 quiet_position = false;
             }
 
             if depth < max_depth {
                 moves.push((m, stat.hash_me()));
             } else {
-                if e.move_effect.destroyed_unit.is_some() {
+                if e.destroyed_unit.is_some() {
                     moves.push((m, stat.hash_me()));
                 }
             }
@@ -523,10 +523,11 @@ impl<'a> AlphaBeta<'a> {
             let effect = {
                 let j = cand.as_move();
                 let k = j.apply(team, game_after_move, world);
-                let j = j
-                    .into_attack(cand.attackto)
-                    .apply(team, game_after_move, world, &k);
-                k.combine(j)
+                // let j = j
+                //     .into_attack(cand.attackto)
+                //     .apply(team, game_after_move, world, &k);
+                // k.combine(j)
+                k
             };
 
             self.path.push(cand);
@@ -543,12 +544,11 @@ impl<'a> AlphaBeta<'a> {
 
             let mov = self.path.pop().unwrap();
             {
-                let k = mov.as_extra();
-                k.undo(&effect.extra_effect, game_after_move).undo(
-                    team,
-                    &effect.move_effect,
-                    game_after_move,
-                );
+                let k = mov.as_move();
+                //k.undo(&effect.extra_effect, game_after_move)
+                //k.u
+
+                k.undo(team, &effect, game_after_move);
             }
 
             let keep_going = ab_iter.consider(&mov, eval);

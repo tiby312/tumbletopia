@@ -265,13 +265,13 @@ pub async fn worker_entry() {
                     .await
                     .apply(team, &mut game, &world);
 
-                let effect_a = kk
-                    .into_attack(the_move.attackto)
-                    .animate(team, &mut game, &world, &mut doop)
-                    .await
-                    .apply(team, &mut game, &world, &effect_m);
+                // let effect_a = kk
+                //     .into_attack(the_move.attackto)
+                //     .animate(team, &mut game, &world, &mut doop)
+                //     .await
+                //     .apply(team, &mut game, &world, &effect_m);
 
-                game_history.push((the_move, effect_m.combine(effect_a)));
+                game_history.push((the_move, effect_m));
 
                 continue;
             }
@@ -422,7 +422,7 @@ async fn render_command(
                         curr: Vector2::new(0.0, 0.0),
                     },
                     rot: util::CurrIterator {
-                        it: { (0..100).map(|x| (x as f32 / 100.0) ) },
+                        it: { (0..100).map(|x| (x as f32 / 100.0)) },
                         curr: 0.0,
                     },
                 });
@@ -865,8 +865,8 @@ async fn render_command(
 
                 //let rr = (std::f32::consts::TAU / 6.0) * i as f32;
 
-                let min_epsilon=-1.0;
-                let max_epsilon=1.0;
+                let min_epsilon = -1.0;
+                let max_epsilon = 1.0;
                 let dddam = |parity: OParity| {
                     if let OParity::Upsidedown = parity {
                         (min_epsilon, std::f32::consts::PI)
@@ -901,25 +901,21 @@ async fn render_command(
                     my_matrix.chain(t).chain(matrix::x_rotation(rr)).generate()
                 });
 
-                
-
                 let ani = unit_animation
                     .as_ref()
-                    .filter(|f| {
-                        f.ttt == mytype && team == my_team
-                    })
+                    .filter(|f| f.ttt == mytype && team == my_team)
                     .map(|f| {
                         let (cc, rr) = dddam(f.parity);
                         let pos = f.pos.curr();
-                        let vert_epsilon={
-                            let dir=match f.parity{
+                        let vert_epsilon = {
+                            let dir = match f.parity {
                                 OParity::Normal => min_epsilon,
                                 OParity::Upsidedown => max_epsilon,
                             };
-                            (max_epsilon-min_epsilon)*f.rot.curr()*dir
+                            (max_epsilon - min_epsilon) * f.rot.curr() * dir
                         };
                         my_matrix
-                            .chain(matrix::translation(pos.x, pos.y, cc+vert_epsilon))
+                            .chain(matrix::translation(pos.x, pos.y, cc + vert_epsilon))
                             .chain(matrix::x_rotation(rr + f.rot.curr() * std::f32::consts::PI))
                             .generate()
                     });
