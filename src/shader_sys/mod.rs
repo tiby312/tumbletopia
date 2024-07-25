@@ -207,6 +207,7 @@ impl ShaderSystem {
         grayscale: bool,
         text: bool,
         lighting: bool,
+        u_world: &[f32; 16],
     ) {
         self.program.draw(shader::Argss {
             texture,
@@ -216,6 +217,7 @@ impl ShaderSystem {
             grayscale,
             text,
             lighting,
+            u_world,
         })
     }
 }

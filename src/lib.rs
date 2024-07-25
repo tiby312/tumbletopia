@@ -673,6 +673,8 @@ async fn render_command(
 
         //     draw_sys.batch(all_grass).build(grass);
         // }
+        let lll = matrix::scale(0.0, 0.0, 0.0).generate();
+        let projjj = lll.as_ref();
 
         {
             //Draw forest
@@ -685,7 +687,7 @@ async fn render_command(
 
             let all_grass = grass1;
 
-            draw_sys.batch(all_grass).build(mountain_asset);
+            draw_sys.batch(all_grass).build(mountain_asset, &projjj);
         }
 
         {
@@ -699,7 +701,7 @@ async fn render_command(
 
             let all_grass = grass1;
 
-            draw_sys.batch(all_grass).build(mountain_asset);
+            draw_sys.batch(all_grass).build(mountain_asset, &projjj);
         }
 
         {
@@ -724,7 +726,7 @@ async fn render_command(
 
             let all_fog = fog1.chain(ani_fog.into_iter());
 
-            draw_sys.batch(all_fog).build(snow);
+            draw_sys.batch(all_fog).build(snow, &projjj);
         }
 
         if let Some(a) = &get_mouse_input {
@@ -736,7 +738,7 @@ async fn render_command(
                             .batch(cells)
                             .no_lighting()
                             .grey(*grey)
-                            .build(select_model);
+                            .build(select_model, &projjj);
 
                         // {
                         //     let mut mesh=mesh::small_mesh::SmallMesh::new();
@@ -785,7 +787,10 @@ async fn render_command(
             let m = my_matrix.chain(t).//.chain(matrix::z_rotation(std::f32::consts::TAU/6.0)).
                 generate();
 
-            draw_sys.batch([m]).no_lighting().build(attack_model);
+            draw_sys
+                .batch([m])
+                .no_lighting()
+                .build(attack_model, &projjj);
         }
 
         // {
@@ -827,7 +832,7 @@ async fn render_command(
 
             let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
 
-            draw_sys.batch(all_shadows).build(drop_shadow);
+            draw_sys.batch(all_shadows).build(drop_shadow, &projjj);
         }
 
         // draw_sys
@@ -922,7 +927,7 @@ async fn render_command(
 
                 let k = color.chain(ani.into_iter());
 
-                draw_sys.batch(k).build(model)
+                draw_sys.batch(k).build(model, &projjj)
             };
 
         //TODO combine into one draw call
@@ -947,7 +952,7 @@ async fn render_command(
 
         draw_sys
             .batch(visible_water.iter_mesh().map(|e| grid_snap(e, 0.0)))
-            .build(water);
+            .build(water, &projjj);
 
         // let d = DepthDisabler::new(ctx);
 
@@ -983,7 +988,7 @@ pub struct BatchBuilder<'a, I> {
     grey: bool,
 }
 impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
-    pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>) {
+    pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>, u_world: &[f32; 16]) {
         let mmatrix: Vec<[f32; 16]> = (&mut self.ff)
             .map(|x| {
                 let x = x.generate();
@@ -999,6 +1004,7 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
             self.grey,
             false,
             self.lighting,
+            u_world,
         );
     }
     pub fn grey(&mut self, grey: bool) -> &mut Self {

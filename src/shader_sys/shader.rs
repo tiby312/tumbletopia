@@ -57,6 +57,8 @@ in vec3 position;
 in vec2 a_texcoord;
 in vec3 v_normal;
 in mat4 mmatrix;
+uniform mat4 u_world;
+
 uniform float point_size;
 out vec3 f_normal;
 out vec2 v_texcoord;
@@ -65,8 +67,11 @@ void main() {
     vec4 pp=vec4(position,1.0);
     vec4 j = mmatrix*pp;
     gl_Position = j;
-    v_texcoord=a_texcoord;
+    v_texcoord=a_texcoord+vec2(0.0,u_world[0][0]*0.00001);
+    //v_texcoord=a_texcoord;
+    //f_normal=mat3(u_world) *v_normal;
     f_normal=v_normal;
+    
 }
 "#;
 
@@ -74,6 +79,7 @@ pub struct Argss<'a> {
     pub texture: &'a TextureBuffer,
     pub res: &'a VaoData,
     pub mmatrix: &'a [[f32; 16]],
+    pub u_world: &'a [f32; 16],
     pub point_size: f32,
     pub grayscale: bool,
     pub text: bool,
@@ -90,6 +96,7 @@ impl GlProgram {
             grayscale,
             text,
             lighting,
+            u_world,
         } = argss;
 
         let context = &self.ctx;
@@ -112,6 +119,8 @@ impl GlProgram {
         } else {
             0
         };
+
+        context.uniform_matrix4fv_with_f32_array(Some(&self.u_world), false, u_world);
 
         context.uniform1i(Some(&self.text), kk);
         context.uniform1f(Some(&self.point_size), point_size);
@@ -149,6 +158,10 @@ impl GlProgram {
             .get_uniform_location(&program, "point_size")
             .ok_or_else(|| "uniform err".to_string())?;
 
+        let u_world = context
+            .get_uniform_location(&program, "u_world")
+            .ok_or_else(|| "uniform err".to_string())?;
+
         let mmatrix = context.get_attrib_location(&program, "mmatrix");
 
         let position = context.get_attrib_location(&program, "position");
@@ -170,6 +183,7 @@ impl GlProgram {
             ctx: context.clone(),
             program,
             mmatrix,
+            u_world,
             point_size,
             normal,
             position,
@@ -316,6 +330,7 @@ pub struct GlProgram {
     mmatrix: u32,
     point_size: WebGlUniformLocation,
     grayscale: WebGlUniformLocation,
+    u_world: WebGlUniformLocation,
     position: u32,
     texcoord: u32,
     normal: u32,
