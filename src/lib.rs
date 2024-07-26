@@ -1,3 +1,5 @@
+use std::convert::identity;
+
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use gloo::console::console_dbg;
 
@@ -619,7 +621,7 @@ async fn render_command(
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
             //let r=matrix::z_rotation(1.0);
-            my_matrix.chain(t).//.chain(matrix::z_rotation(rr)).
+            t.//.chain(matrix::z_rotation(rr)).
             generate()
         };
         let mut foo = false;
@@ -673,7 +675,7 @@ async fn render_command(
 
         //     draw_sys.batch(all_grass).build(grass);
         // }
-        let lll = matrix::scale(0.0, 0.0, 0.0).generate();
+        let lll = my_matrix.generate(); //matrix::scale(0.0, 0.0, 0.0).generate();
         let projjj = lll.as_ref();
 
         {
@@ -715,7 +717,7 @@ async fn render_command(
                     let pos = grid_matrix.hex_axial_to_world(&gpos);
 
                     let t = matrix::translation(pos.x, pos.y, LAND_OFFSET + *zpos);
-                    let m = my_matrix.chain(t).generate();
+                    let m = t.generate();
                     Some(m)
                 } else {
                     None
@@ -784,7 +786,7 @@ async fn render_command(
 
             let t = matrix::translation(pos[0], pos[1], 2.0);
 
-            let m = my_matrix.chain(t).//.chain(matrix::z_rotation(std::f32::consts::TAU/6.0)).
+            let m = t.//.chain(matrix::z_rotation(std::f32::consts::TAU/6.0)).
                 generate();
 
             draw_sys
@@ -825,9 +827,7 @@ async fn render_command(
                 .map(|f| {
                     let pos = f.pos.curr();
 
-                    my_matrix
-                        .chain(matrix::translation(pos.x, pos.y, zzzz))
-                        .generate()
+                    matrix::translation(pos.x, pos.y, zzzz).generate()
                 });
 
             let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
@@ -903,7 +903,7 @@ async fn render_command(
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, cc);
 
-                    my_matrix.chain(t).chain(matrix::x_rotation(rr)).generate()
+                    t.chain(matrix::x_rotation(rr)).generate()
                 });
 
                 let ani = unit_animation
@@ -919,8 +919,7 @@ async fn render_command(
                             };
                             (max_epsilon - min_epsilon) * f.rot.curr() * dir
                         };
-                        my_matrix
-                            .chain(matrix::translation(pos.x, pos.y, cc + vert_epsilon))
+                        matrix::translation(pos.x, pos.y, cc + vert_epsilon)
                             .chain(matrix::x_rotation(rr + f.rot.curr() * std::f32::consts::PI))
                             .generate()
                     });
@@ -988,8 +987,17 @@ pub struct BatchBuilder<'a, I> {
     grey: bool,
 }
 impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
-    pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>, u_world: &[f32; 16]) {
-        let mmatrix: Vec<[f32; 16]> = (&mut self.ff)
+    pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>, my_matrix: &[f32; 16]) {
+        // let mmatrix: Vec<[f32; 16]> = (&mut self.ff)
+        //     .map(|x| {
+        //         let my_matrix:&Matrix4<f32>=my_matrix.into();
+        //         let x = my_matrix.chain(x).generate();
+        //         let x: &[f32; 16] = x.as_ref();
+        //         *x
+        //     })
+        //     .collect();
+
+        let uworlds: Vec<[f32; 16]> = (&mut self.ff)
             .map(|x| {
                 let x = x.generate();
                 let x: &[f32; 16] = x.as_ref();
@@ -997,15 +1005,33 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
             })
             .collect();
 
-        self.sys.draw(
-            &texture.model.res,
-            &texture.texture.texture,
-            &mmatrix,
-            self.grey,
-            false,
-            self.lighting,
-            u_world,
-        );
+        let mmatrix: Vec<_> = uworlds
+            .iter()
+            .map(|x| {
+                let x: &Matrix4<f32> = x.into();
+                let my_matrix: &Matrix4<f32> = my_matrix.into();
+                let x = my_matrix.chain(*x).generate();
+                let x: &[f32; 16] = x.as_ref();
+                *x
+            })
+            .collect();
+
+        if !uworlds.is_empty() {
+            use cgmath::One;
+            let j = Matrix4::<f32>::one();
+            let j = j.generate();
+            let x: &[f32; 16] = j.as_ref();
+
+            self.sys.draw(
+                &texture.model.res,
+                &texture.texture.texture,
+                &mmatrix,
+                self.grey,
+                false,
+                self.lighting,
+                &uworlds[0],
+            );
+        }
     }
     pub fn grey(&mut self, grey: bool) -> &mut Self {
         self.grey = grey;

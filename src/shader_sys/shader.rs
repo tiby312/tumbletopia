@@ -67,10 +67,10 @@ void main() {
     vec4 pp=vec4(position,1.0);
     vec4 j = mmatrix*pp;
     gl_Position = j;
-    v_texcoord=a_texcoord+vec2(0.0,u_world[0][0]*0.00001);
-    //v_texcoord=a_texcoord;
-    //f_normal=mat3(u_world) *v_normal;
-    f_normal=v_normal;
+    //v_texcoord=a_texcoord+vec2(0.0,u_world[0][0]*0.00001);
+    v_texcoord=a_texcoord;
+    f_normal=mat3(u_world) *v_normal;
+    //f_normal=v_normal;
     
 }
 "#;
