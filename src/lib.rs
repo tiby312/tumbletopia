@@ -919,7 +919,7 @@ async fn render_command(
                             };
                             (max_epsilon - min_epsilon) * f.rot.curr() * dir
                         };
-                        let BIG = 300.0;
+                        let BIG = 100.0;
                         let first = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
                             .chain(matrix::x_rotation(rr))
                             .chain(matrix::translation(0.0, 0.0, f.rot.curr() * BIG))
