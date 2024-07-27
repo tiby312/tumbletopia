@@ -988,50 +988,52 @@ pub struct BatchBuilder<'a, I> {
 }
 impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
     pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>, my_matrix: &[f32; 16]) {
-        // let mmatrix: Vec<[f32; 16]> = (&mut self.ff)
-        //     .map(|x| {
-        //         let my_matrix:&Matrix4<f32>=my_matrix.into();
-        //         let x = my_matrix.chain(x).generate();
-        //         let x: &[f32; 16] = x.as_ref();
-        //         *x
-        //     })
-        //     .collect();
-
-        let uworlds: Vec<[f32; 16]> = (&mut self.ff)
+        let mmatrix: Vec<[f32; 16]> = (&mut self.ff)
             .map(|x| {
+                //let my_matrix:&Matrix4<f32>=my_matrix.into();
+                //let x = my_matrix.chain(x).generate();
+                //let x: &[f32; 16] = x.as_ref();
                 let x = x.generate();
                 let x: &[f32; 16] = x.as_ref();
                 *x
             })
             .collect();
 
-        let mmatrix: Vec<_> = uworlds
-            .iter()
-            .map(|x| {
-                let x: &Matrix4<f32> = x.into();
-                let my_matrix: &Matrix4<f32> = my_matrix.into();
-                let x = my_matrix.chain(*x).generate();
-                let x: &[f32; 16] = x.as_ref();
-                *x
-            })
-            .collect();
+        // let uworlds: Vec<[f32; 16]> = (&mut self.ff)
+        //     .map(|x| {
+        //         let x = x.generate();
+        //         let x: &[f32; 16] = x.as_ref();
+        //         *x
+        //     })
+        //     .collect();
 
-        if !uworlds.is_empty() {
-            use cgmath::One;
-            let j = Matrix4::<f32>::one();
-            let j = j.generate();
-            let x: &[f32; 16] = j.as_ref();
+        // let mmatrix: Vec<_> = uworlds
+        //     .iter()
+        //     .map(|x| {
+        //         let x: &Matrix4<f32> = x.into();
+        //         let my_matrix: &Matrix4<f32> = my_matrix.into();
+        //         let x = my_matrix.chain(*x).generate();
+        //         let x: &[f32; 16] = x.as_ref();
+        //         *x
+        //     })
+        //     .collect();
 
-            self.sys.draw(
-                &texture.model.res,
-                &texture.texture.texture,
-                &mmatrix,
-                self.grey,
-                false,
-                self.lighting,
-                &uworlds[0],
-            );
-        }
+        //if !uworlds.is_empty() {
+        use cgmath::One;
+        let j = Matrix4::<f32>::one();
+        let j = j.generate();
+        let x: &[f32; 16] = j.as_ref();
+
+        self.sys.draw(
+            &texture.model.res,
+            &texture.texture.texture,
+            &mmatrix,
+            self.grey,
+            false,
+            self.lighting,
+            my_matrix,
+        );
+        //}
     }
     pub fn grey(&mut self, grey: bool) -> &mut Self {
         self.grey = grey;

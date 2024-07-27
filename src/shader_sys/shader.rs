@@ -65,10 +65,10 @@ out vec2 v_texcoord;
 void main() {
     gl_PointSize = point_size;
     vec4 pp=vec4(position,1.0);
-    vec4 j = mmatrix*pp;
+    vec4 j = u_world*mmatrix*pp;
     gl_Position = j;
     v_texcoord=a_texcoord;
-    f_normal=mat3(u_world) *v_normal;
+    f_normal=mat3(mmatrix) *v_normal;
     
 }
 "#;
