@@ -919,12 +919,20 @@ async fn render_command(
                             };
                             (max_epsilon - min_epsilon) * f.rot.curr() * dir
                         };
-                        matrix::translation(pos.x, pos.y, cc + vert_epsilon)
-                            .chain(matrix::x_rotation(rr + f.rot.curr() * std::f32::consts::PI))
-                            .generate()
+                        let BIG = 300.0;
+                        let first = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
+                            .chain(matrix::x_rotation(rr))
+                            .chain(matrix::translation(0.0, 0.0, f.rot.curr() * BIG))
+                            .generate();
+
+                        let second = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
+                            .chain(matrix::x_rotation(rr + std::f32::consts::PI))
+                            .chain(matrix::translation(0.0, 0.0, (1.0 - f.rot.curr()) * BIG))
+                            .generate();
+                        [first, second].into_iter()
                     });
 
-                let k = color.chain(ani.into_iter());
+                let k = color.chain(ani.into_iter().flatten());
 
                 draw_sys.batch(k).build(model, &projjj)
             };
