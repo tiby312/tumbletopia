@@ -920,8 +920,13 @@ async fn render_command(
                             (max_epsilon - min_epsilon) * f.rot.curr() * dir
                         };
                         let BIG = 50.0;
+
+                        let rrr = matrix::translation(0., 0., -model.height / 2.0);
+                        let rrr =
+                            matrix::x_rotation(rr + f.rot.curr() * std::f32::consts::PI).chain(rrr);
+
                         let first = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
-                            .chain(matrix::x_rotation(rr+f.rot.curr()*std::f32::consts::PI))
+                            .chain(rrr)
                             //.chain(matrix::translation(0.0, 0.0, f.rot.curr() * BIG))
                             .generate();
 
@@ -1166,6 +1171,12 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             model_parse::Foo {
                 texture: model_parse::TextureGpu::new(&shader.ctx, &t),
                 model: model_parse::ModelGpu::new(shader, &data),
+                height: data
+                    .positions
+                    .iter()
+                    .map(|x| x[2])
+                    .max_by(|a, b| a.total_cmp(b))
+                    .unwrap(),
             }
         };
 

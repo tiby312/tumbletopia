@@ -15,6 +15,7 @@ impl TextureGpu {
 pub struct Foo<A, B> {
     pub texture: A,
     pub model: B,
+    pub height: f32,
 }
 
 pub struct ModelGpu {
