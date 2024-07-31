@@ -929,8 +929,12 @@ async fn render_command(
 
                         let hh = model.height / 2.0;
                         let rrr = matrix::translation(0., 0., -hh);
-                        let rrr =
-                            matrix::y_rotation(rr + f.rot.curr() * std::f32::consts::PI).chain(rrr);
+
+                        let rrr = matrix::y_rotation(
+                            rr + (2. * (f.rot.curr() - 0.5)).max(0.0).min(1.0)
+                                * std::f32::consts::PI,
+                        )
+                        .chain(rrr);
 
                         let dir = match f.parity {
                             OParity::Normal => 1.0,
@@ -943,7 +947,6 @@ async fn render_command(
                             dir * (-(f.rot.curr() * 2.0 - 1.0) + hh - f.rot.curr() * model.height),
                         )
                         .chain(rrr)
-                        //.chain(matrix::translation(0.0, 0.0, f.rot.curr() * BIG))
                         .generate();
 
                         // let second = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
