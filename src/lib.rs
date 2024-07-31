@@ -346,7 +346,7 @@ async fn render_command(
     let white_pawn = &models.white_pawn;
 
     //let fog_asset = &models.fog;
-    let water = &models.water;
+    let water = &models.chess_cell;
     let grass = &models.grass;
     let mountain_asset = &models.mountain;
     let snow = &models.snow;
@@ -465,7 +465,7 @@ async fn render_command(
     };
 
     //TODO don't calculate 60 times a second?
-    let visible_water = {
+    let dark_cells = {
         // let mut g = game.env.terrain.gen_all_terrain();
         // g.union_with(&game.env.fog);
 
@@ -488,6 +488,8 @@ async fn render_command(
         }
         foo
     };
+
+    let light_cells = dark_cells.not();
 
     loop {
         if poking == 1 {
@@ -982,8 +984,12 @@ async fn render_command(
         draw_unit_type(UnitType::Queen, ActiveTeam::White, &models.white_trook);
 
         draw_sys
-            .batch(visible_water.iter_mesh().map(|e| grid_snap(e, 0.0)))
-            .build(water, &projjj);
+            .batch(dark_cells.iter_mesh().map(|e| grid_snap(e, 0.0)))
+            .build(&models.chess_cell, &projjj);
+
+        draw_sys
+            .batch(light_cells.iter_mesh().map(|e| grid_snap(e, 0.0)))
+            .build(&models.chess_cell_light, &projjj);
 
         // let d = DepthDisabler::new(ctx);
 
@@ -1173,7 +1179,8 @@ pub struct Models<T> {
     black_king: T,
     grass: T,
     snow: T,
-    water: T,
+    chess_cell: T,
+    chess_cell_light: T,
     direction: T,
     mountain: T,
     black_trook: T,
@@ -1237,7 +1244,12 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
 
             snow: quick_load(include_bytes!("../assets/snow.glb"), RESIZE, None),
             //water: quick_load(include_bytes!("../assets/water.glb"), RESIZE, None),
-            water: quick_load(include_bytes!("../assets/chess_cell.glb"), RESIZE, None),
+            chess_cell: quick_load(include_bytes!("../assets/chess_cell.glb"), RESIZE, None),
+            chess_cell_light: quick_load(
+                include_bytes!("../assets/chess_cell_light.glb"),
+                RESIZE,
+                None,
+            ),
 
             direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
             mountain: quick_load(include_bytes!("../assets/mountain.glb"), 1, None),
