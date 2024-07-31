@@ -910,7 +910,14 @@ async fn render_command(
                     .as_ref()
                     .filter(|f| f.ttt == mytype && team == my_team)
                     .map(|f| {
-                        let (cc, rr) = dddam(f.parity);
+
+                        let (cc,rr)=if let OParity::Upsidedown = f.parity {
+                            (min_epsilon, std::f32::consts::PI)
+                        } else {
+                            (max_epsilon, 0.0)
+                        };
+                        //let (cc, rr) = dddam(f.parity);
+
                         let pos = f.pos.curr();
                         let vert_epsilon = {
                             let dir = match f.parity {
@@ -921,11 +928,18 @@ async fn render_command(
                         };
                         let BIG = 50.0;
 
-                        let rrr = matrix::translation(0., 0., -model.height / 2.0);
+                        let hh=model.height / 2.0;
+                        let rrr = matrix::translation(0., 0., -hh);
                         let rrr =
-                            matrix::x_rotation(rr + f.rot.curr() * std::f32::consts::PI).chain(rrr);
+                            matrix::y_rotation(rr + f.rot.curr() * std::f32::consts::PI).chain(rrr);
 
-                        let first = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
+                        
+                            let dir = match f.parity {
+                                OParity::Normal => 1.0,
+                                OParity::Upsidedown => -1.0,
+                            };
+                        
+                        let first = matrix::translation(pos.x, pos.y, dir*( -(f.rot.curr()*2.0-1.0)+ hh-f.rot.curr()*model.height))
                             .chain(rrr)
                             //.chain(matrix::translation(0.0, 0.0, f.rot.curr() * BIG))
                             .generate();
