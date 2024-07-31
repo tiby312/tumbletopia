@@ -903,15 +903,14 @@ async fn render_command(
                     let pos = grid_matrix.hex_axial_to_world(&c);
                     let t = matrix::translation(pos.x, pos.y, cc);
 
-                    t.chain(matrix::x_rotation(rr)).generate()
+                    t.chain(matrix::y_rotation(rr)).generate()
                 });
 
                 let ani = unit_animation
                     .as_ref()
                     .filter(|f| f.ttt == mytype && team == my_team)
                     .map(|f| {
-
-                        let (cc,rr)=if let OParity::Upsidedown = f.parity {
+                        let (cc, rr) = if let OParity::Upsidedown = f.parity {
                             (min_epsilon, std::f32::consts::PI)
                         } else {
                             (max_epsilon, 0.0)
@@ -928,21 +927,24 @@ async fn render_command(
                         };
                         let BIG = 50.0;
 
-                        let hh=model.height / 2.0;
+                        let hh = model.height / 2.0;
                         let rrr = matrix::translation(0., 0., -hh);
                         let rrr =
                             matrix::y_rotation(rr + f.rot.curr() * std::f32::consts::PI).chain(rrr);
 
-                        
-                            let dir = match f.parity {
-                                OParity::Normal => 1.0,
-                                OParity::Upsidedown => -1.0,
-                            };
-                        
-                        let first = matrix::translation(pos.x, pos.y, dir*( -(f.rot.curr()*2.0-1.0)+ hh-f.rot.curr()*model.height))
-                            .chain(rrr)
-                            //.chain(matrix::translation(0.0, 0.0, f.rot.curr() * BIG))
-                            .generate();
+                        let dir = match f.parity {
+                            OParity::Normal => 1.0,
+                            OParity::Upsidedown => -1.0,
+                        };
+
+                        let first = matrix::translation(
+                            pos.x,
+                            pos.y,
+                            dir * (-(f.rot.curr() * 2.0 - 1.0) + hh - f.rot.curr() * model.height),
+                        )
+                        .chain(rrr)
+                        //.chain(matrix::translation(0.0, 0.0, f.rot.curr() * BIG))
+                        .generate();
 
                         // let second = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
                         //     .chain(matrix::x_rotation(rr + std::f32::consts::PI))
