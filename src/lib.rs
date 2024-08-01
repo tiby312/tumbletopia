@@ -955,10 +955,20 @@ async fn render_command(
                         //     .chain(matrix::x_rotation(rr + std::f32::consts::PI))
                         //     .chain(matrix::translation(0.0, 0.0, (1.0 - f.rot.curr()) * BIG))
                         //     .generate();
-                        [first].into_iter()
+                        first
                     });
 
-                let k = color.chain(ani.into_iter().flatten());
+                if let Some(ani)=ani{
+                    
+                    //if f.rot.curr()>0.0{
+                    //draw_unit_typ
+                    draw_sys
+                    .batch([ani])
+                    .build(&models.chess_cell_light, &projjj);
+                    //}
+                };
+
+                let k = color.chain(ani.into_iter());
 
                 draw_sys.batch(k).build(model, &projjj)
             };
