@@ -365,6 +365,7 @@ async fn render_command(
 
     struct AnimationInfo<I: Iterator<Item = Vector2<f32>>, I2: Iterator<Item = f32>> {
         unit: Axial,
+        target: Axial,
         ttt: UnitType,
         parity: OParity,
         pos: util::CurrIterator<I>,
@@ -417,6 +418,7 @@ async fn render_command(
 
                 unit_animation = Some(AnimationInfo {
                     unit,
+                    target: end,
                     ttt,
                     parity,
                     pos: util::CurrIterator {
@@ -465,7 +467,7 @@ async fn render_command(
     };
 
     //TODO don't calculate 60 times a second?
-    let dark_cells = {
+    let mut dark_cells = {
         // let mut g = game.env.terrain.gen_all_terrain();
         // g.union_with(&game.env.fog);
 
@@ -489,7 +491,7 @@ async fn render_command(
         foo
     };
 
-    let light_cells = dark_cells.not();
+    let mut light_cells = dark_cells.not();
 
     loop {
         if poking == 1 {
@@ -948,6 +950,8 @@ async fn render_command(
                                 .generate();
 
                         if *f.rot.curr() > 0.0 {
+                            dark_cells.remove(f.target);
+                            light_cells.remove(f.target);
                             //draw_unit_typ
                             draw_sys
                                 .batch([first])
