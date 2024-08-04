@@ -8,7 +8,7 @@ use gloo::console::log;
 use hex::{Axial, HDir};
 use mesh::bitfield::BitField;
 use mesh::small_mesh::SingleMesh;
-use model::matrix::{self, MyMatrix};
+use model::matrix::{self, y_rotation, MyMatrix};
 use moves::ActualMove;
 use serde::{Deserialize, Serialize};
 use shader_sys::ShaderSystem;
@@ -908,10 +908,8 @@ async fn render_command(
                     t.chain(matrix::y_rotation(rr)).generate()
                 });
 
-                let ani = unit_animation
-                    .as_ref()
-                    .filter(|f| f.ttt == mytype && team == my_team)
-                    .map(|f| {
+                let ani = if let Some(f) = &unit_animation {
+                    if f.ttt == mytype && team == my_team {
                         let (cc, rr) = if let OParity::Upsidedown = f.parity {
                             (min_epsilon, std::f32::consts::PI)
                         } else {
@@ -932,40 +930,40 @@ async fn render_command(
                         let hh = model.height / 2.0;
                         let rrr = matrix::translation(0., 0., -hh);
 
-                        let rrr = matrix::y_rotation(
-                            rr + (2. * (f.rot.curr() - 0.5)).max(0.0).min(1.0)
-                                * std::f32::consts::PI,
-                        )
-                        .chain(rrr);
+                        // let rrr = matrix::y_rotation(
+                        //     rr + (2. * (f.rot.curr() - 0.5)).max(0.0).min(1.0)
+                        //         * std::f32::consts::PI,
+                        // )
+                        // .chain(rrr);
 
                         let dir = match f.parity {
                             OParity::Normal => 1.0,
                             OParity::Upsidedown => -1.0,
                         };
 
-                        let first = matrix::translation(
-                            pos.x,
-                            pos.y,
-                            dir * (-(f.rot.curr() * 2.0 - 1.0) + hh - f.rot.curr() * model.height),
-                        )
-                        .chain(rrr)
-                        .generate();
+                        let first =
+                            matrix::translation(pos.x, pos.y, dir * (-(f.rot.curr() * 2.0 - 1.0)))
+                                .chain(matrix::y_rotation(rr + f.rot.curr() * std::f32::consts::PI))
+                                //.chain(rrr)
+                                .generate();
+
+                        if *f.rot.curr() > 0.0 {
+                            //draw_unit_typ
+                            draw_sys
+                                .batch([first])
+                                .build(&models.chess_cell_light, &projjj);
+                        }
 
                         // let second = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
                         //     .chain(matrix::x_rotation(rr + std::f32::consts::PI))
                         //     .chain(matrix::translation(0.0, 0.0, (1.0 - f.rot.curr()) * BIG))
                         //     .generate();
-                        first
-                    });
-
-                if let Some(ani)=ani{
-                    
-                    //if f.rot.curr()>0.0{
-                    //draw_unit_typ
-                    draw_sys
-                    .batch([ani])
-                    .build(&models.chess_cell_light, &projjj);
-                    //}
+                        Some(first)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
                 };
 
                 let k = color.chain(ani.into_iter());
