@@ -1,6 +1,6 @@
 use std::convert::identity;
 
-use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
+use cgmath::{InnerSpace, Matrix4, Transform, Vector2, Zero};
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -850,159 +850,218 @@ async fn render_command(
         //     .build(grass);
 
         let zzzz = 0.;
-        let mut draw_unit_type =
-            |mytype: UnitType, my_team: ActiveTeam, model: &Foo<TextureGpu, ModelGpu>| {
-                // let i = match mytype {
-                //     UnitType::Book(Parity::One) => 2,
-                //     UnitType::Book(Parity::Two) => 1,
-                //     UnitType::Pawn | UnitType::King => {
-                //         if let ActiveTeam::White = my_team {
-                //             2
-                //         } else {
-                //             5
-                //         }
-                //     }
-                //     UnitType::Knight(Parity::One) => 2,
-                //     UnitType::Knight(Parity::Two) => 1,
-                //     UnitType::Rook => 0,
-                //     UnitType::Trook(TrookParity::One) => 3,
-                //     UnitType::Trook(TrookParity::Two) => 2,
-                //     UnitType::Trook(TrookParity::Three) => 1,
+        let mut draw_unit_type = |mytype: UnitType,
+                                  my_team: ActiveTeam,
+                                  model: &Foo<TextureGpu, ModelGpu>,
+                                  animated: &mut Matrix4<f32>| {
+            // let i = match mytype {
+            //     UnitType::Book(Parity::One) => 2,
+            //     UnitType::Book(Parity::Two) => 1,
+            //     UnitType::Pawn | UnitType::King => {
+            //         if let ActiveTeam::White = my_team {
+            //             2
+            //         } else {
+            //             5
+            //         }
+            //     }
+            //     UnitType::Knight(Parity::One) => 2,
+            //     UnitType::Knight(Parity::Two) => 1,
+            //     UnitType::Rook => 0,
+            //     UnitType::Trook(TrookParity::One) => 3,
+            //     UnitType::Trook(TrookParity::Two) => 2,
+            //     UnitType::Trook(TrookParity::Three) => 1,
+            // };
+
+            let foo = game.factions.specific_unit(mytype, my_team);
+
+            //let rr = (std::f32::consts::TAU / 6.0) * i as f32;
+
+            let min_epsilon = -1.0;
+            let max_epsilon = 1.0;
+            let dddam = |parity: OParity| {
+                if let OParity::Upsidedown = parity {
+                    (min_epsilon, std::f32::consts::PI)
+                } else {
+                    (max_epsilon, 0.0)
+                }
+            };
+
+            let color = foo.iter_mesh().map(|e| {
+                // let rr=if e.q>=0{
+                //     0.0
+                // }else{
+                //     std::f32::consts::PI
                 // };
+                let c = e;
 
-                let foo = game.factions.specific_unit(mytype, my_team);
+                let (cc, rr) = dddam(if game.factions.parity.is_set(e) {
+                    OParity::Upsidedown
+                } else {
+                    OParity::Normal
+                });
 
-                //let rr = (std::f32::consts::TAU / 6.0) * i as f32;
+                // let c = if e.q>=0{
+                //     e
+                // }else{
+                //     e.add(Axial{q:8,r:0})
+                // };
+                //let cc = zzzz;
+                let pos = grid_matrix.hex_axial_to_world(&c);
+                let t = matrix::translation(pos.x, pos.y, cc);
 
-                let min_epsilon = -1.0;
-                let max_epsilon = 1.0;
-                let dddam = |parity: OParity| {
-                    if let OParity::Upsidedown = parity {
+                t.chain(matrix::y_rotation(rr)).generate()
+            });
+
+            let ani = if let Some(f) = &unit_animation {
+                if f.ttt == mytype && team == my_team {
+                    let (cc, rr) = if let OParity::Upsidedown = f.parity {
                         (min_epsilon, std::f32::consts::PI)
                     } else {
                         (max_epsilon, 0.0)
-                    }
-                };
+                    };
+                    //let (cc, rr) = dddam(f.parity);
 
-                let color = foo.iter_mesh().map(|e| {
-                    // let rr=if e.q>=0{
-                    //     0.0
-                    // }else{
-                    //     std::f32::consts::PI
-                    // };
-                    let c = e;
-
-                    let (cc, rr) = dddam(if game.factions.parity.is_set(e) {
-                        OParity::Upsidedown
-                    } else {
-                        OParity::Normal
-                    });
-
-                    // let c = if e.q>=0{
-                    //     e
-                    // }else{
-                    //     e.add(Axial{q:8,r:0})
-                    // };
-                    //let cc = zzzz;
-                    let pos = grid_matrix.hex_axial_to_world(&c);
-                    let t = matrix::translation(pos.x, pos.y, cc);
-
-                    t.chain(matrix::y_rotation(rr)).generate()
-                });
-
-                let ani = if let Some(f) = &unit_animation {
-                    if f.ttt == mytype && team == my_team {
-                        let (cc, rr) = if let OParity::Upsidedown = f.parity {
-                            (min_epsilon, std::f32::consts::PI)
-                        } else {
-                            (max_epsilon, 0.0)
-                        };
-                        //let (cc, rr) = dddam(f.parity);
-
-                        let pos = f.pos.curr();
-                        let vert_epsilon = {
-                            let dir = match f.parity {
-                                OParity::Normal => min_epsilon,
-                                OParity::Upsidedown => max_epsilon,
-                            };
-                            (max_epsilon - min_epsilon) * f.rot.curr() * dir
-                        };
-                        let BIG = 50.0;
-
-                        let hh = model.height / 2.0;
-                        let rrr = matrix::translation(0., 0., -hh);
-
-                        // let rrr = matrix::y_rotation(
-                        //     rr + (2. * (f.rot.curr() - 0.5)).max(0.0).min(1.0)
-                        //         * std::f32::consts::PI,
-                        // )
-                        // .chain(rrr);
-
+                    let pos = f.pos.curr();
+                    let vert_epsilon = {
                         let dir = match f.parity {
-                            OParity::Normal => 1.0,
-                            OParity::Upsidedown => -1.0,
+                            OParity::Normal => min_epsilon,
+                            OParity::Upsidedown => max_epsilon,
                         };
+                        (max_epsilon - min_epsilon) * f.rot.curr() * dir
+                    };
+                    let BIG = 50.0;
 
-                        let first =
-                            matrix::translation(pos.x, pos.y, dir * (-(f.rot.curr() * 2.0 - 1.0)))
-                                .chain(matrix::y_rotation(rr + f.rot.curr() * std::f32::consts::PI))
-                                //.chain(rrr)
-                                .generate();
+                    let hh = model.height / 2.0;
+                    let rrr = matrix::translation(0., 0., -hh);
 
-                        if *f.rot.curr() > 0.0 {
-                            dark_cells.remove(f.target);
-                            light_cells.remove(f.target);
-                            //draw_unit_typ
-                            draw_sys
-                                .batch([first])
-                                .build(&models.chess_cell_light, &projjj);
-                        }
+                    // let rrr = matrix::y_rotation(
+                    //     rr + (2. * (f.rot.curr() - 0.5)).max(0.0).min(1.0)
+                    //         * std::f32::consts::PI,
+                    // )
+                    // .chain(rrr);
 
-                        // let second = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
-                        //     .chain(matrix::x_rotation(rr + std::f32::consts::PI))
-                        //     .chain(matrix::translation(0.0, 0.0, (1.0 - f.rot.curr()) * BIG))
-                        //     .generate();
-                        Some(first)
-                    } else {
-                        None
-                    }
+                    let dir = match f.parity {
+                        OParity::Normal => 1.0,
+                        OParity::Upsidedown => -1.0,
+                    };
+
+                    //dir * (-(f.rot.curr() * 2.0 - 1.0))
+                    let first = matrix::translation(pos.x, pos.y, 0.0)
+                        .chain(matrix::y_rotation(rr + f.rot.curr() * std::f32::consts::PI))
+                        //.chain(rrr)
+                        .generate();
+
+                    *animated = first;
+
+                    // let second = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
+                    //     .chain(matrix::x_rotation(rr + std::f32::consts::PI))
+                    //     .chain(matrix::translation(0.0, 0.0, (1.0 - f.rot.curr()) * BIG))
+                    //     .generate();
+                    Some(first)
                 } else {
                     None
-                };
-
-                let k = color.chain(ani.into_iter());
-
-                draw_sys.batch(k).build(model, &projjj)
+                }
+            } else {
+                None
             };
+
+            let k = color.chain(ani.into_iter());
+
+            draw_sys.batch(k).build(model, &projjj)
+        };
 
         //TODO combine into one draw call
 
-        draw_unit_type(UnitType::Rook, ActiveTeam::White, white_rook);
-        draw_unit_type(UnitType::Rook, ActiveTeam::Black, black_rook);
+        let mut animated = cgmath::Matrix4::<f32>::zero();
+        draw_unit_type(UnitType::Rook, ActiveTeam::White, white_rook, &mut animated);
+        draw_unit_type(UnitType::Rook, ActiveTeam::Black, black_rook, &mut animated);
 
-        draw_unit_type(UnitType::Pawn, ActiveTeam::White, white_pawn);
-        draw_unit_type(UnitType::Pawn, ActiveTeam::Black, black_pawn);
+        draw_unit_type(UnitType::Pawn, ActiveTeam::White, white_pawn, &mut animated);
+        draw_unit_type(UnitType::Pawn, ActiveTeam::Black, black_pawn, &mut animated);
 
-        draw_unit_type(UnitType::Knight, ActiveTeam::White, white_knight);
-        draw_unit_type(UnitType::Knight, ActiveTeam::Black, black_knight);
+        draw_unit_type(
+            UnitType::Knight,
+            ActiveTeam::White,
+            white_knight,
+            &mut animated,
+        );
+        draw_unit_type(
+            UnitType::Knight,
+            ActiveTeam::Black,
+            black_knight,
+            &mut animated,
+        );
 
-        draw_unit_type(UnitType::Bishop, ActiveTeam::White, white_bishop);
-        draw_unit_type(UnitType::Bishop, ActiveTeam::White, white_bishop);
+        draw_unit_type(
+            UnitType::Bishop,
+            ActiveTeam::White,
+            white_bishop,
+            &mut animated,
+        );
+        draw_unit_type(
+            UnitType::Bishop,
+            ActiveTeam::White,
+            white_bishop,
+            &mut animated,
+        );
 
-        draw_unit_type(UnitType::King, ActiveTeam::White, &models.white_king);
-        draw_unit_type(UnitType::King, ActiveTeam::Black, &models.black_king);
+        draw_unit_type(
+            UnitType::King,
+            ActiveTeam::White,
+            &models.white_king,
+            &mut animated,
+        );
+        draw_unit_type(
+            UnitType::King,
+            ActiveTeam::Black,
+            &models.black_king,
+            &mut animated,
+        );
 
-        draw_unit_type(UnitType::Queen, ActiveTeam::Black, &models.black_trook);
-        draw_unit_type(UnitType::Queen, ActiveTeam::White, &models.white_trook);
+        draw_unit_type(
+            UnitType::Queen,
+            ActiveTeam::Black,
+            &models.black_trook,
+            &mut animated,
+        );
+        draw_unit_type(
+            UnitType::Queen,
+            ActiveTeam::White,
+            &models.white_trook,
+            &mut animated,
+        );
 
-        draw_sys
-            .batch(dark_cells.iter_mesh().map(|e| grid_snap(e, 0.0)))
-            .build(&models.chess_cell, &projjj);
+        {
+            let mut dark_cells_new = dark_cells.clone();
+            let mut light_cells_new = light_cells.clone();
 
-        draw_sys
-            .batch(light_cells.iter_mesh().map(|e| grid_snap(e, 0.0)))
-            .build(&models.chess_cell_light, &projjj);
+            if let Some(f) = &unit_animation {
+                if *f.rot.curr() > 0.0 {
+                    dark_cells_new.remove(f.target);
+                    light_cells_new.remove(f.target);
 
+                    let fff = if dark_cells.is_set(f.target) {
+                        Some(&models.chess_cell)
+                    } else if light_cells.is_set(f.target) {
+                        Some(&models.chess_cell_light)
+                    } else {
+                        None
+                    };
+
+                    if let Some(fff) = fff {
+                        //draw_unit_typ
+                        draw_sys.batch([animated]).build(fff, &projjj);
+                    }
+                }
+            }
+            draw_sys
+                .batch(dark_cells_new.iter_mesh().map(|e| grid_snap(e, 0.0)))
+                .build(&models.chess_cell, &projjj);
+
+            draw_sys
+                .batch(light_cells_new.iter_mesh().map(|e| grid_snap(e, 0.0)))
+                .build(&models.chess_cell_light, &projjj);
+        }
         // let d = DepthDisabler::new(ctx);
 
         // draw_health_text(
@@ -1256,7 +1315,11 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
 
             snow: quick_load(include_bytes!("../assets/snow.glb"), RESIZE, None),
             //water: quick_load(include_bytes!("../assets/water.glb"), RESIZE, None),
-            chess_cell: quick_load(include_bytes!("../assets/chess_cell.glb"), RESIZE, None),
+            chess_cell: quick_load(
+                include_bytes!("../assets/chess_cell_dark.glb"),
+                RESIZE,
+                None,
+            ),
             chess_cell_light: quick_load(
                 include_bytes!("../assets/chess_cell_light.glb"),
                 RESIZE,
