@@ -167,27 +167,15 @@ impl GameState {
                 for diag in diag {
                     let j = Axial::from_arr(diag);
 
-                    //if is_enemy_same_parity(unit.add(j)) {
-                    ray2(j, mesh, 1, true);
-                    //}
+                    if game
+                        .factions
+                        .get_board(dir)
+                        .get_all_team(team.not())
+                        .is_set(unit.add(j))
+                    {
+                        ray2(j, mesh, 1, true);
+                    }
                 }
-
-                // let k = unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax);
-
-                // if world.get_game_cells().is_set(k)
-                //     && !game.env.fog.is_set(k)
-                //     && !terrain.is_set(k)
-                //     && !game.factions.has_a_set(k)
-                // {
-                //     mesh.add(k);
-                // }
-
-                // for o in [hex::OFFSETS[dd + 1], hex::OFFSETS[(dd + 5) % 6]] {
-                //     let k = unit.add(hex::Cube::from_arr(o).ax);
-                //     if game.factions.relative(team).that_team.is_set(k) {
-                //         mesh.add(k);
-                //     }
-                // }
             }
             UnitType::Knight => {
                 for [q, r] in [
