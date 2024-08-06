@@ -161,7 +161,7 @@ pub async fn worker_entry() {
                 let aaa = async {
                     render_command(
                         data,
-                        &mut game,
+                        game.clone(),
                         team,
                         &mut render,
                         &world,
@@ -181,7 +181,7 @@ pub async fn worker_entry() {
             } else {
                 render_command(
                     data,
-                    &mut game,
+                    game.clone(),
                     team,
                     &mut render,
                     &world,
@@ -309,7 +309,7 @@ pub struct EngineStuff {
 
 async fn render_command(
     command: ace::Command,
-    game: &GameState,
+    mut game: GameState,
     team: ActiveTeam,
     e: &mut EngineStuff,
     world: &board::MyWorld,
@@ -362,6 +362,8 @@ async fn render_command(
 
     let mut waiting_engine_ack = false;
     let mut rr = 0.0;
+
+    let mut draw_reflection = None;
 
     struct AnimationInfo<I: Iterator<Item = Vector2<f32>>, I2: Iterator<Item = f32>> {
         unit: Axial,
@@ -606,8 +608,22 @@ async fn render_command(
                 return ace::Response::AnimationFinish;
             }
         }
+
         if let Some(f) = &mut unit_animation {
             if !f.pos.update() {
+                if game
+                    .factions
+                    .get_board(f.parity.flip())
+                    .get_all()
+                    .is_set(f.target)
+                {
+                    let a = game
+                        .factions
+                        .get_board_mut(f.parity.flip())
+                        .remove(f.target);
+                    draw_reflection = Some(a);
+                }
+
                 if !f.rot.update() {
                     return ace::Response::AnimationFinish;
                 }
@@ -947,31 +963,29 @@ async fn render_command(
                         .chain(matrix::y_rotation(rr + f.rot.curr() * std::f32::consts::PI))
                         .generate();
 
+                    //if *f.rot.curr()>0.0{
+                    if let Some((typ, tt)) = draw_reflection {
+                        //TODO
+                        let mm = match (typ, tt) {
+                            (UnitType::King, ActiveTeam::White) => &models.white_king,
+                            (UnitType::King, ActiveTeam::Black) => &models.black_king,
+                            (UnitType::Queen, ActiveTeam::White) => &models.white_trook,
+                            (UnitType::Queen, ActiveTeam::Black) => &models.black_trook,
+                            (UnitType::Rook, ActiveTeam::White) => &models.white_rook,
+                            (UnitType::Rook, ActiveTeam::Black) => &models.black_rook,
+                            (UnitType::Bishop, ActiveTeam::White) => &models.white_bishop,
+                            (UnitType::Bishop, ActiveTeam::Black) => &models.black_bishop,
+                            (UnitType::Knight, ActiveTeam::White) => &models.white_knight,
+                            (UnitType::Knight, ActiveTeam::Black) => &models.black_knight,
+                            (UnitType::Pawn, ActiveTeam::White) => &models.white_pawn,
+                            (UnitType::Pawn, ActiveTeam::Black) => &models.black_pawn,
+                        };
 
-                    if *f.rot.curr()>0.0{
-                        if game.factions.get_board(f.parity.flip()).get_all().is_set(f.target){
-                            let (typ,tt)=game.factions.get_board(f.parity.flip()).get_unit_at(f.target);
-                            //TODO
-                            let mm=match (typ,tt){
-                                (UnitType::King, ActiveTeam::White) => &models.white_king,
-                                (UnitType::King, ActiveTeam::Black) => &models.black_king,
-                                (UnitType::Queen, ActiveTeam::White) => &models.white_trook,
-                                (UnitType::Queen, ActiveTeam::Black) => &models.black_trook,
-                                (UnitType::Rook, ActiveTeam::White) => &models.white_rook,
-                                (UnitType::Rook, ActiveTeam::Black) => &models.black_rook,
-                                (UnitType::Bishop, ActiveTeam::White) => &models.white_bishop,
-                                (UnitType::Bishop, ActiveTeam::Black) => &models.black_bishop,
-                                (UnitType::Knight, ActiveTeam::White) => &models.white_knight,
-                                (UnitType::Knight, ActiveTeam::Black) => &models.black_knight,
-                                (UnitType::Pawn, ActiveTeam::White) => &models.white_pawn,
-                                (UnitType::Pawn, ActiveTeam::Black) => &models.black_pawn,
-                            };
-
-                            
-
-                            draw_sys.batch([first.chain(matrix::y_rotation(std::f32::consts::PI))]).build(mm,&projjj);
-                        }
+                        draw_sys
+                            .batch([first.chain(matrix::y_rotation(std::f32::consts::PI))])
+                            .build(mm, &projjj);
                     }
+                    //}
 
                     *animated = first.generate();
 

@@ -83,17 +83,15 @@ impl Board {
         self.units.get_mut(typ).add(coord);
     }
 
-
-    pub fn get_unit_at(&self,coord:Axial) -> (UnitType,ActiveTeam) {
+    pub fn get_unit_at(&self, coord: Axial) -> (UnitType, ActiveTeam) {
         let team = if self.team.is_set(coord) {
             ActiveTeam::White
         } else {
             ActiveTeam::Black
         };
 
-        (self.units.get_type(coord),team)
+        (self.units.get_type(coord), team)
     }
-
 
     pub fn get_all(&self) -> SingleMesh {
         let a = self.get_all_team(ActiveTeam::White);

@@ -122,7 +122,7 @@ impl GameState {
                 }
 
                 mesh.add(a);
-                
+
                 if game
                     .factions
                     .get_board(dir)
