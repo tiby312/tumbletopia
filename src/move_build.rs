@@ -11,6 +11,7 @@ impl crate::moves::ActualMove {
     // }
     pub fn as_move(&self) -> move_build::MovePhase {
         move_build::MovePhase {
+            dir: self.dir,
             original: self.original,
             moveto: self.moveto,
         }
@@ -240,6 +241,7 @@ impl MoveEffect {
 
 #[derive(Clone, Debug)]
 pub struct MovePhase {
+    pub dir: OParity,
     pub original: Axial,
     pub moveto: Axial,
 }
@@ -281,7 +283,7 @@ impl MovePhase {
 
         let mut ss = state.clone();
 
-        let (ttt, pp) = ss.factions.remove(self.original);
+        let (ttt, _) = ss.factions.get_board_mut(self.dir).remove(self.original);
 
         let end = target;
         match info {
@@ -320,7 +322,7 @@ impl MovePhase {
                 ttt,
                 end,
                 data: info,
-                parity: pp,
+                parity: self.dir,
             },
             team,
             &mut ss,
@@ -334,20 +336,24 @@ impl MovePhase {
         let moveto = self.moveto;
         let unit = self.original;
 
-        //undo_transfer_other_board(state, team_index, moveto);
+        state.factions.flip(moveto);
 
-        state.factions.move_unit(moveto, unit);
+        state
+            .factions
+            .get_board_mut(self.dir)
+            .move_unit(moveto, unit);
 
-        let curr = state.factions.parity.is_set(moveto);
-        state.factions.parity.set(unit, !curr);
-        state.factions.parity.remove(moveto);
+        // let curr = state.factions.parity.is_set(moveto);
+        // state.factions.parity.set(unit, !curr);
+        // state.factions.parity.remove(moveto);
 
         if let Some((fooo, typ, oparity)) = effect.destroyed_unit {
             matches!(effect.pushpull, PushInfo::None);
             //TODO need to store parity of taken piece!!!!
             state
                 .factions
-                .add_piece(moveto, team_index.not(), typ, oparity);
+                .get_board_mut(self.dir)
+                .add_piece(moveto, team_index.not(), typ);
 
             //let j = &mut state.factions.relative_mut(team_index).that_team.units;
             assert_eq!(fooo, moveto);
@@ -429,89 +435,18 @@ impl MovePhase {
 
         let mut destroyed_unit = None;
 
-        // let this_unit=move |factions:&mut Factions|{
-        //     factions.relative_mut(team).this_team.units.iter_mut().find(|x|x.position==self.original).unwrap()
-        // };
-
         {
             let terrain = &mut env.terrain;
 
-            //let foo = game.factions.relative_mut(team);
-            let this_team = game.factions.get_all_team(team);
-            let that_team = game.factions.get_all_team(team.not());
-
-            if that_team.is_set(target_cell) {
-                let (k, pp) = game.factions.remove(target_cell);
-                destroyed_unit = Some((target_cell, k, pp));
-
-                // let dir = self.original.dir_to(&target_cell);
-                // let check = target_cell.advance(dir);
-
-                // if env.terrain.is_set(check) || !world.get_game_cells().is_set(check) {
-                //     assert!(!env.fog.is_set(target_cell));
-                //     assert!(!env.fog.is_set(check));
-
-                //     foo.that_team.units.set_coord(target_cell, false);
-                //     destroyed_unit = Some(target_cell);
-                // } else if world.get_game_cells().is_set(check)
-                //     && !env.terrain.is_set(check)
-                //     && !foo.has_a_set(check)
-                // {
-                //     foo.that_team.units.set_coord(target_cell, false);
-                //     foo.that_team.units.set_coord(check, true);
-                //     e = PushInfo::PushedUnit;
-                // }
-            } else if this_team.is_set(target_cell) {
-                todo!()
-                // let dir = self.original.dir_to(&target_cell);
-                // let check = target_cell.advance(dir);
-
-                // if world.get_game_cells().is_set(check)
-                //     && !env.terrain.is_set(check)
-                //     && !foo.has_a_set(check)
-                // {
-                //     foo.this_team.units.set_coord(target_cell, false);
-                //     foo.this_team.units.set_coord(check, true);
-
-                //     e = PushInfo::PushedUnit;
-                // }
-            } else if terrain.land.is_set(target_cell) {
-                let dir = self.original.dir_to(&target_cell);
-                let kk = target_cell.advance(dir);
-
-                terrain.land.set_coord(target_cell, false);
-
-                if terrain.land.is_set(kk) {
-                    terrain.land.set_coord(kk, false);
-                    terrain.forest.set_coord(kk, true);
-
-                    e = PushInfo::UpgradedLand;
-                } else {
-                    assert!(!terrain.is_set(kk));
-                    terrain.land.set_coord(kk, true);
-
-                    e = PushInfo::PushedLand;
-                }
+            if game
+                .factions
+                .get_board_mut(self.dir)
+                .get_all_team(team.not())
+                .is_set(target_cell)
+            {
+                let (k, pp) = game.factions.get_board_mut(self.dir).remove(target_cell);
+                destroyed_unit = Some((target_cell, k, self.dir));
             }
-
-            // if terrain.forest.is_set(target_cell) {
-            //     let dir = this_unit.position.dir_to(&target_cell);
-            //     let kk = target_cell.advance(dir);
-
-            //     terrain.forest.set_coord(target_cell, false);
-
-            //     if terrain.forest.is_set(kk) {
-            //         terrain.forest.set_coord(kk, false);
-            //         terrain.mountain.set_coord(kk, true);
-
-            //         e = PushInfo::UpgradedLand;
-            //     } else {
-            //         assert!(!terrain.is_set(kk));
-            //         terrain.forest.set_coord(kk, true);
-
-            //         e = PushInfo::PushedLand;
-            //     }
-            // }
         }
 
         let powerup = if game.env.powerups.contains(&target_cell) {
@@ -530,14 +465,10 @@ impl MovePhase {
 
         let mut target_cell = target_cell;
 
-        game.factions.move_unit(self.original, target_cell);
-
-        let curr = game.factions.parity.is_set(self.original);
-        game.factions.parity.set(target_cell, !curr);
-        game.factions.parity.remove(self.original);
-
-        //transfer_other_board(game, team, target_cell);
-        //game.factions.relative_mut(team).this_team.f
+        game.factions
+            .get_board_mut(self.dir)
+            .move_unit(self.original, target_cell);
+        game.factions.flip(target_cell);
 
         MoveEffect {
             pushpull: e,
@@ -634,71 +565,71 @@ pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
     FogInfo(mesh)
 }
 
-fn calculate_paths(
-    position: Axial,
-    target: Axial,
-    state: &GameState,
-    world: &board::MyWorld,
-) -> SmallMesh {
-    let typ = state.factions.units.get_type(position);
+// fn calculate_paths(
+//     position: Axial,
+//     target: Axial,
+//     state: &GameState,
+//     world: &board::MyWorld,
+// ) -> SmallMesh {
+//     let typ = state.factions.units.get_type(position);
 
-    let env = &state.env;
-    let mut paths = SmallMesh::new();
+//     let env = &state.env;
+//     let mut paths = SmallMesh::new();
 
-    paths.add(target.sub(&position));
+//     paths.add(target.sub(&position));
 
-    for a in position.to_cube().range(2) {
-        let a = a.to_axial();
-        //TODO this is duplicated logic in selection function???
+//     for a in position.to_cube().range(2) {
+//         let a = a.to_axial();
+//         //TODO this is duplicated logic in selection function???
 
-        if !env.fog.is_set(a)
-            && !env.terrain.is_set(a)
-            && a != position
-            && !state.factions.units.is_set(a)
-            && world.get_game_cells().is_set(a)
-        {
-            //if a != target {
-            paths.add(a.sub(&position));
-            //}
-        }
-    }
-    // match typ {
-    //     UnitType::Mouse => {
-    //         paths.add(target.sub(&position));
+//         if !env.fog.is_set(a)
+//             && !env.terrain.is_set(a)
+//             && a != position
+//             && !state.factions.units.is_set(a)
+//             && world.get_game_cells().is_set(a)
+//         {
+//             //if a != target {
+//             paths.add(a.sub(&position));
+//             //}
+//         }
+//     }
+//     // match typ {
+//     //     UnitType::Mouse => {
+//     //         paths.add(target.sub(&position));
 
-    //         for a in position.to_cube().range(2) {
-    //             let a = a.to_axial();
-    //             //TODO this is duplicated logic in selection function???
+//     //         for a in position.to_cube().range(2) {
+//     //             let a = a.to_axial();
+//     //             //TODO this is duplicated logic in selection function???
 
-    //             if !env.fog.is_set(a)
-    //                 && !env.terrain.is_set(a)
-    //                 && a != position
-    //                 && !state.factions.has_a_set(a)
-    //                 && world.get_game_cells().is_set(a)
-    //             {
-    //                 //if a != target {
-    //                 paths.add(a.sub(&position));
-    //                 //}
-    //             }
-    //         }
-    //     }
-    //     UnitType::Rabbit => {
-    //         paths.add(target.sub(&position));
+//     //             if !env.fog.is_set(a)
+//     //                 && !env.terrain.is_set(a)
+//     //                 && a != position
+//     //                 && !state.factions.has_a_set(a)
+//     //                 && world.get_game_cells().is_set(a)
+//     //             {
+//     //                 //if a != target {
+//     //                 paths.add(a.sub(&position));
+//     //                 //}
+//     //             }
+//     //         }
+//     //     }
+//     //     UnitType::Rabbit => {
+//     //         paths.add(target.sub(&position));
 
-    //         for a in position.to_cube().range(2) {
-    //             let a = a.to_axial();
-    //             //TODO this is duplicated logic in selection function???
+//     //         for a in position.to_cube().range(2) {
+//     //             let a = a.to_axial();
+//     //             //TODO this is duplicated logic in selection function???
 
-    //             if env.terrain.is_set(a) {
-    //                 paths.add(a.sub(&position));
-    //             }
-    //         }
+//     //             if env.terrain.is_set(a) {
+//     //                 paths.add(a.sub(&position));
+//     //             }
+//     //         }
 
-    //         let pos: Vec<_> = paths.iter_mesh(position).collect();
+//     //         let pos: Vec<_> = paths.iter_mesh(position).collect();
 
-    //         console_dbg!("walls size={}", pos);
-    //     }
-    // }
+//     //         console_dbg!("walls size={}", pos);
+//     //     }
+//     // }
 
-    paths
-}
+//     paths
+// }

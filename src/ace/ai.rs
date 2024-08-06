@@ -62,8 +62,23 @@ impl Evaluator {
         //     temp
         // };
 
-        let num_white = view.factions.get_all_team(ActiveTeam::White).count_ones() as i64;
-        let num_black = view.factions.get_all_team(ActiveTeam::Black).count_ones() as i64;
+        let mut num_white = 0;
+        for dir in OParity::all() {
+            num_white += view
+                .factions
+                .get_board(dir)
+                .get_all_team(ActiveTeam::White)
+                .count_ones() as i64;
+        }
+
+        let mut num_black = 0;
+        for dir in OParity::all() {
+            num_black += view
+                .factions
+                .get_board(dir)
+                .get_all_team(ActiveTeam::Black)
+                .count_ones() as i64;
+        }
 
         //TODO remove this allocation
         // let mut white_influence = view.factions.white.all_alloc();

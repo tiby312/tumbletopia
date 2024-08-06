@@ -177,6 +177,7 @@ impl WorkerManager {
 
 pub struct SelectType {
     coord: Axial,
+    dir: OParity,
     team: ActiveTeam,
 }
 
@@ -234,7 +235,12 @@ pub async fn reselect_loop(
     // };
     let cca = None;
     let cca = cca.unwrap_or_else(|| {
-        game.generate_possible_moves_movement(world, &unwrapped_selected_unit, selected_unit.team)
+        game.generate_possible_moves_movement(
+            world,
+            &unwrapped_selected_unit,
+            selected_unit.team,
+            selected_unit.dir,
+        )
     });
 
     let mut cell = CellSelection::MoveSelection(unwrapped_selected_unit, cca, None);
@@ -266,31 +272,37 @@ pub async fn reselect_loop(
         return LoopRes::Deselect;
     }
 
-    //If we select a friendly unit quick swap
-    if game
-        .factions
-        .get_all_team(selected_unit.team)
-        .is_set(target_cell)
-    {
-        if !contains {
-            //it should be impossible for a unit to move onto a friendly
-            //assert!(!contains);
-            selected_unit.coord = target_cell;
-            return LoopRes::Select(selected_unit);
+    for ddir in [OParity::Normal, OParity::Upsidedown] {
+        //If we select a friendly unit quick swap
+        if game
+            .factions
+            .get_board(ddir)
+            .get_all_team(selected_unit.team)
+            .is_set(target_cell)
+        {
+            if !contains {
+                //it should be impossible for a unit to move onto a friendly
+                //assert!(!contains);
+                selected_unit.coord = target_cell;
+                selected_unit.dir = ddir;
+                return LoopRes::Select(selected_unit);
+            }
         }
-    }
 
-    //If we select an enemy unit quick swap
-    if game
-        .factions
-        .get_all_team(selected_unit.team.not())
-        .is_set(target_cell)
-    {
-        if selected_unit.team != team || !contains {
-            //If we select an enemy unit thats outside of our units range.
-            selected_unit.coord = target_cell;
-            selected_unit.team = selected_unit.team.not();
-            return LoopRes::Select(selected_unit);
+        //If we select an enemy unit quick swap
+        if game
+            .factions
+            .get_board(ddir)
+            .get_all_team(selected_unit.team.not())
+            .is_set(target_cell)
+        {
+            if selected_unit.team != team || !contains {
+                //If we select an enemy unit thats outside of our units range.
+                selected_unit.coord = target_cell;
+                selected_unit.team = selected_unit.team.not();
+                selected_unit.dir = ddir;
+                return LoopRes::Select(selected_unit);
+            }
         }
     }
 
@@ -340,6 +352,7 @@ pub async fn reselect_loop(
     } else {
         assert!(game
             .factions
+            .get_board(selected_unit.dir)
             .get_all_team(selected_unit.team)
             .is_set(unwrapped_selected_unit));
 
@@ -348,6 +361,7 @@ pub async fn reselect_loop(
         let mp = move_build::MovePhase {
             original: unwrapped_selected_unit,
             moveto: target_cell,
+            dir: selected_unit.dir,
         };
 
         let effect = mp
@@ -368,6 +382,7 @@ pub async fn reselect_loop(
                     original: mp.original,
                     moveto: mp.moveto,
                     attackto: target_cell,
+                    dir: selected_unit.dir,
                 },
                 effect,
             ))
@@ -529,54 +544,22 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let fog = BitField::new();
 
     let mut factions = Factions {
-        units: Tribe::new(),
-        team: SingleMesh::new(),
-        parity: SingleMesh::new(),
+        boards: [0; 2].map(|x| Board {
+            units: Tribe::new(),
+            team: SingleMesh::new(),
+        }),
     };
 
-    factions.add_piece(
-        Axial { q: 4, r: 4 },
-        ActiveTeam::White,
-        UnitType::King,
-        OParity::Normal,
-    );
-    factions.add_piece(
-        Axial { q: 5, r: 2 },
-        ActiveTeam::White,
-        UnitType::Rook,
-        OParity::Normal,
-    );
-    factions.add_piece(
-        Axial { q: 5, r: 3 },
-        ActiveTeam::White,
-        UnitType::Bishop,
-        OParity::Normal,
-    );
-    factions.add_piece(
-        Axial { q: 5, r: 4 },
-        ActiveTeam::White,
-        UnitType::Knight,
-        OParity::Normal,
-    );
-    factions.add_piece(
-        Axial { q: 1, r: 1 },
-        ActiveTeam::Black,
-        UnitType::King,
-        OParity::Normal,
-    );
+    let ff = &mut factions.boards[0];
 
-    factions.add_piece(
-        Axial { q: 2, r: 2 },
-        ActiveTeam::Black,
-        UnitType::Pawn,
-        OParity::Normal,
-    );
-    factions.add_piece(
-        Axial { q: 6, r: 2 },
-        ActiveTeam::White,
-        UnitType::Pawn,
-        OParity::Normal,
-    );
+    ff.add_piece(Axial { q: 4, r: 4 }, ActiveTeam::White, UnitType::King);
+    ff.add_piece(Axial { q: 5, r: 2 }, ActiveTeam::White, UnitType::Rook);
+    ff.add_piece(Axial { q: 5, r: 3 }, ActiveTeam::White, UnitType::Bishop);
+    ff.add_piece(Axial { q: 5, r: 4 }, ActiveTeam::White, UnitType::Knight);
+    ff.add_piece(Axial { q: 1, r: 1 }, ActiveTeam::Black, UnitType::King);
+
+    ff.add_piece(Axial { q: 2, r: 2 }, ActiveTeam::Black, UnitType::Pawn);
+    ff.add_piece(Axial { q: 6, r: 2 }, ActiveTeam::White, UnitType::Pawn);
     let mut k = GameState {
         factions,
         env: Environment {
@@ -694,7 +677,7 @@ pub async fn handle_player(
         }
 
         //Loop until the user clicks on a selectable unit in their team.
-        let mut selected_unit = loop {
+        let mut selected_unit = 'inner: loop {
             let data = doop.get_mouse(team, game).await;
 
             let cell = match data {
@@ -708,14 +691,27 @@ pub async fn handle_player(
                 }
             };
 
-            if game.factions.get_all_team(team).is_set(cell) {
-                break SelectType { coord: cell, team };
-            }
-            if game.factions.get_all_team(team.not()).is_set(cell) {
-                break SelectType {
-                    coord: cell,
-                    team: team.not(),
-                };
+            for dir in [OParity::Normal, OParity::Upsidedown] {
+                if game.factions.get_board(dir).get_all_team(team).is_set(cell) {
+                    break 'inner SelectType {
+                        coord: cell,
+                        team,
+                        dir,
+                    };
+                }
+
+                if game
+                    .factions
+                    .get_board(dir)
+                    .get_all_team(team.not())
+                    .is_set(cell)
+                {
+                    break 'inner SelectType {
+                        coord: cell,
+                        team: team.not(),
+                        dir,
+                    };
+                }
             }
         };
 

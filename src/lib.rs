@@ -813,9 +813,8 @@ async fn render_command(
 
             let shadows = game
                 .factions
-                .units
-                .all_units()
-                .intersect(&game.factions.parity.not())
+                .get_board(OParity::Normal)
+                .get_all()
                 .iter_mesh()
                 .map(|e| grid_snap(e, zzzz));
 
@@ -872,7 +871,16 @@ async fn render_command(
             //     UnitType::Trook(TrookParity::Three) => 1,
             // };
 
-            let foo = game.factions.specific_unit(mytype, my_team);
+            let foo = game.factions.boards[0]
+                .specific_unit(mytype, my_team)
+                .iter_mesh()
+                .map(|e| (OParity::Normal, e))
+                .chain(
+                    game.factions.boards[1]
+                        .specific_unit(mytype, my_team)
+                        .iter_mesh()
+                        .map(|e| (OParity::Upsidedown, e)),
+                );
 
             //let rr = (std::f32::consts::TAU / 6.0) * i as f32;
 
@@ -886,7 +894,7 @@ async fn render_command(
                 }
             };
 
-            let color = foo.iter_mesh().map(|e| {
+            let color = foo.map(|(dir, e)| {
                 // let rr=if e.q>=0{
                 //     0.0
                 // }else{
@@ -894,11 +902,7 @@ async fn render_command(
                 // };
                 let c = e;
 
-                let (cc, rr) = dddam(if game.factions.parity.is_set(e) {
-                    OParity::Upsidedown
-                } else {
-                    OParity::Normal
-                });
+                let (cc, rr) = dddam(dir);
 
                 // let c = if e.q>=0{
                 //     e

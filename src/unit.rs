@@ -4,13 +4,29 @@ use mesh::small_mesh::{SingleMesh, SmallMesh};
 
 use super::*;
 
-#[derive(Copy, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+#[must_use]
+#[derive(Deserialize, Serialize, Copy, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 
 pub enum OParity {
     Normal,
     Upsidedown,
 }
 impl OParity {
+    pub fn all() -> [OParity; 2] {
+        [OParity::Normal, OParity::Upsidedown]
+    }
+    pub fn flip(&self) -> OParity {
+        match self {
+            OParity::Normal => OParity::Upsidedown,
+            OParity::Upsidedown => OParity::Normal,
+        }
+    }
+    fn as_index(&self) -> usize {
+        match self {
+            OParity::Normal => 0,
+            OParity::Upsidedown => 1,
+        }
+    }
     fn as_bool(&self) -> bool {
         match self {
             OParity::Normal => false,
@@ -20,18 +36,101 @@ impl OParity {
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct Factions {
+pub struct Board {
     pub units: Tribe,
-    pub parity: SingleMesh,
     pub team: SingleMesh,
 }
-impl Factions {
+impl Board {
     pub fn specific_unit(&self, typ: UnitType, team: ActiveTeam) -> SingleMesh {
         let k = self.units.get(typ);
         if team.is_white() {
             self.team.intersect(k)
         } else {
             self.team.not().intersect(k)
+        }
+    }
+    pub fn remove(&mut self, coord: Axial) -> (UnitType, ActiveTeam) {
+        // let pp = if self.parity.is_set(coord) {
+        //     OParity::Upsidedown
+        // } else {
+        //     OParity::Normal
+        // };
+
+        let team = if self.team.is_set(coord) {
+            ActiveTeam::White
+        } else {
+            ActiveTeam::Black
+        };
+
+        self.team.remove(coord);
+
+        //self.parity.remove(coord);
+        (self.units.clear(coord), team)
+    }
+
+    pub fn move_unit(&mut self, coord: Axial, to: Axial) {
+        let team = self.team.is_set(coord);
+        self.units.move_unit(coord, to);
+        self.team.remove(coord);
+        self.team.set(to, team);
+    }
+
+    pub fn add_piece(&mut self, coord: Axial, team: ActiveTeam, typ: UnitType) {
+        assert!(!self.units.is_set(coord));
+        assert!(!self.team.is_set(coord));
+
+        self.team.set(coord, team.is_white());
+        self.units.get_mut(typ).add(coord);
+    }
+
+    pub fn get_all(&self) -> SingleMesh {
+        let a = self.get_all_team(ActiveTeam::White);
+        let b = self.get_all_team(ActiveTeam::Black);
+        a.union(&b)
+    }
+
+    pub fn get_all_team(&self, team: ActiveTeam) -> SingleMesh {
+        let all = self.units.all_units();
+
+        if team.is_white() {
+            self.team.intersect(&all)
+        } else {
+            self.team.not().intersect(&all)
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
+pub struct Factions {
+    pub boards: [Board; 2],
+}
+impl Factions {
+    pub fn get_board(&self, a: OParity) -> &Board {
+        &self.boards[a.as_index()]
+    }
+    pub fn get_board_mut(&mut self, a: OParity) -> &mut Board {
+        &mut self.boards[a.as_index()]
+    }
+    pub fn flip(&mut self, coord: Axial) {
+        let [board_a, board_b] = self.boards.each_mut();
+
+        let to_board_b = if board_a.get_all().is_set(coord) {
+            Some(board_a.remove(coord))
+        } else {
+            None
+        };
+
+        let to_board_a = if board_b.get_all().is_set(coord) {
+            Some(board_b.remove(coord))
+        } else {
+            None
+        };
+
+        if let Some((typ, t)) = to_board_b {
+            board_b.add_piece(coord, t, typ);
+        }
+
+        if let Some((typ, t)) = to_board_a {
+            board_a.add_piece(coord, t, typ);
         }
     }
 
@@ -49,46 +148,6 @@ impl Factions {
     //     }
     //     None
     // }
-
-    pub fn remove(&mut self, coord: Axial) -> (UnitType, OParity) {
-        let pp = if self.parity.is_set(coord) {
-            OParity::Upsidedown
-        } else {
-            OParity::Normal
-        };
-
-        self.team.remove(coord);
-
-        self.parity.remove(coord);
-        (self.units.clear(coord), pp)
-    }
-
-    pub fn move_unit(&mut self, coord: Axial, to: Axial) {
-        let team = self.team.is_set(coord);
-        self.units.move_unit(coord, to);
-        self.team.remove(coord);
-        self.team.set(to, team);
-    }
-
-    pub fn add_piece(&mut self, coord: Axial, team: ActiveTeam, typ: UnitType, parity: OParity) {
-        assert!(!self.units.is_set(coord));
-        assert!(!self.parity.is_set(coord));
-        assert!(!self.team.is_set(coord));
-
-        self.team.set(coord, team.is_white());
-        self.units.get_mut(typ).add(coord);
-        self.parity.set(coord, parity.as_bool());
-    }
-
-    pub fn get_all_team(&self, team: ActiveTeam) -> SingleMesh {
-        let all = self.units.all_units();
-
-        if team.is_white() {
-            self.team.intersect(&all)
-        } else {
-            self.team.not().intersect(&all)
-        }
-    }
 
     // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
     //     self.relative_mut(team)
@@ -212,17 +271,31 @@ impl GameState {
     pub fn game_is_over(&self, world: &board::MyWorld) -> Option<GameOver> {
         if self
             .factions
+            .get_board(OParity::Normal)
             .specific_unit(UnitType::King, ActiveTeam::White)
             .count_ones()
             == 0
+            && self
+                .factions
+                .get_board(OParity::Upsidedown)
+                .specific_unit(UnitType::King, ActiveTeam::White)
+                .count_ones()
+                == 0
         {
             return Some(GameOver::BlackWon);
         }
         if self
             .factions
+            .get_board(OParity::Normal)
             .specific_unit(UnitType::King, ActiveTeam::Black)
             .count_ones()
             == 0
+            && self
+                .factions
+                .get_board(OParity::Upsidedown)
+                .specific_unit(UnitType::King, ActiveTeam::Black)
+                .count_ones()
+                == 0
         {
             return Some(GameOver::WhiteWon);
         }

@@ -89,32 +89,10 @@ impl GameState {
         &unit: &Axial,
         team: ActiveTeam,
         for_show: bool,
+        dir: OParity,
     ) {
-        let typ = self.factions.units.get_type(unit);
+        let typ = self.factions.get_board(dir).units.get_type(unit);
         let game = self;
-        //let terrain = &game.env.terrain;
-
-        let this_team = game.factions.get_all_team(team);
-        let that_team = game.factions.get_all_team(team.not());
-
-        let other_side_occupied = |x: Axial| {
-            game.factions.units.is_set(x)
-                && game.factions.parity.is_set(x) != game.factions.parity.is_set(unit)
-        };
-
-        let is_enemy_same_parity = |x: Axial| {
-            that_team.is_set(x)
-                && game.factions.parity.is_set(x) == game.factions.parity.is_set(unit)
-        };
-
-        let is_friendly_same_parity = |x: Axial| {
-            this_team.is_set(x)
-                && game.factions.parity.is_set(x) == game.factions.parity.is_set(unit)
-        };
-        let is_friendly_different_parity = |x: Axial| {
-            this_team.is_set(x)
-                && game.factions.parity.is_set(x) != game.factions.parity.is_set(unit)
-        };
 
         let ray = |mut c: Axial, v: Axial| {
             std::iter::repeat_with(move || {
@@ -129,19 +107,30 @@ impl GameState {
                     break;
                 }
 
-                if is_friendly_same_parity(a) {
+                if game.factions.get_board(dir).get_all_team(team).is_set(a) {
                     break;
                 }
 
-                if !attacking && is_enemy_same_parity(a) {
+                if !attacking
+                    && game
+                        .factions
+                        .get_board(dir)
+                        .get_all_team(team.not())
+                        .is_set(a)
+                {
                     break;
                 }
 
-                if !other_side_occupied(a) {
+                if !game.factions.get_board(dir).get_all().is_set(a) {
                     mesh.add(a);
                 }
 
-                if is_enemy_same_parity(a) {
+                if game
+                    .factions
+                    .get_board(dir)
+                    .get_all_team(team.not())
+                    .is_set(a)
+                {
                     break;
                 }
             }
@@ -178,9 +167,9 @@ impl GameState {
                 for diag in diag {
                     let j = Axial::from_arr(diag);
 
-                    if is_enemy_same_parity(unit.add(j)) {
-                        ray2(j, mesh, 1, true);
-                    }
+                    //if is_enemy_same_parity(unit.add(j)) {
+                    ray2(j, mesh, 1, true);
+                    //}
                 }
 
                 // let k = unit.add(hex::Cube::from_arr(hex::OFFSETS[dd]).ax);
@@ -243,9 +232,10 @@ impl GameState {
         world: &board::MyWorld,
         &unit: &Axial,
         team: ActiveTeam,
+        dir: OParity,
     ) -> SmallMesh {
         //TODO use
-        let typ = self.factions.units.get_type(unit);
+        //let typ = self.factions.units.get_type(unit);
 
         let game = self;
         let mut mesh = SmallMesh::new();
@@ -314,7 +304,7 @@ impl GameState {
         //     }
         // });
 
-        self.attack_mesh_add(&mut mesh, world, &unit, team, true);
+        self.attack_mesh_add(&mut mesh, world, &unit, team, true, dir);
         mesh
     }
 }
@@ -358,6 +348,7 @@ fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 pub struct ActualMove {
+    pub dir: OParity,
     pub original: Axial,
     pub moveto: Axial,
     pub attackto: Axial,
@@ -370,61 +361,52 @@ impl GameState {
         world: &board::MyWorld,
         mut func: impl FnMut(move_build::MoveEffect, moves::ActualMove, &GameState),
     ) {
-        let state = self;
-        //let mut movs = Vec::new();
-        //for i in 0..state.factions.relative(team).this_team.units.len() {
-        for pos in state.factions.get_all_team(team).iter_mesh() {
-            let mesh = state.generate_possible_moves_movement(world, &pos, team);
-            for mm in mesh.iter_mesh(Axial::zero()) {
-                //Temporarily move the player in the game world.
-                //We do this so that the mesh generated for extra is accurate.
-                let mut mmm = move_build::MovePhase {
-                    original: pos,
-                    moveto: mm,
-                };
+        for dir in [OParity::Normal, OParity::Upsidedown] {
+            let board = self.factions.get_board_mut(dir);
 
-                let mut effect = mmm.apply(team, state, world);
+            for pos in board.get_all_team(team).iter_mesh() {
+                let mesh = self.generate_possible_moves_movement(world, &pos, team, dir);
+                for mm in mesh.iter_mesh(Axial::zero()) {
+                    //Temporarily move the player in the game world.
+                    //We do this so that the mesh generated for extra is accurate.
+                    let mut mmm = move_build::MovePhase {
+                        original: pos,
+                        moveto: mm,
+                        dir,
+                    };
 
-                // let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
+                    let mut effect = mmm.apply(team, self, world);
 
-                // for sm in second_mesh.iter_mesh(Axial::zero()) {
-                //     //assert!(!state.env.terrain.is_set(sm));
+                    // let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
 
-                //     let kkk = mmm.into_attack(sm);
+                    // for sm in second_mesh.iter_mesh(Axial::zero()) {
+                    //     //assert!(!state.env.terrain.is_set(sm));
 
-                //     let k = kkk.apply(team, state, world, &effect);
+                    //     let kkk = mmm.into_attack(sm);
 
-                //     let jjj = effect.combine(k);
+                    //     let k = kkk.apply(team, state, world, &effect);
 
-                //     func(jjj.clone(), mmo, state);
+                    //     let jjj = effect.combine(k);
 
-                //     mmm = kkk.undo(&jjj.extra_effect, state);
-                //     effect = jjj.move_effect;
-                // }
+                    //     func(jjj.clone(), mmo, state);
 
-                let mmo = moves::ActualMove {
-                    original: pos,
-                    moveto: mm,
-                    attackto: mm,
-                };
+                    //     mmm = kkk.undo(&jjj.extra_effect, state);
+                    //     effect = jjj.move_effect;
+                    // }
 
-                func(effect.clone(), mmo, state);
+                    let mmo = moves::ActualMove {
+                        dir,
+                        original: pos,
+                        moveto: mm,
+                        attackto: mm,
+                    };
 
-                //revert it back just the movement component.
-                mmm.undo(team, &effect, state);
+                    func(effect.clone(), mmo, self);
+
+                    //revert it back just the movement component.
+                    mmm.undo(team, &effect, self);
+                }
             }
         }
-
-        // {
-        //     for a in movs.iter() {
-        //         assert!(state
-        //             .factions
-        //             .relative(team)
-        //             .this_team
-        //             .units
-        //             .is_set(a.original));
-        //     }
-        // }
-        // movs
     }
 }
