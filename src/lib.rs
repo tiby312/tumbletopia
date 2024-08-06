@@ -938,29 +938,17 @@ async fn render_command(
                     let hh = model.height / 2.0;
                     let rrr = matrix::translation(0., 0., -hh);
 
-                    // let rrr = matrix::y_rotation(
-                    //     rr + (2. * (f.rot.curr() - 0.5)).max(0.0).min(1.0)
-                    //         * std::f32::consts::PI,
-                    // )
-                    // .chain(rrr);
-
                     let dir = match f.parity {
                         OParity::Normal => 1.0,
                         OParity::Upsidedown => -1.0,
                     };
 
-                    //dir * (-(f.rot.curr() * 2.0 - 1.0))
                     let first = matrix::translation(pos.x, pos.y, 0.0)
                         .chain(matrix::y_rotation(rr + f.rot.curr() * std::f32::consts::PI))
-                        //.chain(rrr)
                         .generate();
 
                     *animated = first;
 
-                    // let second = matrix::translation(pos.x, pos.y, cc + vert_epsilon)
-                    //     .chain(matrix::x_rotation(rr + std::f32::consts::PI))
-                    //     .chain(matrix::translation(0.0, 0.0, (1.0 - f.rot.curr()) * BIG))
-                    //     .generate();
                     Some(first)
                 } else {
                     None
