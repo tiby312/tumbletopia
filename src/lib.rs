@@ -947,7 +947,33 @@ async fn render_command(
                         .chain(matrix::y_rotation(rr + f.rot.curr() * std::f32::consts::PI))
                         .generate();
 
-                    *animated = first;
+
+                    if *f.rot.curr()>0.0{
+                        if game.factions.get_board(f.parity.flip()).get_all().is_set(f.target){
+                            let (typ,tt)=game.factions.get_board(f.parity.flip()).get_unit_at(f.target);
+                            //TODO
+                            let mm=match (typ,tt){
+                                (UnitType::King, ActiveTeam::White) => &models.white_king,
+                                (UnitType::King, ActiveTeam::Black) => &models.black_king,
+                                (UnitType::Queen, ActiveTeam::White) => &models.white_trook,
+                                (UnitType::Queen, ActiveTeam::Black) => &models.black_trook,
+                                (UnitType::Rook, ActiveTeam::White) => &models.white_rook,
+                                (UnitType::Rook, ActiveTeam::Black) => &models.black_rook,
+                                (UnitType::Bishop, ActiveTeam::White) => &models.white_bishop,
+                                (UnitType::Bishop, ActiveTeam::Black) => &models.black_bishop,
+                                (UnitType::Knight, ActiveTeam::White) => &models.white_knight,
+                                (UnitType::Knight, ActiveTeam::Black) => &models.black_knight,
+                                (UnitType::Pawn, ActiveTeam::White) => &models.white_pawn,
+                                (UnitType::Pawn, ActiveTeam::Black) => &models.black_pawn,
+                            };
+
+                            
+
+                            draw_sys.batch([first.chain(matrix::y_rotation(std::f32::consts::PI))]).build(mm,&projjj);
+                        }
+                    }
+
+                    *animated = first.generate();
 
                     Some(first)
                 } else {
