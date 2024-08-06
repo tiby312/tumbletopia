@@ -269,7 +269,26 @@ pub async fn reselect_loop(
 
     //If we just clicked on ourselves, just deselect.
     if target_cell == unwrapped_selected_unit && !contains {
-        return LoopRes::Deselect;
+        if game
+            .factions
+            .get_board(selected_unit.dir.flip())
+            .get_all_team(selected_unit.team)
+            .is_set(target_cell)
+        {
+            selected_unit.dir = selected_unit.dir.flip();
+            return LoopRes::Select(selected_unit);
+        } else if game
+            .factions
+            .get_board(selected_unit.dir.flip())
+            .get_all_team(selected_unit.team.not())
+            .is_set(target_cell)
+        {
+            selected_unit.dir = selected_unit.dir.flip();
+            selected_unit.team = selected_unit.team.not();
+            return LoopRes::Select(selected_unit);
+        } else {
+            return LoopRes::Deselect;
+        }
     }
 
     for ddir in [OParity::Normal, OParity::Upsidedown] {
