@@ -121,10 +121,8 @@ impl GameState {
                     break;
                 }
 
-                if !game.factions.get_board(dir).get_all().is_set(a) {
-                    mesh.add(a);
-                }
-
+                mesh.add(a);
+                
                 if game
                     .factions
                     .get_board(dir)
@@ -167,12 +165,14 @@ impl GameState {
                 for diag in diag {
                     let j = Axial::from_arr(diag);
 
+                    console_dbg!(unit, j, unit.add(j));
                     if game
                         .factions
                         .get_board(dir)
                         .get_all_team(team.not())
                         .is_set(unit.add(j))
                     {
+                        console_dbg!("IS_SEET");
                         ray2(j, mesh, 1, true);
                     }
                 }
