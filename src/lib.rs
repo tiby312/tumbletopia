@@ -959,8 +959,20 @@ async fn render_command(
                         OParity::Upsidedown => -1.0,
                     };
 
+                    let ang = rr + f.rot.curr() * std::f32::consts::PI;
+                    let jjj = Matrix4::<f32>::from_axis_angle(
+                        cgmath::Vector3 {
+                            x: 1.0,
+                            y: 1.0,
+                            z: 0.0,
+                        }
+                        .normalize(),
+                        cgmath::Rad(ang),
+                    );
+
                     let first = matrix::translation(pos.x, pos.y, 0.0)
-                        .chain(matrix::y_rotation(rr + f.rot.curr() * std::f32::consts::PI))
+                        //.chain(matrix::y_rotation())
+                        .chain(jjj)
                         .generate();
 
                     //if *f.rot.curr()>0.0{
