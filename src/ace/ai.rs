@@ -3,7 +3,7 @@ use crate::mesh::bitfield::BitField;
 use super::*;
 
 pub type Eval = i64;
-const MATE: i64 = 1_000_000;
+const MATE: i64 = 1_000;
 
 pub struct Evaluator {
     workspace: BitField,
@@ -117,7 +117,7 @@ impl Evaluator {
         // //The more influlence is at stake, the more precious each piece is
         // (num_white_influence - num_black_influence) * 100
         //     + (-white_distance + black_distance) * 1
-        (num_white - num_black) * 2000
+        (num_white - num_black)
     }
 }
 
@@ -239,8 +239,8 @@ pub fn iterative_deepening(
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
-    let max_iterative_depth = 6;
-    //let max_depth = 2;
+    let max_iterative_depth = 6; //6;
+                                 //let max_depth = 2;
 
     let mut foo1 = TranspositionTable {
         a: std::collections::BTreeMap::new(),
@@ -297,10 +297,15 @@ pub fn iterative_deepening(
         //doop.poke(team, game.clone()).await;
     }
 
+    console_dbg!(&results);
+
     //console_dbg!(count);
     //console_dbg!(&results);
 
-    //let _target_eval = results.last().unwrap().eval;
+    let true_eval = results.last().unwrap().clone();
+
+    console_dbg!("Eval", true_eval.eval);
+
     // let mov = if let Some(a) = results
     //     .iter()
     //     .rev()
@@ -310,13 +315,21 @@ pub fn iterative_deepening(
     // } else {
     //     results.pop().unwrap()
     // };
-    let mov = results.pop().unwrap();
 
-    let m = mov;
+    if team == ActiveTeam::White {
+        results.retain(|e| e.eval > -MATE);
+    } else {
+        results.retain(|e| e.eval < MATE);
+    };
 
-    console_dbg!("AI MOVE::", m.mov, m.eval);
+    let best_move = if let Some(fo) = results.last() {
+        fo.clone()
+    } else {
+        true_eval
+    };
 
-    m.mov.0
+    console_dbg!("move", best_move);
+    best_move.mov.0
 }
 
 #[derive(Debug)]
@@ -423,9 +436,9 @@ impl<'a> AlphaBeta<'a> {
         //     return evaluator.absolute_evaluate(game_after_move, world, false);
         // }
 
-        // if moves.is_empty() && depth < max_depth {
-        //     return evaluator.check_mate(team);
-        // }
+        if moves.is_empty() {
+            return evaluator.absolute_evaluate(game_after_move, world, false);
+        }
 
         let mut num_sorted = 0;
 
@@ -514,6 +527,9 @@ impl<'a> AlphaBeta<'a> {
             )
         };
 
+        //assert_ne!(eval,i64::MAX,"invalid eval");
+        //assert_ne!(eval,i64::MIN,"invalid eval");
+
         if let Some(kk) = m {
             self.prev_cache.update(game_after_move, kk, eval);
         }
@@ -534,6 +550,8 @@ impl<'a> AlphaBeta<'a> {
         moves: Vec<moves::ActualMove>,
     ) -> (i64, Option<moves::ActualMove>) {
         let mut ab_iter = ab.ab_iter(doop);
+
+        assert!(!moves.is_empty());
         for cand in moves {
             let effect = {
                 let j = cand.as_move();
@@ -612,6 +630,9 @@ mod abab {
 
     impl<'a, T: Clone, D: Doop> ABIter<'a, T, D> {
         pub fn finish(self) -> (Eval, Option<T>) {
+            //assert!(!self.keep_going);
+            //assert_ne!(self.value,i64::MAX);
+            //assert_ne!(self.value,i64::MIN);
             (self.value, self.mm)
         }
         pub fn clone_ab_values(&self) -> ABAB {

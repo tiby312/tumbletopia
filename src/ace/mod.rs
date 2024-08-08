@@ -139,7 +139,6 @@ impl WorkerManager {
         let Response::AiFinish(the_move) = data else {
             unreachable!();
         };
-        console_dbg!("woke up");
         the_move
     }
 
@@ -150,8 +149,6 @@ impl WorkerManager {
         game1: &mut GameState,
         co: Command,
     ) -> Response {
-        console_dbg!("aaa");
-
         let game2 = std::mem::take(game1);
 
         self.sender
@@ -163,11 +160,8 @@ impl WorkerManager {
             .await
             .expect("got a send error???");
 
-        console_dbg!("bbb");
-
         let GameWrap { mut game, data, .. } =
             self.receiver.next().await.expect("Didnt get response??");
-        console_dbg!("ccc");
 
         std::mem::swap(&mut game, game1);
 
@@ -569,9 +563,9 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         }),
     };
 
+    factions.boards[1].add_piece(Axial { q: 1, r: 3 }, ActiveTeam::White, UnitType::King);
     let ff = &mut factions.boards[0];
 
-    ff.add_piece(Axial { q: 4, r: 4 }, ActiveTeam::White, UnitType::King);
     ff.add_piece(Axial { q: 5, r: 2 }, ActiveTeam::White, UnitType::Rook);
     ff.add_piece(Axial { q: 5, r: 3 }, ActiveTeam::White, UnitType::Bishop);
     ff.add_piece(Axial { q: 5, r: 4 }, ActiveTeam::White, UnitType::Knight);
@@ -579,6 +573,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     ff.add_piece(Axial { q: 2, r: 2 }, ActiveTeam::Black, UnitType::Pawn);
     ff.add_piece(Axial { q: 6, r: 2 }, ActiveTeam::White, UnitType::Pawn);
+
     let mut k = GameState {
         factions,
         env: Environment {
