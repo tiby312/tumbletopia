@@ -45,8 +45,13 @@ impl Evaluator {
     ) -> Eval {
         if let Some(k) = view.game_is_over(world) {
             match k {
-                GameOver::WhiteWon => return i64::MAX,
-                GameOver::BlackWon => return i64::MIN,
+                GameOver::WhiteWon => {
+                    return {
+                        //console_dbg!("Found white one");
+                        i64::MAX
+                    }
+                }
+                GameOver::BlackWon => return { i64::MIN },
                 GameOver::Tie => {}
             }
         }
@@ -239,7 +244,7 @@ pub fn iterative_deepening(
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
-    let max_iterative_depth = 6; //6;
+    let max_iterative_depth = 4; //6;
                                  //let max_depth = 2;
 
     let mut foo1 = TranspositionTable {
@@ -248,8 +253,8 @@ pub fn iterative_deepening(
     let mut evaluator = Evaluator::default();
 
     //TODO stop searching if we found a game ending move.
-    for depth in 1..max_iterative_depth {
-        console_dbg!("searching", depth);
+    for d in 0..max_iterative_depth {
+        let depth = d + 1;
 
         //TODO should this be outside the loop?
         let mut k = KillerMoves::new(max_iterative_depth + 4 + 4);
@@ -280,6 +285,8 @@ pub fn iterative_deepening(
         let res = EvalRet { mov, eval: res };
 
         let eval = res.eval;
+
+        console_dbg!("searching", depth, eval);
 
         results.push(res);
 
@@ -398,14 +405,14 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        //TODO necessary?
-        // if let Some(f)=game_after_move.game_is_over(world){
-        //     return match f{
-        //         GameOver::WhiteWon => MATE,
-        //         GameOver::BlackWon => -MATE,
-        //         GameOver::Tie => 0,
-        //     };
-        // }
+        //TODO optimize this. we know who moved last turn. Only need to check one team.
+        if let Some(f) = game_after_move.game_is_over(world) {
+            return match f {
+                GameOver::WhiteWon => i64::MAX,
+                GameOver::BlackWon => i64::MIN,
+                GameOver::Tie => 0,
+            };
+        }
 
         if depth >= max_depth
         /*+ 2*/
@@ -553,6 +560,7 @@ impl<'a> AlphaBeta<'a> {
 
         assert!(!moves.is_empty());
         for cand in moves {
+            //console_dbg!("Considering:",cand.original,cand.moveto,team,depth,cand.dir);
             let effect = {
                 let j = cand.as_move();
                 let k = j.apply(team, game_after_move, world);
