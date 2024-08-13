@@ -563,16 +563,87 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         }),
     };
 
-    factions.boards[1].add_piece(Axial { q: 1, r: 3 }, ActiveTeam::White, UnitType::King);
+    //factions.boards[1].add_piece(Axial { q: 1, r: 3 }, ActiveTeam::White, UnitType::King);
     let ff = &mut factions.boards[0];
 
-    ff.add_piece(Axial { q: 5, r: 2 }, ActiveTeam::White, UnitType::Rook);
-    ff.add_piece(Axial { q: 5, r: 3 }, ActiveTeam::White, UnitType::Bishop);
-    ff.add_piece(Axial { q: 5, r: 4 }, ActiveTeam::White, UnitType::Knight);
-    ff.add_piece(Axial { q: 1, r: 1 }, ActiveTeam::Black, UnitType::King);
+    fn standard_layout(tt: ActiveTeam, ff: &mut Board, major_piece_rank: i8, pawn_rank: i8) {
+        ff.add_piece(
+            Axial {
+                q: major_piece_rank,
+                r: 0,
+            },
+            tt,
+            UnitType::Rook,
+        );
+        ff.add_piece(
+            Axial {
+                q: major_piece_rank,
+                r: 1,
+            },
+            tt,
+            UnitType::Knight,
+        );
+        ff.add_piece(
+            Axial {
+                q: major_piece_rank,
+                r: 2,
+            },
+            tt,
+            UnitType::Bishop,
+        );
+        ff.add_piece(
+            Axial {
+                q: major_piece_rank,
+                r: 3,
+            },
+            tt,
+            UnitType::King,
+        );
+        ff.add_piece(
+            Axial {
+                q: major_piece_rank,
+                r: 4,
+            },
+            tt,
+            UnitType::Queen,
+        );
+        ff.add_piece(
+            Axial {
+                q: major_piece_rank,
+                r: 5,
+            },
+            tt,
+            UnitType::Bishop,
+        );
+        ff.add_piece(
+            Axial {
+                q: major_piece_rank,
+                r: 6,
+            },
+            tt,
+            UnitType::Knight,
+        );
+        ff.add_piece(
+            Axial {
+                q: major_piece_rank,
+                r: 7,
+            },
+            tt,
+            UnitType::Rook,
+        );
 
-    ff.add_piece(Axial { q: 2, r: 2 }, ActiveTeam::Black, UnitType::Pawn);
-    ff.add_piece(Axial { q: 6, r: 2 }, ActiveTeam::White, UnitType::Pawn);
+        for a in 0..8 {
+            ff.add_piece(Axial { q: pawn_rank, r: a }, tt, UnitType::Pawn);
+        }
+    }
+    standard_layout(ActiveTeam::Black, ff, 0, 1);
+    standard_layout(ActiveTeam::White, ff, 7, 6);
+
+    // ff.add_piece(Axial { q: 5, r: 4 }, ActiveTeam::White, UnitType::Knight);
+    // ff.add_piece(Axial { q: 3, r: 1 }, ActiveTeam::Black, UnitType::King);
+
+    // ff.add_piece(Axial { q: 2, r: 2 }, ActiveTeam::Black, UnitType::Pawn);
+    // ff.add_piece(Axial { q: 6, r: 2 }, ActiveTeam::White, UnitType::Pawn);
 
     let mut k = GameState {
         factions,
