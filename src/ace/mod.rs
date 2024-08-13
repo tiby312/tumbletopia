@@ -567,70 +567,27 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let ff = &mut factions.boards[0];
 
     fn standard_layout(tt: ActiveTeam, ff: &mut Board, major_piece_rank: i8, pawn_rank: i8) {
-        ff.add_piece(
-            Axial {
-                q: major_piece_rank,
-                r: 0,
-            },
-            tt,
+        let table = [
             UnitType::Rook,
-        );
-        ff.add_piece(
-            Axial {
-                q: major_piece_rank,
-                r: 1,
-            },
-            tt,
             UnitType::Knight,
-        );
-        ff.add_piece(
-            Axial {
-                q: major_piece_rank,
-                r: 2,
-            },
-            tt,
             UnitType::Bishop,
-        );
-        ff.add_piece(
-            Axial {
-                q: major_piece_rank,
-                r: 3,
-            },
-            tt,
             UnitType::King,
-        );
-        ff.add_piece(
-            Axial {
-                q: major_piece_rank,
-                r: 4,
-            },
-            tt,
             UnitType::Queen,
-        );
-        ff.add_piece(
-            Axial {
-                q: major_piece_rank,
-                r: 5,
-            },
-            tt,
             UnitType::Bishop,
-        );
-        ff.add_piece(
-            Axial {
-                q: major_piece_rank,
-                r: 6,
-            },
-            tt,
             UnitType::Knight,
-        );
-        ff.add_piece(
-            Axial {
-                q: major_piece_rank,
-                r: 7,
-            },
-            tt,
             UnitType::Rook,
-        );
+        ];
+
+        for (a, i) in table.into_iter().zip(0..) {
+            ff.add_piece(
+                Axial {
+                    q: major_piece_rank,
+                    r: i,
+                },
+                tt,
+                a,
+            )
+        }
 
         for a in 0..8 {
             ff.add_piece(Axial { q: pawn_rank, r: a }, tt, UnitType::Pawn);
