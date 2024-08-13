@@ -241,8 +241,8 @@ pub async fn worker_entry() {
                 //ai_worker.post_message(AiCommand{game:game.clone(),world:world.clone(),team});
                 console_dbg!("game:Sending ai command");
 
-                let the_move = doop.wait_ai(team, &mut game).await;
-                //let the_move = ace::ai::iterative_deepening(&mut game, &world, team);
+                //let the_move = doop.wait_ai(team, &mut game).await;
+                let the_move = ace::ai::iterative_deepening(&mut game, &world, team);
 
                 //let the_move=
 

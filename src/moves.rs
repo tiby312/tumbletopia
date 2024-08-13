@@ -361,7 +361,7 @@ impl GameState {
                         dir,
                     };
 
-                    let mut effect = mmm.apply(team, self, world);
+                    let effect = mmm.apply(team, self, world);
 
                     // let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
 

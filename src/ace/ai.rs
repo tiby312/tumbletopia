@@ -3,7 +3,7 @@ use crate::mesh::bitfield::BitField;
 use super::*;
 
 pub type Eval = i64;
-const MATE: i64 = 1_000;
+//const MATE: i64 = 1_000;
 
 pub struct Evaluator {
     workspace: BitField,
@@ -45,8 +45,8 @@ impl Evaluator {
     ) -> Eval {
         if let Some(k) = view.game_is_over(world) {
             match k {
-                GameOver::WhiteWon => return MATE,
-                GameOver::BlackWon => return -MATE,
+                GameOver::WhiteWon => return i64::MAX,
+                GameOver::BlackWon => return i64::MIN,
                 GameOver::Tie => {}
             }
         }
@@ -284,9 +284,9 @@ pub fn iterative_deepening(
         results.push(res);
 
         let short_target = if team == ActiveTeam::White {
-            MATE
+            i64::MAX
         } else {
-            -MATE
+            i64::MIN
         };
 
         if eval == short_target {
@@ -317,9 +317,9 @@ pub fn iterative_deepening(
     // };
 
     if team == ActiveTeam::White {
-        results.retain(|e| e.eval > -MATE);
+        results.retain(|e| e.eval > i64::MIN);
     } else {
-        results.retain(|e| e.eval < MATE);
+        results.retain(|e| e.eval < i64::MAX);
     };
 
     let best_move = if let Some(fo) = results.last() {

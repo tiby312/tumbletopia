@@ -596,6 +596,16 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     standard_layout(ActiveTeam::Black, ff, 0, 1);
     standard_layout(ActiveTeam::White, ff, 7, 6);
 
+    ff.remove(Axial{q:6,r:4});
+    ff.remove(Axial{q:0,r:5});
+    ff.remove(Axial{q:0,r:4});
+    
+    
+    ff.add_piece(Axial{q:0,r:5}, ActiveTeam::White, UnitType::Queen);
+
+    factions.boards[1].add_piece(Axial{q:4,r:6}, ActiveTeam::Black, UnitType::Queen);
+
+
     // ff.add_piece(Axial { q: 5, r: 4 }, ActiveTeam::White, UnitType::Knight);
     // ff.add_piece(Axial { q: 3, r: 1 }, ActiveTeam::Black, UnitType::King);
 
