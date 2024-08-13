@@ -176,7 +176,7 @@ pub struct SelectType {
 }
 
 pub enum LoopRes<T> {
-    EndTurn((moves::ActualMove, move_build::MoveEffect)),
+    EndTurn((moves::ActualMove, move_build::MoveEffect, GameFinishingMove)),
     Deselect,
     Undo,
     Select(T),
@@ -377,7 +377,7 @@ pub async fn reselect_loop(
             dir: selected_unit.dir,
         };
 
-        let effect = mp
+        let (effect, finishing_move) = mp
             .animate(selected_unit.team, game, world, doop)
             .await
             .apply(selected_unit.team, game, world);
@@ -398,6 +398,7 @@ pub async fn reselect_loop(
                     dir: selected_unit.dir,
                 },
                 effect,
+                finishing_move,
             ))
         }
     }
@@ -671,12 +672,13 @@ pub async fn replay(
     doop.send_command(start_team, &mut game, Command::HideUndo)
         .await;
 
+    let mut last_finish = None;
     for the_move in just_logs.inner {
         let team = team_gen.next().unwrap();
 
         let kk = the_move.as_move();
 
-        let effect_m = kk
+        let (effect_m, finishing_move) = kk
             .animate(team, &mut game, world, &mut doop)
             .await
             .apply(team, &mut game, world);
@@ -688,8 +690,11 @@ pub async fn replay(
         //     .apply(team, &mut game, world, &effect_m);
 
         game_history.push((the_move, effect_m));
+
+        last_finish = Some(finishing_move);
     }
 
+    matches!(last_finish.unwrap(), GameFinishingMove::Yes);
     if let Some(g) = game.game_is_over(world) {
         (g, game_history)
     } else {
@@ -703,7 +708,7 @@ pub async fn handle_player(
     doop: &mut WorkerManager,
     team: ActiveTeam,
     move_log: &mut selection::MoveHistory,
-) -> (moves::ActualMove, move_build::MoveEffect) {
+) -> (moves::ActualMove, move_build::MoveEffect, GameFinishingMove) {
     let undo = |move_log: &mut selection::MoveHistory, game: &mut GameState| {
         log!("undoing turn!!!");
         assert!(move_log.inner.len() >= 2, "Not enough moves to undo");

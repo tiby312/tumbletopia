@@ -223,12 +223,6 @@ pub async fn worker_entry() {
         loop {
             let team = team_gen.next().unwrap();
 
-            if let Some(g) = game.game_is_over(&world) {
-                console_dbg!("Game over=", g);
-                break (g, game_history);
-                //break 'game_loop;
-            }
-
             //Add AIIIIII.
             let foo = match game_type {
                 dom::GameType::SinglePlayer => team == ActiveTeam::Black,
@@ -262,7 +256,7 @@ pub async fn worker_entry() {
 
                 let kk = the_move.as_move();
 
-                let effect_m = kk
+                let (effect_m, finishing_move) = kk
                     .animate(team, &mut game, &world, &mut doop)
                     .await
                     .apply(team, &mut game, &world);
@@ -275,15 +269,29 @@ pub async fn worker_entry() {
 
                 game_history.push((the_move, effect_m));
 
+                if let GameFinishingMove::Yes = finishing_move {
+                    break;
+                }
+
                 continue;
             }
 
-            let r = ace::handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
-            game_history.push(r);
+            let (a, f, finishing_move) =
+                ace::handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
+            game_history.push((a, f));
 
             let mut e = ace::ai::Evaluator::default();
             e.absolute_evaluate(&mut game, &world, true);
+
+            if let GameFinishingMove::Yes = finishing_move {
+                break;
+            }
         }
+
+        let g = game.game_is_over(&world).unwrap();
+
+        console_dbg!("Game over=", g);
+        (g, game_history)
     };
 
     let ((result, game), ()) = futures::join!(gameplay_thread, render_thead);

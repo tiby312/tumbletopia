@@ -49,7 +49,7 @@ impl Evaluator {
                     return {
                         //console_dbg!("Found white one");
                         i64::MAX
-                    }
+                    };
                 }
                 GameOver::BlackWon => return { i64::MIN },
                 GameOver::Tie => {}
@@ -406,13 +406,13 @@ impl<'a> AlphaBeta<'a> {
         self.max_ext = self.max_ext.max(ext);
 
         //TODO optimize this. we know who moved last turn. Only need to check one team.
-        if let Some(f) = game_after_move.game_is_over(world) {
-            return match f {
-                GameOver::WhiteWon => i64::MAX,
-                GameOver::BlackWon => i64::MIN,
-                GameOver::Tie => 0,
-            };
-        }
+        // if let Some(f) = game_after_move.game_is_over(world) {
+        //     return match f {
+        //         GameOver::WhiteWon => i64::MAX,
+        //         GameOver::BlackWon => i64::MIN,
+        //         GameOver::Tie => 0,
+        //     };
+        // }
 
         if depth >= max_depth
         /*+ 2*/
@@ -424,7 +424,7 @@ impl<'a> AlphaBeta<'a> {
         let mut quiet_position = true;
         let mut moves = vec![];
 
-        game_after_move.for_all_moves_fast(team, world, |e, m, stat| {
+        game_after_move.for_all_moves_fast(team, world, |e, m, stat, game_finishing_move| {
             if e.destroyed_unit.is_some() {
                 quiet_position = false;
             }
@@ -443,6 +443,8 @@ impl<'a> AlphaBeta<'a> {
         //     return evaluator.absolute_evaluate(game_after_move, world, false);
         // }
 
+        //TODO test this case. I guess it is possilble if your king is blocked by your own units and none of your
+        //units can move.
         if moves.is_empty() {
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
@@ -561,7 +563,7 @@ impl<'a> AlphaBeta<'a> {
         assert!(!moves.is_empty());
         for cand in moves {
             //console_dbg!("Considering:",cand.original,cand.moveto,team,depth,cand.dir);
-            let effect = {
+            let (effect, finishing_move) = {
                 let j = cand.as_move();
                 let k = j.apply(team, game_after_move, world);
                 // let j = j
@@ -572,16 +574,25 @@ impl<'a> AlphaBeta<'a> {
             };
 
             self.path.push(cand);
-            let eval = self.alpha_beta(
-                game_after_move,
-                world,
-                ab_iter.clone_ab_values(),
-                team.not(),
-                depth + 1,
-                max_depth,
-                ext,
-                evaluator,
-            );
+
+            let eval = if let GameFinishingMove::Yes = finishing_move {
+                if team == ActiveTeam::White {
+                    i64::MAX
+                } else {
+                    i64::MIN
+                }
+            } else {
+                self.alpha_beta(
+                    game_after_move,
+                    world,
+                    ab_iter.clone_ab_values(),
+                    team.not(),
+                    depth + 1,
+                    max_depth,
+                    ext,
+                    evaluator,
+                )
+            };
 
             let mov = self.path.pop().unwrap();
             {

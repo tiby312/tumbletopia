@@ -428,13 +428,14 @@ impl MovePhase {
         team: ActiveTeam,
         game: &mut GameState,
         world: &board::MyWorld,
-    ) -> MoveEffect {
+    ) -> (MoveEffect, GameFinishingMove) {
         let env = &mut game.env;
         let target_cell = self.moveto;
         let mut e = PushInfo::None;
 
         let mut destroyed_unit = None;
 
+        let mut finish = GameFinishingMove::No;
         {
             let terrain = &mut env.terrain;
 
@@ -446,6 +447,10 @@ impl MovePhase {
             {
                 let (k, pp) = game.factions.get_board_mut(self.dir).remove(target_cell);
                 destroyed_unit = Some((target_cell, k, self.dir));
+
+                if let UnitType::King = k {
+                    finish = GameFinishingMove::Yes;
+                }
             }
         }
 
@@ -470,11 +475,14 @@ impl MovePhase {
             .move_unit(self.original, target_cell);
         game.factions.flip(target_cell);
 
-        MoveEffect {
-            pushpull: e,
-            powerup,
-            destroyed_unit,
-        }
+        (
+            MoveEffect {
+                pushpull: e,
+                powerup,
+                destroyed_unit,
+            },
+            finish,
+        )
     }
 }
 

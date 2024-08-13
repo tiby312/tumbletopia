@@ -345,7 +345,7 @@ impl GameState {
         &mut self,
         team: ActiveTeam,
         world: &board::MyWorld,
-        mut func: impl FnMut(move_build::MoveEffect, moves::ActualMove, &GameState),
+        mut func: impl FnMut(move_build::MoveEffect, moves::ActualMove, &GameState, GameFinishingMove),
     ) {
         for dir in [OParity::Normal, OParity::Upsidedown] {
             let board = self.factions.get_board_mut(dir);
@@ -361,7 +361,7 @@ impl GameState {
                         dir,
                     };
 
-                    let effect = mmm.apply(team, self, world);
+                    let (effect, finishing_move) = mmm.apply(team, self, world);
 
                     // let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
 
@@ -387,7 +387,7 @@ impl GameState {
                         attackto: mm,
                     };
 
-                    func(effect.clone(), mmo, self);
+                    func(effect.clone(), mmo, self, finishing_move);
 
                     //revert it back just the movement component.
                     mmm.undo(team, &effect, self);

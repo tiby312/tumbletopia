@@ -263,6 +263,13 @@ pub struct GameState {
 }
 
 #[must_use]
+#[derive(Debug, Clone)]
+pub enum GameFinishingMove {
+    Yes,
+    No,
+}
+
+#[must_use]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum GameOver {
     WhiteWon,
