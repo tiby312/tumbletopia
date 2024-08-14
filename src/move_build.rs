@@ -435,7 +435,7 @@ impl MovePhase {
 
         let mut destroyed_unit = None;
 
-        let mut finish = GameFinishingMove::No;
+        let mut finish = GameFinishingMove::NotFinished;
         {
             let terrain = &mut env.terrain;
 
@@ -449,7 +449,13 @@ impl MovePhase {
                 destroyed_unit = Some((target_cell, k, self.dir));
 
                 if let UnitType::King = k {
-                    finish = GameFinishingMove::Yes;
+                    let k = if team == ActiveTeam::White {
+                        GameOver::WhiteWon
+                    } else {
+                        GameOver::BlackWon
+                    };
+
+                    finish = GameFinishingMove::Finished(k);
                 }
             }
         }

@@ -44,16 +44,7 @@ impl Evaluator {
         _debug: bool,
     ) -> Eval {
         if let Some(k) = view.game_is_over(world) {
-            match k {
-                GameOver::WhiteWon => {
-                    return {
-                        //console_dbg!("Found white one");
-                        i64::MAX
-                    };
-                }
-                GameOver::BlackWon => return { i64::MIN },
-                GameOver::Tie => {}
-            }
+            unreachable!("Game over states shouldnt get to this stage");
         }
 
         // let ship_allowed = {
@@ -575,11 +566,11 @@ impl<'a> AlphaBeta<'a> {
 
             self.path.push(cand);
 
-            let eval = if let GameFinishingMove::Yes = finishing_move {
-                if team == ActiveTeam::White {
-                    i64::MAX
-                } else {
-                    i64::MIN
+            let eval = if let GameFinishingMove::Finished(g) = finishing_move {
+                match g {
+                    GameOver::WhiteWon => i64::MAX,
+                    GameOver::BlackWon => i64::MIN,
+                    GameOver::Tie => 0,
                 }
             } else {
                 self.alpha_beta(

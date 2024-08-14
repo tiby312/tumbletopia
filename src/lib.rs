@@ -220,7 +220,7 @@ pub async fn worker_entry() {
         //doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
 
         //Loop over each team!
-        loop {
+        let game_finish = loop {
             let team = team_gen.next().unwrap();
 
             //Add AIIIIII.
@@ -269,8 +269,8 @@ pub async fn worker_entry() {
 
                 game_history.push((the_move, effect_m));
 
-                if let GameFinishingMove::Yes = finishing_move {
-                    break;
+                if let GameFinishingMove::Finished(o) = finishing_move {
+                    break o;
                 }
 
                 continue;
@@ -283,15 +283,15 @@ pub async fn worker_entry() {
             let mut e = ace::ai::Evaluator::default();
             e.absolute_evaluate(&mut game, &world, true);
 
-            if let GameFinishingMove::Yes = finishing_move {
-                break;
+            if let GameFinishingMove::Finished(o) = finishing_move {
+                break o;
             }
-        }
+        };
 
-        let g = game.game_is_over(&world).unwrap();
+        //let g = game.game_is_over(&world).unwrap();
 
-        console_dbg!("Game over=", g);
-        (g, game_history)
+        console_dbg!("Game over=", game_finish);
+        (game_finish, game_history)
     };
 
     let ((result, game), ()) = futures::join!(gameplay_thread, render_thead);

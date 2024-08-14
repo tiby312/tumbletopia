@@ -694,11 +694,11 @@ pub async fn replay(
         last_finish = Some(finishing_move);
     }
 
-    matches!(last_finish.unwrap(), GameFinishingMove::Yes);
-    if let Some(g) = game.game_is_over(world) {
-        (g, game_history)
-    } else {
-        panic!("replay didnt end with game over state");
+    match last_finish.unwrap() {
+        GameFinishingMove::Finished(g) => (g, game_history),
+        GameFinishingMove::NotFinished => {
+            panic!("replay didnt end with game over state");
+        }
     }
 }
 
