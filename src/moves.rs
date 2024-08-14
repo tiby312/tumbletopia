@@ -160,7 +160,21 @@ impl GameState {
                     ([-1, 0], [[-1, -1], [-1, 1]])
                 };
 
-                ray2(Axial::from_arr(forward), mesh, 1, false);
+                let l = if let ActiveTeam::Black = team {
+                    if unit.q == 1 {
+                        2
+                    } else {
+                        1
+                    }
+                } else {
+                    if unit.q == 6 {
+                        2
+                    } else {
+                        1
+                    }
+                };
+
+                ray2(Axial::from_arr(forward), mesh, l, false);
 
                 for diag in diag {
                     let j = Axial::from_arr(diag);
