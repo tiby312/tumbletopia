@@ -228,7 +228,7 @@ impl crate::moves::ActualMove {
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
-    pub destroyed_unit: Option<(Axial, UnitType, OParity)>,
+    pub destroyed_unit: Option<UnitType>,
 }
 impl MoveEffect {
     pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
@@ -347,7 +347,7 @@ impl MovePhase {
         // state.factions.parity.set(unit, !curr);
         // state.factions.parity.remove(moveto);
 
-        if let Some((fooo, typ, oparity)) = effect.destroyed_unit {
+        if let Some((typ)) = effect.destroyed_unit {
             matches!(effect.pushpull, PushInfo::None);
             //TODO need to store parity of taken piece!!!!
             state
@@ -356,7 +356,7 @@ impl MovePhase {
                 .add_piece(moveto, team_index.not(), typ);
 
             //let j = &mut state.factions.relative_mut(team_index).that_team.units;
-            assert_eq!(fooo, moveto);
+            //assert_eq!(fooo, moveto);
             //j.set_coord(moveto, true);
         }
 
@@ -446,7 +446,7 @@ impl MovePhase {
                 .is_set(target_cell)
             {
                 let (k, pp) = game.factions.get_board_mut(self.dir).remove(target_cell);
-                destroyed_unit = Some((target_cell, k, self.dir));
+                destroyed_unit = Some( k);
 
                 if let UnitType::King = k {
                     let k = if team == ActiveTeam::White {
