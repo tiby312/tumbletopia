@@ -68,7 +68,6 @@ impl Board {
         (self.units.clear(coord), team)
     }
 
-
     pub fn move_unit(&mut self, coord: Axial, to: Axial) {
         let team = self.team.is_set(coord);
         self.units.move_unit(coord, to);
@@ -100,6 +99,15 @@ impl Board {
         a.union(&b)
     }
 
+    pub fn get_unit_team(&self, team: ActiveTeam, u: UnitType) -> SingleMesh {
+        let u = self.units.get(u);
+
+        if team.is_white() {
+            self.team.intersect(&u)
+        } else {
+            self.team.not().intersect(&u)
+        }
+    }
     pub fn get_all_team(&self, team: ActiveTeam) -> SingleMesh {
         let all = self.units.all_units();
 
