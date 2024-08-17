@@ -58,26 +58,21 @@ impl Evaluator {
             (Pawn, 1),
         ];
 
+        let all_pieces = |team: ActiveTeam, ty: UnitType| {
+            OParity::all().into_iter().flat_map(move |dir| {
+                view.factions
+                    .get_board(dir)
+                    .get_unit_team(team, ty)
+                    .iter_mesh()
+            })
+        };
+
         let mut pawn_score = 0;
-        for dir in OParity::all() {
-            for p in view
-                .factions
-                .get_board(dir)
-                .get_all_team(ActiveTeam::White)
-                .iter_mesh()
-            {
-                pawn_score += 7 - p.q as i64
-            }
+        for p in all_pieces(ActiveTeam::White, UnitType::Pawn) {
+            pawn_score += 7 - p.q as i64
         }
-        for dir in OParity::all() {
-            for p in view
-                .factions
-                .get_board(dir)
-                .get_all_team(ActiveTeam::Black)
-                .iter_mesh()
-            {
-                pawn_score -= p.q as i64
-            }
+        for p in all_pieces(ActiveTeam::Black, UnitType::Pawn) {
+            pawn_score -= p.q as i64
         }
 
         let count_points = |team: ActiveTeam| {
