@@ -227,6 +227,7 @@ impl crate::moves::ActualMove {
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct MoveEffect {
     pub destroyed_unit: Option<UnitType>,
+    pub promoted:bool
 }
 
 #[derive(Clone, Debug)]
@@ -318,6 +319,12 @@ impl MovePhase {
     pub fn undo(&self, team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;
         let unit = self.original;
+
+
+        if effect.promoted{
+            let (u,t)=state.factions.get_board_mut(self.dir.flip()).remove(moveto);
+            state.factions.get_board_mut(self.dir.flip()).add_piece(moveto, team_index, UnitType::Pawn);
+        }
 
         state.factions.flip(moveto);
 
@@ -464,10 +471,43 @@ impl MovePhase {
             .move_unit(self.original, target_cell);
         game.factions.flip(target_cell);
 
+
+
+
+        let promoted=if game.factions.get_board(self.dir.flip()).get_unit_at(target_cell).0 ==UnitType::Pawn{
+
+
+            if team==ActiveTeam::White{
+                if target_cell.q==0{
+                    true
+                }else{
+                    false
+                }
+            }else{
+                if target_cell.q==7{
+                    true
+                }else{
+                    false
+                }
+
+            }
+        }else{
+            false
+        };
+
+        if promoted{
+            let (u,t)=game.factions.get_board_mut(self.dir.flip()).remove(target_cell);
+            game.factions.get_board_mut(self.dir.flip()).add_piece(target_cell, team, UnitType::Queen);
+        }
+
+
+
+
         (
             MoveEffect {
                 //pushpull: e,
                 //powerup,
+                promoted,
                 destroyed_unit,
             },
             finish,

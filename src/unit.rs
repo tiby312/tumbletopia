@@ -68,6 +68,7 @@ impl Board {
         (self.units.clear(coord), team)
     }
 
+
     pub fn move_unit(&mut self, coord: Axial, to: Axial) {
         let team = self.team.is_set(coord);
         self.units.move_unit(coord, to);
