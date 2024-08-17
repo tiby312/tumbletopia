@@ -226,17 +226,7 @@ impl crate::moves::ActualMove {
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct MoveEffect {
-    pushpull: PushInfo,
-    powerup: PowerupAction,
     pub destroyed_unit: Option<UnitType>,
-}
-impl MoveEffect {
-    pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
-        CombinedEffect {
-            move_effect: self,
-            extra_effect,
-        }
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -246,13 +236,6 @@ pub struct MovePhase {
     pub moveto: Axial,
 }
 impl MovePhase {
-    // pub fn into_attack(self, target: Axial) -> ExtraPhase {
-    //     ExtraPhase {
-    //         original: self.original,
-    //         moveto: self.moveto,
-    //         target,
-    //     }
-    // }
     pub async fn animate(
         &self,
         team: ActiveTeam,
@@ -348,7 +331,7 @@ impl MovePhase {
         // state.factions.parity.remove(moveto);
 
         if let Some((typ)) = effect.destroyed_unit {
-            matches!(effect.pushpull, PushInfo::None);
+            //matches!(effect.pushpull, PushInfo::None);
             //TODO need to store parity of taken piece!!!!
             state
                 .factions
@@ -360,67 +343,67 @@ impl MovePhase {
             //j.set_coord(moveto, true);
         }
 
-        match effect.pushpull {
-            PushInfo::UpgradedLand => {
-                assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
+        // match effect.pushpull {
+        //     PushInfo::UpgradedLand => {
+        //         assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
 
-                let dir = unit.dir_to(&moveto);
-                let t3 = moveto.advance(dir);
+        //         let dir = unit.dir_to(&moveto);
+        //         let t3 = moveto.advance(dir);
 
-                if state.env.terrain.land.is_set(t3) {
-                    panic!("This is impossible!");
-                } else if state.env.terrain.forest.is_set(t3) {
-                    state.env.terrain.forest.set_coord(t3, false);
-                    state.env.terrain.land.set_coord(t3, true);
-                    state.env.terrain.land.set_coord(moveto, true);
-                } else if state.env.terrain.mountain.is_set(t3) {
-                    state.env.terrain.mountain.set_coord(t3, false);
-                    state.env.terrain.forest.set_coord(t3, true);
-                    state.env.terrain.forest.set_coord(moveto, true);
-                }
-            }
-            PushInfo::PushedUnit => {
-                todo!()
-                // assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
-                // let dir = unit.dir_to(&moveto);
-                // let t3 = moveto.advance(dir);
+        //         if state.env.terrain.land.is_set(t3) {
+        //             panic!("This is impossible!");
+        //         } else if state.env.terrain.forest.is_set(t3) {
+        //             state.env.terrain.forest.set_coord(t3, false);
+        //             state.env.terrain.land.set_coord(t3, true);
+        //             state.env.terrain.land.set_coord(moveto, true);
+        //         } else if state.env.terrain.mountain.is_set(t3) {
+        //             state.env.terrain.mountain.set_coord(t3, false);
+        //             state.env.terrain.forest.set_coord(t3, true);
+        //             state.env.terrain.forest.set_coord(moveto, true);
+        //         }
+        //     }
+        //     PushInfo::PushedUnit => {
+        //         todo!()
+        //         // assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
+        //         // let dir = unit.dir_to(&moveto);
+        //         // let t3 = moveto.advance(dir);
 
-                // let tt = state.factions.relative_mut(team_index);
-                // if tt.this_team.units.is_set(t3) {
-                //     tt.this_team.units.set_coord(t3, false);
-                //     tt.this_team.units.set_coord(moveto, true);
-                // } else if tt.that_team.units.is_set(t3) {
-                //     tt.that_team.units.set_coord(t3, false);
-                //     tt.that_team.units.set_coord(moveto, true);
-                // } else {
-                //     unreachable!("PushedUnit enum error");
-                // }
-            }
-            PushInfo::PushedLand => {
-                assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
+        //         // let tt = state.factions.relative_mut(team_index);
+        //         // if tt.this_team.units.is_set(t3) {
+        //         //     tt.this_team.units.set_coord(t3, false);
+        //         //     tt.this_team.units.set_coord(moveto, true);
+        //         // } else if tt.that_team.units.is_set(t3) {
+        //         //     tt.that_team.units.set_coord(t3, false);
+        //         //     tt.that_team.units.set_coord(moveto, true);
+        //         // } else {
+        //         //     unreachable!("PushedUnit enum error");
+        //         // }
+        //     }
+        //     PushInfo::PushedLand => {
+        //         assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
 
-                let dir = unit.dir_to(&moveto);
-                let t3 = moveto.advance(dir);
+        //         let dir = unit.dir_to(&moveto);
+        //         let t3 = moveto.advance(dir);
 
-                if state.env.terrain.land.is_set(t3) {
-                    state.env.terrain.land.set_coord(t3, false);
-                    state.env.terrain.land.set_coord(moveto, true);
-                } else if state.env.terrain.forest.is_set(t3) {
-                    state.env.terrain.forest.set_coord(t3, false);
-                    state.env.terrain.forest.set_coord(moveto, true);
-                } else if state.env.terrain.mountain.is_set(t3) {
-                    state.env.terrain.mountain.set_coord(t3, false);
-                    state.env.terrain.mountain.set_coord(moveto, true);
-                }
+        //         if state.env.terrain.land.is_set(t3) {
+        //             state.env.terrain.land.set_coord(t3, false);
+        //             state.env.terrain.land.set_coord(moveto, true);
+        //         } else if state.env.terrain.forest.is_set(t3) {
+        //             state.env.terrain.forest.set_coord(t3, false);
+        //             state.env.terrain.forest.set_coord(moveto, true);
+        //         } else if state.env.terrain.mountain.is_set(t3) {
+        //             state.env.terrain.mountain.set_coord(t3, false);
+        //             state.env.terrain.mountain.set_coord(moveto, true);
+        //         }
 
-                // assert!(state.env.terrain.land.is_set(t3));
-                // state.env.terrain.land.set_coord(t3, false);
-                // assert!(!state.env.terrain.land.is_set(moveto));
-                // state.env.terrain.land.set_coord(moveto, true);
-            }
+        //         // assert!(state.env.terrain.land.is_set(t3));
+        //         // state.env.terrain.land.set_coord(t3, false);
+        //         // assert!(!state.env.terrain.land.is_set(moveto));
+        //         // state.env.terrain.land.set_coord(moveto, true);
+        //     }
 
-            PushInfo::None => {}
-        }
+        //     PushInfo::None => {}
+        // }
     }
 
     pub fn apply(
@@ -431,7 +414,7 @@ impl MovePhase {
     ) -> (MoveEffect, GameFinishingMove) {
         let env = &mut game.env;
         let target_cell = self.moveto;
-        let mut e = PushInfo::None;
+        //let mut e = PushInfo::None;
 
         let mut destroyed_unit = None;
 
@@ -446,7 +429,7 @@ impl MovePhase {
                 .is_set(target_cell)
             {
                 let (k, pp) = game.factions.get_board_mut(self.dir).remove(target_cell);
-                destroyed_unit = Some( k);
+                destroyed_unit = Some(k);
 
                 if let UnitType::King = k {
                     let k = if team == ActiveTeam::White {
@@ -460,19 +443,19 @@ impl MovePhase {
             }
         }
 
-        let powerup = if game.env.powerups.contains(&target_cell) {
-            game.env.powerups.retain(|&a| a != target_cell);
-            unreachable!()
-            // if !this_unit.has_powerup {
-            //     this_unit.has_powerup = true;
-            //     PowerupAction::GotPowerup
-            // } else {
-            //     // powerup is discarded
-            //     PowerupAction::DiscardedPowerup
-            // }
-        } else {
-            PowerupAction::None
-        };
+        // let powerup = if game.env.powerups.contains(&target_cell) {
+        //     game.env.powerups.retain(|&a| a != target_cell);
+        //     unreachable!()
+        //     // if !this_unit.has_powerup {
+        //     //     this_unit.has_powerup = true;
+        //     //     PowerupAction::GotPowerup
+        //     // } else {
+        //     //     // powerup is discarded
+        //     //     PowerupAction::DiscardedPowerup
+        //     // }
+        // } else {
+        //     PowerupAction::None
+        // };
 
         let mut target_cell = target_cell;
 
@@ -483,8 +466,8 @@ impl MovePhase {
 
         (
             MoveEffect {
-                pushpull: e,
-                powerup,
+                //pushpull: e,
+                //powerup,
                 destroyed_unit,
             },
             finish,

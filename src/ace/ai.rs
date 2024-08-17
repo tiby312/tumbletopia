@@ -58,26 +58,34 @@ impl Evaluator {
         //     temp
         // };
 
-
         use UnitType::*;
-        
-        let weights=[(King,0),(Queen,9),(Rook,5),(Bishop,3),(Knight,3),(Pawn,1)];
 
+        let weights = [
+            (King, 0),
+            (Queen, 9),
+            (Rook, 5),
+            (Bishop, 3),
+            (Knight, 3),
+            (Pawn, 1),
+        ];
 
-        let count_points=|team:ActiveTeam|{
-            let mut num=0;
+        let count_points = |team: ActiveTeam| {
+            let mut num = 0;
             for dir in OParity::all() {
-                for (t,j) in weights{
-                    let l=view.factions.get_board(dir).specific_unit(t, team).count_ones();
-                    num+=(l*j )as i64;
+                for (t, j) in weights {
+                    let l = view
+                        .factions
+                        .get_board(dir)
+                        .specific_unit(t, team)
+                        .count_ones();
+                    num += (l * j) as i64;
                 }
-            }    
+            }
             num
         };
 
-
-        let num_white=count_points(ActiveTeam::White);
-        let num_black=count_points(ActiveTeam::Black);
+        let num_white = count_points(ActiveTeam::White);
+        let num_black = count_points(ActiveTeam::Black);
 
         // let mut num_white = 0;
         // for dir in OParity::all() {

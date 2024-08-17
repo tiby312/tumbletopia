@@ -473,7 +473,6 @@ pub enum UnitType {
     Pawn,
 }
 impl UnitType {
-    
     pub fn to_int(&self) -> usize {
         match self {
             UnitType::King => 0,
