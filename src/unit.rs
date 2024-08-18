@@ -41,30 +41,31 @@ pub struct Board {
     pub team: SingleMesh,
 }
 impl Board {
-    pub fn specific_unit(&self, typ: UnitType, team: ActiveTeam) -> SingleMesh {
-        let k = self.units.get(typ);
-        if team.is_white() {
-            self.team.intersect(k)
-        } else {
-            self.team.not().intersect(k)
-        }
-    }
-    pub fn remove(&mut self, coord: Axial) -> (UnitType, ActiveTeam) {
-        // let pp = if self.parity.is_set(coord) {
-        //     OParity::Upsidedown
-        // } else {
-        //     OParity::Normal
-        // };
-
-        let team = if self.team.is_set(coord) {
+    pub fn determine_team_of_unit(&self, coord: Axial) -> ActiveTeam {
+        if self.team.is_set(coord) {
             ActiveTeam::White
         } else {
             ActiveTeam::Black
-        };
+        }
+    }
+
+    pub fn filter_by_team(&self, mesh: &SingleMesh, team: ActiveTeam) -> SingleMesh {
+        if team.is_white() {
+            self.team.intersect(mesh)
+        } else {
+            self.team.not().intersect(mesh)
+        }
+    }
+
+    pub fn specific_unit(&self, typ: UnitType, team: ActiveTeam) -> SingleMesh {
+        let k = self.units.get(typ);
+        self.filter_by_team(k, team)
+    }
+    pub fn remove(&mut self, coord: Axial) -> (UnitType, ActiveTeam) {
+        let team = self.determine_team_of_unit(coord);
 
         self.team.remove(coord);
 
-        //self.parity.remove(coord);
         (self.units.clear(coord), team)
     }
 
@@ -84,11 +85,7 @@ impl Board {
     }
 
     pub fn get_unit_at(&self, coord: Axial) -> (UnitType, ActiveTeam) {
-        let team = if self.team.is_set(coord) {
-            ActiveTeam::White
-        } else {
-            ActiveTeam::Black
-        };
+        let team = self.determine_team_of_unit(coord);
 
         (self.units.get_type(coord), team)
     }
@@ -102,20 +99,12 @@ impl Board {
     pub fn get_unit_team(&self, team: ActiveTeam, u: UnitType) -> SingleMesh {
         let u = self.units.get(u);
 
-        if team.is_white() {
-            self.team.intersect(&u)
-        } else {
-            self.team.not().intersect(&u)
-        }
+        self.filter_by_team(u, team)
     }
     pub fn get_all_team(&self, team: ActiveTeam) -> SingleMesh {
         let all = self.units.all_units();
 
-        if team.is_white() {
-            self.team.intersect(&all)
-        } else {
-            self.team.not().intersect(&all)
-        }
+        self.filter_by_team(&all, team)
     }
 }
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
