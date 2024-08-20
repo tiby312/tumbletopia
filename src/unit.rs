@@ -135,24 +135,25 @@ impl GameState {
         hasher.finish()
     }
     pub fn game_is_over(&self, world: &board::MyWorld, team: ActiveTeam) -> Option<GameOver> {
-        let this_team_stuck = 'foo: {
-            for unit in self.factions.relative(team).this_team.iter_mesh() {
-                let mesh = self.generate_possible_moves_movement(world, &unit, team);
-                if !mesh.is_empty() {
-                    break 'foo false;
-                }
-            }
-            true
-        };
+        // let this_team_stuck = 'foo: {
+        //     for unit in self.factions.relative(team).this_team.iter_mesh() {
+        //         let mesh = self.generate_possible_moves_movement(world, &unit, team);
+        //         if !mesh.is_empty() {
+        //             break 'foo false;
+        //         }
+        //     }
+        //     true
+        // };
 
-        if this_team_stuck {
-            match team {
-                ActiveTeam::White => Some(GameOver::BlackWon),
-                ActiveTeam::Black => Some(GameOver::WhiteWon),
-            }
-        } else {
-            None
-        }
+        // if this_team_stuck {
+        //     match team {
+        //         ActiveTeam::White => Some(GameOver::BlackWon),
+        //         ActiveTeam::Black => Some(GameOver::WhiteWon),
+        //     }
+        // } else {
+        //     None
+        // }
+        None
     }
 }
 

@@ -361,13 +361,13 @@ pub async fn reselect_loop(
 pub fn game_init(world: &board::MyWorld) -> GameState {
     let a = 3; //world.white_start().len();
 
-    let white_mouse = BitField::from_iter(&world.white_start()[0..a]);
+    // let white_mouse = BitField::from_iter(&world.white_start()[0..a]);
 
-    let black_mouse = BitField::from_iter(&world.black_start()[0..a]);
+    // let black_mouse = BitField::from_iter(&world.black_start()[0..a]);
 
-    let white_rabbit = BitField::from_iter(&world.white_start()[a..]);
+    // let white_rabbit = BitField::from_iter(&world.white_start()[a..]);
 
-    let black_rabbit = BitField::from_iter(&world.black_start()[a..]);
+    // let black_rabbit = BitField::from_iter(&world.black_start()[a..]);
 
     let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
@@ -378,12 +378,12 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let mut k = GameState {
         factions: Factions {
             black: Tribe {
-                mouse: black_mouse,
-                rabbit: black_rabbit,
+                mouse: BitField::new(),
+                rabbit: BitField::new(),
             },
             white: Tribe {
-                mouse: white_mouse,
-                rabbit: white_rabbit,
+                mouse: BitField::new(),
+                rabbit: BitField::new(),
             },
         },
         env: Environment {
@@ -397,14 +397,14 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         },
     };
 
-    for a in k
-        .factions
-        .white
-        .iter_mesh()
-        .chain(k.factions.black.iter_mesh())
-    {
-        move_build::compute_fog(a, &mut k.env).apply(a, &mut k.env);
-    }
+    // for a in k
+    //     .factions
+    //     .white
+    //     .iter_mesh()
+    //     .chain(k.factions.black.iter_mesh())
+    // {
+    //     move_build::compute_fog(a, &mut k.env).apply(a, &mut k.env);
+    // }
 
     k
 }

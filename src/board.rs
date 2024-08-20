@@ -5,10 +5,10 @@ use super::*;
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct MyWorld {
     pub seed: WorldSeed,
-    w: BitField,
+    //w: BitField,
     pub land: BitField,
-    black_start: Vec<Axial>,
-    white_start: Vec<Axial>,
+    //black_start: Vec<Axial>,
+    //white_start: Vec<Axial>,
 }
 
 // impl Default for MyWorld {
@@ -105,105 +105,102 @@ impl MyWorld {
         //for size 3 use this
         //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
 
-        let mut w = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
+        let mut land = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
         //w.set_coord(Axial::zero(), false);
         //3*3*5*4 = 180 choices!!!
 
-        let mut i: usize = seed.foo.try_into().unwrap();
+        // let mut i: usize = seed.foo.try_into().unwrap();
 
-        let white_long = i % 3;
-        i /= 3;
-        let black_long = i % 3;
-        i /= 3;
-        // let mut dog_long2 = i % 2;
-        // i /= 2;
-        let world_missing_index1 = i % 5;
-        i /= 5;
-        let mut world_missing_index2 = i % 4;
-        i /= 4;
-        assert_eq!(i, 0);
+        // let white_long = i % 3;
+        // i /= 3;
+        // let black_long = i % 3;
+        // i /= 3;
+        // // let mut dog_long2 = i % 2;
+        // // i /= 2;
+        // let world_missing_index1 = i % 5;
+        // i /= 5;
+        // let mut world_missing_index2 = i % 4;
+        // i /= 4;
+        // assert_eq!(i, 0);
 
-        // if dog_long == dog_long2 {
-        //     dog_long2 = (dog_long2 + 1) % 3
+        // // if dog_long == dog_long2 {
+        // //     dog_long2 = (dog_long2 + 1) % 3
+        // // }
+
+        // if world_missing_index1 == world_missing_index2 {
+        //     world_missing_index2 = (world_missing_index2 + 1) % 5
+        // }
+        // //assert_ne!(dog_long, dog_long2);
+        // assert_ne!(world_missing_index1, world_missing_index2);
+        // assert!((0..3).contains(&white_long), "uhoh:{}", white_long);
+        // assert!((0..3).contains(&black_long));
+        // //assert!((0..3).contains(&dog_long2));
+        // assert!((0..6).contains(&world_missing_index1));
+        // assert!((0..6).contains(&world_missing_index2));
+
+        // let d = 4;
+
+        // let mut white_start: Vec<_> = [[-d, d], [0, -d], [d, 0]].map(Axial::from_arr).into();
+        // let mut black_start: Vec<_> = [[d, -d], [-d, 0], [0, d]].map(Axial::from_arr).into();
+
+        // let world_missing = j.map(Axial::from_arr);
+
+        // for a in 0..3 {
+        //     if a == white_long {
+        //         continue;
+        //     }
+        //     let mut j = white_start[a];
+        //     increase_mag(&mut j.q);
+        //     increase_mag(&mut j.r);
+        //     white_start.push(j);
         // }
 
-        if world_missing_index1 == world_missing_index2 {
-            world_missing_index2 = (world_missing_index2 + 1) % 5
-        }
-        //assert_ne!(dog_long, dog_long2);
-        assert_ne!(world_missing_index1, world_missing_index2);
-        assert!((0..3).contains(&white_long), "uhoh:{}", white_long);
-        assert!((0..3).contains(&black_long));
-        //assert!((0..3).contains(&dog_long2));
-        assert!((0..6).contains(&world_missing_index1));
-        assert!((0..6).contains(&world_missing_index2));
-
-        let d = 4;
-
-        let mut white_start: Vec<_> = [[-d, d], [0, -d], [d, 0]].map(Axial::from_arr).into();
-        let mut black_start: Vec<_> = [[d, -d], [-d, 0], [0, d]].map(Axial::from_arr).into();
-
-        let world_missing = j.map(Axial::from_arr);
-
-        for a in 0..3 {
-            if a == white_long {
-                continue;
-            }
-            let mut j = white_start[a];
-            increase_mag(&mut j.q);
-            increase_mag(&mut j.r);
-            white_start.push(j);
-        }
-
-        for a in 0..3 {
-            if a == black_long {
-                continue;
-            }
-            let mut j = black_start[a];
-            increase_mag(&mut j.q);
-            increase_mag(&mut j.r);
-            black_start.push(j);
-        }
-
-        // let mut j=dog_start[dog_long2];
-        // increase_mag(&mut j.q);
-        // increase_mag(&mut j.r);
-        // dog_start.push(j);
-
-        let mut land = BitField::new();
-        land.set_coord(world_missing[world_missing_index1], true);
-        land.set_coord(world_missing[world_missing_index2], true);
-
-        // let starting_land=[[0,-3],[-3,0],[-3,3],[0,3],[3,0],[3,-3]];
-
-        // for a in starting_land{
-        //     land.set_coord(Axial::from_arr(a), true);
+        // for a in 0..3 {
+        //     if a == black_long {
+        //         continue;
+        //     }
+        //     let mut j = black_start[a];
+        //     increase_mag(&mut j.q);
+        //     increase_mag(&mut j.r);
+        //     black_start.push(j);
         // }
 
-        for &a in white_start.iter() {
-            w.set_coord(a, true);
-        }
+        // // let mut j=dog_start[dog_long2];
+        // // increase_mag(&mut j.q);
+        // // increase_mag(&mut j.r);
+        // // dog_start.push(j);
 
-        for &a in black_start.iter() {
-            w.set_coord(a, true);
-        }
+        // let mut land = BitField::new();
+        // land.set_coord(world_missing[world_missing_index1], true);
+        // land.set_coord(world_missing[world_missing_index2], true);
+
+        // // let starting_land=[[0,-3],[-3,0],[-3,3],[0,3],[3,0],[3,-3]];
+
+        // // for a in starting_land{
+        // //     land.set_coord(Axial::from_arr(a), true);
+        // // }
+
+        // for &a in white_start.iter() {
+        //     w.set_coord(a, true);
+        // }
+
+        // for &a in black_start.iter() {
+        //     w.set_coord(a, true);
+        // }
 
         MyWorld {
             seed,
             land,
-            w,
-            black_start,
-            white_start,
         }
     }
-    pub fn white_start(&self) -> &[Axial] {
-        &self.white_start
-    }
-    pub fn black_start(&self) -> &[Axial] {
-        &self.black_start
-    }
+    // pub fn white_start(&self) -> &[Axial] {
+    //     &self.white_start
+    // }
+    // pub fn black_start(&self) -> &[Axial] {
+    //     &self.black_start
+    // }
 
     pub fn get_game_cells(&self) -> &BitField {
-        &self.w
+        &self.land
     }
 }
