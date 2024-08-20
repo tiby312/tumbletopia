@@ -378,12 +378,12 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     let mut k = GameState {
         factions: Factions {
             black: Tribe {
-                mouse: BitField::new(),
-                rabbit: BitField::new(),
+                mouse: BitField::from_iter([Axial::from_arr([1,1])]),
+                rabbit: BitField::from_iter([Axial::from_arr([2,2])]),
             },
             white: Tribe {
-                mouse: BitField::new(),
-                rabbit: BitField::new(),
+                mouse: BitField::from_iter([Axial::from_arr([-2,-2])]),
+                rabbit: BitField::from_iter([Axial::from_arr([-1,-1])]),
             },
         },
         env: Environment {

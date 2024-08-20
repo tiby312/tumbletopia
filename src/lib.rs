@@ -562,108 +562,108 @@ async fn render_command(
         };
 
         draw_sys
-            .batch(visible_water.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET)))
+            .batch(world.land.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET)))
             .build(water);
 
-        {
-            //Draw grass
-            let grass1 = game
-                .env
-                .terrain
-                .land
-                .iter_mesh()
-                .map(|e| grid_snap(e, LAND_OFFSET));
+        // {
+        //     //Draw grass
+        //     let grass1 = game
+        //         .env
+        //         .terrain
+        //         .land
+        //         .iter_mesh()
+        //         .map(|e| grid_snap(e, LAND_OFFSET));
 
-            let ani_grass = if let Some((zpos, _, gpos, k)) = &terrain_animation {
-                if let animation::TerrainType::Grass = k {
-                    let gpos = *gpos;
+        //     let ani_grass = if let Some((zpos, _, gpos, k)) = &terrain_animation {
+        //         if let animation::TerrainType::Grass = k {
+        //             let gpos = *gpos;
 
-                    let pos = grid_matrix.hex_axial_to_world(&gpos);
+        //             let pos = grid_matrix.hex_axial_to_world(&gpos);
 
-                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET + *zpos);
-                    let m = my_matrix.chain(t).generate();
-                    Some(m)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
+        //             let t = matrix::translation(pos.x, pos.y, LAND_OFFSET + *zpos);
+        //             let m = my_matrix.chain(t).generate();
+        //             Some(m)
+        //         } else {
+        //             None
+        //         }
+        //     } else {
+        //         None
+        //     };
 
-            let push_grass = if let Some((pos, _, _unit, _, data)) = &unit_animation {
-                if let Some(f) = data {
-                    let kk = pos + f;
-                    let m = my_matrix
-                        .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
-                        .chain(matrix::scale(1.0, 1.0, 1.0))
-                        .generate();
-                    Some(m)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
+        //     let push_grass = if let Some((pos, _, _unit, _, data)) = &unit_animation {
+        //         if let Some(f) = data {
+        //             let kk = pos + f;
+        //             let m = my_matrix
+        //                 .chain(matrix::translation(kk.x, kk.y, LAND_OFFSET))
+        //                 .chain(matrix::scale(1.0, 1.0, 1.0))
+        //                 .generate();
+        //             Some(m)
+        //         } else {
+        //             None
+        //         }
+        //     } else {
+        //         None
+        //     };
 
-            let all_grass = grass1
-                .chain(ani_grass.into_iter())
-                .chain(push_grass.into_iter());
+        //     let all_grass = grass1
+        //         .chain(ani_grass.into_iter())
+        //         .chain(push_grass.into_iter());
 
-            draw_sys.batch(all_grass).build(grass);
-        }
+        //     draw_sys.batch(all_grass).build(grass);
+        // }
 
-        {
-            //Draw forest
-            let grass1 = game
-                .env
-                .terrain
-                .forest
-                .iter_mesh()
-                .map(|e| grid_snap(e, LAND_OFFSET));
+        // {
+        //     //Draw forest
+        //     let grass1 = game
+        //         .env
+        //         .terrain
+        //         .forest
+        //         .iter_mesh()
+        //         .map(|e| grid_snap(e, LAND_OFFSET));
 
-            let all_grass = grass1;
+        //     let all_grass = grass1;
 
-            draw_sys.batch(all_grass).build(mountain_asset);
-        }
+        //     draw_sys.batch(all_grass).build(mountain_asset);
+        // }
 
-        {
-            //Draw mountain
-            let grass1 = game
-                .env
-                .terrain
-                .mountain
-                .iter_mesh()
-                .map(|e| grid_snap(e, 0.0));
+        // {
+        //     //Draw mountain
+        //     let grass1 = game
+        //         .env
+        //         .terrain
+        //         .mountain
+        //         .iter_mesh()
+        //         .map(|e| grid_snap(e, 0.0));
 
-            let all_grass = grass1;
+        //     let all_grass = grass1;
 
-            draw_sys.batch(all_grass).build(mountain_asset);
-        }
+        //     draw_sys.batch(all_grass).build(mountain_asset);
+        // }
 
-        {
-            //Draw fog
-            let fog1 = game.env.fog.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET));
+        // {
+        //     //Draw fog
+        //     let fog1 = game.env.fog.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET));
 
-            let ani_fog = if let Some((zpos, _, gpos, k)) = &terrain_animation {
-                if let animation::TerrainType::Fog = k {
-                    let gpos = *gpos;
+        //     let ani_fog = if let Some((zpos, _, gpos, k)) = &terrain_animation {
+        //         if let animation::TerrainType::Fog = k {
+        //             let gpos = *gpos;
 
-                    let pos = grid_matrix.hex_axial_to_world(&gpos);
+        //             let pos = grid_matrix.hex_axial_to_world(&gpos);
 
-                    let t = matrix::translation(pos.x, pos.y, LAND_OFFSET + *zpos);
-                    let m = my_matrix.chain(t).generate();
-                    Some(m)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
+        //             let t = matrix::translation(pos.x, pos.y, LAND_OFFSET + *zpos);
+        //             let m = my_matrix.chain(t).generate();
+        //             Some(m)
+        //         } else {
+        //             None
+        //         }
+        //     } else {
+        //         None
+        //     };
 
-            let all_fog = fog1.chain(ani_fog.into_iter());
+        //     let all_fog = fog1.chain(ani_fog.into_iter());
 
-            draw_sys.batch(all_fog).build(snow);
-        }
+        //     draw_sys.batch(all_fog).build(snow);
+        // }
 
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
