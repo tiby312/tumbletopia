@@ -343,7 +343,7 @@ async fn render_command(
     let mut poking = 0;
 
     let mut waiting_engine_ack = false;
-
+    console_dbg!(command);
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(WorkerToDom::HideUndo);
@@ -395,6 +395,7 @@ async fn render_command(
             }
         },
         ace::Command::GetMouseInputSelection { selection, grey } => {
+            
             get_mouse_input = Some(Some((selection, grey)));
         }
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
@@ -669,12 +670,9 @@ async fn render_command(
             if let Some((selection, grey)) = a {
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
+                        //console_dbg!("doo=",mesh);
                         let cells = mesh.iter_mesh(*point).map(|e| {
-                            let zzzz = if game.env.terrain.is_set(e) {
-                                0.0
-                            } else {
-                                -8.0
-                            };
+                            let zzzz = 1.0;
 
                             grid_snap(e, zzzz)
                         });
