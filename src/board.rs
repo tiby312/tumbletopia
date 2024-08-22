@@ -188,10 +188,7 @@ impl MyWorld {
         //     w.set_coord(a, true);
         // }
 
-        MyWorld {
-            seed,
-            land,
-        }
+        MyWorld { seed, land }
     }
     // pub fn white_start(&self) -> &[Axial] {
     //     &self.white_start

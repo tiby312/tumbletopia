@@ -90,27 +90,22 @@ impl GameState {
         team: ActiveTeam,
     ) -> SmallMesh {
         //TODO use
-        let typ = self.factions.relative(team).this_team.get_type(unit);
+        //let typ = self.factions.relative(team).this_team.get_type(unit);
 
         let game = self;
         let mut mesh = SmallMesh::new();
 
         let terrain = &game.env.terrain;
 
-
         for (i, h) in hex::OFFSETS.into_iter().enumerate() {
-            for k in unit
-            .to_cube()
-            .ray_from_vector(hex::Cube::from_arr(h))
-            {
-                let k=k.to_axial();
-                if !world.get_game_cells().is_set(k) || game.factions.has_a_set(k){
+            for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
+                let k = k.to_axial();
+                if !world.get_game_cells().is_set(k) || game.factions.cells.get_cell(k).is_some() {
                     break;
                 }
                 mesh.add(k.sub(&unit));
             }
         }
-
 
         mesh
     }
@@ -168,47 +163,48 @@ impl GameState {
         mut func: impl FnMut(move_build::CombinedEffect, moves::ActualMove, &GameState),
     ) {
         let state = self;
+        todo!();
         //let mut movs = Vec::new();
         //for i in 0..state.factions.relative(team).this_team.units.len() {
-        for pos in state.factions.relative(team).this_team.clone().iter_mesh() {
-            let mesh = state.generate_possible_moves_movement(world, &pos, team);
-            for mm in mesh.iter_mesh(pos) {
-                //Temporarily move the player in the game world.
-                //We do this so that the mesh generated for extra is accurate.
-                let mut mmm = move_build::MovePhase {
-                    original: pos,
-                    moveto: mm,
-                };
+        // for pos in state.factions.relative(team).this_team.clone().iter_mesh() {
+        //     let mesh = state.generate_possible_moves_movement(world, &pos, team);
+        //     for mm in mesh.iter_mesh(pos) {
+        //         //Temporarily move the player in the game world.
+        //         //We do this so that the mesh generated for extra is accurate.
+        //         let mut mmm = move_build::MovePhase {
+        //             original: pos,
+        //             moveto: mm,
+        //         };
 
-                let mut effect = mmm.apply(team, state, world);
+        //         let mut effect = mmm.apply(team, state, world);
 
-                let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
+        //         let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
 
-                for sm in second_mesh.iter_mesh(mm) {
-                    assert!(!state.env.terrain.is_set(sm));
+        //         for sm in second_mesh.iter_mesh(mm) {
+        //             assert!(!state.env.terrain.is_set(sm));
 
-                    let kkk = mmm.into_attack(sm);
+        //             let kkk = mmm.into_attack(sm);
 
-                    let k = kkk.apply(team, state, world, &effect);
+        //             let k = kkk.apply(team, state, world, &effect);
 
-                    let mmo = moves::ActualMove {
-                        original: pos,
-                        moveto: mm,
-                        attackto: sm,
-                    };
+        //             let mmo = moves::ActualMove {
+        //                 original: pos,
+        //                 moveto: mm,
+        //                 attackto: sm,
+        //             };
 
-                    let jjj = effect.combine(k);
+        //             let jjj = effect.combine(k);
 
-                    func(jjj.clone(), mmo, state);
+        //             func(jjj.clone(), mmo, state);
 
-                    mmm = kkk.undo(&jjj.extra_effect, state);
-                    effect = jjj.move_effect;
-                }
+        //             mmm = kkk.undo(&jjj.extra_effect, state);
+        //             effect = jjj.move_effect;
+        //         }
 
-                //revert it back just the movement component.
-                mmm.undo(team, &effect, state);
-            }
-        }
+        //         //revert it back just the movement component.
+        //         mmm.undo(team, &effect, state);
+        //     }
+        // }
 
         // {
         //     for a in movs.iter() {

@@ -192,11 +192,11 @@ pub async fn reselect_loop(
 
     let unwrapped_selected_unit = selected_unit.coord;
 
-    assert!(game
-        .factions
-        .relative(selected_unit.team)
-        .this_team
-        .is_set(unwrapped_selected_unit));
+    // assert!(game
+    //     .factions
+    //     .relative(selected_unit.team)
+    //     .this_team
+    //     .is_set(unwrapped_selected_unit));
 
     let grey = if selected_unit.team == team {
         //If we are in the middle of a extra attack move, make sure
@@ -258,32 +258,27 @@ pub async fn reselect_loop(
     }
 
     //If we select a friendly unit quick swap
-    if game
-        .factions
-        .relative(selected_unit.team)
-        .this_team
-        .is_set(target_cell)
-    {
-        if !contains {
-            //it should be impossible for a unit to move onto a friendly
-            //assert!(!contains);
-            selected_unit.coord = target_cell;
-            return LoopRes::Select(selected_unit);
+
+    if let Some((_, team2)) = game.factions.cells.get_cell(target_cell) {
+        if team2 == selected_unit.team {
+            if !contains {
+                //it should be impossible for a unit to move onto a friendly
+                //assert!(!contains);
+                selected_unit.coord = target_cell;
+                return LoopRes::Select(selected_unit);
+            }
         }
     }
 
     //If we select an enemy unit quick swap
-    if game
-        .factions
-        .relative(selected_unit.team)
-        .that_team
-        .is_set(target_cell)
-    {
-        if selected_unit.team != team || !contains {
-            //If we select an enemy unit thats outside of our units range.
-            selected_unit.coord = target_cell;
-            selected_unit.team = selected_unit.team.not();
-            return LoopRes::Select(selected_unit);
+    if let Some((_, team2)) = game.factions.cells.get_cell(target_cell) {
+        if team2 == selected_unit.team {
+            if selected_unit.team != team || !contains {
+                //If we select an enemy unit thats outside of our units range.
+                selected_unit.coord = target_cell;
+                selected_unit.team = selected_unit.team.not();
+                return LoopRes::Select(selected_unit);
+            }
         }
     }
 
@@ -328,11 +323,11 @@ pub async fn reselect_loop(
             effect,
         ))
     } else {
-        assert!(game
-            .factions
-            .relative_mut(selected_unit.team)
-            .this_team
-            .is_set(unwrapped_selected_unit));
+        // assert!(game
+        //     .factions
+        //     .relative_mut(selected_unit.team)
+        //     .this_team
+        //     .is_set(unwrapped_selected_unit));
 
         let c = target_cell;
 
@@ -375,17 +370,12 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     fog.intersect_with(&world.get_game_cells());
     //let fog=BitField::new();
 
+    let mut cells = Tribe::new();
+    cells.add_cell(Axial::from_arr([2, 2]), 1, ActiveTeam::White);
+    cells.add_cell(Axial::from_arr([-2, -2]), 1, ActiveTeam::Black);
+
     let mut k = GameState {
-        factions: Factions {
-            black: Tribe {
-                mouse: BitField::from_iter([Axial::from_arr([1,1])]),
-                rabbit: BitField::from_iter([Axial::from_arr([2,2])]),
-            },
-            white: Tribe {
-                mouse: BitField::from_iter([Axial::from_arr([-2,-2])]),
-                rabbit: BitField::from_iter([Axial::from_arr([-1,-1])]),
-            },
-        },
+        factions: Factions { cells },
         env: Environment {
             terrain: Terrain {
                 land: world.land.clone(),
@@ -515,13 +505,10 @@ pub async fn handle_player(
                 }
             };
 
-            if game.factions.relative(team).this_team.is_set(cell) {
-                break SelectType { coord: cell, team };
-            }
-            if game.factions.relative(team).that_team.is_set(cell) {
+            if let Some((_, team2)) = game.factions.cells.get_cell(cell) {
                 break SelectType {
                     coord: cell,
-                    team: team.not(),
+                    team: team2,
                 };
             }
         };

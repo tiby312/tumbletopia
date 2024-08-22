@@ -106,10 +106,7 @@ impl ExtraPhase {
 
             fog.apply(moveto, &mut game.env);
 
-            return ExtraEffect {
-                fog,
-                bomb: None,
-            };
+            return ExtraEffect { fog, bomb: None };
         }
 
         let bb = if let Some(bb) = self.compute_bomb(game, world) {
@@ -168,59 +165,59 @@ impl ExtraPhase {
         world: &board::MyWorld,
         data: &mut ace::WorkerManager,
     ) -> &Self {
-        let target = self.target;
+        // let target = self.target;
 
-        let mut gg = state.clone();
+        // let mut gg = state.clone();
 
-        if let Some(bb) = self.compute_bomb(state, world) {
-            let k = self.original.to_cube();
-            for a in std::iter::once(k).chain(k.ring(1)).chain(k.ring(2)) {
-                if bb.0.is_set(a.sub(self.original.to_cube()).to_axial()) {
-                    data.wait_animation(
-                        animation::AnimationCommand::Terrain {
-                            pos: a.to_axial(),
-                            terrain_type: animation::TerrainType::Grass,
-                            dir: animation::AnimationDirection::Up,
-                        },
-                        team,
-                        &mut gg,
-                    )
-                    .await;
-                    gg.env.terrain.land.set_coord(a.to_axial(), true);
-                }
-            }
-        } else {
-            data.wait_animation(
-                animation::AnimationCommand::Terrain {
-                    pos: target,
-                    terrain_type: animation::TerrainType::Grass,
-                    dir: animation::AnimationDirection::Up,
-                },
-                team,
-                &mut gg,
-            )
-            .await;
+        // if let Some(bb) = self.compute_bomb(state, world) {
+        //     let k = self.original.to_cube();
+        //     for a in std::iter::once(k).chain(k.ring(1)).chain(k.ring(2)) {
+        //         if bb.0.is_set(a.sub(self.original.to_cube()).to_axial()) {
+        //             data.wait_animation(
+        //                 animation::AnimationCommand::Terrain {
+        //                     pos: a.to_axial(),
+        //                     terrain_type: animation::TerrainType::Grass,
+        //                     dir: animation::AnimationDirection::Up,
+        //                 },
+        //                 team,
+        //                 &mut gg,
+        //             )
+        //             .await;
+        //             gg.env.terrain.land.set_coord(a.to_axial(), true);
+        //         }
+        //     }
+        // } else {
+        //     data.wait_animation(
+        //         animation::AnimationCommand::Terrain {
+        //             pos: target,
+        //             terrain_type: animation::TerrainType::Grass,
+        //             dir: animation::AnimationDirection::Up,
+        //         },
+        //         team,
+        //         &mut gg,
+        //     )
+        //     .await;
 
-            gg.env.terrain.land.set_coord(target, true);
-        }
+        //     gg.env.terrain.land.set_coord(target, true);
+        // }
 
-        let fog = compute_fog(self.moveto, &state.env);
+        // let fog = compute_fog(self.moveto, &state.env);
 
-        //let mut game = state.clone();
-        for a in fog.0.iter_mesh(self.moveto) {
-            gg.env.fog.set_coord(a, false);
-            // Change mesh
-            data.wait_animation(
-                animation::AnimationCommand::Terrain {
-                    pos: a,
-                    terrain_type: animation::TerrainType::Fog,
-                    dir: animation::AnimationDirection::Down,
-                },
-                team,
-                &mut gg,
-            )
-            .await;
-        }
+        // //let mut game = state.clone();
+        // for a in fog.0.iter_mesh(self.moveto) {
+        //     gg.env.fog.set_coord(a, false);
+        //     // Change mesh
+        //     data.wait_animation(
+        //         animation::AnimationCommand::Terrain {
+        //             pos: a,
+        //             terrain_type: animation::TerrainType::Fog,
+        //             dir: animation::AnimationDirection::Down,
+        //         },
+        //         team,
+        //         &mut gg,
+        //     )
+        //     .await;
+        // }
 
         self
     }
@@ -261,81 +258,81 @@ impl MovePhase {
         world: &board::MyWorld,
         data: &mut ace::WorkerManager,
     ) -> &Self {
-        let target = self.moveto;
-        let paths = calculate_paths(self.original, self.moveto, state, world);
+        // let target = self.moveto;
+        // let paths = calculate_paths(self.original, self.moveto, state, world);
 
-        assert!(state
-            .factions
-            .relative(team)
-            .this_team
-            .is_set(self.original));
+        // assert!(state
+        //     .factions
+        //     .relative(team)
+        //     .this_team
+        //     .is_set(self.original));
 
-        let mesh = state.generate_possible_moves_movement(world, &self.original, team);
+        // let mesh = state.generate_possible_moves_movement(world, &self.original, team);
 
-        let info = {
-            let target_cell = self.moveto;
-            let mut e = PushInfo::None;
+        // let info = {
+        //     let target_cell = self.moveto;
+        //     let mut e = PushInfo::None;
 
-            if state.env.terrain.land.is_set(target_cell) {
-                e = PushInfo::PushedLand;
-            }
+        //     if state.env.terrain.land.is_set(target_cell) {
+        //         e = PushInfo::PushedLand;
+        //     }
 
-            e
-        };
-        //let this_unit = state.factions.get_unit(team, this_unit);
+        //     e
+        // };
+        // //let this_unit = state.factions.get_unit(team, this_unit);
 
-        let mut ss = state.clone();
+        // let mut ss = state.clone();
 
-        let ttt = ss
-            .factions
-            .relative_mut(team)
-            .this_team
-            .clear(self.original);
+        // let ttt = ss
+        //     .factions
+        //     .relative_mut(team)
+        //     .this_team
+        //     .clear(self.original);
 
-        let end = target;
-        match info {
-            PushInfo::PushedLand => {
-                let dir = self.original.dir_to(&end);
-                let k = self.original.advance(dir);
-                assert!(ss.env.terrain.land.is_set(k));
-                ss.env.terrain.land.set_coord(k, false);
-            }
-            PushInfo::UpgradedLand => {
-                //TODO fooo
-            }
-            PushInfo::PushedUnit => {
-                //TODO animate
-            }
+        // let end = target;
+        // match info {
+        //     PushInfo::PushedLand => {
+        //         let dir = self.original.dir_to(&end);
+        //         let k = self.original.advance(dir);
+        //         assert!(ss.env.terrain.land.is_set(k));
+        //         ss.env.terrain.land.set_coord(k, false);
+        //     }
+        //     PushInfo::UpgradedLand => {
+        //         //TODO fooo
+        //     }
+        //     PushInfo::PushedUnit => {
+        //         //TODO animate
+        //     }
 
-            PushInfo::None => {}
-        }
+        //     PushInfo::None => {}
+        // }
 
-        let capturing = state.factions.relative(team).that_team.is_set(end);
-        if !capturing {
-            let path = mesh::path(
-                &mesh,
-                self.original,
-                self.moveto,
-                &paths,
-                state,
-                team,
-                world,
-                capturing,
-            );
+        // let capturing = state.factions.relative(team).that_team.is_set(end);
+        // if !capturing {
+        //     let path = mesh::path(
+        //         &mesh,
+        //         self.original,
+        //         self.moveto,
+        //         &paths,
+        //         state,
+        //         team,
+        //         world,
+        //         capturing,
+        //     );
 
-            data.wait_animation(
-                animation::AnimationCommand::Movement {
-                    unit: self.original,
-                    ttt,
-                    path,
-                    end,
-                    data: info,
-                },
-                team,
-                &mut ss,
-            )
-            .await;
-        }
+        //     data.wait_animation(
+        //         animation::AnimationCommand::Movement {
+        //             unit: self.original,
+        //             ttt,
+        //             path,
+        //             end,
+        //             data: info,
+        //         },
+        //         team,
+        //         &mut ss,
+        //     )
+        //     .await;
+        // }
         self
     }
 
@@ -343,87 +340,87 @@ impl MovePhase {
         let moveto = self.moveto;
         let unit = self.original;
 
-        state
-            .factions
-            .relative_mut(team_index)
-            .this_team
-            .move_unit(moveto, unit);
+        // state
+        //     .factions
+        //     .relative_mut(team_index)
+        //     .this_team
+        //     .move_unit(moveto, unit);
 
-        if let Some((fooo, typ)) = effect.destroyed_unit {
-            matches!(effect.pushpull, PushInfo::None);
-            state
-                .factions
-                .relative_mut(team_index)
-                .that_team
-                .get_mut(typ)
-                .set_coord(moveto, true);
+        // if let Some((fooo, typ)) = effect.destroyed_unit {
+        //     matches!(effect.pushpull, PushInfo::None);
+        //     state
+        //         .factions
+        //         .relative_mut(team_index)
+        //         .that_team
+        //         .get_mut(typ)
+        //         .set_coord(moveto, true);
 
-            //let j = &mut state.factions.relative_mut(team_index).that_team.units;
-            assert_eq!(fooo, moveto);
-            //j.set_coord(moveto, true);
-        }
+        //     //let j = &mut state.factions.relative_mut(team_index).that_team.units;
+        //     assert_eq!(fooo, moveto);
+        //     //j.set_coord(moveto, true);
+        // }
 
-        match effect.pushpull {
-            PushInfo::UpgradedLand => {
-                assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
+        // match effect.pushpull {
+        //     PushInfo::UpgradedLand => {
+        //         assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
 
-                let dir = unit.dir_to(&moveto);
-                let t3 = moveto.advance(dir);
+        //         let dir = unit.dir_to(&moveto);
+        //         let t3 = moveto.advance(dir);
 
-                if state.env.terrain.land.is_set(t3) {
-                    panic!("This is impossible!");
-                } else if state.env.terrain.forest.is_set(t3) {
-                    state.env.terrain.forest.set_coord(t3, false);
-                    state.env.terrain.land.set_coord(t3, true);
-                    state.env.terrain.land.set_coord(moveto, true);
-                } else if state.env.terrain.mountain.is_set(t3) {
-                    state.env.terrain.mountain.set_coord(t3, false);
-                    state.env.terrain.forest.set_coord(t3, true);
-                    state.env.terrain.forest.set_coord(moveto, true);
-                }
-            }
-            PushInfo::PushedUnit => {
-                todo!()
-                // assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
-                // let dir = unit.dir_to(&moveto);
-                // let t3 = moveto.advance(dir);
+        //         if state.env.terrain.land.is_set(t3) {
+        //             panic!("This is impossible!");
+        //         } else if state.env.terrain.forest.is_set(t3) {
+        //             state.env.terrain.forest.set_coord(t3, false);
+        //             state.env.terrain.land.set_coord(t3, true);
+        //             state.env.terrain.land.set_coord(moveto, true);
+        //         } else if state.env.terrain.mountain.is_set(t3) {
+        //             state.env.terrain.mountain.set_coord(t3, false);
+        //             state.env.terrain.forest.set_coord(t3, true);
+        //             state.env.terrain.forest.set_coord(moveto, true);
+        //         }
+        //     }
+        //     PushInfo::PushedUnit => {
+        //         todo!()
+        //         // assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
+        //         // let dir = unit.dir_to(&moveto);
+        //         // let t3 = moveto.advance(dir);
 
-                // let tt = state.factions.relative_mut(team_index);
-                // if tt.this_team.units.is_set(t3) {
-                //     tt.this_team.units.set_coord(t3, false);
-                //     tt.this_team.units.set_coord(moveto, true);
-                // } else if tt.that_team.units.is_set(t3) {
-                //     tt.that_team.units.set_coord(t3, false);
-                //     tt.that_team.units.set_coord(moveto, true);
-                // } else {
-                //     unreachable!("PushedUnit enum error");
-                // }
-            }
-            PushInfo::PushedLand => {
-                assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
+        //         // let tt = state.factions.relative_mut(team_index);
+        //         // if tt.this_team.units.is_set(t3) {
+        //         //     tt.this_team.units.set_coord(t3, false);
+        //         //     tt.this_team.units.set_coord(moveto, true);
+        //         // } else if tt.that_team.units.is_set(t3) {
+        //         //     tt.that_team.units.set_coord(t3, false);
+        //         //     tt.that_team.units.set_coord(moveto, true);
+        //         // } else {
+        //         //     unreachable!("PushedUnit enum error");
+        //         // }
+        //     }
+        //     PushInfo::PushedLand => {
+        //         assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 1);
 
-                let dir = unit.dir_to(&moveto);
-                let t3 = moveto.advance(dir);
+        //         let dir = unit.dir_to(&moveto);
+        //         let t3 = moveto.advance(dir);
 
-                if state.env.terrain.land.is_set(t3) {
-                    state.env.terrain.land.set_coord(t3, false);
-                    state.env.terrain.land.set_coord(moveto, true);
-                } else if state.env.terrain.forest.is_set(t3) {
-                    state.env.terrain.forest.set_coord(t3, false);
-                    state.env.terrain.forest.set_coord(moveto, true);
-                } else if state.env.terrain.mountain.is_set(t3) {
-                    state.env.terrain.mountain.set_coord(t3, false);
-                    state.env.terrain.mountain.set_coord(moveto, true);
-                }
+        //         if state.env.terrain.land.is_set(t3) {
+        //             state.env.terrain.land.set_coord(t3, false);
+        //             state.env.terrain.land.set_coord(moveto, true);
+        //         } else if state.env.terrain.forest.is_set(t3) {
+        //             state.env.terrain.forest.set_coord(t3, false);
+        //             state.env.terrain.forest.set_coord(moveto, true);
+        //         } else if state.env.terrain.mountain.is_set(t3) {
+        //             state.env.terrain.mountain.set_coord(t3, false);
+        //             state.env.terrain.mountain.set_coord(moveto, true);
+        //         }
 
-                // assert!(state.env.terrain.land.is_set(t3));
-                // state.env.terrain.land.set_coord(t3, false);
-                // assert!(!state.env.terrain.land.is_set(moveto));
-                // state.env.terrain.land.set_coord(moveto, true);
-            }
+        //         // assert!(state.env.terrain.land.is_set(t3));
+        //         // state.env.terrain.land.set_coord(t3, false);
+        //         // assert!(!state.env.terrain.land.is_set(moveto));
+        //         // state.env.terrain.land.set_coord(moveto, true);
+        //     }
 
-            PushInfo::None => {}
-        }
+        //     PushInfo::None => {}
+        // }
     }
 
     pub fn apply(
@@ -442,108 +439,33 @@ impl MovePhase {
         //     factions.relative_mut(team).this_team.units.iter_mut().find(|x|x.position==self.original).unwrap()
         // };
 
-        {
-            let terrain = &mut env.terrain;
-
-            let foo = game.factions.relative_mut(team);
-            if foo.that_team.is_set(target_cell)
-                
+        let mut stack_size = 0;
+        for (i, h) in hex::OFFSETS.into_iter().enumerate() {
+            for k in target_cell
+                .to_cube()
+                .ray_from_vector(hex::Cube::from_arr(h))
             {
-                let k = foo.that_team.clear(target_cell);
-                destroyed_unit = Some((target_cell, k));
-            
-                // let dir = self.original.dir_to(&target_cell);
-                // let check = target_cell.advance(dir);
+                let k = k.to_axial();
+                if !world.get_game_cells().is_set(k) {
+                    break;
+                }
 
-                // if env.terrain.is_set(check) || !world.get_game_cells().is_set(check) {
-                //     assert!(!env.fog.is_set(target_cell));
-                //     assert!(!env.fog.is_set(check));
-
-                //     foo.that_team.units.set_coord(target_cell, false);
-                //     destroyed_unit = Some(target_cell);
-                // } else if world.get_game_cells().is_set(check)
-                //     && !env.terrain.is_set(check)
-                //     && !foo.has_a_set(check)
-                // {
-                //     foo.that_team.units.set_coord(target_cell, false);
-                //     foo.that_team.units.set_coord(check, true);
-                //     e = PushInfo::PushedUnit;
-                // }
-            } else if foo.this_team.is_set(target_cell) {
-                todo!()
-                // let dir = self.original.dir_to(&target_cell);
-                // let check = target_cell.advance(dir);
-
-                // if world.get_game_cells().is_set(check)
-                //     && !env.terrain.is_set(check)
-                //     && !foo.has_a_set(check)
-                // {
-                //     foo.this_team.units.set_coord(target_cell, false);
-                //     foo.this_team.units.set_coord(check, true);
-
-                //     e = PushInfo::PushedUnit;
-                // }
-            } else if terrain.land.is_set(target_cell) {
-                let dir = self.original.dir_to(&target_cell);
-                let kk = target_cell.advance(dir);
-
-                terrain.land.set_coord(target_cell, false);
-
-                if terrain.land.is_set(kk) {
-                    terrain.land.set_coord(kk, false);
-                    terrain.forest.set_coord(kk, true);
-
-                    e = PushInfo::UpgradedLand;
-                } else {
-                    assert!(!terrain.is_set(kk));
-                    terrain.land.set_coord(kk, true);
-
-                    e = PushInfo::PushedLand;
+                if let Some((vv, team2)) = game.factions.cells.get_cell(k) {
+                    if team2 == team {
+                        stack_size += 1;
+                    }
+                    break;
                 }
             }
-
-            // if terrain.forest.is_set(target_cell) {
-            //     let dir = this_unit.position.dir_to(&target_cell);
-            //     let kk = target_cell.advance(dir);
-
-            //     terrain.forest.set_coord(target_cell, false);
-
-            //     if terrain.forest.is_set(kk) {
-            //         terrain.forest.set_coord(kk, false);
-            //         terrain.mountain.set_coord(kk, true);
-
-            //         e = PushInfo::UpgradedLand;
-            //     } else {
-            //         assert!(!terrain.is_set(kk));
-            //         terrain.forest.set_coord(kk, true);
-
-            //         e = PushInfo::PushedLand;
-            //     }
-            // }
         }
 
-        let powerup = if game.env.powerups.contains(&target_cell) {
-            game.env.powerups.retain(|&a| a != target_cell);
-            unreachable!()
-            // if !this_unit.has_powerup {
-            //     this_unit.has_powerup = true;
-            //     PowerupAction::GotPowerup
-            // } else {
-            //     // powerup is discarded
-            //     PowerupAction::DiscardedPowerup
-            // }
-        } else {
-            PowerupAction::None
-        };
+        console_dbg!("Adding stacksize=", stack_size);
 
-        game.factions
-            .relative_mut(team)
-            .this_team
-            .move_unit(self.original, target_cell);
+        game.factions.cells.add_cell(target_cell, stack_size, team);
 
         MoveEffect {
             pushpull: e,
-            powerup,
+            powerup: PowerupAction::None,
             destroyed_unit,
         }
     }
@@ -610,71 +532,71 @@ pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
     FogInfo(mesh)
 }
 
-fn calculate_paths(
-    position: Axial,
-    target: Axial,
-    state: &GameState,
-    world: &board::MyWorld,
-) -> SmallMesh {
-    let typ = state.factions.has_a_set_type(position).unwrap();
+// fn calculate_paths(
+//     position: Axial,
+//     target: Axial,
+//     state: &GameState,
+//     world: &board::MyWorld,
+// ) -> SmallMesh {
+//     let typ = state.factions.has_a_set_type(position).unwrap();
 
-    let env = &state.env;
-    let mut paths = SmallMesh::new();
+//     let env = &state.env;
+//     let mut paths = SmallMesh::new();
 
-    paths.add(target.sub(&position));
+//     paths.add(target.sub(&position));
 
-    for a in position.to_cube().range(2) {
-        let a = a.to_axial();
-        //TODO this is duplicated logic in selection function???
+//     for a in position.to_cube().range(2) {
+//         let a = a.to_axial();
+//         //TODO this is duplicated logic in selection function???
 
-        if !env.fog.is_set(a)
-            && !env.terrain.is_set(a)
-            && a != position
-            && !state.factions.has_a_set(a)
-            && world.get_game_cells().is_set(a)
-        {
-            //if a != target {
-            paths.add(a.sub(&position));
-            //}
-        }
-    }
-    // match typ {
-    //     UnitType::Mouse => {
-    //         paths.add(target.sub(&position));
+//         if !env.fog.is_set(a)
+//             && !env.terrain.is_set(a)
+//             && a != position
+//             && !state.factions.has_a_set(a)
+//             && world.get_game_cells().is_set(a)
+//         {
+//             //if a != target {
+//             paths.add(a.sub(&position));
+//             //}
+//         }
+//     }
+//     // match typ {
+//     //     UnitType::Mouse => {
+//     //         paths.add(target.sub(&position));
 
-    //         for a in position.to_cube().range(2) {
-    //             let a = a.to_axial();
-    //             //TODO this is duplicated logic in selection function???
+//     //         for a in position.to_cube().range(2) {
+//     //             let a = a.to_axial();
+//     //             //TODO this is duplicated logic in selection function???
 
-    //             if !env.fog.is_set(a)
-    //                 && !env.terrain.is_set(a)
-    //                 && a != position
-    //                 && !state.factions.has_a_set(a)
-    //                 && world.get_game_cells().is_set(a)
-    //             {
-    //                 //if a != target {
-    //                 paths.add(a.sub(&position));
-    //                 //}
-    //             }
-    //         }
-    //     }
-    //     UnitType::Rabbit => {
-    //         paths.add(target.sub(&position));
+//     //             if !env.fog.is_set(a)
+//     //                 && !env.terrain.is_set(a)
+//     //                 && a != position
+//     //                 && !state.factions.has_a_set(a)
+//     //                 && world.get_game_cells().is_set(a)
+//     //             {
+//     //                 //if a != target {
+//     //                 paths.add(a.sub(&position));
+//     //                 //}
+//     //             }
+//     //         }
+//     //     }
+//     //     UnitType::Rabbit => {
+//     //         paths.add(target.sub(&position));
 
-    //         for a in position.to_cube().range(2) {
-    //             let a = a.to_axial();
-    //             //TODO this is duplicated logic in selection function???
+//     //         for a in position.to_cube().range(2) {
+//     //             let a = a.to_axial();
+//     //             //TODO this is duplicated logic in selection function???
 
-    //             if env.terrain.is_set(a) {
-    //                 paths.add(a.sub(&position));
-    //             }
-    //         }
+//     //             if env.terrain.is_set(a) {
+//     //                 paths.add(a.sub(&position));
+//     //             }
+//     //         }
 
-    //         let pos: Vec<_> = paths.iter_mesh(position).collect();
+//     //         let pos: Vec<_> = paths.iter_mesh(position).collect();
 
-    //         console_dbg!("walls size={}", pos);
-    //     }
-    // }
+//     //         console_dbg!("walls size={}", pos);
+//     //     }
+//     // }
 
-    paths
-}
+//     paths
+// }

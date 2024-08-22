@@ -2,21 +2,20 @@ use super::*;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Factions {
-    pub black: Tribe,
-    pub white: Tribe,
+    pub cells: Tribe,
 }
 impl Factions {
-    pub fn has_a_set(&self, coord: Axial) -> bool {
-        self.black.is_set(coord) || self.white.is_set(coord)
-    }
+    // pub fn has_a_set(&self, coord: Axial) -> bool {
+    //     self.black.is_set(coord) || self.white.is_set(coord)
+    // }
 
-    pub fn has_a_set_type(&self, coord: Axial) -> Option<UnitType> {
-        if let Some(a) = self.black.try_get_type(coord) {
-            return Some(a);
-        }
+    // pub fn has_a_set_type(&self, coord: Axial) -> Option<UnitType> {
+    //     if let Some(a) = self.black.try_get_type(coord) {
+    //         return Some(a);
+    //     }
 
-        self.white.try_get_type(coord)
-    }
+    //     self.white.try_get_type(coord)
+    // }
 
     // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
     //     self.relative_mut(team)
@@ -27,30 +26,30 @@ impl Factions {
     // pub fn get_unit(&self, team: ActiveTeam, coord: Axial) -> &UnitData {
     //     self.relative(team).this_team.find_slow(&coord).unwrap()
     // }
-    pub fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
-        match team {
-            ActiveTeam::White => FactionRelative {
-                this_team: &mut self.white,
-                that_team: &mut self.black,
-            },
-            ActiveTeam::Black => FactionRelative {
-                this_team: &mut self.black,
-                that_team: &mut self.white,
-            },
-        }
-    }
-    pub fn relative(&self, team: ActiveTeam) -> FactionRelative<&Tribe> {
-        match team {
-            ActiveTeam::White => FactionRelative {
-                this_team: &self.white,
-                that_team: &self.black,
-            },
-            ActiveTeam::Black => FactionRelative {
-                this_team: &self.black,
-                that_team: &self.white,
-            },
-        }
-    }
+    // pub fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
+    //     match team {
+    //         ActiveTeam::White => FactionRelative {
+    //             this_team: &mut self.white,
+    //             that_team: &mut self.black,
+    //         },
+    //         ActiveTeam::Black => FactionRelative {
+    //             this_team: &mut self.black,
+    //             that_team: &mut self.white,
+    //         },
+    //     }
+    // }
+    // pub fn relative(&self, team: ActiveTeam) -> FactionRelative<&Tribe> {
+    //     match team {
+    //         ActiveTeam::White => FactionRelative {
+    //             this_team: &self.white,
+    //             that_team: &self.black,
+    //         },
+    //         ActiveTeam::Black => FactionRelative {
+    //             this_team: &self.black,
+    //             that_team: &self.white,
+    //         },
+    //     }
+    // }
 }
 
 #[must_use]
@@ -71,20 +70,20 @@ impl ActiveTeam {
     }
 }
 
-pub struct FactionRelative<T> {
-    pub this_team: T,
-    pub that_team: T,
-}
-impl FactionRelative<&mut Tribe> {
-    pub fn has_a_set(&self, coord: Axial) -> bool {
-        self.this_team.is_set(coord) || self.that_team.is_set(coord)
-    }
-}
-impl FactionRelative<&Tribe> {
-    pub fn has_a_set(&self, coord: Axial) -> bool {
-        self.this_team.is_set(coord) || self.that_team.is_set(coord)
-    }
-}
+// pub struct FactionRelative<T> {
+//     pub this_team: T,
+//     pub that_team: T,
+// }
+// impl FactionRelative<&mut Tribe> {
+//     pub fn has_a_set(&self, coord: Axial) -> bool {
+//         self.this_team.is_set(coord) || self.that_team.is_set(coord)
+//     }
+// }
+// impl FactionRelative<&Tribe> {
+//     pub fn has_a_set(&self, coord: Axial) -> bool {
+//         self.this_team.is_set(coord) || self.that_team.is_set(coord)
+//     }
+// }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Terrain {
@@ -178,113 +177,61 @@ impl Default for CellSelection {
     }
 }
 
-// #[derive(Hash, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
-// pub enum Type {
-//     Warrior,
-//     Archer,
-// }
-
-// impl Type {
-//     pub fn is_warrior(&self) -> bool {
-//         if let Type::Warrior { .. } = self {
-//             true
-//         } else {
-//             false
-//         }
-//     }
-//     pub fn is_archer(&self) -> bool {
-//         if let Type::Archer = self {
-//             true
-//         } else {
-//             false
-//         }
-//     }
-//     pub fn type_index(&self) -> usize {
-//         let a = self;
-//         match a {
-//             Type::Warrior { .. } => 0,
-//             Type::Archer => 1,
-//         }
-//     }
-// }
-
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub mouse: BitField,
-    pub rabbit: BitField,
+    pub cells: [BitField; 3],
+    pub team: BitField,
 }
 
 impl Tribe {
-    pub fn all_alloc(&self) -> BitField {
-        let mut j = self.mouse.clone();
-        j.union_with(&self.rabbit);
-        j
-    }
-    pub fn count_ones(&self) -> usize {
-        self.mouse.count_ones(..) + self.rabbit.count_ones(..)
-    }
-    pub fn iter_mesh(&self) -> impl Iterator<Item = Axial> + '_ {
-        self.mouse.iter_mesh().chain(self.rabbit.iter_mesh())
-    }
-    pub fn is_set(&self, a: Axial) -> bool {
-        self.mouse.is_set(a) || self.rabbit.is_set(a)
-    }
-
-    pub fn move_unit(&mut self, a: Axial, b: Axial) {
-        if self.mouse.is_set(a) {
-            self.mouse.set_coord(a, false);
-            self.mouse.set_coord(b, true);
-            return;
-        }
-        if self.rabbit.is_set(a) {
-            self.rabbit.set_coord(a, false);
-            self.rabbit.set_coord(b, true);
-            return;
-        }
-
-        unreachable!("Can't move")
-    }
-
-    pub fn get_mut(&mut self, a: UnitType) -> &mut BitField {
-        match a {
-            UnitType::Mouse => &mut self.mouse,
-            UnitType::Rabbit => &mut self.rabbit,
+    pub fn new() -> Tribe {
+        Tribe {
+            cells: [0; 3].map(|_| BitField::new()),
+            team: BitField::new(),
         }
     }
 
-    pub fn clear(&mut self, a: Axial) -> UnitType {
-        if self.mouse.is_set(a) {
-            self.mouse.set_coord(a, false);
-            return UnitType::Mouse;
-        }
-        if self.rabbit.is_set(a) {
-            self.rabbit.set_coord(a, false);
-            return UnitType::Rabbit;
-        }
-
-        unreachable!("coord isnt set in first place.")
+    pub fn remove(&mut self, a: Axial) {
+        self.cells[0].set_coord(a, false);
+        self.cells[1].set_coord(a, false);
+        self.cells[2].set_coord(a, false);
+        self.team.set_coord(a, false);
     }
-    pub fn try_get_type(&self, a: Axial) -> Option<UnitType> {
-        if self.mouse.is_set(a) {
-            return Some(UnitType::Mouse);
-        }
 
-        if self.rabbit.is_set(a) {
-            return Some(UnitType::Rabbit);
-        }
+    pub fn get_cell(&self, a: Axial) -> Option<(usize, ActiveTeam)> {
+        let bit0 = self.cells[0].is_set(a) as usize;
+        let bit1 = self.cells[1].is_set(a) as usize;
+        let bit2 = self.cells[2].is_set(a) as usize;
 
-        return None;
+        let val = bit0 | bit1 << 1 | bit2 << 2;
+        assert!(val <= 6);
+
+        if val == 0 {
+            return None;
+        }
+        let team = if self.team.is_set(a) {
+            ActiveTeam::White
+        } else {
+            ActiveTeam::Black
+        };
+        Some((val, team))
     }
-    pub fn get_type(&self, a: Axial) -> UnitType {
-        if self.mouse.is_set(a) {
-            return UnitType::Mouse;
-        }
 
-        if self.rabbit.is_set(a) {
-            return UnitType::Rabbit;
-        }
+    pub fn add_cell(&mut self, a: Axial, stack: usize, team: ActiveTeam) {
+        assert!(stack <= 6);
+        let bit2 = ((stack >> 2) & 1) != 0;
+        let bit1 = ((stack >> 1) & 1) != 0;
+        let bit0 = ((stack >> 0) & 1) != 0;
 
-        unreachable!("Could not find unit at position");
+        self.cells[0].set_coord(a, bit0);
+        self.cells[1].set_coord(a, bit1);
+        self.cells[2].set_coord(a, bit2);
+
+        if let ActiveTeam::White = team {
+            self.team.set_coord(a, true)
+        } else {
+            self.team.set_coord(a, false)
+        }
     }
 }
 

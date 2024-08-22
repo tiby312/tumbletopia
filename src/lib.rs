@@ -395,7 +395,6 @@ async fn render_command(
             }
         },
         ace::Command::GetMouseInputSelection { selection, grey } => {
-            
             get_mouse_input = Some(Some((selection, grey)));
         }
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
@@ -554,8 +553,6 @@ async fn render_command(
 
         draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
 
-        pub const LAND_OFFSET: f32 = -10.0;
-
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
@@ -563,7 +560,7 @@ async fn render_command(
         };
 
         draw_sys
-            .batch(world.land.iter_mesh().map(|e| grid_snap(e, LAND_OFFSET)))
+            .batch(world.land.iter_mesh().map(|e| grid_snap(e, 0.0)))
             .build(water);
 
         // {
@@ -706,81 +703,90 @@ async fn render_command(
             }
         }
 
-        let zzzz = -9.0;
-        {
-            // Draw shadows
-            let _d = DepthDisabler::new(ctx);
+        let zzzz = 0.0;
+        // {
+        //     // Draw shadows
+        //     let _d = DepthDisabler::new(ctx);
 
-            let shadows = game
-                .factions
-                .white
-                .iter_mesh()
-                .chain(game.factions.black.iter_mesh())
-                .map(|e| grid_snap(e, zzzz));
+        //     let shadows = game
+        //         .factions
+        //         .white
+        //         .iter_mesh()
+        //         .chain(game.factions.black.iter_mesh())
+        //         .map(|e| grid_snap(e, zzzz));
 
-            let ani_drop_shadow = unit_animation.as_ref().map(|a| {
-                let pos = a.0;
-                my_matrix
-                    .chain(matrix::translation(pos.x, pos.y, zzzz))
-                    .generate()
-            });
+        //     let ani_drop_shadow = unit_animation.as_ref().map(|a| {
+        //         let pos = a.0;
+        //         my_matrix
+        //             .chain(matrix::translation(pos.x, pos.y, zzzz))
+        //             .generate()
+        //     });
 
-            let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
+        //     let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
 
-            draw_sys.batch(all_shadows).build(drop_shadow);
+        //     draw_sys.batch(all_shadows).build(drop_shadow);
+        // }
+
+        // let zzzz = 0.0;
+        // let mut draw_unit_type =
+        //     |mytype: UnitType,
+        //      my_team: ActiveTeam,
+        //      foo: &BitField,
+        //      model: &Foo<TextureGpu, ModelGpu>| {
+        //         let color = foo.iter_mesh().map(|e| grid_snap(e, zzzz));
+
+        //         let ani = unit_animation
+        //             .as_ref()
+        //             .filter(|(pos, _, unit, ttt, _data)| {
+        //                 *ttt == mytype && team == my_team
+        //                 //foo.is_set(*unit)
+        //             })
+        //             .map(|(pos, _, unit, _, _data)| {
+        //                 my_matrix
+        //                     .chain(matrix::translation(pos.x, pos.y, zzzz))
+        //                     .chain(matrix::scale(1.0, 1.0, 1.0))
+        //                     .generate()
+        //             });
+
+        //         let k = color.chain(ani.into_iter());
+
+        //         draw_sys.batch(k).build(model)
+        //     };
+
+        //TODO pre-allocate
+        let mut white_team_cells = vec![];
+        let mut black_team_cells = vec![];
+
+        for a in world.get_game_cells().iter_mesh() {
+            if let Some((val, team2)) = game.factions.cells.get_cell(a) {
+                if let ActiveTeam::White = team2 {
+                    for k in 0..val {
+                        white_team_cells.push(grid_snap(a, k as f32 * 10.0));
+                    }
+                } else {
+                    for k in 0..val {
+                        black_team_cells.push(grid_snap(a, k as f32 * 10.0));
+                    }
+                }
+            }
         }
 
-        let zzzz = -10.0;
-        let mut draw_unit_type =
-            |mytype: UnitType,
-             my_team: ActiveTeam,
-             foo: &BitField,
-             model: &Foo<TextureGpu, ModelGpu>| {
-                let color = foo.iter_mesh().map(|e| grid_snap(e, zzzz));
+        draw_sys.batch(white_team_cells).build(&models.snow);
+        draw_sys.batch(black_team_cells).build(&models.grass);
 
-                let ani = unit_animation
-                    .as_ref()
-                    .filter(|(pos, _, unit, ttt, _data)| {
-                        *ttt == mytype && team == my_team
-                        //foo.is_set(*unit)
-                    })
-                    .map(|(pos, _, unit, _, _data)| {
-                        my_matrix
-                            .chain(matrix::translation(pos.x, pos.y, zzzz))
-                            .chain(matrix::scale(1.0, 1.0, 1.0))
-                            .generate()
-                    });
+        // draw_unit_type(
+        //     UnitType::Mouse,
+        //     ActiveTeam::White,
+        //     &game.factions.white.mouse,
+        //     &models.grass,
+        // );
 
-                let k = color.chain(ani.into_iter());
-
-                draw_sys.batch(k).build(model)
-            };
-
-        draw_unit_type(
-            UnitType::Mouse,
-            ActiveTeam::White,
-            &game.factions.white.mouse,
-            white_mouse,
-        );
-        draw_unit_type(
-            UnitType::Rabbit,
-            ActiveTeam::White,
-            &game.factions.white.rabbit,
-            white_rabbit,
-        );
-
-        draw_unit_type(
-            UnitType::Mouse,
-            ActiveTeam::Black,
-            &game.factions.black.mouse,
-            black_mouse,
-        );
-        draw_unit_type(
-            UnitType::Rabbit,
-            ActiveTeam::Black,
-            &game.factions.black.rabbit,
-            black_rabbit,
-        );
+        // draw_unit_type(
+        //     UnitType::Mouse,
+        //     ActiveTeam::Black,
+        //     &game.factions.black.mouse,
+        //     &models.snow,
+        // );
 
         // let d = DepthDisabler::new(ctx);
 
