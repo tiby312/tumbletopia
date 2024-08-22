@@ -191,6 +191,10 @@ impl Tribe {
         }
     }
 
+
+    
+
+
     pub fn remove(&mut self, a: Axial) {
         self.cells[0].set_coord(a, false);
         self.cells[1].set_coord(a, false);

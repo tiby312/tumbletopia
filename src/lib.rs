@@ -254,13 +254,13 @@ pub async fn worker_entry() {
                     .await
                     .apply(team, &mut game, &world);
 
-                let effect_a = kk
-                    .into_attack(the_move.attackto)
-                    .animate(team, &mut game, &world, &mut doop)
-                    .await
-                    .apply(team, &mut game, &world, &effect_m);
+                // let effect_a = kk
+                //     .into_attack(the_move.attackto)
+                //     .animate(team, &mut game, &world, &mut doop)
+                //     .await
+                //     .apply(team, &mut game, &world, &effect_m);
 
-                game_history.push((the_move, effect_m.combine(effect_a)));
+                game_history.push((the_move, effect_m));
 
                 continue;
             }
@@ -668,7 +668,7 @@ async fn render_command(
                 match selection {
                     CellSelection::MoveSelection(point, mesh, hh) => {
                         //console_dbg!("doo=",mesh);
-                        let cells = mesh.iter_mesh(*point).map(|e| {
+                        let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
                             let zzzz = 1.0;
 
                             grid_snap(e, zzzz)
@@ -761,11 +761,11 @@ async fn render_command(
             if let Some((val, team2)) = game.factions.cells.get_cell(a) {
                 if let ActiveTeam::White = team2 {
                     for k in 0..val {
-                        white_team_cells.push(grid_snap(a, k as f32 * 10.0));
+                        white_team_cells.push(grid_snap(a, k as f32 * 5.0));
                     }
                 } else {
                     for k in 0..val {
-                        black_team_cells.push(grid_snap(a, k as f32 * 10.0));
+                        black_team_cells.push(grid_snap(a, k as f32 * 5.0));
                     }
                 }
             }

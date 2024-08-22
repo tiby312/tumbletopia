@@ -138,7 +138,7 @@ impl WorkerManager {
         let Response::AiFinish(the_move) = data else {
             unreachable!();
         };
-        console_dbg!("woke up");
+        //console_dbg!("woke up");
         the_move
     }
 
@@ -167,13 +167,16 @@ impl WorkerManager {
     }
 }
 
+
+#[derive(Debug)]
 pub struct SelectType {
     coord: Axial,
     team: ActiveTeam,
 }
 
+#[derive(Debug)]
 pub enum LoopRes<T> {
-    EndTurn((moves::ActualMove, move_build::CombinedEffect)),
+    EndTurn((moves::ActualMove, move_build::MoveEffect)),
     Deselect,
     Undo,
     Select(T),
@@ -243,6 +246,8 @@ pub async fn reselect_loop(
             return LoopRes::Undo;
         }
     };
+
+
     let target_cell = mouse_world;
 
     //This is the cell the user selected from the pool of available moves for the unit
@@ -250,7 +255,7 @@ pub async fn reselect_loop(
         unreachable!()
     };
 
-    let contains = ss.is_set(target_cell.sub(&unwrapped_selected_unit));
+    let contains = ss.is_set(target_cell);
 
     //If we just clicked on ourselves, just deselect.
     if target_cell == unwrapped_selected_unit && !contains {
@@ -294,35 +299,35 @@ pub async fn reselect_loop(
 
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
-    if let Some(e) = have_moved {
-        if unwrapped_selected_unit != e.the_move.moveto {
-            return LoopRes::Deselect;
-        }
-    }
+    // if let Some(e) = have_moved {
+    //     if unwrapped_selected_unit != e.the_move.moveto {
+    //         return LoopRes::Deselect;
+    //     }
+    // }
 
     //At this point all re-selecting of units based off of the input has occured.
     //We definately want to act on the action the user took on the selected unit.
 
-    if let Some(e) = have_moved.take() {
-        let meta = e
-            .the_move
-            .clone()
-            .into_attack(target_cell)
-            .animate(selected_unit.team, game, world, doop)
-            .await
-            .apply(selected_unit.team, game, world, &e.effect);
+    // if let Some(e) = have_moved.take() {
+    //     let meta = e
+    //         .the_move
+    //         .clone()
+    //         .into_attack(target_cell)
+    //         .animate(selected_unit.team, game, world, doop)
+    //         .await
+    //         .apply(selected_unit.team, game, world, &e.effect);
 
-        let effect = e.effect.combine(meta);
+    //     let effect = e.effect.combine(meta);
 
-        LoopRes::EndTurn((
-            moves::ActualMove {
-                original: e.the_move.original,
-                moveto: e.the_move.moveto,
-                attackto: target_cell,
-            },
-            effect,
-        ))
-    } else {
+    //     LoopRes::EndTurn((
+    //         moves::ActualMove {
+    //             original: e.the_move.original,
+    //             moveto: e.the_move.moveto,
+    //             attackto: target_cell,
+    //         },
+    //         effect,
+    //     ))
+    // } else {
         // assert!(game
         //     .factions
         //     .relative_mut(selected_unit.team)
@@ -342,15 +347,23 @@ pub async fn reselect_loop(
             .apply(selected_unit.team, game, world);
 
         {
-            *have_moved = Some(selection::HaveMoved {
-                the_move: mp,
+            LoopRes::EndTurn((
+                moves::ActualMove {
+                    original: mp.original,
+                    moveto: mp.moveto,
+                    attackto: target_cell,
+                },
                 effect,
-            });
-            selected_unit.coord = c;
-            selected_unit.team = team;
-            LoopRes::Select(selected_unit)
+            ))
+            // *have_moved = Some(selection::HaveMoved {
+            //     the_move: mp,
+            //     effect,
+            // });
+            // selected_unit.coord = c;
+            // selected_unit.team = team;
+            // LoopRes::Select(selected_unit)
         }
-    }
+    //}
 }
 
 pub fn game_init(world: &board::MyWorld) -> GameState {
@@ -445,13 +458,13 @@ pub async fn replay(
             .await
             .apply(team, &mut game, world);
 
-        let effect_a = kk
-            .into_attack(the_move.attackto)
-            .animate(team, &mut game, world, &mut doop)
-            .await
-            .apply(team, &mut game, world, &effect_m);
+        // let effect_a = kk
+        //     .into_attack(the_move.attackto)
+        //     .animate(team, &mut game, world, &mut doop)
+        //     .await
+        //     .apply(team, &mut game, world, &effect_m);
 
-        game_history.push((the_move, effect_m.combine(effect_a)));
+        game_history.push((the_move, effect_m));
     }
 
     if let Some(g) = game.game_is_over(world, team_gen.next().unwrap()) {
@@ -467,18 +480,18 @@ pub async fn handle_player(
     doop: &mut WorkerManager,
     team: ActiveTeam,
     move_log: &mut selection::MoveHistory,
-) -> (moves::ActualMove, move_build::CombinedEffect) {
+) -> (moves::ActualMove, move_build::MoveEffect) {
     let undo = |move_log: &mut selection::MoveHistory, game: &mut GameState| {
         log!("undoing turn!!!");
         assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
 
         let (a, e) = move_log.inner.pop().unwrap();
-        a.as_extra().undo(&e.extra_effect, game);
-        a.as_move().undo(team.not(), &e.move_effect, game);
+        //a.as_extra().undo(&e.extra_effect, game);
+        a.as_move().undo(team.not(), &e, game);
 
         let (a, e) = move_log.inner.pop().unwrap();
-        a.as_extra().undo(&e.extra_effect, game);
-        a.as_move().undo(team, &e.move_effect, game);
+        //a.as_extra().undo(&e.extra_effect, game);
+        a.as_move().undo(team, &e, game);
     };
 
     let mut extra_attack = None;
@@ -523,6 +536,7 @@ pub async fn handle_player(
             let res =
                 reselect_loop(doop, game, world, team, &mut extra_attack, selected_unit).await;
 
+            console_dbg!(res);
             let a = match res {
                 LoopRes::EndTurn(r) => {
                     return r;
