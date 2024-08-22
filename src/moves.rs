@@ -90,64 +90,61 @@ impl GameState {
         &unit: &Axial,
         team: ActiveTeam,
     ) -> SmallMesh {
-
         let game = self;
         let mut mesh = SmallMesh::new();
 
-        for ho in world.get_game_cells().iter_mesh(){
-            if let Some((val,tt))=self.factions.cells.get_cell(ho){
-                assert!(val>0);
-                if tt==team{
-                    let unit=ho;
-                    let mut num_friendlies_in_sight=0;
+        for ho in world.get_game_cells().iter_mesh() {
+            if let Some((val, tt)) = self.factions.cells.get_cell(ho) {
+                assert!(val > 0);
+                if tt == team {
+                    let unit = ho;
+                    let mut num_friendlies_in_sight = 0;
                     for h in hex::OFFSETS.into_iter() {
                         for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
                             let k = k.to_axial();
-                            if !world.get_game_cells().is_set(k){
+                            if !world.get_game_cells().is_set(k) {
                                 break;
                             }
 
-                            if let Some((_,b))=game.factions.cells.get_cell(k) {
-                                if b==tt{
-                                    num_friendlies_in_sight+=1;
+                            if let Some((_, b)) = game.factions.cells.get_cell(k) {
+                                if b == tt {
+                                    num_friendlies_in_sight += 1;
                                 }
 
                                 break;
                             }
 
-
                             mesh.add(k);
                         }
                     }
 
-                    if num_friendlies_in_sight>val{
+                    if num_friendlies_in_sight > val {
                         mesh.add(ho);
                     }
-                }else{
-                    let unit=ho;
-                    let mut num_friendlies_in_sight=0;
+                } else {
+                    let unit = ho;
+                    let mut num_friendlies_in_sight = 0;
 
                     for h in hex::OFFSETS.into_iter() {
                         for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
                             let k = k.to_axial();
-                            if !world.get_game_cells().is_set(k){
+                            if !world.get_game_cells().is_set(k) {
                                 break;
                             }
 
-                            if let Some((_,b))=game.factions.cells.get_cell(k) {
-                                if b==tt{
-                                    num_friendlies_in_sight+=1;
+                            if let Some((_, b)) = game.factions.cells.get_cell(k) {
+                                if b == team {
+                                    num_friendlies_in_sight += 1;
                                 }
 
                                 break;
                             }
 
-
-                            mesh.add(k);
+                            //mesh.add(k);
                         }
                     }
 
-                    if num_friendlies_in_sight>val{
+                    if num_friendlies_in_sight > val {
                         mesh.add(ho);
                     }
                 }

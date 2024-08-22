@@ -167,7 +167,6 @@ impl WorkerManager {
     }
 }
 
-
 #[derive(Debug)]
 pub struct SelectType {
     coord: Axial,
@@ -247,7 +246,6 @@ pub async fn reselect_loop(
         }
     };
 
-
     let target_cell = mouse_world;
 
     //This is the cell the user selected from the pool of available moves for the unit
@@ -299,11 +297,11 @@ pub async fn reselect_loop(
 
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
-    // if let Some(e) = have_moved {
-    //     if unwrapped_selected_unit != e.the_move.moveto {
-    //         return LoopRes::Deselect;
-    //     }
-    // }
+    if let Some(e) = have_moved {
+        if unwrapped_selected_unit != e.the_move.moveto {
+            return LoopRes::Deselect;
+        }
+    }
 
     //At this point all re-selecting of units based off of the input has occured.
     //We definately want to act on the action the user took on the selected unit.
@@ -328,41 +326,41 @@ pub async fn reselect_loop(
     //         effect,
     //     ))
     // } else {
-        // assert!(game
-        //     .factions
-        //     .relative_mut(selected_unit.team)
-        //     .this_team
-        //     .is_set(unwrapped_selected_unit));
+    // assert!(game
+    //     .factions
+    //     .relative_mut(selected_unit.team)
+    //     .this_team
+    //     .is_set(unwrapped_selected_unit));
 
-        let c = target_cell;
+    let c = target_cell;
 
-        let mp = move_build::MovePhase {
-            original: unwrapped_selected_unit,
-            moveto: target_cell,
-        };
+    let mp = move_build::MovePhase {
+        original: unwrapped_selected_unit,
+        moveto: target_cell,
+    };
 
-        let effect = mp
-            .animate(selected_unit.team, game, world, doop)
-            .await
-            .apply(selected_unit.team, game, world);
+    let effect = mp
+        .animate(selected_unit.team, game, world, doop)
+        .await
+        .apply(selected_unit.team, game, world);
 
-        {
-            LoopRes::EndTurn((
-                moves::ActualMove {
-                    original: mp.original,
-                    moveto: mp.moveto,
-                    attackto: target_cell,
-                },
-                effect,
-            ))
-            // *have_moved = Some(selection::HaveMoved {
-            //     the_move: mp,
-            //     effect,
-            // });
-            // selected_unit.coord = c;
-            // selected_unit.team = team;
-            // LoopRes::Select(selected_unit)
-        }
+    {
+        LoopRes::EndTurn((
+            moves::ActualMove {
+                original: mp.original,
+                moveto: mp.moveto,
+                attackto: target_cell,
+            },
+            effect,
+        ))
+        // *have_moved = Some(selection::HaveMoved {
+        //     the_move: mp,
+        //     effect,
+        // });
+        // selected_unit.coord = c;
+        // selected_unit.team = team;
+        // LoopRes::Select(selected_unit)
+    }
     //}
 }
 

@@ -669,7 +669,13 @@ async fn render_command(
                     CellSelection::MoveSelection(point, mesh, hh) => {
                         //console_dbg!("doo=",mesh);
                         let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
-                            let zzzz = 1.0;
+                            let zzzz = if let Some((val, b)) = game.factions.cells.get_cell(e) {
+                                val as f32 * 10.0
+                            } else {
+                                1.0
+                            };
+
+                            //let zzzz = 1.0;
 
                             grid_snap(e, zzzz)
                         });
