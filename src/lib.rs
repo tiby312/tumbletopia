@@ -509,6 +509,9 @@ async fn render_command(
 
         *last_matrix = my_matrix;
 
+        let lll = my_matrix.generate(); //matrix::scale(0.0, 0.0, 0.0).generate();
+        let projjj = lll.as_ref();
+
         let mouse_world =
             scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
@@ -556,12 +559,12 @@ async fn render_command(
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
-            my_matrix.chain(t).generate()
+            t.generate()
         };
 
         draw_sys
             .batch(world.land.iter_mesh().map(|e| grid_snap(e, 0.0)))
-            .build(water);
+            .build(water, &projjj);
 
         // {
         //     //Draw grass
@@ -685,7 +688,7 @@ async fn render_command(
                             .batch(cells)
                             .no_lighting()
                             .grey(*grey)
-                            .build(select_model);
+                            .build(select_model, &projjj);
 
                         // if let Some(k) = hh {
                         //     if k.the_move
@@ -779,8 +782,12 @@ async fn render_command(
             }
         }
 
-        draw_sys.batch(white_team_cells).build(&models.snow);
-        draw_sys.batch(black_team_cells).build(&models.grass);
+        draw_sys
+            .batch(white_team_cells)
+            .build(&models.snow, &projjj);
+        draw_sys
+            .batch(black_team_cells)
+            .build(&models.grass, &projjj);
 
         // draw_unit_type(
         //     UnitType::Mouse,
@@ -830,14 +837,42 @@ pub struct BatchBuilder<'a, I> {
     grey: bool,
 }
 impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
-    pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>) {
+    pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>, my_matrix: &[f32; 16]) {
         let mmatrix: Vec<[f32; 16]> = (&mut self.ff)
             .map(|x| {
+                //let my_matrix:&Matrix4<f32>=my_matrix.into();
+                //let x = my_matrix.chain(x).generate();
+                //let x: &[f32; 16] = x.as_ref();
                 let x = x.generate();
                 let x: &[f32; 16] = x.as_ref();
                 *x
             })
             .collect();
+
+        // let uworlds: Vec<[f32; 16]> = (&mut self.ff)
+        //     .map(|x| {
+        //         let x = x.generate();
+        //         let x: &[f32; 16] = x.as_ref();
+        //         *x
+        //     })
+        //     .collect();
+
+        // let mmatrix: Vec<_> = uworlds
+        //     .iter()
+        //     .map(|x| {
+        //         let x: &Matrix4<f32> = x.into();
+        //         let my_matrix: &Matrix4<f32> = my_matrix.into();
+        //         let x = my_matrix.chain(*x).generate();
+        //         let x: &[f32; 16] = x.as_ref();
+        //         *x
+        //     })
+        //     .collect();
+
+        //if !uworlds.is_empty() {
+        use cgmath::One;
+        let j = Matrix4::<f32>::one();
+        let j = j.generate();
+        let x: &[f32; 16] = j.as_ref();
 
         self.sys.draw(
             &texture.model.res,
@@ -846,7 +881,9 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
             self.grey,
             false,
             self.lighting,
+            my_matrix,
         );
+        //}
     }
     pub fn grey(&mut self, grey: bool) -> &mut Self {
         self.grey = grey;
