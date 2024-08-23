@@ -663,6 +663,8 @@ async fn render_command(
         //     draw_sys.batch(all_fog).build(snow);
         // }
 
+        let cell_height = models.grass.height;
+
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
                 match selection {
@@ -670,7 +672,7 @@ async fn render_command(
                         //console_dbg!("doo=",mesh);
                         let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
                             let zzzz = if let Some((val, b)) = game.factions.cells.get_cell(e) {
-                                val as f32 * 10.0
+                                val as f32 * cell_height + 1.0
                             } else {
                                 1.0
                             };
@@ -767,11 +769,11 @@ async fn render_command(
             if let Some((val, team2)) = game.factions.cells.get_cell(a) {
                 if let ActiveTeam::White = team2 {
                     for k in 0..val {
-                        white_team_cells.push(grid_snap(a, k as f32 * 5.0));
+                        white_team_cells.push(grid_snap(a, k as f32 * cell_height));
                     }
                 } else {
                     for k in 0..val {
-                        black_team_cells.push(grid_snap(a, k as f32 * 5.0));
+                        black_team_cells.push(grid_snap(a, k as f32 * cell_height));
                     }
                 }
             }
@@ -959,6 +961,12 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             model_parse::Foo {
                 texture: model_parse::TextureGpu::new(&shader.ctx, &t),
                 model: model_parse::ModelGpu::new(shader, &data),
+                height: data
+                    .positions
+                    .iter()
+                    .map(|x| x[2])
+                    .max_by(|a, b| a.total_cmp(b))
+                    .unwrap(),
             }
         };
 
