@@ -101,6 +101,44 @@ impl GameState {
             world.get_game_cells().clone()
         };
 
+        struct EndPoints<T> {
+            inner: [T; 6],
+            num_first: usize,
+            second_start_index: usize,
+        }
+        impl<T> EndPoints<T> {
+            pub fn new() -> EndPoints<T>
+            where
+                T: Default,
+            {
+                EndPoints {
+                    inner: [0; 6].map(|_| std::default::Default::default()),
+                    num_first: 0,
+                    second_start_index: 6,
+                }
+            }
+            pub fn add_first(&mut self, a: T) {
+                self.inner[self.num_first] = a;
+                self.num_first += 1;
+            }
+            pub fn add_second(&mut self, a: T) {
+                self.second_start_index -= 1;
+                self.inner[self.second_start_index] = a;
+            }
+            pub fn first_len(&self) -> usize {
+                self.num_first
+            }
+            pub fn second_len(&self) -> usize {
+                6 - self.second_start_index
+            }
+            pub fn iter_first(&self) -> impl Iterator<Item = &T> {
+                self.inner[..self.num_first].iter()
+            }
+            pub fn iter_second(&self) -> impl Iterator<Item = &T> {
+                self.inner[self.second_start_index..].iter()
+            }
+        }
+
         let func = |unit: Axial, mesh: &mut SmallMesh, val: usize, team: ActiveTeam| {
             let for_ray = |unit: Axial, dir: [i8; 3]| {
                 unit.to_cube()
@@ -111,16 +149,16 @@ impl GameState {
                     })
                     .map(|x| x.to_axial())
             };
-            //TODO don't use vec
-            let mut friendly_end_points = Vec::new();
-            let mut enemy_end_points = Vec::new();
+            let mut endpoints = EndPoints::new();
             for h in hex::OFFSETS {
                 for k in for_ray(unit, h) {
                     if let Some((a, b)) = game.factions.cells.get_cell(k) {
                         if b == team {
-                            friendly_end_points.push((k, a))
+                            endpoints.add_first((k, a));
+                            //friendly_end_points.push((k, a))
                         } else {
-                            enemy_end_points.push((k, a))
+                            endpoints.add_second((k, a));
+                            //enemy_end_points.push((k, a))
                         }
 
                         break;
@@ -130,7 +168,7 @@ impl GameState {
                 }
             }
 
-            (friendly_end_points, enemy_end_points)
+            endpoints
         };
 
         let mut covered = SmallMesh::new();
@@ -140,18 +178,18 @@ impl GameState {
                 if let Some((val, tt)) = self.factions.cells.get_cell(ho) {
                     assert!(val > 0);
                     if tt == team {
-                        let (f1, e1) = func(ho, &mut mesh, val, team);
-                        if f1.len() > val {
+                        let fff = func(ho, &mut mesh, val, team);
+                        if fff.first_len() > val {
                             mesh.add(ho);
                         }
 
-                        for (ea, eval) in e1 {
+                        for &(ea, eval) in fff.iter_second() {
                             if !covered.is_set(ea) {
                                 let mut empty = SmallMesh::new();
 
-                                let (f1, e1) = func(ea, &mut empty, eval, team.not());
+                                let fff = func(ea, &mut empty, eval, team.not());
 
-                                if e1.len() > eval {
+                                if fff.second_len() > eval {
                                     mesh.add(ea);
                                 }
 
