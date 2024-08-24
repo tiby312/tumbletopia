@@ -94,16 +94,57 @@ impl GameState {
         let mut mesh = SmallMesh::new();
 
 
+        // fn check_a_unit(unit:Axial,val:usize,team:ActiveTeam,world:&board::MyWorld,game:&GameState,mut func:impl FnMut(Axial))->(usize,impl Iterator<Item=Axial>){
+        //     //let sm=SmallMesh::new();
+
+        //     let mut enemy_end_points:Vec<Axial>=Vec::new();
+        //     let mut num_friendlies_in_sight = 0;
+        //     for h in hex::OFFSETS.into_iter() {
+        //         for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
+        //             let k = k.to_axial();
+        //             if !world.get_game_cells().is_set(k) {
+        //                 break;
+        //             }
+
+        //             if let Some((a, b)) = game.factions.cells.get_cell(k) {
+        //                 if b == team {
+        //                     num_friendlies_in_sight += 1;
+        //                 }else{
+        //                     enemy_end_points.push(k);
+        //                 }
+
+        //                 break;
+        //             }
+
+        //             func(k)
+        //         }
+        //     }
+
+        //     // if num_friendlies_in_sight > val {
+        //     //     mesh.add(unit);
+        //     // }
+        //     (num_friendlies_in_sight,enemy_end_points.into_iter())
+
+        // }
+
+        fn iterate_out(){
+
+        }
+
+        let for_ray=|unit:Axial,dir:[i8;3]|{
+            unit.to_cube().ray_from_vector(hex::Cube::from_arr(dir)).take_while(|k|{
+                let k = k.to_axial();
+                world.get_game_cells().is_set(k)
+            }).map(|x|x.to_axial())
+        };
+
+
         let func=|unit:Axial,mesh:&mut SmallMesh,val:usize|{
             
             let mut num_friendlies_in_sight = 0;
             for h in hex::OFFSETS.into_iter() {
-                for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
-                    let k = k.to_axial();
-                    if !world.get_game_cells().is_set(k) {
-                        break;
-                    }
-
+                for k in for_ray(unit,h){
+                
                     if let Some((_, b)) = game.factions.cells.get_cell(k) {
                         if b == team {
                             num_friendlies_in_sight += 1;
@@ -123,12 +164,21 @@ impl GameState {
         };
 
 
-        if let Some(unit)=unit{
-            if let Some((val, tt)) = self.factions.cells.get_cell(unit) {
-                assert_eq!(tt,team);
-                func(unit,&mut mesh,val);
-            }
-        }else{
+        //if let Some(unit)=unit{
+            // let (val, tt) = self.factions.cells.get_cell(unit).unwrap();
+
+            // let (num_friendlies_in_sight,end)=check_a_unit(unit,val,team,world,self,|a|mesh.add(a));
+
+            // if num_friendlies_in_sight>val{
+            //     mesh.add(unit);
+            // }
+
+            // for e in end{
+
+            // }
+        
+        //}else
+        {
 
             for ho in world.get_game_cells().iter_mesh() {
                 if let Some((val, tt)) = self.factions.cells.get_cell(ho) {
