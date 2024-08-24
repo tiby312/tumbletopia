@@ -183,6 +183,7 @@ impl GameState {
                             mesh.add(ho);
                         }
 
+                        //Capture enemy
                         for &(ea, eval) in fff.iter_second() {
                             if !covered.is_set(ea) {
                                 let mut empty = SmallMesh::new();
@@ -196,6 +197,13 @@ impl GameState {
                                 covered.add(ea);
                             }
                         }
+
+                        //Re-enforce
+                        // for &(ea,eval) in fff.iter_second(){
+
+                        // }
+
+
                     } else {
                     }
                 }
