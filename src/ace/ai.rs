@@ -34,13 +34,12 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-
-        let mut influence=0;
+        let mut influence = 0;
         for unit in world.get_game_cells().iter_mesh() {
             if let Some((val, tt)) = view.factions.cells.get_cell(unit) {
                 assert!(val > 0);
 
-                let mut num_cells=0;
+                let mut num_cells = 0;
                 for h in hex::OFFSETS.into_iter() {
                     for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
                         let k = k.to_axial();
@@ -51,21 +50,19 @@ impl Evaluator {
                         if let Some((_, _)) = view.factions.cells.get_cell(k) {
                             break;
                         }
-                        num_cells+=1;
-
+                        num_cells += 1;
                     }
                 }
 
                 if tt == ActiveTeam::White {
-                    influence+=num_cells;
+                    influence += num_cells;
                 } else {
-                    influence-=num_cells;
+                    influence -= num_cells;
                 }
             }
         }
 
         influence
-
     }
 }
 
@@ -491,11 +488,7 @@ impl<'a> AlphaBeta<'a> {
             let mov = self.path.pop().unwrap();
             {
                 //let k = mov.as_extra();
-                move_build::MovePhase{moveto:mov.moveto}.undo(
-                    team,
-                    &effect,
-                    game_after_move,
-                );
+                move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game_after_move);
             }
 
             let keep_going = ab_iter.consider(&mov, eval);

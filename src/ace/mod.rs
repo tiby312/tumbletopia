@@ -227,9 +227,13 @@ pub async fn reselect_loop(
     // };
 
     // let cca = cca.unwrap_or_else(|| {
-    //    
+    //
     // });
-    let cca= game.generate_possible_moves_movement(world, Some(unwrapped_selected_unit), selected_unit.team);
+    let cca = game.generate_possible_moves_movement(
+        world,
+        Some(unwrapped_selected_unit),
+        selected_unit.team,
+    );
 
     let mut cell = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
 
