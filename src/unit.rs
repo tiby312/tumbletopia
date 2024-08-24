@@ -53,7 +53,7 @@ impl Factions {
 }
 
 #[must_use]
-#[derive(Serialize, Deserialize, Hash, Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Hash, Ord, PartialOrd, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ActiveTeam {
     White = 0,
     Black = 1,

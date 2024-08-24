@@ -227,7 +227,7 @@ impl ExtraPhase {
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
-    pub destroyed_unit: Option<(Axial, UnitType)>,
+    pub destroyed_unit: Option<(usize, ActiveTeam)>,
 }
 impl MoveEffect {
     pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
@@ -340,25 +340,11 @@ impl MovePhase {
         let moveto = self.moveto;
         let unit = self.original;
 
-        // state
-        //     .factions
-        //     .relative_mut(team_index)
-        //     .this_team
-        //     .move_unit(moveto, unit);
-
-        // if let Some((fooo, typ)) = effect.destroyed_unit {
-        //     matches!(effect.pushpull, PushInfo::None);
-        //     state
-        //         .factions
-        //         .relative_mut(team_index)
-        //         .that_team
-        //         .get_mut(typ)
-        //         .set_coord(moveto, true);
-
-        //     //let j = &mut state.factions.relative_mut(team_index).that_team.units;
-        //     assert_eq!(fooo, moveto);
-        //     //j.set_coord(moveto, true);
-        // }
+        if let Some((fooo, typ)) = effect.destroyed_unit {
+            state.factions.cells.add_cell(moveto, fooo, typ);
+        } else {
+            state.factions.cells.remove(moveto)
+        };
 
         // match effect.pushpull {
         //     PushInfo::UpgradedLand => {
@@ -433,12 +419,6 @@ impl MovePhase {
         let target_cell = self.moveto;
         let mut e = PushInfo::None;
 
-        let mut destroyed_unit = None;
-
-        // let this_unit=move |factions:&mut Factions|{
-        //     factions.relative_mut(team).this_team.units.iter_mut().find(|x|x.position==self.original).unwrap()
-        // };
-
         let mut stack_size = 0;
         for (i, h) in hex::OFFSETS.into_iter().enumerate() {
             for k in target_cell
@@ -460,6 +440,12 @@ impl MovePhase {
         }
 
         console_dbg!("Adding stacksize=", stack_size);
+
+        let destroyed_unit = if let Some((a, v)) = game.factions.cells.get_cell(target_cell) {
+            Some((a, v))
+        } else {
+            None
+        };
 
         game.factions.cells.add_cell(target_cell, stack_size, team);
 
