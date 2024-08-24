@@ -35,121 +35,136 @@ impl GameState {
     //         && game.factions.cats.find_slow(&a).is_none()
     // }
 
-    pub fn generate_possible_moves_extra(
-        &self,
-        world: &board::MyWorld,
-        foo: &move_build::MovePhase,
-        effect: &move_build::MoveEffect,
-        _team: ActiveTeam,
-    ) -> SmallMesh {
-        let game = self;
-        let unit = foo.moveto;
-        let original_pos = foo.original;
-        let mut mesh = SmallMesh::new();
+    // pub fn generate_possible_moves_extra(
+    //     &self,
+    //     world: &board::MyWorld,
+    //     foo: &move_build::MovePhase,
+    //     effect: &move_build::MoveEffect,
+    //     _team: ActiveTeam,
+    // ) -> SmallMesh {
+    //     let game = self;
+    //     let unit = foo.moveto;
+    //     let original_pos = foo.original;
+    //     let mut mesh = SmallMesh::new();
 
-        mesh.add(Axial::zero());
+    //     mesh.add(Axial::zero());
 
-        // if effect.destroyed_unit.is_some() {
-        //     mesh.add(Axial::zero())
-        // } else {
-        //     let tt = self.factions.has_a_set_type(unit).unwrap();
+    //     // if effect.destroyed_unit.is_some() {
+    //     //     mesh.add(Axial::zero())
+    //     // } else {
+    //     //     let tt = self.factions.has_a_set_type(unit).unwrap();
 
-        //     // match tt {
-        //     //     UnitType::Mouse => {
-        //     //         for a in unit.to_cube().neighbours2() {
-        //     //             let a = a.to_axial();
+    //     //     // match tt {
+    //     //     //     UnitType::Mouse => {
+    //     //     //         for a in unit.to_cube().neighbours2() {
+    //     //     //             let a = a.to_axial();
 
-        //     //             if a != unit
-        //     //                 && world.get_game_cells().is_set(a)
-        //     //                 && !game.factions.has_a_set(a)
-        //     //                 && !game.env.terrain.is_set(a)
-        //     //                 && !game.env.fog.is_set(a)
-        //     //             {
-        //     //                 mesh.add(a.sub(&unit));
+    //     //     //             if a != unit
+    //     //     //                 && world.get_game_cells().is_set(a)
+    //     //     //                 && !game.factions.has_a_set(a)
+    //     //     //                 && !game.env.terrain.is_set(a)
+    //     //     //                 && !game.env.fog.is_set(a)
+    //     //     //             {
+    //     //     //                 mesh.add(a.sub(&unit));
 
-        //     //                 // for a in a.to_cube().ring(1) {
-        //     //                 //     let a = a.to_axial();
+    //     //     //                 // for a in a.to_cube().ring(1) {
+    //     //     //                 //     let a = a.to_axial();
 
-        //     //                 //     if check_if_occ(a, true) {
-        //     //                 //         mesh.add(a.sub(&unit));
-        //     //                 //     }
-        //     //                 // }
-        //     //             }
-        //     //         }
-        //     //     }
-        //     //     UnitType::Rabbit => mesh.add(foo.original.sub(&unit)),
-        //     // }
-        //     mesh.add(foo.original.sub(&unit))
-        // }
-        mesh
-    }
+    //     //     //                 //     if check_if_occ(a, true) {
+    //     //     //                 //         mesh.add(a.sub(&unit));
+    //     //     //                 //     }
+    //     //     //                 // }
+    //     //     //             }
+    //     //     //         }
+    //     //     //     }
+    //     //     //     UnitType::Rabbit => mesh.add(foo.original.sub(&unit)),
+    //     //     // }
+    //     //     mesh.add(foo.original.sub(&unit))
+    //     // }
+    //     mesh
+    // }
 
     pub fn generate_possible_moves_movement(
         &self,
         world: &board::MyWorld,
-        &unit: &Axial,
+        unit: Option<Axial>,
         team: ActiveTeam,
     ) -> SmallMesh {
         let game = self;
         let mut mesh = SmallMesh::new();
 
-        for ho in world.get_game_cells().iter_mesh() {
-            if let Some((val, tt)) = self.factions.cells.get_cell(ho) {
-                assert!(val > 0);
-                if tt == team {
-                    let unit = ho;
-                    let mut num_friendlies_in_sight = 0;
-                    for h in hex::OFFSETS.into_iter() {
-                        for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
-                            let k = k.to_axial();
-                            if !world.get_game_cells().is_set(k) {
-                                break;
-                            }
 
-                            if let Some((_, b)) = game.factions.cells.get_cell(k) {
-                                if b == tt {
-                                    num_friendlies_in_sight += 1;
-                                }
+        let func=|unit:Axial,mesh:&mut SmallMesh,val:usize|{
+            
+            let mut num_friendlies_in_sight = 0;
+            for h in hex::OFFSETS.into_iter() {
+                for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
+                    let k = k.to_axial();
+                    if !world.get_game_cells().is_set(k) {
+                        break;
+                    }
 
-                                break;
-                            }
-
-                            mesh.add(k);
+                    if let Some((_, b)) = game.factions.cells.get_cell(k) {
+                        if b == team {
+                            num_friendlies_in_sight += 1;
                         }
+
+                        break;
                     }
 
-                    if num_friendlies_in_sight > val {
-                        mesh.add(ho);
-                    }
-                } else {
-                    let unit = ho;
-                    let mut num_friendlies_in_sight = 0;
+                    mesh.add(k);
+                }
+            }
 
-                    for h in hex::OFFSETS.into_iter() {
-                        for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
-                            let k = k.to_axial();
-                            if !world.get_game_cells().is_set(k) {
-                                break;
-                            }
+            if num_friendlies_in_sight > val {
+                mesh.add(unit);
+            }
 
-                            if let Some((_, b)) = game.factions.cells.get_cell(k) {
-                                if b == team {
-                                    num_friendlies_in_sight += 1;
+        };
+
+
+        if let Some(unit)=unit{
+            if let Some((val, tt)) = self.factions.cells.get_cell(unit) {
+                assert_eq!(tt,team);
+                func(unit,&mut mesh,val);
+            }
+        }else{
+
+            for ho in world.get_game_cells().iter_mesh() {
+                if let Some((val, tt)) = self.factions.cells.get_cell(ho) {
+                    assert!(val > 0);
+                    if tt == team {
+                        func(ho,&mut mesh,val);
+                    } else {
+                        let unit = ho;
+                        let mut num_friendlies_in_sight = 0;
+    
+                        for h in hex::OFFSETS.into_iter() {
+                            for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
+                                let k = k.to_axial();
+                                if !world.get_game_cells().is_set(k) {
+                                    break;
                                 }
-
-                                break;
+    
+                                if let Some((_, b)) = game.factions.cells.get_cell(k) {
+                                    if b == team {
+                                        num_friendlies_in_sight += 1;
+                                    }
+    
+                                    break;
+                                }
+    
                             }
-
-                            //mesh.add(k);
                         }
-                    }
-
-                    if num_friendlies_in_sight > val {
-                        mesh.add(ho);
+    
+                        if num_friendlies_in_sight > val {
+                            mesh.add(ho);
+                        }
                     }
                 }
             }
         }
+
 
         mesh
     }
@@ -194,9 +209,9 @@ fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 pub struct ActualMove {
-    pub original: Axial,
+    //pub original: Axial,
     pub moveto: Axial,
-    pub attackto: Axial,
+    //pub attackto: Axial,
 }
 
 impl GameState {
@@ -204,10 +219,28 @@ impl GameState {
         &mut self,
         team: ActiveTeam,
         world: &board::MyWorld,
-        mut func: impl FnMut(move_build::CombinedEffect, moves::ActualMove, &GameState),
+        mut func: impl FnMut(&move_build::MoveEffect, moves::ActualMove, &GameState),
     ) {
-        let state = self;
-        todo!();
+        //let state = self;
+
+        for mm in self.generate_possible_moves_movement(world, None, team).iter_mesh(Axial::zero()){
+            let mut mmm = move_build::MovePhase {
+                moveto: mm,
+            };
+
+            let mut effect = mmm.apply(team, self, world);
+
+            let mmo = moves::ActualMove {
+                moveto: mm,
+            };
+            
+            func(&effect,mmo,self);
+
+            mmm.undo(team,&effect,self);
+        }
+
+
+
         //let mut movs = Vec::new();
         //for i in 0..state.factions.relative(team).this_team.units.len() {
         // for pos in state.factions.relative(team).this_team.clone().iter_mesh() {

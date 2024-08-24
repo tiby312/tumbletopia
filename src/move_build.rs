@@ -2,16 +2,16 @@ use super::*;
 use crate::mesh::small_mesh::SmallMesh;
 
 impl crate::moves::ActualMove {
-    pub fn as_extra(&self) -> move_build::ExtraPhase {
-        move_build::ExtraPhase {
-            original: self.original,
-            moveto: self.moveto,
-            target: self.attackto,
-        }
-    }
+    // pub fn as_extra(&self) -> move_build::ExtraPhase {
+    //     move_build::ExtraPhase {
+    //         original: self.original,
+    //         moveto: self.moveto,
+    //         target: self.attackto,
+    //     }
+    // }
     pub fn as_move(&self) -> move_build::MovePhase {
         move_build::MovePhase {
-            original: self.original,
+            //original: self.original,
             moveto: self.moveto,
         }
     }
@@ -51,7 +51,7 @@ impl ExtraPhase {
         }
 
         MovePhase {
-            original: self.original,
+            //original: self.original,
             moveto: self.moveto,
         }
     }
@@ -240,17 +240,17 @@ impl MoveEffect {
 
 #[derive(Clone, Debug)]
 pub struct MovePhase {
-    pub original: Axial,
+    //pub original: Axial,
     pub moveto: Axial,
 }
 impl MovePhase {
-    pub fn into_attack(self, target: Axial) -> ExtraPhase {
-        ExtraPhase {
-            original: self.original,
-            moveto: self.moveto,
-            target,
-        }
-    }
+    // pub fn into_attack(self, target: Axial) -> ExtraPhase {
+    //     ExtraPhase {
+    //         original: self.original,
+    //         moveto: self.moveto,
+    //         target,
+    //     }
+    // }
     pub async fn animate(
         &self,
         team: ActiveTeam,
@@ -338,7 +338,7 @@ impl MovePhase {
 
     pub fn undo(&self, team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;
-        let unit = self.original;
+        //let unit = self.original;
 
         if let Some((fooo, typ)) = effect.destroyed_unit {
             state.factions.cells.add_cell(moveto, fooo, typ);
@@ -439,7 +439,7 @@ impl MovePhase {
             }
         }
 
-        console_dbg!("Adding stacksize=", stack_size);
+        //console_dbg!("Adding stacksize=", stack_size);
 
         let destroyed_unit = if let Some((a, v)) = game.factions.cells.get_cell(target_cell) {
             Some((a, v))

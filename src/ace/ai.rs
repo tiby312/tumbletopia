@@ -34,55 +34,38 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-        0
-        //todo!();
-        // let ship_allowed = {
-        //     let temp = &mut self.workspace;
-        //     temp.clear();
-        //     temp.union_with(&view.env.terrain.land);
-        //     temp.toggle_range(..);
-        //     temp.intersect_with(world.get_game_cells());
-        //     temp
-        // };
 
-        // let num_white = view.factions.white.count_ones() as i64;
-        // let num_black = view.factions.black.count_ones() as i64;
+        let mut influence=0;
+        for unit in world.get_game_cells().iter_mesh() {
+            if let Some((val, tt)) = view.factions.cells.get_cell(unit) {
+                assert!(val > 0);
 
-        // //TODO remove this allocation
-        // let mut white_influence = view.factions.white.all_alloc();
+                let mut num_cells=0;
+                for h in hex::OFFSETS.into_iter() {
+                    for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
+                        let k = k.to_axial();
+                        if !world.get_game_cells().is_set(k) {
+                            break;
+                        }
 
-        // let mut black_influence = view.factions.black.all_alloc();
+                        if let Some((_, _)) = view.factions.cells.get_cell(k) {
+                            break;
+                        }
+                        num_cells+=1;
 
-        // doop(
-        //     7,
-        //     &mut black_influence,
-        //     &mut white_influence,
-        //     &ship_allowed,
-        //     &mut self.workspace2,
-        //     &mut self.workspace3,
-        // );
+                    }
+                }
 
-        // let num_white_influence = white_influence.count_ones(..) as i64;
-        // let num_black_influence = black_influence.count_ones(..) as i64;
+                if tt == ActiveTeam::White {
+                    influence+=num_cells;
+                } else {
+                    influence-=num_cells;
+                }
+            }
+        }
 
-        // let black_distance = view
-        //     .factions
-        //     .black
-        //     .iter_mesh()
-        //     .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-        //     .sum::<i64>();
-        // let white_distance = view
-        //     .factions
-        //     .white
-        //     .iter_mesh()
-        //     .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-        //     .sum::<i64>();
+        influence
 
-        // //The AI will try to avoid the center.
-        // //The more influlence is at stake, the more precious each piece is
-        // (num_white_influence - num_black_influence) * 100
-        //     + (-white_distance + black_distance) * 1
-        //     + (num_white - num_black) * 2000
     }
 }
 
@@ -354,14 +337,14 @@ impl<'a> AlphaBeta<'a> {
         let mut moves = vec![];
 
         game_after_move.for_all_moves_fast(team, world, |e, m, stat| {
-            if e.move_effect.destroyed_unit.is_some() {
+            if e.destroyed_unit.is_some() {
                 quiet_position = false;
             }
 
             if depth < max_depth {
                 moves.push((m, stat.hash_me()));
             } else {
-                if e.move_effect.destroyed_unit.is_some() {
+                if e.destroyed_unit.is_some() {
                     moves.push((m, stat.hash_me()));
                 }
             }
@@ -486,11 +469,11 @@ impl<'a> AlphaBeta<'a> {
         for cand in moves {
             let effect = {
                 let j = cand.as_move();
-                let k = j.apply(team, game_after_move, world);
-                let j = j
-                    .into_attack(cand.attackto)
-                    .apply(team, game_after_move, world, &k);
-                k.combine(j)
+                j.apply(team, game_after_move, world)
+                // let j = j
+                //     .into_attack(cand.attackto)
+                //     .apply(team, game_after_move, world, &k);
+                // k.combine(j)
             };
 
             self.path.push(cand);
@@ -507,10 +490,10 @@ impl<'a> AlphaBeta<'a> {
 
             let mov = self.path.pop().unwrap();
             {
-                let k = mov.as_extra();
-                k.undo(&effect.extra_effect, game_after_move).undo(
+                //let k = mov.as_extra();
+                move_build::MovePhase{moveto:mov.moveto}.undo(
                     team,
-                    &effect.move_effect,
+                    &effect,
                     game_after_move,
                 );
             }

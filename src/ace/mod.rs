@@ -213,22 +213,23 @@ pub async fn reselect_loop(
         true
     };
 
-    let cca = if let Some(have_moved) = have_moved {
-        (selected_unit.coord == have_moved.the_move.moveto).then(|| {
-            game.generate_possible_moves_extra(
-                world,
-                &have_moved.the_move,
-                &have_moved.effect,
-                selected_unit.team,
-            )
-        })
-    } else {
-        None
-    };
+    // let cca = if let Some(have_moved) = have_moved {
+    //     (selected_unit.coord == have_moved.the_move.moveto).then(|| {
+    //         game.generate_possible_moves_extra(
+    //             world,
+    //             &have_moved.the_move,
+    //             &have_moved.effect,
+    //             selected_unit.team,
+    //         )
+    //     })
+    // } else {
+    //     None
+    // };
 
-    let cca = cca.unwrap_or_else(|| {
-        game.generate_possible_moves_movement(world, &unwrapped_selected_unit, selected_unit.team)
-    });
+    // let cca = cca.unwrap_or_else(|| {
+    //    
+    // });
+    let cca= game.generate_possible_moves_movement(world, Some(unwrapped_selected_unit), selected_unit.team);
 
     let mut cell = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
 
@@ -335,7 +336,7 @@ pub async fn reselect_loop(
     let c = target_cell;
 
     let mp = move_build::MovePhase {
-        original: unwrapped_selected_unit,
+        //original: unwrapped_selected_unit,
         moveto: target_cell,
     };
 
@@ -347,9 +348,9 @@ pub async fn reselect_loop(
     {
         LoopRes::EndTurn((
             moves::ActualMove {
-                original: mp.original,
+                //original: mp.original,
                 moveto: mp.moveto,
-                attackto: target_cell,
+                //attackto: target_cell,
             },
             effect,
         ))
