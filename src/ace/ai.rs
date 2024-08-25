@@ -184,7 +184,7 @@ pub fn iterative_deepening(
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
-    let max_iterative_depth = 4;
+    let num_iter = 6;
     //let max_depth = 2;
 
     let mut foo1 = TranspositionTable {
@@ -193,11 +193,12 @@ pub fn iterative_deepening(
     let mut evaluator = Evaluator::default();
 
     //TODO stop searching if we found a game ending move.
-    for depth in 1..max_iterative_depth {
+    for d in 0..num_iter {
+        let depth=d+1;
         console_dbg!("searching", depth);
 
         //TODO should this be outside the loop?
-        let mut k = KillerMoves::new(max_iterative_depth + 4 + 4);
+        let mut k = KillerMoves::new(num_iter + 4 + 4);
 
         let mut aaaa = ai::AlphaBeta {
             //table: &mut table,
