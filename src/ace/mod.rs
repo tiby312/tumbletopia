@@ -387,8 +387,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     //let fog=BitField::new();
 
     let mut cells = Tribe::new();
-    cells.add_cell(Axial::from_arr([1, 1]), 1, ActiveTeam::White);
-    cells.add_cell(Axial::from_arr([-1, -1]), 1, ActiveTeam::Black);
+    cells.add_cell(Axial::from_arr([2, 2]), 1, ActiveTeam::White);
+    cells.add_cell(Axial::from_arr([-2, -2]), 1, ActiveTeam::Black);
 
     let mut k = GameState {
         factions: Factions { cells },

@@ -199,8 +199,8 @@ impl GameState {
                         }
 
                         //Re-enforce
-                        for &(ea,eval) in fff.iter_first(){
-                            if !covered.is_set(ea){
+                        for &(ea, eval) in fff.iter_first() {
+                            if !covered.is_set(ea) {
                                 let mut empty = SmallMesh::new();
 
                                 let fff = func(ea, &mut empty, eval, team);
@@ -212,8 +212,6 @@ impl GameState {
                                 covered.add(ea);
                             }
                         }
-
-
                     } else {
                     }
                 }

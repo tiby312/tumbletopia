@@ -34,35 +34,89 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-        let mut influence = 0;
+        // let mut influence = 0;
+        let mut white_influence = BitField::new();
+        let mut black_influence = BitField::new();
+
         for unit in world.get_game_cells().iter_mesh() {
             if let Some((val, tt)) = view.factions.cells.get_cell(unit) {
-                assert!(val > 0);
-
-                let mut num_cells = 0;
-                for h in hex::OFFSETS.into_iter() {
-                    for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
-                        let k = k.to_axial();
-                        if !world.get_game_cells().is_set(k) {
-                            break;
-                        }
-
-                        if let Some((_, _)) = view.factions.cells.get_cell(k) {
-                            break;
-                        }
-                        num_cells += 1;
-                    }
-                }
-
                 if tt == ActiveTeam::White {
-                    influence += num_cells;
+                    white_influence.set_coord(unit, true);
                 } else {
-                    influence -= num_cells;
+                    black_influence.set_coord(unit, true);
                 }
+                // assert!(val > 0);
+
+                // let mut num_cells = 0;
+                // for h in hex::OFFSETS.into_iter() {
+                //     for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
+                //         let k = k.to_axial();
+                //         if !world.get_game_cells().is_set(k) {
+                //             break;
+                //         }
+
+                //         if let Some((_, _)) = view.factions.cells.get_cell(k) {
+                //             break;
+                //         }
+                //         num_cells += 1;
+                //     }
+                // }
+
+                // if tt == ActiveTeam::White {
+                //     influence += num_cells;
+                // } else {
+                //     influence -= num_cells;
+                // }
             }
         }
 
-        influence
+        // influence
+
+        let ship_allowed = {
+            let temp = &mut self.workspace;
+            temp.clear();
+            //temp.union_with(&view.env.terrain.land);
+            //temp.toggle_range(..);
+            temp.union_with(world.get_game_cells());
+            temp
+        };
+
+        // let num_white = view.factions.cells.team.count_ones() as i64;
+        // let num_black = view.factions.cells.tea.count_ones() as i64;
+
+        //TODO remove this allocation
+        // let mut white_influence = view.factions.white.all_alloc();
+
+        // let mut black_influence = view.factions.black.all_alloc();
+
+        doop(
+            7,
+            &mut black_influence,
+            &mut white_influence,
+            &ship_allowed,
+            &mut self.workspace2,
+            &mut self.workspace3,
+        );
+
+        let num_white_influence = white_influence.count_ones(..) as i64;
+        let num_black_influence = black_influence.count_ones(..) as i64;
+
+        // let black_distance = view
+        //     .factions
+        //     .black
+        //     .iter_mesh()
+        //     .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
+        //     .sum::<i64>();
+        // let white_distance = view
+        //     .factions
+        //     .white
+        //     .iter_mesh()
+        //     .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
+        //     .sum::<i64>();
+
+        //The AI will try to avoid the center.
+        //The more influlence is at stake, the more precious each piece is
+        (num_white_influence - num_black_influence) * 100
     }
 }
 
@@ -184,7 +238,7 @@ pub fn iterative_deepening(
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
-    let num_iter = 6;
+    let num_iter = 4;
     //let max_depth = 2;
 
     let mut foo1 = TranspositionTable {
@@ -194,7 +248,7 @@ pub fn iterative_deepening(
 
     //TODO stop searching if we found a game ending move.
     for d in 0..num_iter {
-        let depth=d+1;
+        let depth = d + 1;
         console_dbg!("searching", depth);
 
         //TODO should this be outside the loop?

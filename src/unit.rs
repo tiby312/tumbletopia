@@ -1,3 +1,5 @@
+use mesh::small_mesh::SmallMesh;
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
