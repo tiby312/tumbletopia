@@ -28,6 +28,7 @@ pub trait MyMatrix {
     }
 }
 
+#[derive(Copy,Clone,Debug)]
 pub struct Chain<A, B> {
     a: A,
     b: B,
@@ -83,6 +84,8 @@ pub fn perspective(field_of_view_rad: f32, aspect: f32, near: f32, far: f32) -> 
     }
 }
 
+
+#[derive(Copy,Clone,Debug)]
 pub struct Scale {
     pub tx: f32,
     pub ty: f32,
@@ -107,6 +110,7 @@ impl MyMatrix for Scale {
     }
 }
 
+#[derive(Copy,Clone,Debug)]
 pub struct XRot {
     pub angle_rad: f32,
 }
@@ -127,6 +131,7 @@ impl MyMatrix for XRot {
     }
 }
 
+#[derive(Copy,Clone,Debug)]
 pub struct YRot {
     pub angle_rad: f32,
 }
@@ -147,6 +152,7 @@ impl MyMatrix for YRot {
     }
 }
 
+#[derive(Copy,Clone,Debug)]
 pub struct ZRot {
     pub angle_rad: f32,
 }

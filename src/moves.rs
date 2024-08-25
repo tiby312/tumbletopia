@@ -179,9 +179,9 @@ impl GameState {
                     assert!(val > 0);
                     if tt == team {
                         let fff = func(ho, &mut mesh, val, team);
-                        if fff.first_len() > val {
-                            mesh.add(ho);
-                        }
+                        // if fff.first_len() > val {
+                        //     mesh.add(ho);
+                        // }
 
                         //Capture enemy
                         for &(ea, eval) in fff.iter_second() {
@@ -199,9 +199,19 @@ impl GameState {
                         }
 
                         //Re-enforce
-                        // for &(ea,eval) in fff.iter_second(){
+                        for &(ea,eval) in fff.iter_first(){
+                            if !covered.is_set(ea){
+                                let mut empty = SmallMesh::new();
 
-                        // }
+                                let fff = func(ea, &mut empty, eval, team);
+
+                                if fff.first_len() > eval {
+                                    mesh.add(ea);
+                                }
+
+                                covered.add(ea);
+                            }
+                        }
 
 
                     } else {

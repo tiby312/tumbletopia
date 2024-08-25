@@ -306,6 +306,7 @@ async fn render_command(
     >,
     engine_worker: &mut shogo::EngineWorker<DomToWorker, WorkerToDom>,
 ) -> ace::Response {
+    let mut x=0.0;
     let scroll_manager = &mut e.scroll_manager;
     let last_matrix = &mut e.last_matrix;
     let ctx = &e.ctx;
@@ -666,7 +667,7 @@ async fn render_command(
         //     draw_sys.batch(all_fog).build(snow);
         // }
 
-        let cell_height = models.grass.height;
+        let cell_height = models.snow.height;
 
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
@@ -768,10 +769,13 @@ async fn render_command(
         let mut white_team_cells = vec![];
         let mut black_team_cells = vec![];
 
+        x+=0.1;
         for a in world.get_game_cells().iter_mesh() {
             if let Some((val, team2)) = game.factions.cells.get_cell(a) {
+                //let jjj=matrix::scale(0.5,0.5,1.0).chain(matrix::translation(grid_matrix.spacing()/2.0,grid_matrix.spacing()/2.0,0.0));
                 if let ActiveTeam::White = team2 {
                     for k in 0..val {
+                        
                         white_team_cells.push(grid_snap(a, k as f32 * cell_height));
                     }
                 } else {
@@ -1018,8 +1022,8 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             black_mouse: quick_load(include_bytes!("../assets/black_mouse.glb"), RESIZE, None),
             white_rabbit: quick_load(include_bytes!("../assets/white_rabbit.glb"), RESIZE, None),
             black_rabbit: quick_load(include_bytes!("../assets/black_rabbit.glb"), RESIZE, None),
-            grass: quick_load(include_bytes!("../assets/hex-grass.glb"), RESIZE, None),
-            snow: quick_load(include_bytes!("../assets/snow.glb"), RESIZE, None),
+            grass: quick_load(include_bytes!("../assets/hex-black.glb"), RESIZE, None),
+            snow: quick_load(include_bytes!("../assets/hex-white.glb"), RESIZE, None),
             water: quick_load(include_bytes!("../assets/water.glb"), RESIZE, None),
             direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
             mountain: quick_load(include_bytes!("../assets/mountain.glb"), 1, None),
