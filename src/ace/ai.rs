@@ -47,7 +47,7 @@ impl Evaluator {
                 // }
                 assert!(val > 0);
 
-                let mut num_cells = 0;
+                let mut num_cells = 1;
                 'outer: for h in hex::OFFSETS.into_iter() {
                     let mut temp_num_cells = 0;
                     for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
@@ -69,9 +69,9 @@ impl Evaluator {
                 }
 
                 if tt == ActiveTeam::White {
-                    influence += num_cells;
+                    influence += num_cells*10+val as i64;
                 } else {
-                    influence -= num_cells;
+                    influence -= num_cells*10+val as i64;
                 }
             }
         }

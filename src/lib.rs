@@ -269,7 +269,7 @@ pub async fn worker_entry() {
             game_history.push(r);
 
             let mut e = ace::ai::Evaluator::default();
-            e.absolute_evaluate(&mut game, &world, true);
+            console_dbg!("current position:",e.absolute_evaluate(&mut game, &world, true));
         }
     };
 
