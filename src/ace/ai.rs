@@ -40,11 +40,7 @@ impl Evaluator {
 
         for unit in world.get_game_cells().iter_mesh() {
             if let Some((val, tt)) = view.factions.cells.get_cell(unit) {
-                // if tt == ActiveTeam::White {
-                //     white_influence.set_coord(unit, true);
-                // } else {
-                //     black_influence.set_coord(unit, true);
-                // }
+                
                 assert!(val > 0);
 
                 let mut num_cells = 1;
@@ -69,9 +65,9 @@ impl Evaluator {
                 }
 
                 if tt == ActiveTeam::White {
-                    influence += num_cells*10+val as i64;
+                    influence += num_cells*6+val as i64;
                 } else {
-                    influence -= num_cells*10+val as i64;
+                    influence -= num_cells*6+val as i64;
                 }
             }
         }
@@ -246,7 +242,7 @@ pub fn iterative_deepening(
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
-    let num_iter = 4;
+    let num_iter = 5;
     //let max_depth = 2;
 
     let mut foo1 = TranspositionTable {
