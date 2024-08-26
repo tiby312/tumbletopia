@@ -282,6 +282,12 @@ impl MovePhase {
         }
 
         let mut ss = state.clone();
+
+        // if let Some(_)=state.factions.cells.get_cell(self.moveto){
+        //     ss.factions.cells.remove(self.moveto);
+        // }
+
+        let mut stack = 0;
         for &(e, _) in endpoints.iter_first() {
             data.wait_animation(
                 animation::AnimationCommand::Movement {
@@ -292,6 +298,12 @@ impl MovePhase {
                 &mut ss,
             )
             .await;
+
+            stack += 1;
+            if let Some(_) = state.factions.cells.get_cell(self.moveto) {
+                ss.factions.cells.remove(self.moveto);
+            }
+            ss.factions.cells.add_cell(self.moveto, stack, team);
         }
 
         self
