@@ -349,30 +349,33 @@ async fn render_command(
             //return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
-            animation::AnimationCommand::Movement {
-                unit,
-                ttt,
-                end,
-                path,
-                data,
-            } => {
-                let ff = match data {
-                    move_build::PushInfo::PushedLand => {
-                        Some(animation::land_delta(unit, end, grid_matrix))
-                    }
-                    move_build::PushInfo::UpgradedLand => {
-                        todo!("BLAP");
-                    }
-                    move_build::PushInfo::PushedUnit => {
-                        todo!("BLAP");
-                    }
+            animation::AnimationCommand::Movement { unit, end } => {
+                // let ff = match data {
+                //     move_build::PushInfo::PushedLand => {
+                //         Some(animation::land_delta(unit, end, grid_matrix))
+                //     }
+                //     move_build::PushInfo::UpgradedLand => {
+                //         todo!("BLAP");
+                //     }
+                //     move_build::PushInfo::PushedUnit => {
+                //         todo!("BLAP");
+                //     }
 
-                    move_build::PushInfo::None => None,
+                //     move_build::PushInfo::None => None,
+                // };
+
+                let it = {
+                    let a = grid_matrix.hex_axial_to_world(&unit);
+                    let b = grid_matrix.hex_axial_to_world(&end);
+
+                    (0..100).map(move |c| {
+                        let counter = c as f32 / 100.0;
+                        use cgmath::VectorSpace;
+                        a.lerp(b, counter)
+                    })
                 };
 
-                let it = path.animation_iter(unit, grid_matrix);
-
-                unit_animation = Some((Vector2::new(0.0, 0.0), it, unit, ttt, ff));
+                unit_animation = Some((Vector2::new(0.0, 0.0), it, unit));
             }
             animation::AnimationCommand::Terrain {
                 pos,
@@ -537,7 +540,7 @@ async fn render_command(
                 return ace::Response::AnimationFinish;
             }
         }
-        if let Some((lpos, a, _, _, _data)) = &mut unit_animation {
+        if let Some((lpos, a, _)) = &mut unit_animation {
             if let Some(pos) = a.next() {
                 *lpos = pos;
             } else {
@@ -760,6 +763,15 @@ async fn render_command(
         //TODO pre-allocate
         let mut white_team_cells = vec![];
         let mut black_team_cells = vec![];
+
+        if let Some((pos, ..)) = &unit_animation {
+            let first = matrix::translation(pos.x, pos.y, 0.0).generate();
+            if team == ActiveTeam::White {
+                white_team_cells.push(first);
+            } else {
+                black_team_cells.push(first);
+            }
+        }
 
         x += 0.1;
         for a in world.get_game_cells().iter_mesh() {

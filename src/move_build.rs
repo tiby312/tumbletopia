@@ -258,81 +258,42 @@ impl MovePhase {
         world: &board::MyWorld,
         data: &mut ace::WorkerManager,
     ) -> &Self {
-        // let target = self.moveto;
-        // let paths = calculate_paths(self.original, self.moveto, state, world);
+        let for_ray = |unit: Axial, dir: [i8; 3]| {
+            unit.to_cube()
+                .ray_from_vector(hex::Cube::from_arr(dir))
+                .take_while(|k| {
+                    let k = k.to_axial();
+                    world.get_game_cells().is_set(k)
+                })
+                .map(|x| x.to_axial())
+        };
 
-        // assert!(state
-        //     .factions
-        //     .relative(team)
-        //     .this_team
-        //     .is_set(self.original));
+        let mut endpoints = moves::EndPoints::new();
+        for h in hex::OFFSETS {
+            for k in for_ray(self.moveto, h) {
+                if let Some((a, b)) = state.factions.cells.get_cell(k) {
+                    if b == team {
+                        endpoints.add_first((k, a));
+                    }
 
-        // let mesh = state.generate_possible_moves_movement(world, &self.original, team);
+                    break;
+                }
+            }
+        }
 
-        // let info = {
-        //     let target_cell = self.moveto;
-        //     let mut e = PushInfo::None;
+        let mut ss = state.clone();
+        for &(e, _) in endpoints.iter_first() {
+            data.wait_animation(
+                animation::AnimationCommand::Movement {
+                    unit: e,
+                    end: self.moveto,
+                },
+                team,
+                &mut ss,
+            )
+            .await;
+        }
 
-        //     if state.env.terrain.land.is_set(target_cell) {
-        //         e = PushInfo::PushedLand;
-        //     }
-
-        //     e
-        // };
-        // //let this_unit = state.factions.get_unit(team, this_unit);
-
-        // let mut ss = state.clone();
-
-        // let ttt = ss
-        //     .factions
-        //     .relative_mut(team)
-        //     .this_team
-        //     .clear(self.original);
-
-        // let end = target;
-        // match info {
-        //     PushInfo::PushedLand => {
-        //         let dir = self.original.dir_to(&end);
-        //         let k = self.original.advance(dir);
-        //         assert!(ss.env.terrain.land.is_set(k));
-        //         ss.env.terrain.land.set_coord(k, false);
-        //     }
-        //     PushInfo::UpgradedLand => {
-        //         //TODO fooo
-        //     }
-        //     PushInfo::PushedUnit => {
-        //         //TODO animate
-        //     }
-
-        //     PushInfo::None => {}
-        // }
-
-        // let capturing = state.factions.relative(team).that_team.is_set(end);
-        // if !capturing {
-        //     let path = mesh::path(
-        //         &mesh,
-        //         self.original,
-        //         self.moveto,
-        //         &paths,
-        //         state,
-        //         team,
-        //         world,
-        //         capturing,
-        //     );
-
-        //     data.wait_animation(
-        //         animation::AnimationCommand::Movement {
-        //             unit: self.original,
-        //             ttt,
-        //             path,
-        //             end,
-        //             data: info,
-        //         },
-        //         team,
-        //         &mut ss,
-        //     )
-        //     .await;
-        // }
         self
     }
 

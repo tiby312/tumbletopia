@@ -50,10 +50,7 @@ pub fn attack(
 pub enum AnimationCommand {
     Movement {
         unit: Axial,
-        ttt: UnitType,
         end: Axial,
-        path: mesh::MyPath,
-        data: PushInfo,
     },
     Terrain {
         pos: Axial,

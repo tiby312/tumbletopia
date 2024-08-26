@@ -4,6 +4,44 @@ use super::*;
 
 use crate::{hex::HDir, mesh::small_mesh::SmallMesh};
 
+pub struct EndPoints<T> {
+    inner: [T; 6],
+    num_first: usize,
+    second_start_index: usize,
+}
+impl<T> EndPoints<T> {
+    pub fn new() -> EndPoints<T>
+    where
+        T: Default,
+    {
+        EndPoints {
+            inner: [0; 6].map(|_| std::default::Default::default()),
+            num_first: 0,
+            second_start_index: 6,
+        }
+    }
+    pub fn add_first(&mut self, a: T) {
+        self.inner[self.num_first] = a;
+        self.num_first += 1;
+    }
+    pub fn add_second(&mut self, a: T) {
+        self.second_start_index -= 1;
+        self.inner[self.second_start_index] = a;
+    }
+    pub fn first_len(&self) -> usize {
+        self.num_first
+    }
+    pub fn second_len(&self) -> usize {
+        6 - self.second_start_index
+    }
+    pub fn iter_first(&self) -> impl Iterator<Item = &T> {
+        self.inner[..self.num_first].iter()
+    }
+    pub fn iter_second(&self) -> impl Iterator<Item = &T> {
+        self.inner[self.second_start_index..].iter()
+    }
+}
+
 impl GameState {
     // pub fn is_trap(&self, team: ActiveTeam, world: &board::MyWorld, check: Axial,typ:UnitType) -> bool {
     //     let k=match typ{
@@ -100,44 +138,6 @@ impl GameState {
         } else {
             world.get_game_cells().clone()
         };
-
-        struct EndPoints<T> {
-            inner: [T; 6],
-            num_first: usize,
-            second_start_index: usize,
-        }
-        impl<T> EndPoints<T> {
-            pub fn new() -> EndPoints<T>
-            where
-                T: Default,
-            {
-                EndPoints {
-                    inner: [0; 6].map(|_| std::default::Default::default()),
-                    num_first: 0,
-                    second_start_index: 6,
-                }
-            }
-            pub fn add_first(&mut self, a: T) {
-                self.inner[self.num_first] = a;
-                self.num_first += 1;
-            }
-            pub fn add_second(&mut self, a: T) {
-                self.second_start_index -= 1;
-                self.inner[self.second_start_index] = a;
-            }
-            pub fn first_len(&self) -> usize {
-                self.num_first
-            }
-            pub fn second_len(&self) -> usize {
-                6 - self.second_start_index
-            }
-            pub fn iter_first(&self) -> impl Iterator<Item = &T> {
-                self.inner[..self.num_first].iter()
-            }
-            pub fn iter_second(&self) -> impl Iterator<Item = &T> {
-                self.inner[self.second_start_index..].iter()
-            }
-        }
 
         let func = |unit: Axial, mesh: &mut SmallMesh, val: usize, team: ActiveTeam| {
             let for_ray = |unit: Axial, dir: [i8; 3]| {
