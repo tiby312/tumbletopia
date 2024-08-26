@@ -194,10 +194,10 @@ impl Tribe {
     }
 
     pub fn remove(&mut self, a: Axial) {
-        self.cells[0].set_coord(a,false);
-        self.cells[1].set_coord(a,false);
-        self.cells[2].set_coord(a,false);
-        self.team.set_coord(a,false);
+        self.cells[0].set_coord(a, false);
+        self.cells[1].set_coord(a, false);
+        self.cells[2].set_coord(a, false);
+        self.team.set_coord(a, false);
     }
 
     pub fn get_cell(&self, a: Axial) -> Option<(usize, ActiveTeam)> {
@@ -225,7 +225,6 @@ impl Tribe {
         let bit1 = ((stack >> 1) & 1) != 0;
         let bit0 = ((stack >> 0) & 1) != 0;
 
-        
         self.cells[0].set_coord(a, bit0);
         self.cells[1].set_coord(a, bit1);
         self.cells[2].set_coord(a, bit2);

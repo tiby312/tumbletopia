@@ -233,7 +233,7 @@ pub async fn worker_entry() {
                 console_dbg!("game:Sending ai command");
                 //let the_move = doop.wait_ai(team, &mut game).await;
                 console_dbg!("game:finished");
-                
+
                 let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
 
                 let kk = the_move.as_move();
@@ -258,7 +258,10 @@ pub async fn worker_entry() {
             game_history.push(r);
 
             let mut e = ace::ai::Evaluator::default();
-            console_dbg!("current position:",e.absolute_evaluate(&mut game, &world, true));
+            console_dbg!(
+                "current position:",
+                e.absolute_evaluate(&mut game, &world, true)
+            );
         }
     };
 

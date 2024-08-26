@@ -45,7 +45,9 @@ pub mod small_mesh {
         )
     }
 
-    #[derive(Hash,Serialize, Deserialize,Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
+    #[derive(
+        Hash, Serialize, Deserialize, Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone,
+    )]
     pub struct SmallMesh {
         pub inner: [u64; 4],
     }
@@ -84,10 +86,10 @@ pub mod small_mesh {
             self.inner[a] |= 1 << b;
             //self.inner |= 1 << ind;
         }
-        pub fn set_coord(&mut self,a:Axial,val:bool){
-            if val{
+        pub fn set_coord(&mut self, a: Axial, val: bool) {
+            if val {
                 self.add(a)
-            }else{
+            } else {
                 self.remove(a)
             }
         }

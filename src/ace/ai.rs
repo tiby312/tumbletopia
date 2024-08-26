@@ -40,10 +40,9 @@ impl Evaluator {
 
         for unit in world.get_game_cells().iter_mesh() {
             if let Some((val, tt)) = view.factions.cells.get_cell(unit) {
-                
                 assert!(val > 0);
 
-                let mut num_cells = 1;
+                let mut num_cells = 0;
                 'outer: for h in hex::OFFSETS.into_iter() {
                     let mut temp_num_cells = 0;
                     for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
@@ -65,9 +64,9 @@ impl Evaluator {
                 }
 
                 if tt == ActiveTeam::White {
-                    influence += num_cells*6+val as i64;
+                    influence += num_cells * 6 + val as i64;
                 } else {
-                    influence -= num_cells*6+val as i64;
+                    influence -= num_cells * 6 + val as i64;
                 }
             }
         }
@@ -280,7 +279,7 @@ pub fn iterative_deepening(
         );
         assert_eq!(&kk, game);
 
-        let Some(mov) = foo1.get(game).cloned() else{
+        let Some(mov) = foo1.get(game).cloned() else {
             console_dbg!("Couldnt find a move???");
             panic!("OVER");
         };
