@@ -181,23 +181,23 @@ impl Default for CellSelection {
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub cells: [BitField; 3],
-    pub team: BitField,
+    pub cells: [SmallMesh; 3],
+    pub team: SmallMesh,
 }
 
 impl Tribe {
     pub fn new() -> Tribe {
         Tribe {
-            cells: [0; 3].map(|_| BitField::new()),
-            team: BitField::new(),
+            cells: [0; 3].map(|_| SmallMesh::new()),
+            team: SmallMesh::new(),
         }
     }
 
     pub fn remove(&mut self, a: Axial) {
-        self.cells[0].set_coord(a, false);
-        self.cells[1].set_coord(a, false);
-        self.cells[2].set_coord(a, false);
-        self.team.set_coord(a, false);
+        self.cells[0].set_coord(a,false);
+        self.cells[1].set_coord(a,false);
+        self.cells[2].set_coord(a,false);
+        self.team.set_coord(a,false);
     }
 
     pub fn get_cell(&self, a: Axial) -> Option<(usize, ActiveTeam)> {
@@ -225,6 +225,7 @@ impl Tribe {
         let bit1 = ((stack >> 1) & 1) != 0;
         let bit0 = ((stack >> 0) & 1) != 0;
 
+        
         self.cells[0].set_coord(a, bit0);
         self.cells[1].set_coord(a, bit1);
         self.cells[2].set_coord(a, bit2);

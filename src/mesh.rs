@@ -13,6 +13,8 @@ pub mod small_mesh {
         })
     }
 
+    use serde::{Deserialize, Serialize};
+
     use crate::hex;
     use crate::hex::HDir;
     #[test]
@@ -43,7 +45,7 @@ pub mod small_mesh {
         )
     }
 
-    #[derive(Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
+    #[derive(Hash,Serialize, Deserialize,Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
     pub struct SmallMesh {
         pub inner: [u64; 4],
     }
@@ -81,6 +83,13 @@ pub mod small_mesh {
             let (a, b) = ind_to_foo(ind);
             self.inner[a] |= 1 << b;
             //self.inner |= 1 << ind;
+        }
+        pub fn set_coord(&mut self,a:Axial,val:bool){
+            if val{
+                self.add(a)
+            }else{
+                self.remove(a)
+            }
         }
         pub fn remove(&mut self, a: Axial) {
             assert!(Self::validate_rel(a));

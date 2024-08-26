@@ -242,7 +242,7 @@ pub fn iterative_deepening(
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
-    let num_iter = 5;
+    let num_iter = 3;
     //let max_depth = 2;
 
     let mut foo1 = TranspositionTable {
@@ -280,7 +280,10 @@ pub fn iterative_deepening(
         );
         assert_eq!(&kk, game);
 
-        let mov = foo1.get(game).cloned().unwrap();
+        let Some(mov) = foo1.get(game).cloned() else{
+            console_dbg!("Couldnt find a move???");
+            panic!("OVER");
+        };
         let res = EvalRet { mov, eval: res };
 
         let eval = res.eval;

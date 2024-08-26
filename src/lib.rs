@@ -230,22 +230,11 @@ pub async fn worker_entry() {
             };
 
             if foo {
-                //ai_worker.post_message(AiCommand{game:game.clone(),world:world.clone(),team});
                 console_dbg!("game:Sending ai command");
-                let the_move = doop.wait_ai(team, &mut game).await;
+                //let the_move = doop.wait_ai(team, &mut game).await;
                 console_dbg!("game:finished");
-                // use futures::FutureExt;
-                // let mut jj=game.clone();
-                // let k=futures::select!(
-                //     _ = doop.do_nothing( team, &mut jj).fuse()=>unreachable!(),
-                //     x = ai_response.next() => x
-                // );
-                // console_dbg!("GOT RESPONSEEEE");
-
-                //let k=ai_response.next().await;
-                //let the_move = k.unwrap().the_move;
-
-                //let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
+                
+                let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
 
                 let kk = the_move.as_move();
 
