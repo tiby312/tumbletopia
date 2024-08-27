@@ -63,6 +63,20 @@ pub mod small_mesh {
             }
             m
         }
+        pub fn count_ones(&self)->u32{
+            self.inner[0].count_ones()+
+            self.inner[1].count_ones()+
+            self.inner[2].count_ones()+
+            self.inner[3].count_ones()
+            
+        }
+        pub fn union_with(&mut self,other:&SmallMesh){
+            self.inner[0]|=other.inner[0];
+            self.inner[1]|=other.inner[1];
+            self.inner[2]|=other.inner[2];
+            self.inner[3]|=other.inner[3];
+            
+        }
 
         #[must_use]
         pub fn validate_rel(a: Axial) -> bool {

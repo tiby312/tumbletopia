@@ -30,48 +30,101 @@ impl Evaluator {
     //black minimizing
     pub fn absolute_evaluate(
         &mut self,
-        view: &GameState,
+        game: &GameState,
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-        let mut influence = 0;
-        //let mut white_influence = BitField::new();
-        //let mut black_influence = BitField::new();
+        let mut white_influence = SmallMesh::new();
+        let mut black_influence = SmallMesh::new();
 
-        for unit in world.get_game_cells().iter_mesh() {
-            if let Some((val, tt)) = view.factions.cells.get_cell(unit) {
-                assert!(val > 0);
 
-                let mut num_cells = 0;
-                'outer: for h in hex::OFFSETS.into_iter() {
-                    let mut temp_num_cells = 0;
-                    for k in unit.to_cube().ray_from_vector(hex::Cube::from_arr(h)) {
+        let func = |unit: Axial, mesh: &mut SmallMesh, team: ActiveTeam| {
+            let for_ray = |unit: Axial, dir: [i8; 3]| {
+                unit.to_cube()
+                    .ray_from_vector(hex::Cube::from_arr(dir))
+                    .take_while(|k| {
                         let k = k.to_axial();
-                        if !world.get_game_cells().is_set(k) {
-                            break;
+                        world.get_game_cells().is_set(k)
+                    })
+                    .map(|x| x.to_axial())
+            };
+            let mut endpoints = EndPoints::new();
+            for h in hex::OFFSETS {
+                for k in for_ray(unit, h) {
+                    if let Some((a, b)) = game.factions.cells.get_cell(k) {
+                        if b == team {
+                            endpoints.add_first((k, a));
+                            //friendly_end_points.push((k, a))
+                        } else {
+                            endpoints.add_second((k, a));
+                            //enemy_end_points.push((k, a))
                         }
 
-                        if let Some((_, tt2)) = view.factions.cells.get_cell(k) {
-                            if tt2 != tt {
-                                continue 'outer;
-                                //cancel out since both teams have line of sight on each other.
-                            }
-                            break;
-                        }
-                        temp_num_cells += 1;
+                        break;
                     }
-                    num_cells += temp_num_cells;
-                }
 
-                if tt == ActiveTeam::White {
-                    influence += num_cells * 6 + val as i64;
-                } else {
-                    influence -= num_cells * 6 + val as i64;
+                    mesh.add(k);
                 }
             }
+
+            endpoints
+        };
+
+        
+
+        let mut num_stack=0;
+
+        let mut influence=0;
+        for unit in world.get_game_cells().iter_mesh() {
+
+            let end_points = func(unit,&mut SmallMesh::new(),ActiveTeam::White);
+            let num_white=end_points.first_len();
+            let num_black=end_points.second_len();
+
+
+            let inf = if let Some((val, tt)) = game.factions.cells.get_cell(unit) {
+                if tt==ActiveTeam::White{
+                    num_stack+=val as i64;
+                }else{
+                    num_stack-=val as i64;
+                }
+                if tt==ActiveTeam::White{
+                    if num_black<=val{
+                        1
+                    }else{
+                        
+                        if num_white>num_black{
+                            1
+                        }else{
+                            -1
+                        }
+
+
+                    }
+                }else{
+                    if num_white<=val{
+                        -1
+                    }else{
+                        if num_black>num_white{
+                            1
+                        }else{
+                            -1
+                        }
+                    }
+                }
+            }else{
+                if num_white>num_black{
+                    1
+                }else if num_white<num_black{
+                    -1
+                }else{
+                    0
+                }
+            };
+            influence+=inf
         }
 
-        influence
+        influence*100+num_stack
 
         // influence
 
@@ -241,7 +294,7 @@ pub fn iterative_deepening(
     let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
-    let num_iter = 3;
+    let num_iter = 2;
     //let max_depth = 2;
 
     let mut foo1 = TranspositionTable {
@@ -564,6 +617,8 @@ impl<'a> AlphaBeta<'a> {
 }
 
 use abab::ABAB;
+use mesh::small_mesh::SmallMesh;
+use moves::EndPoints;
 mod abab {
     use super::*;
     #[derive(Clone)]

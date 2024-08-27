@@ -52,9 +52,9 @@ pub async fn worker_entry2() {
     let (mut worker, mut response) = worker::Worker::<AiCommand, AiResponse>::new();
 
     loop {
-        console_dbg!("worker:waiting");
+        console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
-        console_dbg!("worker:processing");
+        console_dbg!("worker:processing:",res.game.hash_me(),res.team);
         let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
         console_dbg!("worker:finished processing");
         worker.post_message(AiResponse { the_move });
@@ -230,11 +230,15 @@ pub async fn worker_entry() {
             };
 
             if foo {
+                console_dbg!("original game dbg=",game.hash_me(),team);
                 console_dbg!("game:Sending ai command");
-                //let the_move = doop.wait_ai(team, &mut game).await;
+                let the_move = doop.wait_ai(team, &mut game).await;
                 console_dbg!("game:finished");
 
-                let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
+
+                //let the_move2 = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
+                //assert_eq!(the_move,the_move2);
+
 
                 let kk = the_move.as_move();
 
@@ -765,7 +769,8 @@ async fn render_command(
         let mut black_team_cells = vec![];
 
         if let Some((pos, ..)) = &unit_animation {
-            let first = matrix::translation(pos.x, pos.y, 0.0).generate();
+            //Draw it a bit higher then static ones so there is no flickering
+            let first = matrix::translation(pos.x, pos.y, 1.0).generate();
             if team == ActiveTeam::White {
                 white_team_cells.push(first);
             } else {

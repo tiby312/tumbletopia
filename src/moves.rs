@@ -139,7 +139,7 @@ impl GameState {
             world.get_game_cells().clone()
         };
 
-        let func = |unit: Axial, mesh: &mut SmallMesh, val: usize, team: ActiveTeam| {
+        let func = |unit: Axial, mesh: &mut SmallMesh,team: ActiveTeam| {
             let for_ray = |unit: Axial, dir: [i8; 3]| {
                 unit.to_cube()
                     .ray_from_vector(hex::Cube::from_arr(dir))
@@ -178,7 +178,7 @@ impl GameState {
                 if let Some((val, tt)) = self.factions.cells.get_cell(ho) {
                     assert!(val > 0);
                     if tt == team {
-                        let fff = func(ho, &mut mesh, val, team);
+                        let fff = func(ho, &mut mesh, team);
                         // if fff.first_len() > val {
                         //     mesh.add(ho);
                         // }
@@ -188,7 +188,7 @@ impl GameState {
                             if !covered.is_set(ea) {
                                 let mut empty = SmallMesh::new();
 
-                                let fff = func(ea, &mut empty, eval, team.not());
+                                let fff = func(ea, &mut empty, team.not());
 
                                 if fff.second_len() > eval {
                                     mesh.add(ea);
@@ -203,7 +203,7 @@ impl GameState {
                             if !covered.is_set(ea) {
                                 let mut empty = SmallMesh::new();
 
-                                let fff = func(ea, &mut empty, eval, team);
+                                let fff = func(ea, &mut empty, team);
 
                                 if fff.first_len() > eval {
                                     mesh.add(ea);
