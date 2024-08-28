@@ -37,7 +37,6 @@ impl Evaluator {
         let mut white_influence = SmallMesh::new();
         let mut black_influence = SmallMesh::new();
 
-
         let func = |unit: Axial, mesh: &mut SmallMesh, team: ActiveTeam| {
             let for_ray = |unit: Axial, dir: [i8; 3]| {
                 unit.to_cube()
@@ -70,61 +69,54 @@ impl Evaluator {
             endpoints
         };
 
-        
+        let mut num_stack = 0;
 
-        let mut num_stack=0;
-
-        let mut influence=0;
+        let mut influence = 0;
         for unit in world.get_game_cells().iter_mesh() {
-
-            let end_points = func(unit,&mut SmallMesh::new(),ActiveTeam::White);
-            let num_white=end_points.first_len();
-            let num_black=end_points.second_len();
-
+            let end_points = func(unit, &mut SmallMesh::new(), ActiveTeam::White);
+            let num_white = end_points.first_len();
+            let num_black = end_points.second_len();
 
             let inf = if let Some((val, tt)) = game.factions.cells.get_cell(unit) {
-                if tt==ActiveTeam::White{
-                    num_stack+=val as i64;
-                }else{
-                    num_stack-=val as i64;
+                if tt == ActiveTeam::White {
+                    num_stack += val as i64;
+                } else {
+                    num_stack -= val as i64;
                 }
-                if tt==ActiveTeam::White{
-                    if num_black<=val{
+                if tt == ActiveTeam::White {
+                    if num_black <= val {
                         1
-                    }else{
-                        
-                        if num_white>num_black{
+                    } else {
+                        if num_white > num_black {
                             1
-                        }else{
+                        } else {
                             -1
                         }
-
-
                     }
-                }else{
-                    if num_white<=val{
+                } else {
+                    if num_white <= val {
                         -1
-                    }else{
-                        if num_black>num_white{
+                    } else {
+                        if num_black > num_white {
                             1
-                        }else{
+                        } else {
                             -1
                         }
                     }
                 }
-            }else{
-                if num_white>num_black{
+            } else {
+                if num_white > num_black {
                     1
-                }else if num_white<num_black{
+                } else if num_white < num_black {
                     -1
-                }else{
+                } else {
                     0
                 }
             };
-            influence+=inf
+            influence += inf
         }
 
-        influence*100+num_stack
+        influence * 100 + num_stack
 
         // influence
 
@@ -472,59 +464,48 @@ impl<'a> AlphaBeta<'a> {
 
         let mut num_sorted = 0;
 
-        for _ in 0..2 {
-            let ind = if team == ActiveTeam::White {
-                moves[num_sorted..]
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, x)| {
-                        if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-                            Some((i, k))
-                        } else {
-                            None
-                        }
-                    })
-                    .max_by_key(|&(_, x)| x)
-            } else {
-                moves[num_sorted..]
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, x)| {
-                        if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-                            Some((i, k))
-                        } else {
-                            None
-                        }
-                    })
-                    .min_by_key(|&(_, x)| x)
-            };
+        // for _ in 0..2 {
+        //     let ind = if team == ActiveTeam::White {
+        //         moves[num_sorted..]
+        //             .iter()
+        //             .enumerate()
+        //             .filter_map(|(i, x)| {
+        //                 if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
+        //                     Some((i, k))
+        //                 } else {
+        //                     None
+        //                 }
+        //             })
+        //             .max_by_key(|&(_, x)| x)
+        //     } else {
+        //         moves[num_sorted..]
+        //             .iter()
+        //             .enumerate()
+        //             .filter_map(|(i, x)| {
+        //                 if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
+        //                     Some((i, k))
+        //                 } else {
+        //                     None
+        //                 }
+        //             })
+        //             .min_by_key(|&(_, x)| x)
+        //     };
 
-            if let Some((ind, _)) = ind {
-                moves.swap(num_sorted + ind, num_sorted);
-                num_sorted += 1;
-            }
-        }
+        //     if let Some((ind, _)) = ind {
+        //         moves.swap(num_sorted + ind, num_sorted);
+        //         num_sorted += 1;
+        //     }
+        // }
 
-        for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
-            if let Some((x, _)) = moves[num_sorted..]
-                .iter()
-                .enumerate()
-                .find(|(_, x)| x.0 == *a)
-            {
-                moves.swap(num_sorted + x, num_sorted);
-                num_sorted += 1;
-            }
-        }
-
-        // if team==ActiveTeam::Dogs && num_sorted == 3{
-        //     console_dbg!(team,moves.iter().map(|&(_,x)|{
-        //         let mut num = None;
-        //         //self.path.push(x.clone());
-        //         if let Some((_, k)) = self.prev_cache.a.get(&x) {
-        //             num = Some(*k);
-        //         }
-        //         num
-        //     }).collect::<Vec<_>>());
+        // for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
+        //     if let Some((x, _)) = moves[num_sorted..]
+        //         .iter()
+        //         .enumerate()
+        //         .find(|(_, x)| x.0 == *a)
+        //     {
+        //         moves.swap(num_sorted + x, num_sorted);
+        //         num_sorted += 1;
+        //     }
         // }
 
         let moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();

@@ -47,6 +47,7 @@ features=[
 
 [profile.release]
 debug = true
+opt-level = 2
 
 
 [patch.crates-io]
@@ -54,4 +55,7 @@ shogo={path="../shogo"}
 
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-O1']
+wasm-opt = false
+
+# [package.metadata.wasm-pack.profile.release]
+# wasm-opt = ['-O1']

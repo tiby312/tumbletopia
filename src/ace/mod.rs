@@ -380,7 +380,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     // let black_rabbit = BitField::from_iter(&world.black_start()[a..]);
 
-    let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
+    //let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
     let mut fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x| x.ax));
     fog.intersect_with(&world.get_game_cells());
@@ -392,15 +392,15 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     let mut k = GameState {
         factions: Factions { cells },
-        env: Environment {
-            terrain: Terrain {
-                land: world.land.clone(),
-                forest: BitField::from_iter([] as [Axial; 0]),
-                mountain: BitField::from_iter([] as [Axial; 0]),
-            },
-            fog,
-            powerups: powerups.into_iter().map(Axial::from_arr).collect(),
-        },
+        // env: Environment {
+        //     terrain: Terrain {
+        //         land: world.land.clone(),
+        //         forest: BitField::from_iter([] as [Axial; 0]),
+        //         mountain: BitField::from_iter([] as [Axial; 0]),
+        //     },
+        //     fog,
+        //     powerups: powerups.into_iter().map(Axial::from_arr).collect(),
+        // },
     };
 
     // for a in k
@@ -412,7 +412,9 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     //     move_build::compute_fog(a, &mut k.env).apply(a, &mut k.env);
     // }
 
-    k
+    //k
+
+    serde_json::from_str("{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,36284020031488,2251799855628320,2080]},{\"inner\":[0,180163776572555264,36028797037838464,40]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,180143985497473024,38280596893466752,40]}}}}").unwrap()
 }
 
 pub mod share {

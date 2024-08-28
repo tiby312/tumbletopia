@@ -54,7 +54,7 @@ pub async fn worker_entry2() {
     loop {
         console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
-        console_dbg!("worker:processing:",res.game.hash_me(),res.team);
+        console_dbg!("worker:processing:", res.game.hash_me(), res.team);
         let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
         console_dbg!("worker:finished processing");
         worker.post_message(AiResponse { the_move });
@@ -207,7 +207,7 @@ pub async fn worker_entry() {
 
         let mut game_history = ace::selection::MoveHistory::new();
 
-        let mut team_gen = ActiveTeam::White.iter();
+        let mut team_gen = ActiveTeam::Black.iter();
 
         //doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
 
@@ -230,15 +230,13 @@ pub async fn worker_entry() {
             };
 
             if foo {
-                console_dbg!("original game dbg=",game.hash_me(),team);
+                console_dbg!("original game dbg=", game.hash_me(), team);
                 console_dbg!("game:Sending ai command");
                 let the_move = doop.wait_ai(team, &mut game).await;
                 console_dbg!("game:finished");
 
-
                 //let the_move2 = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
                 //assert_eq!(the_move,the_move2);
-
 
                 let kk = the_move.as_move();
 
@@ -261,9 +259,12 @@ pub async fn worker_entry() {
             let r = ace::handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
             game_history.push(r);
 
+            let stest = serde_json::to_string(&game).unwrap();
+            console_dbg!("FOOOO", stest);
+
             let mut e = ace::ai::Evaluator::default();
             console_dbg!(
-                "current position:",
+                "current position2:",
                 e.absolute_evaluate(&mut game, &world, true)
             );
         }
@@ -415,18 +416,7 @@ async fn render_command(
     };
 
     //TODO don't calculate 60 times a second?
-    let visible_water = {
-        let mut g = game.env.terrain.gen_all_terrain();
-        g.union_with(&game.env.fog);
-
-        g.toggle_range(..);
-
-        ace::ai::expand_mesh(&mut g, &mut BitField::new());
-
-        g.intersect_with(world.get_game_cells());
-
-        g
-    };
+    let visible_water = { world.get_game_cells() };
 
     loop {
         if poking == 1 {
@@ -554,7 +544,7 @@ async fn render_command(
 
         scroll_manager.step();
 
-        draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
+        draw_sys.draw_clear([0.4, 0.1, 0.1, 0.0]);
 
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);

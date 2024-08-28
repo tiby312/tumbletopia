@@ -116,7 +116,7 @@ pub struct Environment {
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
     pub factions: Factions,
-    pub env: Environment,
+    //pub env: Environment,
 }
 
 #[must_use]

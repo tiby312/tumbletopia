@@ -139,7 +139,7 @@ impl GameState {
             world.get_game_cells().clone()
         };
 
-        let func = |unit: Axial, mesh: &mut SmallMesh,team: ActiveTeam| {
+        let func = |unit: Axial, mesh: &mut SmallMesh, team: ActiveTeam| {
             let for_ray = |unit: Axial, dir: [i8; 3]| {
                 unit.to_cube()
                     .ray_from_vector(hex::Cube::from_arr(dir))

@@ -17,211 +17,211 @@ impl crate::moves::ActualMove {
     }
 }
 
-pub struct ExtraPhase {
-    pub original: Axial,
-    pub moveto: Axial,
-    pub target: Axial,
-}
-impl ExtraPhase {
-    pub fn undo(self, meta: &ExtraEffect, state: &mut GameState) -> MovePhase {
-        let moveto = self.moveto;
-        let unit = self.original;
-        let attackto = self.target;
+// pub struct ExtraPhase {
+//     pub original: Axial,
+//     pub moveto: Axial,
+//     pub target: Axial,
+// }
+// impl ExtraPhase {
+//     pub fn undo(self, meta: &ExtraEffect, state: &mut GameState) -> MovePhase {
+//         let moveto = self.moveto;
+//         let unit = self.original;
+//         let attackto = self.target;
 
-        for a in meta.fog.0.iter_mesh(moveto) {
-            assert!(!state.env.fog.is_set(a));
-            state.env.fog.set_coord(a, true);
-        }
+//         for a in meta.fog.0.iter_mesh(moveto) {
+//             assert!(!state.env.fog.is_set(a));
+//             state.env.fog.set_coord(a, true);
+//         }
 
-        if moveto != attackto {
-            if let Some(m) = &meta.bomb {
-                assert_eq!(unit, attackto);
-                assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 2);
-                for a in m.0.iter_mesh(unit) {
-                    assert!(state.env.terrain.land.is_set(a));
-                    state.env.terrain.land.set_coord(a, false);
-                }
-            } else if state.env.terrain.forest.is_set(attackto) {
-                state.env.terrain.forest.set_coord(attackto, false);
-            } else if state.env.terrain.land.is_set(attackto) {
-                state.env.terrain.land.set_coord(attackto, false);
-            } else {
-                unreachable!();
-            }
-        }
+//         if moveto != attackto {
+//             if let Some(m) = &meta.bomb {
+//                 assert_eq!(unit, attackto);
+//                 assert_eq!(unit.to_cube().dist(&moveto.to_cube()), 2);
+//                 for a in m.0.iter_mesh(unit) {
+//                     assert!(state.env.terrain.land.is_set(a));
+//                     state.env.terrain.land.set_coord(a, false);
+//                 }
+//             } else if state.env.terrain.forest.is_set(attackto) {
+//                 state.env.terrain.forest.set_coord(attackto, false);
+//             } else if state.env.terrain.land.is_set(attackto) {
+//                 state.env.terrain.land.set_coord(attackto, false);
+//             } else {
+//                 unreachable!();
+//             }
+//         }
 
-        MovePhase {
-            //original: self.original,
-            moveto: self.moveto,
-        }
-    }
-    //returns a mesh where set bits indicate cells
-    //that were fog before this function was called,
-    //and were then unfogged.
-    fn compute_bomb(&self, game: &GameState, world: &board::MyWorld) -> Option<BombInfo> {
-        // if self.target != self.original || self.original.to_cube().dist(&self.moveto.to_cube()) != 2
-        // {
-        //     return None;
-        // }
+//         MovePhase {
+//             //original: self.original,
+//             moveto: self.moveto,
+//         }
+//     }
+//     //returns a mesh where set bits indicate cells
+//     //that were fog before this function was called,
+//     //and were then unfogged.
+//     fn compute_bomb(&self, game: &GameState, world: &board::MyWorld) -> Option<BombInfo> {
+//         // if self.target != self.original || self.original.to_cube().dist(&self.moveto.to_cube()) != 2
+//         // {
+//         //     return None;
+//         // }
 
-        // let mut mesh = SmallMesh::new();
+//         // let mut mesh = SmallMesh::new();
 
-        // for a in self.original.to_cube().range(2).map(|a| a.to_axial()) {
-        //     if !world.get_game_cells().is_set(a) {
-        //         continue;
-        //     }
+//         // for a in self.original.to_cube().range(2).map(|a| a.to_axial()) {
+//         //     if !world.get_game_cells().is_set(a) {
+//         //         continue;
+//         //     }
 
-        //     if game.factions.has_a_set(a) {
-        //         continue;
-        //     }
+//         //     if game.factions.has_a_set(a) {
+//         //         continue;
+//         //     }
 
-        //     if game.env.terrain.is_set(a) {
-        //         continue;
-        //     }
+//         //     if game.env.terrain.is_set(a) {
+//         //         continue;
+//         //     }
 
-        //     if game.env.fog.is_set(a) {
-        //         continue;
-        //     }
+//         //     if game.env.fog.is_set(a) {
+//         //         continue;
+//         //     }
 
-        //     mesh.add(a.sub(&self.original));
-        // }
+//         //     mesh.add(a.sub(&self.original));
+//         // }
 
-        // Some(BombInfo(mesh))
-        return None;
-    }
+//         // Some(BombInfo(mesh))
+//         return None;
+//     }
 
-    pub fn apply(
-        &self,
-        _team: ActiveTeam,
-        game: &mut GameState,
-        world: &board::MyWorld,
-        mov_eff: &MoveEffect,
-    ) -> ExtraEffect {
-        let original = self.original;
-        let moveto = self.moveto;
-        let target_cell = self.target;
+//     pub fn apply(
+//         &self,
+//         _team: ActiveTeam,
+//         game: &mut GameState,
+//         world: &board::MyWorld,
+//         mov_eff: &MoveEffect,
+//     ) -> ExtraEffect {
+//         let original = self.original;
+//         let moveto = self.moveto;
+//         let target_cell = self.target;
 
-        if self.moveto == self.target {
-            let fog = compute_fog(moveto, &mut game.env);
+//         if self.moveto == self.target {
+//             let fog = compute_fog(moveto, &mut game.env);
 
-            fog.apply(moveto, &mut game.env);
+//             fog.apply(moveto, &mut game.env);
 
-            return ExtraEffect { fog, bomb: None };
-        }
+//             return ExtraEffect { fog, bomb: None };
+//         }
 
-        let bb = if let Some(bb) = self.compute_bomb(game, world) {
-            bb.apply(original, game);
-            Some(bb)
-        } else {
-            if !game.env.terrain.land.is_set(target_cell) {
-                game.env.terrain.land.set_coord(target_cell, true)
-            } else {
-                // if !env.forest.is_coord_set(target_cell) {
-                //     env.forest.set_coord(target_cell, true);
-                // }
-                unreachable!("WAT");
-            }
-            None
-        };
+//         let bb = if let Some(bb) = self.compute_bomb(game, world) {
+//             bb.apply(original, game);
+//             Some(bb)
+//         } else {
+//             if !game.env.terrain.land.is_set(target_cell) {
+//                 game.env.terrain.land.set_coord(target_cell, true)
+//             } else {
+//                 // if !env.forest.is_coord_set(target_cell) {
+//                 //     env.forest.set_coord(target_cell, true);
+//                 // }
+//                 unreachable!("WAT");
+//             }
+//             None
+//         };
 
-        // let bb = if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
-        //     //if false{
-        //     let bb = compute_bomb(original, game);
-        //     bb.apply(original, game);
-        //     Some(bb)
-        // } else {
-        //     if !game.env.land.is_coord_set(target_cell) {
-        //         game.env.land.set_coord(target_cell, true)
-        //     } else {
-        //         // if !env.forest.is_coord_set(target_cell) {
-        //         //     env.forest.set_coord(target_cell, true);
-        //         // }
-        //         unreachable!("WAT");
-        //     }
-        //     None
-        // };
+//         // let bb = if target_cell == original && original.to_cube().dist(&moveto.to_cube()) == 2 {
+//         //     //if false{
+//         //     let bb = compute_bomb(original, game);
+//         //     bb.apply(original, game);
+//         //     Some(bb)
+//         // } else {
+//         //     if !game.env.land.is_coord_set(target_cell) {
+//         //         game.env.land.set_coord(target_cell, true)
+//         //     } else {
+//         //         // if !env.forest.is_coord_set(target_cell) {
+//         //         //     env.forest.set_coord(target_cell, true);
+//         //         // }
+//         //         unreachable!("WAT");
+//         //     }
+//         //     None
+//         // };
 
-        let mut fog = compute_fog(moveto, &mut game.env);
+//         let mut fog = compute_fog(moveto, &mut game.env);
 
-        if let PushInfo::PushedUnit = mov_eff.pushpull {
-            let dir = original.dir_to(&moveto);
-            let check = moveto.advance(dir);
-            let fog2 = compute_fog(check, &mut game.env);
+//         if let PushInfo::PushedUnit = mov_eff.pushpull {
+//             let dir = original.dir_to(&moveto);
+//             let check = moveto.advance(dir);
+//             let fog2 = compute_fog(check, &mut game.env);
 
-            for f in fog2.0.iter_mesh(check) {
-                fog.0.add(f.sub(&moveto));
-            }
-        }
+//             for f in fog2.0.iter_mesh(check) {
+//                 fog.0.add(f.sub(&moveto));
+//             }
+//         }
 
-        fog.apply(moveto, &mut game.env);
+//         fog.apply(moveto, &mut game.env);
 
-        ExtraEffect { fog, bomb: bb }
-    }
+//         ExtraEffect { fog, bomb: bb }
+//     }
 
-    pub async fn animate(
-        &self,
-        team: ActiveTeam,
-        state: &GameState,
-        world: &board::MyWorld,
-        data: &mut ace::WorkerManager,
-    ) -> &Self {
-        // let target = self.target;
+//     pub async fn animate(
+//         &self,
+//         team: ActiveTeam,
+//         state: &GameState,
+//         world: &board::MyWorld,
+//         data: &mut ace::WorkerManager,
+//     ) -> &Self {
+//         // let target = self.target;
 
-        // let mut gg = state.clone();
+//         // let mut gg = state.clone();
 
-        // if let Some(bb) = self.compute_bomb(state, world) {
-        //     let k = self.original.to_cube();
-        //     for a in std::iter::once(k).chain(k.ring(1)).chain(k.ring(2)) {
-        //         if bb.0.is_set(a.sub(self.original.to_cube()).to_axial()) {
-        //             data.wait_animation(
-        //                 animation::AnimationCommand::Terrain {
-        //                     pos: a.to_axial(),
-        //                     terrain_type: animation::TerrainType::Grass,
-        //                     dir: animation::AnimationDirection::Up,
-        //                 },
-        //                 team,
-        //                 &mut gg,
-        //             )
-        //             .await;
-        //             gg.env.terrain.land.set_coord(a.to_axial(), true);
-        //         }
-        //     }
-        // } else {
-        //     data.wait_animation(
-        //         animation::AnimationCommand::Terrain {
-        //             pos: target,
-        //             terrain_type: animation::TerrainType::Grass,
-        //             dir: animation::AnimationDirection::Up,
-        //         },
-        //         team,
-        //         &mut gg,
-        //     )
-        //     .await;
+//         // if let Some(bb) = self.compute_bomb(state, world) {
+//         //     let k = self.original.to_cube();
+//         //     for a in std::iter::once(k).chain(k.ring(1)).chain(k.ring(2)) {
+//         //         if bb.0.is_set(a.sub(self.original.to_cube()).to_axial()) {
+//         //             data.wait_animation(
+//         //                 animation::AnimationCommand::Terrain {
+//         //                     pos: a.to_axial(),
+//         //                     terrain_type: animation::TerrainType::Grass,
+//         //                     dir: animation::AnimationDirection::Up,
+//         //                 },
+//         //                 team,
+//         //                 &mut gg,
+//         //             )
+//         //             .await;
+//         //             gg.env.terrain.land.set_coord(a.to_axial(), true);
+//         //         }
+//         //     }
+//         // } else {
+//         //     data.wait_animation(
+//         //         animation::AnimationCommand::Terrain {
+//         //             pos: target,
+//         //             terrain_type: animation::TerrainType::Grass,
+//         //             dir: animation::AnimationDirection::Up,
+//         //         },
+//         //         team,
+//         //         &mut gg,
+//         //     )
+//         //     .await;
 
-        //     gg.env.terrain.land.set_coord(target, true);
-        // }
+//         //     gg.env.terrain.land.set_coord(target, true);
+//         // }
 
-        // let fog = compute_fog(self.moveto, &state.env);
+//         // let fog = compute_fog(self.moveto, &state.env);
 
-        // //let mut game = state.clone();
-        // for a in fog.0.iter_mesh(self.moveto) {
-        //     gg.env.fog.set_coord(a, false);
-        //     // Change mesh
-        //     data.wait_animation(
-        //         animation::AnimationCommand::Terrain {
-        //             pos: a,
-        //             terrain_type: animation::TerrainType::Fog,
-        //             dir: animation::AnimationDirection::Down,
-        //         },
-        //         team,
-        //         &mut gg,
-        //     )
-        //     .await;
-        // }
+//         // //let mut game = state.clone();
+//         // for a in fog.0.iter_mesh(self.moveto) {
+//         //     gg.env.fog.set_coord(a, false);
+//         //     // Change mesh
+//         //     data.wait_animation(
+//         //         animation::AnimationCommand::Terrain {
+//         //             pos: a,
+//         //             terrain_type: animation::TerrainType::Fog,
+//         //             dir: animation::AnimationDirection::Down,
+//         //         },
+//         //         team,
+//         //         &mut gg,
+//         //     )
+//         //     .await;
+//         // }
 
-        self
-    }
-}
+//         self
+//     }
+// }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct MoveEffect {
@@ -230,12 +230,12 @@ pub struct MoveEffect {
     pub destroyed_unit: Option<(usize, ActiveTeam)>,
 }
 impl MoveEffect {
-    pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
-        CombinedEffect {
-            move_effect: self,
-            extra_effect,
-        }
-    }
+    // pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
+    //     CombinedEffect {
+    //         move_effect: self,
+    //         extra_effect,
+    //     }
+    // }
 }
 
 #[derive(Clone, Debug)]
@@ -388,7 +388,7 @@ impl MovePhase {
         game: &mut GameState,
         world: &board::MyWorld,
     ) -> MoveEffect {
-        let env = &mut game.env;
+        //let env = &mut game.env;
         let target_cell = self.moveto;
         let mut e = PushInfo::None;
 
@@ -445,27 +445,27 @@ pub enum PushInfo {
     None,
 }
 
-#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-pub struct CombinedEffect {
-    pub move_effect: MoveEffect,
-    pub extra_effect: ExtraEffect,
-}
+// #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+// pub struct CombinedEffect {
+//     pub move_effect: MoveEffect,
+//     pub extra_effect: ExtraEffect,
+// }
 
-#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-struct BombInfo(pub SmallMesh);
-impl BombInfo {
-    fn apply(&self, original: Axial, game: &mut GameState) {
-        for a in self.0.iter_mesh(Axial::zero()) {
-            game.env.terrain.land.set_coord(original.add(a), true);
-        }
-    }
-}
+// #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+// struct BombInfo(pub SmallMesh);
+// impl BombInfo {
+//     fn apply(&self, original: Axial, game: &mut GameState) {
+//         for a in self.0.iter_mesh(Axial::zero()) {
+//             game.env.terrain.land.set_coord(original.add(a), true);
+//         }
+//     }
+// }
 
-#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-pub struct ExtraEffect {
-    fog: FogInfo,
-    bomb: Option<BombInfo>,
-}
+// #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+// pub struct ExtraEffect {
+//     fog: FogInfo,
+//     bomb: Option<BombInfo>,
+// }
 
 #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct FogInfo(pub SmallMesh);
