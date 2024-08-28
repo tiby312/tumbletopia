@@ -568,7 +568,14 @@ impl<'a> AlphaBeta<'a> {
                 // k.combine(j)
             };
 
+
+
             self.path.push(cand);
+
+            if game_after_move.hash_me()==8680502445482342463{
+                console_dbg!("!!!!!!!");
+
+            }
             let eval = self.alpha_beta(
                 game_after_move,
                 world,
@@ -579,6 +586,11 @@ impl<'a> AlphaBeta<'a> {
                 ext,
                 evaluator,
             );
+
+
+            if game_after_move.hash_me()==8680502445482342463{
+                console_dbg!("CONSIDERING THIS STATE!!!!",depth,eval);
+            }
 
             let mov = self.path.pop().unwrap();
             {

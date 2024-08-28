@@ -52,11 +52,11 @@ pub async fn worker_entry2() {
     let (mut worker, mut response) = worker::Worker::<AiCommand, AiResponse>::new();
 
     loop {
-        console_dbg!("worker:waiting22222");
+        //console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
-        console_dbg!("worker:processing:", res.game.hash_me(), res.team);
+        //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
         let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
-        console_dbg!("worker:finished processing");
+        //console_dbg!("worker:finished processing");
         worker.post_message(AiResponse { the_move });
     }
 }
@@ -230,10 +230,10 @@ pub async fn worker_entry() {
             };
 
             if foo {
-                console_dbg!("original game dbg=", game.hash_me(), team);
-                console_dbg!("game:Sending ai command");
+                //console_dbg!("original game dbg=", game.hash_me(), team);
+                //console_dbg!("game:Sending ai command");
                 let the_move = doop.wait_ai(team, &mut game).await;
-                console_dbg!("game:finished");
+                //console_dbg!("game:finished");
 
                 //let the_move2 = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
                 //assert_eq!(the_move,the_move2);
@@ -260,13 +260,13 @@ pub async fn worker_entry() {
             game_history.push(r);
 
             let stest = serde_json::to_string(&game).unwrap();
-            console_dbg!("FOOOO", stest);
+            console_dbg!("Game after player move:", stest,game.hash_me());
 
             let mut e = ace::ai::Evaluator::default();
-            console_dbg!(
-                "current position2:",
-                e.absolute_evaluate(&mut game, &world, true)
-            );
+            // console_dbg!(
+            //     "current position2:",
+            //     e.absolute_evaluate(&mut game, &world, true)
+            // );
         }
     };
 
