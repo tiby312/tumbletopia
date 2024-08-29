@@ -179,9 +179,7 @@ impl GameState {
                     assert!(val > 0);
                     if tt == team {
                         let fff = func(ho, &mut mesh, team);
-                        // if fff.first_len() > val {
-                        //     mesh.add(ho);
-                        // }
+                        
 
                         //Capture enemy
                         for &(ea, eval) in fff.iter_second() {
