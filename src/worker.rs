@@ -168,7 +168,7 @@ impl<MW: 'static + for<'a> Deserialize<'a>, WM: Serialize> Worker<MW, WM> {
         let (bags, bagf) = futures::channel::mpsc::unbounded();
 
         let _handle = gloo::events::EventListener::new(&scope, "message", move |event| {
-            crate::console_dbg!("working got something");
+            //crate::console_dbg!("working got something");
             let event = event.dyn_ref::<web_sys::MessageEvent>().unwrap_throw();
             let data = event.data();
 

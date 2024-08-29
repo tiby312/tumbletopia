@@ -34,8 +34,7 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-        let mut white_influence = SmallMesh::new();
-        let mut black_influence = SmallMesh::new();
+
 
         let func = |unit: Axial, mesh: &mut SmallMesh, team: ActiveTeam| {
             let for_ray = |unit: Axial, dir: [i8; 3]| {
@@ -53,10 +52,8 @@ impl Evaluator {
                     if let Some((a, b)) = game.factions.cells.get_cell(k) {
                         if b == team {
                             endpoints.add_first((k, a));
-                            //friendly_end_points.push((k, a))
                         } else {
                             endpoints.add_second((k, a));
-                            //enemy_end_points.push((k, a))
                         }
 
                         break;
@@ -69,102 +66,49 @@ impl Evaluator {
             endpoints
         };
 
-        let mut num_stack = 0;
-
-        let mut influence = 0;
+        let mut score=0;
+        let mut stack_count=0;
+        let mut territory_count=0;
         for unit in world.get_game_cells().iter_mesh() {
             let end_points = func(unit, &mut SmallMesh::new(), ActiveTeam::White);
-            let num_white = end_points.first_len();
-            let num_black = end_points.second_len();
+            let num_white = end_points.first_len() as i64;
+            let num_black = end_points.second_len() as i64;
 
-            let inf = if let Some((val, tt)) = game.factions.cells.get_cell(unit) {
+            if let Some((val, tt)) = game.factions.cells.get_cell(unit) {
+                stack_count+=1;
+
+                let val=val as i64;
+                
                 if tt == ActiveTeam::White {
-                    num_stack += val as i64;
-                } else {
-                    num_stack -= val as i64;
-                }
-                if tt == ActiveTeam::White {
-                    if num_black <= val {
-                        1
-                    } else {
-                        if num_white > num_black {
-                            1
-                        } else {
-                            -1
-                        }
+                    if num_black>val{
+                        score-=1
+                    }else{
+                        score+=1
                     }
+                    
                 } else {
-                    if num_white <= val {
-                        -1
-                    } else {
-                        if num_black > num_white {
-                            1
-                        } else {
-                            -1
-                        }
+                    if num_white>val{
+                        score+=1
+                    }else{
+                        score-=1
                     }
                 }
             } else {
-                if num_white > num_black {
-                    1
-                } else if num_white < num_black {
-                    -1
-                } else {
-                    0
+
+                let ownership=num_white-num_black;
+                
+                if ownership>0{
+                    score+=ownership;
+                    territory_count+=1;
+                }else if ownership<0{
+                    score+=ownership;
+                    territory_count+=1;
                 }
             };
-            influence += inf
         }
 
-        influence * 100 + num_stack
+        (stack_count + territory_count) * score
 
-        // influence
-
-        // let ship_allowed = {
-        //     let temp = &mut self.workspace;
-        //     temp.clear();
-        //     //temp.union_with(&view.env.terrain.land);
-        //     //temp.toggle_range(..);
-        //     temp.union_with(world.get_game_cells());
-        //     temp
-        // };
-
-        // // let num_white = view.factions.cells.team.count_ones() as i64;
-        // // let num_black = view.factions.cells.tea.count_ones() as i64;
-
-        // //TODO remove this allocation
-        // // let mut white_influence = view.factions.white.all_alloc();
-
-        // // let mut black_influence = view.factions.black.all_alloc();
-
-        // doop(
-        //     7,
-        //     &mut black_influence,
-        //     &mut white_influence,
-        //     &ship_allowed,
-        //     &mut self.workspace2,
-        //     &mut self.workspace3,
-        // );
-
-        // let num_white_influence = white_influence.count_ones(..) as i64;
-        // let num_black_influence = black_influence.count_ones(..) as i64;
-
-        // // let black_distance = view
-        // //     .factions
-        // //     .black
-        // //     .iter_mesh()
-        // //     .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-        // //     .sum::<i64>();
-        // // let white_distance = view
-        // //     .factions
-        // //     .white
-        // //     .iter_mesh()
-        // //     .map(|a| a.to_cube().dist(&Axial::zero().to_cube()) as i64)
-        // //     .sum::<i64>();
-
-        // //The AI will try to avoid the center.
-        // //The more influlence is at stake, the more precious each piece is
-        // (num_white_influence - num_black_influence) * 100
     }
 }
 
@@ -295,8 +239,12 @@ pub fn iterative_deepening(
     let mut evaluator = Evaluator::default();
 
     //TODO stop searching if we found a game ending move.
-    for d in 0..num_iter {
-        let depth = d + 1;
+    for depth in [1,2,3,4] {
+
+    
+        //let depth=2;
+
+        //let depth = d + 1;
         console_dbg!("searching", depth);
 
         //TODO should this be outside the loop?
@@ -331,20 +279,20 @@ pub fn iterative_deepening(
         let res = EvalRet { mov, eval: res };
 
         let eval = res.eval;
-        console_dbg!(eval);
+        //console_dbg!(eval);
 
         results.push(res);
 
         if eval.abs() == MATE {
             console_dbg!("found a mate");
-            break;
+            //break;
         }
 
         //doop.poke(team, game.clone()).await;
     }
 
-    console_dbg!(count);
-    console_dbg!(&results);
+    //console_dbg!(count);
+    //console_dbg!(&results);
 
     let _target_eval = results.last().unwrap().eval;
     // let mov = if let Some(a) = results
@@ -360,10 +308,21 @@ pub fn iterative_deepening(
 
     let m = mov;
 
-    console_dbg!("AI MOVE::", m.mov, m.eval);
+    console_dbg!("AI evaluation::", m.mov, m.eval);
 
     m.mov.0
 }
+
+
+
+
+
+
+
+
+
+
+
 
 #[derive(Debug)]
 struct Counter {
@@ -411,6 +370,29 @@ impl KillerMoves {
     }
 }
 
+
+impl GameState{
+    pub fn evaluate_a_continuation(&self,world:&board::MyWorld,team_to_play:ActiveTeam,m:impl IntoIterator<Item=ActualMove>)->Eval{
+        let mut game=self.clone();
+        let mut team=team_to_play;
+        for cand in m{
+            {
+                let j = cand.as_move();
+                j.apply(team, &mut game, world)
+            };
+            team=team.not();
+
+            // {
+            //     move_build::MovePhase { moveto: cand.moveto }.undo(team, &effect, game);
+            // }
+        }
+
+        Evaluator::default().absolute_evaluate(&game, world, false)
+    }
+}
+
+
+
 #[derive(Debug, Clone)]
 struct EvalRet<T> {
     pub mov: T,
@@ -431,84 +413,163 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        if depth >= max_depth + 2 {
+        if depth >= max_depth {
+            if game_after_move.hash_me()==12916878750629778790{
+            console_dbg!("FOO",evaluator.absolute_evaluate(game_after_move, world, false));
+            }
             self.calls.add_eval();
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
 
-        let mut quiet_position = true;
+        //let mut quiet_position = true;
         let mut moves = vec![];
 
-        game_after_move.for_all_moves_fast(team, world, |e, m, stat| {
-            if e.destroyed_unit.is_some() {
-                quiet_position = false;
-            }
+        game_after_move.for_all_moves_fast(team, world, |m, stat| {
+            // if e.destroyed_unit.is_some() {
+            //     quiet_position = false;
+            // }
 
-            if depth < max_depth {
-                moves.push((m, stat.hash_me()));
-            } else {
-                if e.destroyed_unit.is_some() {
-                    moves.push((m, stat.hash_me()));
-                }
-            }
+            moves.push((m, stat.hash_me()));
+
+            // if depth < max_depth {
+            //     moves.push((m, stat.hash_me()));
+            // } else {
+            //     if e.destroyed_unit.is_some() {
+            //         moves.push((m, stat.hash_me()));
+            //     }
+            // }
         });
 
-        if depth >= max_depth && quiet_position {
-            self.calls.add_eval();
-            return evaluator.absolute_evaluate(game_after_move, world, false);
-        }
+        // if depth >= max_depth && quiet_position {
+        //     self.calls.add_eval();
+        //     return evaluator.absolute_evaluate(game_after_move, world, false);
+        // }
 
-        if moves.is_empty() && depth < max_depth {
+        if moves.is_empty()  {
             return evaluator.cant_move(team);
         }
 
         let mut num_sorted = 0;
 
-        // for _ in 0..2 {
-        //     let ind = if team == ActiveTeam::White {
-        //         moves[num_sorted..]
-        //             .iter()
-        //             .enumerate()
-        //             .filter_map(|(i, x)| {
-        //                 if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-        //                     Some((i, k))
-        //                 } else {
-        //                     None
-        //                 }
-        //             })
-        //             .max_by_key(|&(_, x)| x)
-        //     } else {
-        //         moves[num_sorted..]
-        //             .iter()
-        //             .enumerate()
-        //             .filter_map(|(i, x)| {
-        //                 if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-        //                     Some((i, k))
-        //                 } else {
-        //                     None
-        //                 }
-        //             })
-        //             .min_by_key(|&(_, x)| x)
-        //     };
+        for _ in 0..2 {
+            let ind = if team == ActiveTeam::White {
+                moves[num_sorted..]
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, x)| {
+                        if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
+                            Some((i, k))
+                        } else {
+                            None
+                        }
+                    })
+                    .max_by_key(|&(_, x)| x)
+            } else {
+                moves[num_sorted..]
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, x)| {
+                        if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
+                            Some((i, k))
+                        } else {
+                            None
+                        }
+                    })
+                    .min_by_key(|&(_, x)| x)
+            };
 
-        //     if let Some((ind, _)) = ind {
-        //         moves.swap(num_sorted + ind, num_sorted);
-        //         num_sorted += 1;
-        //     }
-        // }
+            if let Some((ind, _)) = ind {
+                moves.swap(num_sorted + ind, num_sorted);
+                num_sorted += 1;
+            }
+        }
 
-        // for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
-        //     if let Some((x, _)) = moves[num_sorted..]
-        //         .iter()
-        //         .enumerate()
-        //         .find(|(_, x)| x.0 == *a)
-        //     {
-        //         moves.swap(num_sorted + x, num_sorted);
-        //         num_sorted += 1;
-        //     }
-        // }
+        for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
+            if let Some((x, _)) = moves[num_sorted..]
+                .iter()
+                .enumerate()
+                .find(|(_, x)| x.0 == *a)
+            {
+                moves.swap(num_sorted + x, num_sorted);
+                num_sorted += 1;
+            }
+        }
 
         let moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
+
+
+        // let (eval,m)=if team==ActiveTeam::White{
+        //     let mut value=i64::MIN;
+        //     let mut best_move=None;
+        //     for cand in moves{
+        //         let effect = {
+        //             let j = cand.as_move();
+        //             j.apply(team, game_after_move, world)
+        //         };
+
+        //         self.path.push(cand.clone());
+
+        //         let eval = self.alpha_beta(
+        //             game_after_move,
+        //             world,
+        //             ab.clone(),
+        //             team.not(),
+        //             depth + 1,
+        //             max_depth,
+        //             ext,
+        //             evaluator,
+        //         );
+
+        //         if eval>value{
+        //             value=eval;
+        //             best_move=Some(cand);
+        //         }
+
+        //         let mov = self.path.pop().unwrap();
+        //         {
+        //             move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game_after_move);
+        //         }
+
+        //     }
+        //     (value,best_move)
+        // }else{
+
+        //     let mut value=i64::MAX;
+        //     let mut best_move=None;
+        //     for cand in moves{
+        //         let effect = {
+        //             let j = cand.as_move();
+        //             j.apply(team, game_after_move, world)
+        //         };
+
+        //         self.path.push(cand.clone());
+
+        //         let eval = self.alpha_beta(
+        //             game_after_move,
+        //             world,
+        //             ab.clone(),
+        //             team.not(),
+        //             depth + 1,
+        //             max_depth,
+        //             ext,
+        //             evaluator,
+        //         );
+
+        //         if eval<value{
+        //             value=eval;
+        //             best_move=Some(cand);
+        //         }
+
+        //         let mov = self.path.pop().unwrap();
+        //         {
+        //             move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game_after_move);
+        //         }
+
+        //     }
+        //     (value,best_move)
+
+        // };
+
 
         let (eval, m) = if team == ActiveTeam::White {
             self.floopy(
@@ -562,17 +623,13 @@ impl<'a> AlphaBeta<'a> {
             let effect = {
                 let j = cand.as_move();
                 j.apply(team, game_after_move, world)
-                // let j = j
-                //     .into_attack(cand.attackto)
-                //     .apply(team, game_after_move, world, &k);
-                // k.combine(j)
             };
 
 
 
             self.path.push(cand);
 
-            if game_after_move.hash_me()==8680502445482342463{
+            if game_after_move.hash_me()==12916878750629778790{
                 console_dbg!("!!!!!!!");
 
             }
@@ -588,7 +645,7 @@ impl<'a> AlphaBeta<'a> {
             );
 
 
-            if game_after_move.hash_me()==8680502445482342463{
+            if game_after_move.hash_me()==12916878750629778790{
                 console_dbg!("CONSIDERING THIS STATE!!!!",depth,eval);
             }
 

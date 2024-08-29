@@ -271,7 +271,7 @@ impl GameState {
         &mut self,
         team: ActiveTeam,
         world: &board::MyWorld,
-        mut func: impl FnMut(&move_build::MoveEffect, moves::ActualMove, &GameState),
+        mut func: impl FnMut(moves::ActualMove, &GameState),
     ) {
         //let state = self;
 
@@ -279,15 +279,15 @@ impl GameState {
             .generate_possible_moves_movement(world, None, team)
             .iter_mesh(Axial::zero())
         {
-            let mut mmm = move_build::MovePhase { moveto: mm };
+            // let mut mmm = move_build::MovePhase { moveto: mm };
 
-            let mut effect = mmm.apply(team, self, world);
+            // let mut effect = mmm.apply(team, self, world);
 
             let mmo = moves::ActualMove { moveto: mm };
 
-            func(&effect, mmo, self);
+            func( mmo, self);
 
-            mmm.undo(team, &effect, self);
+            //mmm.undo(team, &effect, self);
         }
 
         //let mut movs = Vec::new();

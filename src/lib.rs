@@ -168,7 +168,7 @@ pub async fn worker_entry() {
                     _ = aaa.fuse()=>unreachable!(),
                     x = ai_response.next() => x
                 );
-                console_dbg!("render:finished ai");
+                //console_dbg!("render:finished ai");
                 ace::Response::AiFinish(k.unwrap().the_move)
             } else {
                 render_command(
@@ -187,7 +187,7 @@ pub async fn worker_entry() {
                 .send(ace::GameWrap { game, data, team })
                 .await
                 .unwrap();
-            console_dbg!("send response!");
+            //console_dbg!("send response!");
         }
     };
 
@@ -253,6 +253,10 @@ pub async fn worker_entry() {
 
                 game_history.push((the_move, effect_m));
 
+                let mut e = ace::ai::Evaluator::default();
+                console_dbg!("Game after ai move:",game.hash_me(),e.absolute_evaluate(&mut game, &world, true));
+
+
                 continue;
             }
 
@@ -260,9 +264,10 @@ pub async fn worker_entry() {
             game_history.push(r);
 
             let stest = serde_json::to_string(&game).unwrap();
-            console_dbg!("Game after player move:", stest,game.hash_me());
 
             let mut e = ace::ai::Evaluator::default();
+            console_dbg!("Game after player move:", stest,game.hash_me(),e.absolute_evaluate(&mut game, &world, true));
+
             // console_dbg!(
             //     "current position2:",
             //     e.absolute_evaluate(&mut game, &world, true)
@@ -341,7 +346,7 @@ async fn render_command(
     let mut poking = 0;
 
     let mut waiting_engine_ack = false;
-    console_dbg!(command);
+    //console_dbg!(command);
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(WorkerToDom::HideUndo);

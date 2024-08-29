@@ -5,6 +5,7 @@ pub mod ai;
 pub mod selection;
 use crate::{CellSelection, GameState};
 
+use ai::Evaluator;
 use collision::primitive::Cube;
 use futures::{
     channel::mpsc::{Receiver, Sender},
@@ -390,7 +391,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     cells.add_cell(Axial::from_arr([1, 1]), 1, ActiveTeam::White);
     cells.add_cell(Axial::from_arr([-1, -1]), 1, ActiveTeam::Black);
 
-    let mut k = GameState {
+    let mut game = GameState {
         factions: Factions { cells },
         // env: Environment {
         //     terrain: Terrain {
@@ -403,18 +404,23 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         // },
     };
 
-    // for a in k
-    //     .factions
-    //     .white
-    //     .iter_mesh()
-    //     .chain(k.factions.black.iter_mesh())
-    // {
-    //     move_build::compute_fog(a, &mut k.env).apply(a, &mut k.env);
-    // }
+    
 
-    //k
+    let str="{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,180143985094819840,50332928,0]},{\"inner\":[0,0,0,0]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,0,50332672,0]}}}}";
+    // let str="{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,180146184520728576,36031270970459392,2048]},{\"inner\":[0,288247968337756160,2048,0]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,288247968606191616,2199073590272,0]}}}}";
+    let game:GameState=serde_json::from_str(str).unwrap();
 
-    serde_json::from_str("{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,36284020031488,2251799855628320,2080]},{\"inner\":[0,180163776572555264,36028797037838464,40]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,180143985497473024,38280596893466752,40]}}}}").unwrap()
+    let k=Evaluator::default().absolute_evaluate(&game, world,false);
+    console_dbg!("Current eval=",k);
+
+    // let variation1=game.evaluate_a_continuation(world, ActiveTeam::Black,[ActualMove{moveto:Axial{q:3,r:0}},ActualMove{moveto:Axial{q:3,r:0}}]);
+
+
+    // let variation2=game.evaluate_a_continuation(world, ActiveTeam::Black,[ActualMove{moveto:Axial{q:-7,r:0}},ActualMove{moveto:Axial{q:3,r:0}}]);
+
+    // console_dbg!(variation1,variation2);
+    game
+
 }
 
 pub mod share {
