@@ -43,84 +43,6 @@ impl<T> EndPoints<T> {
 }
 
 impl GameState {
-    // pub fn is_trap(&self, team: ActiveTeam, world: &board::MyWorld, check: Axial,typ:UnitType) -> bool {
-    //     let k=match typ{
-    //         UnitType::Mouse=>self.env.terrain.is_set(check),
-    //         UnitType::Rabbit=>!self.env.terrain.is_set(check) && world.get_game_cells().is_set(check)
-    //     };
-    //     //if you push an enemy unit into a wall, they die
-    //     //if you push an enemy off the map, they die
-    //     //if you push an enemy into one of your teamates they die
-    //     k
-    //         || self.factions.has_a_set(check)
-    //         || !world.get_game_cells().is_set(check)
-    // }
-
-    // fn check_if_occ(&self, world: &board::MyWorld, a: Axial, check_fog: bool) -> bool {
-    //     let game = self;
-    //     let is_world_cell = world.get_game_cells().is_coord_set(a);
-
-    //     let jjj = if check_fog {
-    //         !game.env.fog.is_coord_set(a)
-    //     } else {
-    //         true
-    //     };
-
-    //     is_world_cell
-    //         && !game.env.terrain.is_coord_set(a)
-    //         && jjj
-    //         && game.factions.dogs.find_slow(&a).is_none()
-    //         && game.factions.cats.find_slow(&a).is_none()
-    // }
-
-    // pub fn generate_possible_moves_extra(
-    //     &self,
-    //     world: &board::MyWorld,
-    //     foo: &move_build::MovePhase,
-    //     effect: &move_build::MoveEffect,
-    //     _team: ActiveTeam,
-    // ) -> SmallMesh {
-    //     let game = self;
-    //     let unit = foo.moveto;
-    //     let original_pos = foo.original;
-    //     let mut mesh = SmallMesh::new();
-
-    //     mesh.add(Axial::zero());
-
-    //     // if effect.destroyed_unit.is_some() {
-    //     //     mesh.add(Axial::zero())
-    //     // } else {
-    //     //     let tt = self.factions.has_a_set_type(unit).unwrap();
-
-    //     //     // match tt {
-    //     //     //     UnitType::Mouse => {
-    //     //     //         for a in unit.to_cube().neighbours2() {
-    //     //     //             let a = a.to_axial();
-
-    //     //     //             if a != unit
-    //     //     //                 && world.get_game_cells().is_set(a)
-    //     //     //                 && !game.factions.has_a_set(a)
-    //     //     //                 && !game.env.terrain.is_set(a)
-    //     //     //                 && !game.env.fog.is_set(a)
-    //     //     //             {
-    //     //     //                 mesh.add(a.sub(&unit));
-
-    //     //     //                 // for a in a.to_cube().ring(1) {
-    //     //     //                 //     let a = a.to_axial();
-
-    //     //     //                 //     if check_if_occ(a, true) {
-    //     //     //                 //         mesh.add(a.sub(&unit));
-    //     //     //                 //     }
-    //     //     //                 // }
-    //     //     //             }
-    //     //     //         }
-    //     //     //     }
-    //     //     //     UnitType::Rabbit => mesh.add(foo.original.sub(&unit)),
-    //     //     // }
-    //     //     mesh.add(foo.original.sub(&unit))
-    //     // }
-    //     mesh
-    // }
 
     pub fn generate_possible_moves_movement(
         &self,
@@ -131,13 +53,6 @@ impl GameState {
         let game = self;
         let mut mesh = SmallMesh::new();
 
-        // let units = if let Some(unit) = unit {
-        //     let mut k = BitField::new();
-        //     k.set_coord(unit, true);
-        //     k
-        // } else {
-        //     world.get_game_cells().clone()
-        // };
 
         let for_ray = |unit: Axial, dir: [i8; 3]| {
             unit.to_cube()
@@ -165,27 +80,6 @@ impl GameState {
             })
         };
 
-        // let func = |unit: Axial, mesh: &mut SmallMesh, team: ActiveTeam| {
-        //     let mut endpoints = EndPoints::new();
-
-        //     for h in hex::OFFSETS {
-        //         for k in for_ray(unit, h) {
-        //             if let Some((a, b)) = game.factions.cells.get_cell(k) {
-        //                 if b == team {
-        //                     endpoints.add_first((k, a));
-        //                 } else {
-        //                     endpoints.add_second((k, a));
-        //                 }
-
-        //                 break;
-        //             }
-
-        //             mesh.add(k);
-        //         }
-        //     }
-
-        //     endpoints
-        // };
 
         for pos in world.get_game_cells().iter_mesh() {
             let it = iter_end_points(pos, team);
@@ -193,7 +87,7 @@ impl GameState {
             let mut potential_height = 0;
             let mut num_enemy = 0;
             for (_, rest) in it {
-                if let Some((val, tt)) = rest {
+                if let Some((_, tt)) = rest {
                     if tt == team {
                         potential_height += 1;
                     } else {
@@ -218,60 +112,6 @@ impl GameState {
 
             mesh.add(pos);
         }
-
-        // let mut covered = SmallMesh::new();
-
-        // {
-        //     for ho in units.iter_mesh() {
-        //         if let Some((val, tt)) = self.factions.cells.get_cell(ho) {
-        //             assert!(val > 0);
-        //             if tt == team {
-        //                 for (pos, k) in iter_end_points(ho, team,&mut mesh) {
-        //                     if covered.is_set(pos) {
-        //                         continue;
-        //                     }
-        //                     covered.add(pos);
-        //                     if let Some((eval, tt2)) = k {
-        //                         if tt != tt2 {
-        //                             let mut empty = SmallMesh::new();
-
-        //                             let fff = func(pos, &mut empty, team.not());
-
-        //                             if fff.second_len() > eval {
-        //                                 mesh.add(pos);
-        //                             }
-        //                         } else {
-        //                             let mut empty = SmallMesh::new();
-
-        //                             let fff = func(pos, &mut empty, team);
-
-        //                             if fff.first_len() > eval {
-        //                                 mesh.add(pos);
-        //                             }
-        //                         }
-        //                     } else {
-        //                         let mut num_enemy = 0;
-        //                         let mut num_friendly = 0;
-        //                         for (_, rest) in iter_end_points(pos, team,&mut SmallMesh::new()) {
-        //                             if let Some((_, ttt)) = rest {
-        //                                 if ttt != team {
-        //                                     num_enemy += 1;
-        //                                 } else {
-        //                                     num_friendly += 1;
-        //                                 }
-        //                             }
-        //                         }
-
-        //                         //if num_friendly < num_enemy {
-        //                             mesh.remove(pos);
-        //                         //}
-        //                     }
-        //                 }
-        //             } else {
-        //             }
-        //         }
-        //     }
-        // }
 
         mesh
     }
