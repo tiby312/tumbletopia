@@ -34,8 +34,6 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-
-
         let func = |unit: Axial, mesh: &mut SmallMesh, team: ActiveTeam| {
             let for_ray = |unit: Axial, dir: [i8; 3]| {
                 unit.to_cube()
@@ -66,49 +64,46 @@ impl Evaluator {
             endpoints
         };
 
-        let mut score=0;
-        let mut stack_count=0;
-        let mut territory_count=0;
+        let mut score = 0;
+        let mut stack_count = 0;
+        let mut territory_count = 0;
         for unit in world.get_game_cells().iter_mesh() {
             let end_points = func(unit, &mut SmallMesh::new(), ActiveTeam::White);
             let num_white = end_points.first_len() as i64;
             let num_black = end_points.second_len() as i64;
 
             if let Some((val, tt)) = game.factions.cells.get_cell(unit) {
-                stack_count+=1;
+                stack_count += 1;
 
-                let val=val as i64;
-                
+                let val = val as i64;
+
                 if tt == ActiveTeam::White {
-                    if num_black>val{
-                        score-=1
-                    }else{
-                        score+=1
+                    if num_black > val {
+                        score -= 1
+                    } else {
+                        score += 1
                     }
-                    
                 } else {
-                    if num_white>val{
-                        score+=1
-                    }else{
-                        score-=1
+                    if num_white > val {
+                        score += 1
+                    } else {
+                        score -= 1
                     }
                 }
             } else {
+                let ownership = num_white - num_black;
 
-                let ownership=num_white-num_black;
-                
-                if ownership>0{
-                    score+=ownership;
-                    territory_count+=1;
-                }else if ownership<0{
-                    score+=ownership;
-                    territory_count+=1;
+                if ownership > 0 {
+                    score += ownership;
+                    territory_count += 1;
+                } else if ownership < 0 {
+                    score += ownership;
+                    territory_count += 1;
                 }
             };
         }
 
         (stack_count + territory_count) * score
-
     }
 }
 
@@ -239,9 +234,7 @@ pub fn iterative_deepening(
     let mut evaluator = Evaluator::default();
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1,2,3,4] {
-
-    
+    for depth in [1, 2, 3] {
         //let depth=2;
 
         //let depth = d + 1;
@@ -313,17 +306,6 @@ pub fn iterative_deepening(
     m.mov.0
 }
 
-
-
-
-
-
-
-
-
-
-
-
 #[derive(Debug)]
 struct Counter {
     count: u128,
@@ -370,17 +352,21 @@ impl KillerMoves {
     }
 }
 
-
-impl GameState{
-    pub fn evaluate_a_continuation(&self,world:&board::MyWorld,team_to_play:ActiveTeam,m:impl IntoIterator<Item=ActualMove>)->Eval{
-        let mut game=self.clone();
-        let mut team=team_to_play;
-        for cand in m{
+impl GameState {
+    pub fn evaluate_a_continuation(
+        &self,
+        world: &board::MyWorld,
+        team_to_play: ActiveTeam,
+        m: impl IntoIterator<Item = ActualMove>,
+    ) -> Eval {
+        let mut game = self.clone();
+        let mut team = team_to_play;
+        for cand in m {
             {
                 let j = cand.as_move();
                 j.apply(team, &mut game, world)
             };
-            team=team.not();
+            team = team.not();
 
             // {
             //     move_build::MovePhase { moveto: cand.moveto }.undo(team, &effect, game);
@@ -390,8 +376,6 @@ impl GameState{
         Evaluator::default().absolute_evaluate(&game, world, false)
     }
 }
-
-
 
 #[derive(Debug, Clone)]
 struct EvalRet<T> {
@@ -414,8 +398,11 @@ impl<'a> AlphaBeta<'a> {
         self.max_ext = self.max_ext.max(ext);
 
         if depth >= max_depth {
-            if game_after_move.hash_me()==12916878750629778790{
-            console_dbg!("FOO",evaluator.absolute_evaluate(game_after_move, world, false));
+            if game_after_move.hash_me() == 12916878750629778790 {
+                console_dbg!(
+                    "FOO",
+                    evaluator.absolute_evaluate(game_after_move, world, false)
+                );
             }
             self.calls.add_eval();
             return evaluator.absolute_evaluate(game_after_move, world, false);
@@ -445,7 +432,7 @@ impl<'a> AlphaBeta<'a> {
         //     return evaluator.absolute_evaluate(game_after_move, world, false);
         // }
 
-        if moves.is_empty()  {
+        if moves.is_empty() {
             return evaluator.cant_move(team);
         }
 
@@ -496,7 +483,6 @@ impl<'a> AlphaBeta<'a> {
         }
 
         let moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
-
 
         // let (eval,m)=if team==ActiveTeam::White{
         //     let mut value=i64::MIN;
@@ -570,7 +556,6 @@ impl<'a> AlphaBeta<'a> {
 
         // };
 
-
         let (eval, m) = if team == ActiveTeam::White {
             self.floopy(
                 depth,
@@ -625,13 +610,10 @@ impl<'a> AlphaBeta<'a> {
                 j.apply(team, game_after_move, world)
             };
 
-
-
             self.path.push(cand);
 
-            if game_after_move.hash_me()==12916878750629778790{
+            if game_after_move.hash_me() == 12916878750629778790 {
                 console_dbg!("!!!!!!!");
-
             }
             let eval = self.alpha_beta(
                 game_after_move,
@@ -644,9 +626,8 @@ impl<'a> AlphaBeta<'a> {
                 evaluator,
             );
 
-
-            if game_after_move.hash_me()==12916878750629778790{
-                console_dbg!("CONSIDERING THIS STATE!!!!",depth,eval);
+            if game_after_move.hash_me() == 12916878750629778790 {
+                console_dbg!("CONSIDERING THIS STATE!!!!", depth, eval);
             }
 
             let mov = self.path.pop().unwrap();

@@ -131,90 +131,147 @@ impl GameState {
         let game = self;
         let mut mesh = SmallMesh::new();
 
-        let units = if let Some(unit) = unit {
-            let mut k = BitField::new();
-            k.set_coord(unit, true);
-            k
-        } else {
-            world.get_game_cells().clone()
+        // let units = if let Some(unit) = unit {
+        //     let mut k = BitField::new();
+        //     k.set_coord(unit, true);
+        //     k
+        // } else {
+        //     world.get_game_cells().clone()
+        // };
+
+        let for_ray = |unit: Axial, dir: [i8; 3]| {
+            unit.to_cube()
+                .ray_from_vector(hex::Cube::from_arr(dir))
+                .take_while(|k| {
+                    let k = k.to_axial();
+                    world.get_game_cells().is_set(k)
+                })
+                .map(|x| x.to_axial())
         };
 
-        let func = |unit: Axial, mesh: &mut SmallMesh, team: ActiveTeam| {
-            let for_ray = |unit: Axial, dir: [i8; 3]| {
-                unit.to_cube()
-                    .ray_from_vector(hex::Cube::from_arr(dir))
-                    .take_while(|k| {
-                        let k = k.to_axial();
-                        world.get_game_cells().is_set(k)
-                    })
-                    .map(|x| x.to_axial())
-            };
-            let mut endpoints = EndPoints::new();
-            for h in hex::OFFSETS {
+        let iter_end_points = |unit: Axial, team: ActiveTeam| {
+            hex::OFFSETS.map(|h| {
+                let mut last_cell = (Axial::zero(), None);
                 for k in for_ray(unit, h) {
+                    last_cell.0 = k;
+
                     if let Some((a, b)) = game.factions.cells.get_cell(k) {
-                        if b == team {
-                            endpoints.add_first((k, a));
-                            //friendly_end_points.push((k, a))
-                        } else {
-                            endpoints.add_second((k, a));
-                            //enemy_end_points.push((k, a))
-                        }
+                        last_cell.1 = Some((a, b));
 
                         break;
                     }
-
-                    mesh.add(k);
                 }
-            }
-
-            endpoints
+                last_cell
+            })
         };
 
-        let mut covered = SmallMesh::new();
+        // let func = |unit: Axial, mesh: &mut SmallMesh, team: ActiveTeam| {
+        //     let mut endpoints = EndPoints::new();
 
-        {
-            for ho in units.iter_mesh() {
-                if let Some((val, tt)) = self.factions.cells.get_cell(ho) {
-                    assert!(val > 0);
+        //     for h in hex::OFFSETS {
+        //         for k in for_ray(unit, h) {
+        //             if let Some((a, b)) = game.factions.cells.get_cell(k) {
+        //                 if b == team {
+        //                     endpoints.add_first((k, a));
+        //                 } else {
+        //                     endpoints.add_second((k, a));
+        //                 }
+
+        //                 break;
+        //             }
+
+        //             mesh.add(k);
+        //         }
+        //     }
+
+        //     endpoints
+        // };
+
+        for pos in world.get_game_cells().iter_mesh() {
+            let it = iter_end_points(pos, team);
+
+            let mut potential_height = 0;
+            let mut num_enemy = 0;
+            for (_, rest) in it {
+                if let Some((val, tt)) = rest {
                     if tt == team {
-                        let fff = func(ho, &mut mesh, team);
-                        
-
-                        //Capture enemy
-                        for &(ea, eval) in fff.iter_second() {
-                            if !covered.is_set(ea) {
-                                let mut empty = SmallMesh::new();
-
-                                let fff = func(ea, &mut empty, team.not());
-
-                                if fff.second_len() > eval {
-                                    mesh.add(ea);
-                                }
-
-                                covered.add(ea);
-                            }
-                        }
-
-                        //Re-enforce
-                        for &(ea, eval) in fff.iter_first() {
-                            if !covered.is_set(ea) {
-                                let mut empty = SmallMesh::new();
-
-                                let fff = func(ea, &mut empty, team);
-
-                                if fff.first_len() > eval {
-                                    mesh.add(ea);
-                                }
-
-                                covered.add(ea);
-                            }
-                        }
+                        potential_height += 1;
                     } else {
+                        num_enemy += 1;
                     }
                 }
             }
+
+            if potential_height == 0 {
+                continue;
+            }
+
+            if potential_height < num_enemy {
+                continue;
+            }
+
+            if let Some((height, rest)) = self.factions.cells.get_cell(pos) {
+                if potential_height <= height {
+                    continue;
+                }
+            }
+
+            mesh.add(pos);
         }
+
+        // let mut covered = SmallMesh::new();
+
+        // {
+        //     for ho in units.iter_mesh() {
+        //         if let Some((val, tt)) = self.factions.cells.get_cell(ho) {
+        //             assert!(val > 0);
+        //             if tt == team {
+        //                 for (pos, k) in iter_end_points(ho, team,&mut mesh) {
+        //                     if covered.is_set(pos) {
+        //                         continue;
+        //                     }
+        //                     covered.add(pos);
+        //                     if let Some((eval, tt2)) = k {
+        //                         if tt != tt2 {
+        //                             let mut empty = SmallMesh::new();
+
+        //                             let fff = func(pos, &mut empty, team.not());
+
+        //                             if fff.second_len() > eval {
+        //                                 mesh.add(pos);
+        //                             }
+        //                         } else {
+        //                             let mut empty = SmallMesh::new();
+
+        //                             let fff = func(pos, &mut empty, team);
+
+        //                             if fff.first_len() > eval {
+        //                                 mesh.add(pos);
+        //                             }
+        //                         }
+        //                     } else {
+        //                         let mut num_enemy = 0;
+        //                         let mut num_friendly = 0;
+        //                         for (_, rest) in iter_end_points(pos, team,&mut SmallMesh::new()) {
+        //                             if let Some((_, ttt)) = rest {
+        //                                 if ttt != team {
+        //                                     num_enemy += 1;
+        //                                 } else {
+        //                                     num_friendly += 1;
+        //                                 }
+        //                             }
+        //                         }
+
+        //                         //if num_friendly < num_enemy {
+        //                             mesh.remove(pos);
+        //                         //}
+        //                     }
+        //                 }
+        //             } else {
+        //             }
+        //         }
+        //     }
+        // }
 
         mesh
     }
@@ -283,7 +340,7 @@ impl GameState {
 
             let mmo = moves::ActualMove { moveto: mm };
 
-            func( mmo, self);
+            func(mmo, self);
 
             //mmm.undo(team, &effect, self);
         }

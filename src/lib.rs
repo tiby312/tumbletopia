@@ -254,8 +254,11 @@ pub async fn worker_entry() {
                 game_history.push((the_move, effect_m));
 
                 let mut e = ace::ai::Evaluator::default();
-                console_dbg!("Game after ai move:",game.hash_me(),e.absolute_evaluate(&mut game, &world, true));
-
+                console_dbg!(
+                    "Game after ai move:",
+                    game.hash_me(),
+                    e.absolute_evaluate(&mut game, &world, true)
+                );
 
                 continue;
             }
@@ -266,7 +269,12 @@ pub async fn worker_entry() {
             let stest = serde_json::to_string(&game).unwrap();
 
             let mut e = ace::ai::Evaluator::default();
-            console_dbg!("Game after player move:", stest,game.hash_me(),e.absolute_evaluate(&mut game, &world, true));
+            console_dbg!(
+                "Game after player move:",
+                stest,
+                game.hash_me(),
+                e.absolute_evaluate(&mut game, &world, true)
+            );
 
             // console_dbg!(
             //     "current position2:",

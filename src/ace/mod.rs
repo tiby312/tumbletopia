@@ -404,23 +404,19 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
         // },
     };
 
-    
-
     let str="{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,180143985094819840,50332928,0]},{\"inner\":[0,0,0,0]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,0,50332672,0]}}}}";
     // let str="{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,180146184520728576,36031270970459392,2048]},{\"inner\":[0,288247968337756160,2048,0]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,288247968606191616,2199073590272,0]}}}}";
-    let game:GameState=serde_json::from_str(str).unwrap();
+    let game: GameState = serde_json::from_str(str).unwrap();
 
-    let k=Evaluator::default().absolute_evaluate(&game, world,false);
-    console_dbg!("Current eval=",k);
+    let k = Evaluator::default().absolute_evaluate(&game, world, false);
+    console_dbg!("Current eval=", k);
 
     // let variation1=game.evaluate_a_continuation(world, ActiveTeam::Black,[ActualMove{moveto:Axial{q:3,r:0}},ActualMove{moveto:Axial{q:3,r:0}}]);
-
 
     // let variation2=game.evaluate_a_continuation(world, ActiveTeam::Black,[ActualMove{moveto:Axial{q:-7,r:0}},ActualMove{moveto:Axial{q:3,r:0}}]);
 
     // console_dbg!(variation1,variation2);
     game
-
 }
 
 pub mod share {
