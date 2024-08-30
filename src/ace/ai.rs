@@ -59,7 +59,7 @@ impl Evaluator {
 
                 let curr_strength = match tt {
                     ActiveTeam::White => val.max(num_white - 1) + 2,
-                    ActiveTeam::Black => -(val.max(num_black - 1))+ 2,
+                    ActiveTeam::Black => -(val.max(num_black - 1)) + 2,
                     ActiveTeam::Neutral => 0,
                 };
 

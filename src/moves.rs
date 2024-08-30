@@ -85,6 +85,9 @@ impl GameState {
         let game = self;
         let mut mesh = SmallMesh::new();
 
+        if team == ActiveTeam::Neutral {
+            return mesh;
+        }
         // let for_ray = |unit: Axial, dir: [i8; 3]| {
         //     unit.to_cube()
         //         .ray_from_vector(hex::Cube::from_arr(dir))

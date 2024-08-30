@@ -209,9 +209,9 @@ impl Tribe {
 
         let val = bit0 | bit1 << 1 | bit2 << 2;
 
-        if val == 6 {
-            return Some((1, ActiveTeam::Neutral));
-        }
+        // if val == 6 {
+        //     return Some((1, ActiveTeam::Neutral));
+        // }
         if val == 7 {
             return Some((2, ActiveTeam::Neutral));
         }
@@ -227,6 +227,7 @@ impl Tribe {
     }
 
     fn set_coord(&mut self, a: Axial, stack: usize) {
+        assert!(stack <= 7);
         let bit2 = ((stack >> 2) & 1) != 0;
         let bit1 = ((stack >> 1) & 1) != 0;
         let bit0 = ((stack >> 0) & 1) != 0;
@@ -237,24 +238,17 @@ impl Tribe {
     }
 
     pub fn add_cell(&mut self, a: Axial, stack: usize, team: ActiveTeam) {
-        assert!(stack <= 6);
-        self.set_coord(a, stack);
-
         match team {
             ActiveTeam::White => self.team.set_coord(a, true),
             ActiveTeam::Black => self.team.set_coord(a, false),
             ActiveTeam::Neutral => {
-                let val = if stack == 1 {
-                    6
-                } else if stack == 2 {
-                    7
-                } else {
-                    panic!("impossible")
-                };
+                let val = if stack == 2 { 7 } else { panic!("impossible") };
 
                 self.set_coord(a, val);
+                return;
             }
         }
+        self.set_coord(a, stack);
     }
 }
 
