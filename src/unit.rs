@@ -245,6 +245,7 @@ impl Tribe {
                 let val = if stack == 2 { 7 } else { panic!("impossible") };
 
                 self.set_coord(a, val);
+                self.team.set_coord(a, false);
                 return;
             }
         }

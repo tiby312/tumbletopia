@@ -390,27 +390,36 @@ impl MovePhase {
     ) -> MoveEffect {
         //let env = &mut game.env;
         let target_cell = self.moveto;
-        let mut e = PushInfo::None;
+        let e = PushInfo::None;
 
         let mut stack_size = 0;
-        for (i, h) in hex::OFFSETS.into_iter().enumerate() {
-            for k in target_cell
-                .to_cube()
-                .ray_from_vector(hex::Cube::from_arr(h))
-            {
-                let k = k.to_axial();
-                if !world.get_game_cells().is_set(k) {
-                    break;
-                }
 
-                if let Some((vv, team2)) = game.factions.cells.get_cell(k) {
-                    if team2 == team {
-                        stack_size += 1;
-                    }
-                    break;
+        for (_, rest) in game.iter_end_points(world, target_cell) {
+            if let Some((_, tt)) = rest {
+                if tt == team {
+                    stack_size += 1;
                 }
             }
         }
+
+        // for (i, h) in hex::OFFSETS.into_iter().enumerate() {
+        //     for k in target_cell
+        //         .to_cube()
+        //         .ray_from_vector(hex::Cube::from_arr(h))
+        //     {
+        //         let k = k.to_axial();
+        //         if !world.get_game_cells().is_set(k) {
+        //             break;
+        //         }
+
+        //         if let Some((vv, team2)) = game.factions.cells.get_cell(k) {
+        //             if team2 == team {
+        //                 stack_size += 1;
+        //             }
+        //             break;
+        //         }
+        //     }
+        // }
 
         //console_dbg!("Adding stacksize=", stack_size);
 
@@ -419,7 +428,7 @@ impl MovePhase {
         } else {
             None
         };
-
+        game.factions.cells.remove(target_cell);
         game.factions.cells.add_cell(target_cell, stack_size, team);
 
         MoveEffect {

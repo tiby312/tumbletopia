@@ -821,7 +821,7 @@ async fn render_command(
 
         draw_sys
             .batch(neutral_team_cells)
-            .build(&models.mountain, &projjj);
+            .build(&models.black_mouse, &projjj);
 
         // draw_unit_type(
         //     UnitType::Mouse,
