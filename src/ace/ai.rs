@@ -57,12 +57,11 @@ impl Evaluator {
             if let Some((val, tt)) = game.factions.cells.get_cell(unit) {
                 let val = val as i64;
 
-                let mut curr_strength = match tt {
-                    ActiveTeam::White => val.max(num_white - 1),
-                    ActiveTeam::Black => -(val.max(num_black - 1)),
+                let curr_strength = match tt {
+                    ActiveTeam::White => val.max(num_white - 1) + 2,
+                    ActiveTeam::Black => -(val.max(num_black - 1))+ 2,
                     ActiveTeam::Neutral => 0,
                 };
-                curr_strength += 2 * curr_strength.signum();
 
                 strength += curr_strength;
 
