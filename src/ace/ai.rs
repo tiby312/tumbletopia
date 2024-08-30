@@ -24,6 +24,7 @@ impl Evaluator {
         match team {
             ActiveTeam::White => -MATE,
             ActiveTeam::Black => MATE,
+            ActiveTeam::Neutral => unreachable!(),
         }
     }
     //white maximizing
@@ -34,61 +35,43 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-        let func = |unit: Axial, mesh: &mut SmallMesh, team: ActiveTeam| {
-            let for_ray = |unit: Axial, dir: [i8; 3]| {
-                unit.to_cube()
-                    .ray_from_vector(hex::Cube::from_arr(dir))
-                    .take_while(|k| {
-                        let k = k.to_axial();
-                        world.get_game_cells().is_set(k)
-                    })
-                    .map(|x| x.to_axial())
-            };
-            let mut endpoints = EndPoints::new();
-            for h in hex::OFFSETS {
-                for k in for_ray(unit, h) {
-                    if let Some((a, b)) = game.factions.cells.get_cell(k) {
-                        if b == team {
-                            endpoints.add_first((k, a));
-                        } else {
-                            endpoints.add_second((k, a));
-                        }
-
-                        break;
-                    }
-
-                    mesh.add(k);
-                }
-            }
-
-            endpoints
-        };
-
         let mut score = 0;
         let mut stack_count = 0;
         let mut territory_count = 0;
         for unit in world.get_game_cells().iter_mesh() {
-            let end_points = func(unit, &mut SmallMesh::new(), ActiveTeam::White);
-            let num_white = end_points.first_len() as i64;
-            let num_black = end_points.second_len() as i64;
+            let mut num_white = 0;
+            let mut num_black = 0;
+            for (_, rest) in game.iter_end_points(world, unit) {
+                if let Some((_, team)) = rest {
+                    match team {
+                        ActiveTeam::White => num_white += 1,
+                        ActiveTeam::Black => num_black += 1,
+                        ActiveTeam::Neutral => {}
+                    }
+                }
+            }
 
             if let Some((val, tt)) = game.factions.cells.get_cell(unit) {
                 stack_count += 1;
 
                 let val = val as i64;
 
-                if tt == ActiveTeam::White {
-                    if num_black > val {
-                        score -= 1
-                    } else {
-                        score += 1
+                match tt {
+                    ActiveTeam::White => {
+                        if num_black > val {
+                            score -= 1
+                        } else {
+                            score += 1
+                        }
                     }
-                } else {
-                    if num_white > val {
-                        score += 1
-                    } else {
-                        score -= 1
+                    ActiveTeam::Black => {
+                        if num_white > val {
+                            score += 1
+                        } else {
+                            score -= 1
+                        }
                     }
+                    ActiveTeam::Neutral => {}
                 }
             } else {
                 let ownership = num_white - num_black;
@@ -439,8 +422,8 @@ impl<'a> AlphaBeta<'a> {
         let mut num_sorted = 0;
 
         for _ in 0..2 {
-            let ind = if team == ActiveTeam::White {
-                moves[num_sorted..]
+            let ind = match team {
+                ActiveTeam::White => moves[num_sorted..]
                     .iter()
                     .enumerate()
                     .filter_map(|(i, x)| {
@@ -450,9 +433,8 @@ impl<'a> AlphaBeta<'a> {
                             None
                         }
                     })
-                    .max_by_key(|&(_, x)| x)
-            } else {
-                moves[num_sorted..]
+                    .max_by_key(|&(_, x)| x),
+                ActiveTeam::Black => moves[num_sorted..]
                     .iter()
                     .enumerate()
                     .filter_map(|(i, x)| {
@@ -462,7 +444,10 @@ impl<'a> AlphaBeta<'a> {
                             None
                         }
                     })
-                    .min_by_key(|&(_, x)| x)
+                    .min_by_key(|&(_, x)| x),
+                ActiveTeam::Neutral => {
+                    unreachable!()
+                }
             };
 
             if let Some((ind, _)) = ind {
@@ -484,80 +469,8 @@ impl<'a> AlphaBeta<'a> {
 
         let moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
 
-        // let (eval,m)=if team==ActiveTeam::White{
-        //     let mut value=i64::MIN;
-        //     let mut best_move=None;
-        //     for cand in moves{
-        //         let effect = {
-        //             let j = cand.as_move();
-        //             j.apply(team, game_after_move, world)
-        //         };
-
-        //         self.path.push(cand.clone());
-
-        //         let eval = self.alpha_beta(
-        //             game_after_move,
-        //             world,
-        //             ab.clone(),
-        //             team.not(),
-        //             depth + 1,
-        //             max_depth,
-        //             ext,
-        //             evaluator,
-        //         );
-
-        //         if eval>value{
-        //             value=eval;
-        //             best_move=Some(cand);
-        //         }
-
-        //         let mov = self.path.pop().unwrap();
-        //         {
-        //             move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game_after_move);
-        //         }
-
-        //     }
-        //     (value,best_move)
-        // }else{
-
-        //     let mut value=i64::MAX;
-        //     let mut best_move=None;
-        //     for cand in moves{
-        //         let effect = {
-        //             let j = cand.as_move();
-        //             j.apply(team, game_after_move, world)
-        //         };
-
-        //         self.path.push(cand.clone());
-
-        //         let eval = self.alpha_beta(
-        //             game_after_move,
-        //             world,
-        //             ab.clone(),
-        //             team.not(),
-        //             depth + 1,
-        //             max_depth,
-        //             ext,
-        //             evaluator,
-        //         );
-
-        //         if eval<value{
-        //             value=eval;
-        //             best_move=Some(cand);
-        //         }
-
-        //         let mov = self.path.pop().unwrap();
-        //         {
-        //             move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game_after_move);
-        //         }
-
-        //     }
-        //     (value,best_move)
-
-        // };
-
-        let (eval, m) = if team == ActiveTeam::White {
-            self.floopy(
+        let (eval, m) = match team {
+            ActiveTeam::White => self.floopy(
                 depth,
                 max_depth,
                 ext,
@@ -568,9 +481,8 @@ impl<'a> AlphaBeta<'a> {
                 ab,
                 abab::Maximizer,
                 moves,
-            )
-        } else {
-            self.floopy(
+            ),
+            ActiveTeam::Black => self.floopy(
                 depth,
                 max_depth,
                 ext,
@@ -581,7 +493,10 @@ impl<'a> AlphaBeta<'a> {
                 ab,
                 abab::Minimizer,
                 moves,
-            )
+            ),
+            ActiveTeam::Neutral => {
+                unreachable!()
+            }
         };
 
         if let Some(kk) = m {

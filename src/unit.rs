@@ -59,6 +59,7 @@ impl Factions {
 pub enum ActiveTeam {
     White = 0,
     Black = 1,
+    Neutral = 2,
 }
 impl ActiveTeam {
     pub fn iter(&self) -> impl Iterator<Item = Self> {
@@ -68,6 +69,7 @@ impl ActiveTeam {
         match self {
             ActiveTeam::White => ActiveTeam::Black,
             ActiveTeam::Black => ActiveTeam::White,
+            ActiveTeam::Neutral => ActiveTeam::Neutral,
         }
     }
 }
@@ -206,8 +208,13 @@ impl Tribe {
         let bit2 = self.cells[2].is_set(a) as usize;
 
         let val = bit0 | bit1 << 1 | bit2 << 2;
-        assert!(val <= 6);
 
+        if val == 6 {
+            return Some((1, ActiveTeam::Neutral));
+        }
+        if val == 7 {
+            return Some((2, ActiveTeam::Neutral));
+        }
         if val == 0 {
             return None;
         }
@@ -219,8 +226,7 @@ impl Tribe {
         Some((val, team))
     }
 
-    pub fn add_cell(&mut self, a: Axial, stack: usize, team: ActiveTeam) {
-        assert!(stack <= 6);
+    fn set_coord(&mut self, a: Axial, stack: usize) {
         let bit2 = ((stack >> 2) & 1) != 0;
         let bit1 = ((stack >> 1) & 1) != 0;
         let bit0 = ((stack >> 0) & 1) != 0;
@@ -228,11 +234,26 @@ impl Tribe {
         self.cells[0].set_coord(a, bit0);
         self.cells[1].set_coord(a, bit1);
         self.cells[2].set_coord(a, bit2);
+    }
 
-        if let ActiveTeam::White = team {
-            self.team.set_coord(a, true)
-        } else {
-            self.team.set_coord(a, false)
+    pub fn add_cell(&mut self, a: Axial, stack: usize, team: ActiveTeam) {
+        assert!(stack <= 6);
+        self.set_coord(a, stack);
+
+        match team {
+            ActiveTeam::White => self.team.set_coord(a, true),
+            ActiveTeam::Black => self.team.set_coord(a, false),
+            ActiveTeam::Neutral => {
+                let val = if stack == 1 {
+                    6
+                } else if stack == 2 {
+                    7
+                } else {
+                    panic!("impossible")
+                };
+
+                self.set_coord(a, val);
+            }
         }
     }
 }

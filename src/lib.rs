@@ -770,28 +770,43 @@ async fn render_command(
         //TODO pre-allocate
         let mut white_team_cells = vec![];
         let mut black_team_cells = vec![];
+        let mut neutral_team_cells = vec![];
 
         if let Some((pos, ..)) = &unit_animation {
             //Draw it a bit higher then static ones so there is no flickering
             let first = matrix::translation(pos.x, pos.y, 1.0).generate();
-            if team == ActiveTeam::White {
-                white_team_cells.push(first);
-            } else {
-                black_team_cells.push(first);
+
+            match team {
+                ActiveTeam::White => {
+                    white_team_cells.push(first);
+                }
+                ActiveTeam::Black => {
+                    black_team_cells.push(first);
+                }
+                ActiveTeam::Neutral => {
+                    neutral_team_cells.push(first);
+                }
             }
         }
 
         x += 0.1;
         for a in world.get_game_cells().iter_mesh() {
             if let Some((val, team2)) = game.factions.cells.get_cell(a) {
-                //let jjj=matrix::scale(0.5,0.5,1.0).chain(matrix::translation(grid_matrix.spacing()/2.0,grid_matrix.spacing()/2.0,0.0));
-                if let ActiveTeam::White = team2 {
-                    for k in 0..val {
-                        white_team_cells.push(grid_snap(a, k as f32 * cell_height));
+                match team2 {
+                    ActiveTeam::White => {
+                        for k in 0..val {
+                            white_team_cells.push(grid_snap(a, k as f32 * cell_height));
+                        }
                     }
-                } else {
-                    for k in 0..val {
-                        black_team_cells.push(grid_snap(a, k as f32 * cell_height));
+                    ActiveTeam::Black => {
+                        for k in 0..val {
+                            black_team_cells.push(grid_snap(a, k as f32 * cell_height));
+                        }
+                    }
+                    ActiveTeam::Neutral => {
+                        for k in 0..val {
+                            neutral_team_cells.push(grid_snap(a, k as f32 * cell_height));
+                        }
                     }
                 }
             }
@@ -803,6 +818,10 @@ async fn render_command(
         draw_sys
             .batch(black_team_cells)
             .build(&models.grass, &projjj);
+
+        draw_sys
+            .batch(neutral_team_cells)
+            .build(&models.mountain, &projjj);
 
         // draw_unit_type(
         //     UnitType::Mouse,
