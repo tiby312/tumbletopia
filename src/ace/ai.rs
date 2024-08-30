@@ -38,6 +38,9 @@ impl Evaluator {
         let mut score = 0;
         let mut stack_count = 0;
         let mut territory_count = 0;
+        let mut strength = 0;
+        let mut contested = 0;
+        let mut unseen = 0;
         for unit in world.get_game_cells().iter_mesh() {
             let mut num_white = 0;
             let mut num_black = 0;
@@ -52,9 +55,18 @@ impl Evaluator {
             }
 
             if let Some((val, tt)) = game.factions.cells.get_cell(unit) {
-                stack_count += 1;
-
                 let val = val as i64;
+
+                let mut curr_strength = match tt {
+                    ActiveTeam::White => val.max(num_white - 1),
+                    ActiveTeam::Black => -(val.max(num_black - 1)),
+                    ActiveTeam::Neutral => 0,
+                };
+                curr_strength += 2 * curr_strength.signum();
+
+                strength += curr_strength;
+
+                stack_count += 1;
 
                 match tt {
                     ActiveTeam::White => {
@@ -82,11 +94,18 @@ impl Evaluator {
                 } else if ownership < 0 {
                     score += ownership;
                     territory_count += 1;
+                } else {
+                    //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
+                    if num_white > 0 {
+                        contested += 1
+                    } else {
+                        unseen += 1;
+                    }
                 }
             };
         }
 
-        (stack_count + territory_count) * score
+        (stack_count + territory_count) * score + (unseen + contested) * strength
     }
 }
 
