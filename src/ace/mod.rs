@@ -268,7 +268,7 @@ pub async fn reselect_loop(
 
     //If we select a friendly unit quick swap
 
-    if let Some((_, team2)) = game.factions.cells.get_cell(target_cell) {
+    if let Some((_, team2)) = game.factions.get_cell(target_cell) {
         if team2 == selected_unit.team {
             if !contains {
                 //it should be impossible for a unit to move onto a friendly
@@ -280,7 +280,7 @@ pub async fn reselect_loop(
     }
 
     //If we select an enemy unit quick swap
-    if let Some((_, team2)) = game.factions.cells.get_cell(target_cell) {
+    if let Some((_, team2)) = game.factions.get_cell(target_cell) {
         if team2 == selected_unit.team {
             if selected_unit.team != team || !contains {
                 //If we select an enemy unit thats outside of our units range.
@@ -393,7 +393,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     cells.add_cell(Axial::from_arr([0, 0]), 2, ActiveTeam::Neutral);
 
     let mut game = GameState {
-        factions: Factions { cells },
+        factions: cells,
         // env: Environment {
         //     terrain: Terrain {
         //         land: world.land.clone(),
@@ -520,7 +520,7 @@ pub async fn handle_player(
                 }
             };
 
-            if let Some((_, team2)) = game.factions.cells.get_cell(cell) {
+            if let Some((_, team2)) = game.factions.get_cell(cell) {
                 break SelectType {
                     coord: cell,
                     team: team2,

@@ -64,7 +64,7 @@ impl GameState {
                 for k in for_ray(unit, h) {
                     last_cell.0 = k;
 
-                    if let Some((a, b)) = self.factions.cells.get_cell(k) {
+                    if let Some((a, b)) = self.factions.get_cell(k) {
                         last_cell.1 = Some((a, b));
 
                         break;
@@ -88,31 +88,6 @@ impl GameState {
         if team == ActiveTeam::Neutral {
             return mesh;
         }
-        // let for_ray = |unit: Axial, dir: [i8; 3]| {
-        //     unit.to_cube()
-        //         .ray_from_vector(hex::Cube::from_arr(dir))
-        //         .take_while(|k| {
-        //             let k = k.to_axial();
-        //             world.get_game_cells().is_set(k)
-        //         })
-        //         .map(|x| x.to_axial())
-        // };
-
-        // let iter_end_points = |unit: Axial, team: ActiveTeam| {
-        //     hex::OFFSETS.map(|h| {
-        //         let mut last_cell = (Axial::zero(), None);
-        //         for k in for_ray(unit, h) {
-        //             last_cell.0 = k;
-
-        //             if let Some((a, b)) = game.factions.cells.get_cell(k) {
-        //                 last_cell.1 = Some((a, b));
-
-        //                 break;
-        //             }
-        //         }
-        //         last_cell
-        //     })
-        // };
 
         for pos in world.get_game_cells().iter_mesh() {
             let it = self.iter_end_points(world, pos);
@@ -139,7 +114,7 @@ impl GameState {
                 continue;
             }
 
-            if let Some((height, rest)) = self.factions.cells.get_cell(pos) {
+            if let Some((height, rest)) = self.factions.get_cell(pos) {
                 if potential_height <= height {
                     continue;
                 }

@@ -677,7 +677,7 @@ async fn render_command(
                     CellSelection::MoveSelection(point, mesh, hh) => {
                         //console_dbg!("doo=",mesh);
                         let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
-                            let zzzz = if let Some((val, b)) = game.factions.cells.get_cell(e) {
+                            let zzzz = if let Some((val, b)) = game.factions.get_cell(e) {
                                 val as f32 * cell_height + 1.0
                             } else {
                                 1.0
@@ -791,7 +791,7 @@ async fn render_command(
 
         x += 0.1;
         for a in world.get_game_cells().iter_mesh() {
-            if let Some((val, team2)) = game.factions.cells.get_cell(a) {
+            if let Some((val, team2)) = game.factions.get_cell(a) {
                 match team2 {
                     ActiveTeam::White => {
                         for k in 0..val {

@@ -54,7 +54,7 @@ impl Evaluator {
                 }
             }
 
-            if let Some((val, tt)) = game.factions.cells.get_cell(unit) {
+            if let Some((val, tt)) = game.factions.get_cell(unit) {
                 let val = val as i64;
 
                 let curr_strength = match tt {

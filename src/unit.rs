@@ -2,57 +2,57 @@ use mesh::small_mesh::SmallMesh;
 
 use super::*;
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct Factions {
-    pub cells: Tribe,
-}
-impl Factions {
-    // pub fn has_a_set(&self, coord: Axial) -> bool {
-    //     self.black.is_set(coord) || self.white.is_set(coord)
-    // }
+// #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
+// pub struct Factions {
+//     pub cells: Tribe,
+// }
+// impl Factions {
+//     // pub fn has_a_set(&self, coord: Axial) -> bool {
+//     //     self.black.is_set(coord) || self.white.is_set(coord)
+//     // }
 
-    // pub fn has_a_set_type(&self, coord: Axial) -> Option<UnitType> {
-    //     if let Some(a) = self.black.try_get_type(coord) {
-    //         return Some(a);
-    //     }
+//     // pub fn has_a_set_type(&self, coord: Axial) -> Option<UnitType> {
+//     //     if let Some(a) = self.black.try_get_type(coord) {
+//     //         return Some(a);
+//     //     }
 
-    //     self.white.try_get_type(coord)
-    // }
+//     //     self.white.try_get_type(coord)
+//     // }
 
-    // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
-    //     self.relative_mut(team)
-    //         .this_team
-    //         .find_slow_mut(&coord)
-    //         .unwrap()
-    // }
-    // pub fn get_unit(&self, team: ActiveTeam, coord: Axial) -> &UnitData {
-    //     self.relative(team).this_team.find_slow(&coord).unwrap()
-    // }
-    // pub fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
-    //     match team {
-    //         ActiveTeam::White => FactionRelative {
-    //             this_team: &mut self.white,
-    //             that_team: &mut self.black,
-    //         },
-    //         ActiveTeam::Black => FactionRelative {
-    //             this_team: &mut self.black,
-    //             that_team: &mut self.white,
-    //         },
-    //     }
-    // }
-    // pub fn relative(&self, team: ActiveTeam) -> FactionRelative<&Tribe> {
-    //     match team {
-    //         ActiveTeam::White => FactionRelative {
-    //             this_team: &self.white,
-    //             that_team: &self.black,
-    //         },
-    //         ActiveTeam::Black => FactionRelative {
-    //             this_team: &self.black,
-    //             that_team: &self.white,
-    //         },
-    //     }
-    // }
-}
+//     // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
+//     //     self.relative_mut(team)
+//     //         .this_team
+//     //         .find_slow_mut(&coord)
+//     //         .unwrap()
+//     // }
+//     // pub fn get_unit(&self, team: ActiveTeam, coord: Axial) -> &UnitData {
+//     //     self.relative(team).this_team.find_slow(&coord).unwrap()
+//     // }
+//     // pub fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
+//     //     match team {
+//     //         ActiveTeam::White => FactionRelative {
+//     //             this_team: &mut self.white,
+//     //             that_team: &mut self.black,
+//     //         },
+//     //         ActiveTeam::Black => FactionRelative {
+//     //             this_team: &mut self.black,
+//     //             that_team: &mut self.white,
+//     //         },
+//     //     }
+//     // }
+//     // pub fn relative(&self, team: ActiveTeam) -> FactionRelative<&Tribe> {
+//     //     match team {
+//     //         ActiveTeam::White => FactionRelative {
+//     //             this_team: &self.white,
+//     //             that_team: &self.black,
+//     //         },
+//     //         ActiveTeam::Black => FactionRelative {
+//     //             this_team: &self.black,
+//     //             that_team: &self.white,
+//     //         },
+//     //     }
+//     // }
+// }
 
 #[must_use]
 #[derive(Serialize, Deserialize, Hash, Ord, PartialOrd, Debug, Copy, Clone, Eq, PartialEq)]
@@ -117,7 +117,7 @@ pub struct Environment {
 //Additionally removes need to special case animation.
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
-    pub factions: Factions,
+    pub factions: Tribe,
     //pub env: Environment,
 }
 

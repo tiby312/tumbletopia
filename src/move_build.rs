@@ -271,7 +271,7 @@ impl MovePhase {
         let mut endpoints = moves::EndPoints::new();
         for h in hex::OFFSETS {
             for k in for_ray(self.moveto, h) {
-                if let Some((a, b)) = state.factions.cells.get_cell(k) {
+                if let Some((a, b)) = state.factions.get_cell(k) {
                     if b == team {
                         endpoints.add_first((k, a));
                     }
@@ -300,10 +300,10 @@ impl MovePhase {
             .await;
 
             stack += 1;
-            if let Some(_) = state.factions.cells.get_cell(self.moveto) {
-                ss.factions.cells.remove(self.moveto);
+            if let Some(_) = state.factions.get_cell(self.moveto) {
+                ss.factions.remove(self.moveto);
             }
-            ss.factions.cells.add_cell(self.moveto, stack, team);
+            ss.factions.add_cell(self.moveto, stack, team);
         }
 
         self
@@ -314,9 +314,9 @@ impl MovePhase {
         //let unit = self.original;
 
         if let Some((fooo, typ)) = effect.destroyed_unit {
-            state.factions.cells.add_cell(moveto, fooo, typ);
+            state.factions.add_cell(moveto, fooo, typ);
         } else {
-            state.factions.cells.remove(moveto)
+            state.factions.remove(moveto)
         };
 
         // match effect.pushpull {
@@ -423,13 +423,13 @@ impl MovePhase {
 
         //console_dbg!("Adding stacksize=", stack_size);
 
-        let destroyed_unit = if let Some((a, v)) = game.factions.cells.get_cell(target_cell) {
+        let destroyed_unit = if let Some((a, v)) = game.factions.get_cell(target_cell) {
             Some((a, v))
         } else {
             None
         };
-        game.factions.cells.remove(target_cell);
-        game.factions.cells.add_cell(target_cell, stack_size, team);
+        game.factions.remove(target_cell);
+        game.factions.add_cell(target_cell, stack_size, team);
 
         MoveEffect {
             pushpull: e,
