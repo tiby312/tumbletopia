@@ -811,7 +811,7 @@ async fn render_command(
 
                 let xx = models.grass.width / 2.0;
 
-                let radius = [0.5, 0.7, 1.0];
+                let radius = [0.4, 0.6, 0.8];
 
                 for (stack, radius) in [inner_stack, mid_stack, outer_stack].iter().zip(radius) {
                     for k in 0..*stack {
