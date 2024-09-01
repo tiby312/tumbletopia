@@ -565,8 +565,15 @@ async fn render_command(
             t.generate()
         };
 
+        let cell_height = models.water.height;
+
         draw_sys
-            .batch(world.land.iter_mesh().map(|e| grid_snap(e, 0.0)))
+            .batch(
+                world
+                    .land
+                    .iter_mesh()
+                    .map(|e| grid_snap(e, -models.water.height)),
+            )
             .build(water, &projjj);
 
         // {
@@ -668,8 +675,6 @@ async fn render_command(
 
         //     draw_sys.batch(all_fog).build(snow);
         // }
-
-        let cell_height = models.snow.height;
 
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
@@ -821,7 +826,7 @@ async fn render_command(
 
         draw_sys
             .batch(neutral_team_cells)
-            .build(&models.black_mouse, &projjj);
+            .build(&models.water, &projjj);
 
         // draw_unit_type(
         //     UnitType::Mouse,
@@ -1054,7 +1059,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             black_rabbit: quick_load(include_bytes!("../assets/black_rabbit.glb"), RESIZE, None),
             grass: quick_load(include_bytes!("../assets/hex-black.glb"), RESIZE, None),
             snow: quick_load(include_bytes!("../assets/hex-white.glb"), RESIZE, None),
-            water: quick_load(include_bytes!("../assets/water.glb"), RESIZE, None),
+            water: quick_load(include_bytes!("../assets/hex-neutral.glb"), RESIZE, None),
             direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
             mountain: quick_load(include_bytes!("../assets/mountain.glb"), 1, None),
         }
