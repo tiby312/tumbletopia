@@ -723,29 +723,31 @@ async fn render_command(
             }
         }
 
-        let zzzz = 0.0;
-        // {
-        //     // Draw shadows
-        //     let _d = DepthDisabler::new(ctx);
+        {
+            let zzzz = 0.1;
 
-        //     let shadows = game
-        //         .factions
-        //         .white
-        //         .iter_mesh()
-        //         .chain(game.factions.black.iter_mesh())
-        //         .map(|e| grid_snap(e, zzzz));
+            // Draw shadows
+            let _d = DepthDisabler::new(ctx);
 
-        //     let ani_drop_shadow = unit_animation.as_ref().map(|a| {
-        //         let pos = a.0;
-        //         my_matrix
-        //             .chain(matrix::translation(pos.x, pos.y, zzzz))
-        //             .generate()
-        //     });
+            let shadows = world.get_game_cells().iter_mesh().filter_map(|a| {
+                if let Some(_) = game.factions.get_cell(a) {
+                    Some(grid_snap(a, zzzz))
+                } else {
+                    None
+                }
+            });
 
-        //     let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
+            let ani_drop_shadow = unit_animation.as_ref().map(|a| {
+                let pos = a.0;
+                my_matrix
+                    .chain(matrix::translation(pos.x, pos.y, zzzz))
+                    .generate()
+            });
 
-        //     draw_sys.batch(all_shadows).build(drop_shadow);
-        // }
+            let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
+
+            draw_sys.batch(all_shadows).build(drop_shadow, &projjj);
+        }
 
         // let zzzz = 0.0;
         // let mut draw_unit_type =
