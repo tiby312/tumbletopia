@@ -778,8 +778,8 @@ async fn render_command(
         let mut neutral_team_cells = vec![];
 
         if let Some((pos, ..)) = &unit_animation {
-            //Draw it a bit higher then static ones so there is no flickering
-            let first = matrix::translation(pos.x, pos.y, 1.0).generate();
+            //Draw it a bit lower then static ones so there is no flickering
+            let first = matrix::translation(pos.x, pos.y, -1.0).generate();
 
             match team {
                 ActiveTeam::White => {
@@ -797,22 +797,27 @@ async fn render_command(
         x += 0.1;
         for a in world.get_game_cells().iter_mesh() {
             if let Some((val, team2)) = game.factions.get_cell(a) {
-                match team2 {
-                    ActiveTeam::White => {
-                        for k in 0..val {
-                            white_team_cells.push(grid_snap(a, k as f32 * cell_height));
-                        }
-                    }
-                    ActiveTeam::Black => {
-                        for k in 0..val {
-                            black_team_cells.push(grid_snap(a, k as f32 * cell_height));
-                        }
-                    }
-                    ActiveTeam::Neutral => {
-                        for k in 0..val {
-                            neutral_team_cells.push(grid_snap(a, k as f32 * cell_height));
-                        }
-                    }
+                let inner_stack = val.min(3);
+                let outer_stack = (val.max(3) - 3);
+                let arr = match team2 {
+                    ActiveTeam::White => &mut white_team_cells,
+                    ActiveTeam::Black => &mut black_team_cells,
+                    ActiveTeam::Neutral => &mut neutral_team_cells,
+                };
+
+                let xx = models.grass.width / 2.0;
+
+                for k in 0..inner_stack {
+                    arr.push(
+                        grid_snap(a, k as f32 * cell_height)
+                            .chain(matrix::scale(0.5, 0.5, 1.0))
+                            .chain(matrix::translation(xx, xx, 0.0))
+                            .generate(),
+                    );
+                }
+
+                for k in 0..outer_stack {
+                    arr.push(grid_snap(a, k as f32 * cell_height));
                 }
             }
         }
@@ -1037,6 +1042,12 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             model_parse::Foo {
                 texture: model_parse::TextureGpu::new(&shader.ctx, &t),
                 model: model_parse::ModelGpu::new(shader, &data),
+                width: data
+                    .positions
+                    .iter()
+                    .map(|x| x[0])
+                    .max_by(|a, b| a.total_cmp(b))
+                    .unwrap(),
                 height: data
                     .positions
                     .iter()
