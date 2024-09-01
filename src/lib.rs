@@ -800,8 +800,9 @@ async fn render_command(
         x += 0.1;
         for a in world.get_game_cells().iter_mesh() {
             if let Some((val, team2)) = game.factions.get_cell(a) {
-                let inner_stack = val.min(3);
-                let outer_stack = (val.max(3) - 3);
+                let inner_stack = val.min(2);
+                let mid_stack = val.max(2).min(4) - 2;
+                let outer_stack = (val.max(4) - 4);
                 let arr = match team2 {
                     ActiveTeam::White => &mut white_team_cells,
                     ActiveTeam::Black => &mut black_team_cells,
@@ -810,21 +811,32 @@ async fn render_command(
 
                 let xx = models.grass.width / 2.0;
 
-                for k in 0..inner_stack {
-                    arr.push(
-                        grid_snap(a, k as f32 * cell_height)
-                            .chain(matrix::scale(0.5, 0.5, 1.0))
-                            .generate(),
-                    );
-                }
+                let radius = [0.5, 0.7, 1.0];
 
-                for k in 0..outer_stack {
-                    arr.push(
-                        grid_snap(a, k as f32 * cell_height)
-                            .chain(matrix::scale(0.8, 0.8, 1.0))
-                            .generate(),
-                    );
+                for (stack, radius) in [inner_stack, mid_stack, outer_stack].iter().zip(radius) {
+                    for k in 0..*stack {
+                        arr.push(
+                            grid_snap(a, k as f32 * cell_height)
+                                .chain(matrix::scale(radius, radius, 1.0))
+                                .generate(),
+                        );
+                    }
                 }
+                // for k in 0..inner_stack {
+                //     arr.push(
+                //         grid_snap(a, k as f32 * cell_height)
+                //             .chain(matrix::scale(0.5, 0.5, 1.0))
+                //             .generate(),
+                //     );
+                // }
+
+                // for k in 0..outer_stack {
+                //     arr.push(
+                //         grid_snap(a, k as f32 * cell_height)
+                //             .chain(matrix::scale(0.8, 0.8, 1.0))
+                //             .generate(),
+                //     );
+                // }
             }
         }
 
