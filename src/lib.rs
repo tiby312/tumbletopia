@@ -683,7 +683,8 @@ async fn render_command(
                         //console_dbg!("doo=",mesh);
                         let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
                             let zzzz = if let Some((val, b)) = game.factions.get_cell(e) {
-                                val as f32 * cell_height + 1.0
+                                //val as f32 * cell_height + 1.0
+                                1.0
                             } else {
                                 1.0
                             };
@@ -779,7 +780,9 @@ async fn render_command(
 
         if let Some((pos, ..)) = &unit_animation {
             //Draw it a bit lower then static ones so there is no flickering
-            let first = matrix::translation(pos.x, pos.y, -1.0).generate();
+            let first = matrix::translation(pos.x, pos.y, -1.0)
+                .chain(matrix::scale(0.5, 0.5, 1.0))
+                .generate();
 
             match team {
                 ActiveTeam::White => {
@@ -811,13 +814,16 @@ async fn render_command(
                     arr.push(
                         grid_snap(a, k as f32 * cell_height)
                             .chain(matrix::scale(0.5, 0.5, 1.0))
-                            .chain(matrix::translation(xx, xx, 0.0))
                             .generate(),
                     );
                 }
 
                 for k in 0..outer_stack {
-                    arr.push(grid_snap(a, k as f32 * cell_height));
+                    arr.push(
+                        grid_snap(a, k as f32 * cell_height)
+                            .chain(matrix::scale(0.8, 0.8, 1.0))
+                            .generate(),
+                    );
                 }
             }
         }

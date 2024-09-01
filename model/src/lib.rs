@@ -80,7 +80,7 @@ impl Doop {
         let (mut m, tex) = self.gen(foo, custom_alpha);
 
         let v = ss;
-        let s = matrix::translation(v / 2.0, v / 2.0, 0.0)
+        let s = matrix::translation(0.0, 0.0, 0.0)
             .chain(x_rotation(PI / 2.0))
             .chain(matrix::scale(v, v, v))
             .generate();
