@@ -223,7 +223,6 @@ pub fn iterative_deepening(
     world: &board::MyWorld,
     team: ActiveTeam,
 ) -> moves::ActualMove {
-    let mut count = Counter { count: 0 };
     let mut results = Vec::new();
 
     let num_iter = 2;
@@ -242,7 +241,6 @@ pub fn iterative_deepening(
 
         let mut aaaa = ai::AlphaBeta {
             prev_cache: &mut foo1,
-            calls: &mut count,
             path: &mut vec![],
             killer_moves: &mut k,
             max_ext: 0,
@@ -302,20 +300,9 @@ pub fn iterative_deepening(
     m.mov.0
 }
 
-#[derive(Debug)]
-struct Counter {
-    count: u128,
-}
-impl Counter {
-    pub fn add_eval(&mut self) {
-        self.count += 1;
-    }
-}
 
 struct AlphaBeta<'a> {
-    //table: &'a mut LeafTranspositionTable,
     prev_cache: &'a mut TranspositionTable,
-    calls: &'a mut Counter,
     path: &'a mut Vec<moves::ActualMove>,
     killer_moves: &'a mut KillerMoves,
     max_ext: usize,
@@ -394,13 +381,6 @@ impl<'a> AlphaBeta<'a> {
         self.max_ext = self.max_ext.max(ext);
 
         if depth >= max_depth {
-            if game_after_move.hash_me() == 12916878750629778790 {
-                console_dbg!(
-                    "FOO",
-                    evaluator.absolute_evaluate(game_after_move, world, false)
-                );
-            }
-            self.calls.add_eval();
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
 
