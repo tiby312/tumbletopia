@@ -684,15 +684,15 @@ async fn render_command(
                         let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
                             let zzzz = if let Some((val, b)) = game.factions.get_cell(e) {
                                 //val as f32 * cell_height + 1.0
-                                0.1
+                                0.0
                             } else {
-                                0.1
+                                0.0
                             };
 
                             //let zzzz = 1.0;
 
                             grid_snap(e, zzzz)
-                                .chain(matrix::scale(1.2, 1.2, 1.0))
+                                .chain(matrix::scale(1.0, 1.0, 1.0))
                                 .generate()
                         });
                         draw_sys
@@ -1067,7 +1067,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
         pub const RESIZE: usize = 10;
 
         Models {
-            select_model: quick_load(include_bytes!("../assets/select_model.glb"), 1, None),
+            select_model: quick_load(include_bytes!("../assets/hex-select.glb"), 1, None),
             drop_shadow: quick_load(include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
             fog: quick_load(include_bytes!("../assets/fog.glb"), RESIZE, None),
             attack: quick_load(include_bytes!("../assets/attack.glb"), 1, None),
