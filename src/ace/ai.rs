@@ -236,16 +236,11 @@ pub fn iterative_deepening(
 
     //TODO stop searching if we found a game ending move.
     for depth in [1, 2, 3, 4, 5] {
-        //let depth=2;
-
-        //let depth = d + 1;
         console_dbg!("searching", depth);
 
-        //TODO should this be outside the loop?
         let mut k = KillerMoves::new(num_iter + 4 + 4);
 
         let mut aaaa = ai::AlphaBeta {
-            //table: &mut table,
             prev_cache: &mut foo1,
             calls: &mut count,
             path: &mut vec![],
