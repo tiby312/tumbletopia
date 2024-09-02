@@ -684,14 +684,16 @@ async fn render_command(
                         let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
                             let zzzz = if let Some((val, b)) = game.factions.get_cell(e) {
                                 //val as f32 * cell_height + 1.0
-                                1.0
+                                0.1
                             } else {
-                                1.0
+                                0.1
                             };
 
                             //let zzzz = 1.0;
 
                             grid_snap(e, zzzz)
+                                .chain(matrix::scale(1.2, 1.2, 1.0))
+                                .generate()
                         });
                         draw_sys
                             .batch(cells)
@@ -730,8 +732,18 @@ async fn render_command(
             let _d = DepthDisabler::new(ctx);
 
             let shadows = world.get_game_cells().iter_mesh().filter_map(|a| {
-                if let Some(_) = game.factions.get_cell(a) {
-                    Some(grid_snap(a, zzzz))
+                if let Some((val, _)) = game.factions.get_cell(a) {
+                    let xx = match val {
+                        1 | 2 => 0.6,
+                        3 | 4 => 0.8,
+                        5 | 6 => 1.2,
+                        _ => unreachable!(),
+                    };
+                    Some(
+                        grid_snap(a, zzzz)
+                            .chain(matrix::scale(xx, xx, 1.0))
+                            .generate(),
+                    )
                 } else {
                     None
                 }
@@ -739,8 +751,8 @@ async fn render_command(
 
             let ani_drop_shadow = unit_animation.as_ref().map(|a| {
                 let pos = a.0;
-                my_matrix
-                    .chain(matrix::translation(pos.x, pos.y, zzzz))
+                matrix::translation(pos.x, pos.y, zzzz)
+                    .chain(matrix::scale(0.6, 0.6, 1.0))
                     .generate()
             });
 
@@ -749,41 +761,16 @@ async fn render_command(
             draw_sys.batch(all_shadows).build(drop_shadow, &projjj);
         }
 
-        // let zzzz = 0.0;
-        // let mut draw_unit_type =
-        //     |mytype: UnitType,
-        //      my_team: ActiveTeam,
-        //      foo: &BitField,
-        //      model: &Foo<TextureGpu, ModelGpu>| {
-        //         let color = foo.iter_mesh().map(|e| grid_snap(e, zzzz));
-
-        //         let ani = unit_animation
-        //             .as_ref()
-        //             .filter(|(pos, _, unit, ttt, _data)| {
-        //                 *ttt == mytype && team == my_team
-        //                 //foo.is_set(*unit)
-        //             })
-        //             .map(|(pos, _, unit, _, _data)| {
-        //                 my_matrix
-        //                     .chain(matrix::translation(pos.x, pos.y, zzzz))
-        //                     .chain(matrix::scale(1.0, 1.0, 1.0))
-        //                     .generate()
-        //             });
-
-        //         let k = color.chain(ani.into_iter());
-
-        //         draw_sys.batch(k).build(model)
-        //     };
-
         //TODO pre-allocate
         let mut white_team_cells = vec![];
         let mut black_team_cells = vec![];
         let mut neutral_team_cells = vec![];
 
         if let Some((pos, ..)) = &unit_animation {
+            let ss = 0.4;
             //Draw it a bit lower then static ones so there is no flickering
-            let first = matrix::translation(pos.x, pos.y, -1.0)
-                .chain(matrix::scale(0.5, 0.5, 1.0))
+            let first = matrix::translation(pos.x, pos.y, 1.0)
+                .chain(matrix::scale(ss, ss, 1.0))
                 .generate();
 
             match team {

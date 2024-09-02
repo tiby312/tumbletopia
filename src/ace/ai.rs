@@ -235,7 +235,7 @@ pub fn iterative_deepening(
     let mut evaluator = Evaluator::default();
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3, 4,5,6] {
+    for depth in [1, 2, 3, 4, 5] {
         //let depth=2;
 
         //let depth = d + 1;
