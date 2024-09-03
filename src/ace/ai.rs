@@ -6,16 +6,16 @@ pub type Eval = i64;
 const MATE: i64 = 1_000_000;
 
 pub struct Evaluator {
-    workspace: BitField,
-    workspace2: BitField,
-    workspace3: BitField,
+    // workspace: BitField,
+    // workspace2: BitField,
+    // workspace3: BitField,
 }
 impl Default for Evaluator {
     fn default() -> Self {
         Self {
-            workspace: Default::default(),
-            workspace2: Default::default(),
-            workspace3: Default::default(),
+            // workspace: Default::default(),
+            // workspace2: Default::default(),
+            // workspace3: Default::default(),
         }
     }
 }
@@ -242,18 +242,12 @@ pub fn iterative_deepening(
         let mut aaaa = ai::AlphaBeta {
             prev_cache: &mut foo1,
             killer_moves: &mut k,
+            evaluator: &mut evaluator,
+            world,
         };
 
         let mut kk = game.clone();
-        let res = aaaa.alpha_beta(
-            &mut kk,
-            world,
-            ABAB::new(),
-            team,
-            depth,
-            &mut evaluator,
-            false,
-        );
+        let res = aaaa.alpha_beta(&mut kk, ABAB::new(), team, depth, false);
         assert_eq!(&kk, game);
 
         let Some(mov) = foo1.get(game).cloned() else {
@@ -300,6 +294,8 @@ pub fn iterative_deepening(
 struct AlphaBeta<'a> {
     prev_cache: &'a mut TranspositionTable,
     killer_moves: &'a mut KillerMoves,
+    evaluator: &'a mut Evaluator,
+    world: &'a board::MyWorld,
 }
 
 struct KillerMoves {
@@ -360,31 +356,29 @@ impl<'a> AlphaBeta<'a> {
     fn alpha_beta(
         &mut self,
         game: &mut GameState,
-        world: &board::MyWorld,
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
-        evaluator: &mut Evaluator,
+
         quiescance: bool,
     ) -> Eval {
-        
         if !quiescance {
             if depth == 0 {
-                return self.alpha_beta(game, world, ab, team, 4, evaluator, true);
+                return self.alpha_beta(game, ab, team, 4, true);
             }
         } else {
             if depth == 0 {
-                return evaluator.absolute_evaluate(game, world, false);
+                return self.evaluator.absolute_evaluate(game, self.world, false);
             }
         }
 
         let mut moves: Vec<_> = if !quiescance {
-            game.generate_possible_moves_movement(world, None, team)
+            game.generate_possible_moves_movement(self.world, None, team)
                 .iter_mesh(Axial::zero())
                 .map(|x| ActualMove { moveto: x })
                 .collect()
         } else {
-            game.loud_moves(world, team)
+            game.loud_moves(self.world, team)
                 .iter_mesh(Axial::zero())
                 .map(|x| ActualMove { moveto: x })
                 .collect()
@@ -404,11 +398,11 @@ impl<'a> AlphaBeta<'a> {
 
         if quiescance {
             if moves.is_empty() {
-                return evaluator.absolute_evaluate(game, world, false);
+                return self.evaluator.absolute_evaluate(game, self.world, false);
             }
         } else {
             if moves.is_empty() {
-                return evaluator.cant_move(team);
+                return self.evaluator.cant_move(team);
             }
         }
 
@@ -482,24 +476,20 @@ impl<'a> AlphaBeta<'a> {
             for cand in moves {
                 let effect = {
                     let j = cand.as_move();
-                    j.apply(team, game, world)
+                    j.apply(team, game, self.world)
                 };
 
                 let eval = self.alpha_beta(
                     game,
-                    world,
                     ab_iter.clone_ab_values(),
                     team.not(),
                     depth - 1,
-                    evaluator,
                     quiescance,
                 );
 
                 let mov = cand;
 
-                
                 move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game);
-            
 
                 let keep_going = ab_iter.consider(&mov, eval);
 
