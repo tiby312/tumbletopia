@@ -225,7 +225,7 @@ pub fn iterative_deepening(
 ) -> moves::ActualMove {
     let mut results = Vec::new();
 
-    let num_iter = 2;
+    let num_iter = 4;
     //let max_depth = 2;
 
     let mut foo1 = TranspositionTable {
@@ -234,7 +234,7 @@ pub fn iterative_deepening(
     let mut evaluator = Evaluator::default();
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3, 4, 5] {
+    for depth in [1, 2, 3, 4] {
         console_dbg!("searching", depth);
 
         let mut k = KillerMoves::new(num_iter + 4 + 4);
@@ -385,17 +385,33 @@ impl<'a> AlphaBeta<'a> {
             //return evaluator.absolute_evaluate(game_after_move, world, false);
         }
 
-        let mut moves = vec![];
+        //let mut moves = vec![];
 
-        game_after_move.for_all_moves_fast(team, world, |m, fo, stat| {
-            if quiescance {
-                if fo.destroyed_unit.is_some() {
-                    moves.push((m, stat.hash_me()));
-                }
-            } else {
-                moves.push((m, stat.hash_me()));
-            }
-        });
+        let mut moves: Vec<_> = if !quiescance {
+            game_after_move
+                .generate_possible_moves_movement(world, None, team)
+                .iter_mesh(Axial::zero())
+                .map(|x| ActualMove { moveto: x })
+                .collect()
+        } else {
+            game_after_move
+                .loud_moves(world, team)
+                .iter_mesh(Axial::zero())
+                .map(|x| ActualMove { moveto: x })
+                .collect()
+        };
+
+        // game_after_move.for_all_moves_fast(team, world, |m, fo, stat| {
+        //     if quiescance {
+        //         if fo.destroyed_unit.is_some() {
+        //             moves.push((m, stat.hash_me()));
+        //         }
+        //     } else {
+        //         moves.push((m, stat.hash_me()));
+        //     }
+        // });
+
+        // let mut moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
 
         if quiescance {
             if moves.is_empty() {
@@ -409,38 +425,48 @@ impl<'a> AlphaBeta<'a> {
 
         let mut num_sorted = 0;
 
-        for _ in 0..2 {
-            let ind = match team {
-                ActiveTeam::White => moves[num_sorted..]
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, x)| {
-                        if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-                            Some((i, k))
-                        } else {
-                            None
-                        }
-                    })
-                    .max_by_key(|&(_, x)| x),
-                ActiveTeam::Black => moves[num_sorted..]
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, x)| {
-                        if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-                            Some((i, k))
-                        } else {
-                            None
-                        }
-                    })
-                    .min_by_key(|&(_, x)| x),
-                ActiveTeam::Neutral => {
-                    unreachable!()
-                }
-            };
+        // for _ in 0..2 {
+        //     let ind = match team {
+        //         ActiveTeam::White => moves[num_sorted..]
+        //             .iter()
+        //             .enumerate()
+        //             .filter_map(|(i, x)| {
+        //                 if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
+        //                     Some((i, k))
+        //                 } else {
+        //                     None
+        //                 }
+        //             })
+        //             .max_by_key(|&(_, x)| x),
+        //         ActiveTeam::Black => moves[num_sorted..]
+        //             .iter()
+        //             .enumerate()
+        //             .filter_map(|(i, x)| {
+        //                 if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
+        //                     Some((i, k))
+        //                 } else {
+        //                     None
+        //                 }
+        //             })
+        //             .min_by_key(|&(_, x)| x),
+        //         ActiveTeam::Neutral => {
+        //             unreachable!()
+        //         }
+        //     };
 
-            if let Some((ind, _)) = ind {
-                moves.swap(num_sorted + ind, num_sorted);
-                num_sorted += 1;
+        //     if let Some((ind, _)) = ind {
+        //         moves.swap(num_sorted + ind, num_sorted);
+        //         num_sorted += 1;
+        //     }
+        // }
+
+        {
+            if let Some(a) = self.prev_cache.a.get(&game_after_move.hash_me()) {
+                moves.sort_unstable();
+                if let Ok(f) = moves.binary_search(&a.0) {
+                    moves.swap(f, num_sorted);
+                    num_sorted += 1;
+                }
             }
         }
 
@@ -449,15 +475,13 @@ impl<'a> AlphaBeta<'a> {
                 if let Some((x, _)) = moves[num_sorted..]
                     .iter()
                     .enumerate()
-                    .find(|(_, x)| x.0 == *a)
+                    .find(|(_, x)| **x == *a)
                 {
                     moves.swap(num_sorted + x, num_sorted);
                     num_sorted += 1;
                 }
             }
         }
-
-        let moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
 
         let (eval, m) = {
             let maximizing = match team {
