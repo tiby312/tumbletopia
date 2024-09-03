@@ -241,7 +241,7 @@ pub fn iterative_deepening(
 
         let mut aaaa = ai::AlphaBeta {
             prev_cache: &mut foo1,
-            path: &mut vec![],
+            //path: &mut vec![],
             killer_moves: &mut k,
             max_ext: 0,
         };
@@ -302,7 +302,7 @@ pub fn iterative_deepening(
 
 struct AlphaBeta<'a> {
     prev_cache: &'a mut TranspositionTable,
-    path: &'a mut Vec<moves::ActualMove>,
+    //path: &'a mut Vec<moves::ActualMove>,
     killer_moves: &'a mut KillerMoves,
     max_ext: usize,
 }
@@ -368,7 +368,7 @@ struct EvalRet<T> {
 impl<'a> AlphaBeta<'a> {
     fn alpha_beta(
         &mut self,
-        game_after_move: &mut GameState,
+        game: &mut GameState,
         world: &board::MyWorld,
         mut ab: ABAB,
         team: ActiveTeam,
@@ -379,23 +379,25 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        if depth == 0 {
-            return self.alpha_beta(game_after_move, world, ab, team, 4, ext, evaluator, true);
-
-            //return evaluator.absolute_evaluate(game_after_move, world, false);
+        if !quiescance {
+            if depth == 0 {
+                return self.alpha_beta(game, world, ab, team, 4, ext, evaluator, true);
+            }
+        } else {
+            if depth == 0 {
+                return evaluator.absolute_evaluate(game, world, false);
+            }
         }
 
         //let mut moves = vec![];
 
         let mut moves: Vec<_> = if !quiescance {
-            game_after_move
-                .generate_possible_moves_movement(world, None, team)
+            game.generate_possible_moves_movement(world, None, team)
                 .iter_mesh(Axial::zero())
                 .map(|x| ActualMove { moveto: x })
                 .collect()
         } else {
-            game_after_move
-                .loud_moves(world, team)
+            game.loud_moves(world, team)
                 .iter_mesh(Axial::zero())
                 .map(|x| ActualMove { moveto: x })
                 .collect()
@@ -415,7 +417,7 @@ impl<'a> AlphaBeta<'a> {
 
         if quiescance {
             if moves.is_empty() {
-                return evaluator.absolute_evaluate(game_after_move, world, false);
+                return evaluator.absolute_evaluate(game, world, false);
             }
         } else {
             if moves.is_empty() {
@@ -461,7 +463,7 @@ impl<'a> AlphaBeta<'a> {
         // }
 
         {
-            if let Some(a) = self.prev_cache.a.get(&game_after_move.hash_me()) {
+            if let Some(a) = self.prev_cache.a.get(&game.hash_me()) {
                 moves.sort_unstable();
                 if let Ok(f) = moves.binary_search(&a.0) {
                     moves.swap(f, num_sorted);
@@ -493,13 +495,13 @@ impl<'a> AlphaBeta<'a> {
             for cand in moves {
                 let effect = {
                     let j = cand.as_move();
-                    j.apply(team, game_after_move, world)
+                    j.apply(team, game, world)
                 };
 
-                self.path.push(cand);
+                //self.path.push(cand);
 
                 let eval = self.alpha_beta(
-                    game_after_move,
+                    game,
                     world,
                     ab_iter.clone_ab_values(),
                     team.not(),
@@ -509,18 +511,16 @@ impl<'a> AlphaBeta<'a> {
                     quiescance,
                 );
 
-                let mov = self.path.pop().unwrap();
+                let mov = cand;
+                //let mov = self.path.pop().unwrap();
                 {
-                    move_build::MovePhase { moveto: mov.moveto }.undo(
-                        team,
-                        &effect,
-                        game_after_move,
-                    );
+                    move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game);
                 }
 
                 let keep_going = ab_iter.consider(&mov, eval);
 
                 if !keep_going {
+                    //TODO don't do for killer moves
                     self.killer_moves.consider(depth, mov);
                     break;
                 }
@@ -529,7 +529,8 @@ impl<'a> AlphaBeta<'a> {
         };
 
         if let Some(kk) = m {
-            self.prev_cache.update(game_after_move, kk, eval);
+            //TODO don't do for quiesance
+            self.prev_cache.update(game, kk, eval);
         }
         eval
     }
