@@ -255,6 +255,7 @@ pub fn iterative_deepening(
             depth,
             0,
             &mut evaluator,
+            false,
         );
         assert_eq!(&kk, game);
 
@@ -374,21 +375,36 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
         ext: usize,
         evaluator: &mut Evaluator,
+        quiescance: bool,
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
         if depth == 0 {
-            return evaluator.absolute_evaluate(game_after_move, world, false);
+            return self.alpha_beta(game_after_move, world, ab, team, 4, ext, evaluator, true);
+
+            //return evaluator.absolute_evaluate(game_after_move, world, false);
         }
 
         let mut moves = vec![];
 
-        game_after_move.for_all_moves_fast(team, world, |m, stat| {
-            moves.push((m, stat.hash_me()));
+        game_after_move.for_all_moves_fast(team, world, |m, fo, stat| {
+            if quiescance {
+                if fo.destroyed_unit.is_some() {
+                    moves.push((m, stat.hash_me()));
+                }
+            } else {
+                moves.push((m, stat.hash_me()));
+            }
         });
 
-        if moves.is_empty() {
-            return evaluator.cant_move(team);
+        if quiescance {
+            if moves.is_empty() {
+                return evaluator.absolute_evaluate(game_after_move, world, false);
+            }
+        } else {
+            if moves.is_empty() {
+                return evaluator.cant_move(team);
+            }
         }
 
         let mut num_sorted = 0;
@@ -428,14 +444,16 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
-        for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
-            if let Some((x, _)) = moves[num_sorted..]
-                .iter()
-                .enumerate()
-                .find(|(_, x)| x.0 == *a)
-            {
-                moves.swap(num_sorted + x, num_sorted);
-                num_sorted += 1;
+        if !quiescance {
+            for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
+                if let Some((x, _)) = moves[num_sorted..]
+                    .iter()
+                    .enumerate()
+                    .find(|(_, x)| x.0 == *a)
+                {
+                    moves.swap(num_sorted + x, num_sorted);
+                    num_sorted += 1;
+                }
             }
         }
 
@@ -461,9 +479,10 @@ impl<'a> AlphaBeta<'a> {
                     world,
                     ab_iter.clone_ab_values(),
                     team.not(),
-                    depth -1,
+                    depth - 1,
                     ext,
                     evaluator,
+                    quiescance,
                 );
 
                 let mov = self.path.pop().unwrap();

@@ -76,6 +76,56 @@ impl GameState {
 
         iter_end_points(unit)
     }
+
+    pub fn loud_moves(&self, world: &board::MyWorld, team: ActiveTeam) -> SmallMesh {
+        let game = self;
+        let mut mesh = SmallMesh::new();
+
+        if team == ActiveTeam::Neutral {
+            return mesh;
+        }
+
+        for pos in world.get_game_cells().iter_mesh() {
+            let it = self.iter_end_points(world, pos);
+
+            let mut potential_height = 0;
+            let mut num_enemy = 0;
+            for (_, rest) in it {
+                if let Some((_, tt)) = rest {
+                    if tt == team {
+                        potential_height += 1;
+                    } else {
+                        if tt != ActiveTeam::Neutral {
+                            num_enemy += 1;
+                        }
+                    }
+                }
+            }
+
+            if potential_height == 0 {
+                continue;
+            }
+
+            if potential_height < num_enemy {
+                continue;
+            }
+
+            if let Some((height, rest)) = self.factions.get_cell(pos) {
+                if potential_height <= height {
+                    continue;
+                }
+
+                if rest != team {
+                    mesh.add(pos);
+                }
+            }
+
+            //mesh.add(pos);
+        }
+
+        mesh
+    }
+
     pub fn generate_possible_moves_movement(
         &self,
         world: &board::MyWorld,
@@ -176,7 +226,7 @@ impl GameState {
         &mut self,
         team: ActiveTeam,
         world: &board::MyWorld,
-        mut func: impl FnMut(moves::ActualMove, &GameState),
+        mut func: impl FnMut(moves::ActualMove, &move_build::MoveEffect, &GameState),
     ) {
         //let state = self;
 
@@ -184,15 +234,15 @@ impl GameState {
             .generate_possible_moves_movement(world, None, team)
             .iter_mesh(Axial::zero())
         {
-            // let mut mmm = move_build::MovePhase { moveto: mm };
+            let mut mmm = move_build::MovePhase { moveto: mm };
 
-            // let mut effect = mmm.apply(team, self, world);
+            let mut effect = mmm.apply(team, self, world);
 
             let mmo = moves::ActualMove { moveto: mm };
 
-            func(mmo, self);
+            func(mmo, &effect, self);
 
-            //mmm.undo(team, &effect, self);
+            mmm.undo(team, &effect, self);
         }
 
         //let mut movs = Vec::new();
