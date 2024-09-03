@@ -62,6 +62,13 @@ pub enum ActiveTeam {
     Neutral = 2,
 }
 impl ActiveTeam {
+    pub fn is_white(&self) -> bool {
+        if let ActiveTeam::White = self {
+            true
+        } else {
+            false
+        }
+    }
     pub fn iter(&self) -> impl Iterator<Item = Self> {
         [*self, self.not()].into_iter().cycle()
     }

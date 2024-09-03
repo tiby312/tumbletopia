@@ -247,7 +247,7 @@ pub fn iterative_deepening(
         };
 
         let mut kk = game.clone();
-        let res = aaaa.alpha_beta(&mut kk, ABAB::new(), team, depth, false);
+        let res = aaaa.alpha_beta(&mut kk, ABAB::new(), team, depth);
         assert_eq!(&kk, game);
 
         let Some(mov) = foo1.get(game).cloned() else {
@@ -353,96 +353,66 @@ struct EvalRet<T> {
 }
 
 impl<'a> AlphaBeta<'a> {
+    fn quiesance(
+        &mut self,
+        game: &mut GameState,
+        mut ab: ABAB,
+        team: ActiveTeam,
+        depth: usize,
+    ) -> Eval {
+        if depth == 0 {
+            return self.evaluator.absolute_evaluate(game, self.world, false);
+        }
+
+        let moves: Vec<_> = game
+            .loud_moves(self.world, team)
+            .iter_mesh(Axial::zero())
+            .map(|x| ActualMove { moveto: x })
+            .collect();
+
+        if moves.is_empty() {
+            return self.evaluator.absolute_evaluate(game, self.world, false);
+        }
+
+        let mut ab_iter = ab.ab_iter(team.is_white());
+        for cand in moves {
+            let effect = cand.apply(team, game, self.world);
+
+            let eval = self.quiesance(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
+
+            cand.undo(team, &effect, game);
+
+            if !ab_iter.consider(&cand, eval) {
+                break;
+            }
+        }
+
+        let (eval, m) = ab_iter.finish();
+
+        eval
+    }
     fn alpha_beta(
         &mut self,
         game: &mut GameState,
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
-
-        quiescance: bool,
     ) -> Eval {
-        if !quiescance {
-            if depth == 0 {
-                return self.alpha_beta(game, ab, team, 4, true);
-            }
-        } else {
-            if depth == 0 {
-                return self.evaluator.absolute_evaluate(game, self.world, false);
-            }
+        if depth == 0 {
+            return self.quiesance(game, ab, team, 4);
         }
 
-        let mut moves: Vec<_> = if !quiescance {
-            game.generate_possible_moves_movement(self.world, None, team)
-                .iter_mesh(Axial::zero())
-                .map(|x| ActualMove { moveto: x })
-                .collect()
-        } else {
-            game.loud_moves(self.world, team)
-                .iter_mesh(Axial::zero())
-                .map(|x| ActualMove { moveto: x })
-                .collect()
-        };
+        let mut moves: Vec<_> = game
+            .generate_possible_moves_movement(self.world, None, team)
+            .iter_mesh(Axial::zero())
+            .map(|x| ActualMove { moveto: x })
+            .collect();
 
-        // game_after_move.for_all_moves_fast(team, world, |m, fo, stat| {
-        //     if quiescance {
-        //         if fo.destroyed_unit.is_some() {
-        //             moves.push((m, stat.hash_me()));
-        //         }
-        //     } else {
-        //         moves.push((m, stat.hash_me()));
-        //     }
-        // });
-
-        // let mut moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
-
-        if quiescance {
-            if moves.is_empty() {
-                return self.evaluator.absolute_evaluate(game, self.world, false);
-            }
-        } else {
-            if moves.is_empty() {
-                return self.evaluator.cant_move(team);
-            }
+        if moves.is_empty() {
+            return self.evaluator.cant_move(team);
         }
 
         let mut num_sorted = 0;
-
-        // for _ in 0..2 {
-        //     let ind = match team {
-        //         ActiveTeam::White => moves[num_sorted..]
-        //             .iter()
-        //             .enumerate()
-        //             .filter_map(|(i, x)| {
-        //                 if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-        //                     Some((i, k))
-        //                 } else {
-        //                     None
-        //                 }
-        //             })
-        //             .max_by_key(|&(_, x)| x),
-        //         ActiveTeam::Black => moves[num_sorted..]
-        //             .iter()
-        //             .enumerate()
-        //             .filter_map(|(i, x)| {
-        //                 if let Some((_, k)) = self.prev_cache.a.get(&x.1) {
-        //                     Some((i, k))
-        //                 } else {
-        //                     None
-        //                 }
-        //             })
-        //             .min_by_key(|&(_, x)| x),
-        //         ActiveTeam::Neutral => {
-        //             unreachable!()
-        //         }
-        //     };
-
-        //     if let Some((ind, _)) = ind {
-        //         moves.swap(num_sorted + ind, num_sorted);
-        //         num_sorted += 1;
-        //     }
-        // }
-
         {
             if let Some(a) = self.prev_cache.a.get(&game.hash_me()) {
                 moves.sort_unstable();
@@ -453,49 +423,33 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
-        if !quiescance {
-            for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
-                if let Some((x, _)) = moves[num_sorted..]
-                    .iter()
-                    .enumerate()
-                    .find(|(_, x)| **x == *a)
-                {
-                    moves.swap(num_sorted + x, num_sorted);
-                    num_sorted += 1;
-                }
+        for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
+            if let Some((x, _)) = moves[num_sorted..]
+                .iter()
+                .enumerate()
+                .find(|(_, x)| **x == *a)
+            {
+                moves.swap(num_sorted + x, num_sorted);
+                num_sorted += 1;
             }
         }
 
-        let (eval, m) = {
-            let maximizing = match team {
-                ActiveTeam::White => true,
-                ActiveTeam::Black => false,
-                ActiveTeam::Neutral => unreachable!(),
-            };
-            let mut ab_iter = ab.ab_iter(maximizing);
-            for cand in moves {
-                let effect = cand.apply(team, game, self.world);
+        let mut ab_iter = ab.ab_iter(team.is_white());
+        for cand in moves {
+            let effect = cand.apply(team, game, self.world);
 
-                let eval = self.alpha_beta(
-                    game,
-                    ab_iter.clone_ab_values(),
-                    team.not(),
-                    depth - 1,
-                    quiescance,
-                );
+            let eval = self.alpha_beta(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
 
-                cand.undo(team, &effect, game);
+            cand.undo(team, &effect, game);
 
-                let keep_going = ab_iter.consider(&cand, eval);
-
-                if !keep_going {
-                    //TODO don't do for killer moves
-                    self.killer_moves.consider(depth, cand);
-                    break;
-                }
+            if !ab_iter.consider(&cand, eval) {
+                //TODO don't do for killer moves
+                self.killer_moves.consider(depth, cand);
+                break;
             }
-            ab_iter.finish()
-        };
+        }
+
+        let (eval, m) = ab_iter.finish();
 
         if let Some(kk) = m {
             //TODO don't do for quiesance
