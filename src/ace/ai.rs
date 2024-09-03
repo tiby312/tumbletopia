@@ -336,7 +336,7 @@ impl GameState {
         let mut team = team_to_play;
         for cand in m {
             {
-                let j = cand.as_move();
+                let j = cand;
                 j.apply(team, &mut game, world)
             };
             team = team.not();
@@ -474,10 +474,7 @@ impl<'a> AlphaBeta<'a> {
             };
             let mut ab_iter = ab.ab_iter(maximizing);
             for cand in moves {
-                let effect = {
-                    let j = cand.as_move();
-                    j.apply(team, game, self.world)
-                };
+                let effect = cand.apply(team, game, self.world);
 
                 let eval = self.alpha_beta(
                     game,
@@ -487,15 +484,13 @@ impl<'a> AlphaBeta<'a> {
                     quiescance,
                 );
 
-                let mov = cand;
+                cand.undo(team, &effect, game);
 
-                move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game);
-
-                let keep_going = ab_iter.consider(&mov, eval);
+                let keep_going = ab_iter.consider(&cand, eval);
 
                 if !keep_going {
                     //TODO don't do for killer moves
-                    self.killer_moves.consider(depth, mov);
+                    self.killer_moves.consider(depth, cand);
                     break;
                 }
             }

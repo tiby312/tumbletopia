@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct HaveMoved {
-    pub the_move: move_build::MovePhase,
+    pub the_move: ActualMove,
     pub effect: move_build::MoveEffect,
 }
 

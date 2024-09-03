@@ -340,7 +340,7 @@ pub async fn reselect_loop(
 
     let c = target_cell;
 
-    let mp = move_build::MovePhase {
+    let mp = ActualMove {
         //original: unwrapped_selected_unit,
         moveto: target_cell,
     };
@@ -453,9 +453,9 @@ pub async fn replay(
     for the_move in just_logs.inner {
         let team = team_gen.next().unwrap();
 
-        let kk = the_move.as_move();
+        //let kk = the_move.as_move();
 
-        let effect_m = kk
+        let effect_m = the_move
             .animate(team, &mut game, world, &mut doop)
             .await
             .apply(team, &mut game, world);
@@ -489,11 +489,11 @@ pub async fn handle_player(
 
         let (a, e) = move_log.inner.pop().unwrap();
         //a.as_extra().undo(&e.extra_effect, game);
-        a.as_move().undo(team.not(), &e, game);
+        a.undo(team.not(), &e, game);
 
         let (a, e) = move_log.inner.pop().unwrap();
         //a.as_extra().undo(&e.extra_effect, game);
-        a.as_move().undo(team, &e, game);
+        a.undo(team, &e, game);
     };
 
     let mut extra_attack = None;

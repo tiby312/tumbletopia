@@ -238,9 +238,9 @@ pub async fn worker_entry() {
                 //let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
                 //assert_eq!(the_move,the_move2);
 
-                let kk = the_move.as_move();
+                //let kk = the_move;
 
-                let effect_m = kk
+                let effect_m = the_move
                     .animate(team, &mut game, &world, &mut doop)
                     .await
                     .apply(team, &mut game, &world);

@@ -234,7 +234,7 @@ impl GameState {
             .generate_possible_moves_movement(world, None, team)
             .iter_mesh(Axial::zero())
         {
-            let mut mmm = move_build::MovePhase { moveto: mm };
+            let mut mmm = ActualMove { moveto: mm };
 
             let mut effect = mmm.apply(team, self, world);
 

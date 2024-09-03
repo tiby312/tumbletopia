@@ -9,12 +9,12 @@ impl crate::moves::ActualMove {
     //         target: self.attackto,
     //     }
     // }
-    pub fn as_move(&self) -> move_build::MovePhase {
-        move_build::MovePhase {
-            //original: self.original,
-            moveto: self.moveto,
-        }
-    }
+    // pub fn as_move(&self) -> move_build::MovePhase {
+    //     move_build::MovePhase {
+    //         //original: self.original,
+    //         moveto: self.moveto,
+    //     }
+    // }
 }
 
 // pub struct ExtraPhase {
@@ -238,12 +238,12 @@ impl MoveEffect {
     // }
 }
 
-#[derive(Clone, Debug)]
-pub struct MovePhase {
-    //pub original: Axial,
-    pub moveto: Axial,
-}
-impl MovePhase {
+// #[derive(Clone, Debug)]
+// pub struct MovePhase {
+//     //pub original: Axial,
+//     pub moveto: Axial,
+// }
+impl ActualMove {
     // pub fn into_attack(self, target: Axial) -> ExtraPhase {
     //     ExtraPhase {
     //         original: self.original,
