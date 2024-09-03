@@ -252,7 +252,6 @@ pub fn iterative_deepening(
             world,
             ABAB::new(),
             team,
-            0,
             depth,
             0,
             &mut evaluator,
@@ -373,13 +372,12 @@ impl<'a> AlphaBeta<'a> {
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
-        max_depth: usize,
         ext: usize,
         evaluator: &mut Evaluator,
     ) -> Eval {
         self.max_ext = self.max_ext.max(ext);
 
-        if depth >= max_depth {
+        if depth == 0 {
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
 
@@ -463,8 +461,7 @@ impl<'a> AlphaBeta<'a> {
                     world,
                     ab_iter.clone_ab_values(),
                     team.not(),
-                    depth + 1,
-                    max_depth,
+                    depth -1,
                     ext,
                     evaluator,
                 );
