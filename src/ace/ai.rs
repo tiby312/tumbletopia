@@ -241,9 +241,7 @@ pub fn iterative_deepening(
 
         let mut aaaa = ai::AlphaBeta {
             prev_cache: &mut foo1,
-            //path: &mut vec![],
             killer_moves: &mut k,
-            max_ext: 0,
         };
 
         let mut kk = game.clone();
@@ -253,7 +251,6 @@ pub fn iterative_deepening(
             ABAB::new(),
             team,
             depth,
-            0,
             &mut evaluator,
             false,
         );
@@ -302,9 +299,7 @@ pub fn iterative_deepening(
 
 struct AlphaBeta<'a> {
     prev_cache: &'a mut TranspositionTable,
-    //path: &'a mut Vec<moves::ActualMove>,
     killer_moves: &'a mut KillerMoves,
-    max_ext: usize,
 }
 
 struct KillerMoves {
@@ -349,10 +344,6 @@ impl GameState {
                 j.apply(team, &mut game, world)
             };
             team = team.not();
-
-            // {
-            //     move_build::MovePhase { moveto: cand.moveto }.undo(team, &effect, game);
-            // }
         }
 
         Evaluator::default().absolute_evaluate(&game, world, false)
@@ -373,23 +364,19 @@ impl<'a> AlphaBeta<'a> {
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
-        ext: usize,
         evaluator: &mut Evaluator,
         quiescance: bool,
     ) -> Eval {
-        self.max_ext = self.max_ext.max(ext);
-
+        
         if !quiescance {
             if depth == 0 {
-                return self.alpha_beta(game, world, ab, team, 4, ext, evaluator, true);
+                return self.alpha_beta(game, world, ab, team, 4, evaluator, true);
             }
         } else {
             if depth == 0 {
                 return evaluator.absolute_evaluate(game, world, false);
             }
         }
-
-        //let mut moves = vec![];
 
         let mut moves: Vec<_> = if !quiescance {
             game.generate_possible_moves_movement(world, None, team)
@@ -506,7 +493,6 @@ impl<'a> AlphaBeta<'a> {
                     ab_iter.clone_ab_values(),
                     team.not(),
                     depth - 1,
-                    ext,
                     evaluator,
                     quiescance,
                 );
