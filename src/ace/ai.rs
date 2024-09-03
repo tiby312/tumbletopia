@@ -443,7 +443,6 @@ impl<'a> AlphaBeta<'a> {
             cand.undo(team, &effect, game);
 
             if !ab_iter.consider(&cand, eval) {
-                //TODO don't do for killer moves
                 self.killer_moves.consider(depth, cand);
                 break;
             }
@@ -452,7 +451,6 @@ impl<'a> AlphaBeta<'a> {
         let (eval, m) = ab_iter.finish();
 
         if let Some(kk) = m {
-            //TODO don't do for quiesance
             self.prev_cache.update(game, kk, eval);
         }
         eval
