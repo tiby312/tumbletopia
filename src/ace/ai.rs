@@ -485,8 +485,6 @@ impl<'a> AlphaBeta<'a> {
                     j.apply(team, game, world)
                 };
 
-                //self.path.push(cand);
-
                 let eval = self.alpha_beta(
                     game,
                     world,
@@ -498,10 +496,10 @@ impl<'a> AlphaBeta<'a> {
                 );
 
                 let mov = cand;
-                //let mov = self.path.pop().unwrap();
-                {
-                    move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game);
-                }
+
+                
+                move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game);
+            
 
                 let keep_going = ab_iter.consider(&mov, eval);
 
