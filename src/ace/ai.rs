@@ -300,7 +300,6 @@ pub fn iterative_deepening(
     m.mov.0
 }
 
-
 struct AlphaBeta<'a> {
     prev_cache: &'a mut TranspositionTable,
     path: &'a mut Vec<moves::ActualMove>,
@@ -384,29 +383,11 @@ impl<'a> AlphaBeta<'a> {
             return evaluator.absolute_evaluate(game_after_move, world, false);
         }
 
-        //let mut quiet_position = true;
         let mut moves = vec![];
 
         game_after_move.for_all_moves_fast(team, world, |m, stat| {
-            // if e.destroyed_unit.is_some() {
-            //     quiet_position = false;
-            // }
-
             moves.push((m, stat.hash_me()));
-
-            // if depth < max_depth {
-            //     moves.push((m, stat.hash_me()));
-            // } else {
-            //     if e.destroyed_unit.is_some() {
-            //         moves.push((m, stat.hash_me()));
-            //     }
-            // }
         });
-
-        // if depth >= max_depth && quiet_position {
-        //     self.calls.add_eval();
-        //     return evaluator.absolute_evaluate(game_after_move, world, false);
-        // }
 
         if moves.is_empty() {
             return evaluator.cant_move(team);
@@ -462,96 +443,55 @@ impl<'a> AlphaBeta<'a> {
 
         let moves: Vec<_> = moves.drain(..).map(|x| x.0).collect();
 
-        let (eval, m) = match team {
-            ActiveTeam::White => self.floopy(
-                depth,
-                max_depth,
-                ext,
-                evaluator,
-                team,
-                game_after_move,
-                world,
-                ab,
-                abab::Maximizer,
-                moves,
-            ),
-            ActiveTeam::Black => self.floopy(
-                depth,
-                max_depth,
-                ext,
-                evaluator,
-                team,
-                game_after_move,
-                world,
-                ab,
-                abab::Minimizer,
-                moves,
-            ),
-            ActiveTeam::Neutral => {
-                unreachable!()
+        let (eval, m) = {
+            let maximizing = match team {
+                ActiveTeam::White => true,
+                ActiveTeam::Black => false,
+                ActiveTeam::Neutral => unreachable!(),
+            };
+            let mut ab_iter = ab.ab_iter(maximizing);
+            for cand in moves {
+                let effect = {
+                    let j = cand.as_move();
+                    j.apply(team, game_after_move, world)
+                };
+
+                self.path.push(cand);
+
+                let eval = self.alpha_beta(
+                    game_after_move,
+                    world,
+                    ab_iter.clone_ab_values(),
+                    team.not(),
+                    depth + 1,
+                    max_depth,
+                    ext,
+                    evaluator,
+                );
+
+                let mov = self.path.pop().unwrap();
+                {
+                    move_build::MovePhase { moveto: mov.moveto }.undo(
+                        team,
+                        &effect,
+                        game_after_move,
+                    );
+                }
+
+                let keep_going = ab_iter.consider(&mov, eval);
+
+                if !keep_going {
+                    self.killer_moves.consider(depth, mov);
+                    break;
+                }
             }
+            ab_iter.finish()
         };
 
         if let Some(kk) = m {
             self.prev_cache.update(game_after_move, kk, eval);
         }
         eval
-    }
-
-    fn floopy<D: ace::ai::abab::Doop>(
-        &mut self,
-        depth: usize,
-        max_depth: usize,
-        ext: usize,
-        evaluator: &mut Evaluator,
-        team: ActiveTeam,
-        game_after_move: &mut GameState,
-        world: &board::MyWorld,
-        mut ab: ABAB,
-        doop: D,
-        moves: Vec<moves::ActualMove>,
-    ) -> (i64, Option<moves::ActualMove>) {
-        let mut ab_iter = ab.ab_iter(doop);
-        for cand in moves {
-            let effect = {
-                let j = cand.as_move();
-                j.apply(team, game_after_move, world)
-            };
-
-            self.path.push(cand);
-
-            if game_after_move.hash_me() == 12916878750629778790 {
-                console_dbg!("!!!!!!!");
-            }
-            let eval = self.alpha_beta(
-                game_after_move,
-                world,
-                ab_iter.clone_ab_values(),
-                team.not(),
-                depth + 1,
-                max_depth,
-                ext,
-                evaluator,
-            );
-
-            if game_after_move.hash_me() == 12916878750629778790 {
-                console_dbg!("CONSIDERING THIS STATE!!!!", depth, eval);
-            }
-
-            let mov = self.path.pop().unwrap();
-            {
-                //let k = mov.as_extra();
-                move_build::MovePhase { moveto: mov.moveto }.undo(team, &effect, game_after_move);
-            }
-
-            let keep_going = ab_iter.consider(&mov, eval);
-
-            if !keep_going {
-                self.killer_moves.consider(depth, mov);
-                break;
-            }
-        }
-        ab_iter.finish()
     }
 }
 
@@ -582,15 +522,15 @@ mod abab {
         }
     }
 
-    pub struct ABIter<'a, T, D: Doop> {
+    pub struct ABIter<'a, T> {
         value: i64,
         a: &'a mut ABAB,
         mm: Option<T>,
         keep_going: bool,
-        doop: D,
+        maximizing: bool,
     }
 
-    impl<'a, T: Clone, D: Doop> ABIter<'a, T, D> {
+    impl<'a, T: Clone> ABIter<'a, T> {
         pub fn finish(self) -> (Eval, Option<T>) {
             (self.value, self.mm)
         }
@@ -598,8 +538,10 @@ mod abab {
             self.a.clone()
         }
         pub fn consider(&mut self, t: &T, eval: Eval) -> bool {
+            //TODO monomorphize internally for maximizing and minimizing.
+
             //TODO should be less than or equal instead maybe?
-            let mmm = if self.doop.maximizing() {
+            let mmm = if self.maximizing {
                 eval > self.value
             } else {
                 eval < self.value
@@ -609,7 +551,7 @@ mod abab {
                 self.value = eval;
             }
 
-            let cond = if self.doop.maximizing() {
+            let cond = if self.maximizing {
                 eval > self.a.beta
             } else {
                 eval < self.a.alpha
@@ -620,7 +562,7 @@ mod abab {
                 self.keep_going = false;
             }
 
-            if self.doop.maximizing() {
+            if self.maximizing {
                 self.a.alpha = self.a.alpha.max(self.value);
             } else {
                 self.a.beta = self.a.beta.min(self.value);
@@ -638,18 +580,14 @@ mod abab {
             }
         }
 
-        pub fn ab_iter<T: Clone, D: Doop>(&mut self, doop: D) -> ABIter<T, D> {
-            let value = if doop.maximizing() {
-                i64::MIN
-            } else {
-                i64::MAX
-            };
+        pub fn ab_iter<T: Clone>(&mut self, maximizing: bool) -> ABIter<T> {
+            let value = if maximizing { i64::MIN } else { i64::MAX };
             ABIter {
                 value,
                 a: self,
                 mm: None,
                 keep_going: true,
-                doop,
+                maximizing,
             }
         }
     }
