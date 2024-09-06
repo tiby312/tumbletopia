@@ -393,11 +393,6 @@ struct EvalRet<T> {
 
 const STACK_SIZE: usize = 4 + 4;
 
-// struct Variation{
-//     a:Vec<ActualMove>,
-//     eval:Eval
-// }
-
 impl<'a> AlphaBeta<'a> {
     fn quiesance(
         &mut self,
