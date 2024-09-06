@@ -170,18 +170,18 @@ fn doop(
 }
 
 struct TranspositionTable {
-    a: std::collections::BTreeMap<u64, (moves::ActualMove, Eval)>,
+    a: std::collections::BTreeMap<u64, moves::ActualMove>,
 }
 impl TranspositionTable {
-    pub fn update(&mut self, a: &GameState, m: moves::ActualMove, eval: Eval) {
+    pub fn update(&mut self, a: &GameState, m: moves::ActualMove) {
         let k = a.hash_me();
         if let Some(foo) = self.a.get_mut(&k) {
-            *foo = (m, eval);
+            *foo = m;
         } else {
-            self.a.insert(k, (m, eval));
+            self.a.insert(k, m);
         }
     }
-    pub fn get(&self, a: &GameState) -> Option<&(moves::ActualMove, Eval)> {
+    pub fn get(&self, a: &GameState) -> Option<&moves::ActualMove> {
         self.a.get(&a.hash_me())
     }
 }
@@ -247,13 +247,34 @@ pub fn iterative_deepening(
         };
 
         let mut kk = game.clone();
-        let res = aaaa.alpha_beta(&mut kk, ABAB::new(), team, depth);
+        let (res, mov) = aaaa.alpha_beta(&mut kk, ABAB::new(), team, depth);
         assert_eq!(&kk, game);
 
-        let Some(mov) = foo1.get(game).cloned() else {
-            console_dbg!("Couldnt find a move???");
-            panic!("OVER");
-        };
+        {
+            //Store the PV into the transposition table
+            let mut tt = team;
+            let mut gg = kk.clone();
+            let mut effects = vec![];
+            for m in mov.iter() {
+                let effect1 = m.apply(tt, &mut gg, world);
+                effects.push(effect1);
+                tt = tt.not();
+            }
+
+            for (m, effect) in mov.iter().rev().zip(effects.iter().rev()) {
+                tt = tt.not();
+                foo1.update(&gg, m.clone());
+                m.undo(tt, effect, &mut gg);
+            }
+            assert_eq!(gg, kk);
+        }
+
+        let mov = mov.last().unwrap().clone();
+
+        // let Some(mov) = foo1.get(game).cloned() else {
+        //     console_dbg!("Couldnt find a move???");
+        //     panic!("OVER");
+        // };
         let res = EvalRet { mov, eval: res };
 
         let eval = res.eval;
@@ -268,6 +289,8 @@ pub fn iterative_deepening(
 
         //doop.poke(team, game.clone()).await;
     }
+
+    console_dbg!("transpotiion table len=", foo1.a.len());
 
     //console_dbg!(count);
     //console_dbg!(&results);
@@ -288,7 +311,7 @@ pub fn iterative_deepening(
 
     console_dbg!("AI evaluation::", m.mov, m.eval);
 
-    m.mov.0
+    m.mov
 }
 
 struct AlphaBeta<'a> {
@@ -352,6 +375,11 @@ struct EvalRet<T> {
     pub eval: Eval,
 }
 
+// struct Variation{
+//     a:Vec<ActualMove>,
+//     eval:Eval
+// }
+
 impl<'a> AlphaBeta<'a> {
     fn quiesance(
         &mut self,
@@ -359,37 +387,48 @@ impl<'a> AlphaBeta<'a> {
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
-    ) -> Eval {
+    ) -> (Eval, Vec<ActualMove>) {
         if depth == 0 {
-            return self.evaluator.absolute_evaluate(game, self.world, false);
+            return (
+                self.evaluator.absolute_evaluate(game, self.world, false),
+                vec![],
+            );
         }
 
         let moves: Vec<_> = game
-            .loud_moves(self.world, team)
+            .generate_possible_moves_movement(self.world, None, team)
+            .1
             .iter_mesh(Axial::zero())
             .map(|x| ActualMove { moveto: x })
             .collect();
 
         if moves.is_empty() {
-            return self.evaluator.absolute_evaluate(game, self.world, false);
+            return (
+                self.evaluator.absolute_evaluate(game, self.world, false),
+                vec![],
+            );
         }
 
         let mut ab_iter = ab.ab_iter(team.is_white());
         for cand in moves {
             let effect = cand.apply(team, game, self.world);
 
-            let eval = self.quiesance(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
+            let (eval, m) = self.quiesance(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
 
             cand.undo(team, &effect, game);
 
-            if !ab_iter.consider(&cand, eval) {
+            if !ab_iter.consider((cand, m), eval) {
                 break;
             }
         }
 
-        let (eval, m) = ab_iter.finish();
-
-        eval
+        let (eval, j) = ab_iter.finish();
+        if let Some((cand, mut m)) = j {
+            m.push(cand);
+            (eval, m)
+        } else {
+            (eval, vec![])
+        }
     }
     fn alpha_beta(
         &mut self,
@@ -397,63 +436,101 @@ impl<'a> AlphaBeta<'a> {
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
-    ) -> Eval {
+    ) -> (Eval, Vec<ActualMove>) {
         if depth == 0 {
             return self.quiesance(game, ab, team, 4);
         }
 
-        let mut moves: Vec<_> = game
-            .generate_possible_moves_movement(self.world, None, team)
+        let (all_moves, captures) = game.generate_possible_moves_movement(self.world, None, team);
+
+        let mut moves: Vec<_> = all_moves
             .iter_mesh(Axial::zero())
             .map(|x| ActualMove { moveto: x })
             .collect();
 
         if moves.is_empty() {
-            return self.evaluator.cant_move(team);
+            return (self.evaluator.cant_move(team), vec![]);
         }
 
-        let mut num_sorted = 0;
-        {
+        moves.sort_by_cached_key(|k| {
+            if captures.is_set(k.moveto) {
+                return 4;
+            }
+
             if let Some(a) = self.prev_cache.a.get(&game.hash_me()) {
-                moves.sort_unstable();
-                if let Ok(f) = moves.binary_search(&a.0) {
-                    moves.swap(f, num_sorted);
-                    num_sorted += 1;
+                if a == k {
+                    return 1000;
                 }
             }
-        }
 
-        for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
-            if let Some((x, _)) = moves[num_sorted..]
+            for (i, a) in self
+                .killer_moves
+                .get(usize::try_from(depth).unwrap())
                 .iter()
                 .enumerate()
-                .find(|(_, x)| **x == *a)
             {
-                moves.swap(num_sorted + x, num_sorted);
-                num_sorted += 1;
+                if a == k {
+                    return 800 - i;
+                }
             }
-        }
+
+            0
+        });
+
+        // let mut num_sorted = 0;
+        // {
+        //     if let Some(a) = self.prev_cache.a.get(&game.hash_me()) {
+        //         if let Some((x, _)) = moves[num_sorted..]
+        //         .iter()
+        //         .enumerate()
+        //         .find(|(_, x)| **x == a.0)
+        //         {
+        //             moves.swap(num_sorted + x, num_sorted);
+        //             num_sorted += 1;
+        //         }
+        //     }
+        // }
+
+        // for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
+        //     if let Some((x, _)) = moves[num_sorted..]
+        //         .iter()
+        //         .enumerate()
+        //         .find(|(_, x)| **x == *a)
+        //     {
+        //         moves.swap(num_sorted + x, num_sorted);
+        //         num_sorted += 1;
+        //     }
+        // }
 
         let mut ab_iter = ab.ab_iter(team.is_white());
-        for cand in moves {
+        for cand in moves.into_iter().rev() {
             let effect = cand.apply(team, game, self.world);
 
-            let eval = self.alpha_beta(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
+            let (eval, m) = self.alpha_beta(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
 
             cand.undo(team, &effect, game);
 
-            if !ab_iter.consider(&cand, eval) {
-                self.killer_moves.consider(depth, cand);
+            if !ab_iter.consider((cand.clone(), m), eval) {
+                if effect.destroyed_unit.is_none() {
+                    self.killer_moves.consider(depth, cand);
+                } else {
+                    self.prev_cache.update(game, cand);
+                }
                 break;
             }
         }
 
         let (eval, m) = ab_iter.finish();
 
-        if let Some(kk) = m {
-            self.prev_cache.update(game, kk, eval);
+        // if let Some(kk) = m {
+        //     self.prev_cache.update(game, kk, eval);
+        // }
+        if let Some((cand, mut m)) = m {
+            m.push(cand);
+            (eval, m)
+        } else {
+            (eval, vec![])
         }
-        eval
     }
 }
 
@@ -499,7 +576,7 @@ mod abab {
         pub fn clone_ab_values(&self) -> ABAB {
             self.a.clone()
         }
-        pub fn consider(&mut self, t: &T, eval: Eval) -> bool {
+        pub fn consider(&mut self, t: T, eval: Eval) -> bool {
             //TODO monomorphize internally for maximizing and minimizing.
 
             //TODO should be less than or equal instead maybe?
@@ -509,7 +586,7 @@ mod abab {
                 eval < self.value
             };
             if mmm {
-                self.mm = Some(t.clone());
+                self.mm = Some(t);
                 self.value = eval;
             }
 

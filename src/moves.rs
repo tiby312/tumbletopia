@@ -77,12 +77,67 @@ impl GameState {
         iter_end_points(unit)
     }
 
-    pub fn loud_moves(&self, world: &board::MyWorld, team: ActiveTeam) -> SmallMesh {
+    // pub fn loud_moves(&self, world: &board::MyWorld, team: ActiveTeam) -> SmallMesh {
+    //     let game = self;
+    //     let mut mesh = SmallMesh::new();
+
+    //     if team == ActiveTeam::Neutral {
+    //         return mesh;
+    //     }
+
+    //     for pos in world.get_game_cells().iter_mesh() {
+    //         let it = self.iter_end_points(world, pos);
+
+    //         let mut potential_height = 0;
+    //         let mut num_enemy = 0;
+    //         for (_, rest) in it {
+    //             if let Some((_, tt)) = rest {
+    //                 if tt == team {
+    //                     potential_height += 1;
+    //                 } else {
+    //                     if tt != ActiveTeam::Neutral {
+    //                         num_enemy += 1;
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         if potential_height == 0 {
+    //             continue;
+    //         }
+
+    //         if potential_height < num_enemy {
+    //             continue;
+    //         }
+
+    //         if let Some((height, rest)) = self.factions.get_cell(pos) {
+    //             if potential_height <= height {
+    //                 continue;
+    //             }
+
+    //             if rest != team {
+    //                 mesh.add(pos);
+    //             }
+    //         }
+
+    //         //mesh.add(pos);
+    //     }
+
+    //     mesh
+    // }
+
+    pub fn generate_possible_moves_movement(
+        &self,
+        world: &board::MyWorld,
+        unit: Option<Axial>,
+        team: ActiveTeam,
+    ) -> (SmallMesh, SmallMesh) {
         let game = self;
         let mut mesh = SmallMesh::new();
+        let mut captures = SmallMesh::new();
 
         if team == ActiveTeam::Neutral {
-            return mesh;
+            return (mesh, captures);
         }
 
         for pos in world.get_game_cells().iter_mesh() {
@@ -116,64 +171,14 @@ impl GameState {
                 }
 
                 if rest != team {
-                    mesh.add(pos);
-                }
-            }
-
-            //mesh.add(pos);
-        }
-
-        mesh
-    }
-
-    pub fn generate_possible_moves_movement(
-        &self,
-        world: &board::MyWorld,
-        unit: Option<Axial>,
-        team: ActiveTeam,
-    ) -> SmallMesh {
-        let game = self;
-        let mut mesh = SmallMesh::new();
-
-        if team == ActiveTeam::Neutral {
-            return mesh;
-        }
-
-        for pos in world.get_game_cells().iter_mesh() {
-            let it = self.iter_end_points(world, pos);
-
-            let mut potential_height = 0;
-            let mut num_enemy = 0;
-            for (_, rest) in it {
-                if let Some((_, tt)) = rest {
-                    if tt == team {
-                        potential_height += 1;
-                    } else {
-                        if tt != ActiveTeam::Neutral {
-                            num_enemy += 1;
-                        }
-                    }
-                }
-            }
-
-            if potential_height == 0 {
-                continue;
-            }
-
-            if potential_height < num_enemy {
-                continue;
-            }
-
-            if let Some((height, rest)) = self.factions.get_cell(pos) {
-                if potential_height <= height {
-                    continue;
+                    captures.add(pos)
                 }
             }
 
             mesh.add(pos);
         }
 
-        mesh
+        (mesh, captures)
     }
 }
 
@@ -222,81 +227,27 @@ pub struct ActualMove {
 }
 
 impl GameState {
-    pub fn for_all_moves_fast(
-        &mut self,
-        team: ActiveTeam,
-        world: &board::MyWorld,
-        mut func: impl FnMut(moves::ActualMove, &move_build::MoveEffect, &GameState),
-    ) {
-        //let state = self;
+    // pub fn for_all_moves_fast(
+    //     &mut self,
+    //     team: ActiveTeam,
+    //     world: &board::MyWorld,
+    //     mut func: impl FnMut(moves::ActualMove, &move_build::MoveEffect, &GameState),
+    // ) {
+    //     //let state = self;
 
-        for mm in self
-            .generate_possible_moves_movement(world, None, team)
-            .iter_mesh(Axial::zero())
-        {
-            let mut mmm = ActualMove { moveto: mm };
+    //     for mm in self
+    //         .generate_possible_moves_movement(world, None, team).0
+    //         .iter_mesh(Axial::zero())
+    //     {
+    //         let mut mmm = ActualMove { moveto: mm };
 
-            let mut effect = mmm.apply(team, self, world);
+    //         let mut effect = mmm.apply(team, self, world);
 
-            let mmo = moves::ActualMove { moveto: mm };
+    //         let mmo = moves::ActualMove { moveto: mm };
 
-            func(mmo, &effect, self);
+    //         func(mmo, &effect, self);
 
-            mmm.undo(team, &effect, self);
-        }
-
-        //let mut movs = Vec::new();
-        //for i in 0..state.factions.relative(team).this_team.units.len() {
-        // for pos in state.factions.relative(team).this_team.clone().iter_mesh() {
-        //     let mesh = state.generate_possible_moves_movement(world, &pos, team);
-        //     for mm in mesh.iter_mesh(pos) {
-        //         //Temporarily move the player in the game world.
-        //         //We do this so that the mesh generated for extra is accurate.
-        //         let mut mmm = move_build::MovePhase {
-        //             original: pos,
-        //             moveto: mm,
-        //         };
-
-        //         let mut effect = mmm.apply(team, state, world);
-
-        //         let second_mesh = state.generate_possible_moves_extra(world, &mmm, &effect, team);
-
-        //         for sm in second_mesh.iter_mesh(mm) {
-        //             assert!(!state.env.terrain.is_set(sm));
-
-        //             let kkk = mmm.into_attack(sm);
-
-        //             let k = kkk.apply(team, state, world, &effect);
-
-        //             let mmo = moves::ActualMove {
-        //                 original: pos,
-        //                 moveto: mm,
-        //                 attackto: sm,
-        //             };
-
-        //             let jjj = effect.combine(k);
-
-        //             func(jjj.clone(), mmo, state);
-
-        //             mmm = kkk.undo(&jjj.extra_effect, state);
-        //             effect = jjj.move_effect;
-        //         }
-
-        //         //revert it back just the movement component.
-        //         mmm.undo(team, &effect, state);
-        //     }
-        // }
-
-        // {
-        //     for a in movs.iter() {
-        //         assert!(state
-        //             .factions
-        //             .relative(team)
-        //             .this_team
-        //             .units
-        //             .is_set(a.original));
-        //     }
-        // }
-        // movs
-    }
+    //         mmm.undo(team, &effect, self);
+    //     }
+    // }
 }
