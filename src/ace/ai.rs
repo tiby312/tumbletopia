@@ -173,13 +173,15 @@ struct TranspositionTable {
     a: std::collections::BTreeMap<u64, moves::ActualMove>,
 }
 impl TranspositionTable {
-    pub fn update(&mut self, a: &GameState, m: moves::ActualMove) {
-        let k = a.hash_me();
+    pub fn update_inner(&mut self, k: u64, m: moves::ActualMove) {
         if let Some(foo) = self.a.get_mut(&k) {
             *foo = m;
         } else {
             self.a.insert(k, m);
         }
+    }
+    pub fn update(&mut self, a: &GameState, m: moves::ActualMove) {
+        self.update_inner(a.hash_me(), m)
     }
     pub fn get(&self, a: &GameState) -> Option<&moves::ActualMove> {
         self.a.get(&a.hash_me())
@@ -235,7 +237,7 @@ pub fn iterative_deepening(
 
     //TODO stop searching if we found a game ending move.
     for depth in [1, 2, 3, 4] {
-        console_dbg!("searching", depth);
+        gloo::console::info!(format!("searching depth={}", depth));
 
         let mut k = KillerMoves::new(num_iter + 4 + 4);
 
@@ -251,22 +253,36 @@ pub fn iterative_deepening(
         assert_eq!(&kk, game);
 
         {
-            //Store the PV into the transposition table
-            let mut tt = team;
             let mut gg = kk.clone();
-            let mut effects = vec![];
-            for m in mov.iter() {
-                let effect1 = m.apply(tt, &mut gg, world);
-                effects.push(effect1);
+            let mut tt = team;
+            let mut vals = vec![];
+            for m in mov.iter().rev() {
+                vals.push((gg.hash_me(), m.clone()));
+                m.apply(tt, &mut gg, world);
                 tt = tt.not();
+            }
+            for (v, k) in vals.into_iter().rev() {
+                foo1.update_inner(v, k);
             }
 
-            for (m, effect) in mov.iter().rev().zip(effects.iter().rev()) {
-                tt = tt.not();
-                foo1.update(&gg, m.clone());
-                m.undo(tt, effect, &mut gg);
-            }
-            assert_eq!(gg, kk);
+            //Store the PV into the transposition table
+            // let mut tt = team;
+            // let mut gg = kk.clone();
+            // let mut effects = vec![];
+            // for m in mov.iter() {
+            //     let effect1 = m.apply(tt, &mut gg, world);
+            //     effects.push(effect1);
+            //     tt = tt.not();
+            // }
+
+            // for (m, effect) in mov.iter().rev().zip(effects.iter().rev()) {
+            //     tt = tt.not();
+            //     m.undo(tt, effect, &mut gg);
+            //     foo1.update(&gg, m.clone());
+
+            // }
+            // assert_eq!(gg, kk);
+            gloo::console::info!(format!("transpotion table size={}", foo1.a.len()));
         }
 
         let mov = mov.last().unwrap().clone();
@@ -330,8 +346,8 @@ impl KillerMoves {
         let v = (0..a).map(|_| smallvec::SmallVec::new()).collect();
         Self { a: v }
     }
-    pub fn get(&mut self, depth: usize) -> &mut [moves::ActualMove] {
-        &mut self.a[depth]
+    pub fn get(&self, depth: usize) -> &[moves::ActualMove] {
+        &self.a[depth]
     }
     pub fn consider(&mut self, depth: usize, m: moves::ActualMove) {
         let a = &mut self.a[depth];
@@ -452,12 +468,12 @@ impl<'a> AlphaBeta<'a> {
             return (self.evaluator.cant_move(team), vec![]);
         }
 
-        moves.sort_by_cached_key(|k| {
+        let move_value = |k: &ActualMove| {
             if captures.is_set(k.moveto) {
                 return 4;
             }
 
-            if let Some(a) = self.prev_cache.a.get(&game.hash_me()) {
+            if let Some(a) = self.prev_cache.get(&game) {
                 if a == k {
                     return 1000;
                 }
@@ -475,7 +491,12 @@ impl<'a> AlphaBeta<'a> {
             }
 
             0
-        });
+        };
+
+        moves.sort_by_cached_key(move_value);
+
+        // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
+        // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
 
         let mut ab_iter = ab.ab_iter(team.is_white());
         for cand in moves.into_iter().rev() {
