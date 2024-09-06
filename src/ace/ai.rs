@@ -477,31 +477,6 @@ impl<'a> AlphaBeta<'a> {
             0
         });
 
-        // let mut num_sorted = 0;
-        // {
-        //     if let Some(a) = self.prev_cache.a.get(&game.hash_me()) {
-        //         if let Some((x, _)) = moves[num_sorted..]
-        //         .iter()
-        //         .enumerate()
-        //         .find(|(_, x)| **x == a.0)
-        //         {
-        //             moves.swap(num_sorted + x, num_sorted);
-        //             num_sorted += 1;
-        //         }
-        //     }
-        // }
-
-        // for a in self.killer_moves.get(usize::try_from(depth).unwrap()) {
-        //     if let Some((x, _)) = moves[num_sorted..]
-        //         .iter()
-        //         .enumerate()
-        //         .find(|(_, x)| **x == *a)
-        //     {
-        //         moves.swap(num_sorted + x, num_sorted);
-        //         num_sorted += 1;
-        //     }
-        // }
-
         let mut ab_iter = ab.ab_iter(team.is_white());
         for cand in moves.into_iter().rev() {
             let effect = cand.apply(team, game, self.world);
@@ -512,19 +487,17 @@ impl<'a> AlphaBeta<'a> {
 
             if !ab_iter.consider((cand.clone(), m), eval) {
                 if effect.destroyed_unit.is_none() {
-                    self.killer_moves.consider(depth, cand);
-                } else {
-                    self.prev_cache.update(game, cand);
+                    self.killer_moves.consider(depth, cand.clone());
                 }
+
+                self.prev_cache.update(game, cand);
+
                 break;
             }
         }
 
         let (eval, m) = ab_iter.finish();
 
-        // if let Some(kk) = m {
-        //     self.prev_cache.update(game, kk, eval);
-        // }
         if let Some((cand, mut m)) = m {
             m.push(cand);
             (eval, m)
