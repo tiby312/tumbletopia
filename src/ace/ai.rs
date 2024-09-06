@@ -4,7 +4,7 @@ use super::*;
 
 pub type Eval = i64;
 const MATE: i64 = 1_000_000;
-
+use tinyvec::ArrayVec;
 pub struct Evaluator {
     // workspace: BitField,
     // workspace2: BitField,
@@ -391,6 +391,8 @@ struct EvalRet<T> {
     pub eval: Eval,
 }
 
+const STACK_SIZE: usize = 4 + 4;
+
 // struct Variation{
 //     a:Vec<ActualMove>,
 //     eval:Eval
@@ -403,11 +405,11 @@ impl<'a> AlphaBeta<'a> {
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
-    ) -> (Eval, Vec<ActualMove>) {
+    ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         if depth == 0 {
             return (
                 self.evaluator.absolute_evaluate(game, self.world, false),
-                vec![],
+                tinyvec::array_vec![],
             );
         }
 
@@ -421,7 +423,7 @@ impl<'a> AlphaBeta<'a> {
         if moves.is_empty() {
             return (
                 self.evaluator.absolute_evaluate(game, self.world, false),
-                vec![],
+                tinyvec::array_vec![],
             );
         }
 
@@ -443,7 +445,7 @@ impl<'a> AlphaBeta<'a> {
             m.push(cand);
             (eval, m)
         } else {
-            (eval, vec![])
+            (eval, tinyvec::array_vec![])
         }
     }
     fn alpha_beta(
@@ -452,7 +454,7 @@ impl<'a> AlphaBeta<'a> {
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
-    ) -> (Eval, Vec<ActualMove>) {
+    ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         if depth == 0 {
             return self.quiesance(game, ab, team, 4);
         }
@@ -465,7 +467,7 @@ impl<'a> AlphaBeta<'a> {
             .collect();
 
         if moves.is_empty() {
-            return (self.evaluator.cant_move(team), vec![]);
+            return (self.evaluator.cant_move(team), tinyvec::array_vec![]);
         }
 
         let move_value = |k: &ActualMove| {
@@ -523,7 +525,7 @@ impl<'a> AlphaBeta<'a> {
             m.push(cand);
             (eval, m)
         } else {
-            (eval, vec![])
+            (eval, tinyvec::array_vec![])
         }
     }
 }

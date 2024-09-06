@@ -225,6 +225,13 @@ pub struct ActualMove {
     pub moveto: Axial,
     //pub attackto: Axial,
 }
+impl Default for ActualMove {
+    fn default() -> Self {
+        Self {
+            moveto: Default::default(),
+        }
+    }
+}
 
 impl GameState {
     // pub fn for_all_moves_fast(
