@@ -4,6 +4,8 @@ use super::*;
 
 pub mod small_mesh {
 
+    use primitive_types::U256;
+
     pub fn explore_outward_two() -> impl Iterator<Item = (HDir, [HDir; 3])> {
         HDir::all().map(move |dir| {
             let straight = dir;
@@ -49,12 +51,15 @@ pub mod small_mesh {
         Hash, Serialize, Deserialize, Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone,
     )]
     pub struct SmallMesh {
-        pub inner: [u64; 4],
+        //pub inner: [u64; 4],
+        pub inner: U256,
     }
 
     impl SmallMesh {
         pub fn new() -> SmallMesh {
-            SmallMesh { inner: [0; 4] }
+            SmallMesh {
+                inner: U256::zero(),
+            }
         }
         pub fn from_iter(it: impl Iterator<Item = Axial>) -> SmallMesh {
             let mut m = SmallMesh::new();
@@ -63,17 +68,20 @@ pub mod small_mesh {
             }
             m
         }
-        pub fn count_ones(&self) -> u32 {
-            self.inner[0].count_ones()
-                + self.inner[1].count_ones()
-                + self.inner[2].count_ones()
-                + self.inner[3].count_ones()
-        }
+        // pub fn count_ones(&self) -> u32 {
+        //     self.inner.c
+        //     self.inner[0].count_ones()
+        //         + self.inner[1].count_ones()
+        //         + self.inner[2].count_ones()
+        //         + self.inner[3].count_ones()
+        // }
         pub fn union_with(&mut self, other: &SmallMesh) {
-            self.inner[0] |= other.inner[0];
-            self.inner[1] |= other.inner[1];
-            self.inner[2] |= other.inner[2];
-            self.inner[3] |= other.inner[3];
+            self.inner |= other.inner
+
+            // self.inner[0] |= other.inner[0];
+            // self.inner[1] |= other.inner[1];
+            // self.inner[2] |= other.inner[2];
+            // self.inner[3] |= other.inner[3];
         }
 
         #[must_use]
@@ -91,11 +99,12 @@ pub mod small_mesh {
             //assert!(x != 0 || y != 0);
         }
         pub fn add(&mut self, a: Axial) {
+            //use std::ops::Shl;
             assert!(Self::validate_rel(a));
 
             let ind = conv(a);
-            let (a, b) = ind_to_foo(ind);
-            self.inner[a] |= 1 << b;
+            //let (a, b) = ind_to_foo(ind);
+            self.inner |= U256::one() << ind;
             //self.inner |= 1 << ind;
         }
         pub fn set_coord(&mut self, a: Axial, val: bool) {
@@ -108,11 +117,11 @@ pub mod small_mesh {
         pub fn remove(&mut self, a: Axial) {
             assert!(Self::validate_rel(a));
             let ind = conv(a);
-            let (a, b) = ind_to_foo(ind);
-            self.inner[a] &= !(1 << b);
+            //let (a, b) = ind_to_foo(ind);
+            self.inner &= !(U256::one() << ind);
         }
         pub fn is_empty(&self) -> bool {
-            self.inner[0] == 0 && self.inner[1] == 0 && self.inner[2] == 0 && self.inner[3] == 0
+            self.inner == U256::zero()
         }
         pub fn is_set(&self, a: Axial) -> bool {
             if !Self::validate_rel(a) {
@@ -120,9 +129,9 @@ pub mod small_mesh {
             }
 
             let ind = conv(a);
-            let (a, b) = ind_to_foo(ind);
+            //let (a, b) = ind_to_foo(ind);
 
-            self.inner[a] & (1 << b) != 0
+            self.inner & (U256::one() << ind) != U256::zero()
         }
 
         pub fn iter_mesh(&self, point: Axial) -> impl Iterator<Item = Axial> {
@@ -138,9 +147,9 @@ pub mod small_mesh {
 
             (0usize..256)
                 .filter(move |&x| {
-                    let (a, b) = ind_to_foo(x);
+                    //let (a, b) = ind_to_foo(x);
 
-                    inner[a] & (1 << b) != 0
+                    inner & (U256::one() << x) != U256::zero()
                 })
                 .map(move |a| {
                     let x = a / 16;

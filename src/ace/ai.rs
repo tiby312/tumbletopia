@@ -220,9 +220,7 @@ impl TranspositionTable {
 //     }
 // }
 
-
 const STACK_SIZE: usize = 5 + 4;
-
 
 pub fn iterative_deepening(
     game: &GameState,
