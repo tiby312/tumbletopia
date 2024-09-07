@@ -220,6 +220,10 @@ impl TranspositionTable {
 //     }
 // }
 
+
+const STACK_SIZE: usize = 5 + 4;
+
+
 pub fn iterative_deepening(
     game: &GameState,
     world: &board::MyWorld,
@@ -390,8 +394,6 @@ struct EvalRet<T> {
     pub mov: T,
     pub eval: Eval,
 }
-
-const STACK_SIZE: usize = 4 + 4;
 
 impl<'a> AlphaBeta<'a> {
     fn quiesance(
