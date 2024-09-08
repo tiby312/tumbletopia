@@ -392,6 +392,13 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     cells.add_cell(Axial::from_arr([-1, -1]), 1, ActiveTeam::Black);
     cells.add_cell(Axial::from_arr([0, 0]), 2, ActiveTeam::Neutral);
 
+    // use primitive_types::U256;
+
+    // cells.cells[0].inner <<= U256::one();
+    // cells.cells[1].inner <<= U256::one();
+    // cells.cells[2].inner <<= U256::one();
+    // cells.team.inner <<= U256::one();
+
     let mut game = GameState {
         factions: cells,
         // env: Environment {

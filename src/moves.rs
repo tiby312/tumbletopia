@@ -45,21 +45,7 @@ impl<T> EndPoints<T> {
 #[test]
 fn doop() {
 
-    // let mut k=SmallMesh::new();
 
-    // for i in 0..6{
-    //     k.add(Axial{q:i,r:-i});
-    //     println!("0x{:b}",k.inner[0]);
-    //     println!("0x{:b}",k.inner[1]);
-    //     println!("0x{:b}",k.inner[2]);
-    //     println!("0x{:b}",k.inner[3]);
-    //     println!();
-
-    // }
-
-    // //dbg!(k);
-
-    // panic!();
 }
 
 impl GameState {
