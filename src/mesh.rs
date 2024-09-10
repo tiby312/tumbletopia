@@ -47,18 +47,20 @@ pub mod small_mesh {
         )
     }
 
+    use bitvec::boxed::BitBox;
+
     #[derive(
         Hash, Serialize, Deserialize, Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone,
     )]
     pub struct SmallMesh {
         //pub inner: [u64; 4],
-        pub inner: U256,
+        pub inner: BitBox,
     }
 
     impl SmallMesh {
         pub fn new() -> SmallMesh {
             SmallMesh {
-                inner: U256::zero(),
+                inner: BitBox::from_iter((0..8).map(|_| 0)),
             }
         }
         pub fn from_iter(it: impl Iterator<Item = Axial>) -> SmallMesh {
@@ -76,12 +78,7 @@ pub mod small_mesh {
         //         + self.inner[3].count_ones()
         // }
         pub fn union_with(&mut self, other: &SmallMesh) {
-            self.inner |= other.inner
-
-            // self.inner[0] |= other.inner[0];
-            // self.inner[1] |= other.inner[1];
-            // self.inner[2] |= other.inner[2];
-            // self.inner[3] |= other.inner[3];
+            *self.inner.as_mut_bitslice() |= &other.inner
         }
 
         #[must_use]
@@ -103,9 +100,10 @@ pub mod small_mesh {
             assert!(Self::validate_rel(a));
 
             let ind = conv(a);
-            //let (a, b) = ind_to_foo(ind);
-            self.inner |= U256::one() << ind;
-            //self.inner |= 1 << ind;
+
+            //*self.inner.as_mut_bitslice() |= U256::one() << ind;
+
+            self.inner.as_mut_bitslice().set(ind, true);
         }
         pub fn set_coord(&mut self, a: Axial, val: bool) {
             if val {
@@ -118,10 +116,11 @@ pub mod small_mesh {
             assert!(Self::validate_rel(a));
             let ind = conv(a);
             //let (a, b) = ind_to_foo(ind);
-            self.inner &= !(U256::one() << ind);
+            //self.inner &= !(U256::one() << ind);
+            self.inner.set(ind, false);
         }
         pub fn is_empty(&self) -> bool {
-            self.inner == U256::zero()
+            self.inner.is_empty()
         }
         pub fn is_set(&self, a: Axial) -> bool {
             if !Self::validate_rel(a) {
@@ -131,11 +130,12 @@ pub mod small_mesh {
             let ind = conv(a);
             //let (a, b) = ind_to_foo(ind);
 
-            self.inner & (U256::one() << ind) != U256::zero()
+            //self.inner & (U256::one() << ind) != U256::zero()
+            self.inner[ind] == true
         }
 
-        pub fn iter_mesh(&self, point: Axial) -> impl Iterator<Item = Axial> {
-            let inner = self.inner;
+        pub fn iter_mesh(&self, point: Axial) -> impl Iterator<Item = Axial> + '_ {
+            let inner = &self.inner;
 
             //let skip_moves = self.swing_moves(point);
 
@@ -148,8 +148,8 @@ pub mod small_mesh {
             (0usize..256)
                 .filter(move |&x| {
                     //let (a, b) = ind_to_foo(x);
-
-                    inner & (U256::one() << x) != U256::zero()
+                    inner[x] == true
+                    //inner & (U256::one() << x) != U256::zero()
                 })
                 .map(move |a| {
                     let x = a / 16;

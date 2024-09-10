@@ -43,10 +43,7 @@ impl<T> EndPoints<T> {
 }
 
 #[test]
-fn doop() {
-
-
-}
+fn doop() {}
 
 impl GameState {
     pub fn iter_end_points(
