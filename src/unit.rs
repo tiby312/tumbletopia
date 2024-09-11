@@ -292,9 +292,8 @@ impl Tribe {
             // let first:Vec<_>=for_ray(unit,i).collect();
             // let second:Vec<_>=for_ray2(unit,i).collect();
             // assert_eq!(first,second);
-            
+
             for k in for_ray2(unit, i) {
-                //TODO compute at end of loop instead???
                 last_cell.0 = k;
 
                 if self.has_a_piece(k) {
