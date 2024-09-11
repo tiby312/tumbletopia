@@ -269,7 +269,7 @@ impl Tribe {
         &self,
         world: &board::MyWorld,
         unit: Axial,
-    ) -> [(i8, Option<(usize, ActiveTeam)>); 6] {
+    ) -> [(i8, Option<(u8, ActiveTeam)>); 6] {
         let for_ray = |unit: Axial, dir: usize| {
             unit.to_cube()
                 .ray_from_vector(hex::Cube::from_arr(hex::OFFSETS[dir]))
@@ -332,11 +332,12 @@ impl Tribe {
     }
 
     pub fn remove(&mut self, a: Axial) {
-        self.cells[0].set_coord(a, false);
-        self.cells[1].set_coord(a, false);
-        self.cells[2].set_coord(a, false);
-        self.piece.set_coord(a, false);
-        self.team.set_coord(a, false);
+        let a = mesh::small_mesh::conv(a);
+        self.cells[0].inner.set(a, false);
+        self.cells[1].inner.set(a, false);
+        self.cells[2].inner.set(a, false);
+        self.piece.inner.set(a, false);
+        self.team.inner.set(a, false);
     }
 
     pub fn has_a_piece(&self, index: usize) -> bool {
@@ -346,7 +347,7 @@ impl Tribe {
         self.piece.inner[index]
     }
 
-    pub fn get_cell_inner(&self, index: usize) -> Option<(usize, ActiveTeam)> {
+    pub fn get_cell_inner(&self, index: usize) -> Option<(u8, ActiveTeam)> {
         let bit0 = self.cells[0].inner[index] as usize;
         let bit1 = self.cells[1].inner[index] as usize;
         let bit2 = self.cells[2].inner[index] as usize;
@@ -364,36 +365,37 @@ impl Tribe {
         } else {
             ActiveTeam::Black
         };
-        Some((val, team))
+        Some((val as u8, team))
     }
-    pub fn get_cell(&self, a: Axial) -> Option<(usize, ActiveTeam)> {
+    pub fn get_cell(&self, a: Axial) -> Option<(u8, ActiveTeam)> {
         self.get_cell_inner(mesh::small_mesh::conv(a))
     }
 
-    fn set_coord(&mut self, a: Axial, stack: usize) {
+    fn set_coord(&mut self, index: usize, stack: u8) {
         assert!(stack <= 7);
         let bit2 = ((stack >> 2) & 1) != 0;
         let bit1 = ((stack >> 1) & 1) != 0;
         let bit0 = ((stack >> 0) & 1) != 0;
 
-        self.cells[0].set_coord(a, bit0);
-        self.cells[1].set_coord(a, bit1);
-        self.cells[2].set_coord(a, bit2);
+        self.cells[0].inner.set(index, bit0);
+        self.cells[1].inner.set(index, bit1);
+        self.cells[2].inner.set(index, bit2);
 
         if stack != 0 {
-            self.piece.set_coord(a, true);
+            self.piece.inner.set(index, true);
         }
     }
 
-    pub fn add_cell(&mut self, a: Axial, stack: usize, team: ActiveTeam) {
+    pub fn add_cell(&mut self, a: Axial, stack: u8, team: ActiveTeam) {
+        let a = mesh::small_mesh::conv(a);
         match team {
-            ActiveTeam::White => self.team.set_coord(a, true),
-            ActiveTeam::Black => self.team.set_coord(a, false),
+            ActiveTeam::White => self.team.inner.set(a, true),
+            ActiveTeam::Black => self.team.inner.set(a, false),
             ActiveTeam::Neutral => {
                 let val = if stack == 2 { 7 } else { panic!("impossible") };
 
                 self.set_coord(a, val);
-                self.team.set_coord(a, false);
+                self.team.inner.set(a, false);
                 return;
             }
         }

@@ -227,7 +227,7 @@ impl crate::moves::ActualMove {
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
-    pub destroyed_unit: Option<(usize, ActiveTeam)>,
+    pub destroyed_unit: Option<(u8, ActiveTeam)>,
 }
 impl MoveEffect {
     // pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
