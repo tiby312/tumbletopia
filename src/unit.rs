@@ -257,6 +257,11 @@ impl Default for CellSelection {
 pub struct Tribe {
     pub cells: [SmallMesh; 3],
     pub team: SmallMesh,
+
+    //This just signifies if there is a number in cells.
+    //This way you can just check one mesh to see if a piece is there or not
+    //instead of checking 3
+    pub piece: SmallMesh,
 }
 
 impl Tribe {
@@ -312,6 +317,7 @@ impl Tribe {
         Tribe {
             cells: [0; 3].map(|_| SmallMesh::new()),
             team: SmallMesh::new(),
+            piece: SmallMesh::new(),
         }
     }
 
@@ -319,13 +325,15 @@ impl Tribe {
         self.cells[0].set_coord(a, false);
         self.cells[1].set_coord(a, false);
         self.cells[2].set_coord(a, false);
+        self.piece.set_coord(a, false);
         self.team.set_coord(a, false);
     }
 
     pub fn has_a_piece(&self, a: Axial) -> bool {
         //TODO worth having a seperate piece bitfield????
         //Check smaller bits first. more likely to be set.
-        self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
+        //self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
+        self.piece.is_set(a)
     }
     pub fn get_cell(&self, a: Axial) -> Option<(usize, ActiveTeam)> {
         let bit0 = self.cells[0].is_set(a) as usize;
@@ -357,6 +365,10 @@ impl Tribe {
         self.cells[0].set_coord(a, bit0);
         self.cells[1].set_coord(a, bit1);
         self.cells[2].set_coord(a, bit2);
+
+        if stack != 0 {
+            self.piece.set_coord(a, true);
+        }
     }
 
     pub fn add_cell(&mut self, a: Axial, stack: usize, team: ActiveTeam) {
