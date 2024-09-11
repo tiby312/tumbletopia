@@ -188,70 +188,70 @@ impl Default for CellSelection {
     }
 }
 
-#[derive(Default, Clone)]
-pub struct SpokeNode {
-    spokes: [u8; 6],
-}
-impl SpokeNode {
-    pub fn has_piece_at_end(&self, dir: usize) -> bool {
-        self.spokes[dir] & (1 << 7) != 0
-    }
+// #[derive(Default, Clone)]
+// pub struct SpokeNode {
+//     spokes: [u8; 6],
+// }
+// impl SpokeNode {
+//     pub fn has_piece_at_end(&self, dir: usize) -> bool {
+//         self.spokes[dir] & (1 << 7) != 0
+//     }
 
-    pub fn distance(&self, dir: usize) -> u8 {
-        self.spokes[dir] & !(1 << 7)
-    }
-}
+//     pub fn distance(&self, dir: usize) -> u8 {
+//         self.spokes[dir] & !(1 << 7)
+//     }
+// }
 
-pub struct Spokes {
-    inner: Vec<SpokeNode>,
-}
-impl Spokes {
-    pub fn update_to_added_unit(&mut self, factions: &Tribe, ax: Axial, world: &board::MyWorld) {
-        let s = self.get_spokes(ax).clone();
+// pub struct Spokes {
+//     inner: Vec<SpokeNode>,
+// }
+// impl Spokes {
+//     pub fn update_to_added_unit(&mut self, factions: &Tribe, ax: Axial, world: &board::MyWorld) {
+//         let s = self.get_spokes(ax).clone();
 
-        for i in 0..6 {
-            let dis = s.distance(i);
+//         for i in 0..6 {
+//             let dis = s.distance(i);
 
-            for k in 0..dis {}
-            let has_piece = s.has_piece_at_end(i);
-            let j = (i + 3) % 6;
-            // let end_point_ax=ax.add(hex::OFFSETS[i].mul(dis));
+//             for k in 0..dis {}
+//             let has_piece = s.has_piece_at_end(i);
+//             let j = (i + 3) % 6;
+//             // let end_point_ax=ax.add(hex::OFFSETS[i].mul(dis));
 
-            // self.get_spokes_mut(end_point_ax).spokes[j]=dis;
-        }
-    }
+//             // self.get_spokes_mut(end_point_ax).spokes[j]=dis;
+//         }
+//     }
 
-    pub fn generate(factions: &Tribe, world: &board::MyWorld) -> Spokes {
-        let mut s = Spokes {
-            inner: vec![SpokeNode::default(); 256],
-        };
+//     pub fn generate(factions: &Tribe, world: &board::MyWorld) -> Spokes {
+//         let mut s = Spokes {
+//             inner: vec![SpokeNode::default(); 256],
+//         };
 
-        for unit in world.get_game_cells().iter_mesh() {
-            let res = factions.iter_end_points(world, unit);
+//         for unit in world.get_game_cells().iter_mesh() {
+//             let res = factions.iter_end_points(world, unit);
 
-            let res = res.map(|(ax, foo)| {
-                let mut val = ax.to_cube().dist(&unit.to_cube()) as u8;
+//             let res = res.map(|(ax, foo)| {
+//                 let mut val = ax.to_cube().dist(&unit.to_cube()) as u8;
 
-                if foo.is_some() {
-                    val |= 1 << 7;
-                }
-                val
-            });
+//                 if foo.is_some() {
+//                     val |= 1 << 7;
+//                 }
+//                 val
+//             });
 
-            s.get_spokes_mut(unit).spokes = res;
-        }
+//             s.get_spokes_mut(unit).spokes = res;
+//         }
 
-        s
-    }
-    pub fn get_spokes(&self, a: Axial) -> &SpokeNode {
-        let ind = mesh::small_mesh::conv(a);
-        &self.inner[ind]
-    }
-    pub fn get_spokes_mut(&mut self, a: Axial) -> &mut SpokeNode {
-        let ind = mesh::small_mesh::conv(a);
-        &mut self.inner[ind]
-    }
-}
+//         s
+//     }
+//     pub fn get_spokes(&self, a: Axial) -> &SpokeNode {
+//         let ind = mesh::small_mesh::conv(a);
+//         &self.inner[ind]
+//     }
+//     pub fn get_spokes_mut(&mut self, a: Axial) -> &mut SpokeNode {
+//         let ind = mesh::small_mesh::conv(a);
+//         &mut self.inner[ind]
+//     }
+// }
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
@@ -333,9 +333,6 @@ impl Tribe {
 
         let val = bit0 | bit1 << 1 | bit2 << 2;
 
-        // if val == 6 {
-        //     return Some((1, ActiveTeam::Neutral));
-        // }
         if val == 7 {
             return Some((2, ActiveTeam::Neutral));
         }
