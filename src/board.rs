@@ -130,38 +130,71 @@ fn lap(){
     //https://math.stackexchange.com/questions/1210572/find-the-distance-to-the-edge-of-a-hexagon
 
 
-    let distance_to_top_right=|a:Axial|{
+
+
+    fn dis(a:Axial,dir:hex::HDir,radius:i8)->i8{
         let a=a.to_cube();
-        3-a.r - a.s.max(0)
-    };
+        match dir{
+            hex::HDir::BottomRight => {
+                radius-a.q - a.r.max(0)
+            },
+            hex::HDir::Bottom => {
+                radius-a.q - a.s.max(0)
+            },
+            hex::HDir::BottomLeft => {
+                radius-a.s - a.q.max(0)
+            },
+            hex::HDir::TopLeft => {
+                radius-a.s - a.r.max(0)
+            },
+            hex::HDir::Top => {
+                radius-a.r - a.s.max(0)
+            },
+            hex::HDir::TopRight => {
+                radius-a.r - a.q.max(0)
+            },
+        }
+    }
 
 
-    let distance_to_bottom_left=|a:Axial|{
-        let a=a.to_cube();
-        3-a.q - a.s.max(0)
-    };
 
 
-    let distance_to_right=|a:Axial|{
-        let a=a.to_cube();
-        3-a.r - a.q.max(0)
-    };
+    // let distance_to_bottom=|a:Axial|{
+    //     let a=a.to_cube();
+    //     3-a.q - a.r.max(0)
+    // };
 
-    let distance_to_bottom=|a:Axial|{
-        let a=a.to_cube();
-        3-a.q - a.r.max(0)
-    };
 
-    let distance_to_top=|a:Axial|{
-        let a=a.to_cube();
-        3-a.s - a.r.max(0)
-    };
 
-    let distance_to_left=|a:Axial|{
-        let a=a.to_cube();
-        3-a.s - a.q.max(0)
-    };
+    // let distance_to_bottom_left=|a:Axial|{
+    //     let a=a.to_cube();
+    //     3-a.q - a.s.max(0)
+    // };
 
+    // let distance_to_left=|a:Axial|{
+    //     let a=a.to_cube();
+    //     3-a.s - a.q.max(0)
+    // };
+
+
+    // let distance_to_top=|a:Axial|{
+    //     let a=a.to_cube();
+    //     3-a.s - a.r.max(0)
+    // };
+
+    // let distance_to_top_right=|a:Axial|{
+    //     let a=a.to_cube();
+    //     3-a.r - a.s.max(0)
+    // };
+
+
+    // let distance_to_right=|a:Axial|{
+    //     let a=a.to_cube();
+    //     3-a.r - a.q.max(0)
+    // };
+
+
+    
 
 
 
@@ -172,7 +205,7 @@ fn lap(){
         for r in -8..8{
             
             if mesh.is_set(Axial{q,r}){
-                let val=distance_to_right(Axial{q,r});
+                let val=dis(Axial{q,r},hex::HDir::Bottom,3);
 
                 print!("{} ",val);
             }else{
