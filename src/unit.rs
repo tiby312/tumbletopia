@@ -188,6 +188,29 @@ impl Default for CellSelection {
     }
 }
 
+
+
+pub struct SpokeNode{
+    spokes:[u8;6],
+}
+impl SpokeNode{
+    pub fn has_piece_at_end(&self,dir:usize)->bool{
+        self.spokes[dir] & (1<<7) !=0
+    }
+
+    pub fn distance(&self,dir:usize)->u8{
+        self.spokes[dir] & !(1<<7)
+    }
+}
+
+
+pub struct Spokes{
+    inner:Vec<SpokeNode>
+}
+
+
+
+
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
     pub cells: [SmallMesh; 3],

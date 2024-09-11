@@ -57,10 +57,11 @@ pub mod small_mesh {
         pub inner: BitBox,
     }
 
+    use bitvec::prelude::*;
     impl SmallMesh {
         pub fn new() -> SmallMesh {
             SmallMesh {
-                inner: BitBox::from_iter((0..8).map(|_| 0)),
+                inner:  bitbox![0;256],
             }
         }
         pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SmallMesh {
