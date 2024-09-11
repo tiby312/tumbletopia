@@ -292,8 +292,7 @@ impl Tribe {
         };
 
         core::array::from_fn(|i| {
-            //let mut last_cell = (Axial::zero(), None);
-
+            
             // let first:Vec<_>=for_ray(unit,i).collect();
             // let second:Vec<_>=for_ray2(unit,i).collect();
             // assert_eq!(first,second);
@@ -313,8 +312,7 @@ impl Tribe {
             // }
 
             for k in for_ray2(unit, i) {
-                //last_cell.0 = k;
-
+                
                 let index = mesh::small_mesh::conv(k);
                 if self.has_a_piece(index) {
                     if let Some((a, b)) = self.get_cell_inner(index) {
@@ -323,7 +321,6 @@ impl Tribe {
                 }
             }
             (dis, None)
-            //last_cell
         })
     }
 
