@@ -99,6 +99,34 @@ impl WorldSeed {
 
 
 
+
+pub fn dis_to_hex_of_hexagon(a:Axial,dir:hex::HDir,radius:i8)->i8{
+    let a=a.to_cube();
+    match dir{
+        hex::HDir::BottomRight => {
+            radius-a.q - a.r.max(0)
+        },
+        hex::HDir::Bottom => {
+            radius-a.q - a.s.max(0)
+        },
+        hex::HDir::BottomLeft => {
+            radius-a.s - a.q.max(0)
+            
+        },
+        hex::HDir::TopLeft => {
+            radius-a.s - a.r.max(0)
+        },
+        hex::HDir::Top => {
+            radius-a.r - a.s.max(0)
+        },
+        hex::HDir::TopRight => {
+            radius-a.r - a.q.max(0)
+        },
+    }
+}
+
+
+
 #[test]
 fn lap(){
 
@@ -130,31 +158,6 @@ fn lap(){
     //https://math.stackexchange.com/questions/1210572/find-the-distance-to-the-edge-of-a-hexagon
 
 
-
-
-    fn dis(a:Axial,dir:hex::HDir,radius:i8)->i8{
-        let a=a.to_cube();
-        match dir{
-            hex::HDir::BottomRight => {
-                radius-a.q - a.r.max(0)
-            },
-            hex::HDir::Bottom => {
-                radius-a.q - a.s.max(0)
-            },
-            hex::HDir::BottomLeft => {
-                radius-a.s - a.q.max(0)
-            },
-            hex::HDir::TopLeft => {
-                radius-a.s - a.r.max(0)
-            },
-            hex::HDir::Top => {
-                radius-a.r - a.s.max(0)
-            },
-            hex::HDir::TopRight => {
-                radius-a.r - a.q.max(0)
-            },
-        }
-    }
 
 
 
@@ -203,11 +206,25 @@ fn lap(){
 
     for q in -8..8{
         for r in -8..8{
-            
-            if mesh.is_set(Axial{q,r}){
-                let val=dis(Axial{q,r},hex::HDir::Bottom,3);
+            let unit=Axial{q,r};
+            if mesh.is_set(unit){
 
-                print!("{} ",val);
+                for i in 0..6{
+                    let true_dis=unit.to_cube()
+                        .ray_from_vector(hex::Cube::from_arr(hex::OFFSETS[i])).take_while(|x|{
+                            mesh.is_set(**x)
+                        }).count() as i8;
+
+                    
+                    let computed_dis=dis_to_hex_of_hexagon(unit,hex::HDir::from(i as u8),3);
+
+                    assert_eq!(true_dis,computed_dis);
+                }
+
+                //let val=dis(Axial{q,r},hex::HDir::Bottom,3);
+
+                //print!("{} ",val);
+
             }else{
                 print!("- ");
             }
@@ -216,7 +233,7 @@ fn lap(){
     }
 
 
-    panic!("FIN");
+    //panic!("FIN");
 
 
 
