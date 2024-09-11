@@ -97,6 +97,65 @@ impl WorldSeed {
     }
 }
 
+
+
+#[test]
+fn lap(){
+
+    let size=1;
+
+    let ll=hex::Cube::new(0, 0).range(size).map(|x| x.to_axial());
+    let ll=[Axial{q:7,r:7}];
+    let mut mesh=mesh::small_mesh::SmallMesh::from_iter(ll);
+
+    //mesh.inner.rotate_left(2);
+
+    //shift up
+    // let m=10;
+    // mesh.inner.rotate_left(16*m);
+
+    //shift down
+    //mesh.inner.rotate_right(16);
+
+
+    //shift up left
+     let m=8;
+    // mesh.inner.rotate_left(17*m);
+    // mesh.inner.rotate_right(m);
+    let rot_mag=15*(m )-(m);
+    println!("rot mag={}",rot_mag);
+    mesh.inner.rotate_left(rot_mag );
+
+
+
+
+    mesh.set_coord(Axial{q:8,r:8}, true);
+
+    for q in 0..17{
+        for r in 0..17{
+            if mesh.is_set(Axial{q,r}){
+                if q==8 && r==8{
+                    print!("o");
+                }else{
+
+                    print!("x");
+                }
+            }else{
+                print!("-");
+            }
+        }
+        println!();
+    }
+
+
+    panic!("FIN");
+
+
+
+
+}
+
+
 impl MyWorld {
     pub fn new(seed: WorldSeed) -> MyWorld {
         let size = 3;

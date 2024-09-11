@@ -63,7 +63,7 @@ pub mod small_mesh {
                 inner: BitBox::from_iter((0..8).map(|_| 0)),
             }
         }
-        pub fn from_iter(it: impl Iterator<Item = Axial>) -> SmallMesh {
+        pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SmallMesh {
             let mut m = SmallMesh::new();
             for a in it {
                 m.add(a);
