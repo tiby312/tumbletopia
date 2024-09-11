@@ -46,7 +46,6 @@ impl<T> EndPoints<T> {
 fn doop() {}
 
 impl GameState {
-    
     // pub fn loud_moves(&self, world: &board::MyWorld, team: ActiveTeam) -> SmallMesh {
     //     let game = self;
     //     let mut mesh = SmallMesh::new();

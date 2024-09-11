@@ -61,7 +61,7 @@ pub mod small_mesh {
     impl SmallMesh {
         pub fn new() -> SmallMesh {
             SmallMesh {
-                inner:  bitbox![0;256],
+                inner: bitbox![0;256],
             }
         }
         pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SmallMesh {

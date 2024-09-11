@@ -7,8 +7,8 @@ pub struct MyWorld {
     pub seed: WorldSeed,
     //w: BitField,
     pub land: BitField,
-    //black_start: Vec<Axial>,
-    //white_start: Vec<Axial>,
+    pub radius: u8, //black_start: Vec<Axial>,
+                    //white_start: Vec<Axial>,
 }
 
 // impl Default for MyWorld {
@@ -97,44 +97,25 @@ impl WorldSeed {
     }
 }
 
-
-
-
-pub fn dis_to_hex_of_hexagon(a:Axial,dir:hex::HDir,radius:i8)->i8{
-    let a=a.to_cube();
-    match dir{
-        hex::HDir::BottomRight => {
-            radius-a.q - a.r.max(0)
-        },
-        hex::HDir::Bottom => {
-            radius-a.q - a.s.max(0)
-        },
-        hex::HDir::BottomLeft => {
-            radius-a.s - a.q.max(0)
-            
-        },
-        hex::HDir::TopLeft => {
-            radius-a.s - a.r.max(0)
-        },
-        hex::HDir::Top => {
-            radius-a.r - a.s.max(0)
-        },
-        hex::HDir::TopRight => {
-            radius-a.r - a.q.max(0)
-        },
+pub fn dis_to_hex_of_hexagon(a: Axial, dir: hex::HDir, radius: i8) -> i8 {
+    let a = a.to_cube();
+    match dir {
+        hex::HDir::BottomRight => radius - a.q - a.r.max(0),
+        hex::HDir::Bottom => radius - a.q - a.s.max(0),
+        hex::HDir::BottomLeft => radius - a.s - a.q.max(0),
+        hex::HDir::TopLeft => radius - a.s - a.r.max(0),
+        hex::HDir::Top => radius - a.r - a.s.max(0),
+        hex::HDir::TopRight => radius - a.r - a.q.max(0),
     }
 }
 
-
-
 #[test]
-fn lap(){
+fn lap() {
+    let size = 3;
 
-    let size=3;
-
-    let ll=hex::Cube::new(0, 0).range(size).map(|x| x.to_axial());
+    let ll = hex::Cube::new(0, 0).range(size).map(|x| x.to_axial());
     //let ll=[Axial{q:7,r:7}];
-    let mut mesh=mesh::small_mesh::SmallMesh::from_iter(ll);
+    let mut mesh = mesh::small_mesh::SmallMesh::from_iter(ll);
 
     //mesh.inner.rotate_left(2);
 
@@ -145,7 +126,6 @@ fn lap(){
     //shift down
     //mesh.inner.rotate_right(16);
 
-
     //shift up left
     //let m=8;
     // mesh.inner.rotate_left(17*m);
@@ -154,20 +134,12 @@ fn lap(){
     // println!("rot mag={}",rot_mag);
     // mesh.inner.rotate_left(rot_mag );
 
-
     //https://math.stackexchange.com/questions/1210572/find-the-distance-to-the-edge-of-a-hexagon
-
-
-
-
-
 
     // let distance_to_bottom=|a:Axial|{
     //     let a=a.to_cube();
     //     3-a.q - a.r.max(0)
     // };
-
-
 
     // let distance_to_bottom_left=|a:Axial|{
     //     let a=a.to_cube();
@@ -179,7 +151,6 @@ fn lap(){
     //     3-a.s - a.q.max(0)
     // };
 
-
     // let distance_to_top=|a:Axial|{
     //     let a=a.to_cube();
     //     3-a.s - a.r.max(0)
@@ -190,56 +161,41 @@ fn lap(){
     //     3-a.r - a.s.max(0)
     // };
 
-
     // let distance_to_right=|a:Axial|{
     //     let a=a.to_cube();
     //     3-a.r - a.q.max(0)
     // };
 
-
-    
-
-
-
-
     //mesh.set_coord(Axial{q:8,r:8}, true);
 
-    for q in -8..8{
-        for r in -8..8{
-            let unit=Axial{q,r};
-            if mesh.is_set(unit){
+    for q in -8..8 {
+        for r in -8..8 {
+            let unit = Axial { q, r };
+            if mesh.is_set(unit) {
+                for i in 0..6 {
+                    let true_dis = unit
+                        .to_cube()
+                        .ray_from_vector(hex::Cube::from_arr(hex::OFFSETS[i]))
+                        .take_while(|x| mesh.is_set(**x))
+                        .count() as i8;
 
-                for i in 0..6{
-                    let true_dis=unit.to_cube()
-                        .ray_from_vector(hex::Cube::from_arr(hex::OFFSETS[i])).take_while(|x|{
-                            mesh.is_set(**x)
-                        }).count() as i8;
+                    let computed_dis = dis_to_hex_of_hexagon(unit, hex::HDir::from(i as u8), 3);
 
-                    
-                    let computed_dis=dis_to_hex_of_hexagon(unit,hex::HDir::from(i as u8),3);
-
-                    assert_eq!(true_dis,computed_dis);
+                    assert_eq!(true_dis, computed_dis);
                 }
 
                 //let val=dis(Axial{q,r},hex::HDir::Bottom,3);
 
                 //print!("{} ",val);
-
-            }else{
+            } else {
                 print!("- ");
             }
         }
         println!();
     }
 
-
     //panic!("FIN");
-
-
-
-
 }
-
 
 impl MyWorld {
     pub fn new(seed: WorldSeed) -> MyWorld {
@@ -334,7 +290,11 @@ impl MyWorld {
         //     w.set_coord(a, true);
         // }
 
-        MyWorld { seed, land }
+        MyWorld {
+            seed,
+            land,
+            radius: size as u8,
+        }
     }
     // pub fn white_start(&self) -> &[Axial] {
     //     &self.white_start

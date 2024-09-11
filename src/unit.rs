@@ -188,84 +188,70 @@ impl Default for CellSelection {
     }
 }
 
-
-
-#[derive(Default,Clone)]
-pub struct SpokeNode{
-    spokes:[u8;6],
+#[derive(Default, Clone)]
+pub struct SpokeNode {
+    spokes: [u8; 6],
 }
-impl SpokeNode{
-    pub fn has_piece_at_end(&self,dir:usize)->bool{
-        self.spokes[dir] & (1<<7) !=0
+impl SpokeNode {
+    pub fn has_piece_at_end(&self, dir: usize) -> bool {
+        self.spokes[dir] & (1 << 7) != 0
     }
 
-    pub fn distance(&self,dir:usize)->u8{
-        self.spokes[dir] & !(1<<7)
+    pub fn distance(&self, dir: usize) -> u8 {
+        self.spokes[dir] & !(1 << 7)
     }
 }
 
-
-pub struct Spokes{
-    inner:Vec<SpokeNode>
+pub struct Spokes {
+    inner: Vec<SpokeNode>,
 }
-impl Spokes{
+impl Spokes {
+    pub fn update_to_added_unit(&mut self, factions: &Tribe, ax: Axial, world: &board::MyWorld) {
+        let s = self.get_spokes(ax).clone();
 
-    pub fn update_to_added_unit(&mut self,factions:&Tribe,ax:Axial,world:&board::MyWorld){
-        let s=self.get_spokes(ax).clone();
+        for i in 0..6 {
+            let dis = s.distance(i);
 
-        for i in 0..6{
-            let dis=s.distance(i);
-
-            for k in 0..dis{
-
-            }
-            let has_piece=s.has_piece_at_end(i);
-            let j=(i+3) % 6;
+            for k in 0..dis {}
+            let has_piece = s.has_piece_at_end(i);
+            let j = (i + 3) % 6;
             // let end_point_ax=ax.add(hex::OFFSETS[i].mul(dis));
 
             // self.get_spokes_mut(end_point_ax).spokes[j]=dis;
-
         }
-
     }
 
-    pub fn generate(factions:&Tribe,world:&board::MyWorld)->Spokes{
-
-        let mut s=Spokes{
-            inner:vec![SpokeNode::default();256]
+    pub fn generate(factions: &Tribe, world: &board::MyWorld) -> Spokes {
+        let mut s = Spokes {
+            inner: vec![SpokeNode::default(); 256],
         };
 
-        for unit in world.get_game_cells().iter_mesh(){
+        for unit in world.get_game_cells().iter_mesh() {
+            let res = factions.iter_end_points(world, unit);
 
-            let res=factions.iter_end_points(world, unit);
+            let res = res.map(|(ax, foo)| {
+                let mut val = ax.to_cube().dist(&unit.to_cube()) as u8;
 
-            let res=res.map(|(ax,foo)|{
-                let mut val=ax.to_cube().dist(&unit.to_cube()) as u8;
-                
-                if foo.is_some(){
-                    val|=1<<7;
+                if foo.is_some() {
+                    val |= 1 << 7;
                 }
                 val
             });
 
-            s.get_spokes_mut(unit).spokes=res;
-
-
+            s.get_spokes_mut(unit).spokes = res;
         }
 
         s
     }
-    pub fn get_spokes(&self,a:Axial)->&SpokeNode{
-        let ind=mesh::small_mesh::conv(a);
+    pub fn get_spokes(&self, a: Axial) -> &SpokeNode {
+        let ind = mesh::small_mesh::conv(a);
         &self.inner[ind]
     }
-    pub fn get_spokes_mut(&mut self,a:Axial)->&mut SpokeNode{
-        let ind=mesh::small_mesh::conv(a);
+    pub fn get_spokes_mut(&mut self, a: Axial) -> &mut SpokeNode {
+        let ind = mesh::small_mesh::conv(a);
         &mut self.inner[ind]
     }
 }
-
-
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
@@ -279,9 +265,9 @@ impl Tribe {
         world: &board::MyWorld,
         unit: Axial,
     ) -> [(Axial, Option<(usize, ActiveTeam)>); 6] {
-        let for_ray = |unit: Axial, dir: [i8; 3]| {
+        let for_ray = |unit: Axial, dir: usize| {
             unit.to_cube()
-                .ray_from_vector(hex::Cube::from_arr(dir))
+                .ray_from_vector(hex::Cube::from_arr(hex::OFFSETS[dir]))
                 .take_while(|k| {
                     let k = k.to_axial();
                     world.get_game_cells().is_set(k)
@@ -289,10 +275,27 @@ impl Tribe {
                 .map(|x| x.to_axial())
         };
 
+        let for_ray2 = |mut unit: Axial, dir: usize| {
+            let dis =
+                board::dis_to_hex_of_hexagon(unit, hex::HDir::from(dir as u8), world.radius as i8);
+
+            let j = hex::Cube::from_arr(hex::OFFSETS[dir]);
+            (0..dis).map(move |_| {
+                //let temp=unit;
+                unit = unit.add(j.ax);
+                //temp
+                unit
+            })
+        };
+
         let iter_end_points = |unit: Axial| {
-            hex::OFFSETS.map(|h| {
+            core::array::from_fn(|i| {
                 let mut last_cell = (Axial::zero(), None);
-                for k in for_ray(unit, h) {
+
+                // let first:Vec<_>=for_ray(unit,i).collect();
+                // let second:Vec<_>=for_ray2(unit,i).collect();
+                // assert_eq!(first,second);
+                for k in for_ray2(unit, i) {
                     last_cell.0 = k;
 
                     if let Some((a, b)) = self.get_cell(k) {
@@ -303,11 +306,13 @@ impl Tribe {
                 }
                 last_cell
             })
+            // hex::OFFSETS.into_iter().map(|h| {
+
+            // }).collect()
         };
 
         iter_end_points(unit)
     }
-
 
     pub fn new() -> Tribe {
         Tribe {
