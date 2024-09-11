@@ -108,65 +108,74 @@ pub fn dis_to_hex_of_hexagon(a: Axial, dir: hex::HDir, radius: i8) -> i8 {
         hex::HDir::TopRight => radius - a.r - a.q.max(0),
     }
 }
+pub fn determine_stride(a: hex::HDir) -> i32 {
+    match a {
+        hex::HDir::BottomRight => 16,
+        hex::HDir::Bottom => 15,
+        hex::HDir::BottomLeft => -1,
+        hex::HDir::TopLeft => -16,
+        hex::HDir::Top => -15,
+        hex::HDir::TopRight => 1,
+    }
+}
 
 #[test]
-fn lap() {
+fn test_dummy() {
+    let size = 5;
+
+    let ll = hex::Cube::new(0, 0).range(size).map(|x| x.to_axial());
+    let mut mesh = mesh::small_mesh::SmallMesh::from_iter(ll);
+    let mut mesh2 = mesh::small_mesh::SmallMesh::new();
+
+    let unit = Axial { q: 1, r: 2 };
+    // for i in 0..6{
+    //     let computed_dis = dis_to_hex_of_hexagon(unit, hex::HDir::from(i as u8), 3);
+
+    //     for j in 0..computed_dis{
+
+    //     }
+    //     mesh.remove();
+    // }
+    let computed_dis = dis_to_hex_of_hexagon(unit, hex::HDir::BottomRight, 5);
+
+    let top_right_stride = 1; //hex::Dir::TopRight
+    let bottom_left_stride = -1; //hex::DIR::BottomLeft
+    let top_stride = -15;
+    let bottom_stride = 15;
+    let top_left_stride = -16;
+    let bottom_right_stride = 16;
+
+    let stride = bottom_right_stride;
+    let mut index = mesh::small_mesh::conv(unit) as isize;
+    for i in 0..computed_dis {
+        index += stride;
+        mesh2.inner.set(index as usize, true);
+    }
+
+    for q in -8..8 {
+        for r in -8..8 {
+            let unit = Axial { q, r };
+
+            if mesh2.is_set(unit) {
+                print!("x ");
+            } else if mesh.is_set(unit) {
+                print!("o ");
+            } else {
+                print!("- ");
+            }
+        }
+        println!();
+    }
+
+    panic!("FIN");
+}
+
+#[test]
+fn test_dis_to_hex_border() {
     let size = 3;
 
     let ll = hex::Cube::new(0, 0).range(size).map(|x| x.to_axial());
-    //let ll=[Axial{q:7,r:7}];
-    let mut mesh = mesh::small_mesh::SmallMesh::from_iter(ll);
-
-    //mesh.inner.rotate_left(2);
-
-    //shift up
-    // let m=10;
-    // mesh.inner.rotate_left(16*m);
-
-    //shift down
-    //mesh.inner.rotate_right(16);
-
-    //shift up left
-    //let m=8;
-    // mesh.inner.rotate_left(17*m);
-    // mesh.inner.rotate_right(m);
-    // let rot_mag=15*(m )-(m);
-    // println!("rot mag={}",rot_mag);
-    // mesh.inner.rotate_left(rot_mag );
-
-    //https://math.stackexchange.com/questions/1210572/find-the-distance-to-the-edge-of-a-hexagon
-
-    // let distance_to_bottom=|a:Axial|{
-    //     let a=a.to_cube();
-    //     3-a.q - a.r.max(0)
-    // };
-
-    // let distance_to_bottom_left=|a:Axial|{
-    //     let a=a.to_cube();
-    //     3-a.q - a.s.max(0)
-    // };
-
-    // let distance_to_left=|a:Axial|{
-    //     let a=a.to_cube();
-    //     3-a.s - a.q.max(0)
-    // };
-
-    // let distance_to_top=|a:Axial|{
-    //     let a=a.to_cube();
-    //     3-a.s - a.r.max(0)
-    // };
-
-    // let distance_to_top_right=|a:Axial|{
-    //     let a=a.to_cube();
-    //     3-a.r - a.s.max(0)
-    // };
-
-    // let distance_to_right=|a:Axial|{
-    //     let a=a.to_cube();
-    //     3-a.r - a.q.max(0)
-    // };
-
-    //mesh.set_coord(Axial{q:8,r:8}, true);
+    let mesh = mesh::small_mesh::SmallMesh::from_iter(ll);
 
     for q in -8..8 {
         for r in -8..8 {
@@ -183,10 +192,6 @@ fn lap() {
 
                     assert_eq!(true_dis, computed_dis);
                 }
-
-                //let val=dis(Axial{q,r},hex::HDir::Bottom,3);
-
-                //print!("{} ",val);
             } else {
                 print!("- ");
             }

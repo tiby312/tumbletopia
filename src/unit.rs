@@ -298,11 +298,25 @@ impl Tribe {
             // let second:Vec<_>=for_ray2(unit,i).collect();
             // assert_eq!(first,second);
 
+            // let dd=hex::HDir::from(i as u8);
+            // let stride=board::determine_stride(dd) as isize;
+            // let mut index=mesh::small_mesh::conv(unit) as isize;
+            // for _ in 0..board::dis_to_hex_of_hexagon(unit,dd,world.radius as i8){
+            //     index+=stride;
+
+            //     if self.piece.inner[index]{
+            //         if let Some((a, b)) = self.get_cell_inner(index) {
+
+            //         }
+            //     }
+            // }
+
             for k in for_ray2(unit, i) {
                 last_cell.0 = k;
 
-                if self.has_a_piece(k) {
-                    if let Some((a, b)) = self.get_cell(k) {
+                let index = mesh::small_mesh::conv(k);
+                if self.has_a_piece(index) {
+                    if let Some((a, b)) = self.get_cell_inner(index) {
                         last_cell.1 = Some((a, b));
 
                         break;
@@ -329,16 +343,17 @@ impl Tribe {
         self.team.set_coord(a, false);
     }
 
-    pub fn has_a_piece(&self, a: Axial) -> bool {
+    pub fn has_a_piece(&self, index: usize) -> bool {
         //TODO worth having a seperate piece bitfield????
         //Check smaller bits first. more likely to be set.
         //self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
-        self.piece.is_set(a)
+        self.piece.inner[index]
     }
-    pub fn get_cell(&self, a: Axial) -> Option<(usize, ActiveTeam)> {
-        let bit0 = self.cells[0].is_set(a) as usize;
-        let bit1 = self.cells[1].is_set(a) as usize;
-        let bit2 = self.cells[2].is_set(a) as usize;
+
+    pub fn get_cell_inner(&self, index: usize) -> Option<(usize, ActiveTeam)> {
+        let bit0 = self.cells[0].inner[index] as usize;
+        let bit1 = self.cells[1].inner[index] as usize;
+        let bit2 = self.cells[2].inner[index] as usize;
 
         let val = bit0 | bit1 << 1 | bit2 << 2;
 
@@ -348,12 +363,15 @@ impl Tribe {
         if val == 0 {
             return None;
         }
-        let team = if self.team.is_set(a) {
+        let team = if self.team.inner[index] {
             ActiveTeam::White
         } else {
             ActiveTeam::Black
         };
         Some((val, team))
+    }
+    pub fn get_cell(&self, a: Axial) -> Option<(usize, ActiveTeam)> {
+        self.get_cell_inner(mesh::small_mesh::conv(a))
     }
 
     fn set_coord(&mut self, a: Axial, stack: usize) {
