@@ -209,7 +209,27 @@ pub struct Spokes{
     inner:Vec<SpokeNode>
 }
 impl Spokes{
-    pub fn generate(game:&GameState,world:&board::MyWorld)->Spokes{
+
+    pub fn update_to_added_unit(&mut self,factions:&Tribe,ax:Axial,world:&board::MyWorld){
+        let s=self.get_spokes(ax).clone();
+
+        for i in 0..6{
+            let dis=s.distance(i);
+
+            for k in 0..dis{
+
+            }
+            let has_piece=s.has_piece_at_end(i);
+            let j=(i+3) % 6;
+            // let end_point_ax=ax.add(hex::OFFSETS[i].mul(dis));
+
+            // self.get_spokes_mut(end_point_ax).spokes[j]=dis;
+
+        }
+
+    }
+
+    pub fn generate(factions:&Tribe,world:&board::MyWorld)->Spokes{
 
         let mut s=Spokes{
             inner:vec![SpokeNode::default();256]
@@ -217,7 +237,7 @@ impl Spokes{
 
         for unit in world.get_game_cells().iter_mesh(){
 
-            let res=game.factions.iter_end_points(world, unit);
+            let res=factions.iter_end_points(world, unit);
 
             let res=res.map(|(ax,foo)|{
                 let mut val=ax.to_cube().dist(&unit.to_cube()) as u8;
