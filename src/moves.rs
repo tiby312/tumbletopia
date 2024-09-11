@@ -110,7 +110,9 @@ impl GameState {
         }
 
         for pos in world.get_game_cells().iter_mesh() {
-            let it = self.factions.iter_end_points(world, pos);
+            let it = self
+                .factions
+                .iter_end_points(world, mesh::small_mesh::conv(pos));
 
             let mut potential_height = 0;
             let mut num_enemy = 0;

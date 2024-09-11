@@ -152,14 +152,7 @@ pub mod small_mesh {
                     inner[x] == true
                     //inner & (U256::one() << x) != U256::zero()
                 })
-                .map(move |a| {
-                    let x = a / 16;
-                    let y = a % 16;
-                    point.add(Axial::from_arr([
-                        (x - 8) as hex::CoordNum,
-                        (y - 8) as hex::CoordNum,
-                    ]))
-                }) //.chain(skip_moves)
+                .map(move |a| point.add(inverse(a))) //.chain(skip_moves)
         }
     }
 
@@ -177,6 +170,12 @@ pub mod small_mesh {
         let block = a / 64;
         let block_ind = a % 64;
         (block, block_ind)
+    }
+
+    pub fn inverse(index: usize) -> Axial {
+        let x = index / 16;
+        let y = index % 16;
+        Axial::from_arr([(x - 8) as hex::CoordNum, (y - 8) as hex::CoordNum])
     }
 
     pub fn conv(a: Axial) -> usize {

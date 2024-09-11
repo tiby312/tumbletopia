@@ -44,7 +44,10 @@ impl Evaluator {
         for unit in world.get_game_cells().iter_mesh() {
             let mut num_white = 0;
             let mut num_black = 0;
-            for (_, rest) in game.factions.iter_end_points(world, unit) {
+            for (_, rest) in game
+                .factions
+                .iter_end_points(world, mesh::small_mesh::conv(unit))
+            {
                 if let Some((_, team)) = rest {
                     match team {
                         ActiveTeam::White => num_white += 1,

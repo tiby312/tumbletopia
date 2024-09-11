@@ -394,7 +394,10 @@ impl ActualMove {
 
         let mut stack_size = 0;
 
-        for (_, rest) in game.factions.iter_end_points(world, target_cell) {
+        for (_, rest) in game
+            .factions
+            .iter_end_points(world, mesh::small_mesh::conv(target_cell))
+        {
             if let Some((_, tt)) = rest {
                 if tt == team {
                     stack_size += 1;

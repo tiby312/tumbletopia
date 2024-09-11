@@ -268,7 +268,7 @@ impl Tribe {
     pub fn iter_end_points(
         &self,
         world: &board::MyWorld,
-        unit: Axial,
+        index: usize,
     ) -> [(i8, Option<(u8, ActiveTeam)>); 6] {
         let for_ray = |unit: Axial, dir: usize| {
             unit.to_cube()
@@ -298,13 +298,18 @@ impl Tribe {
 
             let dd = hex::HDir::from(i as u8);
             let stride = board::determine_stride(dd) as isize;
-            let mut index = mesh::small_mesh::conv(unit) as isize;
-            let dis = board::dis_to_hex_of_hexagon(unit, dd, world.radius as i8);
-            for _ in 0..dis {
-                index += stride;
+            let dis = board::dis_to_hex_of_hexagon(
+                mesh::small_mesh::inverse(index),
+                dd,
+                world.radius as i8,
+            );
+            let mut index2 = index as isize;
 
-                if self.piece.inner[index as usize] {
-                    if let Some(pp) = self.get_cell_inner(index as usize) {
+            for _ in 0..dis {
+                index2 += stride;
+
+                if self.piece.inner[index2 as usize] {
+                    if let Some(pp) = self.get_cell_inner(index2 as usize) {
                         return (dis, Some(pp));
                     }
                 }
