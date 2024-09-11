@@ -304,8 +304,8 @@ impl Tribe {
                 index += stride;
 
                 if self.piece.inner[index as usize] {
-                    if let Some((a, b)) = self.get_cell_inner(index as usize) {
-                        return (dis, Some((a, b)));
+                    if let Some(pp) = self.get_cell_inner(index as usize) {
+                        return (dis, Some(pp));
                     }
                 }
             }
