@@ -269,7 +269,7 @@ impl Tribe {
         &self,
         world: &board::MyWorld,
         unit: Axial,
-    ) -> [(Axial, Option<(usize, ActiveTeam)>); 6] {
+    ) -> [(i8, Option<(usize, ActiveTeam)>); 6] {
         let for_ray = |unit: Axial, dir: usize| {
             unit.to_cube()
                 .ray_from_vector(hex::Cube::from_arr(hex::OFFSETS[dir]))
@@ -292,16 +292,17 @@ impl Tribe {
         };
 
         core::array::from_fn(|i| {
-            let mut last_cell = (Axial::zero(), None);
+            //let mut last_cell = (Axial::zero(), None);
 
             // let first:Vec<_>=for_ray(unit,i).collect();
             // let second:Vec<_>=for_ray2(unit,i).collect();
             // assert_eq!(first,second);
 
-            // let dd=hex::HDir::from(i as u8);
+            let dd = hex::HDir::from(i as u8);
             // let stride=board::determine_stride(dd) as isize;
             // let mut index=mesh::small_mesh::conv(unit) as isize;
-            // for _ in 0..board::dis_to_hex_of_hexagon(unit,dd,world.radius as i8){
+            let dis = board::dis_to_hex_of_hexagon(unit, dd, world.radius as i8);
+            // for _ in 0..dis{
             //     index+=stride;
 
             //     if self.piece.inner[index]{
@@ -312,18 +313,17 @@ impl Tribe {
             // }
 
             for k in for_ray2(unit, i) {
-                last_cell.0 = k;
+                //last_cell.0 = k;
 
                 let index = mesh::small_mesh::conv(k);
                 if self.has_a_piece(index) {
                     if let Some((a, b)) = self.get_cell_inner(index) {
-                        last_cell.1 = Some((a, b));
-
-                        break;
+                        return (dis, Some((a, b)));
                     }
                 }
             }
-            last_cell
+            (dis, None)
+            //last_cell
         })
     }
 
