@@ -292,34 +292,33 @@ impl Tribe {
         };
 
         core::array::from_fn(|i| {
-            
             // let first:Vec<_>=for_ray(unit,i).collect();
             // let second:Vec<_>=for_ray2(unit,i).collect();
             // assert_eq!(first,second);
 
             let dd = hex::HDir::from(i as u8);
-            // let stride=board::determine_stride(dd) as isize;
-            // let mut index=mesh::small_mesh::conv(unit) as isize;
+            let stride = board::determine_stride(dd) as isize;
+            let mut index = mesh::small_mesh::conv(unit) as isize;
             let dis = board::dis_to_hex_of_hexagon(unit, dd, world.radius as i8);
-            // for _ in 0..dis{
-            //     index+=stride;
+            for _ in 0..dis {
+                index += stride;
 
-            //     if self.piece.inner[index]{
-            //         if let Some((a, b)) = self.get_cell_inner(index) {
-
-            //         }
-            //     }
-            // }
-
-            for k in for_ray2(unit, i) {
-                
-                let index = mesh::small_mesh::conv(k);
-                if self.has_a_piece(index) {
-                    if let Some((a, b)) = self.get_cell_inner(index) {
+                if self.piece.inner[index as usize] {
+                    if let Some((a, b)) = self.get_cell_inner(index as usize) {
                         return (dis, Some((a, b)));
                     }
                 }
             }
+
+            // for k in for_ray2(unit, i) {
+
+            //     let index = mesh::small_mesh::conv(k);
+            //     if self.has_a_piece(index) {
+            //         if let Some((a, b)) = self.get_cell_inner(index) {
+            //             return (dis, Some((a, b)));
+            //         }
+            //     }
+            // }
             (dis, None)
         })
     }
