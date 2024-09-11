@@ -322,6 +322,8 @@ impl Tribe {
     }
 
     pub fn has_a_piece(&self, a: Axial) -> bool {
+        //TODO worth having a seperate piece bitfield????
+        //Check smaller bits first. more likely to be set.
         self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
     }
     pub fn get_cell(&self, a: Axial) -> Option<(usize, ActiveTeam)> {
