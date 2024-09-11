@@ -46,40 +46,7 @@ impl<T> EndPoints<T> {
 fn doop() {}
 
 impl GameState {
-    pub fn iter_end_points(
-        &self,
-        world: &board::MyWorld,
-        unit: Axial,
-    ) -> [(Axial, Option<(usize, ActiveTeam)>); 6] {
-        let for_ray = |unit: Axial, dir: [i8; 3]| {
-            unit.to_cube()
-                .ray_from_vector(hex::Cube::from_arr(dir))
-                .take_while(|k| {
-                    let k = k.to_axial();
-                    world.get_game_cells().is_set(k)
-                })
-                .map(|x| x.to_axial())
-        };
-
-        let iter_end_points = |unit: Axial| {
-            hex::OFFSETS.map(|h| {
-                let mut last_cell = (Axial::zero(), None);
-                for k in for_ray(unit, h) {
-                    last_cell.0 = k;
-
-                    if let Some((a, b)) = self.factions.get_cell(k) {
-                        last_cell.1 = Some((a, b));
-
-                        break;
-                    }
-                }
-                last_cell
-            })
-        };
-
-        iter_end_points(unit)
-    }
-
+    
     // pub fn loud_moves(&self, world: &board::MyWorld, team: ActiveTeam) -> SmallMesh {
     //     let game = self;
     //     let mut mesh = SmallMesh::new();
@@ -144,7 +111,7 @@ impl GameState {
         }
 
         for pos in world.get_game_cells().iter_mesh() {
-            let it = self.iter_end_points(world, pos);
+            let it = self.factions.iter_end_points(world, pos);
 
             let mut potential_height = 0;
             let mut num_enemy = 0;

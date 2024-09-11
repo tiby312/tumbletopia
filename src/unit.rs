@@ -217,7 +217,7 @@ impl Spokes{
 
         for unit in world.get_game_cells().iter_mesh(){
 
-            let res=game.iter_end_points(world, unit);
+            let res=game.factions.iter_end_points(world, unit);
 
             let res=res.map(|(ax,foo)|{
                 let mut val=ax.to_cube().dist(&unit.to_cube()) as u8;
@@ -254,6 +254,41 @@ pub struct Tribe {
 }
 
 impl Tribe {
+    pub fn iter_end_points(
+        &self,
+        world: &board::MyWorld,
+        unit: Axial,
+    ) -> [(Axial, Option<(usize, ActiveTeam)>); 6] {
+        let for_ray = |unit: Axial, dir: [i8; 3]| {
+            unit.to_cube()
+                .ray_from_vector(hex::Cube::from_arr(dir))
+                .take_while(|k| {
+                    let k = k.to_axial();
+                    world.get_game_cells().is_set(k)
+                })
+                .map(|x| x.to_axial())
+        };
+
+        let iter_end_points = |unit: Axial| {
+            hex::OFFSETS.map(|h| {
+                let mut last_cell = (Axial::zero(), None);
+                for k in for_ray(unit, h) {
+                    last_cell.0 = k;
+
+                    if let Some((a, b)) = self.get_cell(k) {
+                        last_cell.1 = Some((a, b));
+
+                        break;
+                    }
+                }
+                last_cell
+            })
+        };
+
+        iter_end_points(unit)
+    }
+
+
     pub fn new() -> Tribe {
         Tribe {
             cells: [0; 3].map(|_| SmallMesh::new()),
