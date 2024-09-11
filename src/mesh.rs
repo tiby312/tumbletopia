@@ -179,7 +179,7 @@ pub mod small_mesh {
         (block, block_ind)
     }
 
-    fn conv(a: Axial) -> usize {
+    pub fn conv(a: Axial) -> usize {
         let Axial { q, r } = a;
         //     let ind=x/7+y%7;
         //     // -3 -2 -1 0 1 2 3
