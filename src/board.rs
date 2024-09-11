@@ -6,7 +6,7 @@ use super::*;
 pub struct MyWorld {
     pub seed: WorldSeed,
     //w: BitField,
-    pub land: BitField,
+    pub land: mesh::small_mesh::SmallMesh,
     pub radius: u8, //black_start: Vec<Axial>,
                     //white_start: Vec<Axial>,
 }
@@ -212,7 +212,9 @@ impl MyWorld {
         //for size 3 use this
         //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
 
-        let mut land = BitField::from_iter(hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()));
+        let mut land = mesh::small_mesh::SmallMesh::from_iter(
+            hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()),
+        );
         //w.set_coord(Axial::zero(), false);
         //3*3*5*4 = 180 choices!!!
 
@@ -308,7 +310,7 @@ impl MyWorld {
     //     &self.black_start
     // }
 
-    pub fn get_game_cells(&self) -> &BitField {
+    pub fn get_game_cells(&self) -> &mesh::small_mesh::SmallMesh {
         &self.land
     }
 }

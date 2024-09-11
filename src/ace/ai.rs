@@ -41,7 +41,7 @@ impl Evaluator {
         let mut strength = 0;
         let mut contested = 0;
         let mut unseen = 0;
-        for unit in world.get_game_cells().iter_mesh() {
+        for unit in world.get_game_cells().iter_mesh(Axial::zero()) {
             let mut num_white = 0;
             let mut num_black = 0;
             for (_, rest) in game

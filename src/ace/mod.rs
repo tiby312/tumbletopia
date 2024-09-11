@@ -383,8 +383,8 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
 
     //let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
 
-    let mut fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x| x.ax));
-    fog.intersect_with(&world.get_game_cells());
+    // let mut fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x| x.ax));
+    // fog.intersect_with(&world.get_game_cells());
     //let fog=BitField::new();
 
     let mut cells = Tribe::new();

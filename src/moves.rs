@@ -109,7 +109,7 @@ impl GameState {
             return (mesh, captures);
         }
 
-        for pos in world.get_game_cells().iter_mesh() {
+        for pos in world.get_game_cells().iter_mesh(Axial::zero()) {
             let it = self
                 .factions
                 .iter_end_points(world, mesh::small_mesh::conv(pos));

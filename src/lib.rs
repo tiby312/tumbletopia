@@ -571,7 +571,7 @@ async fn render_command(
             .batch(
                 world
                     .land
-                    .iter_mesh()
+                    .iter_mesh(hex::Axial::zero())
                     .map(|e| grid_snap(e, -models.water.height)),
             )
             .build(water, &projjj);
@@ -731,23 +731,26 @@ async fn render_command(
             // Draw shadows
             let _d = DepthDisabler::new(ctx);
 
-            let shadows = world.get_game_cells().iter_mesh().filter_map(|a| {
-                if let Some((val, _)) = game.factions.get_cell(a) {
-                    let xx = match val {
-                        1 | 2 => 0.6,
-                        3 | 4 => 0.8,
-                        5 | 6 => 1.2,
-                        _ => unreachable!(),
-                    };
-                    Some(
-                        grid_snap(a, zzzz)
-                            .chain(matrix::scale(xx, xx, 1.0))
-                            .generate(),
-                    )
-                } else {
-                    None
-                }
-            });
+            let shadows = world
+                .get_game_cells()
+                .iter_mesh(Axial::zero())
+                .filter_map(|a| {
+                    if let Some((val, _)) = game.factions.get_cell(a) {
+                        let xx = match val {
+                            1 | 2 => 0.6,
+                            3 | 4 => 0.8,
+                            5 | 6 => 1.2,
+                            _ => unreachable!(),
+                        };
+                        Some(
+                            grid_snap(a, zzzz)
+                                .chain(matrix::scale(xx, xx, 1.0))
+                                .generate(),
+                        )
+                    } else {
+                        None
+                    }
+                });
 
             let ani_drop_shadow = unit_animation.as_ref().map(|a| {
                 let pos = a.0;
@@ -787,7 +790,7 @@ async fn render_command(
         }
 
         x += 0.1;
-        for a in world.get_game_cells().iter_mesh() {
+        for a in world.get_game_cells().iter_mesh(Axial::zero()) {
             if let Some((val, team2)) = game.factions.get_cell(a) {
                 let inner_stack = val.min(2);
                 let mid_stack = val.max(2).min(4) - 2;
