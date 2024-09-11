@@ -102,10 +102,10 @@ impl WorldSeed {
 #[test]
 fn lap(){
 
-    let size=1;
+    let size=3;
 
     let ll=hex::Cube::new(0, 0).range(size).map(|x| x.to_axial());
-    let ll=[Axial{q:7,r:7}];
+    //let ll=[Axial{q:7,r:7}];
     let mut mesh=mesh::small_mesh::SmallMesh::from_iter(ll);
 
     //mesh.inner.rotate_left(2);
@@ -119,29 +119,64 @@ fn lap(){
 
 
     //shift up left
-     let m=8;
+    //let m=8;
     // mesh.inner.rotate_left(17*m);
     // mesh.inner.rotate_right(m);
-    let rot_mag=15*(m )-(m);
-    println!("rot mag={}",rot_mag);
-    mesh.inner.rotate_left(rot_mag );
+    // let rot_mag=15*(m )-(m);
+    // println!("rot mag={}",rot_mag);
+    // mesh.inner.rotate_left(rot_mag );
+
+
+    //https://math.stackexchange.com/questions/1210572/find-the-distance-to-the-edge-of-a-hexagon
+
+
+    let distance_to_top_right=|a:Axial|{
+        let a=a.to_cube();
+        3-a.r - a.s.max(0)
+    };
+
+
+    let distance_to_bottom_left=|a:Axial|{
+        let a=a.to_cube();
+        3-a.q - a.s.max(0)
+    };
+
+
+    let distance_to_right=|a:Axial|{
+        let a=a.to_cube();
+        3-a.r - a.q.max(0)
+    };
+
+    let distance_to_bottom=|a:Axial|{
+        let a=a.to_cube();
+        3-a.q - a.r.max(0)
+    };
+
+    let distance_to_top=|a:Axial|{
+        let a=a.to_cube();
+        3-a.s - a.r.max(0)
+    };
+
+    let distance_to_left=|a:Axial|{
+        let a=a.to_cube();
+        3-a.s - a.q.max(0)
+    };
 
 
 
 
-    mesh.set_coord(Axial{q:8,r:8}, true);
 
-    for q in 0..17{
-        for r in 0..17{
+    //mesh.set_coord(Axial{q:8,r:8}, true);
+
+    for q in -8..8{
+        for r in -8..8{
+            
             if mesh.is_set(Axial{q,r}){
-                if q==8 && r==8{
-                    print!("o");
-                }else{
+                let val=distance_to_right(Axial{q,r});
 
-                    print!("x");
-                }
+                print!("{} ",val);
             }else{
-                print!("-");
+                print!("- ");
             }
         }
         println!();
