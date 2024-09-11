@@ -281,37 +281,30 @@ impl Tribe {
 
             let j = hex::Cube::from_arr(hex::OFFSETS[dir]);
             (0..dis).map(move |_| {
-                //let temp=unit;
                 unit = unit.add(j.ax);
-                //temp
                 unit
             })
         };
 
-        let iter_end_points = |unit: Axial| {
-            core::array::from_fn(|i| {
-                let mut last_cell = (Axial::zero(), None);
+        core::array::from_fn(|i| {
+            let mut last_cell = (Axial::zero(), None);
 
-                // let first:Vec<_>=for_ray(unit,i).collect();
-                // let second:Vec<_>=for_ray2(unit,i).collect();
-                // assert_eq!(first,second);
-                for k in for_ray2(unit, i) {
-                    last_cell.0 = k;
+            // let first:Vec<_>=for_ray(unit,i).collect();
+            // let second:Vec<_>=for_ray2(unit,i).collect();
+            // assert_eq!(first,second);
+            for k in for_ray2(unit, i) {
+                last_cell.0 = k;
 
+                if self.has_a_piece(k) {
                     if let Some((a, b)) = self.get_cell(k) {
                         last_cell.1 = Some((a, b));
 
                         break;
                     }
                 }
-                last_cell
-            })
-            // hex::OFFSETS.into_iter().map(|h| {
-
-            // }).collect()
-        };
-
-        iter_end_points(unit)
+            }
+            last_cell
+        })
     }
 
     pub fn new() -> Tribe {
@@ -328,6 +321,9 @@ impl Tribe {
         self.team.set_coord(a, false);
     }
 
+    pub fn has_a_piece(&self, a: Axial) -> bool {
+        self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
+    }
     pub fn get_cell(&self, a: Axial) -> Option<(usize, ActiveTeam)> {
         let bit0 = self.cells[0].is_set(a) as usize;
         let bit1 = self.cells[1].is_set(a) as usize;
