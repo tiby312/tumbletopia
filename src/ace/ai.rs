@@ -413,15 +413,11 @@ impl<'a> AlphaBeta<'a> {
         let (all_moves, captures, reinfocements) =
             game.generate_possible_moves_movement(self.world, None, team);
 
-        //TODO store as index
-        let mut moves: ArrayVec<[usize; 64]> = captures.inner.iter_ones().collect();
-
-        // let moves: Vec<_> = game
-        //     .generate_possible_moves_movement(self.world, None, team)
-        //     .1
-        //     .iter_mesh(Axial::zero())
-        //     .map(|x| ActualMove { moveto: x })
-        //     .collect();
+        let mut moves: ArrayVec<[u8; board::NUM_CELLS]> = captures
+            .inner
+            .iter_ones()
+            .map(|x| x.try_into().unwrap())
+            .collect();
 
         if moves.is_empty() {
             return (
@@ -432,7 +428,9 @@ impl<'a> AlphaBeta<'a> {
 
         let mut ab_iter = ab.ab_iter(team.is_white());
         for cand in moves {
-            let cand = ActualMove { moveto: cand };
+            let cand = ActualMove {
+                moveto: cand as usize,
+            };
             let effect = cand.apply(team, game, self.world);
 
             let (eval, m) = self.quiesance(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
@@ -468,13 +466,17 @@ impl<'a> AlphaBeta<'a> {
 
         //TODO put the constant somewhere!!!
         //TODO use u8 instead if its big enough????
-        let mut moves: ArrayVec<[usize; 64]> = all_moves.inner.iter_ones().collect();
+        let mut moves: ArrayVec<[u8; board::NUM_CELLS]> = all_moves
+            .inner
+            .iter_ones()
+            .map(|x| x.try_into().unwrap())
+            .collect();
 
         if moves.is_empty() {
             return (self.evaluator.cant_move(team), tinyvec::array_vec![]);
         }
 
-        let move_value = |&index: &usize| {
+        let move_value = |index: usize| {
             if captures.inner[index] {
                 return 4;
             }
@@ -508,14 +510,16 @@ impl<'a> AlphaBeta<'a> {
             1
         };
 
-        moves.sort_by_cached_key(|f| -move_value(f));
+        moves.sort_by_cached_key(|&f| -move_value(f as usize));
 
         // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
         // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
 
         let mut ab_iter = ab.ab_iter(team.is_white());
         for index in moves.into_iter() {
-            let cand = ActualMove { moveto: index };
+            let cand = ActualMove {
+                moveto: index as usize,
+            };
             let effect = cand.apply(team, game, self.world);
 
             let (eval, m) = self.alpha_beta(game, ab_iter.clone_ab_values(), team.not(), depth - 1);

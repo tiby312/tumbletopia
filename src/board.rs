@@ -29,6 +29,8 @@ fn increase_mag(a: &mut hex::CoordNum) {
     }
 }
 
+pub const NUM_CELLS: usize = 128;
+
 #[test]
 fn foo() {
     //let i=234314;
