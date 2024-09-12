@@ -305,12 +305,12 @@ impl Tribe {
             );
             let mut index2 = index as isize;
 
-            for _ in 0..dis {
+            for d in 0..dis {
                 index2 += stride;
 
                 if self.piece.inner[index2 as usize] {
                     if let Some(pp) = self.get_cell_inner(index2 as usize) {
-                        return (dis, Some(pp));
+                        return (d, Some(pp));
                     }
                 }
             }
