@@ -462,6 +462,7 @@ impl<'a> AlphaBeta<'a> {
 
         //TODO remove dynamic allocation
         //TODO put the primitive somewhere!!!
+        //TODO use u8 instead if its big enough????
         let mut moves: ArrayVec<[usize; 64]> = all_moves.inner.iter_ones().collect();
 
         if moves.is_empty() {
@@ -495,20 +496,20 @@ impl<'a> AlphaBeta<'a> {
                 .enumerate()
             {
                 if a == k {
-                    return 800 - i;
+                    return 800 - i as isize;
                 }
             }
 
             1
         };
 
-        moves.sort_by_cached_key(move_value);
+        moves.sort_by_cached_key(|f| -move_value(f));
 
         // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
         // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
 
         let mut ab_iter = ab.ab_iter(team.is_white());
-        for index in moves.into_iter().rev() {
+        for index in moves.into_iter() {
             let cand = ActualMove {
                 moveto: mesh::small_mesh::inverse(index),
             };
