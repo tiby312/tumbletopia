@@ -47,21 +47,22 @@ pub mod small_mesh {
         )
     }
 
-    use bitvec::boxed::BitBox;
+    //use bitvec::boxed::BitBox;
 
     #[derive(
         Hash, Serialize, Deserialize, Default, PartialOrd, Ord, PartialEq, Eq, Debug, Clone,
     )]
     pub struct SmallMesh {
         //pub inner: [u64; 4],
-        pub inner: BitBox,
+        //pub inner: BitBox,
+        pub inner: BitArr!(for 256),
     }
 
     use bitvec::prelude::*;
     impl SmallMesh {
         pub fn new() -> SmallMesh {
             SmallMesh {
-                inner: bitbox![0;256],
+                inner: bitarr![0;256],
             }
         }
         pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SmallMesh {
