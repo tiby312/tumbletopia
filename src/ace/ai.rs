@@ -410,6 +410,7 @@ impl<'a> AlphaBeta<'a> {
             );
         }
 
+        //TODO store as index
         let moves: Vec<_> = game
             .generate_possible_moves_movement(self.world, None, team)
             .1
@@ -460,7 +461,8 @@ impl<'a> AlphaBeta<'a> {
             game.generate_possible_moves_movement(self.world, None, team);
 
         //TODO remove dynamic allocation
-        let mut moves: Vec<_> = all_moves.inner.iter_ones().collect();
+        //TODO put the primitive somewhere!!!
+        let mut moves: ArrayVec<[usize; 64]> = all_moves.inner.iter_ones().collect();
 
         if moves.is_empty() {
             return (self.evaluator.cant_move(team), tinyvec::array_vec![]);
