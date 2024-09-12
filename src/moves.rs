@@ -109,10 +109,10 @@ impl GameState {
             return (mesh, captures);
         }
 
-        for pos in world.get_game_cells().iter_mesh(Axial::zero()) {
-            let it = self
-                .factions
-                .iter_end_points(world, mesh::small_mesh::conv(pos));
+        for index in world.get_game_cells().inner.iter_ones() {
+            let pos = mesh::small_mesh::inverse(index);
+
+            let it = self.factions.iter_end_points(world, index);
 
             let mut potential_height = 0;
             let mut num_enemy = 0;
@@ -136,17 +136,21 @@ impl GameState {
                 continue;
             }
 
-            if let Some((height, rest)) = self.factions.get_cell(pos) {
+            if let Some((height, rest)) = self.factions.get_cell_inner(index) {
                 if potential_height <= height {
                     continue;
                 }
 
                 if rest != team {
-                    captures.add(pos)
+                    captures.inner.set(index, true);
+
+                    //captures.add(pos)
                 }
             }
 
-            mesh.add(pos);
+            mesh.inner.set(index, true);
+
+            //mesh.add(pos);
         }
 
         (mesh, captures)
