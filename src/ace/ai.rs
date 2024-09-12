@@ -460,8 +460,7 @@ impl<'a> AlphaBeta<'a> {
         let (all_moves, captures, reinfocements) =
             game.generate_possible_moves_movement(self.world, None, team);
 
-        //TODO remove dynamic allocation
-        //TODO put the primitive somewhere!!!
+        //TODO put the constant somewhere!!!
         //TODO use u8 instead if its big enough????
         let mut moves: ArrayVec<[usize; 64]> = all_moves.inner.iter_ones().collect();
 
