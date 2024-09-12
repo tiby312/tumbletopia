@@ -258,52 +258,27 @@ impl ActualMove {
         world: &board::MyWorld,
         data: &mut ace::WorkerManager,
     ) -> &Self {
-        let for_ray = |unit: Axial, dir: [i8; 3]| {
-            unit.to_cube()
-                .ray_from_vector(hex::Cube::from_arr(dir))
-                .take_while(|k| {
-                    let k = k.to_axial();
-                    world.get_game_cells().is_set(k)
-                })
-                .map(|x| x.to_axial())
-        };
-
+        
         let end_points = state
             .factions
             .iter_end_points(world, mesh::small_mesh::conv(self.moveto));
 
-        // let mut endpoints = moves::EndPoints::new();
-        // for h in hex::OFFSETS {
-        //     for k in for_ray(self.moveto, h) {
-        //         if let Some((a, b)) = state.factions.get_cell(k) {
-        //             if b == team {
-        //                 endpoints.add_first((k, a));
-        //             }
-
-        //             break;
-        //         }
-        //     }
-        // }
-
+        
         let mut ss = state.clone();
 
-        // if let Some(_)=state.factions.cells.get_cell(self.moveto){
-        //     ss.factions.cells.remove(self.moveto);
-        // }
-
         let mut stack = 0;
-        for (i, (dis, rest)) in end_points.iter().enumerate() {
+        for (i, (dis, rest)) in end_points.into_iter().enumerate() {
             let Some((_, team2)) = rest else {
                 continue;
             };
 
-            if *team2 != team {
+            if team2 != team {
                 continue;
             }
 
             let unit = self
                 .moveto
-                .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(*dis as i8));
+                .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
 
             data.wait_animation(
                 animation::AnimationCommand::Movement {
