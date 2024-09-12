@@ -459,23 +459,26 @@ impl<'a> AlphaBeta<'a> {
         let (all_moves, captures, reinfocements) =
             game.generate_possible_moves_movement(self.world, None, team);
 
-        let mut moves: Vec<_> = all_moves
-            .iter_mesh(Axial::zero())
-            .map(|x| ActualMove { moveto: x })
-            .collect();
+        //TODO remove dynamic allocation
+        let mut moves: Vec<_> = all_moves.inner.iter_ones().collect();
 
         if moves.is_empty() {
             return (self.evaluator.cant_move(team), tinyvec::array_vec![]);
         }
 
-        let move_value = |k: &ActualMove| {
-            if captures.is_set(k.moveto) {
+        let move_value = |&index: &usize| {
+            if captures.inner[index] {
                 return 4;
             }
 
-            if reinfocements.is_set(k.moveto) {
+            if reinfocements.inner[index] {
                 return 0;
             }
+
+            //TODO remove this?
+            let k = &ActualMove {
+                moveto: mesh::small_mesh::inverse(index),
+            };
 
             if let Some(a) = self.prev_cache.get(&game) {
                 if a == k {
@@ -503,7 +506,10 @@ impl<'a> AlphaBeta<'a> {
         // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
 
         let mut ab_iter = ab.ab_iter(team.is_white());
-        for cand in moves.into_iter().rev() {
+        for index in moves.into_iter().rev() {
+            let cand = ActualMove {
+                moveto: mesh::small_mesh::inverse(index),
+            };
             let effect = cand.apply(team, game, self.world);
 
             let (eval, m) = self.alpha_beta(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
