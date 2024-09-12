@@ -268,18 +268,22 @@ impl ActualMove {
                 .map(|x| x.to_axial())
         };
 
-        let mut endpoints = moves::EndPoints::new();
-        for h in hex::OFFSETS {
-            for k in for_ray(self.moveto, h) {
-                if let Some((a, b)) = state.factions.get_cell(k) {
-                    if b == team {
-                        endpoints.add_first((k, a));
-                    }
+        let end_points = state
+            .factions
+            .iter_end_points(world, mesh::small_mesh::conv(self.moveto));
 
-                    break;
-                }
-            }
-        }
+        // let mut endpoints = moves::EndPoints::new();
+        // for h in hex::OFFSETS {
+        //     for k in for_ray(self.moveto, h) {
+        //         if let Some((a, b)) = state.factions.get_cell(k) {
+        //             if b == team {
+        //                 endpoints.add_first((k, a));
+        //             }
+
+        //             break;
+        //         }
+        //     }
+        // }
 
         let mut ss = state.clone();
 
@@ -288,10 +292,22 @@ impl ActualMove {
         // }
 
         let mut stack = 0;
-        for &(e, _) in endpoints.iter_first() {
+        for (i, (dis, rest)) in end_points.iter().enumerate() {
+            let Some((_, team2)) = rest else {
+                continue;
+            };
+
+            if *team2 != team {
+                continue;
+            }
+
+            let unit = self
+                .moveto
+                .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(*dis as i8));
+
             data.wait_animation(
                 animation::AnimationCommand::Movement {
-                    unit: e,
+                    unit,
                     end: self.moveto,
                 },
                 team,

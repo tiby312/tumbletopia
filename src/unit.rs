@@ -310,7 +310,7 @@ impl Tribe {
 
                 if self.piece.inner[index2 as usize] {
                     if let Some(pp) = self.get_cell_inner(index2 as usize) {
-                        return (d, Some(pp));
+                        return (d + 1, Some(pp));
                     }
                 }
             }
