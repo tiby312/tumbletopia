@@ -100,13 +100,13 @@ impl GameState {
         world: &board::MyWorld,
         unit: Option<Axial>,
         team: ActiveTeam,
-    ) -> (SmallMesh, SmallMesh) {
+    ) -> (SmallMesh, SmallMesh, SmallMesh) {
         let game = self;
         let mut mesh = SmallMesh::new();
         let mut captures = SmallMesh::new();
-
+        let mut reinforcements = SmallMesh::new();
         if team == ActiveTeam::Neutral {
-            return (mesh, captures);
+            return (mesh, captures, reinforcements);
         }
 
         for index in world.get_game_cells().inner.iter_ones() {
@@ -145,6 +145,8 @@ impl GameState {
                     captures.inner.set(index, true);
 
                     //captures.add(pos)
+                } else {
+                    reinforcements.inner.set(index, true);
                 }
             }
 
@@ -153,7 +155,7 @@ impl GameState {
             //mesh.add(pos);
         }
 
-        (mesh, captures)
+        (mesh, captures, reinforcements)
     }
 }
 

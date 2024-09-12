@@ -456,7 +456,8 @@ impl<'a> AlphaBeta<'a> {
             return self.quiesance(game, ab, team, 4);
         }
 
-        let (all_moves, captures) = game.generate_possible_moves_movement(self.world, None, team);
+        let (all_moves, captures, reinfocements) =
+            game.generate_possible_moves_movement(self.world, None, team);
 
         let mut moves: Vec<_> = all_moves
             .iter_mesh(Axial::zero())
@@ -470,6 +471,10 @@ impl<'a> AlphaBeta<'a> {
         let move_value = |k: &ActualMove| {
             if captures.is_set(k.moveto) {
                 return 4;
+            }
+
+            if reinfocements.is_set(k.moveto) {
+                return 0;
             }
 
             if let Some(a) = self.prev_cache.get(&game) {
@@ -489,7 +494,7 @@ impl<'a> AlphaBeta<'a> {
                 }
             }
 
-            0
+            1
         };
 
         moves.sort_by_cached_key(move_value);
