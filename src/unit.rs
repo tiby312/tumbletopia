@@ -338,13 +338,15 @@ impl Tribe {
 
     pub fn remove(&mut self, a: Axial) {
         let a = mesh::small_mesh::conv(a);
+        self.remove_inner(a);
+    }
+    pub fn remove_inner(&mut self, a: usize) {
         self.cells[0].inner.set(a, false);
         self.cells[1].inner.set(a, false);
         self.cells[2].inner.set(a, false);
         self.piece.inner.set(a, false);
         self.team.inner.set(a, false);
     }
-
     pub fn has_a_piece(&self, index: usize) -> bool {
         //TODO worth having a seperate piece bitfield????
         //Check smaller bits first. more likely to be set.
@@ -391,8 +393,7 @@ impl Tribe {
         }
     }
 
-    pub fn add_cell(&mut self, a: Axial, stack: u8, team: ActiveTeam) {
-        let a = mesh::small_mesh::conv(a);
+    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: ActiveTeam) {
         match team {
             ActiveTeam::White => self.team.inner.set(a, true),
             ActiveTeam::Black => self.team.inner.set(a, false),
@@ -405,6 +406,10 @@ impl Tribe {
             }
         }
         self.set_coord(a, stack);
+    }
+    pub fn add_cell(&mut self, a: Axial, stack: u8, team: ActiveTeam) {
+        let a = mesh::small_mesh::conv(a);
+        self.add_cell_inner(a, stack, team);
     }
 }
 

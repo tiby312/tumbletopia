@@ -258,12 +258,8 @@ impl ActualMove {
         world: &board::MyWorld,
         data: &mut ace::WorkerManager,
     ) -> &Self {
-        
-        let end_points = state
-            .factions
-            .iter_end_points(world, mesh::small_mesh::conv(self.moveto));
+        let end_points = state.factions.iter_end_points(world, self.moveto);
 
-        
         let mut ss = state.clone();
 
         let mut stack = 0;
@@ -276,14 +272,13 @@ impl ActualMove {
                 continue;
             }
 
-            let unit = self
-                .moveto
+            let unit = mesh::small_mesh::inverse(self.moveto)
                 .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
 
             data.wait_animation(
                 animation::AnimationCommand::Movement {
                     unit,
-                    end: self.moveto,
+                    end: mesh::small_mesh::inverse(self.moveto),
                 },
                 team,
                 &mut ss,
@@ -291,10 +286,10 @@ impl ActualMove {
             .await;
 
             stack += 1;
-            if let Some(_) = state.factions.get_cell(self.moveto) {
-                ss.factions.remove(self.moveto);
+            if let Some(_) = state.factions.get_cell_inner(self.moveto) {
+                ss.factions.remove_inner(self.moveto);
             }
-            ss.factions.add_cell(self.moveto, stack, team);
+            ss.factions.add_cell_inner(self.moveto, stack, team);
         }
 
         self
@@ -305,9 +300,9 @@ impl ActualMove {
         //let unit = self.original;
 
         if let Some((fooo, typ)) = effect.destroyed_unit {
-            state.factions.add_cell(moveto, fooo, typ);
+            state.factions.add_cell_inner(moveto, fooo, typ);
         } else {
-            state.factions.remove(moveto)
+            state.factions.remove_inner(moveto)
         };
 
         // match effect.pushpull {
@@ -385,10 +380,7 @@ impl ActualMove {
 
         let mut stack_size = 0;
 
-        for (_, rest) in game
-            .factions
-            .iter_end_points(world, mesh::small_mesh::conv(target_cell))
-        {
+        for (_, rest) in game.factions.iter_end_points(world, target_cell) {
             if let Some((_, tt)) = rest {
                 if tt == team {
                     stack_size += 1;
@@ -417,13 +409,13 @@ impl ActualMove {
 
         //console_dbg!("Adding stacksize=", stack_size);
 
-        let destroyed_unit = if let Some((a, v)) = game.factions.get_cell(target_cell) {
+        let destroyed_unit = if let Some((a, v)) = game.factions.get_cell_inner(target_cell) {
             Some((a, v))
         } else {
             None
         };
-        game.factions.remove(target_cell);
-        game.factions.add_cell(target_cell, stack_size, team);
+        game.factions.remove_inner(target_cell);
+        game.factions.add_cell_inner(target_cell, stack_size, team);
 
         MoveEffect {
             pushpull: e,

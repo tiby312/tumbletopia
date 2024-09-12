@@ -206,7 +206,7 @@ pub async fn reselect_loop(
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
         if let Some(e) = have_moved {
-            e.the_move.moveto != selected_unit.coord
+            e.the_move.moveto != mesh::small_mesh::conv(selected_unit.coord)
         } else {
             false
         }
@@ -304,7 +304,7 @@ pub async fn reselect_loop(
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
     if let Some(e) = have_moved {
-        if unwrapped_selected_unit != e.the_move.moveto {
+        if mesh::small_mesh::conv(unwrapped_selected_unit) != e.the_move.moveto {
             return LoopRes::Deselect;
         }
     }
@@ -342,7 +342,7 @@ pub async fn reselect_loop(
 
     let mp = ActualMove {
         //original: unwrapped_selected_unit,
-        moveto: target_cell,
+        moveto: mesh::small_mesh::conv(target_cell),
     };
 
     let effect = mp

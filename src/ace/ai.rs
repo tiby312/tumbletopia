@@ -410,13 +410,18 @@ impl<'a> AlphaBeta<'a> {
             );
         }
 
+        let (all_moves, captures, reinfocements) =
+            game.generate_possible_moves_movement(self.world, None, team);
+
         //TODO store as index
-        let moves: Vec<_> = game
-            .generate_possible_moves_movement(self.world, None, team)
-            .1
-            .iter_mesh(Axial::zero())
-            .map(|x| ActualMove { moveto: x })
-            .collect();
+        let mut moves: ArrayVec<[usize; 64]> = captures.inner.iter_ones().collect();
+
+        // let moves: Vec<_> = game
+        //     .generate_possible_moves_movement(self.world, None, team)
+        //     .1
+        //     .iter_mesh(Axial::zero())
+        //     .map(|x| ActualMove { moveto: x })
+        //     .collect();
 
         if moves.is_empty() {
             return (
@@ -427,6 +432,7 @@ impl<'a> AlphaBeta<'a> {
 
         let mut ab_iter = ab.ab_iter(team.is_white());
         for cand in moves {
+            let cand = ActualMove { moveto: cand };
             let effect = cand.apply(team, game, self.world);
 
             let (eval, m) = self.quiesance(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
@@ -478,12 +484,12 @@ impl<'a> AlphaBeta<'a> {
             }
 
             //TODO remove this?
-            let k = &ActualMove {
-                moveto: mesh::small_mesh::inverse(index),
-            };
+            // let k = &ActualMove {
+            //     moveto: mesh::small_mesh::inverse(index),
+            // };
 
             if let Some(a) = self.prev_cache.get(&game) {
-                if a == k {
+                if a.moveto == index {
                     return 1000;
                 }
             }
@@ -494,7 +500,7 @@ impl<'a> AlphaBeta<'a> {
                 .iter()
                 .enumerate()
             {
-                if a == k {
+                if a.moveto == index {
                     return 800 - i as isize;
                 }
             }
@@ -509,9 +515,7 @@ impl<'a> AlphaBeta<'a> {
 
         let mut ab_iter = ab.ab_iter(team.is_white());
         for index in moves.into_iter() {
-            let cand = ActualMove {
-                moveto: mesh::small_mesh::inverse(index),
-            };
+            let cand = ActualMove { moveto: index };
             let effect = cand.apply(team, game, self.world);
 
             let (eval, m) = self.alpha_beta(game, ab_iter.clone_ab_values(), team.not(), depth - 1);

@@ -199,7 +199,7 @@ fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 pub struct ActualMove {
     //pub original: Axial,
-    pub moveto: Axial,
+    pub moveto: usize,
     //pub attackto: Axial,
 }
 impl Default for ActualMove {
