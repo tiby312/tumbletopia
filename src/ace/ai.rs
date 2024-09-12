@@ -41,13 +41,12 @@ impl Evaluator {
         let mut strength = 0;
         let mut contested = 0;
         let mut unseen = 0;
-        for unit in world.get_game_cells().iter_mesh(Axial::zero()) {
+        for index in world.get_game_cells().inner.iter_ones() {
+            let unit = mesh::small_mesh::inverse(index);
+
             let mut num_white = 0;
             let mut num_black = 0;
-            for (_, rest) in game
-                .factions
-                .iter_end_points(world, mesh::small_mesh::conv(unit))
-            {
+            for (_, rest) in game.factions.iter_end_points(world, index) {
                 if let Some((_, team)) = rest {
                     match team {
                         ActiveTeam::White => num_white += 1,
@@ -57,7 +56,7 @@ impl Evaluator {
                 }
             }
 
-            if let Some((val, tt)) = game.factions.get_cell(unit) {
+            if let Some((val, tt)) = game.factions.get_cell_inner(index) {
                 let val = val as i64;
 
                 let curr_strength = match tt {
