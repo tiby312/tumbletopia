@@ -22,7 +22,7 @@ impl<MW: 'static + Serialize, WM: for<'a> Deserialize<'a> + 'static> WorkerInter
 
         let (ks, kr) = futures::channel::mpsc::unbounded();
 
-        let mut options = web_sys::WorkerOptions::new();
+        let options = web_sys::WorkerOptions::new();
         options.set_type(web_sys::WorkerType::Module);
 
         let worker = Rc::new(RefCell::new(

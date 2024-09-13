@@ -106,9 +106,9 @@ impl Evaluator {
     }
 }
 
-fn around(point: Axial) -> impl Iterator<Item = Axial> {
-    point.to_cube().ring(1).map(|b| b.to_axial())
-}
+// fn around(point: Axial) -> impl Iterator<Item = Axial> {
+//     point.to_cube().ring(1).map(|b| b.to_axial())
+// }
 
 // pub fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
 //     workspace.clear();
