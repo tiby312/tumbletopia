@@ -249,13 +249,13 @@ impl Mat4Buffer {
 
 //TODO destroy buffers in destructor
 pub struct VaoData {
-    num_index: usize,
-    num_vertex: usize,
-    index: WebGlBuffer,
-    tex_coord: WebGlBuffer,
-    position: WebGlBuffer,
-    normal: WebGlBuffer,
-    vao: web_sys::WebGlVertexArrayObject,
+    pub num_index: usize,
+    pub num_vertex: usize,
+    pub index: WebGlBuffer,
+    pub tex_coord: WebGlBuffer,
+    pub position: WebGlBuffer,
+    pub normal: WebGlBuffer,
+    pub vao: web_sys::WebGlVertexArrayObject,
 }
 
 pub fn create_vao(
