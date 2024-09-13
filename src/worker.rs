@@ -1,4 +1,3 @@
-use gloo::utils::format::JsValueSerdeExt;
 use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 use wasm_bindgen::UnwrapThrowExt;

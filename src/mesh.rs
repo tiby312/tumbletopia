@@ -4,7 +4,7 @@ use super::*;
 
 pub mod small_mesh {
 
-    use primitive_types::U256;
+    
 
     pub fn explore_outward_two() -> impl Iterator<Item = (HDir, [HDir; 3])> {
         HDir::all().map(move |dir| {

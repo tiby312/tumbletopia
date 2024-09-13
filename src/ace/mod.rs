@@ -5,8 +5,6 @@ pub mod ai;
 pub mod selection;
 use crate::{CellSelection, GameState};
 
-use ai::Evaluator;
-use collision::primitive::Cube;
 use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
@@ -399,7 +397,7 @@ pub fn game_init(world: &board::MyWorld) -> GameState {
     // cells.cells[2].inner <<= U256::one();
     // cells.team.inner <<= U256::one();
 
-    let mut game = GameState {
+    let game = GameState {
         factions: cells,
         // env: Environment {
         //     terrain: Terrain {

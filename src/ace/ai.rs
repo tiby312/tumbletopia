@@ -413,7 +413,7 @@ impl<'a> AlphaBeta<'a> {
         let (all_moves, captures, reinfocements) =
             game.generate_possible_moves_movement(self.world, None, team);
 
-        let mut moves: ArrayVec<[u8; board::NUM_CELLS]> = captures
+        let moves: ArrayVec<[u8; board::NUM_CELLS]> = captures
             .inner
             .iter_ones()
             .map(|x| x.try_into().unwrap())
@@ -549,8 +549,6 @@ impl<'a> AlphaBeta<'a> {
 }
 
 use abab::ABAB;
-use mesh::small_mesh::SmallMesh;
-use moves::EndPoints;
 mod abab {
     use super::*;
     #[derive(Clone)]

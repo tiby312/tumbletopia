@@ -1,4 +1,3 @@
-use crate::mesh::bitfield::BitField;
 
 use super::*;
 
@@ -126,7 +125,7 @@ fn test_dummy() {
     let size = 5;
 
     let ll = hex::Cube::new(0, 0).range(size).map(|x| x.to_axial());
-    let mut mesh = mesh::small_mesh::SmallMesh::from_iter(ll);
+    let mesh = mesh::small_mesh::SmallMesh::from_iter(ll);
     let mut mesh2 = mesh::small_mesh::SmallMesh::new();
 
     let unit = Axial { q: 1, r: 2 };
@@ -214,7 +213,7 @@ impl MyWorld {
         //for size 3 use this
         //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
 
-        let mut land = mesh::small_mesh::SmallMesh::from_iter(
+        let land = mesh::small_mesh::SmallMesh::from_iter(
             hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()),
         );
         //w.set_coord(Axial::zero(), false);

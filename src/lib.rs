@@ -794,7 +794,7 @@ async fn render_command(
             if let Some((val, team2)) = game.factions.get_cell(a) {
                 let inner_stack = val.min(2);
                 let mid_stack = val.max(2).min(4) - 2;
-                let outer_stack = (val.max(4) - 4);
+                let outer_stack = val.max(4) - 4;
                 let arr = match team2 {
                     ActiveTeam::White => &mut white_team_cells,
                     ActiveTeam::Black => &mut black_team_cells,
