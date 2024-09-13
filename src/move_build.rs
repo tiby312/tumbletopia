@@ -462,29 +462,29 @@ pub enum PushInfo {
 //     bomb: Option<BombInfo>,
 // }
 
-#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-pub struct FogInfo(pub SmallMesh);
+// #[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+// pub struct FogInfo(pub SmallMesh);
 
-impl FogInfo {
-    pub fn apply(&self, og: Axial, env: &mut Environment) {
-        for a in self.0.iter_mesh(Axial::zero()) {
-            env.fog.set_coord(og.add(a), false);
-        }
-    }
-}
+// impl FogInfo {
+//     pub fn apply(&self, og: Axial, env: &mut Environment) {
+//         for a in self.0.iter_mesh(Axial::zero()) {
+//             env.fog.set_coord(og.add(a), false);
+//         }
+//     }
+// }
 
-//returns a mesh where set bits indicate cells
-//that were fog before this function was called,
-//and were then unfogged.
-pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
-    let mut mesh = SmallMesh::new();
-    for a in og.to_cube().range(1) {
-        if env.fog.is_set(a.to_axial()) {
-            mesh.add(a.to_axial().sub(&og));
-        }
-    }
-    FogInfo(mesh)
-}
+// //returns a mesh where set bits indicate cells
+// //that were fog before this function was called,
+// //and were then unfogged.
+// pub fn compute_fog(og: Axial, env: &Environment) -> FogInfo {
+//     let mut mesh = SmallMesh::new();
+//     for a in og.to_cube().range(1) {
+//         if env.fog.is_set(a.to_axial()) {
+//             mesh.add(a.to_axial().sub(&og));
+//         }
+//     }
+//     FogInfo(mesh)
+// }
 
 // fn calculate_paths(
 //     position: Axial,

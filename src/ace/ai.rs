@@ -1,5 +1,3 @@
-use crate::mesh::bitfield::BitField;
-
 use super::*;
 
 pub type Eval = i64;
@@ -112,18 +110,18 @@ fn around(point: Axial) -> impl Iterator<Item = Axial> {
     point.to_cube().ring(1).map(|b| b.to_axial())
 }
 
-pub fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
-    workspace.clear();
-    workspace.union_with(mesh);
+// pub fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
+//     workspace.clear();
+//     workspace.union_with(mesh);
 
-    for a in workspace.iter_mesh() {
-        for b in around(a) {
-            if mesh.valid_coord(b) {
-                mesh.set_coord(b, true);
-            }
-        }
-    }
-}
+//     for a in workspace.iter_mesh() {
+//         for b in around(a) {
+//             if mesh.valid_coord(b) {
+//                 mesh.set_coord(b, true);
+//             }
+//         }
+//     }
+// }
 
 struct TranspositionTable {
     a: std::collections::BTreeMap<u64, moves::ActualMove>,
@@ -296,12 +294,12 @@ struct AlphaBeta<'a> {
 }
 
 struct KillerMoves {
-    a: Vec<smallvec::SmallVec<[moves::ActualMove; 2]>>,
+    a: Vec<tinyvec::ArrayVec<[moves::ActualMove; 2]>>,
 }
 
 impl KillerMoves {
     pub fn new(a: usize) -> Self {
-        let v = (0..a).map(|_| smallvec::SmallVec::new()).collect();
+        let v = (0..a).map(|_| tinyvec::ArrayVec::new()).collect();
         Self { a: v }
     }
     pub fn get(&self, depth: usize) -> &[moves::ActualMove] {

@@ -4,7 +4,6 @@ use gloo::console::console_dbg;
 use futures::{SinkExt, StreamExt};
 use gloo::console::log;
 use hex::Axial;
-use mesh::bitfield::BitField;
 use model::matrix::{self, MyMatrix};
 use moves::ActualMove;
 use serde::{Deserialize, Serialize};
