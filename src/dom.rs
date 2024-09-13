@@ -281,7 +281,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
 
                 undo.set_hidden(false);
 
-                let k = r###"<button id="undo" class="foo">Undo</button>"###;
+                //let k = r###"<button id="undo" class="foo">Undo</button>"###;
                 //let body = gloo::utils::document().body().expect("get body fail");
 
                 //body.insert_adjacent_html("beforeend",&k).expect("inserting undo fail");

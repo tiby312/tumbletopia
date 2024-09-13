@@ -1,7 +1,6 @@
-
 use super::*;
 
-use crate::{hex::HDir, mesh::small_mesh::SmallMesh};
+use crate::mesh::small_mesh::SmallMesh;
 
 pub struct EndPoints<T> {
     inner: [T; 6],
@@ -97,10 +96,9 @@ impl GameState {
     pub fn generate_possible_moves_movement(
         &self,
         world: &board::MyWorld,
-        unit: Option<Axial>,
+        _unit: Option<Axial>,
         team: ActiveTeam,
     ) -> (SmallMesh, SmallMesh, SmallMesh) {
-        let game = self;
         let mut mesh = SmallMesh::new();
         let mut captures = SmallMesh::new();
         let mut reinforcements = SmallMesh::new();
@@ -109,8 +107,6 @@ impl GameState {
         }
 
         for index in world.get_game_cells().inner.iter_ones() {
-            let pos = mesh::small_mesh::inverse(index);
-
             let it = self.factions.iter_end_points(world, index);
 
             let mut potential_height = 0;
@@ -158,48 +154,46 @@ impl GameState {
     }
 }
 
-fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
-    for a in unit.to_cube().neighbours2() {
-        let a = a.to_axial();
-        let dir = unit.dir_to(&a);
+// fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
+//     for a in unit.to_cube().neighbours2() {
+//         let a = a.to_axial();
+//         let dir = unit.dir_to(&a);
 
-        if func(a, &[dir]) {
-            continue;
-        }
+//         if func(a, &[dir]) {
+//             continue;
+//         }
 
-        for b in a.to_cube().neighbours2() {
-            let b = b.to_axial();
-            let dir2 = a.dir_to(&b);
+//         for b in a.to_cube().neighbours2() {
+//             let b = b.to_axial();
+//             let dir2 = a.dir_to(&b);
 
-            if b.to_cube().dist(&unit.to_cube()) < a.to_cube().dist(&unit.to_cube()) {
-                continue;
-            }
+//             if b.to_cube().dist(&unit.to_cube()) < a.to_cube().dist(&unit.to_cube()) {
+//                 continue;
+//             }
 
-            if func(b, &[dir, dir2]) {
-                continue;
-            }
+//             if func(b, &[dir, dir2]) {
+//                 continue;
+//             }
 
-            for c in b.to_cube().neighbours2() {
-                let c = c.to_axial();
-                let dir3 = b.dir_to(&c);
+//             for c in b.to_cube().neighbours2() {
+//                 let c = c.to_axial();
+//                 let dir3 = b.dir_to(&c);
 
-                if c.to_cube().dist(&unit.to_cube()) < b.to_cube().dist(&unit.to_cube()) {
-                    continue;
-                }
+//                 if c.to_cube().dist(&unit.to_cube()) < b.to_cube().dist(&unit.to_cube()) {
+//                     continue;
+//                 }
 
-                if func(c, &[dir, dir2, dir3]) {
-                    continue;
-                }
-            }
-        }
-    }
-}
+//                 if func(c, &[dir, dir2, dir3]) {
+//                     continue;
+//                 }
+//             }
+//         }
+//     }
+// }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 pub struct ActualMove {
-    //pub original: Axial,
     pub moveto: usize,
-    //pub attackto: Axial,
 }
 impl Default for ActualMove {
     fn default() -> Self {

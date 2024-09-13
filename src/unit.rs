@@ -144,7 +144,8 @@ impl GameState {
         self.hash(&mut hasher);
         hasher.finish()
     }
-    pub fn game_is_over(&self, world: &board::MyWorld, team: ActiveTeam) -> Option<GameOver> {
+    pub fn game_is_over(&self, _world: &board::MyWorld, _team: ActiveTeam) -> Option<GameOver> {
+        //TODO update
         // let this_team_stuck = 'foo: {
         //     for unit in self.factions.relative(team).this_team.iter_mesh() {
         //         let mesh = self.generate_possible_moves_movement(world, &unit, team);
@@ -270,27 +271,6 @@ impl Tribe {
         world: &board::MyWorld,
         index: usize,
     ) -> [(i8, Option<(u8, ActiveTeam)>); 6] {
-        let for_ray = |unit: Axial, dir: usize| {
-            unit.to_cube()
-                .ray_from_vector(hex::Cube::from_arr(hex::OFFSETS[dir]))
-                .take_while(|k| {
-                    let k = k.to_axial();
-                    world.get_game_cells().is_set(k)
-                })
-                .map(|x| x.to_axial())
-        };
-
-        let for_ray2 = |mut unit: Axial, dir: usize| {
-            let dis =
-                board::dis_to_hex_of_hexagon(unit, hex::HDir::from(dir as u8), world.radius as i8);
-
-            let j = hex::Cube::from_arr(hex::OFFSETS[dir]);
-            (0..dis).map(move |_| {
-                unit = unit.add(j.ax);
-                unit
-            })
-        };
-
         core::array::from_fn(|i| {
             // let first:Vec<_>=for_ray(unit,i).collect();
             // let second:Vec<_>=for_ray2(unit,i).collect();

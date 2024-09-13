@@ -1,4 +1,3 @@
-
 use super::*;
 
 pub struct Interpolate {
@@ -94,36 +93,36 @@ pub fn land_delta(start: Axial, end: Axial, v: &grids::HexConverter) -> Vector2<
     e - s
 }
 
-impl mesh::MyPath {
-    pub fn animation_iter(
-        self,
-        start: Axial,
-        v: &grids::HexConverter,
-    ) -> impl Iterator<Item = Vector2<f32>> {
-        let v = v.clone();
-        let mut counter = v.hex_axial_to_world(&start);
-        let mut cc = start;
+// impl mesh::MyPath {
+//     pub fn animation_iter(
+//         self,
+//         start: Axial,
+//         v: &grids::HexConverter,
+//     ) -> impl Iterator<Item = Vector2<f32>> {
+//         let v = v.clone();
+//         let mut counter = v.hex_axial_to_world(&start);
+//         let mut cc = start;
 
-        self.0.into_iter().flatten().flat_map(move |m| {
-            let a = m.to_relative();
-            cc.q += a.q;
-            cc.r += a.r;
-            let k = v.hex_axial_to_world(&cc);
-            let dis = (k - counter).magnitude();
-            let dir = (k - counter).normalize();
-            let old = counter;
-            counter = k;
+//         self.0.into_iter().flatten().flat_map(move |m| {
+//             let a = m.to_relative();
+//             cc.q += a.q;
+//             cc.r += a.r;
+//             let k = v.hex_axial_to_world(&cc);
+//             let dis = (k - counter).magnitude();
+//             let dir = (k - counter).normalize();
+//             let old = counter;
+//             counter = k;
 
-            animation::Interpolate {
-                curr: 0.0,
-                target: dis,
-                tt: 0.2,
-                max: 4.0,
-            }
-            .map(move |val| old + dir * val)
-        })
-    }
-}
+//             animation::Interpolate {
+//                 curr: 0.0,
+//                 target: dis,
+//                 tt: 0.2,
+//                 max: 4.0,
+//             }
+//             .map(move |val| old + dir * val)
+//         })
+//     }
+// }
 
 // pub fn movement(
 //     start: Axial,

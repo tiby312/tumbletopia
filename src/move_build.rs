@@ -295,7 +295,7 @@ impl ActualMove {
         self
     }
 
-    pub fn undo(&self, team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
+    pub fn undo(&self, _team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;
         //let unit = self.original;
 

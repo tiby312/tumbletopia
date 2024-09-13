@@ -316,7 +316,7 @@ async fn render_command(
     >,
     engine_worker: &mut shogo::EngineWorker<DomToWorker, WorkerToDom>,
 ) -> ace::Response {
-    let mut x = 0.0;
+    //let mut x = 0.0;
     let scroll_manager = &mut e.scroll_manager;
     let last_matrix = &mut e.last_matrix;
     let ctx = &e.ctx;
@@ -333,18 +333,18 @@ async fn render_command(
     let mut viewport = [canvas.width() as f32, canvas.height() as f32];
 
     let drop_shadow = &models.drop_shadow;
-    let black_mouse = &models.black_mouse;
-    let white_mouse = &models.white_mouse;
-    let black_rabbit = &models.black_rabbit;
-    let white_rabbit = &models.white_rabbit;
+    // let black_mouse = &models.black_mouse;
+    // let white_mouse = &models.white_mouse;
+    // let black_rabbit = &models.black_rabbit;
+    // let white_rabbit = &models.white_rabbit;
 
     //let fog_asset = &models.fog;
     let water = &models.water;
-    let grass = &models.grass;
-    let mountain_asset = &models.mountain;
-    let snow = &models.snow;
+    // let grass = &models.grass;
+    // let mountain_asset = &models.mountain;
+    // let snow = &models.snow;
     let select_model = &models.select_model;
-    let attack_model = &models.attack;
+    // let attack_model = &models.attack;
 
     //First lets process the command. Break it down
     //into pieces that this thread understands.
@@ -427,9 +427,6 @@ async fn render_command(
             poking = 3;
         }
     };
-
-    //TODO don't calculate 60 times a second?
-    let visible_water = { world.get_game_cells() };
 
     loop {
         if poking == 1 {
@@ -679,17 +676,10 @@ async fn render_command(
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
                 match selection {
-                    CellSelection::MoveSelection(point, mesh, hh) => {
+                    CellSelection::MoveSelection(_, mesh, _) => {
                         //console_dbg!("doo=",mesh);
                         let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
-                            let zzzz = if let Some((val, b)) = game.factions.get_cell(e) {
-                                //val as f32 * cell_height + 1.0
-                                0.0
-                            } else {
-                                0.0
-                            };
-
-                            //let zzzz = 1.0;
+                            let zzzz = 0.0;
 
                             grid_snap(e, zzzz)
                                 .chain(matrix::scale(1.0, 1.0, 1.0))
@@ -789,7 +779,7 @@ async fn render_command(
             }
         }
 
-        x += 0.1;
+        //x += 0.1;
         for a in world.get_game_cells().iter_mesh(Axial::zero()) {
             if let Some((val, team2)) = game.factions.get_cell(a) {
                 let inner_stack = val.min(2);
@@ -800,8 +790,6 @@ async fn render_command(
                     ActiveTeam::Black => &mut black_team_cells,
                     ActiveTeam::Neutral => &mut neutral_team_cells,
                 };
-
-                let xx = models.grass.width / 2.0;
 
                 let radius = [0.4, 0.6, 0.8];
 
@@ -923,10 +911,6 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
         //     .collect();
 
         //if !uworlds.is_empty() {
-        use cgmath::One;
-        let j = Matrix4::<f32>::one();
-        let j = j.generate();
-        let x: &[f32; 16] = j.as_ref();
 
         self.sys.draw(
             &texture.model.res,
@@ -1029,17 +1013,17 @@ use crate::model_parse::{Foo, ModelGpu, TextureGpu};
 pub struct Models<T> {
     select_model: T,
     drop_shadow: T,
-    fog: T,
-    attack: T,
-    white_mouse: T,
-    black_mouse: T,
-    white_rabbit: T,
-    black_rabbit: T,
+    // fog: T,
+    // attack: T,
+    // white_mouse: T,
+    // black_mouse: T,
+    // white_rabbit: T,
+    // black_rabbit: T,
     grass: T,
     snow: T,
     water: T,
-    direction: T,
-    mountain: T,
+    // direction: T,
+    // mountain: T,
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
@@ -1072,136 +1056,86 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
         Models {
             select_model: quick_load(include_bytes!("../assets/hex-select.glb"), 1, None),
             drop_shadow: quick_load(include_bytes!("../assets/drop_shadow.glb"), 1, Some(0.5)),
-            fog: quick_load(include_bytes!("../assets/fog.glb"), RESIZE, None),
-            attack: quick_load(include_bytes!("../assets/attack.glb"), 1, None),
-            white_mouse: quick_load(include_bytes!("../assets/white_mouse.glb"), RESIZE, None),
-            black_mouse: quick_load(include_bytes!("../assets/black_mouse.glb"), RESIZE, None),
-            white_rabbit: quick_load(include_bytes!("../assets/white_rabbit.glb"), RESIZE, None),
-            black_rabbit: quick_load(include_bytes!("../assets/black_rabbit.glb"), RESIZE, None),
+            // fog: quick_load(include_bytes!("../assets/fog.glb"), RESIZE, None),
+            // attack: quick_load(include_bytes!("../assets/attack.glb"), 1, None),
+            // white_mouse: quick_load(include_bytes!("../assets/white_mouse.glb"), RESIZE, None),
+            // black_mouse: quick_load(include_bytes!("../assets/black_mouse.glb"), RESIZE, None),
+            // white_rabbit: quick_load(include_bytes!("../assets/white_rabbit.glb"), RESIZE, None),
+            // black_rabbit: quick_load(include_bytes!("../assets/black_rabbit.glb"), RESIZE, None),
             grass: quick_load(include_bytes!("../assets/hex-black.glb"), RESIZE, None),
             snow: quick_load(include_bytes!("../assets/hex-white.glb"), RESIZE, None),
             water: quick_load(include_bytes!("../assets/hex-neutral.glb"), RESIZE, None),
-            direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
-            mountain: quick_load(include_bytes!("../assets/mountain.glb"), 1, None),
+            // direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
+            // mountain: quick_load(include_bytes!("../assets/mountain.glb"), 1, None),
         }
     }
 }
 
-// pub struct Numm {
-//     text_texture: TextureGpu,
-//     health_numbers: NumberTextManager,
-// }
-// impl Numm {
-//     pub fn new(ctx: &WebGl2RenderingContext) -> Self {
-//         let text_texture = {
-//             let ascii_tex = model::load_texture_from_data(include_bytes!("../assets/ascii5.png"));
+// fn string_to_coords<'a>(st: &str) -> model::ModelData {
+//     let num_rows = 16;
+//     let num_columns = 16;
 
-//             model_parse::TextureGpu::new(ctx, &ascii_tex)
-//         };
+//     let mut tex_coords = vec![];
+//     let mut counter = 0.0;
+//     let dd = 20.0;
+//     let mut positions = vec![];
 
-//         let health_numbers = NumberTextManager::new(ctx);
+//     let mut inds = vec![];
+//     for (_, a) in st.chars().enumerate() {
+//         let ascii = a as u8;
+//         let index = ascii as u16;
 
-//         Numm {
-//             text_texture,
-//             health_numbers,
-//         }
+//         let x = (index % num_rows) as f32 / num_rows as f32;
+//         let y = (index / num_rows) as f32 / num_columns as f32;
+
+//         let x1 = x;
+//         let x2 = x1 + 1.0 / num_rows as f32;
+
+//         let y1 = y;
+//         let y2 = y + 1.0 / num_columns as f32;
+
+//         let a = [[x1, y1], [x2, y1], [x1, y2], [x2, y2]];
+
+//         tex_coords.extend(a);
+
+//         let iii = [0u16, 1, 2, 2, 1, 3].map(|a| positions.len() as u16 + a);
+
+//         let xx1 = counter;
+//         let xx2 = counter + dd;
+//         let yy1 = dd;
+//         let yy2 = 0.0;
+
+//         let zz = 0.0;
+//         let y = [
+//             [xx1, yy1, zz],
+//             [xx2, yy1, zz],
+//             [xx1, yy2, zz],
+//             [xx2, yy2, zz],
+//         ];
+
+//         positions.extend(y);
+
+//         inds.extend(iii);
+
+//         assert!(ascii >= 32);
+//         counter += dd;
+//     }
+
+//     let normals = positions.iter().map(|_| [0.0, 0.0, 1.0]).collect();
+
+//     let cc = 1.0 / dd;
+//     let mm = matrix::scale(cc, cc, cc).generate();
+
+//     let positions = positions
+//         .into_iter()
+//         .map(|a| mm.transform_point(a.into()).into())
+//         .collect();
+
+//     model::ModelData {
+//         positions,
+//         tex_coords,
+//         indices: Some(inds),
+//         normals,
+//         matrix: mm,
 //     }
 // }
-
-// pub struct NumberTextManager {
-//     pub numbers: Vec<model_parse::ModelGpu>,
-// }
-// impl NumberTextManager {
-//     fn new(ctx: &WebGl2RenderingContext) -> Self {
-//         let range = -10..=10;
-//         fn generate_number(number: i8, ctx: &WebGl2RenderingContext) -> model_parse::ModelGpu {
-//             let data = string_to_coords(&format!("{}", number));
-//             model_parse::ModelGpu::new(ctx, &data)
-//         }
-
-//         let numbers = range.into_iter().map(|i| generate_number(i, ctx)).collect();
-//         Self { numbers }
-//     }
-
-//     pub fn get_number<'b>(
-//         &self,
-//         num: i8,
-//         texture: &'b model_parse::TextureGpu,
-//     ) -> model_parse::Foo<&'b model_parse::TextureGpu, &model_parse::ModelGpu> {
-//         let gpu = &self.numbers[(num + 10) as usize];
-
-//         model_parse::Foo {
-//             texture,
-//             model: gpu,
-//         }
-//     }
-// }
-
-fn string_to_coords<'a>(st: &str) -> model::ModelData {
-    let num_rows = 16;
-    let num_columns = 16;
-
-    let mut tex_coords = vec![];
-    let mut counter = 0.0;
-    let dd = 20.0;
-    let mut positions = vec![];
-
-    let mut inds = vec![];
-    for (_, a) in st.chars().enumerate() {
-        let ascii = a as u8;
-        let index = ascii as u16;
-
-        let x = (index % num_rows) as f32 / num_rows as f32;
-        let y = (index / num_rows) as f32 / num_columns as f32;
-
-        let x1 = x;
-        let x2 = x1 + 1.0 / num_rows as f32;
-
-        let y1 = y;
-        let y2 = y + 1.0 / num_columns as f32;
-
-        let a = [[x1, y1], [x2, y1], [x1, y2], [x2, y2]];
-
-        tex_coords.extend(a);
-
-        let iii = [0u16, 1, 2, 2, 1, 3].map(|a| positions.len() as u16 + a);
-
-        let xx1 = counter;
-        let xx2 = counter + dd;
-        let yy1 = dd;
-        let yy2 = 0.0;
-
-        let zz = 0.0;
-        let y = [
-            [xx1, yy1, zz],
-            [xx2, yy1, zz],
-            [xx1, yy2, zz],
-            [xx2, yy2, zz],
-        ];
-
-        positions.extend(y);
-
-        inds.extend(iii);
-
-        assert!(ascii >= 32);
-        counter += dd;
-    }
-
-    let normals = positions.iter().map(|_| [0.0, 0.0, 1.0]).collect();
-
-    let cc = 1.0 / dd;
-    let mm = matrix::scale(cc, cc, cc).generate();
-
-    let positions = positions
-        .into_iter()
-        .map(|a| mm.transform_point(a.into()).into())
-        .collect();
-
-    model::ModelData {
-        positions,
-        tex_coords,
-        indices: Some(inds),
-        normals,
-        matrix: mm,
-    }
-}

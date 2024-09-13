@@ -1,10 +1,6 @@
-use crate::hex::HDir;
-
 use super::*;
 
 pub mod small_mesh {
-
-    
 
     pub fn explore_outward_two() -> impl Iterator<Item = (HDir, [HDir; 3])> {
         HDir::all().map(move |dir| {
@@ -159,20 +155,6 @@ pub mod small_mesh {
 
     use super::Axial;
 
-    fn ind_to_foo(a: usize) -> (usize, usize) {
-        assert!(a >= 0 && a < 256);
-
-        // 0
-        // 64
-        // 128
-        // 192
-        // 256
-
-        let block = a / 64;
-        let block_ind = a % 64;
-        (block, block_ind)
-    }
-
     pub fn inverse(index: usize) -> Axial {
         let x = index / 16;
         let y = index % 16;
@@ -196,92 +178,92 @@ pub mod small_mesh {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct MyPath(pub [Option<HDir>; 3]);
+// #[derive(Debug, Clone)]
+// pub struct MyPath(pub [Option<HDir>; 3]);
 
-pub fn path(
-    _mesh: &small_mesh::SmallMesh,
-    unit: Axial,
-    target: Axial,
-    pathable: &small_mesh::SmallMesh,
-    game: &GameState,
-    team: ActiveTeam,
-    world: &board::MyWorld,
-    capturing: bool,
-) -> MyPath {
-    let neighbours = |a: &Axial| {
-        let mut k = a.to_cube().neighbours2();
-        k.sort_unstable_by_key(|a| a.dist(&target.to_cube()));
-        k.map(|x| (x.to_axial(), a.dir_to(&x)))
-    };
+// pub fn path(
+//     _mesh: &small_mesh::SmallMesh,
+//     unit: Axial,
+//     target: Axial,
+//     pathable: &small_mesh::SmallMesh,
+//     game: &GameState,
+//     team: ActiveTeam,
+//     world: &board::MyWorld,
+//     capturing: bool,
+// ) -> MyPath {
+//     let neighbours = |a: &Axial| {
+//         let mut k = a.to_cube().neighbours2();
+//         k.sort_unstable_by_key(|a| a.dist(&target.to_cube()));
+//         k.map(|x| (x.to_axial(), a.dir_to(&x)))
+//     };
 
-    // if walls.is_set(target.sub(&unit)) {
-    //     assert_eq!(unit.to_cube().dist(&target.to_cube()), 1);
-    //     return MyPath([Some(unit.dir_to(&target)), None, None]);
-    // }
+//     // if walls.is_set(target.sub(&unit)) {
+//     //     assert_eq!(unit.to_cube().dist(&target.to_cube()), 1);
+//     //     return MyPath([Some(unit.dir_to(&target)), None, None]);
+//     // }
 
-    //let typ = game.factions.relative(team).this_team.get_type(unit);
+//     //let typ = game.factions.relative(team).this_team.get_type(unit);
 
-    let find = |depth: usize| {
-        for (a, adir) in neighbours(&unit) {
-            if !pathable.is_set(a.sub(&unit)) {
-                continue;
-            }
+//     let find = |depth: usize| {
+//         for (a, adir) in neighbours(&unit) {
+//             if !pathable.is_set(a.sub(&unit)) {
+//                 continue;
+//             }
 
-            if a == target {
-                return Some(MyPath([Some(adir), None, None]));
-            }
+//             if a == target {
+//                 return Some(MyPath([Some(adir), None, None]));
+//             }
 
-            if depth == 1 {
-                continue;
-            }
+//             if depth == 1 {
+//                 continue;
+//             }
 
-            for (b, bdir) in neighbours(&a) {
-                if !pathable.is_set(b.sub(&unit)) {
-                    continue;
-                }
+//             for (b, bdir) in neighbours(&a) {
+//                 if !pathable.is_set(b.sub(&unit)) {
+//                     continue;
+//                 }
 
-                if b == target {
-                    return Some(MyPath([Some(adir), Some(bdir), None]));
-                }
+//                 if b == target {
+//                     return Some(MyPath([Some(adir), Some(bdir), None]));
+//                 }
 
-                if depth == 2 {
-                    continue;
-                }
+//                 if depth == 2 {
+//                     continue;
+//                 }
 
-                for (c, cdir) in neighbours(&b) {
-                    if !pathable.is_set(c.sub(&unit)) {
-                        continue;
-                    }
+//                 for (c, cdir) in neighbours(&b) {
+//                     if !pathable.is_set(c.sub(&unit)) {
+//                         continue;
+//                     }
 
-                    if c == target {
-                        // if capturing && !game.is_trap(team, world, c.advance(cdir),typ) {
-                        //     continue;
-                        // }
-                        return Some(MyPath([Some(adir), Some(bdir), Some(cdir)]));
-                    }
-                }
-            }
-        }
+//                     if c == target {
+//                         // if capturing && !game.is_trap(team, world, c.advance(cdir),typ) {
+//                         //     continue;
+//                         // }
+//                         return Some(MyPath([Some(adir), Some(bdir), Some(cdir)]));
+//                     }
+//                 }
+//             }
+//         }
 
-        None
-    };
+//         None
+//     };
 
-    //similar to iterative deepening. We have to make sure we check for paths
-    //at smaller depths before trying larger depths because dfs has no order.
-    for a in 1..4 {
-        if let Some(a) = find(a) {
-            return a;
-        }
-    }
+//     //similar to iterative deepening. We have to make sure we check for paths
+//     //at smaller depths before trying larger depths because dfs has no order.
+//     for a in 1..4 {
+//         if let Some(a) = find(a) {
+//             return a;
+//         }
+//     }
 
-    unreachable!(
-        "could not find path {:?}:{:?}:{:?}",
-        target,
-        Axial::zero().to_cube().dist(&target.to_cube()),
-        pathable.is_set(target)
-    );
-}
+//     unreachable!(
+//         "could not find path {:?}:{:?}:{:?}",
+//         target,
+//         Axial::zero().to_cube().dist(&target.to_cube()),
+//         pathable.is_set(target)
+//     );
+// }
 
 // pub fn path_old(
 //     _mesh: &small_mesh::SmallMesh,

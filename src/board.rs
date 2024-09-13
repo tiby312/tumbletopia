@@ -1,31 +1,10 @@
-
 use super::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct MyWorld {
     pub seed: WorldSeed,
-    //w: BitField,
     pub land: mesh::small_mesh::SmallMesh,
-    pub radius: u8, //black_start: Vec<Axial>,
-                    //white_start: Vec<Axial>,
-}
-
-// impl Default for MyWorld {
-//     fn default() -> Self {
-//         Self::new()
-//     }
-// }
-
-fn increase_mag(a: &mut hex::CoordNum) {
-    if *a == 0 {
-        return;
-    }
-
-    if *a > 0 {
-        *a += 1
-    } else {
-        *a -= 1
-    }
+    pub radius: u8,
 }
 
 pub const NUM_CELLS: usize = 128;
@@ -129,26 +108,19 @@ fn test_dummy() {
     let mut mesh2 = mesh::small_mesh::SmallMesh::new();
 
     let unit = Axial { q: 1, r: 2 };
-    // for i in 0..6{
-    //     let computed_dis = dis_to_hex_of_hexagon(unit, hex::HDir::from(i as u8), 3);
 
-    //     for j in 0..computed_dis{
-
-    //     }
-    //     mesh.remove();
-    // }
     let computed_dis = dis_to_hex_of_hexagon(unit, hex::HDir::BottomRight, 5);
 
-    let top_right_stride = 1; //hex::Dir::TopRight
-    let bottom_left_stride = -1; //hex::DIR::BottomLeft
-    let top_stride = -15;
-    let bottom_stride = 15;
-    let top_left_stride = -16;
+    // let top_right_stride = 1; //hex::Dir::TopRight
+    // let bottom_left_stride = -1; //hex::DIR::BottomLeft
+    // let top_stride = -15;
+    // let bottom_stride = 15;
+    // let top_left_stride = -16;
     let bottom_right_stride = 16;
 
     let stride = bottom_right_stride;
     let mut index = mesh::small_mesh::conv(unit) as isize;
-    for i in 0..computed_dis {
+    for _ in 0..computed_dis {
         index += stride;
         mesh2.inner.set(index as usize, true);
     }
@@ -205,10 +177,10 @@ fn test_dis_to_hex_border() {
 
 impl MyWorld {
     pub fn new(seed: WorldSeed) -> MyWorld {
-        let size = 3;
+        //let size = 3;
         let size = 5;
 
-        let j = [[2, -4], [-2, -2], [-4, 2], [-2, 4], [2, 2], [4, -2]];
+        //let j = [[2, -4], [-2, -2], [-4, 2], [-2, 4], [2, 2], [4, -2]];
 
         //for size 3 use this
         //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];

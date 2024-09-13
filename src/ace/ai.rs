@@ -42,8 +42,6 @@ impl Evaluator {
         let mut contested = 0;
         let mut unseen = 0;
         for index in world.get_game_cells().inner.iter_ones() {
-            let unit = mesh::small_mesh::inverse(index);
-
             let mut num_white = 0;
             let mut num_black = 0;
             for (_, rest) in game.factions.iter_end_points(world, index) {
@@ -124,50 +122,6 @@ pub fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
                 mesh.set_coord(b, true);
             }
         }
-    }
-}
-
-fn doop(
-    iteration: usize,
-    black: &mut BitField,
-    white: &mut BitField,
-    allowed_cells: &BitField,
-    cache: &mut BitField,
-    mut cache2: &mut BitField,
-) {
-    black.intersect_with(allowed_cells);
-    white.intersect_with(allowed_cells);
-    if black.count_ones(..) == 0 && white.count_ones(..) == 0 {
-        return;
-    }
-
-    // let mut cache2 = BitField::new();
-    // let mut cache = BitField::new();
-
-    for _i in 0..iteration {
-        cache.clear();
-        cache.union_with(black);
-        expand_mesh(black, cache2);
-        let black_changed = cache != black;
-        cache.clear();
-        cache.union_with(white);
-        expand_mesh(white, cache2);
-        let white_changed = cache != white;
-        if !black_changed && !white_changed {
-            break;
-        }
-        black.intersect_with(allowed_cells);
-        white.intersect_with(allowed_cells);
-
-        cache2.clear();
-        let contested = &mut cache2;
-        contested.union_with(black);
-        contested.intersect_with(white);
-
-        contested.toggle_range(..);
-
-        black.intersect_with(&contested);
-        white.intersect_with(&contested);
     }
 }
 
@@ -410,8 +364,7 @@ impl<'a> AlphaBeta<'a> {
             );
         }
 
-        let (all_moves, captures, reinfocements) =
-            game.generate_possible_moves_movement(self.world, None, team);
+        let (_, captures, _) = game.generate_possible_moves_movement(self.world, None, team);
 
         let moves: ArrayVec<[u8; board::NUM_CELLS]> = captures
             .inner
@@ -476,7 +429,6 @@ impl<'a> AlphaBeta<'a> {
             return (self.evaluator.cant_move(team), tinyvec::array_vec![]);
         }
 
-
         let move_value = |index: usize| {
             if captures.inner[index] {
                 return 4;
@@ -506,8 +458,7 @@ impl<'a> AlphaBeta<'a> {
             // let spokes=game.factions.iter_end_points(self.world, index);
             // let sum=spokes.into_iter().fold(0,|acc,f|acc+f.0);
 
-            
-            1//+sum as isize
+            1 //+sum as isize
         };
 
         moves.sort_by_cached_key(|&f| -move_value(f as usize));
@@ -555,22 +506,6 @@ mod abab {
     pub struct ABAB {
         alpha: Eval,
         beta: Eval,
-    }
-
-    pub trait Doop {
-        fn maximizing(&self) -> bool;
-    }
-    pub struct Maximizer;
-    impl Doop for Maximizer {
-        fn maximizing(&self) -> bool {
-            true
-        }
-    }
-    pub struct Minimizer;
-    impl Doop for Minimizer {
-        fn maximizing(&self) -> bool {
-            false
-        }
     }
 
     pub struct ABIter<'a, T> {

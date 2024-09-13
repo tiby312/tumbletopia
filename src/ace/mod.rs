@@ -336,7 +336,7 @@ pub async fn reselect_loop(
     //     .this_team
     //     .is_set(unwrapped_selected_unit));
 
-    let c = target_cell;
+    //let c = target_cell;
 
     let mp = ActualMove {
         //original: unwrapped_selected_unit,
@@ -368,8 +368,8 @@ pub async fn reselect_loop(
     //}
 }
 
-pub fn game_init(world: &board::MyWorld) -> GameState {
-    let a = 3; //world.white_start().len();
+pub fn game_init(_world: &board::MyWorld) -> GameState {
+    //let a = 3; //world.white_start().len();
 
     // let white_mouse = BitField::from_iter(&world.white_start()[0..a]);
 
