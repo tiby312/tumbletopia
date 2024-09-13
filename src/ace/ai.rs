@@ -476,6 +476,7 @@ impl<'a> AlphaBeta<'a> {
             return (self.evaluator.cant_move(team), tinyvec::array_vec![]);
         }
 
+
         let move_value = |index: usize| {
             if captures.inner[index] {
                 return 4;
@@ -484,11 +485,6 @@ impl<'a> AlphaBeta<'a> {
             if reinfocements.inner[index] {
                 return 0;
             }
-
-            //TODO remove this?
-            // let k = &ActualMove {
-            //     moveto: mesh::small_mesh::inverse(index),
-            // };
 
             if let Some(a) = self.prev_cache.get(&game) {
                 if a.moveto == index {
@@ -507,7 +503,11 @@ impl<'a> AlphaBeta<'a> {
                 }
             }
 
-            1
+            // let spokes=game.factions.iter_end_points(self.world, index);
+            // let sum=spokes.into_iter().fold(0,|acc,f|acc+f.0);
+
+            
+            1//+sum as isize
         };
 
         moves.sort_by_cached_key(|&f| -move_value(f as usize));
