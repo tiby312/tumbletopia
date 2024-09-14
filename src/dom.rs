@@ -42,7 +42,7 @@ impl DomToWorker {
 
 //convert DOM coordinate to canvas relative coordinate
 fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
-    shader_sys::convert_coord(
+    gui::shader_sys::convert_coord(
         canvas.dyn_ref().unwrap_throw(),
         event.dyn_ref().unwrap_throw(),
     )
