@@ -42,9 +42,9 @@ features=[
 
 [profile.release]
 debug = true
-opt-level = 2
+opt-level = 0
 
-[profile.dev.package."*"]
+[profile.release.package."*"]
 opt-level = 2
 
 [patch.crates-io]
