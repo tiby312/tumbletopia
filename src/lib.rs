@@ -13,23 +13,22 @@ use shogo::utils;
 use wasm_bindgen::prelude::*;
 
 pub mod animation;
-pub mod board;
+use engine::board;
 pub mod dom;
-pub mod grids;
-pub mod mesh;
+use engine::grids;
+use engine::mesh;
 pub mod model_parse;
-pub mod move_build;
-pub mod moves;
+use engine::move_build;
+use engine::moves;
 pub mod projection;
 pub mod scroll;
 pub mod shader_sys;
-pub mod util;
 pub mod worker;
 use dom::DomToWorker;
 use projection::*;
 pub mod ace;
-pub mod hex;
-pub mod unit;
+use engine::hex;
+use engine::unit;
 
 use unit::*;
 
@@ -202,7 +201,7 @@ pub async fn worker_entry() {
             return game_history;
         }
 
-        let mut game = ace::game_init(&world);
+        let mut game = unit::game_init(&world);
 
         let mut game_history = ace::selection::MoveHistory::new();
 
@@ -239,8 +238,7 @@ pub async fn worker_entry() {
 
                 //let kk = the_move;
 
-                let effect_m = the_move
-                    .animate(team, &mut game, &world, &mut doop)
+                let effect_m = animate_move(&the_move, team, &mut game, &world, &mut doop)
                     .await
                     .apply(team, &mut game, &world);
 
@@ -290,6 +288,65 @@ pub async fn worker_entry() {
     });
 
     log!("Worker thread closin");
+}
+
+#[derive(Debug, Clone)]
+pub enum CellSelection {
+    MoveSelection(
+        Axial,
+        mesh::small_mesh::SmallMesh,
+        Option<ace::selection::HaveMoved>,
+    ),
+    BuildSelection(Axial),
+}
+impl Default for CellSelection {
+    fn default() -> Self {
+        CellSelection::BuildSelection(Axial::default())
+    }
+}
+
+pub async fn animate_move<'a>(
+    aa: &'a ActualMove,
+    team: ActiveTeam,
+    state: &GameState,
+    world: &board::MyWorld,
+    data: &mut ace::WorkerManager,
+) -> &'a ActualMove {
+    let end_points = state.factions.iter_end_points(world, aa.moveto);
+
+    let mut ss = state.clone();
+
+    let mut stack = 0;
+    for (i, (dis, rest)) in end_points.into_iter().enumerate() {
+        let Some((_, team2)) = rest else {
+            continue;
+        };
+
+        if team2 != team {
+            continue;
+        }
+
+        let unit = mesh::small_mesh::inverse(aa.moveto)
+            .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
+
+        data.wait_animation(
+            animation::AnimationCommand::Movement {
+                unit,
+                end: mesh::small_mesh::inverse(aa.moveto),
+            },
+            team,
+            &mut ss,
+        )
+        .await;
+
+        stack += 1;
+        if let Some(_) = state.factions.get_cell_inner(aa.moveto) {
+            ss.factions.remove_inner(aa.moveto);
+        }
+        ss.factions.add_cell_inner(aa.moveto, stack, team);
+    }
+
+    aa
 }
 
 pub struct EngineStuff {

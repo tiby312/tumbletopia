@@ -323,25 +323,23 @@ impl KillerMoves {
     }
 }
 
-impl GameState {
-    pub fn evaluate_a_continuation(
-        &self,
-        world: &board::MyWorld,
-        team_to_play: ActiveTeam,
-        m: impl IntoIterator<Item = ActualMove>,
-    ) -> Eval {
-        let mut game = self.clone();
-        let mut team = team_to_play;
-        for cand in m {
-            {
-                let j = cand;
-                j.apply(team, &mut game, world)
-            };
-            team = team.not();
-        }
-
-        Evaluator::default().absolute_evaluate(&game, world, false)
+pub fn evaluate_a_continuation(
+    game: &GameState,
+    world: &board::MyWorld,
+    team_to_play: ActiveTeam,
+    m: impl IntoIterator<Item = ActualMove>,
+) -> Eval {
+    let mut game = game.clone();
+    let mut team = team_to_play;
+    for cand in m {
+        {
+            let j = cand;
+            j.apply(team, &mut game, world)
+        };
+        team = team.not();
     }
+
+    Evaluator::default().absolute_evaluate(&game, world, false)
 }
 
 #[derive(Debug, Clone)]

@@ -359,6 +359,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
+name = "engine"
+version = "0.1.0"
+dependencies = [
+ "axgeom",
+ "bitvec",
+ "cgmath",
+ "rand",
+ "serde",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -755,11 +766,11 @@ version = "0.1.0"
 dependencies = [
  "axgeom",
  "base64 0.21.7",
- "bitvec",
  "byte-slice-cast",
  "cgmath",
  "collision",
  "console_error_panic_hook",
+ "engine",
  "futures",
  "getrandom",
  "gloo",
@@ -768,7 +779,6 @@ dependencies = [
  "model",
  "postcard",
  "querystring",
- "rand",
  "serde",
  "serde_json",
  "shogo",

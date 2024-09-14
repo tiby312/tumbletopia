@@ -343,8 +343,7 @@ pub async fn reselect_loop(
         moveto: mesh::small_mesh::conv(target_cell),
     };
 
-    let effect = mp
-        .animate(selected_unit.team, game, world, doop)
+    let effect = animate_move(&mp, selected_unit.team, game, world, doop)
         .await
         .apply(selected_unit.team, game, world);
 
@@ -366,57 +365,6 @@ pub async fn reselect_loop(
         // LoopRes::Select(selected_unit)
     }
     //}
-}
-
-pub fn game_init(_world: &board::MyWorld) -> GameState {
-    //let a = 3; //world.white_start().len();
-
-    // let white_mouse = BitField::from_iter(&world.white_start()[0..a]);
-
-    // let black_mouse = BitField::from_iter(&world.black_start()[0..a]);
-
-    // let white_rabbit = BitField::from_iter(&world.white_start()[a..]);
-
-    // let black_rabbit = BitField::from_iter(&world.black_start()[a..]);
-
-    //let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
-
-    // let mut fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x| x.ax));
-    // fog.intersect_with(&world.get_game_cells());
-    //let fog=BitField::new();
-
-    let mut cells = Tribe::new();
-    cells.add_cell(Axial::from_arr([-1, 2]), 1, ActiveTeam::White);
-    cells.add_cell(Axial::from_arr([0, -5]), 1, ActiveTeam::Black);
-    cells.add_cell(Axial::from_arr([0, 0]), 2, ActiveTeam::Neutral);
-
-    // use primitive_types::U256;
-
-    // cells.cells[0].inner <<= U256::one();
-    // cells.cells[1].inner <<= U256::one();
-    // cells.cells[2].inner <<= U256::one();
-    // cells.team.inner <<= U256::one();
-
-    let game = GameState {
-        factions: cells,
-        // env: Environment {
-        //     terrain: Terrain {
-        //         land: world.land.clone(),
-        //         forest: BitField::from_iter([] as [Axial; 0]),
-        //         mountain: BitField::from_iter([] as [Axial; 0]),
-        //     },
-        //     fog,
-        //     powerups: powerups.into_iter().map(Axial::from_arr).collect(),
-        // },
-    };
-
-    // let str="{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,180143985094819840,50332928,0]},{\"inner\":[0,0,0,0]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,0,50332672,0]}}}}";
-    // let game: GameState = serde_json::from_str(str).unwrap();
-
-    // let k = Evaluator::default().absolute_evaluate(&game, world, false);
-    // console_dbg!("Current eval=", k);
-
-    game
 }
 
 pub mod share {
@@ -460,8 +408,7 @@ pub async fn replay(
 
         //let kk = the_move.as_move();
 
-        let effect_m = the_move
-            .animate(team, &mut game, world, &mut doop)
+        let effect_m = animate_move(&the_move, team, &mut game, world, &mut doop)
             .await
             .apply(team, &mut game, world);
 

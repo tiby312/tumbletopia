@@ -250,49 +250,6 @@ impl ActualMove {
     //         target,
     //     }
     // }
-    pub async fn animate(
-        &self,
-        team: ActiveTeam,
-        state: &GameState,
-        world: &board::MyWorld,
-        data: &mut ace::WorkerManager,
-    ) -> &Self {
-        let end_points = state.factions.iter_end_points(world, self.moveto);
-
-        let mut ss = state.clone();
-
-        let mut stack = 0;
-        for (i, (dis, rest)) in end_points.into_iter().enumerate() {
-            let Some((_, team2)) = rest else {
-                continue;
-            };
-
-            if team2 != team {
-                continue;
-            }
-
-            let unit = mesh::small_mesh::inverse(self.moveto)
-                .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
-
-            data.wait_animation(
-                animation::AnimationCommand::Movement {
-                    unit,
-                    end: mesh::small_mesh::inverse(self.moveto),
-                },
-                team,
-                &mut ss,
-            )
-            .await;
-
-            stack += 1;
-            if let Some(_) = state.factions.get_cell_inner(self.moveto) {
-                ss.factions.remove_inner(self.moveto);
-            }
-            ss.factions.add_cell_inner(self.moveto, stack, team);
-        }
-
-        self
-    }
 
     pub fn undo(&self, _team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;
