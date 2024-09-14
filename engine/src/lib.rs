@@ -2,6 +2,7 @@ pub mod ai;
 pub mod board;
 pub mod grids;
 
+pub mod main_logic;
 pub mod mesh;
 pub mod move_build;
 pub mod moves;
@@ -12,6 +13,14 @@ use serde::Deserialize;
 use serde::Serialize;
 pub use unit::ActiveTeam;
 pub use unit::GameState;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum GameType {
+    SinglePlayer,
+    PassPlay,
+    AIBattle,
+    Replay(String),
+}
 
 pub mod share {
 

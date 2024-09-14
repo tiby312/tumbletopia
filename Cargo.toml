@@ -42,10 +42,30 @@ features=[
 
 [profile.release]
 debug = true
+opt-level = 1
+
+
+
+[profile.release.package.engine]
 opt-level = 2
+
+[profile.release.package.gui]
+opt-level = 2
+
+[profile.release.package.hex]
+opt-level = 2
+
+[profile.release.package.model]
+opt-level = 2
+
 
 [profile.release.package."*"]
 opt-level = 2
+
+
+[profile.dev.build-override]
+opt-level = 2
+
 
 [patch.crates-io]
 shogo={path="../shogo"}

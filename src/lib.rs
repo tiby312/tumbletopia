@@ -1,4 +1,6 @@
-use ace::MouseEvent;
+use engine::main_logic as ace;
+use engine::main_logic::MouseEvent;
+
 use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
 use gloo::console::console_dbg;
 
@@ -21,7 +23,6 @@ use engine::moves;
 use gui::dom;
 
 use dom::DomToWorker;
-pub mod ace;
 use engine::unit;
 use hex;
 
@@ -176,96 +177,19 @@ pub async fn worker_entry() {
         }
     };
 
-    let gameplay_thread = async {
-        let mut doop = ace::WorkerManager {
-            sender: command_sender,
-            receiver: response_recv,
-        };
-
-        if let Some(fff) = o {
-            let game_history = ace::replay(&world, doop, fff).await;
-
-            return game_history;
-        }
-
-        let mut game = unit::game_init(&world);
-
-        let mut game_history = engine::MoveHistory::new();
-
-        let mut team_gen = ActiveTeam::Black.iter();
-
-        //doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
-
-        //Loop over each team!
-        loop {
-            let team = team_gen.next().unwrap();
-
-            if let Some(g) = game.game_is_over(&world, team) {
-                console_dbg!("Game over=", g);
-                break (g, game_history);
-                //break 'game_loop;
-            }
-
-            //Add AIIIIII.
-            let foo = match game_type {
-                dom::GameType::SinglePlayer => team == ActiveTeam::Black,
-                dom::GameType::PassPlay => false,
-                dom::GameType::AIBattle => true,
-                dom::GameType::Replay(_) => todo!(),
-            };
-
-            if foo {
-                //console_dbg!("original game dbg=", game.hash_me(), team);
-                //console_dbg!("game:Sending ai command");
-                let the_move = doop.wait_ai(team, &mut game).await;
-                //console_dbg!("game:finished");
-
-                //let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
-                //assert_eq!(the_move,the_move2);
-
-                //let kk = the_move;
-
-                let effect_m = animate_move(&the_move, team, &mut game, &world, &mut doop)
-                    .await
-                    .apply(team, &mut game, &world);
-
-                // let effect_a = kk
-                //     .into_attack(the_move.attackto)
-                //     .animate(team, &mut game, &world, &mut doop)
-                //     .await
-                //     .apply(team, &mut game, &world, &effect_m);
-
-                game_history.push((the_move, effect_m));
-
-                let mut e = engine::ai::Evaluator::default();
-                console_dbg!(
-                    "Game after ai move:",
-                    game.hash_me(),
-                    e.absolute_evaluate(&mut game, &world, true)
-                );
-
-                continue;
-            }
-
-            let r = ace::handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
-            game_history.push(r);
-
-            let stest = serde_json::to_string(&game).unwrap();
-
-            let mut e = engine::ai::Evaluator::default();
-            console_dbg!(
-                "Game after player move:",
-                stest,
-                game.hash_me(),
-                e.absolute_evaluate(&mut game, &world, true)
-            );
-
-            // console_dbg!(
-            //     "current position2:",
-            //     e.absolute_evaluate(&mut game, &world, true)
-            // );
-        }
+    let doop = ace::WorkerManager {
+        sender: command_sender,
+        receiver: response_recv,
     };
+
+    let game_type = match game_type {
+        dom::GameType::SinglePlayer => engine::GameType::SinglePlayer,
+        dom::GameType::PassPlay => engine::GameType::PassPlay,
+        dom::GameType::AIBattle => engine::GameType::AIBattle,
+        dom::GameType::Replay(o) => engine::GameType::Replay(o),
+    };
+
+    let gameplay_thread = engine::main_logic::game_play_thread(doop, &world, game_type);
 
     let ((result, game), ()) = futures::join!(gameplay_thread, render_thead);
 
@@ -281,61 +205,6 @@ pub async fn worker_entry() {
     });
 
     log!("Worker thread closin");
-}
-
-#[derive(Debug, Clone)]
-pub enum CellSelection {
-    MoveSelection(Axial, mesh::small_mesh::SmallMesh, Option<ace::HaveMoved>),
-    BuildSelection(Axial),
-}
-impl Default for CellSelection {
-    fn default() -> Self {
-        CellSelection::BuildSelection(Axial::default())
-    }
-}
-
-pub async fn animate_move<'a>(
-    aa: &'a ActualMove,
-    team: ActiveTeam,
-    state: &GameState,
-    world: &board::MyWorld,
-    data: &mut ace::WorkerManager,
-) -> &'a ActualMove {
-    let end_points = state.factions.iter_end_points(world, aa.moveto);
-
-    let mut ss = state.clone();
-
-    let mut stack = 0;
-    for (i, (dis, rest)) in end_points.into_iter().enumerate() {
-        let Some((_, team2)) = rest else {
-            continue;
-        };
-
-        if team2 != team {
-            continue;
-        }
-
-        let unit = mesh::small_mesh::inverse(aa.moveto)
-            .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
-
-        data.wait_animation(
-            gui::animation::AnimationCommand::Movement {
-                unit,
-                end: mesh::small_mesh::inverse(aa.moveto),
-            },
-            team,
-            &mut ss,
-        )
-        .await;
-
-        stack += 1;
-        if let Some(_) = state.factions.get_cell_inner(aa.moveto) {
-            ss.factions.remove_inner(aa.moveto);
-        }
-        ss.factions.add_cell_inner(aa.moveto, stack, team);
-    }
-
-    aa
 }
 
 use gui::model_parse::*;
@@ -416,7 +285,7 @@ async fn render_command(
             //return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
-            gui::animation::AnimationCommand::Movement { unit, end } => {
+            engine::main_logic::AnimationCommand::Movement { unit, end } => {
                 // let ff = match data {
                 //     move_build::PushInfo::PushedLand => {
                 //         Some(animation::land_delta(unit, end, grid_matrix))
@@ -444,14 +313,14 @@ async fn render_command(
 
                 unit_animation = Some((Vector2::new(0.0, 0.0), it, unit));
             }
-            gui::animation::AnimationCommand::Terrain {
+            engine::main_logic::AnimationCommand::Terrain {
                 pos,
                 terrain_type,
                 dir,
             } => {
                 let (a, b) = match dir {
-                    gui::animation::AnimationDirection::Up => (-5., 0.),
-                    gui::animation::AnimationDirection::Down => (0., -6.), //TODO 6 to make sure there is a frame with it gone
+                    engine::main_logic::AnimationDirection::Up => (-5., 0.),
+                    engine::main_logic::AnimationDirection::Down => (0., -6.), //TODO 6 to make sure there is a frame with it gone
                 };
                 let it = gui::animation::terrain_create(a, b);
                 terrain_animation = Some((0.0, it, pos, terrain_type));
@@ -725,7 +594,7 @@ async fn render_command(
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
                 match selection {
-                    CellSelection::MoveSelection(_, mesh, _) => {
+                    engine::main_logic::CellSelection::MoveSelection(_, mesh, _) => {
                         //console_dbg!("doo=",mesh);
                         let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
                             let zzzz = 0.0;
@@ -759,7 +628,7 @@ async fn render_command(
                         //     }
                         // }
                     }
-                    CellSelection::BuildSelection(_) => {}
+                    engine::main_logic::CellSelection::BuildSelection(_) => {}
                 }
             }
         }

@@ -1,11 +1,45 @@
 use super::*;
 
-use crate::{CellSelection, GameState};
+#[derive(Debug, Clone)]
+pub enum CellSelection {
+    MoveSelection(Axial, mesh::small_mesh::SmallMesh, Option<HaveMoved>),
+    BuildSelection(Axial),
+}
+impl Default for CellSelection {
+    fn default() -> Self {
+        CellSelection::BuildSelection(Axial::default())
+    }
+}
 
 use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
 };
+
+#[derive(Debug, Clone)]
+pub enum AnimationCommand {
+    Movement {
+        unit: Axial,
+        end: Axial,
+    },
+    Terrain {
+        pos: Axial,
+        terrain_type: TerrainType,
+        dir: AnimationDirection,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub enum AnimationDirection {
+    Up,
+    Down,
+}
+
+#[derive(Debug, Clone)]
+pub enum TerrainType {
+    Grass,
+    Fog,
+}
 
 #[derive(Clone, Debug)]
 pub struct HaveMoved {
@@ -30,7 +64,7 @@ impl<T> GameWrap<T> {
 
 #[derive(Debug)]
 pub enum Command {
-    Animate(gui::animation::AnimationCommand),
+    Animate(AnimationCommand),
     GetMouseInputSelection {
         selection: CellSelection,
         grey: bool,
@@ -58,6 +92,102 @@ pub enum MouseEvent<T> {
     Undo,
 }
 
+pub async fn game_play_thread(
+    mut doop: WorkerManager,
+    world: &board::MyWorld,
+    game_type: GameType,
+) -> (unit::GameOver, MoveHistory) {
+    //let gameplay_thread = async {
+    // let mut doop = ace::WorkerManager {
+    //     sender: command_sender,
+    //     receiver: response_recv,
+    // };
+
+    // if let Some(fff) = o {
+    //     let game_history = replay(&world, doop, fff).await;
+
+    //     return game_history;
+    // }
+
+    let mut game = unit::game_init(&world);
+
+    let mut game_history = MoveHistory::new();
+
+    let mut team_gen = ActiveTeam::Black.iter();
+
+    //doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
+
+    //Loop over each team!
+    loop {
+        let team = team_gen.next().unwrap();
+
+        if let Some(g) = game.game_is_over(&world, team) {
+            //console_dbg!("Game over=", g);
+            break (g, game_history);
+            //break 'game_loop;
+        }
+
+        //Add AIIIIII.
+        let foo = match game_type {
+            GameType::SinglePlayer => team == ActiveTeam::Black,
+            GameType::PassPlay => false,
+            GameType::AIBattle => true,
+            GameType::Replay(_) => todo!(),
+        };
+
+        if foo {
+            //console_dbg!("original game dbg=", game.hash_me(), team);
+            //console_dbg!("game:Sending ai command");
+            let the_move = doop.wait_ai(team, &mut game).await;
+            //console_dbg!("game:finished");
+
+            //let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
+            //assert_eq!(the_move,the_move2);
+
+            //let kk = the_move;
+
+            let effect_m = animate_move(&the_move, team, &mut game, &world, &mut doop)
+                .await
+                .apply(team, &mut game, &world);
+
+            // let effect_a = kk
+            //     .into_attack(the_move.attackto)
+            //     .animate(team, &mut game, &world, &mut doop)
+            //     .await
+            //     .apply(team, &mut game, &world, &effect_m);
+
+            game_history.push((the_move, effect_m));
+
+            let mut e = ai::Evaluator::default();
+            // console_dbg!(
+            //     "Game after ai move:",
+            //     game.hash_me(),
+            //     e.absolute_evaluate(&mut game, &world, true)
+            // );
+
+            continue;
+        }
+
+        let r = handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
+        game_history.push(r);
+
+        //let stest = serde_json::to_string(&game).unwrap();
+
+        //let mut e = engine::ai::Evaluator::default();
+        // console_dbg!(
+        //     "Game after player move:",
+        //     stest,
+        //     game.hash_me(),
+        //     e.absolute_evaluate(&mut game, &world, true)
+        // );
+
+        // console_dbg!(
+        //     "current position2:",
+        //     e.absolute_evaluate(&mut game, &world, true)
+        // );
+    }
+}
+
 pub struct WorkerManager {
     pub sender: Sender<GameWrap<Command>>,
     pub receiver: Receiver<GameWrap<Response>>,
@@ -66,7 +196,7 @@ pub struct WorkerManager {
 impl WorkerManager {
     pub async fn wait_animation(
         &mut self,
-        animation: gui::animation::AnimationCommand,
+        animation: AnimationCommand,
         team: ActiveTeam,
         game: &mut GameState,
     ) {
@@ -191,7 +321,7 @@ pub async fn reselect_loop(
     have_moved: &mut Option<HaveMoved>,
     mut selected_unit: SelectType,
 ) -> LoopRes<SelectType> {
-    console_dbg!(have_moved.is_some());
+    //console_dbg!(have_moved.is_some());
     //At this point we know a friendly unit is currently selected.
 
     let unwrapped_selected_unit = selected_unit.coord;
@@ -373,11 +503,11 @@ pub async fn reselect_loop(
 pub async fn replay(
     world: &board::MyWorld,
     mut doop: WorkerManager,
-    just_logs: engine::JustMoveLog,
-) -> (GameOver, engine::MoveHistory) {
-    let mut game = ace::game_init(world);
+    just_logs: JustMoveLog,
+) -> (unit::GameOver, MoveHistory) {
+    let mut game = unit::game_init(world);
 
-    let mut game_history = engine::MoveHistory::new();
+    let mut game_history = MoveHistory::new();
 
     let start_team = ActiveTeam::White;
     let mut team_gen = start_team.iter();
@@ -410,15 +540,59 @@ pub async fn replay(
     }
 }
 
+pub async fn animate_move<'a>(
+    aa: &'a ActualMove,
+    team: ActiveTeam,
+    state: &GameState,
+    world: &board::MyWorld,
+    data: &mut WorkerManager,
+) -> &'a ActualMove {
+    let end_points = state.factions.iter_end_points(world, aa.moveto);
+
+    let mut ss = state.clone();
+
+    let mut stack = 0;
+    for (i, (dis, rest)) in end_points.into_iter().enumerate() {
+        let Some((_, team2)) = rest else {
+            continue;
+        };
+
+        if team2 != team {
+            continue;
+        }
+
+        let unit = mesh::small_mesh::inverse(aa.moveto)
+            .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
+
+        data.wait_animation(
+            AnimationCommand::Movement {
+                unit,
+                end: mesh::small_mesh::inverse(aa.moveto),
+            },
+            team,
+            &mut ss,
+        )
+        .await;
+
+        stack += 1;
+        if let Some(_) = state.factions.get_cell_inner(aa.moveto) {
+            ss.factions.remove_inner(aa.moveto);
+        }
+        ss.factions.add_cell_inner(aa.moveto, stack, team);
+    }
+
+    aa
+}
+
 pub async fn handle_player(
     game: &mut GameState,
     world: &board::MyWorld,
     doop: &mut WorkerManager,
     team: ActiveTeam,
-    move_log: &mut engine::MoveHistory,
+    move_log: &mut MoveHistory,
 ) -> (moves::ActualMove, move_build::MoveEffect) {
-    let undo = |move_log: &mut engine::MoveHistory, game: &mut GameState| {
-        log!("undoing turn!!!");
+    let undo = |move_log: &mut MoveHistory, game: &mut GameState| {
+        //log!("undoing turn!!!");
         assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
 
         let (a, e) = move_log.inner.pop().unwrap();
@@ -472,7 +646,7 @@ pub async fn handle_player(
             let res =
                 reselect_loop(doop, game, world, team, &mut extra_attack, selected_unit).await;
 
-            console_dbg!(res);
+            //console_dbg!(res);
             let a = match res {
                 LoopRes::EndTurn(r) => {
                     return r;

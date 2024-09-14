@@ -46,31 +46,6 @@ pub fn attack(
     .map(move |val| start + dir * val)
 }
 
-#[derive(Debug, Clone)]
-pub enum AnimationCommand {
-    Movement {
-        unit: Axial,
-        end: Axial,
-    },
-    Terrain {
-        pos: Axial,
-        terrain_type: TerrainType,
-        dir: AnimationDirection,
-    },
-}
-
-#[derive(Debug, Clone)]
-pub enum AnimationDirection {
-    Up,
-    Down,
-}
-
-#[derive(Debug, Clone)]
-pub enum TerrainType {
-    Grass,
-    Fog,
-}
-
 pub fn terrain_create(curr: f32, target: f32) -> impl Iterator<Item = f32> {
     Interpolate {
         curr,
