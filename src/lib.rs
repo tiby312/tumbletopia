@@ -53,7 +53,7 @@ pub async fn worker_entry2() {
         //console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
         //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        let the_move = ace::ai::iterative_deepening(&mut res.game, &res.world, res.team);
+        let the_move = ai::iterative_deepening(&mut res.game, &res.world, res.team);
         //console_dbg!("worker:finished processing");
         worker.post_message(AiResponse { the_move });
     }
@@ -250,7 +250,7 @@ pub async fn worker_entry() {
 
                 game_history.push((the_move, effect_m));
 
-                let mut e = ace::ai::Evaluator::default();
+                let mut e = ai::Evaluator::default();
                 console_dbg!(
                     "Game after ai move:",
                     game.hash_me(),
@@ -265,7 +265,7 @@ pub async fn worker_entry() {
 
             let stest = serde_json::to_string(&game).unwrap();
 
-            let mut e = ace::ai::Evaluator::default();
+            let mut e = ai::Evaluator::default();
             console_dbg!(
                 "Game after player move:",
                 stest,

@@ -20,6 +20,7 @@ axgeom="*"
 console_error_panic_hook="*"
 model={path="model"}
 engine={path="engine"}
+ai={path="ai"}
 collision={git="https://github.com/rustgd/collision-rs"}
 cgmath="0.18.0"
 base64 = "0.21.7"
@@ -32,7 +33,7 @@ serde_json = "1.0.127"
 tinyvec = "1.8.0"
 
 [workspace]
-members = [ "engine",
+members = [ "ai", "engine",
     "model",
 ]
 

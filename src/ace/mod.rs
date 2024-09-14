@@ -1,7 +1,7 @@
 use self::selection::JustMoveLog;
 
 use super::*;
-pub mod ai;
+
 pub mod selection;
 use crate::{CellSelection, GameState};
 

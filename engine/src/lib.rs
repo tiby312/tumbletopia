@@ -6,9 +6,9 @@ pub mod move_build;
 pub mod moves;
 pub mod unit;
 
-use hex::Axial;
-use moves::ActualMove;
+pub use hex::Axial;
+pub use moves::ActualMove;
 use serde::Deserialize;
 use serde::Serialize;
-use unit::ActiveTeam;
-use unit::GameState;
+pub use unit::ActiveTeam;
+pub use unit::GameState;

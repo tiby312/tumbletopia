@@ -194,7 +194,7 @@ pub fn iterative_deepening(
     let mut moves = vec![];
     //TODO stop searching if we found a game ending move.
     for depth in [1, 2, 3, 4] {
-        gloo::console::info!(format!("searching depth={}", depth));
+        gloo_console::info!(format!("searching depth={}", depth));
 
         let mut k = KillerMoves::new(num_iter + 4 + 4);
 
@@ -240,7 +240,7 @@ pub fn iterative_deepening(
 
             // }
             // assert_eq!(gg, kk);
-            gloo::console::info!(format!("transpotion table size={}", foo1.a.len()));
+            gloo_console::info!(format!("transpotion table size={}", foo1.a.len()));
         }
 
         let mov = mov.last().unwrap().clone();
