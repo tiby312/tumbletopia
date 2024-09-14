@@ -14,11 +14,11 @@ use shogo::utils;
 use wasm_bindgen::prelude::*;
 
 use engine::board;
-pub mod dom;
 use engine::grids;
 use engine::mesh;
 use engine::move_build;
 use engine::moves;
+use gui::dom;
 
 use dom::DomToWorker;
 pub mod ace;
@@ -27,17 +27,9 @@ use hex;
 
 use unit::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-enum WorkerToDom {
-    ShowUndo,
-    HideUndo,
-    GameFinish {
-        replay_string: String,
-        result: GameOver,
-    },
-    CantParseReplay,
-    ReplayFinish,
-    Ack,
+#[wasm_bindgen]
+pub async fn main_entry() {
+    dom::main_entry().await
 }
 
 #[wasm_bindgen]
@@ -78,7 +70,7 @@ pub async fn worker_entry() {
     let DomToWorker::Start(game_type) = k else {
         unreachable!("worker:Didn't receive start")
     };
-    wr.post_message(WorkerToDom::Ack);
+    wr.post_message(dom::WorkerToDom::Ack);
 
     console_dbg!("Found game thingy", game_type);
 
@@ -112,7 +104,7 @@ pub async fn worker_entry() {
 
     let (seed, o) = if let dom::GameType::Replay(rr) = &game_type {
         let Ok(j) = engine::share::load(&rr) else {
-            wr.post_message(WorkerToDom::CantParseReplay);
+            wr.post_message(dom::WorkerToDom::CantParseReplay);
             return;
         };
 
@@ -277,7 +269,13 @@ pub async fn worker_entry() {
 
     let ((result, game), ()) = futures::join!(gameplay_thread, render_thead);
 
-    wr.post_message(WorkerToDom::GameFinish {
+    let result = match result {
+        GameOver::WhiteWon => dom::GameOverGui::WhiteWon,
+        GameOver::BlackWon => dom::GameOverGui::BlackWon,
+        GameOver::Tie => dom::GameOverGui::Tie,
+    };
+
+    wr.post_message(dom::WorkerToDom::GameFinish {
         replay_string: engine::share::save(&game.into_just_move(world.seed)),
         result,
     });
@@ -365,7 +363,7 @@ async fn render_command(
         DomToWorker,
         futures::channel::mpsc::UnboundedReceiver<DomToWorker>,
     >,
-    engine_worker: &mut shogo::EngineWorker<DomToWorker, WorkerToDom>,
+    engine_worker: &mut shogo::EngineWorker<dom::DomToWorker, dom::WorkerToDom>,
 ) -> ace::Response {
     //let mut x = 0.0;
     let scroll_manager = &mut e.scroll_manager;
@@ -408,12 +406,12 @@ async fn render_command(
     //console_dbg!(command);
     match command {
         ace::Command::HideUndo => {
-            engine_worker.post_message(WorkerToDom::HideUndo);
+            engine_worker.post_message(dom::WorkerToDom::HideUndo);
             waiting_engine_ack = true;
             //return ace::Response::Ack;
         }
         ace::Command::ShowUndo => {
-            engine_worker.post_message(WorkerToDom::ShowUndo);
+            engine_worker.post_message(dom::WorkerToDom::ShowUndo);
             waiting_engine_ack = true;
             //return ace::Response::Ack;
         }

@@ -6,6 +6,7 @@ use model::matrix::MyMatrix;
 use shader_sys::ShaderSystem;
 
 pub mod animation;
+pub mod dom;
 pub mod model_parse;
 pub mod projection;
 pub mod scroll;

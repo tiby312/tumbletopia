@@ -1,4 +1,10 @@
+use futures::StreamExt;
+use serde::{Deserialize, Serialize};
+use wasm_bindgen::{JsCast, JsValue, UnwrapThrowExt};
+
 use super::*;
+
+use crate as gui;
 
 ///Common data sent from the main thread to the worker.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -125,6 +131,27 @@ pub fn text_texture(text: &str, width: usize, height: usize) -> web_sys::HtmlCan
     canvas
 }
 
+#[must_use]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum GameOverGui {
+    WhiteWon,
+    BlackWon,
+    Tie,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum WorkerToDom {
+    ShowUndo,
+    HideUndo,
+    GameFinish {
+        replay_string: String,
+        result: GameOverGui,
+    },
+    CantParseReplay,
+    ReplayFinish,
+    Ack,
+}
+
 fn engine_handlers(
     worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
     canvas: &web_sys::HtmlCanvasElement,
@@ -160,7 +187,7 @@ fn engine_handlers(
             DomToWorker::TouchEnd { touches }.some()
         }),
         {
-            let undo = utils::get_by_id_elem("undo");
+            let undo = shogo::utils::get_by_id_elem("undo");
             worker.register_event(&undo, "click", move |_| {
                 log!("clicked the button!!!!!");
                 DomToWorker::Undo.some()
@@ -175,7 +202,7 @@ fn engine_handlers(
 }
 
 pub async fn start_game(game_type: GameType, host: &str) {
-    let canvas = utils::get_by_id_canvas("mycanvas");
+    let canvas = shogo::utils::get_by_id_canvas("mycanvas");
 
     canvas.set_width(gloo::utils::body().client_width() as u32);
     canvas.set_height(gloo::utils::body().client_height() as u32);
@@ -255,9 +282,9 @@ pub async fn start_game(game_type: GameType, host: &str) {
                 let body = gloo::utils::document().body().unwrap();
 
                 let team_str = match result {
-                    GameOver::WhiteWon => "White Won!",
-                    GameOver::BlackWon => "Black Won!",
-                    GameOver::Tie => "Its a tie!",
+                    GameOverGui::WhiteWon => "White Won!",
+                    GameOverGui::BlackWon => "Black Won!",
+                    GameOverGui::Tie => "Its a tie!",
                 };
                 use std::fmt::Write;
 
@@ -280,7 +307,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                 log!("dom:Game finished");
             }
             WorkerToDom::ShowUndo => {
-                let undo = utils::get_by_id_elem("undo");
+                let undo = shogo::utils::get_by_id_elem("undo");
 
                 undo.set_hidden(false);
 
@@ -294,7 +321,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                 //popup.set_text_content(Some(&text));
             }
             WorkerToDom::HideUndo => {
-                let undo = utils::get_by_id_elem("undo");
+                let undo = shogo::utils::get_by_id_elem("undo");
                 //let body = gloo::utils::document().body().expect("get body fail");
                 //body.remove_child(&undo).expect("Couldnt remove undo");
                 //popup.set_text_content(Some(""));
@@ -317,7 +344,6 @@ pub enum GameType {
     Replay(String),
 }
 
-#[wasm_bindgen]
 pub async fn main_entry() {
     let search = gloo::utils::window().location().search().unwrap();
 
@@ -388,7 +414,7 @@ pub async fn main_entry() {
     start_game(command, &host).await;
 }
 fn resize() -> DomToWorker {
-    let canvas = utils::get_by_id_canvas("mycanvas");
+    let canvas = shogo::utils::get_by_id_canvas("mycanvas");
     //canvas.set_width(gloo::utils::body().client_width() as u32);
     //canvas.set_height(gloo::utils::body().client_height() as u32);
 
