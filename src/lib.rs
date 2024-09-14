@@ -16,7 +16,6 @@ use shogo::utils;
 use wasm_bindgen::prelude::*;
 
 use engine::board;
-use engine::grids;
 use engine::mesh;
 use engine::move_build;
 use engine::moves;
