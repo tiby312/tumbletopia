@@ -231,10 +231,10 @@ pub async fn worker_entry() {
             if foo {
                 //console_dbg!("original game dbg=", game.hash_me(), team);
                 //console_dbg!("game:Sending ai command");
-                let the_move = doop.wait_ai(team, &mut game).await;
+                //let the_move = doop.wait_ai(team, &mut game).await;
                 //console_dbg!("game:finished");
 
-                //let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
+                let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
                 //assert_eq!(the_move,the_move2);
 
                 //let kk = the_move;

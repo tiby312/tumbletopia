@@ -386,9 +386,9 @@ impl<'a> AlphaBeta<'a> {
         }
 
         let mut ab_iter = ab.ab_iter(team.is_white());
-        for move_index in start_move_index..end_move_index {
+        for _ in start_move_index..end_move_index {
             let cand = ActualMove {
-                moveto: self.moves[move_index] as usize,
+                moveto: self.moves.pop().unwrap() as usize,
             };
             let effect = cand.apply(team, game, self.world);
 
@@ -397,12 +397,13 @@ impl<'a> AlphaBeta<'a> {
             cand.undo(team, &effect, game);
 
             if !ab_iter.consider((cand, m), eval) {
+                self.moves.drain(start_move_index..);
                 break;
             }
         }
 
-        assert_eq!(self.moves.len(), end_move_index);
-        self.moves.drain(start_move_index..end_move_index);
+        assert_eq!(self.moves.len(), start_move_index);
+        //self.moves.drain(start_move_index..end_move_index);
 
         let (eval, j) = ab_iter.finish();
         if let Some((cand, mut m)) = j {
@@ -473,16 +474,16 @@ impl<'a> AlphaBeta<'a> {
             1 //+sum as isize
         };
 
-        moves.sort_by_cached_key(|&f| -move_value(f as usize));
+        moves.sort_by_cached_key(|&f| move_value(f as usize));
 
         // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
         // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
 
         let mut ab_iter = ab.ab_iter(team.is_white());
-        for move_index in start_move_index..end_move_index {
+        for _ in start_move_index..end_move_index {
             //moves.into_iter()
             let cand = ActualMove {
-                moveto: self.moves[move_index] as usize,
+                moveto: self.moves.pop().unwrap() as usize,
             };
             let effect = cand.apply(team, game, self.world);
 
@@ -497,12 +498,12 @@ impl<'a> AlphaBeta<'a> {
 
                 self.prev_cache.update(game, cand);
 
+                self.moves.drain(start_move_index..);
                 break;
             }
         }
 
-        assert_eq!(self.moves.len(), end_move_index);
-        self.moves.drain(start_move_index..end_move_index);
+        assert_eq!(self.moves.len(), start_move_index);
 
         let (eval, m) = ab_iter.finish();
 
