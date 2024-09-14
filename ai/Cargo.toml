@@ -1,9 +1,0 @@
-[package]
-name = "ai"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-engine={path="../engine"}
-gloo-console = "0.3.0"
-tinyvec = "1.8.0"

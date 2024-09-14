@@ -1,5 +1,7 @@
 use super::*;
 
+use gloo_console::console_dbg;
+
 pub type Eval = i64;
 const MATE: i64 = 1_000_000;
 use tinyvec::ArrayVec;
