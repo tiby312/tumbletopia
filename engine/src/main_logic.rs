@@ -158,7 +158,7 @@ pub async fn game_play_thread(
 
             game_history.push((the_move, effect_m));
 
-            let mut e = ai::Evaluator::default();
+            //let mut e = ai::Evaluator::default();
             // console_dbg!(
             //     "Game after ai move:",
             //     game.hash_me(),

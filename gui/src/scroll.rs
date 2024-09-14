@@ -362,7 +362,6 @@ enum Scrollin {
     },
     NotScrolling,
 }
-use super::*;
 pub struct ScrollController {
     //canvas coordinates
     cursor_canvas: Vector2<f32>,

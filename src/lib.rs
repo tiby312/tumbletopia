@@ -100,7 +100,7 @@ pub async fn worker_entry() {
         shader,
     };
 
-    let (seed, o) = if let dom::GameType::Replay(rr) = &game_type {
+    let (seed, _) = if let dom::GameType::Replay(rr) = &game_type {
         let Ok(j) = engine::share::load(&rr) else {
             wr.post_message(dom::WorkerToDom::CantParseReplay);
             return;

@@ -1,7 +1,6 @@
 use cgmath::Transform;
 use hex::HexConverter;
 
-use super::*;
 pub fn get_world_rect(
     view_projection: &cgmath::Matrix4<f32>,
     grid: &HexConverter,

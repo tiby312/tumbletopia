@@ -132,23 +132,7 @@ pub mod small_mesh {
         }
 
         pub fn iter_mesh(&self, point: Axial) -> impl Iterator<Item = Axial> + '_ {
-            let inner = &self.inner;
-
-            //let skip_moves = self.swing_moves(point);
-
-            // TABLE
-            //     .iter()
-            //     .enumerate()
-            //     .filter(move |(x, _)| inner & (1 << x) != 0)
-            //     .map(move |(_, x)| point.add(GridCoord(*x)))
-
-            (0usize..256)
-                .filter(move |&x| {
-                    //let (a, b) = ind_to_foo(x);
-                    inner[x] == true
-                    //inner & (U256::one() << x) != U256::zero()
-                })
-                .map(move |a| point.add(inverse(a))) //.chain(skip_moves)
+            self.inner.iter_ones().map(move |a| point.add(inverse(a)))
         }
     }
 
@@ -157,7 +141,7 @@ pub mod small_mesh {
     pub fn inverse(index: usize) -> Axial {
         let x = index / 16;
         let y = index % 16;
-        Axial::from_arr([x as hex::CoordNum - 8, y as hex::CoordNum - 8])
+        Axial::from_arr([(x as isize - 8) as i8, (y as isize - 8) as i8])
     }
 
     pub fn conv(a: Axial) -> usize {

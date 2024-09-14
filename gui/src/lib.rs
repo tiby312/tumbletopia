@@ -30,7 +30,7 @@ impl<'a> DepthDisabler<'a> {
     }
 }
 
-use web_sys::{OffscreenCanvas, WebGl2RenderingContext};
+use web_sys::WebGl2RenderingContext;
 
 use model_parse::{Foo, ModelGpu, TextureGpu};
 
