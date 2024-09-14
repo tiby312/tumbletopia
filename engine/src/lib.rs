@@ -13,8 +13,6 @@ use serde::Serialize;
 pub use unit::ActiveTeam;
 pub use unit::GameState;
 
-
-
 pub mod share {
 
     pub struct LoadError;
@@ -35,9 +33,6 @@ pub mod share {
         BASE64_STANDARD_NO_PAD.encode(k)
     }
 }
-
-
-
 
 //This is for saving/loading.
 #[derive(Deserialize, Serialize)]
@@ -137,6 +132,4 @@ impl MoveHistory {
     pub fn push(&mut self, o: (moves::ActualMove, move_build::MoveEffect)) {
         self.inner.push(o);
     }
-
-    
 }

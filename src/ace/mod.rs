@@ -1,4 +1,3 @@
-
 use super::*;
 
 pub mod selection;
@@ -365,8 +364,6 @@ pub async fn reselect_loop(
     }
     //}
 }
-
-
 
 pub async fn replay(
     world: &board::MyWorld,
