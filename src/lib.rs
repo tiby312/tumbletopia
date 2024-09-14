@@ -295,7 +295,7 @@ pub enum CellSelection {
     MoveSelection(
         Axial,
         mesh::small_mesh::SmallMesh,
-        Option<ace::selection::HaveMoved>,
+        Option<ace::HaveMoved>,
     ),
     BuildSelection(Axial),
 }

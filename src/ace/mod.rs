@@ -1,12 +1,19 @@
 use super::*;
 
-pub mod selection;
 use crate::{CellSelection, GameState};
 
 use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
 };
+
+
+
+#[derive(Clone, Debug)]
+pub struct HaveMoved {
+    pub the_move: ActualMove,
+    pub effect: move_build::MoveEffect,
+}
 
 pub struct GameWrap<T> {
     pub game: GameState,
@@ -183,7 +190,7 @@ pub async fn reselect_loop(
     game: &mut GameState,
     world: &board::MyWorld,
     team: ActiveTeam,
-    have_moved: &mut Option<selection::HaveMoved>,
+    have_moved: &mut Option<HaveMoved>,
     mut selected_unit: SelectType,
 ) -> LoopRes<SelectType> {
     console_dbg!(have_moved.is_some());
