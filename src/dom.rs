@@ -12,13 +12,13 @@ pub enum DomToWorker {
         y: f32,
     },
     TouchMove {
-        touches: scroll::Touches,
+        touches: gui::scroll::Touches,
     },
     TouchDown {
-        touches: scroll::Touches,
+        touches: gui::scroll::Touches,
     },
     TouchEnd {
-        touches: scroll::Touches,
+        touches: gui::scroll::Touches,
     },
     Start(GameType),
     Undo,
@@ -48,7 +48,10 @@ fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32;
     )
 }
 
-fn convert_coord_touch(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> scroll::Touches {
+fn convert_coord_touch(
+    canvas: &web_sys::EventTarget,
+    event: &web_sys::Event,
+) -> gui::scroll::Touches {
     event.prevent_default();
     event.stop_propagation();
     convert_coord_touch_inner(canvas, event.dyn_ref().unwrap_throw())
@@ -60,7 +63,7 @@ fn convert_coord_touch(canvas: &web_sys::EventTarget, event: &web_sys::Event) ->
 pub fn convert_coord_touch_inner(
     canvas: &web_sys::EventTarget,
     e: &web_sys::TouchEvent,
-) -> scroll::Touches {
+) -> gui::scroll::Touches {
     let canvas: &web_sys::HtmlElement = canvas.dyn_ref().unwrap_throw();
     let rect = canvas.get_bounding_client_rect();
 
@@ -80,7 +83,7 @@ pub fn convert_coord_touch_inner(
 
     let touches = e.touches();
 
-    let mut k = scroll::Touches {
+    let mut k = gui::scroll::Touches {
         all: [(0, 0.0, 0.0); 4],
         count: 0,
     };

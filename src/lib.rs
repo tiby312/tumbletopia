@@ -12,7 +12,7 @@ use shader_sys::ShaderSystem;
 use shogo::utils;
 use wasm_bindgen::prelude::*;
 
-pub mod animation;
+pub mod gui;
 use engine::board;
 pub mod dom;
 use engine::grids;
@@ -20,12 +20,9 @@ use engine::mesh;
 pub mod model_parse;
 use engine::move_build;
 use engine::moves;
-pub mod projection;
-pub mod scroll;
 pub mod shader_sys;
 pub mod worker;
 use dom::DomToWorker;
-use projection::*;
 pub mod ace;
 use engine::hex;
 use engine::unit;
@@ -89,7 +86,7 @@ pub async fn worker_entry() {
 
     let mut frame_timer = shogo::FrameTimer::new(60, ss);
 
-    let scroll_manager = scroll::TouchController::new([0., 0.].into());
+    let scroll_manager = gui::scroll::TouchController::new([0., 0.].into());
     use cgmath::SquareMatrix;
 
     let (mut ai_worker, mut ai_response) =
@@ -292,11 +289,7 @@ pub async fn worker_entry() {
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(
-        Axial,
-        mesh::small_mesh::SmallMesh,
-        Option<ace::HaveMoved>,
-    ),
+    MoveSelection(Axial, mesh::small_mesh::SmallMesh, Option<ace::HaveMoved>),
     BuildSelection(Axial),
 }
 impl Default for CellSelection {
@@ -330,7 +323,7 @@ pub async fn animate_move<'a>(
             .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
 
         data.wait_animation(
-            animation::AnimationCommand::Movement {
+            gui::animation::AnimationCommand::Movement {
                 unit,
                 end: mesh::small_mesh::inverse(aa.moveto),
             },
@@ -355,7 +348,7 @@ pub struct EngineStuff {
     //numm: Numm,
     ctx: WebGl2RenderingContext,
     canvas: OffscreenCanvas,
-    scroll_manager: scroll::TouchController,
+    scroll_manager: gui::scroll::TouchController,
     last_matrix: cgmath::Matrix4<f32>,
     shader: ShaderSystem,
 }
@@ -423,7 +416,7 @@ async fn render_command(
             //return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
-            animation::AnimationCommand::Movement { unit, end } => {
+            gui::animation::AnimationCommand::Movement { unit, end } => {
                 // let ff = match data {
                 //     move_build::PushInfo::PushedLand => {
                 //         Some(animation::land_delta(unit, end, grid_matrix))
@@ -451,16 +444,16 @@ async fn render_command(
 
                 unit_animation = Some((Vector2::new(0.0, 0.0), it, unit));
             }
-            animation::AnimationCommand::Terrain {
+            gui::animation::AnimationCommand::Terrain {
                 pos,
                 terrain_type,
                 dir,
             } => {
                 let (a, b) = match dir {
-                    animation::AnimationDirection::Up => (-5., 0.),
-                    animation::AnimationDirection::Down => (0., -6.), //TODO 6 to make sure there is a frame with it gone
+                    gui::animation::AnimationDirection::Up => (-5., 0.),
+                    gui::animation::AnimationDirection::Down => (0., -6.), //TODO 6 to make sure there is a frame with it gone
                 };
-                let it = animation::terrain_create(a, b);
+                let it = gui::animation::terrain_create(a, b);
                 terrain_animation = Some((0.0, it, pos, terrain_type));
             }
         },
@@ -520,7 +513,7 @@ async fn render_command(
                     scroll_manager.on_new_touch(touches);
                 }
                 DomToWorker::TouchEnd { touches } => {
-                    if let scroll::MouseUp::Select = scroll_manager.on_touch_up(touches) {
+                    if let gui::scroll::MouseUp::Select = scroll_manager.on_touch_up(touches) {
                         on_select = true;
                     }
                 }
@@ -529,7 +522,7 @@ async fn render_command(
                     let _ = scroll_manager.on_mouse_up();
                 }
                 DomToWorker::CanvasMouseUp => {
-                    if let scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
+                    if let gui::scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
                         on_select = true;
                     }
                 }
@@ -554,8 +547,8 @@ async fn render_command(
             }
         }
 
-        let proj = projection::projection(viewport).generate();
-        let view_proj = projection::view_matrix(
+        let proj = gui::projection::projection(viewport).generate();
+        let view_proj = gui::projection::view_matrix(
             scroll_manager.camera(),
             scroll_manager.zoom(),
             scroll_manager.rot(),
@@ -569,7 +562,7 @@ async fn render_command(
         let projjj = lll.as_ref();
 
         let mouse_world =
-            scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
+            gui::scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
         if get_mouse_input.is_some() {
             if on_undo {

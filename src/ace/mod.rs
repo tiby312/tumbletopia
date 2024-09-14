@@ -7,8 +7,6 @@ use futures::{
     SinkExt, StreamExt,
 };
 
-
-
 #[derive(Clone, Debug)]
 pub struct HaveMoved {
     pub the_move: ActualMove,
@@ -32,7 +30,7 @@ impl<T> GameWrap<T> {
 
 #[derive(Debug)]
 pub enum Command {
-    Animate(animation::AnimationCommand),
+    Animate(gui::animation::AnimationCommand),
     GetMouseInputSelection {
         selection: CellSelection,
         grey: bool,
@@ -68,7 +66,7 @@ pub struct WorkerManager {
 impl WorkerManager {
     pub async fn wait_animation(
         &mut self,
-        animation: animation::AnimationCommand,
+        animation: gui::animation::AnimationCommand,
         team: ActiveTeam,
         game: &mut GameState,
     ) {

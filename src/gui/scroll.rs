@@ -473,5 +473,5 @@ pub fn mouse_to_world(mouse: [f32; 2], view_projection: &Matrix4<f32>, dim: [f32
     //generate some mouse points
     let clip_x = mouse[0] / dim[0] * 2. - 1.;
     let clip_y = mouse[1] / dim[1] * -2. + 1.;
-    clip_to_world([clip_x, clip_y], view_projection)
+    super::projection::clip_to_world([clip_x, clip_y], view_projection)
 }
