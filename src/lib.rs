@@ -1,7 +1,7 @@
 use engine::main_logic as ace;
 use engine::main_logic::MouseEvent;
 
-use cgmath::{InnerSpace, Matrix4, Transform, Vector2};
+use cgmath::Vector2;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -16,8 +16,6 @@ use shogo::utils;
 use wasm_bindgen::prelude::*;
 
 use engine::board;
-use engine::mesh;
-use engine::move_build;
 use engine::moves;
 use gui::dom;
 
