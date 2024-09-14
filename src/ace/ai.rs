@@ -191,6 +191,7 @@ pub fn iterative_deepening(
     };
     let mut evaluator = Evaluator::default();
 
+    let mut moves = vec![];
     //TODO stop searching if we found a game ending move.
     for depth in [1, 2, 3, 4] {
         gloo::console::info!(format!("searching depth={}", depth));
@@ -202,6 +203,7 @@ pub fn iterative_deepening(
             killer_moves: &mut k,
             evaluator: &mut evaluator,
             world,
+            moves: &mut moves,
         };
 
         let mut kk = game.clone();
@@ -291,6 +293,7 @@ struct AlphaBeta<'a> {
     killer_moves: &'a mut KillerMoves,
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
+    moves: &'a mut Vec<u8>,
 }
 
 struct KillerMoves {
@@ -364,11 +367,16 @@ impl<'a> AlphaBeta<'a> {
 
         let (_, captures, _) = game.generate_possible_moves_movement(self.world, None, team);
 
-        let moves: ArrayVec<[u8; board::NUM_CELLS]> = captures
-            .inner
-            .iter_ones()
-            .map(|x| x.try_into().unwrap())
-            .collect();
+        let start_move_index = self.moves.len();
+
+        self.moves.extend(captures.inner.iter_ones().map(|x| {
+            let x: u8 = x.try_into().unwrap();
+            x
+        }));
+
+        let end_move_index = self.moves.len();
+
+        let moves = &mut self.moves[start_move_index..end_move_index];
 
         if moves.is_empty() {
             return (
@@ -378,9 +386,9 @@ impl<'a> AlphaBeta<'a> {
         }
 
         let mut ab_iter = ab.ab_iter(team.is_white());
-        for cand in moves {
+        for move_index in start_move_index..end_move_index {
             let cand = ActualMove {
-                moveto: cand as usize,
+                moveto: self.moves[move_index] as usize,
             };
             let effect = cand.apply(team, game, self.world);
 
@@ -392,6 +400,9 @@ impl<'a> AlphaBeta<'a> {
                 break;
             }
         }
+
+        assert_eq!(self.moves.len(), end_move_index);
+        self.moves.drain(start_move_index..end_move_index);
 
         let (eval, j) = ab_iter.finish();
         if let Some((cand, mut m)) = j {
@@ -415,13 +426,16 @@ impl<'a> AlphaBeta<'a> {
         let (all_moves, captures, reinfocements) =
             game.generate_possible_moves_movement(self.world, None, team);
 
-        //TODO put the constant somewhere!!!
-        //TODO use u8 instead if its big enough????
-        let mut moves: ArrayVec<[u8; board::NUM_CELLS]> = all_moves
-            .inner
-            .iter_ones()
-            .map(|x| x.try_into().unwrap())
-            .collect();
+        let start_move_index = self.moves.len();
+
+        self.moves.extend(all_moves.inner.iter_ones().map(|x| {
+            let x: u8 = x.try_into().unwrap();
+            x
+        }));
+
+        let end_move_index = self.moves.len();
+
+        let moves = &mut self.moves[start_move_index..end_move_index];
 
         if moves.is_empty() {
             return (self.evaluator.cant_move(team), tinyvec::array_vec![]);
@@ -465,9 +479,10 @@ impl<'a> AlphaBeta<'a> {
         // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
 
         let mut ab_iter = ab.ab_iter(team.is_white());
-        for index in moves.into_iter() {
+        for move_index in start_move_index..end_move_index {
+            //moves.into_iter()
             let cand = ActualMove {
-                moveto: index as usize,
+                moveto: self.moves[move_index] as usize,
             };
             let effect = cand.apply(team, game, self.world);
 
@@ -485,6 +500,9 @@ impl<'a> AlphaBeta<'a> {
                 break;
             }
         }
+
+        assert_eq!(self.moves.len(), end_move_index);
+        self.moves.drain(start_move_index..end_move_index);
 
         let (eval, m) = ab_iter.finish();
 
