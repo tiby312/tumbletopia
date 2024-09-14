@@ -4,7 +4,7 @@ pub mod model_parse;
 pub mod projection;
 pub mod scroll;
 pub mod shader_sys;
-
+pub mod worker;
 pub struct DepthDisabler<'a> {
     ctx: &'a WebGl2RenderingContext,
 }

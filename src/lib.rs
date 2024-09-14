@@ -20,7 +20,7 @@ use engine::grids;
 use engine::mesh;
 use engine::move_build;
 use engine::moves;
-pub mod worker;
+
 use dom::DomToWorker;
 pub mod ace;
 use engine::hex;
@@ -43,7 +43,7 @@ enum WorkerToDom {
 
 #[wasm_bindgen]
 pub async fn worker_entry2() {
-    let (mut worker, mut response) = worker::Worker::<AiCommand, AiResponse>::new();
+    let (mut worker, mut response) = gui::worker::Worker::<AiCommand, AiResponse>::new();
 
     loop {
         //console_dbg!("worker:waiting22222");
