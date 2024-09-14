@@ -1069,17 +1069,9 @@ use crate::model_parse::{Foo, ModelGpu, TextureGpu};
 pub struct Models<T> {
     select_model: T,
     drop_shadow: T,
-    // fog: T,
-    // attack: T,
-    // white_mouse: T,
-    // black_mouse: T,
-    // white_rabbit: T,
-    // black_rabbit: T,
     grass: T,
     snow: T,
     water: T,
-    // direction: T,
-    // mountain: T,
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
