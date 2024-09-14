@@ -372,8 +372,11 @@ name = "engine"
 version = "0.1.0"
 dependencies = [
  "axgeom",
+ "base64 0.21.7",
  "bitvec",
  "cgmath",
+ "miniz_oxide 0.7.4",
+ "postcard",
  "rand",
  "serde",
 ]
@@ -801,7 +804,6 @@ version = "0.1.0"
 dependencies = [
  "ai",
  "axgeom",
- "base64 0.21.7",
  "byte-slice-cast",
  "cgmath",
  "collision",
@@ -811,9 +813,7 @@ dependencies = [
  "getrandom",
  "gloo",
  "js-sys",
- "miniz_oxide 0.7.4",
  "model",
- "postcard",
  "querystring",
  "serde",
  "serde_json",
@@ -1472,9 +1472,9 @@ checksum = "84348444bd7ad45729d0c49a4240d7cdc11c9d512c06c5ad1835c1ad4acda6db"
 
 [[package]]
 name = "rustc_version"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfa0f585226d2e68097d4f95d113b15b83a82e819ab25717ec0590d9584ef366"
+checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
 dependencies = [
  "semver",
 ]

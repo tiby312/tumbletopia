@@ -116,7 +116,7 @@ pub async fn worker_entry() {
     };
 
     let (seed, o) = if let dom::GameType::Replay(rr) = &game_type {
-        let Ok(j) = ace::share::load(&rr) else {
+        let Ok(j) = engine::share::load(&rr) else {
             wr.post_message(WorkerToDom::CantParseReplay);
             return;
         };
@@ -203,7 +203,7 @@ pub async fn worker_entry() {
 
         let mut game = unit::game_init(&world);
 
-        let mut game_history = ace::selection::MoveHistory::new();
+        let mut game_history = engine::MoveHistory::new();
 
         let mut team_gen = ActiveTeam::Black.iter();
 
@@ -283,7 +283,7 @@ pub async fn worker_entry() {
     let ((result, game), ()) = futures::join!(gameplay_thread, render_thead);
 
     wr.post_message(WorkerToDom::GameFinish {
-        replay_string: ace::share::save(&game.into_just_move(world.seed)),
+        replay_string: engine::share::save(&game.into_just_move(world.seed)),
         result,
     });
 

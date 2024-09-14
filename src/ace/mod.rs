@@ -1,4 +1,3 @@
-use self::selection::JustMoveLog;
 
 use super::*;
 
@@ -367,35 +366,16 @@ pub async fn reselect_loop(
     //}
 }
 
-pub mod share {
 
-    pub struct LoadError;
-
-    use super::*;
-    pub fn load(s: &str) -> Result<selection::JustMoveLog, LoadError> {
-        use base64::prelude::*;
-        let k = BASE64_STANDARD_NO_PAD.decode(s).map_err(|_| LoadError)?;
-        let k = miniz_oxide::inflate::decompress_to_vec(&k).map_err(|_| LoadError)?;
-        Ok(postcard::from_bytes(&k).map_err(|_| LoadError)?)
-    }
-    pub fn save(game_history: &selection::JustMoveLog) -> String {
-        use base64::prelude::*;
-
-        let k = postcard::to_allocvec(game_history).unwrap();
-
-        let k = miniz_oxide::deflate::compress_to_vec(&k, 10);
-        BASE64_STANDARD_NO_PAD.encode(k)
-    }
-}
 
 pub async fn replay(
     world: &board::MyWorld,
     mut doop: WorkerManager,
-    just_logs: JustMoveLog,
-) -> (GameOver, selection::MoveHistory) {
+    just_logs: engine::JustMoveLog,
+) -> (GameOver, engine::MoveHistory) {
     let mut game = ace::game_init(world);
 
-    let mut game_history = selection::MoveHistory::new();
+    let mut game_history = engine::MoveHistory::new();
 
     let start_team = ActiveTeam::White;
     let mut team_gen = start_team.iter();
@@ -433,9 +413,9 @@ pub async fn handle_player(
     world: &board::MyWorld,
     doop: &mut WorkerManager,
     team: ActiveTeam,
-    move_log: &mut selection::MoveHistory,
+    move_log: &mut engine::MoveHistory,
 ) -> (moves::ActualMove, move_build::MoveEffect) {
-    let undo = |move_log: &mut selection::MoveHistory, game: &mut GameState| {
+    let undo = |move_log: &mut engine::MoveHistory, game: &mut GameState| {
         log!("undoing turn!!!");
         assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
 
