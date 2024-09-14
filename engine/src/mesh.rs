@@ -158,7 +158,7 @@ pub mod small_mesh {
     pub fn inverse(index: usize) -> Axial {
         let x = index / 16;
         let y = index % 16;
-        Axial::from_arr([(x - 8) as hex::CoordNum, (y - 8) as hex::CoordNum])
+        Axial::from_arr([x as hex::CoordNum - 8, y as hex::CoordNum - 8])
     }
 
     pub fn conv(a: Axial) -> usize {
