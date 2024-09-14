@@ -1,5 +1,6 @@
 use cgmath::{InnerSpace, Vector2};
-
+use serde::Deserialize;
+use serde::Serialize;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Touches {
     pub all: [(i32, f32, f32); 4],
@@ -124,7 +125,12 @@ impl TouchController {
             _ => MouseUp::NoSelect,
         }
     }
-    pub fn on_mouse_move(&mut self, pos: [f32; 2], view_projection: &Matrix4<f32>, dim: [f32; 2]) {
+    pub fn on_mouse_move(
+        &mut self,
+        pos: [f32; 2],
+        view_projection: &cgmath::Matrix4<f32>,
+        dim: [f32; 2],
+    ) {
         match self.foo {
             Foo::MouseActive { .. } => {
                 self.inner
@@ -184,7 +190,7 @@ impl TouchController {
     pub fn on_touch_move(
         &mut self,
         touches: &Touches,
-        view_projection: &Matrix4<f32>,
+        view_projection: &cgmath::Matrix4<f32>,
         dim: [f32; 2],
     ) {
         match self.foo {
@@ -386,7 +392,7 @@ impl ScrollController {
         &mut self,
         buffer_radius: f32,
         mouse: [f32; 2],
-        view_projection: &Matrix4<f32>,
+        view_projection: &cgmath::Matrix4<f32>,
         dim: [f32; 2],
     ) {
         self.cursor_canvas = mouse.into();
@@ -469,7 +475,11 @@ impl ScrollController {
 }
 
 //TODO don't do this every step, just when user clicks!!!
-pub fn mouse_to_world(mouse: [f32; 2], view_projection: &Matrix4<f32>, dim: [f32; 2]) -> [f32; 2] {
+pub fn mouse_to_world(
+    mouse: [f32; 2],
+    view_projection: &cgmath::Matrix4<f32>,
+    dim: [f32; 2],
+) -> [f32; 2] {
     //generate some mouse points
     let clip_x = mouse[0] / dim[0] * 2. - 1.;
     let clip_y = mouse[1] / dim[1] * -2. + 1.;

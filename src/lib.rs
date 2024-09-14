@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 use shogo::utils;
 use wasm_bindgen::prelude::*;
 
-pub mod gui;
 use engine::board;
 pub mod dom;
 use engine::grids;
@@ -23,8 +22,8 @@ use engine::moves;
 
 use dom::DomToWorker;
 pub mod ace;
-use engine::hex;
 use engine::unit;
+use hex;
 
 use unit::*;
 
@@ -95,7 +94,7 @@ pub async fn worker_entry() {
     let last_matrix = cgmath::Matrix4::identity();
     let ctx = &utils::get_context_webgl2_offscreen(&wr.canvas());
 
-    let grid_matrix = grids::HexConverter::new();
+    let grid_matrix = hex::HexConverter::new();
 
     let shader = gui::shader_sys::ShaderSystem::new(ctx).unwrap();
 
@@ -346,7 +345,7 @@ use gui::*;
 use web_sys::OffscreenCanvas;
 use web_sys::WebGl2RenderingContext;
 pub struct EngineStuff {
-    grid_matrix: grids::HexConverter,
+    grid_matrix: hex::HexConverter,
     models: Models<Foo<TextureGpu, ModelGpu>>,
     //numm: Numm,
     ctx: WebGl2RenderingContext,

@@ -14,6 +14,7 @@ miniz_oxide = "0.7.1"
 base64 = "0.21.7"
 tinyvec = "1.8.0"
 gloo-console = "0.3.0"
+hex={path="../hex"}
 
 
 

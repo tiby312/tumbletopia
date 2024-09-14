@@ -1,10 +1,11 @@
-use crate::grids::HexConverter;
+use cgmath::Transform;
+use hex::HexConverter;
 
 use super::*;
 pub fn get_world_rect(
     view_projection: &cgmath::Matrix4<f32>,
     grid: &HexConverter,
-) -> [[engine::hex::CoordNum; 2]; 2] {
+) -> [[hex::CoordNum; 2]; 2] {
     let k = 1.0;
     let a = clip_to_world([k, k], view_projection);
     let b = clip_to_world([-k, -k], view_projection);
@@ -23,8 +24,8 @@ pub fn get_world_rect(
     [[a.q, b.q + 1], [a.r, b.r + 1]]
 }
 
-pub fn clip_to_world(clip: [f32; 2], view_projection: &Matrix4<f32>) -> [f32; 2] {
-    use crate::matrix::*;
+pub fn clip_to_world(clip: [f32; 2], view_projection: &cgmath::Matrix4<f32>) -> [f32; 2] {
+    use model::matrix::*;
     let [clip_x, clip_y] = clip;
     let startc = [clip_x, clip_y, -0.9];
     let endc = [clip_x, clip_y, 0.999];
@@ -58,7 +59,7 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> cgmath::Matrix4<f32
     //y right down
     //z+ into the sky (-z into the worlds ground)
 
-    use crate::matrix::*;
+    use model::matrix::*;
 
     use cgmath::*;
 
@@ -81,7 +82,7 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> cgmath::Matrix4<f32
     camera.inverse().generate()
 }
 
-pub fn projection(dim: [f32; 2]) -> crate::matrix::Perspective {
+pub fn projection(dim: [f32; 2]) -> model::matrix::Perspective {
     //https://www.gamedev.net/forums/topic/558921-calculating-the-field-of-view/
     //https://docs.unity3d.com/Manual/FrustumSizeAtDistance.html
 
@@ -93,7 +94,7 @@ pub fn projection(dim: [f32; 2]) -> crate::matrix::Perspective {
     let frustum_height = dd * fov_factor;
 
     let fov = 2.0 * (frustum_height * 0.5 / near).atan();
-    crate::matrix::perspective(fov /*0.4*/, dim[0] / dim[1], near, far)
+    model::matrix::perspective(fov /*0.4*/, dim[0] / dim[1], near, far)
 }
 
 // #[derive(Copy, Clone)]

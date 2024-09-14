@@ -13,8 +13,7 @@ pub mod small_mesh {
 
     use serde::{Deserialize, Serialize};
 
-    use crate::hex;
-    use crate::hex::HDir;
+    use hex::HDir;
     #[test]
     fn test_mesh() {
         let k1 = Axial::from_arr([2, 0]);

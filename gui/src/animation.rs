@@ -1,3 +1,5 @@
+use cgmath::InnerSpace;
+
 use super::*;
 
 pub struct Interpolate {
@@ -21,8 +23,8 @@ impl Iterator for Interpolate {
 pub fn attack(
     start: Axial,
     target: Axial,
-    v: &grids::HexConverter,
-) -> impl Iterator<Item = Vector2<f32>> {
+    v: &hex::HexConverter,
+) -> impl Iterator<Item = cgmath::Vector2<f32>> {
     let v = v.clone();
     let start = v.hex_axial_to_world(&start);
     let end = v.hex_axial_to_world(&target);
@@ -87,7 +89,7 @@ pub fn terrain_create(curr: f32, target: f32) -> impl Iterator<Item = f32> {
 //     }
 // }
 
-pub fn land_delta(start: Axial, end: Axial, v: &grids::HexConverter) -> Vector2<f32> {
+pub fn land_delta(start: Axial, end: Axial, v: &hex::HexConverter) -> cgmath::Vector2<f32> {
     let s = v.hex_axial_to_world(&start);
     let e = v.hex_axial_to_world(&end);
     e - s

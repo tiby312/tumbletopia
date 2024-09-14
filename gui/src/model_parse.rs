@@ -1,11 +1,11 @@
 use super::*;
 
 pub struct TextureGpu {
-    pub texture: gui::shader_sys::TextureBuffer,
+    pub texture: shader_sys::TextureBuffer,
 }
 impl TextureGpu {
     pub fn new(ctx: &web_sys::WebGl2RenderingContext, tt: &model::Img) -> Self {
-        let mut texture = gui::shader_sys::TextureBuffer::new(ctx);
+        let mut texture = shader_sys::TextureBuffer::new(ctx);
         texture.update(tt.width as usize, tt.height as usize, &tt.data);
 
         TextureGpu { texture }
@@ -20,14 +20,14 @@ pub struct Foo<A, B> {
 }
 
 pub struct ModelGpu {
-    pub res: gui::shader_sys::shader::VaoData,
+    pub res: shader_sys::shader::VaoData,
 }
 
 impl ModelGpu {
     pub fn new(shader: &ShaderSystem, data: &model::ModelData) -> Self {
         let program = &shader.program;
         let mat = &shader.program.matrix_buffer;
-        let res = gui::shader_sys::shader::create_vao(
+        let res: shader_sys::shader::VaoData = shader_sys::shader::create_vao(
             &shader.ctx,
             program,
             &data.tex_coords,

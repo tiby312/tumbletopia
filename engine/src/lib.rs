@@ -1,7 +1,7 @@
 pub mod ai;
 pub mod board;
 pub mod grids;
-pub mod hex;
+
 pub mod mesh;
 pub mod move_build;
 pub mod moves;

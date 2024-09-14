@@ -1,4 +1,10 @@
-use super::*;
+use gloo::console::console_dbg;
+use gloo::console::log;
+
+use hex::*;
+use model::matrix::MyMatrix;
+use shader_sys::ShaderSystem;
+
 pub mod animation;
 pub mod model_parse;
 pub mod projection;
@@ -25,8 +31,7 @@ impl<'a> DepthDisabler<'a> {
 
 use web_sys::{OffscreenCanvas, WebGl2RenderingContext};
 
-use crate::ace::MouseEvent;
-use gui::model_parse::{Foo, ModelGpu, TextureGpu};
+use model_parse::{Foo, ModelGpu, TextureGpu};
 
 //purple #6d32e7
 //orange #ff8100
@@ -41,15 +46,15 @@ pub struct Models<T> {
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
-    pub fn new(grid_matrix: &grids::HexConverter, shader: &ShaderSystem) -> Self {
+    pub fn new(grid_matrix: &hex::HexConverter, shader: &ShaderSystem) -> Self {
         let quick_load = |name, res, alpha| {
             let (data, t) = model::load_glb(name).gen_ext(grid_matrix.spacing(), res, alpha);
 
             log!(format!("texture:{:?}", (t.width, t.height)));
 
-            gui::model_parse::Foo {
-                texture: gui::model_parse::TextureGpu::new(&shader.ctx, &t),
-                model: gui::model_parse::ModelGpu::new(shader, &data),
+            model_parse::Foo {
+                texture: model_parse::TextureGpu::new(&shader.ctx, &t),
+                model: model_parse::ModelGpu::new(shader, &data),
                 width: data
                     .positions
                     .iter()
