@@ -1,6 +1,5 @@
 pub mod ai;
 pub mod board;
-pub mod grids;
 
 pub mod main_logic;
 pub mod mesh;
