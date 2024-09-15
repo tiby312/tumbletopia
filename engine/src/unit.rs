@@ -273,10 +273,8 @@ impl Tribe {
             for d in 0..dis {
                 index2 += stride;
 
-                if self.piece.inner[index2 as usize] {
-                    if let Some(pp) = self.get_cell_inner(index2 as usize) {
-                        return (d + 1, Some(pp));
-                    }
+                if let Some(pp) = self.get_cell_inner(index2 as usize) {
+                    return (d + 1, Some(pp));
                 }
             }
 
@@ -320,6 +318,10 @@ impl Tribe {
     }
 
     pub fn get_cell_inner(&self, index: usize) -> Option<(u8, ActiveTeam)> {
+        if !self.piece.inner[index as usize] {
+            return None;
+        }
+
         let bit0 = self.cells[0].inner[index] as usize;
         let bit1 = self.cells[1].inner[index] as usize;
         let bit2 = self.cells[2].inner[index] as usize;
@@ -330,8 +332,9 @@ impl Tribe {
             return Some((2, ActiveTeam::Neutral));
         }
         if val == 0 {
-            return None;
+            return Some((1, ActiveTeam::Neutral));
         }
+
         let team = if self.team.inner[index] {
             ActiveTeam::White
         } else {
@@ -353,9 +356,9 @@ impl Tribe {
         self.cells[1].inner.set(index, bit1);
         self.cells[2].inner.set(index, bit2);
 
-        if stack != 0 {
-            self.piece.inner.set(index, true);
-        }
+        //if stack != 0 {
+        self.piece.inner.set(index, true);
+        //}
     }
 
     pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: ActiveTeam) {
@@ -363,7 +366,13 @@ impl Tribe {
             ActiveTeam::White => self.team.inner.set(a, true),
             ActiveTeam::Black => self.team.inner.set(a, false),
             ActiveTeam::Neutral => {
-                let val = if stack == 2 { 7 } else { panic!("impossible") };
+                let val = if stack == 2 {
+                    7
+                } else if stack == 1 {
+                    0
+                } else {
+                    panic!("impossible")
+                };
 
                 self.set_coord(a, val);
                 self.team.inner.set(a, false);
@@ -384,57 +393,19 @@ pub enum UnitType {
     Rabbit,
 }
 
-// impl std::fmt::Debug for Tribe {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{}", "tribe:[")?;
-//         for pos in self.warrior.iter_mesh() {
-//             write!(f, "{:?},", pos)?;
-//         }
-//         write!(f, "{}", "]")
-//     }
-// }
 
 pub fn game_init(_world: &board::MyWorld) -> GameState {
-    //let a = 3; //world.white_start().len();
-
-    // let white_mouse = BitField::from_iter(&world.white_start()[0..a]);
-
-    // let black_mouse = BitField::from_iter(&world.black_start()[0..a]);
-
-    // let white_rabbit = BitField::from_iter(&world.white_start()[a..]);
-
-    // let black_rabbit = BitField::from_iter(&world.black_start()[a..]);
-
-    //let powerups = vec![]; //vec![[1, 1], [1, -2], [-2, 1]];
-
-    // let mut fog = BitField::from_iter(Axial::zero().to_cube().range(4).map(|x| x.ax));
-    // fog.intersect_with(&world.get_game_cells());
-    //let fog=BitField::new();
-
     let mut cells = Tribe::new();
     cells.add_cell(Axial::from_arr([-1, 2]), 1, ActiveTeam::White);
     cells.add_cell(Axial::from_arr([0, -5]), 1, ActiveTeam::Black);
     cells.add_cell(Axial::from_arr([0, 0]), 2, ActiveTeam::Neutral);
 
-    // use primitive_types::U256;
+    cells.add_cell(Axial::from_arr([1, -3]), 1, ActiveTeam::Neutral);
+    cells.add_cell(Axial::from_arr([1, 1]), 1, ActiveTeam::Neutral);
+    cells.add_cell(Axial::from_arr([-5, 3]), 1, ActiveTeam::Neutral);
+    cells.add_cell(Axial::from_arr([2, -1]), 1, ActiveTeam::Neutral);
 
-    // cells.cells[0].inner <<= U256::one();
-    // cells.cells[1].inner <<= U256::one();
-    // cells.cells[2].inner <<= U256::one();
-    // cells.team.inner <<= U256::one();
-
-    let game = GameState {
-        factions: cells,
-        // env: Environment {
-        //     terrain: Terrain {
-        //         land: world.land.clone(),
-        //         forest: BitField::from_iter([] as [Axial; 0]),
-        //         mountain: BitField::from_iter([] as [Axial; 0]),
-        //     },
-        //     fog,
-        //     powerups: powerups.into_iter().map(Axial::from_arr).collect(),
-        // },
-    };
+    let game = GameState { factions: cells };
 
     // let str="{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,180143985094819840,50332928,0]},{\"inner\":[0,0,0,0]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,0,50332672,0]}}}}";
     // let game: GameState = serde_json::from_str(str).unwrap();

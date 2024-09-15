@@ -58,8 +58,8 @@ impl Evaluator {
                 let height = height as i64;
 
                 let curr_strength = match tt {
-                    ActiveTeam::White => height.max(num_white - 1) ,
-                    ActiveTeam::Black => -height.max(num_black - 1) ,
+                    ActiveTeam::White => height.max(num_white - 1),
+                    ActiveTeam::Black => -height.max(num_black - 1),
                     ActiveTeam::Neutral => 0,
                 };
 
