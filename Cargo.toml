@@ -45,6 +45,9 @@ features=[
 # opt-level = 1
 
 
+[profile.dev]
+opt-level = 1               # Use slightly better optimizations.
+overflow-checks = false
 
 [profile.dev.package.engine]
 opt-level = 2
