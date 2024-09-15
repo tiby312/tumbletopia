@@ -178,7 +178,7 @@ fn test_dis_to_hex_border() {
 impl MyWorld {
     pub fn new(seed: WorldSeed) -> MyWorld {
         //let size = 3;
-        let size = 5;
+        let size = 6;
 
         //let j = [[2, -4], [-2, -2], [-4, 2], [-2, 4], [2, 2], [4, -2]];
 

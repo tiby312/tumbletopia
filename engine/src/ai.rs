@@ -54,12 +54,12 @@ impl Evaluator {
                 }
             }
 
-            if let Some((val, tt)) = game.factions.get_cell_inner(index) {
-                let val = val as i64;
+            if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+                let height = height as i64;
 
                 let curr_strength = match tt {
-                    ActiveTeam::White => val.max(num_white - 1) + 2,
-                    ActiveTeam::Black => -(val.max(num_black - 1)) + 2,
+                    ActiveTeam::White => height.max(num_white - 1) ,
+                    ActiveTeam::Black => -height.max(num_black - 1) ,
                     ActiveTeam::Neutral => 0,
                 };
 
@@ -69,14 +69,14 @@ impl Evaluator {
 
                 match tt {
                     ActiveTeam::White => {
-                        if num_black > val {
+                        if num_black > height {
                             score -= 1
                         } else {
                             score += 1
                         }
                     }
                     ActiveTeam::Black => {
-                        if num_white > val {
+                        if num_white > height {
                             score += 1
                         } else {
                             score -= 1
