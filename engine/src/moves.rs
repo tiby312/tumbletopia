@@ -98,6 +98,7 @@ impl GameState {
         world: &board::MyWorld,
         _unit: Option<Axial>,
         team: ActiveTeam,
+        allow_suicidal: bool,
     ) -> (SmallMesh, SmallMesh, SmallMesh) {
         let mut mesh = SmallMesh::new();
         let mut captures = SmallMesh::new();
@@ -127,8 +128,10 @@ impl GameState {
                 continue;
             }
 
-            if potential_height < num_enemy {
-                continue;
+            if !allow_suicidal {
+                if potential_height < num_enemy {
+                    continue;
+                }
             }
 
             if let Some((height, rest)) = self.factions.get_cell_inner(index) {

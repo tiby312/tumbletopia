@@ -88,6 +88,9 @@ pub fn dis_to_hex_of_hexagon(a: Axial, dir: hex::HDir, radius: i8) -> i8 {
         hex::HDir::TopRight => radius - a.r - a.q.max(0),
     }
 }
+
+pub const STRIDES: [i32; 6] = [16, 15, -1, -16, -15, 1];
+
 pub fn determine_stride(a: hex::HDir) -> i32 {
     match a {
         hex::HDir::BottomRight => 16,

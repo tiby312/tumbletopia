@@ -361,11 +361,18 @@ pub async fn reselect_loop(
     // let cca = cca.unwrap_or_else(|| {
     //
     // });
-    let (cca, _, _) = game.generate_possible_moves_movement(
+    let (mut cca, _, _) = game.generate_possible_moves_movement(
         world,
         Some(unwrapped_selected_unit),
         selected_unit.team,
+        true,
     );
+
+    let c2 = game
+        .factions
+        .doop(mesh::small_mesh::conv(unwrapped_selected_unit), world);
+
+    cca.inner &= c2.inner;
 
     let mut cell = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
 

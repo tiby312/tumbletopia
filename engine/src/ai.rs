@@ -365,7 +365,7 @@ impl<'a> AlphaBeta<'a> {
             );
         }
 
-        let (_, captures, _) = game.generate_possible_moves_movement(self.world, None, team);
+        let (_, captures, _) = game.generate_possible_moves_movement(self.world, None, team, false);
 
         let start_move_index = self.moves.len();
 
@@ -425,7 +425,7 @@ impl<'a> AlphaBeta<'a> {
         }
 
         let (all_moves, captures, reinfocements) =
-            game.generate_possible_moves_movement(self.world, None, team);
+            game.generate_possible_moves_movement(self.world, None, team, false);
 
         let start_move_index = self.moves.len();
 
