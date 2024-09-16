@@ -195,7 +195,7 @@ pub fn iterative_deepening(
 
     let mut moves = vec![];
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3, 4] {
+    for depth in [1, 2, 3] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         let mut k = KillerMoves::new(num_iter + 4 + 4);
