@@ -244,7 +244,7 @@ impl GameState {
 pub struct Tribe {
     pub cells: [SmallMesh; 3],
     pub team: SmallMesh,
-
+    pub water: SmallMesh,
     //This just signifies if there is a number in cells.
     //This way you can just check one mesh to see if a piece is there or not
     //instead of checking 3
@@ -311,6 +311,7 @@ impl Tribe {
         Tribe {
             cells: [0; 3].map(|_| SmallMesh::new()),
             team: SmallMesh::new(),
+            water: SmallMesh::new(),
             piece: SmallMesh::new(),
         }
     }
@@ -348,7 +349,7 @@ impl Tribe {
             return Some((2, ActiveTeam::Neutral));
         }
         if val == 0 {
-            return Some((1, ActiveTeam::Neutral));
+            return Some((6, ActiveTeam::Neutral));
         }
 
         let team = if self.team.inner[index] {
@@ -384,7 +385,7 @@ impl Tribe {
             ActiveTeam::Neutral => {
                 let val = if stack == 2 {
                     7
-                } else if stack == 1 {
+                } else if stack == 6 {
                     0
                 } else {
                     panic!("impossible")
@@ -415,10 +416,10 @@ pub fn game_init(_world: &board::MyWorld) -> GameState {
     cells.add_cell(Axial::from_arr([0, -5]), 1, ActiveTeam::Black);
     cells.add_cell(Axial::from_arr([0, 0]), 2, ActiveTeam::Neutral);
 
-    cells.add_cell(Axial::from_arr([1, -3]), 1, ActiveTeam::Neutral);
-    cells.add_cell(Axial::from_arr([1, 1]), 1, ActiveTeam::Neutral);
-    cells.add_cell(Axial::from_arr([-5, 3]), 1, ActiveTeam::Neutral);
-    cells.add_cell(Axial::from_arr([2, -1]), 1, ActiveTeam::Neutral);
+    cells.add_cell(Axial::from_arr([1, -3]), 6, ActiveTeam::Neutral);
+    cells.add_cell(Axial::from_arr([1, 1]), 6, ActiveTeam::Neutral);
+    cells.add_cell(Axial::from_arr([-5, 3]), 6, ActiveTeam::Neutral);
+    cells.add_cell(Axial::from_arr([2, -1]), 6, ActiveTeam::Neutral);
 
     let game = GameState { factions: cells };
 
