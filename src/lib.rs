@@ -640,7 +640,10 @@ async fn render_command(
                 .get_game_cells()
                 .iter_mesh(Axial::zero())
                 .filter_map(|a| {
-                    if let Some((val, _)) = game.factions.get_cell(a) {
+                    if let Some((val, tt)) = game.factions.get_cell(a) {
+                        if val == 6 && tt == ActiveTeam::Neutral {
+                            return None;
+                        }
                         let xx = match val {
                             1 | 2 => 0.6,
                             3 | 4 => 0.8,
@@ -695,24 +698,21 @@ async fn render_command(
             }
         }
 
-        // for a in world.get_game_cells().iter_mesh(Axial::zero()){
-
-        // }
-
         for a in world.get_game_cells().iter_mesh(Axial::zero()) {
             if let Some((height, team2)) = game.factions.get_cell(a) {
                 let inner_stack = height.min(2);
                 let mid_stack = height.max(2).min(4) - 2;
                 let outer_stack = height.max(4) - 4;
 
-                let arr = if height == 6 && team2 == ActiveTeam::Neutral {
-                    &mut mountains
-                } else {
-                    match team2 {
-                        ActiveTeam::White => &mut white_team_cells,
-                        ActiveTeam::Black => &mut black_team_cells,
-                        ActiveTeam::Neutral => &mut neutral_team_cells,
-                    }
+                if height == 6 && team2 == ActiveTeam::Neutral {
+                    mountains.push(grid_snap(a, models.land.height / 2.0).generate());
+                    continue;
+                }
+
+                let arr = match team2 {
+                    ActiveTeam::White => &mut white_team_cells,
+                    ActiveTeam::Black => &mut black_team_cells,
+                    ActiveTeam::Neutral => &mut neutral_team_cells,
                 };
 
                 let radius = [0.4, 0.6, 0.8];
@@ -744,7 +744,7 @@ async fn render_command(
 
         let mut water_pos = vec![];
         for pos in game.factions.water.iter_mesh(Axial::zero()) {
-            water_pos.push(grid_snap(pos, 0.0));
+            water_pos.push(grid_snap(pos, -models.land.height / 2.0));
         }
         draw_sys.batch(water_pos).build(&models.water, &projjj);
 
