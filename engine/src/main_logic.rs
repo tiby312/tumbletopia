@@ -132,7 +132,7 @@ pub async fn map_editor(mut doop: WorkerManager, world: &board::MyWorld, game_ty
             TT::Water => {
                 game.factions.remove(pos);
                 game.factions.water.set_coord(pos, true)
-            },
+            }
             TT::Land => {
                 game.factions.water.set_coord(pos, false);
                 game.factions.remove(pos);
@@ -140,15 +140,37 @@ pub async fn map_editor(mut doop: WorkerManager, world: &board::MyWorld, game_ty
             TT::Mountains => {
                 game.factions.remove(pos);
                 game.factions.water.set_coord(pos, false);
-                game.factions.add_cell(pos,6, ActiveTeam::Neutral);
-            },
+                game.factions.add_cell(pos, 6, ActiveTeam::Neutral);
+            }
             TT::Forest => {
-                game.factions.add_cell(pos,2, ActiveTeam::Neutral);
-            },
+                game.factions.add_cell(pos, 2, ActiveTeam::Neutral);
+            }
             TT::Start1 => {
-                
-            },
-            TT::Start2 => todo!(),
+                game.factions.remove(pos);
+                game.factions.water.set_coord(pos, false);
+
+                for a in world.get_game_cells().inner.iter_ones() {
+                    if let Some((_, t)) = game.factions.get_cell_inner(a) {
+                        if t == ActiveTeam::White {
+                            game.factions.remove_inner(a);
+                        }
+                    }
+                }
+                game.factions.add_cell(pos, 1, ActiveTeam::White);
+            }
+            TT::Start2 => {
+                game.factions.remove(pos);
+                game.factions.water.set_coord(pos, false);
+
+                for a in world.get_game_cells().inner.iter_ones() {
+                    if let Some((_, t)) = game.factions.get_cell_inner(a) {
+                        if t == ActiveTeam::Black {
+                            game.factions.remove_inner(a);
+                        }
+                    }
+                }
+                game.factions.add_cell(pos, 1, ActiveTeam::Black);
+            }
         }
     }
 }

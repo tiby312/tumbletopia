@@ -156,7 +156,8 @@ fn engine_handlers(
     worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
     canvas: &web_sys::HtmlCanvasElement,
 ) -> [gloo::events::EventListener; 16] {
-    let mut reg_button=|worker:&mut shogo::EngineMain<DomToWorker, WorkerToDom>,s:&'static str|{
+    let mut reg_button = |worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
+                          s: &'static str| {
         let undo = shogo::utils::get_by_id_elem(s);
         worker.register_event(&undo, "click", move |_| {
             DomToWorker::Button(s.to_string()).some()
@@ -193,13 +194,13 @@ fn engine_handlers(
             let touches = convert_coord_touch(e.elem, e.event);
             DomToWorker::TouchEnd { touches }.some()
         }),
-        reg_button(worker,"undo"),
-        reg_button(worker,"b_water"),
-        reg_button(worker,"b_land"),
-        reg_button(worker,"b_mountain"),
-        reg_button(worker,"b_forest"),
-        reg_button(worker,"b_player1"),
-        reg_button(worker,"b_player2"),
+        reg_button(worker, "undo"),
+        reg_button(worker, "b_water"),
+        reg_button(worker, "b_land"),
+        reg_button(worker, "b_mountain"),
+        reg_button(worker, "b_forest"),
+        reg_button(worker, "b_start1"),
+        reg_button(worker, "b_start2"),
         {
             let w = gloo::utils::window();
 
