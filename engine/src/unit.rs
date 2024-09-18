@@ -410,6 +410,7 @@ pub enum UnitType {
     Rabbit,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Map {
     water: SmallMesh,
     mountains: SmallMesh,
@@ -458,7 +459,9 @@ pub fn default_map() -> Map {
     }
 }
 
-pub fn game_init(_world: &board::MyWorld, map: &Map) -> GameState {
+pub fn game_init(world: &board::MyWorld) -> GameState {
+    let map = &world.map;
+
     let mut cells = Tribe::new();
     cells.add_cell(map.start1, 1, ActiveTeam::White);
     cells.add_cell(map.start2, 1, ActiveTeam::Black);
@@ -476,12 +479,6 @@ pub fn game_init(_world: &board::MyWorld, map: &Map) -> GameState {
     }
 
     let game = GameState { factions: cells };
-
-    // let str="{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,180143985094819840,50332928,0]},{\"inner\":[0,0,0,0]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,0,50332672,0]}}}}";
-    // let game: GameState = serde_json::from_str(str).unwrap();
-
-    // let k = Evaluator::default().absolute_evaluate(&game, world, false);
-    // console_dbg!("Current eval=", k);
 
     game
 }

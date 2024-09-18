@@ -5,6 +5,7 @@ pub struct MyWorld {
     pub seed: WorldSeed,
     pub land: mesh::small_mesh::SmallMesh,
     pub radius: u8,
+    pub map: unit::Map,
 }
 
 pub const NUM_CELLS: usize = 128;
@@ -179,7 +180,7 @@ fn test_dis_to_hex_border() {
 }
 
 impl MyWorld {
-    pub fn new(seed: WorldSeed) -> MyWorld {
+    pub fn new(seed: WorldSeed, map: unit::Map) -> MyWorld {
         //let size = 3;
         let size = 7;
 
@@ -277,6 +278,7 @@ impl MyWorld {
             seed,
             land,
             radius: size as u8,
+            map,
         }
     }
     // pub fn white_start(&self) -> &[Axial] {

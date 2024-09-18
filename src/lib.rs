@@ -112,7 +112,7 @@ pub async fn worker_entry() {
         (board::WorldSeed::new(), None)
     };
 
-    let world = board::MyWorld::new(seed);
+    let world = board::MyWorld::new(seed, unit::default_map());
 
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);

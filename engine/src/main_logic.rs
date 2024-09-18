@@ -97,25 +97,11 @@ pub async fn game_play_thread(
     world: &board::MyWorld,
     game_type: GameType,
 ) -> (unit::GameOver, MoveHistory) {
-    //let gameplay_thread = async {
-    // let mut doop = ace::WorkerManager {
-    //     sender: command_sender,
-    //     receiver: response_recv,
-    // };
-
-    // if let Some(fff) = o {
-    //     let game_history = replay(&world, doop, fff).await;
-
-    //     return game_history;
-    // }
-
-    let mut game = unit::game_init(&world, &unit::default_map());
+    let mut game = unit::game_init(&world);
 
     let mut game_history = MoveHistory::new();
 
     let mut team_gen = ActiveTeam::Black.iter();
-
-    //doop.send_command(ActiveTeam::Dogs, &mut game, Command::HideUndo).await;
 
     //Loop over each team!
     loop {
@@ -512,7 +498,7 @@ pub async fn replay(
     mut doop: WorkerManager,
     just_logs: JustMoveLog,
 ) -> (unit::GameOver, MoveHistory) {
-    let mut game = unit::game_init(world, &unit::default_map());
+    let mut game = unit::game_init(world);
 
     let mut game_history = MoveHistory::new();
 
