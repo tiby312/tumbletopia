@@ -27,7 +27,7 @@ pub enum DomToWorker {
         touches: gui::scroll::Touches,
     },
     Start(GameType),
-    Undo,
+    Button(String), //TODO use array backed
     Ack,
     CanvasMouseUp,
     CanvasMouseLeave,
@@ -155,7 +155,14 @@ pub enum WorkerToDom {
 fn engine_handlers(
     worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
     canvas: &web_sys::HtmlCanvasElement,
-) -> [gloo::events::EventListener; 10] {
+) -> [gloo::events::EventListener; 16] {
+    let mut reg_button=|worker:&mut shogo::EngineMain<DomToWorker, WorkerToDom>,s:&'static str|{
+        let undo = shogo::utils::get_by_id_elem(s);
+        worker.register_event(&undo, "click", move |_| {
+            DomToWorker::Button(s.to_string()).some()
+        })
+    };
+
     [
         worker.register_event(canvas, "mousemove", |e| {
             let [x, y] = convert_coord(e.elem, e.event);
@@ -186,13 +193,13 @@ fn engine_handlers(
             let touches = convert_coord_touch(e.elem, e.event);
             DomToWorker::TouchEnd { touches }.some()
         }),
-        {
-            let undo = shogo::utils::get_by_id_elem("undo");
-            worker.register_event(&undo, "click", move |_| {
-                log!("clicked the button!!!!!");
-                DomToWorker::Undo.some()
-            })
-        },
+        reg_button(worker,"undo"),
+        reg_button(worker,"b_water"),
+        reg_button(worker,"b_land"),
+        reg_button(worker,"b_mountain"),
+        reg_button(worker,"b_forest"),
+        reg_button(worker,"b_player1"),
+        reg_button(worker,"b_player2"),
         {
             let w = gloo::utils::window();
 

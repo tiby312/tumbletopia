@@ -117,6 +117,22 @@
         margin-top: 10px;
         margin-bottom:10px;
       }
+      #editor{
+        display: inline-block;
+        position:absolute;
+        bottom:10px;
+        right:10px;
+      }
+      .editor-button{
+        z-index:10;
+        background-color: #213022; /* Green */
+        position:relative;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+      }
     </style>
   <script type=module>
     import { default as init } from './pkg/gridlock.js';
@@ -128,7 +144,16 @@
 <body style="background-color:black;">
 
   <button id="undo" hidden>Undo</button>
-  
+
+  <div id="editor">
+  <button id="b_land" class="editor-button"> Land</button>
+  <button id="b_water" class="editor-button"> Water</button>
+  <button id="b_forest" class="editor-button"> Forest</button>
+  <button id="b_mountain" class="editor-button"> Mountain</button>
+  <button id="b_player1" class="editor-button"> Player1</button>
+  <button id="b_player2" class="editor-button"> Player2</button>
+  </div>
+
   <canvas id="mycanvas" class="unselectable"></canvas>
   
 </body>

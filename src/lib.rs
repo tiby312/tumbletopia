@@ -117,7 +117,6 @@ pub async fn worker_entry() {
 
     console_dbg!("ma", map.save(&world).unwrap());
 
-
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
@@ -364,7 +363,9 @@ async fn render_command(
 
         let mut on_select = false;
         //let mut end_turn = false;
-        let mut on_undo = false;
+        //let mut on_undo = false;
+        let mut button_pushed = None;
+
         let res = frame_timer.next().await;
 
         for e in res {
@@ -404,8 +405,20 @@ async fn render_command(
                         on_select = true;
                     }
                 }
-                DomToWorker::Undo => {
-                    on_undo = true;
+                DomToWorker::Button(s) => {
+                    button_pushed = Some(s);
+
+                    // match s.as_str(){
+                    //     "undo"=>{
+                    //         butt=true
+                    //     },
+                    //     "b_water"=>{
+                    //         console_dbg!("clicked wattttrrrr");
+                    //     },
+                    //     _=>{
+                    //         panic!("not supported yet");
+                    //     }
+                    // }
                 }
                 DomToWorker::Ack => {
                     if waiting_engine_ack {
@@ -443,11 +456,11 @@ async fn render_command(
             gui::scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
         if get_mouse_input.is_some() {
-            if on_undo {
+            if let Some(button) = button_pushed {
                 return if let Some((selection, _grey)) = get_mouse_input.unwrap() {
-                    ace::Response::MouseWithSelection(selection, MouseEvent::Undo)
+                    ace::Response::MouseWithSelection(selection, MouseEvent::Button(button.clone()))
                 } else {
-                    ace::Response::Mouse(MouseEvent::Undo)
+                    ace::Response::Mouse(MouseEvent::Button(button.clone()))
                 };
                 //return ace::Response::Mouse(MouseEvent::Undo);
             } else if on_select {

@@ -15,6 +15,7 @@ use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
 };
+use gloo_console::console_dbg;
 
 #[derive(Debug, Clone)]
 pub enum AnimationCommand {
@@ -89,21 +90,66 @@ pub enum Response {
 #[derive(Debug)]
 pub enum MouseEvent<T> {
     Normal(T),
-    Undo,
+    Button(String),
 }
 
 pub async fn map_editor(mut doop: WorkerManager, world: &board::MyWorld, game_type: GameType) {
     let map = unit::default_map();
     let mut game = unit::game_init(&world, &map);
 
+    enum TT {
+        Water,
+        Land,
+        Mountains,
+        Forest,
+        Start1,
+        Start2,
+    };
+
+    let mut tt = TT::Water;
+
     loop {
         let pos = doop.get_mouse(ActiveTeam::White, &mut game).await;
         let pos = match pos {
             MouseEvent::Normal(pos) => pos,
-            MouseEvent::Undo => todo!(),
+            MouseEvent::Button(s) => {
+                console_dbg!("map editor received", s);
+                tt = match s.as_str() {
+                    "b_water" => TT::Water,
+                    "b_land" => TT::Land,
+                    "b_mountain" => TT::Mountains,
+                    "b_forest" => TT::Forest,
+                    "b_start1" => TT::Start1,
+                    "b_start2" => TT::Start2,
+                    _ => panic!("Not supported!"),
+                };
+
+                continue;
+            }
         };
 
-        game.factions.water.set_coord(pos, true);
+        match tt {
+            TT::Water => {
+                game.factions.remove(pos);
+                game.factions.water.set_coord(pos, true)
+            },
+            TT::Land => {
+                game.factions.water.set_coord(pos, false);
+                game.factions.remove(pos);
+            }
+            TT::Mountains => {
+                game.factions.remove(pos);
+                game.factions.water.set_coord(pos, false);
+                game.factions.add_cell(pos,6, ActiveTeam::Neutral);
+            },
+            TT::Forest => {
+                game.factions.add_cell(pos,2, ActiveTeam::Neutral);
+            },
+            TT::Start1 => {
+                
+            },
+            TT::Start2 => todo!(),
+        }
     }
 }
 
@@ -385,11 +431,15 @@ pub async fn reselect_loop(
 
     let mouse_world = match pototo {
         MouseEvent::Normal(t) => t,
-        MouseEvent::Undo => {
-            //End the turn. Ok because we are not int he middle of anything.
-            //return LoopRes::EndTurn;
-            //unreachable!();
-            return LoopRes::Undo;
+        MouseEvent::Button(s) => {
+            if s == "undo" {
+                //End the turn. Ok because we are not int he middle of anything.
+                //return LoopRes::EndTurn;
+                //unreachable!();
+                return LoopRes::Undo;
+            } else {
+                unreachable!();
+            }
         }
     };
 
@@ -517,7 +567,7 @@ pub async fn replay(
 ) -> (unit::GameOver, MoveHistory) {
     let map = unit::default_map();
     let mut game = unit::game_init(world, &map);
- let mut game_history = MoveHistory::new();
+    let mut game_history = MoveHistory::new();
 
     let start_team = ActiveTeam::White;
     let mut team_gen = start_team.iter();
@@ -629,12 +679,16 @@ pub async fn handle_player(
 
             let cell = match data {
                 MouseEvent::Normal(a) => a,
-                MouseEvent::Undo => {
-                    assert!(extra_attack.is_none());
+                MouseEvent::Button(s) => {
+                    if s == "undo" {
+                        assert!(extra_attack.is_none());
 
-                    undo(move_log, game);
+                        undo(move_log, game);
 
-                    continue 'outer;
+                        continue 'outer;
+                    } else {
+                        unreachable!();
+                    }
                 }
             };
 
