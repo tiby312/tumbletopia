@@ -458,31 +458,21 @@ pub fn default_map() -> Map {
     }
 }
 
-pub fn game_init(_world: &board::MyWorld) -> GameState {
+pub fn game_init(_world: &board::MyWorld, map: &Map) -> GameState {
     let mut cells = Tribe::new();
-    cells.add_cell(Axial::from_arr([-1, 2]), 1, ActiveTeam::White);
-    cells.add_cell(Axial::from_arr([0, -5]), 1, ActiveTeam::Black);
-    cells.add_cell(Axial::from_arr([0, 0]), 2, ActiveTeam::Neutral);
+    cells.add_cell(map.start1, 1, ActiveTeam::White);
+    cells.add_cell(map.start2, 1, ActiveTeam::Black);
 
-    let mountains = [
-        [1, -3],
-        [1, 1],
-        [-5, 3],
-        [2, -1],
-        [-3, 3],
-        [-4, -2],
-        [-3, -2],
-        [-2, -2],
-    ];
-
-    for a in mountains {
-        cells.add_cell(Axial::from_arr(a), 6, ActiveTeam::Neutral);
+    for f in map.forests.iter_mesh(Axial::zero()) {
+        cells.add_cell(f, 2, ActiveTeam::Neutral);
     }
 
-    let water = [[-2, 2], [-2, 1], [-4, 3], [3, -2], [4, -2], [5, -3]];
+    for m in map.mountains.iter_mesh(Axial::zero()) {
+        cells.add_cell(m, 6, ActiveTeam::Neutral);
+    }
 
-    for a in water {
-        cells.water.add(Axial::from_arr(a));
+    for w in map.water.iter_mesh(Axial::zero()) {
+        cells.water.add(w);
     }
 
     let game = GameState { factions: cells };

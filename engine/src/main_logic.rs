@@ -109,7 +109,7 @@ pub async fn game_play_thread(
     //     return game_history;
     // }
 
-    let mut game = unit::game_init(&world);
+    let mut game = unit::game_init(&world, &unit::default_map());
 
     let mut game_history = MoveHistory::new();
 
@@ -512,7 +512,7 @@ pub async fn replay(
     mut doop: WorkerManager,
     just_logs: JustMoveLog,
 ) -> (unit::GameOver, MoveHistory) {
-    let mut game = unit::game_init(world);
+    let mut game = unit::game_init(world, &unit::default_map());
 
     let mut game_history = MoveHistory::new();
 
