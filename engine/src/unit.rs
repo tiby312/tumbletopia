@@ -410,16 +410,53 @@ pub enum UnitType {
     Rabbit,
 }
 
-
-pub struct Map{
-    water:SmallMesh,
-    mountains:SmallMesh,
-    forests:SmallMesh,
-    start1:Axial,
-    start2:Axial
+pub struct Map {
+    water: SmallMesh,
+    mountains: SmallMesh,
+    forests: SmallMesh,
+    start1: Axial,
+    start2: Axial,
 }
 
+pub fn default_map() -> Map {
+    let mut mountains = SmallMesh::new();
+    let mut water = SmallMesh::new();
+    let mut forests = SmallMesh::new();
 
+    let mountains2 = [
+        [1, -3],
+        [1, 1],
+        [-5, 3],
+        [2, -1],
+        [-3, 3],
+        [-4, -2],
+        [-3, -2],
+        [-2, -2],
+    ];
+
+    for a in mountains2 {
+        mountains.add(Axial::from_arr(a));
+    }
+
+    let water2 = [[-2, 2], [-2, 1], [-4, 3], [3, -2], [4, -2], [5, -3]];
+
+    for a in water2 {
+        water.add(Axial::from_arr(a));
+    }
+
+    forests.add(Axial::from_arr([0, 0]));
+
+    let start1 = Axial { q: -1, r: 2 };
+    let start2 = Axial { q: 0, r: -5 };
+
+    Map {
+        water,
+        mountains,
+        forests,
+        start1,
+        start2,
+    }
+}
 
 pub fn game_init(_world: &board::MyWorld) -> GameState {
     let mut cells = Tribe::new();
