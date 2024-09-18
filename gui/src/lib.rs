@@ -41,9 +41,12 @@ use model_parse::{Foo, ModelGpu, TextureGpu};
 pub struct Models<T> {
     pub select_model: T,
     pub drop_shadow: T,
-    pub grass: T,
-    pub snow: T,
+    pub token_black: T,
+    pub token_white: T,
+    pub mountain: T,
+    pub token_neutral: T,
     pub water: T,
+    pub land: T,
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
@@ -82,11 +85,13 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             // black_mouse: quick_load(include_bytes!("../assets/black_mouse.glb"), RESIZE, None),
             // white_rabbit: quick_load(include_bytes!("../assets/white_rabbit.glb"), RESIZE, None),
             // black_rabbit: quick_load(include_bytes!("../assets/black_rabbit.glb"), RESIZE, None),
-            grass: quick_load(include_bytes!("../../assets/hex-black.glb"), RESIZE, None),
-            snow: quick_load(include_bytes!("../../assets/hex-white.glb"), RESIZE, None),
-            water: quick_load(include_bytes!("../../assets/hex-neutral.glb"), RESIZE, None),
+            token_black: quick_load(include_bytes!("../../assets/hex-black.glb"), RESIZE, None),
+            token_white: quick_load(include_bytes!("../../assets/hex-white.glb"), RESIZE, None),
+            token_neutral: quick_load(include_bytes!("../../assets/hex-neutral.glb"), RESIZE, None),
             // direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
-            // mountain: quick_load(include_bytes!("../assets/mountain.glb"), 1, None),
+            mountain: quick_load(include_bytes!("../../assets/mountain.glb"), RESIZE, None),
+            water: quick_load(include_bytes!("../../assets/water.glb"), RESIZE, None),
+            land: quick_load(include_bytes!("../../assets/hex-grass.glb"), RESIZE, None),
         }
     }
 }

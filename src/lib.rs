@@ -2,6 +2,7 @@ use engine::main_logic as ace;
 use engine::main_logic::MouseEvent;
 
 use cgmath::Vector2;
+use engine::mesh;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -254,7 +255,7 @@ async fn render_command(
     // let white_rabbit = &models.white_rabbit;
 
     //let fog_asset = &models.fog;
-    let water = &models.water;
+    let water = &models.token_neutral;
     // let grass = &models.grass;
     // let mountain_asset = &models.mountain;
     // let snow = &models.snow;
@@ -477,16 +478,15 @@ async fn render_command(
             t.generate()
         };
 
-        let cell_height = models.water.height;
+        let cell_height = models.token_neutral.height;
 
+        let land = world.land.inner & !game.factions.water.inner;
         draw_sys
             .batch(
-                world
-                    .land
-                    .iter_mesh(hex::Axial::zero())
-                    .map(|e| grid_snap(e, -models.water.height)),
+                land.iter_ones()
+                    .map(|e| grid_snap(mesh::small_mesh::inverse(e), -models.token_neutral.height)),
             )
-            .build(water, &projjj);
+            .build(&models.land, &projjj);
 
         // {
         //     //Draw grass
@@ -673,6 +673,7 @@ async fn render_command(
         let mut white_team_cells = vec![];
         let mut black_team_cells = vec![];
         let mut neutral_team_cells = vec![];
+        let mut mountains = vec![];
 
         if let Some((pos, ..)) = &unit_animation {
             let ss = 0.4;
@@ -694,16 +695,24 @@ async fn render_command(
             }
         }
 
-        //x += 0.1;
+        // for a in world.get_game_cells().iter_mesh(Axial::zero()){
+
+        // }
+
         for a in world.get_game_cells().iter_mesh(Axial::zero()) {
-            if let Some((val, team2)) = game.factions.get_cell(a) {
-                let inner_stack = val.min(2);
-                let mid_stack = val.max(2).min(4) - 2;
-                let outer_stack = val.max(4) - 4;
-                let arr = match team2 {
-                    ActiveTeam::White => &mut white_team_cells,
-                    ActiveTeam::Black => &mut black_team_cells,
-                    ActiveTeam::Neutral => &mut neutral_team_cells,
+            if let Some((height, team2)) = game.factions.get_cell(a) {
+                let inner_stack = height.min(2);
+                let mid_stack = height.max(2).min(4) - 2;
+                let outer_stack = height.max(4) - 4;
+
+                let arr = if height == 6 && team2 == ActiveTeam::Neutral {
+                    &mut mountains
+                } else {
+                    match team2 {
+                        ActiveTeam::White => &mut white_team_cells,
+                        ActiveTeam::Black => &mut black_team_cells,
+                        ActiveTeam::Neutral => &mut neutral_team_cells,
+                    }
                 };
 
                 let radius = [0.4, 0.6, 0.8];
@@ -717,42 +726,27 @@ async fn render_command(
                         );
                     }
                 }
-                // for k in 0..inner_stack {
-                //     arr.push(
-                //         grid_snap(a, k as f32 * cell_height)
-                //             .chain(matrix::scale(0.5, 0.5, 1.0))
-                //             .generate(),
-                //     );
-                // }
-
-                // for k in 0..outer_stack {
-                //     arr.push(
-                //         grid_snap(a, k as f32 * cell_height)
-                //             .chain(matrix::scale(0.8, 0.8, 1.0))
-                //             .generate(),
-                //     );
-                // }
             }
         }
 
         draw_sys
             .batch(white_team_cells)
-            .build(&models.snow, &projjj);
+            .build(&models.token_white, &projjj);
         draw_sys
             .batch(black_team_cells)
-            .build(&models.grass, &projjj);
+            .build(&models.token_black, &projjj);
 
         draw_sys
             .batch(neutral_team_cells)
-            .build(&models.water, &projjj);
+            .build(&models.token_neutral, &projjj);
+
+        draw_sys.batch(mountains).build(&models.mountain, &projjj);
 
         let mut water_pos = vec![];
         for pos in game.factions.water.iter_mesh(Axial::zero()) {
-            water_pos.push(grid_snap(pos, 5.0));
+            water_pos.push(grid_snap(pos, 0.0));
         }
-        draw_sys
-            .batch(water_pos)
-            .build(&models.select_model, &projjj);
+        draw_sys.batch(water_pos).build(&models.water, &projjj);
 
         // draw_unit_type(
         //     UnitType::Mouse,

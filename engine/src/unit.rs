@@ -416,12 +416,27 @@ pub fn game_init(_world: &board::MyWorld) -> GameState {
     cells.add_cell(Axial::from_arr([0, -5]), 1, ActiveTeam::Black);
     cells.add_cell(Axial::from_arr([0, 0]), 2, ActiveTeam::Neutral);
 
-    cells.add_cell(Axial::from_arr([1, -3]), 6, ActiveTeam::Neutral);
-    cells.add_cell(Axial::from_arr([1, 1]), 6, ActiveTeam::Neutral);
-    cells.add_cell(Axial::from_arr([-5, 3]), 6, ActiveTeam::Neutral);
-    cells.add_cell(Axial::from_arr([2, -1]), 6, ActiveTeam::Neutral);
+    let mountains = [
+        [1, -3],
+        [1, 1],
+        [-5, 3],
+        [2, -1],
+        [-3, 3],
+        [-4, -2],
+        [-3, -2],
+        [-2, -2],
+    ];
 
-    cells.water.add(Axial::from_arr([-2, 2]));
+    for a in mountains {
+        cells.add_cell(Axial::from_arr(a), 6, ActiveTeam::Neutral);
+    }
+
+    let water = [[-2, 2], [-2, 1], [-4, 3], [3, -2], [4, -2], [5, -3]];
+
+    for a in water {
+        cells.water.add(Axial::from_arr(a));
+    }
+
     let game = GameState { factions: cells };
 
     // let str="{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,180143985094819840,50332928,0]},{\"inner\":[0,0,0,0]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,0,50332672,0]}}}}";
