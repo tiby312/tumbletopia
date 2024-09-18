@@ -49,12 +49,10 @@ pub struct JustMoveLog {
     pub inner: Vec<moves::ActualMove>,
 }
 
-
 //Need to keep effect so you can undo all the way to the start.
 pub struct MoveHistory {
     pub inner: Vec<(moves::ActualMove, move_build::MoveEffect)>,
 }
-
 
 impl Default for MoveHistory {
     fn default() -> Self {

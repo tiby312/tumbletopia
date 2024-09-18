@@ -72,7 +72,7 @@ impl GameState {
                 }
             }
 
-            if self.factions.water.inner[index]{
+            if self.factions.water.inner[index] {
                 continue;
             }
 

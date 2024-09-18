@@ -746,6 +746,14 @@ async fn render_command(
             .batch(neutral_team_cells)
             .build(&models.water, &projjj);
 
+        let mut water_pos = vec![];
+        for pos in game.factions.water.iter_mesh(Axial::zero()) {
+            water_pos.push(grid_snap(pos, 5.0));
+        }
+        draw_sys
+            .batch(water_pos)
+            .build(&models.select_model, &projjj);
+
         // draw_unit_type(
         //     UnitType::Mouse,
         //     ActiveTeam::White,
