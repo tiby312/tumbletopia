@@ -13,11 +13,12 @@ use serde::Serialize;
 pub use unit::ActiveTeam;
 pub use unit::GameState;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize,Eq,PartialEq)]
 pub enum GameType {
     SinglePlayer,
     PassPlay,
     AIBattle,
+    MapEditor,
     Replay(String),
 }
 
@@ -40,12 +41,30 @@ pub mod share {
         let k = miniz_oxide::deflate::compress_to_vec(&k, 10);
         BASE64_STANDARD_NO_PAD.encode(k)
     }
+
+
+    impl unit::Map{
+
+        pub fn load(s:&str)->Result<unit::Map,LoadError>{
+            use base64::prelude::*;
+            let k = BASE64_STANDARD_NO_PAD.decode(s).map_err(|_| LoadError)?;
+            let k = miniz_oxide::inflate::decompress_to_vec(&k).map_err(|_| LoadError)?;
+            Ok(postcard::from_bytes(&k).map_err(|_| LoadError)?)
+        }
+        pub fn save(&self) -> String {
+            use base64::prelude::*;
+
+            let k = postcard::to_allocvec(self).unwrap();
+
+            let k = miniz_oxide::deflate::compress_to_vec(&k, 10);
+            BASE64_STANDARD_NO_PAD.encode(k)
+        }
+    }
 }
 
 //This is for saving/loading.
 #[derive(Deserialize, Serialize)]
 pub struct JustMoveLog {
-    pub seed: board::WorldSeed,
     pub inner: Vec<moves::ActualMove>,
 }
 
@@ -64,9 +83,8 @@ impl MoveHistory {
     pub fn new() -> Self {
         MoveHistory { inner: vec![] }
     }
-    pub fn into_just_move(self, seed: board::WorldSeed) -> JustMoveLog {
+    pub fn into_just_move(self) -> JustMoveLog {
         JustMoveLog {
-            seed,
             inner: self.inner.into_iter().map(|a| a.0).collect(),
         }
     }

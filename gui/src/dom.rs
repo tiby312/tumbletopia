@@ -341,6 +341,7 @@ pub enum GameType {
     SinglePlayer,
     PassPlay,
     AIBattle,
+    MapEditor,
     Replay(String),
 }
 
@@ -390,6 +391,10 @@ pub async fn main_entry() {
         ("v", "replay") => {
             assert_eq!(res[1].0, "data");
             GameType::Replay(res[1].1.into())
+        }
+        ("v","mapeditor")=>{
+            log!("map editor!!!");
+            GameType::MapEditor
         }
         _ => {
             unreachable!("unrecognized command");

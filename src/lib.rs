@@ -101,18 +101,20 @@ pub async fn worker_entry() {
         shader,
     };
 
-    let (seed, _) = if let dom::GameType::Replay(rr) = &game_type {
-        let Ok(j) = engine::share::load(&rr) else {
-            wr.post_message(dom::WorkerToDom::CantParseReplay);
-            return;
-        };
+    // let (seed, _) = if let dom::GameType::Replay(rr) = &game_type {
+    //     let Ok(j) = engine::share::load(&rr) else {
+    //         wr.post_message(dom::WorkerToDom::CantParseReplay);
+    //         return;
+    //     };
 
-        (j.seed.clone(), Some(j))
-    } else {
-        (board::WorldSeed::new(), None)
-    };
+    //     (j.seed.clone(), Some(j))
+    // } else {
+    //     (board::WorldSeed::new(), None)
+    // };
 
-    let world = board::MyWorld::new(seed, unit::default_map());
+    let map=unit::default_map();
+    console_dbg!("ma",map.save());
+    let world = board::MyWorld::new(map);
 
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
@@ -185,21 +187,31 @@ pub async fn worker_entry() {
         dom::GameType::PassPlay => engine::GameType::PassPlay,
         dom::GameType::AIBattle => engine::GameType::AIBattle,
         dom::GameType::Replay(o) => engine::GameType::Replay(o),
+        dom::GameType::MapEditor => engine::GameType::MapEditor
     };
 
-    let gameplay_thread = engine::main_logic::game_play_thread(doop, &world, game_type);
+    let gameplay_thread = async{
+        if game_type==engine::GameType::MapEditor{
+            engine::main_logic::map_editor(doop, &world, game_type).await;
+        }else{
+            let res=engine::main_logic::game_play_thread(doop, &world, game_type).await;
 
-    let ((result, game), ()) = futures::join!(gameplay_thread, render_thead);
-
-    let result = match result {
-        GameOver::WhiteWon => dom::GameOverGui::WhiteWon,
-        GameOver::BlackWon => dom::GameOverGui::BlackWon,
-        GameOver::Tie => dom::GameOverGui::Tie,
+        }
     };
+
+    let ((), ()) = futures::join!(gameplay_thread, render_thead);
+
+
+
+    // let result = match result {
+    //     GameOver::WhiteWon => dom::GameOverGui::WhiteWon,
+    //     GameOver::BlackWon => dom::GameOverGui::BlackWon,
+    //     GameOver::Tie => dom::GameOverGui::Tie,
+    // };
 
     wr.post_message(dom::WorkerToDom::GameFinish {
-        replay_string: engine::share::save(&game.into_just_move(world.seed)),
-        result,
+        replay_string: "".to_string(),
+        result:dom::GameOverGui::Tie,
     });
 
     log!("Worker thread closin");

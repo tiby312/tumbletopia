@@ -92,6 +92,33 @@ pub enum MouseEvent<T> {
     Undo,
 }
 
+
+
+
+pub async fn map_editor(mut doop: WorkerManager,
+    world: &board::MyWorld,
+    game_type: GameType){
+
+
+    let mut game = unit::game_init(&world);
+
+    loop{
+
+        let pos=doop.get_mouse(ActiveTeam::White, &mut game).await;
+        let pos=match pos{
+            MouseEvent::Normal(pos) => pos,
+            MouseEvent::Undo => todo!(),
+        };
+
+        game.factions.water.set_coord(pos,true);
+
+
+    }
+}
+
+
+
+
 pub async fn game_play_thread(
     mut doop: WorkerManager,
     world: &board::MyWorld,
@@ -118,7 +145,8 @@ pub async fn game_play_thread(
             GameType::SinglePlayer => team == ActiveTeam::Black,
             GameType::PassPlay => false,
             GameType::AIBattle => true,
-            GameType::Replay(_) => todo!(),
+            GameType::MapEditor =>unreachable!(),
+            GameType::Replay(_) => unreachable!(),
         };
 
         if foo {
