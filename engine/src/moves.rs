@@ -72,6 +72,10 @@ impl GameState {
                 }
             }
 
+            if self.factions.water.inner[index]{
+                continue;
+            }
+
             if potential_height == 0 {
                 continue;
             }

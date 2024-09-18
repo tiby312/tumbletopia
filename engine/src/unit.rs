@@ -421,6 +421,7 @@ pub fn game_init(_world: &board::MyWorld) -> GameState {
     cells.add_cell(Axial::from_arr([-5, 3]), 6, ActiveTeam::Neutral);
     cells.add_cell(Axial::from_arr([2, -1]), 6, ActiveTeam::Neutral);
 
+    cells.water.add(Axial::from_arr([-2,2]));
     let game = GameState { factions: cells };
 
     // let str="{\"factions\":{\"cells\":{\"cells\":[{\"inner\":[0,180143985094819840,50332928,0]},{\"inner\":[0,0,0,0]},{\"inner\":[0,0,0,0]}],\"team\":{\"inner\":[0,0,50332672,0]}}}}";
