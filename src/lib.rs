@@ -641,15 +641,17 @@ async fn render_command(
                 .iter_mesh(Axial::zero())
                 .filter_map(|a| {
                     if let Some((val, tt)) = game.factions.get_cell(a) {
-                        if val == 6 && tt == ActiveTeam::Neutral {
-                            return None;
-                        }
-                        let xx = match val {
-                            1 | 2 => 0.6,
-                            3 | 4 => 0.8,
-                            5 | 6 => 1.2,
-                            _ => unreachable!(),
+                        let xx = if val == 6 && tt == ActiveTeam::Neutral {
+                            1.3
+                        } else {
+                            match val {
+                                1 | 2 => 0.6,
+                                3 | 4 => 0.8,
+                                5 | 6 => 1.2,
+                                _ => unreachable!(),
+                            }
                         };
+
                         Some(
                             grid_snap(a, zzzz)
                                 .chain(matrix::scale(xx, xx, 1.0))
