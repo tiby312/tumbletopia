@@ -410,6 +410,17 @@ pub enum UnitType {
     Rabbit,
 }
 
+
+pub struct Map{
+    water:SmallMesh,
+    mountains:SmallMesh,
+    forests:SmallMesh,
+    start1:Axial,
+    start2:Axial
+}
+
+
+
 pub fn game_init(_world: &board::MyWorld) -> GameState {
     let mut cells = Tribe::new();
     cells.add_cell(Axial::from_arr([-1, 2]), 1, ActiveTeam::White);
