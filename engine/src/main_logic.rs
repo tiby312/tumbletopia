@@ -92,39 +92,28 @@ pub enum MouseEvent<T> {
     Undo,
 }
 
+pub async fn map_editor(mut doop: WorkerManager, world: &board::MyWorld, game_type: GameType) {
+    let map = unit::default_map();
+    let mut game = unit::game_init(&world, &map);
 
-
-
-pub async fn map_editor(mut doop: WorkerManager,
-    world: &board::MyWorld,
-    game_type: GameType){
-
-
-    let mut game = unit::game_init(&world);
-
-    loop{
-
-        let pos=doop.get_mouse(ActiveTeam::White, &mut game).await;
-        let pos=match pos{
+    loop {
+        let pos = doop.get_mouse(ActiveTeam::White, &mut game).await;
+        let pos = match pos {
             MouseEvent::Normal(pos) => pos,
             MouseEvent::Undo => todo!(),
         };
 
-        game.factions.water.set_coord(pos,true);
-
-
+        game.factions.water.set_coord(pos, true);
     }
 }
-
-
-
 
 pub async fn game_play_thread(
     mut doop: WorkerManager,
     world: &board::MyWorld,
     game_type: GameType,
 ) -> (unit::GameOver, MoveHistory) {
-    let mut game = unit::game_init(&world);
+    let map = unit::default_map();
+    let mut game = unit::game_init(&world, &map);
 
     let mut game_history = MoveHistory::new();
 
@@ -145,7 +134,7 @@ pub async fn game_play_thread(
             GameType::SinglePlayer => team == ActiveTeam::Black,
             GameType::PassPlay => false,
             GameType::AIBattle => true,
-            GameType::MapEditor =>unreachable!(),
+            GameType::MapEditor => unreachable!(),
             GameType::Replay(_) => unreachable!(),
         };
 
@@ -526,9 +515,9 @@ pub async fn replay(
     mut doop: WorkerManager,
     just_logs: JustMoveLog,
 ) -> (unit::GameOver, MoveHistory) {
-    let mut game = unit::game_init(world);
-
-    let mut game_history = MoveHistory::new();
+    let map = unit::default_map();
+    let mut game = unit::game_init(world, &map);
+ let mut game_history = MoveHistory::new();
 
     let start_team = ActiveTeam::White;
     let mut team_gen = start_team.iter();

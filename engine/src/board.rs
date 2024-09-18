@@ -4,7 +4,7 @@ use super::*;
 pub struct MyWorld {
     pub land: mesh::small_mesh::SmallMesh,
     pub radius: u8,
-    pub map: unit::Map,
+    //pub map: unit::Map,
 }
 
 pub const NUM_CELLS: usize = 128;
@@ -179,7 +179,7 @@ fn test_dis_to_hex_border() {
 }
 
 impl MyWorld {
-    pub fn new(map: unit::Map) -> MyWorld {
+    pub fn new() -> MyWorld {
         //let size = 3;
         let size = 7;
 
@@ -276,7 +276,7 @@ impl MyWorld {
         MyWorld {
             land,
             radius: size as u8,
-            map,
+            //map,
         }
     }
     // pub fn white_start(&self) -> &[Axial] {

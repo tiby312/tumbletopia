@@ -112,9 +112,11 @@ pub async fn worker_entry() {
     //     (board::WorldSeed::new(), None)
     // };
 
-    let map=unit::default_map();
-    console_dbg!("ma",map.save());
-    let world = board::MyWorld::new(map);
+    let map = unit::default_map();
+    let world = board::MyWorld::new();
+
+    console_dbg!("ma", map.save(&world).unwrap());
+
 
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
@@ -187,21 +189,18 @@ pub async fn worker_entry() {
         dom::GameType::PassPlay => engine::GameType::PassPlay,
         dom::GameType::AIBattle => engine::GameType::AIBattle,
         dom::GameType::Replay(o) => engine::GameType::Replay(o),
-        dom::GameType::MapEditor => engine::GameType::MapEditor
+        dom::GameType::MapEditor => engine::GameType::MapEditor,
     };
 
-    let gameplay_thread = async{
-        if game_type==engine::GameType::MapEditor{
+    let gameplay_thread = async {
+        if game_type == engine::GameType::MapEditor {
             engine::main_logic::map_editor(doop, &world, game_type).await;
-        }else{
-            let res=engine::main_logic::game_play_thread(doop, &world, game_type).await;
-
+        } else {
+            let res = engine::main_logic::game_play_thread(doop, &world, game_type).await;
         }
     };
 
     let ((), ()) = futures::join!(gameplay_thread, render_thead);
-
-
 
     // let result = match result {
     //     GameOver::WhiteWon => dom::GameOverGui::WhiteWon,
@@ -211,7 +210,7 @@ pub async fn worker_entry() {
 
     wr.post_message(dom::WorkerToDom::GameFinish {
         replay_string: "".to_string(),
-        result:dom::GameOverGui::Tie,
+        result: dom::GameOverGui::Tie,
     });
 
     log!("Worker thread closin");

@@ -392,7 +392,7 @@ pub async fn main_entry() {
             assert_eq!(res[1].0, "data");
             GameType::Replay(res[1].1.into())
         }
-        ("v","mapeditor")=>{
+        ("v", "mapeditor") => {
             log!("map editor!!!");
             GameType::MapEditor
         }

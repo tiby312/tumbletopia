@@ -412,11 +412,11 @@ pub enum UnitType {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Map {
-    water: SmallMesh,
-    mountains: SmallMesh,
-    forests: SmallMesh,
-    start1: Axial,
-    start2: Axial,
+    pub water: SmallMesh,
+    pub mountains: SmallMesh,
+    pub forests: SmallMesh,
+    pub start1: Axial,
+    pub start2: Axial,
 }
 
 pub fn default_map() -> Map {
@@ -459,8 +459,8 @@ pub fn default_map() -> Map {
     }
 }
 
-pub fn game_init(world: &board::MyWorld) -> GameState {
-    let map = &world.map;
+pub fn game_init(world: &board::MyWorld, map: &unit::Map) -> GameState {
+    //let map = &world.map;
 
     let mut cells = Tribe::new();
     cells.add_cell(map.start1, 1, ActiveTeam::White);
