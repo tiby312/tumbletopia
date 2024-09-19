@@ -15,10 +15,10 @@ pub use unit::GameState;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum GameType {
-    SinglePlayer,
-    PassPlay,
-    AIBattle,
-    MapEditor,
+    SinglePlayer(String),
+    PassPlay(String),
+    AIBattle(String),
+    MapEditor(String),
     Replay(String),
 }
 

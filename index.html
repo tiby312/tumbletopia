@@ -64,13 +64,40 @@
       var text=document.getElementById("textarea").value;
 
 
-      // let a = document.createElement("a");
-      // a.setAttribute("class","list");
-      // a.setAttribute("href","http://localhost:8000/game1.html?v=replay&data="+text);
-      // a.text="replay";
-      // document.getElementById("listdiv").append(a);
+
       var rp=document.getElementById("replaybutton");
       rp.setAttribute("href","http://localhost:8000/game1.html?v=replay&data="+text);
+      rp.setAttribute("class","list");
+      if (text==""){
+        rp.setAttribute("class","list disabled");
+      }
+
+
+      var rp=document.getElementById("map_b");
+      rp.setAttribute("href","http://localhost:8000/game1.html?v=mapeditor&data="+text);
+      rp.setAttribute("class","list");
+      if (text==""){
+        rp.setAttribute("class","list disabled");
+      }
+
+
+      var rp=document.getElementById("ai_b");
+      rp.setAttribute("href","http://localhost:8000/game1.html?v=aibattle&data="+text);
+      rp.setAttribute("class","list");
+      if (text==""){
+        rp.setAttribute("class","list disabled");
+      }
+
+
+      var rp=document.getElementById("pass_b");
+      rp.setAttribute("href","http://localhost:8000/game1.html?v=passplay&data="+text);
+      rp.setAttribute("class","list");
+      if (text==""){
+        rp.setAttribute("class","list disabled");
+      }
+
+      var rp=document.getElementById("single_b");
+      rp.setAttribute("href","http://localhost:8000/game1.html?v=singleplayer&data="+text);
       rp.setAttribute("class","list");
       if (text==""){
         rp.setAttribute("class","list disabled");
@@ -82,16 +109,17 @@
 
 <body>
   <div id="listdiv">
-    <text> Gridlock: A chess-like game </text>
-    <a class="list" href="http://localhost:8000/game1.html?v=singleplayer">single player</a>
-    <a class="list" href="http://localhost:8000/game1.html?v=passplay">pass play</a>
-    <a class="list" href="http://localhost:8000/game1.html?v=aibattle">AI Battle</a>
-    <a class="list" href="http://localhost:8000/game1.html?v=mapeditor">Map Editor</a>
+    <text> Paste a map code here: </text>
+
+    <form>
+      <textarea class="list" oninput="myFunction()" id="textarea" rows="6" cols="30" placeholder="Paste the replay code here"></textarea>
+      </form>
+    <a class="list disabled" id="single_b" href="">single player</a>
+    <a class="list disabled" id="pass_b" href="">pass play</a>
+    <a class="list disabled" id="ai_b" href="">AI Battle</a>
+    <a class="list disabled" id="map_b" href="">Map Editor</a>
     <a class="list disabled" id="replaybutton" href="" >replay</a>
     
-    <form>
-    <textarea class="list" oninput="myFunction()" id="textarea" rows="6" cols="30" placeholder="Paste the replay code here"></textarea>
-    </form>
     <a class="list" href="http://localhost:8000/about.md" >about</a>
     
   </div>  

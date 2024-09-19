@@ -184,11 +184,11 @@ pub async fn worker_entry() {
     };
 
     let game_type = match game_type {
-        dom::GameType::SinglePlayer => engine::GameType::SinglePlayer,
-        dom::GameType::PassPlay => engine::GameType::PassPlay,
-        dom::GameType::AIBattle => engine::GameType::AIBattle,
+        dom::GameType::SinglePlayer(s) => engine::GameType::SinglePlayer(s),
+        dom::GameType::PassPlay(s) => engine::GameType::PassPlay(s),
+        dom::GameType::AIBattle(s) => engine::GameType::AIBattle(s),
         dom::GameType::Replay(o) => engine::GameType::Replay(o),
-        dom::GameType::MapEditor => engine::GameType::MapEditor,
+        dom::GameType::MapEditor(s) => engine::GameType::MapEditor(s),
     };
 
     enum Finish {
@@ -197,12 +197,22 @@ pub async fn worker_entry() {
     }
 
     let gameplay_thread = async {
-        if game_type == engine::GameType::MapEditor {
-            let g = engine::main_logic::map_editor(doop, &world).await;
-            Finish::MapEditor(g)
-        } else {
-            let res = engine::main_logic::game_play_thread(doop, &world, game_type).await;
-            Finish::GameFinish(res)
+        match game_type.clone() {
+            engine::GameType::MapEditor(s) => {
+                //TODO handle this error better
+                let map = Map::load(&s, &world).unwrap();
+
+                let g = engine::main_logic::map_editor(doop, &world, map).await;
+                Finish::MapEditor(g)
+            }
+            engine::GameType::PassPlay(s)
+            | engine::GameType::SinglePlayer(s)
+            | engine::GameType::AIBattle(s)
+            | engine::GameType::Replay(s) => {
+                //TODO handle this error better
+                let res = engine::main_logic::game_play_thread(doop, &world, game_type).await;
+                Finish::GameFinish(res)
+            }
         }
     };
 

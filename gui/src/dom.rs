@@ -346,10 +346,10 @@ pub async fn start_game(game_type: GameType, host: &str) {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum GameType {
-    SinglePlayer,
-    PassPlay,
-    AIBattle,
-    MapEditor,
+    SinglePlayer(String),
+    PassPlay(String),
+    AIBattle(String),
+    MapEditor(String),
     Replay(String),
 }
 
@@ -383,26 +383,29 @@ pub async fn main_entry() {
     //TODO check if its PLAY AI VS LOCAL PLAY
     console_dbg!(search);
 
+    assert_eq!(res[1].0, "data");
+
     let command = match res[0] {
         ("v", "singleplayer") => {
+            //assert_eq!(res[1].0, "data");
             log!("singleplayer!!!");
-            GameType::SinglePlayer
+            GameType::SinglePlayer(res[1].1.into())
         }
         ("v", "passplay") => {
             log!("passplay!!!");
-            GameType::PassPlay
+            GameType::PassPlay(res[1].1.into())
         }
         ("v", "aibattle") => {
             log!("aibattle!!!");
-            GameType::AIBattle
+            GameType::AIBattle(res[1].1.into())
         }
         ("v", "replay") => {
-            assert_eq!(res[1].0, "data");
+            //assert_eq!(res[1].0, "data");
             GameType::Replay(res[1].1.into())
         }
         ("v", "mapeditor") => {
             log!("map editor!!!");
-            GameType::MapEditor
+            GameType::MapEditor(res[1].1.into())
         }
         _ => {
             unreachable!("unrecognized command");

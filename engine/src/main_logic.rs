@@ -93,8 +93,11 @@ pub enum MouseEvent<T> {
     Button(String),
 }
 
-pub async fn map_editor(mut doop: WorkerManager, world: &board::MyWorld) -> unit::Map {
-    let map = unit::default_map(world);
+pub async fn map_editor(
+    mut doop: WorkerManager,
+    world: &board::MyWorld,
+    map: unit::Map,
+) -> unit::Map {
     let mut game = unit::game_init(&world, &map);
 
     enum TT {
@@ -186,7 +189,19 @@ pub async fn game_play_thread(
     world: &board::MyWorld,
     game_type: GameType,
 ) -> (unit::GameOver, MoveHistory) {
-    let map = unit::default_map(world);
+    //    let map = Map::load(&s, &world).unwrap();
+
+    let s = match &game_type {
+        GameType::SinglePlayer(s) => s,
+        GameType::PassPlay(s) => s,
+        GameType::AIBattle(s) => s,
+        GameType::MapEditor(s) => s,
+        GameType::Replay(s) => s,
+    };
+
+    let map = unit::Map::load(&s, world).unwrap();
+
+    //let map = unit::default_map(world);
     let mut game = unit::game_init(&world, &map);
 
     let mut game_history = MoveHistory::new();
@@ -205,10 +220,10 @@ pub async fn game_play_thread(
 
         //Add AIIIIII.
         let foo = match game_type {
-            GameType::SinglePlayer => team == ActiveTeam::Black,
-            GameType::PassPlay => false,
-            GameType::AIBattle => true,
-            GameType::MapEditor => unreachable!(),
+            GameType::SinglePlayer(_) => team == ActiveTeam::Black,
+            GameType::PassPlay(_) => false,
+            GameType::AIBattle(_) => true,
+            GameType::MapEditor(_) => unreachable!(),
             GameType::Replay(_) => unreachable!(),
         };
 
