@@ -23,7 +23,7 @@ pub enum GameType {
 }
 
 pub mod share {
-
+    #[derive(Debug)]
     pub struct LoadError;
 
     //use std::ptr::metadata;

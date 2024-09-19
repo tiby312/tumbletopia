@@ -112,9 +112,9 @@ pub async fn worker_entry() {
     //     (board::WorldSeed::new(), None)
     // };
 
-    let map = unit::default_map();
     let world = board::MyWorld::new();
 
+    let map = unit::default_map(&world);
     console_dbg!("ma", map.save(&world).unwrap());
 
     let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
@@ -210,7 +210,6 @@ pub async fn worker_entry() {
 
     match gg {
         Finish::MapEditor(e) => {
-            
             console_dbg!("exported map", e.save(&world).unwrap());
         }
         Finish::GameFinish((e, g)) => {

@@ -94,7 +94,7 @@ pub enum MouseEvent<T> {
 }
 
 pub async fn map_editor(mut doop: WorkerManager, world: &board::MyWorld) -> unit::Map {
-    let map = unit::default_map();
+    let map = unit::default_map(world);
     let mut game = unit::game_init(&world, &map);
 
     enum TT {
@@ -186,7 +186,7 @@ pub async fn game_play_thread(
     world: &board::MyWorld,
     game_type: GameType,
 ) -> (unit::GameOver, MoveHistory) {
-    let map = unit::default_map();
+    let map = unit::default_map(world);
     let mut game = unit::game_init(&world, &map);
 
     let mut game_history = MoveHistory::new();
@@ -593,7 +593,7 @@ pub async fn replay(
     mut doop: WorkerManager,
     just_logs: JustMoveLog,
 ) -> (unit::GameOver, MoveHistory) {
-    let map = unit::default_map();
+    let map = unit::default_map(world);
     let mut game = unit::game_init(world, &map);
     let mut game_history = MoveHistory::new();
 
