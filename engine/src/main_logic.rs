@@ -218,7 +218,7 @@ pub async fn game_play_thread(
             let the_move = doop.wait_ai(team, &mut game).await;
             //console_dbg!("game:finished");
 
-            //let the_move = ace::ai::iterative_deepening(&mut game.clone(), &world, team);
+            //let the_move = ai::iterative_deepening(&mut game.clone(), &world, team);
             //assert_eq!(the_move,the_move2);
 
             //let kk = the_move;
