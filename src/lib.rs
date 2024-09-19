@@ -219,8 +219,9 @@ pub async fn worker_entry() {
     let (gg, ()) = futures::join!(gameplay_thread, render_thead);
 
     match gg {
-        Finish::MapEditor(e) => {
-            console_dbg!("exported map", e.save(&world).unwrap());
+        Finish::MapEditor(map) => {
+            wr.post_message(dom::WorkerToDom::ExportMap(map.save(&world).unwrap()));
+            //console_dbg!("exported map", e.save(&world).unwrap());
         }
         Finish::GameFinish((e, g)) => {
             wr.post_message(dom::WorkerToDom::GameFinish {

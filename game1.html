@@ -65,16 +65,19 @@
       #popup{
         z-index: 10;
         position: absolute;
-        top:90%;
-        left:90%;
+        top:50%;
+        left:50%;
         background-color: #213022; /* Green */
         border: none;
         color: white;
+        transform: translate(-50%, -50%);
         padding: 15px 32px;
         text-align: center;
         text-decoration: none;
         font-size: 16px;
         transform: translate(-50%, -50%);
+        display:grid;
+        
       }
       #gameover_popup{
         z-index: 10;
@@ -144,6 +147,14 @@
 <body style="background-color:black;">
 
   <button id="undo" hidden>Undo</button>
+
+  <div id="popup" style="display:none;">
+    <text>Here is your map export</text>
+    <a href="http://localhost:8000/index.html ">main menu</a>
+    <form>
+    <textarea class="list" id="textarea" rows="6" cols="30"></textarea>
+    </form>
+  </div>
 
   <div id="editor">
   <button id="b_land" class="editor-button"> Land</button>
