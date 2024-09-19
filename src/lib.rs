@@ -191,26 +191,41 @@ pub async fn worker_entry() {
         dom::GameType::MapEditor => engine::GameType::MapEditor,
     };
 
+    enum Finish {
+        MapEditor(Map),
+        GameFinish((GameOver, engine::MoveHistory)),
+    }
+
     let gameplay_thread = async {
         if game_type == engine::GameType::MapEditor {
-            engine::main_logic::map_editor(doop, &world, game_type).await;
+            let g = engine::main_logic::map_editor(doop, &world).await;
+            Finish::MapEditor(g)
         } else {
             let res = engine::main_logic::game_play_thread(doop, &world, game_type).await;
+            Finish::GameFinish(res)
         }
     };
 
-    let ((), ()) = futures::join!(gameplay_thread, render_thead);
+    let (gg, ()) = futures::join!(gameplay_thread, render_thead);
+
+    match gg {
+        Finish::MapEditor(e) => {
+            
+            console_dbg!("exported map", e.save(&world).unwrap());
+        }
+        Finish::GameFinish((e, g)) => {
+            wr.post_message(dom::WorkerToDom::GameFinish {
+                replay_string: "".to_string(),
+                result: dom::GameOverGui::Tie,
+            });
+        }
+    }
 
     // let result = match result {
     //     GameOver::WhiteWon => dom::GameOverGui::WhiteWon,
     //     GameOver::BlackWon => dom::GameOverGui::BlackWon,
     //     GameOver::Tie => dom::GameOverGui::Tie,
     // };
-
-    wr.post_message(dom::WorkerToDom::GameFinish {
-        replay_string: "".to_string(),
-        result: dom::GameOverGui::Tie,
-    });
 
     log!("Worker thread closin");
 }

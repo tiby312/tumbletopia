@@ -155,9 +155,8 @@ pub enum WorkerToDom {
 fn engine_handlers(
     worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
     canvas: &web_sys::HtmlCanvasElement,
-) -> [gloo::events::EventListener; 16] {
-    let mut reg_button = |worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
-                          s: &'static str| {
+) -> impl std::any::Any {
+    let reg_button = |worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>, s: &'static str| {
         let undo = shogo::utils::get_by_id_elem(s);
         worker.register_event(&undo, "click", move |_| {
             DomToWorker::Button(s.to_string()).some()
@@ -201,6 +200,7 @@ fn engine_handlers(
         reg_button(worker, "b_forest"),
         reg_button(worker, "b_start1"),
         reg_button(worker, "b_start2"),
+        reg_button(worker, "b_export"),
         {
             let w = gloo::utils::window();
 

@@ -93,7 +93,7 @@ pub enum MouseEvent<T> {
     Button(String),
 }
 
-pub async fn map_editor(mut doop: WorkerManager, world: &board::MyWorld, game_type: GameType) {
+pub async fn map_editor(mut doop: WorkerManager, world: &board::MyWorld) -> unit::Map {
     let map = unit::default_map();
     let mut game = unit::game_init(&world, &map);
 
@@ -104,7 +104,7 @@ pub async fn map_editor(mut doop: WorkerManager, world: &board::MyWorld, game_ty
         Forest,
         Start1,
         Start2,
-    };
+    }
 
     let mut tt = TT::Water;
 
@@ -121,6 +121,12 @@ pub async fn map_editor(mut doop: WorkerManager, world: &board::MyWorld, game_ty
                     "b_forest" => TT::Forest,
                     "b_start1" => TT::Start1,
                     "b_start2" => TT::Start2,
+                    "b_export" => {
+                        if let Some(m) = unit::Map::from_game_state(&game, world) {
+                            return m;
+                        }
+                        continue;
+                    }
                     _ => panic!("Not supported!"),
                 };
 

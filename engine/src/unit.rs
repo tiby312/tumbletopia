@@ -419,6 +419,49 @@ pub struct Map {
     pub start2: Axial,
 }
 
+impl Map {
+    pub fn from_game_state(game: &GameState, world: &board::MyWorld) -> Option<Map> {
+        let water = game.factions.water.clone();
+
+        let mut white = SmallMesh::new();
+        let mut black = SmallMesh::new();
+        let mut mountains = SmallMesh::new();
+        let mut forests = SmallMesh::new();
+
+        for a in world.get_game_cells().inner.iter_ones() {
+            if let Some((height, team)) = game.factions.get_cell_inner(a) {
+                match team {
+                    ActiveTeam::White => {
+                        white.inner.set(a, true);
+                    }
+                    ActiveTeam::Black => {
+                        black.inner.set(a, true);
+                    }
+                    ActiveTeam::Neutral => {
+                        if height == 6 {
+                            mountains.inner.set(a, true);
+                        } else if height == 2 {
+                            forests.inner.set(a, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        let start1 = white.iter_mesh(Axial::zero()).next()?;
+
+        let start2 = black.iter_mesh(Axial::zero()).next()?;
+
+        Some(Map {
+            water,
+            mountains,
+            forests,
+            start1,
+            start2,
+        })
+    }
+}
+
 pub fn default_map() -> Map {
     let mut mountains = SmallMesh::new();
     let mut water = SmallMesh::new();
