@@ -40,6 +40,16 @@ impl<T> EndPoints<T> {
     }
 }
 
+
+
+
+
+pub const PASS_MOVE:Axial=Axial{q:-5,r:9};
+pub const PASS_MOVE_INDEX:usize=const{
+    mesh::small_mesh::conv(PASS_MOVE)
+};
+
+
 impl GameState {
     pub fn generate_possible_moves_movement(
         &self,
@@ -48,7 +58,13 @@ impl GameState {
         team: ActiveTeam,
         allow_suicidal: bool,
     ) -> (SmallMesh, SmallMesh, SmallMesh) {
+
+
         let mut mesh = SmallMesh::new();
+        
+        
+        mesh.inner.set(PASS_MOVE_INDEX,true);
+        
         let mut captures = SmallMesh::new();
         let mut reinforcements = SmallMesh::new();
         if team == ActiveTeam::Neutral {

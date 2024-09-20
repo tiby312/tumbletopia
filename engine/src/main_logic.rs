@@ -730,7 +730,17 @@ pub async fn handle_player(
                         undo(move_log, game);
 
                         continue 'outer;
-                    } else {
+                    } else if s=="pass" {
+
+                        let mp = ActualMove {
+                            moveto: moves::PASS_MOVE_INDEX,
+                        };
+
+                        let me=mp.apply(team,game,world);
+                        return (mp,me)
+                        
+
+                    }else{
                         unreachable!();
                     }
                 }
@@ -754,7 +764,6 @@ pub async fn handle_player(
             let res =
                 reselect_loop(doop, game, world, team, &mut extra_attack, selected_unit).await;
 
-            //console_dbg!(res);
             let a = match res {
                 LoopRes::EndTurn(r) => {
                     return r;

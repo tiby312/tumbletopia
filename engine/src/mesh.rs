@@ -144,7 +144,7 @@ pub mod small_mesh {
         Axial::from_arr([(x as isize - 8) as i8, (y as isize - 8) as i8])
     }
 
-    pub fn conv(a: Axial) -> usize {
+    pub const fn conv(a: Axial) -> usize {
         let Axial { q, r } = a;
         //     let ind=x/7+y%7;
         //     // -3 -2 -1 0 1 2 3

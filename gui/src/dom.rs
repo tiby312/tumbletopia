@@ -195,6 +195,7 @@ fn engine_handlers(
             DomToWorker::TouchEnd { touches }.some()
         }),
         reg_button(worker, "undo"),
+        reg_button(worker, "pass"),
         reg_button(worker, "b_water"),
         reg_button(worker, "b_land"),
         reg_button(worker, "b_mountain"),

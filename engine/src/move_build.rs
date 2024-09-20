@@ -253,6 +253,12 @@ impl ActualMove {
 
     pub fn undo(&self, _team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;
+        
+
+        if moveto==moves::PASS_MOVE_INDEX{
+            return;
+        }
+        
         //let unit = self.original;
 
         if let Some((fooo, typ)) = effect.destroyed_unit {
@@ -330,6 +336,17 @@ impl ActualMove {
         game: &mut GameState,
         world: &board::MyWorld,
     ) -> MoveEffect {
+
+        //this is a pass
+        if self.moveto==moves::PASS_MOVE_INDEX{
+            return MoveEffect{
+                pushpull:PushInfo::None,
+                powerup:PowerupAction::None,
+                destroyed_unit:None
+            }
+        }
+
+
         //let env = &mut game.env;
         let target_cell = self.moveto;
         let e = PushInfo::None;

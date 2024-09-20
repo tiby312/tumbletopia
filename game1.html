@@ -96,19 +96,19 @@
         font-size: 16px;
       }
       #undo{
-        z-index: 10;
+        /* z-index: 10;
         position: absolute;
         top:90%;
         left:90%;
         font-size: 24px;
-        background-color: #213022; /* Green */
+        background-color: #213022; 
         border: none;
         color: white;
         padding: 15px 32px;
         text-align: center;
         text-decoration: none;
         font-size: 16px;
-        transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%); */
       }
       textarea {
         resize: none;
@@ -124,6 +124,12 @@
         display: inline-block;
         position:absolute;
         bottom:10px;
+        right:10px;
+      }
+      #game_b{
+        display: inline-block;
+        position:absolute;
+        bottom:100px;
         right:10px;
       }
       .editor-button{
@@ -146,7 +152,10 @@
 </head>
 <body style="background-color:black;">
 
-  <button id="undo" hidden>Undo</button>
+  <div id="game_b">
+    <button id="undo" class="editor-button">Undo</button>
+    <button id="pass" class="editor-button">Pass</button>  
+  </div>
 
   <div id="popup" style="display:none;">
     <text>Here is your map export</text>
