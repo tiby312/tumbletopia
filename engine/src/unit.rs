@@ -404,13 +404,6 @@ impl Tribe {
     }
 }
 
-
-
-
-
-
-
-
 #[derive(PartialOrd, Ord, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum UnitType {
     Mouse,

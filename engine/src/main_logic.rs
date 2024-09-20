@@ -730,17 +730,14 @@ pub async fn handle_player(
                         undo(move_log, game);
 
                         continue 'outer;
-                    } else if s=="pass" {
-
+                    } else if s == "pass" {
                         let mp = ActualMove {
                             moveto: moves::PASS_MOVE_INDEX,
                         };
 
-                        let me=mp.apply(team,game,world);
-                        return (mp,me)
-                        
-
-                    }else{
+                        let me = mp.apply(team, game, world);
+                        return (mp, me);
+                    } else {
                         unreachable!();
                     }
                 }
