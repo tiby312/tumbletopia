@@ -186,20 +186,21 @@ pub async fn map_editor(
 
 pub async fn game_play_thread(
     mut doop: WorkerManager,
+    map: &unit::Map,
     world: &board::MyWorld,
     game_type: GameType,
 ) -> (unit::GameOver, MoveHistory) {
     //    let map = Map::load(&s, &world).unwrap();
 
-    let s = match &game_type {
-        GameType::SinglePlayer(s) => s,
-        GameType::PassPlay(s) => s,
-        GameType::AIBattle(s) => s,
-        GameType::MapEditor(s) => s,
-        GameType::Replay(s) => s,
-    };
+    // let s = match &game_type {
+    //     GameType::SinglePlayer(s) => s,
+    //     GameType::PassPlay(s) => s,
+    //     GameType::AIBattle(s) => s,
+    //     GameType::MapEditor(s) => s,
+    //     GameType::Replay(s) => s,
+    // };
 
-    let map = unit::Map::load(&s, world).unwrap();
+    //let map = unit::Map::load(&s, world).unwrap();
 
     //let map = unit::default_map(world);
     let mut game = unit::game_init(&world, &map);

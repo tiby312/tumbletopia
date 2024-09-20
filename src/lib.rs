@@ -193,7 +193,7 @@ pub async fn worker_entry() {
 
     enum Finish {
         MapEditor(Map),
-        GameFinish((GameOver, engine::MoveHistory)),
+        GameFinish((GameOver, engine::MoveHistory, Map)),
     }
 
     let gameplay_thread = async {
@@ -209,9 +209,11 @@ pub async fn worker_entry() {
             | engine::GameType::SinglePlayer(s)
             | engine::GameType::AIBattle(s)
             | engine::GameType::Replay(s) => {
+                let map = Map::load(&s, &world).unwrap();
+
                 //TODO handle this error better
-                let res = engine::main_logic::game_play_thread(doop, &world, game_type).await;
-                Finish::GameFinish(res)
+                let res = engine::main_logic::game_play_thread(doop, &map, &world, game_type).await;
+                Finish::GameFinish((res.0, res.1, map))
             }
         }
     };
@@ -223,19 +225,19 @@ pub async fn worker_entry() {
             wr.post_message(dom::WorkerToDom::ExportMap(map.save(&world).unwrap()));
             //console_dbg!("exported map", e.save(&world).unwrap());
         }
-        Finish::GameFinish((e, g)) => {
+        Finish::GameFinish((result, g, map)) => {
+            let result = match result {
+                GameOver::WhiteWon => dom::GameOverGui::WhiteWon,
+                GameOver::BlackWon => dom::GameOverGui::BlackWon,
+                GameOver::Tie => dom::GameOverGui::Tie,
+            };
+            let replay_string = engine::unit::replay_string(&map, &g, &world).unwrap();
             wr.post_message(dom::WorkerToDom::GameFinish {
-                replay_string: "".to_string(),
-                result: dom::GameOverGui::Tie,
+                replay_string,
+                result,
             });
         }
     }
-
-    // let result = match result {
-    //     GameOver::WhiteWon => dom::GameOverGui::WhiteWon,
-    //     GameOver::BlackWon => dom::GameOverGui::BlackWon,
-    //     GameOver::Tie => dom::GameOverGui::Tie,
-    // };
 
     log!("Worker thread closin");
 }

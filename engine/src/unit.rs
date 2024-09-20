@@ -410,6 +410,25 @@ pub enum UnitType {
     Rabbit,
 }
 
+pub fn replay_string(
+    map: &Map,
+    moves: &MoveHistory,
+    world: &MyWorld,
+) -> Result<String, std::fmt::Error> {
+    use std::fmt::Write;
+    let mut s = String::new();
+
+    let map_str = map.save(world).unwrap();
+
+    write!(&mut s, "{}:", map_str)?;
+
+    for m in moves.inner.iter() {
+        write!(&mut s, "{},", m.0.moveto)?;
+    }
+
+    Ok(s)
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Map {
     pub water: SmallMesh,
