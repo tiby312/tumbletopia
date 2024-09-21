@@ -156,7 +156,7 @@ impl GameState {
             _ => return None,
         };
 
-        if a.0.moveto != moves::PASS_MOVE_INDEX || a.0.moveto != moves::PASS_MOVE_INDEX {
+        if a.0.moveto != moves::PASS_MOVE_INDEX || b.0.moveto != moves::PASS_MOVE_INDEX {
             return None;
         }
 
