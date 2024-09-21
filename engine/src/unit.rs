@@ -145,27 +145,98 @@ impl GameState {
         self.hash(&mut hasher);
         hasher.finish()
     }
-    pub fn game_is_over(&self, _world: &board::MyWorld, _team: ActiveTeam) -> Option<GameOver> {
-        //TODO update
-        // let this_team_stuck = 'foo: {
-        //     for unit in self.factions.relative(team).this_team.iter_mesh() {
-        //         let mesh = self.generate_possible_moves_movement(world, &unit, team);
-        //         if !mesh.is_empty() {
-        //             break 'foo false;
-        //         }
-        //     }
-        //     true
-        // };
+    pub fn game_is_over(
+        &self,
+        world: &board::MyWorld,
+        _team: ActiveTeam,
+        history: &MoveHistory,
+    ) -> Option<GameOver> {
+        let (a, b) = match &history.inner[..] {
+            [.., a, b] => (a, b),
+            _ => return None,
+        };
 
-        // if this_team_stuck {
-        //     match team {
-        //         ActiveTeam::White => Some(GameOver::BlackWon),
-        //         ActiveTeam::Black => Some(GameOver::WhiteWon),
-        //     }
-        // } else {
-        //     None
-        // }
-        None
+        if a.0.moveto != moves::PASS_MOVE_INDEX || a.0.moveto != moves::PASS_MOVE_INDEX {
+            return None;
+        }
+
+        let game = self;
+        let mut score = 0;
+        let mut stack_count = 0;
+        let mut territory_count = 0;
+        let mut strength = 0;
+        let mut contested = 0;
+        let mut unseen = 0;
+        for index in world.get_game_cells().inner.iter_ones() {
+            let mut num_white = 0;
+            let mut num_black = 0;
+            for (_, rest) in game.factions.iter_end_points(world, index) {
+                if let Some((_, team)) = rest {
+                    match team {
+                        ActiveTeam::White => num_white += 1,
+                        ActiveTeam::Black => num_black += 1,
+                        ActiveTeam::Neutral => {}
+                    }
+                }
+            }
+
+            if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+                let height = height as i64;
+
+                let curr_strength = match tt {
+                    ActiveTeam::White => height.max(num_white - 1),
+                    ActiveTeam::Black => -height.max(num_black - 1),
+                    ActiveTeam::Neutral => 0,
+                };
+
+                strength += curr_strength;
+
+                stack_count += 1;
+
+                match tt {
+                    ActiveTeam::White => {
+                        if num_black > height {
+                            score -= 1
+                        } else {
+                            score += 1
+                        }
+                    }
+                    ActiveTeam::Black => {
+                        if num_white > height {
+                            score += 1
+                        } else {
+                            score -= 1
+                        }
+                    }
+                    ActiveTeam::Neutral => {}
+                }
+            } else {
+                let ownership = num_white - num_black;
+
+                if ownership > 0 {
+                    score += ownership;
+                    territory_count += 1;
+                } else if ownership < 0 {
+                    score += ownership;
+                    territory_count += 1;
+                } else {
+                    //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
+                    if num_white > 0 {
+                        contested += 1
+                    } else {
+                        unseen += 1;
+                    }
+                }
+            };
+        }
+
+        Some(if score > 0 {
+            GameOver::WhiteWon
+        } else if score < 0 {
+            GameOver::BlackWon
+        } else {
+            GameOver::Tie
+        })
     }
 }
 

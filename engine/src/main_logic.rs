@@ -190,19 +190,6 @@ pub async fn game_play_thread(
     world: &board::MyWorld,
     game_type: GameType,
 ) -> (unit::GameOver, MoveHistory) {
-    //    let map = Map::load(&s, &world).unwrap();
-
-    // let s = match &game_type {
-    //     GameType::SinglePlayer(s) => s,
-    //     GameType::PassPlay(s) => s,
-    //     GameType::AIBattle(s) => s,
-    //     GameType::MapEditor(s) => s,
-    //     GameType::Replay(s) => s,
-    // };
-
-    //let map = unit::Map::load(&s, world).unwrap();
-
-    //let map = unit::default_map(world);
     let mut game = unit::game_init(&world, &map);
 
     let mut game_history = MoveHistory::new();
@@ -213,10 +200,8 @@ pub async fn game_play_thread(
     loop {
         let team = team_gen.next().unwrap();
 
-        if let Some(g) = game.game_is_over(&world, team) {
-            //console_dbg!("Game over=", g);
+        if let Some(g) = game.game_is_over(&world, team, &game_history) {
             break (g, game_history);
-            //break 'game_loop;
         }
 
         //Add AIIIIII.
@@ -229,34 +214,13 @@ pub async fn game_play_thread(
         };
 
         if foo {
-            //console_dbg!("original game dbg=", game.hash_me(), team);
-            //console_dbg!("game:Sending ai command");
             let the_move = doop.wait_ai(team, &mut game).await;
-            //console_dbg!("game:finished");
-
-            //let the_move = ai::iterative_deepening(&mut game.clone(), &world, team);
-            //assert_eq!(the_move,the_move2);
-
-            //let kk = the_move;
 
             let effect_m = animate_move(&the_move, team, &mut game, &world, &mut doop)
                 .await
                 .apply(team, &mut game, &world);
 
-            // let effect_a = kk
-            //     .into_attack(the_move.attackto)
-            //     .animate(team, &mut game, &world, &mut doop)
-            //     .await
-            //     .apply(team, &mut game, &world, &effect_m);
-
             game_history.push((the_move, effect_m));
-
-            //let mut e = ai::Evaluator::default();
-            // console_dbg!(
-            //     "Game after ai move:",
-            //     game.hash_me(),
-            //     e.absolute_evaluate(&mut game, &world, true)
-            // );
 
             continue;
         }
@@ -403,6 +367,7 @@ pub enum LoopRes<T> {
     EndTurn((moves::ActualMove, move_build::MoveEffect)),
     Deselect,
     Undo,
+    Pass,
     Select(T),
 }
 
@@ -481,6 +446,8 @@ pub async fn reselect_loop(
                 //return LoopRes::EndTurn;
                 //unreachable!();
                 return LoopRes::Undo;
+            } else if s == "pass" {
+                return LoopRes::Pass;
             } else {
                 unreachable!();
             }
@@ -637,7 +604,7 @@ pub async fn replay(
         game_history.push((the_move, effect_m));
     }
 
-    if let Some(g) = game.game_is_over(world, team_gen.next().unwrap()) {
+    if let Some(g) = game.game_is_over(world, team_gen.next().unwrap(), &game_history) {
         (g, game_history)
     } else {
         panic!("replay didnt end with game over state");
@@ -751,6 +718,7 @@ pub async fn handle_player(
             }
         };
 
+        //TODO simplify this into one loop
         //Keep showing the selected unit's options and keep handling the users selections
         //Until the unit is deselected.
         loop {
@@ -772,6 +740,14 @@ pub async fn handle_player(
 
                     undo(move_log, game);
                     continue 'outer;
+                }
+                LoopRes::Pass => {
+                    let mp = ActualMove {
+                        moveto: moves::PASS_MOVE_INDEX,
+                    };
+
+                    let me = mp.apply(team, game, world);
+                    return (mp, me);
                 }
             };
             selected_unit = a;
