@@ -3,6 +3,7 @@ use engine::main_logic::MouseEvent;
 
 use cgmath::Vector2;
 use engine::mesh;
+use engine::MoveHistory;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -39,7 +40,7 @@ pub async fn worker_entry2() {
         //console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
         //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        let the_move = engine::ai::iterative_deepening(&mut res.game, &res.world, res.team);
+        let the_move = engine::ai::iterative_deepening(&mut res.game, &res.world, res.team,&MoveHistory::new());
         //console_dbg!("worker:finished processing");
         worker.post_message(AiResponse { the_move });
     }

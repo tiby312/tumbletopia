@@ -182,6 +182,7 @@ pub fn iterative_deepening(
     game: &GameState,
     world: &board::MyWorld,
     team: ActiveTeam,
+    move_history:&MoveHistory
 ) -> moves::ActualMove {
     let mut results = Vec::new();
 
@@ -194,11 +195,19 @@ pub fn iterative_deepening(
     let mut evaluator = Evaluator::default();
 
     let mut moves = vec![];
+    let mut history=MoveHistory::new();
     //TODO stop searching if we found a game ending move.
     for depth in [1, 2, 3] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         let mut k = KillerMoves::new(num_iter + 4 + 4);
+        assert!(moves.is_empty());
+        assert!(history.inner.is_empty());
+
+        //So that we can detect consecutive passes
+        if let Some(f)=move_history.inner.last(){
+            history.push(f.clone());
+        }
 
         let mut aaaa = ai::AlphaBeta {
             prev_cache: &mut foo1,
@@ -206,6 +215,7 @@ pub fn iterative_deepening(
             evaluator: &mut evaluator,
             world,
             moves: &mut moves,
+            history:&mut history
         };
 
         let mut kk = game.clone();
@@ -296,6 +306,7 @@ struct AlphaBeta<'a> {
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
     moves: &'a mut Vec<u8>,
+    history:&'a mut MoveHistory
 }
 
 struct KillerMoves {
@@ -358,12 +369,18 @@ impl<'a> AlphaBeta<'a> {
         team: ActiveTeam,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
+
+        if let Some(g)=game.game_is_over(self.world, team, self.history){
+            return (self.evaluator.cant_move(team),tinyvec::array_vec!())
+        }
+        
         if depth == 0 {
             return (
                 self.evaluator.absolute_evaluate(game, self.world, false),
                 tinyvec::array_vec![],
             );
         }
+
 
         let (_, captures, _) = game.generate_possible_moves_movement(self.world, None, team, false);
 
@@ -420,9 +437,17 @@ impl<'a> AlphaBeta<'a> {
         team: ActiveTeam,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
+        if let Some(g)=game.game_is_over(self.world, team, self.history){
+            console_dbg!("found game over!!!!");
+            return (self.evaluator.cant_move(team),tinyvec::array_vec!())
+        }
+        
+        
         if depth == 0 {
             return self.quiesance(game, ab, team, 4);
         }
+
+
 
         let (all_moves, captures, reinfocements) =
             game.generate_possible_moves_movement(self.world, None, team, false);
@@ -438,10 +463,9 @@ impl<'a> AlphaBeta<'a> {
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
-        if moves.is_empty() {
-            return (self.evaluator.cant_move(team), tinyvec::array_vec![]);
-        }
-
+        //This is impossible since you can always pass
+        assert!(!moves.is_empty());
+        
         let move_value = |index: usize| {
             if captures.inner[index] {
                 return 4;
@@ -485,12 +509,15 @@ impl<'a> AlphaBeta<'a> {
             let cand = ActualMove {
                 moveto: self.moves.pop().unwrap() as usize,
             };
-            let effect = cand.apply(team, game, self.world);
+            let effect: move_build::MoveEffect = cand.apply(team, game, self.world);
+            self.history.push((cand,effect));
 
             let (eval, m) = self.alpha_beta(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
 
+            let (cand,effect)=self.history.inner.pop().unwrap();
+            
             cand.undo(team, &effect, game);
-
+            
             if !ab_iter.consider((cand.clone(), m), eval) {
                 if effect.destroyed_unit.is_none() {
                     self.killer_moves.consider(depth, cand.clone());
