@@ -237,19 +237,19 @@ pub async fn game_play_thread(
 
         console_dbg!("main thread iter");
         if foo {
-            let the_move = ai::iterative_deepening(&game, &world, team, &game_history);
-            // let the_move={
-            //     ai_int.send_command(&game, &world, team, &game_history);
+            //let the_move = ai::iterative_deepening(&game, &world, team, &game_history);
+            let the_move = {
+                ai_int.send_command(&game, &world, team, &game_history);
 
-            //     use futures::FutureExt;
-            //     let the_move = futures::select!(
-            //         _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
-            //         x = ai_int.wait_response().fuse() => x
-            //     );
+                use futures::FutureExt;
+                let the_move = futures::select!(
+                    _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                    x = ai_int.wait_response().fuse() => x
+                );
 
-            //     ai_int.interrupt_render_thread().await;
-            //     the_move
-            // };
+                ai_int.interrupt_render_thread().await;
+                the_move
+            };
 
             console_dbg!("gmae thread has interrupted render thread");
             //let the_move = .await;
