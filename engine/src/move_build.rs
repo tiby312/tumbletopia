@@ -222,7 +222,7 @@ impl crate::moves::ActualMove {
 //     }
 // }
 
-#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
@@ -395,14 +395,14 @@ impl ActualMove {
     }
 }
 
-#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub enum PowerupAction {
     GotPowerup,
     DiscardedPowerup,
     None,
 }
 
-#[derive(PartialOrd, Ord, Clone, Copy, Eq, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialOrd, Ord, Clone, Copy, Eq, PartialEq, Debug)]
 pub enum PushInfo {
     UpgradedLand,
     PushedLand,

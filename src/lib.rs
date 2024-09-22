@@ -42,12 +42,8 @@ pub async fn worker_entry2() {
         //console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
         //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        let the_move = engine::ai::iterative_deepening(
-            &mut res.game,
-            &res.world,
-            res.team,
-            &MoveHistory::new(),
-        );
+        let the_move =
+            engine::ai::iterative_deepening(&mut res.game, &res.world, res.team, &res.history);
         //console_dbg!("worker:finished processing");
         worker.post_message(AiResponse { the_move });
     }
@@ -58,6 +54,7 @@ struct AiCommand {
     game: GameState,
     world: board::MyWorld,
     team: ActiveTeam,
+    history: MoveHistory,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -119,6 +116,7 @@ pub async fn worker_entry() {
                 game: game.clone(),
                 world: world.clone(),
                 team,
+                history: history.clone(),
             });
         }
     }
@@ -188,7 +186,7 @@ pub async fn worker_entry() {
                 let f2 = interrupt_recv.next().map(|x| x.unwrap());
                 use futures::FutureExt;
                 futures::select! {
-                    data= f1.fuse()=>{
+                    _= f1.fuse()=>{
                         unreachable!()
                         // response_sender
                         // .send(ace::GameWrap { game, data, team })
@@ -206,53 +204,6 @@ pub async fn worker_entry() {
                     .await
                     .unwrap();
             }
-
-            // let data=
-            // .await;
-            //if let Command::
-            // let data = if let ace::Command::WaitAI = data {
-            //     console_dbg!("render:sending ai");
-            //     //send ai worker game
-            //     ai_worker.post_message(AiCommand {
-            //         game: game.clone(),
-            //         world: world.clone(),
-            //         team,
-            //     });
-            //     //select on both
-            //     use futures::FutureExt;
-
-            //     let aaa = async {
-            //         render_command(
-            //             data,
-            //             &mut game,
-            //             team,
-            //             &mut render,
-            //             &world,
-            //             &mut frame_timer,
-            //             &mut wr,
-            //         )
-            //         .await
-            //     };
-            //     let k = futures::select!(
-            //         _ = aaa.fuse()=>unreachable!(),
-            //         x = ai_response.next() => x
-            //     );
-            //     //console_dbg!("render:finished ai");
-            //     ace::Response::AiFinish(k.unwrap().the_move)
-            // } else {
-            //     render_command(
-            //         data,
-            //         &mut game,
-            //         team,
-            //         &mut render,
-            //         &world,
-            //         &mut frame_timer,
-            //         &mut wr,
-            //     )
-            //     .await
-            // };
-
-            //console_dbg!("send response!");
         }
     };
 
