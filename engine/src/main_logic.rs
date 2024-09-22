@@ -11,6 +11,7 @@ impl Default for CellSelection {
     }
 }
 
+use board::MyWorld;
 use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
@@ -63,7 +64,7 @@ impl<T> GameWrap<T> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Command {
     Animate(AnimationCommand),
     GetMouseInputSelection {
@@ -76,6 +77,7 @@ pub enum Command {
     HideUndo,
     Popup(String),
     Poke,
+    Wait,
 }
 
 #[derive(Debug)]
@@ -184,12 +186,32 @@ pub async fn map_editor(
     }
 }
 
+pub trait AiInterface {
+    fn wait_response(&mut self) -> impl std::future::Future<Output = ActualMove> + Send;
+    fn send_command(
+        &mut self,
+        game: &GameState,
+        world: &MyWorld,
+        team: ActiveTeam,
+        history: &MoveHistory,
+    );
+    //fn interrupt_render_thread(&mut self);
+    fn interrupt_render_thread(&mut self) -> impl std::future::Future<Output = ()>;
+}
+
 pub async fn game_play_thread(
     mut doop: WorkerManager,
     map: &unit::Map,
     world: &board::MyWorld,
     game_type: GameType,
+    ai_int: &mut impl AiInterface,
 ) -> (unit::GameOver, MoveHistory) {
+    console_dbg!("gameplay thread start");
+    // let (mut ai_worker, mut ai_response) =
+    //     worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;
+
+    // console_dbg!("created ai worker");
+
     let mut game = unit::game_init(&world, &map);
 
     let mut game_history = MoveHistory::new();
@@ -213,8 +235,39 @@ pub async fn game_play_thread(
             GameType::Replay(_) => unreachable!(),
         };
 
+        console_dbg!("main thread iter");
         if foo {
-            let the_move = doop.wait_ai(team, &mut game).await;
+            ai_int.send_command(&game, &world, team, &game_history);
+            // ai_worker.post_message(AiCommand {
+            //     game: game.clone(),
+            //     world: world.clone(),
+            //     team,
+            // });
+            // //select on both
+            // use futures::FutureExt;
+
+            // let aaa = async {
+            //     render_command(
+            //         data,
+            //         &mut game,
+            //         team,
+            //         &mut render,
+            //         &world,
+            //         &mut frame_timer,
+            //         &mut wr,
+            //     )
+            //     .await
+            // };
+            use futures::FutureExt;
+            let the_move = futures::select!(
+                _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                x = ai_int.wait_response().fuse() => x
+            );
+
+            ai_int.interrupt_render_thread().await;
+
+            console_dbg!("gmae thread has interrupted render thread");
+            //let the_move = .await;
 
             let effect_m = animate_move(&the_move, team, &mut game, &world, &mut doop)
                 .await
@@ -321,6 +374,15 @@ impl WorkerManager {
     //     };
     // }
 
+    pub async fn wait_forever(&mut self, team: ActiveTeam, game: &mut GameState) {
+        let data = self.send_command(team, game, Command::Wait).await;
+
+        let Response::AnimationFinish = data else {
+            unreachable!();
+        };
+        //console_db
+    }
+
     pub async fn wait_ai(&mut self, team: ActiveTeam, game: &mut GameState) -> ActualMove {
         let data = self.send_command(team, game, Command::WaitAI).await;
 
@@ -338,10 +400,10 @@ impl WorkerManager {
         game1: &mut GameState,
         co: Command,
     ) -> Response {
-        let game2 = std::mem::take(game1);
+        //let game2 = std::mem::take(game1);
         self.sender
             .send(GameWrap {
-                game: game2,
+                game: game1.clone(),
                 data: co,
                 team,
             })
@@ -350,7 +412,7 @@ impl WorkerManager {
 
         let GameWrap { mut game, data, .. } = self.receiver.next().await.unwrap();
 
-        std::mem::swap(&mut game, game1);
+        //std::mem::swap(&mut game, game1);
 
         data
     }

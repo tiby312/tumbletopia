@@ -1,9 +1,11 @@
 use engine::main_logic as ace;
+use engine::main_logic::GameWrap;
 use engine::main_logic::MouseEvent;
 
 use cgmath::Vector2;
 use engine::mesh;
 use engine::MoveHistory;
+use futures::channel::mpsc::UnboundedReceiver;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -40,7 +42,12 @@ pub async fn worker_entry2() {
         //console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
         //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        let the_move = engine::ai::iterative_deepening(&mut res.game, &res.world, res.team,&MoveHistory::new());
+        let the_move = engine::ai::iterative_deepening(
+            &mut res.game,
+            &res.world,
+            res.team,
+            &MoveHistory::new(),
+        );
         //console_dbg!("worker:finished processing");
         worker.post_message(AiResponse { the_move });
     }
@@ -79,9 +86,47 @@ pub async fn worker_entry() {
     let scroll_manager = gui::scroll::TouchController::new([0., 0.].into());
     use cgmath::SquareMatrix;
 
-    let (mut ai_worker, mut ai_response) =
+    let (ai_worker, ai_response) =
         worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;
     console_dbg!("created ai worker");
+
+    let (interrupt_sender, mut interrupt_recv) = futures::channel::mpsc::channel(5);
+
+    struct Doop {
+        ai_worker: WorkerInterface<AiCommand, AiResponse>,
+        ai_response: UnboundedReceiver<AiResponse>,
+        interrupt_sender: futures::channel::mpsc::Sender<ace::Response>,
+    }
+    impl engine::main_logic::AiInterface for Doop {
+        fn interrupt_render_thread(&mut self) -> impl std::future::Future<Output = ()> {
+            use futures::FutureExt;
+            self.interrupt_sender
+                .send(ace::Response::AnimationFinish)
+                .map(|_| ())
+        }
+        fn wait_response(&mut self) -> impl std::future::Future<Output = ActualMove> + Send {
+            use futures::FutureExt;
+            self.ai_response.next().map(|x| x.unwrap().the_move)
+        }
+        fn send_command(
+            &mut self,
+            game: &GameState,
+            world: &board::MyWorld,
+            team: ActiveTeam,
+            history: &MoveHistory,
+        ) {
+            self.ai_worker.post_message(AiCommand {
+                game: game.clone(),
+                world: world.clone(),
+                team,
+            });
+        }
+    }
+    let mut ai_int = Doop {
+        ai_worker,
+        ai_response,
+        interrupt_sender,
+    };
 
     let last_matrix = cgmath::Matrix4::identity();
     let ctx = &utils::get_context_webgl2_offscreen(&wr.canvas());
@@ -118,7 +163,8 @@ pub async fn worker_entry() {
     let map = unit::default_map(&world);
     console_dbg!("ma", map.save(&world).unwrap());
 
-    let (command_sender, mut command_recv) = futures::channel::mpsc::channel(5);
+    let (command_sender, mut command_recv) =
+        futures::channel::mpsc::channel::<GameWrap<engine::main_logic::Command>>(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
     let render_thead = async {
@@ -128,53 +174,84 @@ pub async fn worker_entry() {
             team,
         }) = command_recv.next().await
         {
-            //if let Command::
-            let data = if let ace::Command::WaitAI = data {
-                console_dbg!("render:sending ai");
-                //send ai worker game
-                ai_worker.post_message(AiCommand {
-                    game: game.clone(),
-                    world: world.clone(),
-                    team,
-                });
-                //select on both
+            let f1 = render_command(
+                data.clone(),
+                &mut game,
+                team,
+                &mut render,
+                &world,
+                &mut frame_timer,
+                &mut wr,
+            );
+
+            if let engine::main_logic::Command::Wait = &data {
+                let f2 = interrupt_recv.next().map(|x| x.unwrap());
                 use futures::FutureExt;
-
-                let aaa = async {
-                    render_command(
-                        data,
-                        &mut game,
-                        team,
-                        &mut render,
-                        &world,
-                        &mut frame_timer,
-                        &mut wr,
-                    )
-                    .await
+                futures::select! {
+                    data= f1.fuse()=>{
+                        unreachable!()
+                        // response_sender
+                        // .send(ace::GameWrap { game, data, team })
+                        // .await
+                        // .unwrap();
+                    },
+                    _=f2.fuse()=>{
+                        //console_dbg!("render thread was interrupted!");
+                    }
                 };
-                let k = futures::select!(
-                    _ = aaa.fuse()=>unreachable!(),
-                    x = ai_response.next() => x
-                );
-                //console_dbg!("render:finished ai");
-                ace::Response::AiFinish(k.unwrap().the_move)
             } else {
-                render_command(
-                    data,
-                    &mut game,
-                    team,
-                    &mut render,
-                    &world,
-                    &mut frame_timer,
-                    &mut wr,
-                )
-                .await
-            };
+                let data = f1.await;
+                response_sender
+                    .send(ace::GameWrap { game, data, team })
+                    .await
+                    .unwrap();
+            }
 
-            response_sender
-                .send(ace::GameWrap { game, data, team })
-                .await
-                .unwrap();
+            // let data=
+            // .await;
+            //if let Command::
+            // let data = if let ace::Command::WaitAI = data {
+            //     console_dbg!("render:sending ai");
+            //     //send ai worker game
+            //     ai_worker.post_message(AiCommand {
+            //         game: game.clone(),
+            //         world: world.clone(),
+            //         team,
+            //     });
+            //     //select on both
+            //     use futures::FutureExt;
+
+            //     let aaa = async {
+            //         render_command(
+            //             data,
+            //             &mut game,
+            //             team,
+            //             &mut render,
+            //             &world,
+            //             &mut frame_timer,
+            //             &mut wr,
+            //         )
+            //         .await
+            //     };
+            //     let k = futures::select!(
+            //         _ = aaa.fuse()=>unreachable!(),
+            //         x = ai_response.next() => x
+            //     );
+            //     //console_dbg!("render:finished ai");
+            //     ace::Response::AiFinish(k.unwrap().the_move)
+            // } else {
+            //     render_command(
+            //         data,
+            //         &mut game,
+            //         team,
+            //         &mut render,
+            //         &world,
+            //         &mut frame_timer,
+            //         &mut wr,
+            //     )
+            //     .await
+            // };
+
             //console_dbg!("send response!");
         }
     };
@@ -213,12 +290,20 @@ pub async fn worker_entry() {
                 let map = Map::load(&s, &world).unwrap();
 
                 //TODO handle this error better
-                let res = engine::main_logic::game_play_thread(doop, &map, &world, game_type).await;
+                let res = engine::main_logic::game_play_thread(
+                    doop,
+                    &map,
+                    &world,
+                    game_type,
+                    &mut ai_int,
+                )
+                .await;
                 Finish::GameFinish((res.0, res.1, map))
             }
         }
     };
 
+    console_dbg!("about to join");
     let (gg, ()) = futures::join!(gameplay_thread, render_thead);
 
     match gg {
@@ -247,6 +332,7 @@ use gui::model_parse::*;
 use gui::*;
 use web_sys::OffscreenCanvas;
 use web_sys::WebGl2RenderingContext;
+use worker::WorkerInterface;
 pub struct EngineStuff {
     grid_matrix: hex::HexConverter,
     models: Models<Foo<TextureGpu, ModelGpu>>,
@@ -367,6 +453,7 @@ async fn render_command(
         }
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
         ace::Command::WaitAI => {}
+        ace::Command::Wait => {}
         ace::Command::Popup(_str) => {
             todo!();
             // if str.is_empty() {
