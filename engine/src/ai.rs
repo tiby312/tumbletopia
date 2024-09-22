@@ -196,18 +196,20 @@ pub fn iterative_deepening(
 
     let mut moves = vec![];
     let mut history = MoveHistory::new();
+
+    //So that we can detect consecutive passes
+    if let Some(f) = move_history.inner.last() {
+        history.push(f.clone());
+    }
+
     //TODO stop searching if we found a game ending move.
     for depth in [1, 2, 3] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         let mut k = KillerMoves::new(num_iter + 4 + 4);
         assert!(moves.is_empty());
-        assert!(history.inner.is_empty());
-
-        //So that we can detect consecutive passes
-        if let Some(f) = move_history.inner.last() {
-            history.push(f.clone());
-        }
+        //assert!(history.inner.is_empty());
+        let mut history = history.clone();
 
         let mut aaaa = ai::AlphaBeta {
             prev_cache: &mut foo1,
