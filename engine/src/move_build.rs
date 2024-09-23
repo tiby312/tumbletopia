@@ -243,6 +243,34 @@ impl MoveEffect {
 //     pub moveto: Axial,
 // }
 impl ActualMove {
+    pub fn as_text(&self, mut w: impl std::fmt::Write) -> Result<(), std::fmt::Error> {
+        let k = mesh::small_mesh::inverse(self.moveto).to_cube();
+
+        let s = k.s;
+        let r = k.r;
+
+        let first = match r {
+            -7 => 'A',
+            -6 => 'B',
+            -5 => 'C',
+            -4 => 'D',
+            -3 => 'E',
+            -2 => 'F',
+            -1 => 'G',
+            0 => 'H',
+            1 => 'I',
+            2 => 'J',
+            3 => 'K',
+            4 => 'L',
+            5 => 'M',
+            6 => 'N',
+            7 => 'O',
+            _ => '?',
+        };
+
+        write!(w, "{}{}", first, (-s + 7) + 1)
+    }
+
     // pub fn into_attack(self, target: Axial) -> ExtraPhase {
     //     ExtraPhase {
     //         original: self.original,

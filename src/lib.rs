@@ -531,7 +531,15 @@ async fn render_command(
                 //return ace::Response::Mouse(MouseEvent::Undo);
             } else if on_select {
                 let mouse: Axial = grid_matrix.center_world_to_hex(mouse_world.into());
-                log!(format!("pos:{:?}", mouse));
+                log!(format!("pos:{:?}", mouse.to_cube()));
+
+                let mut s = String::new();
+                let j = ActualMove {
+                    moveto: mesh::small_mesh::conv(mouse),
+                }
+                .as_text(&mut s);
+
+                log!(format!("game pos:{}", s));
 
                 let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
                     ace::Response::MouseWithSelection(selection, MouseEvent::Normal(mouse))
