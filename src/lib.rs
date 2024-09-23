@@ -542,7 +542,11 @@ async fn render_command(
 
                 let ff = ActualMove::from_str(&s).unwrap();
 
-                log!(format!("game pos:{}  original hopefuly:{:?}", s, mesh::small_mesh::inverse(ff.moveto)));
+                log!(format!(
+                    "game pos:{}  original hopefuly:{:?}",
+                    s,
+                    mesh::small_mesh::inverse(ff.moveto)
+                ));
 
                 let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
                     ace::Response::MouseWithSelection(selection, MouseEvent::Normal(mouse))

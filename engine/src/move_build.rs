@@ -242,17 +242,22 @@ impl MoveEffect {
 //     //pub original: Axial,
 //     pub moveto: Axial,
 // }
+
+#[test]
+fn test_move() {
+    let k = mesh::small_mesh::inverse(ActualMove::from_str("A1").unwrap().moveto);
+    assert_eq!(k, Axial { q: 0, r: -7 });
+
+    let k = mesh::small_mesh::inverse(ActualMove::from_str("H15").unwrap().moveto);
+    assert_eq!(k, Axial { q: 7, r: 0 });
+}
 impl ActualMove {
     pub fn from_str(foo: &str) -> Option<ActualMove> {
-
-    
-
-        let mut char_iter=foo.chars();
+        let mut char_iter = foo.chars();
 
         let Some(letter) = char_iter.next() else {
             return None;
         };
-
 
         let r = match letter {
             'A' => -7,
@@ -273,30 +278,33 @@ impl ActualMove {
             _ => return None,
         };
 
-        let Some(first_digit)=char_iter.next() else{
+        let Some(first_digit) = char_iter.next() else {
             return None;
         };
 
-        let s=if let Some(second_digit)=char_iter.next(){
-            let mut s=String::new();
+        let s = if let Some(second_digit) = char_iter.next() {
+            let mut s = String::new();
             s.push(first_digit);
             s.push(second_digit);
-            let Ok(foo)=u8::from_str_radix(&s,10) else{
+            let Ok(foo) = u8::from_str_radix(&s, 10) else {
                 return None;
             };
             foo
-        }else{
-            let Ok(foo)=u8::from_str_radix(&first_digit.to_string(),10) else{
+        } else {
+            let Ok(foo) = u8::from_str_radix(&first_digit.to_string(), 10) else {
                 return None;
             };
             foo
         };
 
+        dbg!(s);
 
-        let s = -(s as i8) - 1 - 7;
+        let s = -(s as i8 - 1 - 7);
+
+        dbg!(s);
 
         //q+r+s=0
-        let q=-r-s;
+        let q = -r - s;
 
         Some(ActualMove {
             moveto: mesh::small_mesh::conv(Axial { q, r }),
