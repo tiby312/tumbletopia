@@ -243,6 +243,65 @@ impl MoveEffect {
 //     pub moveto: Axial,
 // }
 impl ActualMove {
+    pub fn from_str(foo: &str) -> Option<ActualMove> {
+
+    
+
+        let mut char_iter=foo.chars();
+
+        let Some(letter) = char_iter.next() else {
+            return None;
+        };
+
+
+        let r = match letter {
+            'A' => -7,
+            'B' => -6,
+            'C' => -5,
+            'D' => -4,
+            'E' => -3,
+            'F' => -2,
+            'G' => -1,
+            'H' => 0,
+            'I' => 1,
+            'J' => 2,
+            'K' => 3,
+            'L' => 4,
+            'M' => 5,
+            'N' => 6,
+            'O' => 7,
+            _ => return None,
+        };
+
+        let Some(first_digit)=char_iter.next() else{
+            return None;
+        };
+
+        let s=if let Some(second_digit)=char_iter.next(){
+            let mut s=String::new();
+            s.push(first_digit);
+            s.push(second_digit);
+            let Ok(foo)=u8::from_str_radix(&s,10) else{
+                return None;
+            };
+            foo
+        }else{
+            let Ok(foo)=u8::from_str_radix(&first_digit.to_string(),10) else{
+                return None;
+            };
+            foo
+        };
+
+
+        let s = -(s as i8) - 1 - 7;
+
+        //q+r+s=0
+        let q=-r-s;
+
+        Some(ActualMove {
+            moveto: mesh::small_mesh::conv(Axial { q, r }),
+        })
+    }
     pub fn as_text(&self, mut w: impl std::fmt::Write) -> Result<(), std::fmt::Error> {
         let k = mesh::small_mesh::inverse(self.moveto).to_cube();
 

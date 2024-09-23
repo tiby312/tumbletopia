@@ -534,12 +534,15 @@ async fn render_command(
                 log!(format!("pos:{:?}", mouse.to_cube()));
 
                 let mut s = String::new();
-                let j = ActualMove {
+                ActualMove {
                     moveto: mesh::small_mesh::conv(mouse),
                 }
-                .as_text(&mut s);
+                .as_text(&mut s)
+                .unwrap();
 
-                log!(format!("game pos:{}", s));
+                let ff = ActualMove::from_str(&s).unwrap();
+
+                log!(format!("game pos:{}  original hopefuly:{:?}", s, mesh::small_mesh::inverse(ff.moveto)));
 
                 let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
                     ace::Response::MouseWithSelection(selection, MouseEvent::Normal(mouse))
