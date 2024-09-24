@@ -494,7 +494,9 @@ pub fn replay_string(
     write!(&mut s, "{}:", map_str)?;
 
     for m in moves.inner.iter() {
-        write!(&mut s, "{},", m.0.moveto)?;
+        let mut kk = String::new();
+        m.0.as_text(&mut kk).unwrap();
+        write!(&mut s, "{},", kk)?;
     }
 
     Ok(s)

@@ -1,3 +1,5 @@
+use moves::PASS_MOVE_INDEX;
+
 use super::*;
 
 impl crate::moves::ActualMove {
@@ -253,6 +255,12 @@ fn test_move() {
 }
 impl ActualMove {
     pub fn from_str(foo: &str) -> Option<ActualMove> {
+        if "pp" == foo {
+            return Some(ActualMove {
+                moveto: PASS_MOVE_INDEX,
+            });
+        }
+
         let mut char_iter = foo.chars();
 
         let Some(letter) = char_iter.next() else {
@@ -297,9 +305,7 @@ impl ActualMove {
             foo
         };
 
-
         let s = -(s as i8 - 1 - 7);
-
 
         //q+r+s=0
         let q = -r - s;
@@ -309,6 +315,10 @@ impl ActualMove {
         })
     }
     pub fn as_text(&self, mut w: impl std::fmt::Write) -> Result<(), std::fmt::Error> {
+        if self.moveto == PASS_MOVE_INDEX {
+            return write!(w, "pp");
+        }
+
         let k = mesh::small_mesh::inverse(self.moveto).to_cube();
 
         let s = k.s;
