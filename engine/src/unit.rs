@@ -483,12 +483,30 @@ pub enum UnitType {
 
 
 
+//need 8 layers of map
+//each map needs 
+
 
 pub fn replay_string(
     map: &Map,
     moves: &MoveHistory,
     world: &MyWorld,
 ) -> Result<String, std::fmt::Error> {
+
+    // #[derive(Serialize,Deserialize)]
+    // struct All{
+    //     map:Map,
+    //     moves:MoveHistory
+    // };
+
+    // use base64::prelude::*;
+
+    // let k = postcard::to_allocvec(&All{map:map.clone(),moves:moves.clone()}).unwrap();
+
+    // let k = miniz_oxide::deflate::compress_to_vec(&k, 10);
+    // Ok(BASE64_STANDARD_NO_PAD.encode(k))
+
+
     use std::fmt::Write;
     let mut s = String::new();
 
