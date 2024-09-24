@@ -297,11 +297,9 @@ impl ActualMove {
             foo
         };
 
-        dbg!(s);
 
         let s = -(s as i8 - 1 - 7);
 
-        dbg!(s);
 
         //q+r+s=0
         let q = -r - s;
