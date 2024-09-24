@@ -481,6 +481,9 @@ pub enum UnitType {
     Rabbit,
 }
 
+
+
+
 pub fn replay_string(
     map: &Map,
     moves: &MoveHistory,
@@ -491,7 +494,7 @@ pub fn replay_string(
 
     let map_str = map.save(world).unwrap();
 
-    write!(&mut s, "{}:", map_str)?;
+    write!(&mut s, "{}", map_str)?;
 
     for m in moves.inner.iter() {
         let mut kk = String::new();
@@ -553,6 +556,10 @@ impl Map {
         })
     }
 }
+
+
+
+pub const sample_replay:&'static str=":-----wwm--w---wwm-ww--m-www------w------m----m-----w2m--ww--m-w-w----------ww--w----f-----ww--wwm---m-m-w---ww--m---m1------w---m-----mmw------m--www-m-mm----w----------:D3,J14,L11,G11,J11,L12,J5,M12,L8,J10,J10,pp,pp,:";
 
 pub fn default_map(world: &board::MyWorld) -> Map {
     Map::load("----------w-------ww--m----------w------m----m------2m--ww--m-w------------ww-------f-----ww--wwm---m-m-w---ww--m---m1------w---m-----mmw------m--www-m-mm----w----------",world).unwrap()

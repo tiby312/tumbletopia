@@ -98,6 +98,7 @@ pub mod share {
             use std::fmt::Write;
             let mut s = String::new();
 
+            write!(&mut s,"m=[")?;
             for a in world.get_game_cells().inner.iter_ones() {
                 if self.water.inner[a] {
                     write!(&mut s, "w")?;
@@ -113,6 +114,7 @@ pub mod share {
                     write!(&mut s, "-")?;
                 }
             }
+            write!(&mut s,"]")?;
             Ok(s)
 
             // use base64::prelude::*;
