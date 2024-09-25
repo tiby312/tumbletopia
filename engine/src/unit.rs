@@ -532,6 +532,85 @@ pub struct Map {
     pub start2: Axial,
 }
 
+impl unit::Map {
+    pub fn load(s: &str, world: &MyWorld) -> Result<unit::Map, ()> {
+        // use base64::prelude::*;
+        // let k = BASE64_STANDARD_NO_PAD.decode(s).map_err(|_| LoadError)?;
+        // let k = miniz_oxide::inflate::decompress_to_vec(&k).map_err(|_| LoadError)?;
+        // Ok(postcard::from_bytes(&k).map_err(|_| LoadError)?)
+
+        let mut water = SmallMesh::new();
+        let mut forests = SmallMesh::new();
+        let mut mountains = SmallMesh::new();
+        let mut start1 = None;
+        let mut start2 = None;
+
+        let mut s = s.chars();
+
+        for a in world.get_game_cells().inner.iter_ones() {
+            let Some(c) = s.next() else {
+                return Err(());
+            };
+
+            match c {
+                'w' => water.inner.set(a, true),
+                'f' => forests.inner.set(a, true),
+                'm' => mountains.inner.set(a, true),
+                '1' => start1 = Some(mesh::small_mesh::inverse(a)),
+                '2' => start2 = Some(mesh::small_mesh::inverse(a)),
+                '-' => continue,
+                _ => return Err(()),
+            }
+        }
+
+        let Some(start1) = start1 else {
+            return Err(());
+        };
+
+        let Some(start2) = start2 else {
+            return Err(());
+        };
+
+        Ok(unit::Map {
+            water,
+            mountains,
+            forests,
+            start1,
+            start2,
+        })
+    }
+    pub fn save(&self, world: &MyWorld) -> Result<String, std::fmt::Error> {
+        use std::fmt::Write;
+        let mut s = String::new();
+
+        write!(&mut s,"m{}=[",world.radius)?;
+        for a in world.get_game_cells().inner.iter_ones() {
+            if self.water.inner[a] {
+                write!(&mut s, "w")?;
+            } else if self.forests.inner[a] {
+                write!(&mut s, "f")?;
+            } else if self.mountains.inner[a] {
+                write!(&mut s, "m")?;
+            } else if mesh::small_mesh::conv(self.start1) == a {
+                write!(&mut s, "1")?;
+            } else if mesh::small_mesh::conv(self.start2) == a {
+                write!(&mut s, "2")?;
+            } else {
+                write!(&mut s, "-")?;
+            }
+        }
+        write!(&mut s,"]")?;
+        Ok(s)
+
+        // use base64::prelude::*;
+
+        // let k = postcard::to_allocvec(self).unwrap();
+
+        // let k = miniz_oxide::deflate::compress_to_vec(&k, 10);
+        // BASE64_STANDARD_NO_PAD.encode(k)
+    }
+}
+
 impl Map {
     pub fn from_game_state(game: &GameState, world: &board::MyWorld) -> Option<Map> {
         let water = game.factions.water.clone();
