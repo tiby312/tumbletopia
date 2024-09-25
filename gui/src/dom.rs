@@ -383,33 +383,59 @@ pub enum GameType {
 }
 
 pub async fn main_entry() {
-    let (sender, mut receiver) = futures::channel::mpsc::unbounded();
+    let (mut sender, mut receiver) = futures::channel::mpsc::unbounded();
 
-    let start = gloo::utils::document()
-        .get_element_by_id("single_b")
-        .unwrap();
-    // Attach an event listener
-    let listener = gloo::events::EventListener::new(&start, "click", move |_event| {
-        sender.unbounded_send("start").unwrap_throw();
+    fn doop<'b>(
+        sender: &'static futures::channel::mpsc::UnboundedSender<&'static str>,
+        s: &'static str,
+    ) -> impl Drop + 'static {
+        let undo = shogo::utils::get_by_id_elem(s);
+
+        gloo::events::EventListener::new(&undo, "click", move |_event| {
+            sender.unbounded_send(s).unwrap_throw();
+        })
+    }
+
+    let _listeners = ["single_b", "pass_b", "ai_b"].map(|s| {
+        let se = sender.clone();
+        //let s="single_b";
+        let undo = shogo::utils::get_by_id_elem(s);
+        gloo::events::EventListener::new(&undo, "click", move |_event| {
+            se.unbounded_send(s).unwrap_throw();
+        })
     });
 
-    let text = loop {
+    // let reg_button = |sender: &futures::channel::mpsc::UnboundedSender<&'static str>, s: &'static str| {
+    //     let undo = shogo::utils::get_by_id_elem(s);
+
+    //     gloo::events::EventListener::new(&undo, "click",  |_event| {
+    //         sender.unbounded_send(s).unwrap_throw();
+    //     })
+    // };
+
+    // let _a=doop(&mut sender,"single_b");
+    // let _a=doop(&mut sender,"pass_b");
+    // let _a=doop(&mut sender,"ai_b");
+
+    let command = loop {
         let Some(r) = receiver.next().await else {
             unreachable!()
         };
-        if r == "start" {
-            let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
-                .get_element_by_id("textarea_m")
-                .unwrap()
-                .dyn_into()
-                .unwrap();
-            break t.value();
+        let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
+            .get_element_by_id("textarea_m")
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+
+        match r {
+            "single_b" => break GameType::SinglePlayer(t.value().into()),
+            "pass_b" => break GameType::PassPlay(t.value().into()),
+            "ai_b" => break GameType::AIBattle(t.value().into()),
+            _ => {
+                todo!()
+            }
         }
     };
-
-    console_dbg!("GOT TEXT", text);
-
-    let command = GameType::SinglePlayer(text.into());
 
     // let search = gloo::utils::window().location().search().unwrap();
 
