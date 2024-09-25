@@ -100,7 +100,7 @@ pub async fn map_editor(
     world: &board::MyWorld,
     map: unit::Map,
 ) -> unit::Map {
-    let mut game = unit::game_init(&world, &map);
+    let (mut game,_starting_team) = GameState::new(&world, &map);
 
     enum TT {
         Water,
@@ -212,11 +212,11 @@ pub async fn game_play_thread(
 
     // console_dbg!("created ai worker");
 
-    let mut game = unit::game_init(&world, &map);
+    let (mut game,start_team) = GameState::new(&world, &map);
 
     let mut game_history = MoveHistory::new();
 
-    let mut team_gen = ActiveTeam::Black.iter();
+    let mut team_gen = start_team.iter();
 
     //Loop over each team!
     loop {
@@ -624,13 +624,12 @@ pub async fn replay(
     just_logs: JustMoveLog,
 ) -> (unit::GameOver, MoveHistory) {
     let map = unit::default_map(world);
-    let mut game = unit::game_init(world, &map);
+    let (mut game,starting_team) = GameState::new(world, &map);
     let mut game_history = MoveHistory::new();
 
-    let start_team = ActiveTeam::White;
-    let mut team_gen = start_team.iter();
+    let mut team_gen = starting_team.iter();
 
-    doop.send_command(start_team, &mut game, Command::HideUndo)
+    doop.send_command(starting_team, &mut game, Command::HideUndo)
         .await;
 
     for the_move in just_logs.inner {

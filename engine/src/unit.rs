@@ -484,30 +484,46 @@ pub enum UnitType {
 //need 8 layers of map
 //each map needs
 
+
+
+
+pub fn parse_replay_string(s:&str,world:&MyWorld)->Option<(Map,MoveHistory)>{
+    let mut s=s.split(":");
+
+    let map=s.next()?;
+
+    let Ok(map)=Map::load(&map,world) else{
+        return None
+    };
+
+    let moves=s.next()?;
+
+
+    let (mut g,start_team)=GameState::new(world, &map);
+    let mut mh=MoveHistory::new();
+    for (f,team) in moves.split(',').zip(start_team.iter()){
+        let m=ActualMove::from_str(f)?;
+        let effect=m.apply(team,&mut g,world);
+        mh.inner.push((m,effect));
+    }
+
+    Some((map,mh))
+
+}
+
+
 pub fn replay_string(
     map: &Map,
     moves: &MoveHistory,
     world: &MyWorld,
 ) -> Result<String, std::fmt::Error> {
-    // #[derive(Serialize,Deserialize)]
-    // struct All{
-    //     map:Map,
-    //     moves:MoveHistory
-    // };
-
-    // use base64::prelude::*;
-
-    // let k = postcard::to_allocvec(&All{map:map.clone(),moves:moves.clone()}).unwrap();
-
-    // let k = miniz_oxide::deflate::compress_to_vec(&k, 10);
-    // Ok(BASE64_STANDARD_NO_PAD.encode(k))
 
     use std::fmt::Write;
     let mut s = String::new();
 
     let map_str = map.save(world).unwrap();
 
-    write!(&mut s, "{}", map_str)?;
+    write!(&mut s, "{}:", map_str)?;
 
     for m in moves.inner.iter() {
         let mut kk = String::new();
@@ -680,7 +696,11 @@ pub fn default_map(world: &board::MyWorld) -> Map {
     // }
 }
 
-pub fn game_init(world: &board::MyWorld, map: &unit::Map) -> GameState {
+
+
+impl GameState{
+//TODO make part of GameState
+pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameState,ActiveTeam) {
     //let map = &world.map;
 
     let mut cells = Tribe::new();
@@ -707,5 +727,6 @@ pub fn game_init(world: &board::MyWorld, map: &unit::Map) -> GameState {
 
     let game = GameState { factions: cells };
 
-    game
+    (game,ActiveTeam::White)
+}
 }
