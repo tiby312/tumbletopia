@@ -25,6 +25,7 @@
       body {
         /*position: absolute;*/
       }
+      /*
       a {
         color:white;
         text-decoration: none;
@@ -33,6 +34,7 @@
         margin:10px;
         border-radius: 5px;
       }
+        */
       button{
         color:white;
         text-decoration: none;
@@ -134,17 +136,16 @@
         z-index: 10;
         left:50%;
         transform: translate(-50%, -50%);
-        
         max-width:400px;
-      border-radius: 5px;
-      color:white;
-      text-align: center;
-      font-size: 150%;
-      list-style-type:none;
-      margin:auto;
-      margin-bottom:10px;
-      text-align: center;
-      display:grid;
+        border-radius: 5px;
+        color:white;
+        text-align: center;
+        font-size: 150%;
+        list-style-type:none;
+        margin:auto;
+        margin-bottom:10px;
+        text-align: center;
+        display:block;
       }
       #game_b{
         display: inline-block;
@@ -161,6 +162,18 @@
         text-align: center;
         text-decoration: none;
         font-size: 16px;
+      }
+      .main-menu-button{
+        background-color: #213022; /* Green */
+        /*position:relative;*/
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        width:100%;
+        border:none;
+        margin:2px;
       }
     </style>
   <script type=module>
@@ -181,7 +194,7 @@
     <text>Here is your map export</text>
     <a href="http://localhost:8000/index.html ">main menu</a>
     <form>
-    <textarea class="list" id="textarea" rows="6" cols="30"></textarea>
+    <textarea class="" id="textarea" rows="6" cols="30"></textarea>
     </form>
   </div>
 
@@ -199,15 +212,15 @@
     <text> Paste a map code here: </text>
 
     <form>
-      <textarea class="list" id="textarea_m" rows="6" cols="30" placeholder="Paste the replay code here"></textarea>
+      <textarea class="" id="textarea_m" rows="6" cols="30" placeholder="Paste the replay code here"></textarea>
       </form>
-    <button class="list,editor-button" id="single_b" href="">single player</a>
-    <button class="list,editor-button" id="pass_b" href="">pass play</a>
-    <button class="list,editor-button" id="ai_b" href="">AI Battle</a>
-    <a class="list disabled" id="map_b" href="">Map Editor</a>
-    <a class="list disabled" id="replaybutton" href="" >replay</a>
+    <div><button class="main-menu-button" id="single_b" href="">single player</button></div>
+    <div><button class="main-menu-button" id="pass_b" href="">pass play</button></div>
+    <div><button class="main-menu-button" id="ai_b" href="">AI Battle</button></div>
+    <div><button class="main-menu-button" id="map_b" href="">Map Editor</button></div>
+    <div><button class="main-menu-button" id="replaybutton" href="" >replay</button></div>
     
-    <a class="list" href="http://localhost:8000/about.md" >about</a>
+    <div ><a style="display:block;padding-left: 0px;padding-right:0px" class="main-menu-button" href="http://localhost:8000/about.md" >about</a></div>
     
   </div>  
 
