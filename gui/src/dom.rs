@@ -383,126 +383,13 @@ pub enum GameType {
 }
 
 pub async fn main_entry() {
-    let (mut sender, mut receiver) = futures::channel::mpsc::unbounded();
 
-    fn doop<'b>(
-        sender: &'static futures::channel::mpsc::UnboundedSender<&'static str>,
-        s: &'static str,
-    ) -> impl Drop + 'static {
-        let undo = shogo::utils::get_by_id_elem(s);
 
-        gloo::events::EventListener::new(&undo, "click", move |_event| {
-            sender.unbounded_send(s).unwrap_throw();
-        })
-    }
-
-    let _listeners = ["single_b", "pass_b", "ai_b"].map(|s| {
-        let se = sender.clone();
-        //let s="single_b";
-        let undo = shogo::utils::get_by_id_elem(s);
-        gloo::events::EventListener::new(&undo, "click", move |_event| {
-            se.unbounded_send(s).unwrap_throw();
-        })
-    });
-
-    // let reg_button = |sender: &futures::channel::mpsc::UnboundedSender<&'static str>, s: &'static str| {
-    //     let undo = shogo::utils::get_by_id_elem(s);
-
-    //     gloo::events::EventListener::new(&undo, "click",  |_event| {
-    //         sender.unbounded_send(s).unwrap_throw();
-    //     })
-    // };
-
-    // let _a=doop(&mut sender,"single_b");
-    // let _a=doop(&mut sender,"pass_b");
-    // let _a=doop(&mut sender,"ai_b");
-
-    let command = loop {
-        let Some(r) = receiver.next().await else {
-            unreachable!()
-        };
-        let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
-            .get_element_by_id("textarea_m")
-            .unwrap()
-            .dyn_into()
-            .unwrap();
-
-        match r {
-            "single_b" => break GameType::SinglePlayer(t.value().into()),
-            "pass_b" => break GameType::PassPlay(t.value().into()),
-            "ai_b" => break GameType::AIBattle(t.value().into()),
-            _ => {
-                todo!()
-            }
-        }
-    };
-
-    // let search = gloo::utils::window().location().search().unwrap();
-
-    let prot = gloo::utils::window().location().protocol().unwrap();
-    let host = gloo::utils::window().location().host().unwrap();
-
-    let host = format!("{}//{}", prot, host);
-
-    // console_dbg!("host", host);
-
-    // let k = search.as_str();
-
-    // let (a, k) = k.split_at(1);
-    // console_dbg!(a, k);
-    // assert_eq!(a, "?");
-
-    // let res = querystring::querify(k);
-    // console_dbg!("querystring:", res);
-
-    // console_dbg!(search);
-
-    // assert_eq!(res[1].0, "data");
-
-    // let command = match res[0] {
-    //     ("v", "singleplayer") => {
-    //         //assert_eq!(res[1].0, "data");
-    //         log!("singleplayer!!!");
-    //         GameType::SinglePlayer(res[1].1.into())
-    //     }
-    //     ("v", "passplay") => {
-    //         log!("passplay!!!");
-    //         GameType::PassPlay(res[1].1.into())
-    //     }
-    //     ("v", "aibattle") => {
-    //         log!("aibattle!!!");
-    //         GameType::AIBattle(res[1].1.into())
-    //     }
-    //     ("v", "replay") => {
-    //         //assert_eq!(res[1].0, "data");
-    //         GameType::Replay(res[1].1.into())
-    //     }
-    //     ("v", "mapeditor") => {
-    //         log!("map editor!!!");
-    //         GameType::MapEditor(res[1].1.into())
-    //     }
-    //     _ => {
-    //         unreachable!("unrecognized command");
-    //     }
-    // };
-
-    log!("demo start");
-
-    // let (sender, mut receiver) = futures::channel::mpsc::unbounded();
-
-    // let start_button = utils::get_by_id_elem("startgame");
-
-    // // Attach an event listener
-    // let _listener = gloo::events::EventListener::new(&start_button, "click", move |_event| {
-    //     log!("STARTING");
-    //     sender.unbounded_send(()).unwrap_throw();
-    // });
-
-    // let e=receiver.next().await;
-    log!("FOO");
-
-    start_game(command, &host).await;
 }
+
+
+
+
 fn resize() -> DomToWorker {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");
     //canvas.set_width(gloo::utils::body().client_width() as u32);
