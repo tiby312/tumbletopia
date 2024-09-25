@@ -382,13 +382,7 @@ pub enum GameType {
     Replay(String),
 }
 
-pub async fn main_entry() {
-
-
-}
-
-
-
+pub async fn main_entry() {}
 
 fn resize() -> DomToWorker {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");

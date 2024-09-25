@@ -44,7 +44,7 @@ pub async fn main_entry() {
         })
     }
 
-    let _listeners = ["single_b", "pass_b", "ai_b"].map(|s| {
+    let _listeners = ["single_b", "pass_b", "ai_b", "map_b"].map(|s| {
         let se = sender.clone();
         let undo = shogo::utils::get_by_id_elem(s);
         gloo::events::EventListener::new(&undo, "click", move |_event| {
@@ -53,11 +53,15 @@ pub async fn main_entry() {
     });
 
     let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
-            .get_element_by_id("textarea_m")
-            .unwrap()
-            .dyn_into()
-            .unwrap();
-        t.set_value(&unit::default_map(&board::MyWorld::new()).save(&board::MyWorld::new()).unwrap());
+        .get_element_by_id("textarea_m")
+        .unwrap()
+        .dyn_into()
+        .unwrap();
+    t.set_value(
+        &unit::default_map(&board::MyWorld::new())
+            .save(&board::MyWorld::new())
+            .unwrap(),
+    );
 
     let command = loop {
         let Some(r) = receiver.next().await else {
@@ -73,7 +77,7 @@ pub async fn main_entry() {
             "single_b" => break dom::GameType::SinglePlayer(t.value().into()),
             "pass_b" => break dom::GameType::PassPlay(t.value().into()),
             "ai_b" => break dom::GameType::AIBattle(t.value().into()),
-            "map_b"=>break dom::GameType::MapEditor(t.value().into()),
+            "map_b" => break dom::GameType::MapEditor(t.value().into()),
             _ => {
                 todo!()
             }
@@ -81,9 +85,7 @@ pub async fn main_entry() {
     };
 
     let elem = shogo::utils::get_by_id_elem("mainmenu");
-    elem.set_attribute("style","display:none;").unwrap();
-
-
+    elem.set_attribute("style", "display:none;").unwrap();
 
     let prot = gloo::utils::window().location().protocol().unwrap();
     let host = gloo::utils::window().location().host().unwrap();
@@ -146,7 +148,6 @@ pub async fn main_entry() {
 
     // let e=receiver.next().await;
     log!("FOO");
-
 
     dom::start_game(command, &host).await;
 }
