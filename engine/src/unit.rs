@@ -481,18 +481,14 @@ pub enum UnitType {
     Rabbit,
 }
 
-
-
 //need 8 layers of map
-//each map needs 
-
+//each map needs
 
 pub fn replay_string(
     map: &Map,
     moves: &MoveHistory,
     world: &MyWorld,
 ) -> Result<String, std::fmt::Error> {
-
     // #[derive(Serialize,Deserialize)]
     // struct All{
     //     map:Map,
@@ -505,7 +501,6 @@ pub fn replay_string(
 
     // let k = miniz_oxide::deflate::compress_to_vec(&k, 10);
     // Ok(BASE64_STANDARD_NO_PAD.encode(k))
-
 
     use std::fmt::Write;
     let mut s = String::new();
@@ -583,7 +578,7 @@ impl unit::Map {
         use std::fmt::Write;
         let mut s = String::new();
 
-        write!(&mut s,"m{}=[",world.radius)?;
+        //write!(&mut s,"m{}=[",world.radius)?;
         for a in world.get_game_cells().inner.iter_ones() {
             if self.water.inner[a] {
                 write!(&mut s, "w")?;
@@ -599,7 +594,7 @@ impl unit::Map {
                 write!(&mut s, "-")?;
             }
         }
-        write!(&mut s,"]")?;
+        //write!(&mut s,"]")?;
         Ok(s)
 
         // use base64::prelude::*;
@@ -653,8 +648,6 @@ impl Map {
         })
     }
 }
-
-
 
 pub const sample_replay:&'static str=":-----wwm--w---wwm-ww--m-www------w------m----m-----w2m--ww--m-w-w----------ww--w----f-----ww--wwm---m-m-w---ww--m---m1------w---m-----mmw------m--www-m-mm----w----------:D3,J14,L11,G11,J11,L12,J5,M12,L8,J10,J10,pp,pp,:";
 

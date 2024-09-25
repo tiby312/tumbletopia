@@ -238,6 +238,7 @@ pub async fn worker_entry() {
             | engine::GameType::SinglePlayer(s)
             | engine::GameType::AIBattle(s)
             | engine::GameType::Replay(s) => {
+                console_dbg!("got map=", s);
                 let map = Map::load(&s, &world).unwrap();
 
                 //TODO handle this error better

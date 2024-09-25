@@ -383,63 +383,82 @@ pub enum GameType {
 }
 
 pub async fn main_entry() {
-    let search = gloo::utils::window().location().search().unwrap();
+    let (sender, mut receiver) = futures::channel::mpsc::unbounded();
+
+    let start = gloo::utils::document()
+        .get_element_by_id("single_b")
+        .unwrap();
+    // Attach an event listener
+    let listener = gloo::events::EventListener::new(&start, "click", move |_event| {
+        sender.unbounded_send("start").unwrap_throw();
+    });
+
+    let text = loop {
+        let Some(r) = receiver.next().await else {
+            unreachable!()
+        };
+        if r == "start" {
+            let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
+                .get_element_by_id("textarea_m")
+                .unwrap()
+                .dyn_into()
+                .unwrap();
+            break t.value();
+        }
+    };
+
+    console_dbg!("GOT TEXT", text);
+
+    let command = GameType::SinglePlayer(text.into());
+
+    // let search = gloo::utils::window().location().search().unwrap();
 
     let prot = gloo::utils::window().location().protocol().unwrap();
     let host = gloo::utils::window().location().host().unwrap();
 
     let host = format!("{}//{}", prot, host);
 
-    console_dbg!("host", host);
+    // console_dbg!("host", host);
 
-    let k = search.as_str();
+    // let k = search.as_str();
 
-    let (a, k) = k.split_at(1);
-    console_dbg!(a, k);
-    assert_eq!(a, "?");
+    // let (a, k) = k.split_at(1);
+    // console_dbg!(a, k);
+    // assert_eq!(a, "?");
 
-    let res = querystring::querify(k);
-    console_dbg!("querystring:", res);
-    // let mut k = k.chars();
+    // let res = querystring::querify(k);
+    // console_dbg!("querystring:", res);
 
-    // assert_eq!(k.next().unwrap(), '?');
-    // assert_eq!(k.next().unwrap(), 'v');
-    // assert_eq!(k.next().unwrap(), '=');
-    // let command = k.as_str();
-    // console_dbg!(command);
+    // console_dbg!(search);
 
-    //search.sp
-    //TODO check if its PLAY AI VS LOCAL PLAY
-    console_dbg!(search);
+    // assert_eq!(res[1].0, "data");
 
-    assert_eq!(res[1].0, "data");
-
-    let command = match res[0] {
-        ("v", "singleplayer") => {
-            //assert_eq!(res[1].0, "data");
-            log!("singleplayer!!!");
-            GameType::SinglePlayer(res[1].1.into())
-        }
-        ("v", "passplay") => {
-            log!("passplay!!!");
-            GameType::PassPlay(res[1].1.into())
-        }
-        ("v", "aibattle") => {
-            log!("aibattle!!!");
-            GameType::AIBattle(res[1].1.into())
-        }
-        ("v", "replay") => {
-            //assert_eq!(res[1].0, "data");
-            GameType::Replay(res[1].1.into())
-        }
-        ("v", "mapeditor") => {
-            log!("map editor!!!");
-            GameType::MapEditor(res[1].1.into())
-        }
-        _ => {
-            unreachable!("unrecognized command");
-        }
-    };
+    // let command = match res[0] {
+    //     ("v", "singleplayer") => {
+    //         //assert_eq!(res[1].0, "data");
+    //         log!("singleplayer!!!");
+    //         GameType::SinglePlayer(res[1].1.into())
+    //     }
+    //     ("v", "passplay") => {
+    //         log!("passplay!!!");
+    //         GameType::PassPlay(res[1].1.into())
+    //     }
+    //     ("v", "aibattle") => {
+    //         log!("aibattle!!!");
+    //         GameType::AIBattle(res[1].1.into())
+    //     }
+    //     ("v", "replay") => {
+    //         //assert_eq!(res[1].0, "data");
+    //         GameType::Replay(res[1].1.into())
+    //     }
+    //     ("v", "mapeditor") => {
+    //         log!("map editor!!!");
+    //         GameType::MapEditor(res[1].1.into())
+    //     }
+    //     _ => {
+    //         unreachable!("unrecognized command");
+    //     }
+    // };
 
     log!("demo start");
 
