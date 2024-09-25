@@ -126,6 +126,25 @@
         bottom:10px;
         right:10px;
       }
+      #mainmenu{
+        position: absolute;
+        top:50%;
+        left:50%;
+        z-index: 10;
+        left:50%;
+        transform: translate(-50%, -50%);
+        
+        max-width:400px;
+      border-radius: 5px;
+      color:white;
+      text-align: center;
+      font-size: 150%;
+      list-style-type:none;
+      margin:auto;
+      margin-bottom:10px;
+      text-align: center;
+      display:grid;
+      }
       #game_b{
         display: inline-block;
         position:absolute;
@@ -174,6 +193,22 @@
   <button id="b_start2" class="editor-button"> Player2</button>
   <button id="b_export" class="editor-button"> export</button>
   </div>
+
+  <div id="mainmenu">
+    <text> Paste a map code here: </text>
+
+    <form>
+      <textarea class="list" oninput="myFunction()" id="textarea" rows="6" cols="30" placeholder="Paste the replay code here"></textarea>
+      </form>
+    <a class="list disabled" id="single_b" href="">single player</a>
+    <a class="list disabled" id="pass_b" href="">pass play</a>
+    <a class="list disabled" id="ai_b" href="">AI Battle</a>
+    <a class="list disabled" id="map_b" href="">Map Editor</a>
+    <a class="list disabled" id="replaybutton" href="" >replay</a>
+    
+    <a class="list" href="http://localhost:8000/about.md" >about</a>
+    
+  </div>  
 
   <canvas id="mycanvas" class="unselectable"></canvas>
   
