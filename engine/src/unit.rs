@@ -523,8 +523,8 @@ pub struct Map {
     pub water: SmallMesh,
     pub mountains: SmallMesh,
     pub forests: SmallMesh,
-    pub start1: Axial,
-    pub start2: Axial,
+    pub white: SmallMesh,
+    pub black: SmallMesh,
 }
 
 impl unit::Map {
@@ -537,8 +537,8 @@ impl unit::Map {
         let mut water = SmallMesh::new();
         let mut forests = SmallMesh::new();
         let mut mountains = SmallMesh::new();
-        let mut start1 = None;
-        let mut start2 = None;
+        let mut white = SmallMesh::new();
+        let mut black = SmallMesh::new();
 
         let mut s = s.chars();
 
@@ -551,27 +551,19 @@ impl unit::Map {
                 'w' => water.inner.set(a, true),
                 'f' => forests.inner.set(a, true),
                 'm' => mountains.inner.set(a, true),
-                '1' => start1 = Some(mesh::small_mesh::inverse(a)),
-                '2' => start2 = Some(mesh::small_mesh::inverse(a)),
+                '1' => white.inner.set(a, true),
+                '2' => black.inner.set(a, true),
                 '-' => continue,
                 _ => return Err(()),
             }
         }
 
-        let Some(start1) = start1 else {
-            return Err(());
-        };
-
-        let Some(start2) = start2 else {
-            return Err(());
-        };
-
         Ok(unit::Map {
             water,
             mountains,
             forests,
-            start1,
-            start2,
+            white,
+            black,
         })
     }
     pub fn save(&self, world: &MyWorld) -> Result<String, std::fmt::Error> {
@@ -586,9 +578,9 @@ impl unit::Map {
                 write!(&mut s, "f")?;
             } else if self.mountains.inner[a] {
                 write!(&mut s, "m")?;
-            } else if mesh::small_mesh::conv(self.start1) == a {
+            } else if self.white.inner[a] {
                 write!(&mut s, "1")?;
-            } else if mesh::small_mesh::conv(self.start2) == a {
+            } else if self.black.inner[a] {
                 write!(&mut s, "2")?;
             } else {
                 write!(&mut s, "-")?;
@@ -635,16 +627,12 @@ impl Map {
             }
         }
 
-        let start1 = white.iter_mesh(Axial::zero()).next()?;
-
-        let start2 = black.iter_mesh(Axial::zero()).next()?;
-
         Some(Map {
             water,
             mountains,
             forests,
-            start1,
-            start2,
+            white,
+            black,
         })
     }
 }
@@ -696,8 +684,14 @@ pub fn game_init(world: &board::MyWorld, map: &unit::Map) -> GameState {
     //let map = &world.map;
 
     let mut cells = Tribe::new();
-    cells.add_cell(map.start1, 1, ActiveTeam::White);
-    cells.add_cell(map.start2, 1, ActiveTeam::Black);
+
+    for f in map.white.iter_mesh(Axial::zero()) {
+        cells.add_cell(f, 1, ActiveTeam::White);
+    }
+
+    for f in map.black.iter_mesh(Axial::zero()) {
+        cells.add_cell(f, 1, ActiveTeam::Black);
+    }
 
     for f in map.forests.iter_mesh(Axial::zero()) {
         cells.add_cell(f, 2, ActiveTeam::Neutral);

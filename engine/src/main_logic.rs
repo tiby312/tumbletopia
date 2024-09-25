@@ -160,26 +160,26 @@ pub async fn map_editor(
                 game.factions.remove(pos);
                 game.factions.water.set_coord(pos, false);
 
-                for a in world.get_game_cells().inner.iter_ones() {
-                    if let Some((_, t)) = game.factions.get_cell_inner(a) {
-                        if t == ActiveTeam::White {
-                            game.factions.remove_inner(a);
-                        }
-                    }
-                }
+                // for a in world.get_game_cells().inner.iter_ones() {
+                //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
+                //         if t == ActiveTeam::White {
+                //             game.factions.remove_inner(a);
+                //         }
+                //     }
+                // }
                 game.factions.add_cell(pos, 1, ActiveTeam::White);
             }
             TT::Start2 => {
                 game.factions.remove(pos);
                 game.factions.water.set_coord(pos, false);
 
-                for a in world.get_game_cells().inner.iter_ones() {
-                    if let Some((_, t)) = game.factions.get_cell_inner(a) {
-                        if t == ActiveTeam::Black {
-                            game.factions.remove_inner(a);
-                        }
-                    }
-                }
+                // for a in world.get_game_cells().inner.iter_ones() {
+                //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
+                //         if t == ActiveTeam::Black {
+                //             game.factions.remove_inner(a);
+                //         }
+                //     }
+                // }
                 game.factions.add_cell(pos, 1, ActiveTeam::Black);
             }
         }
