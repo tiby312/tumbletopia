@@ -63,6 +63,14 @@ pub async fn main_entry() {
             .unwrap(),
     );
 
+
+    let editor_elem = shogo::utils::get_by_id_elem("editor");
+    editor_elem.set_attribute("style", "display:none;").unwrap();
+
+    let game_elem = shogo::utils::get_by_id_elem("game_b");
+    game_elem.set_attribute("style", "display:none;").unwrap();
+
+
     let command = loop {
         let Some(r) = receiver.next().await else {
             unreachable!()
@@ -74,10 +82,24 @@ pub async fn main_entry() {
             .unwrap();
 
         match r {
-            "single_b" => break dom::GameType::SinglePlayer(t.value().into()),
-            "pass_b" => break dom::GameType::PassPlay(t.value().into()),
-            "ai_b" => break dom::GameType::AIBattle(t.value().into()),
-            "map_b" => break dom::GameType::MapEditor(t.value().into()),
+            "single_b" => {
+                game_elem.set_attribute("style","display:block;").unwrap();
+                break dom::GameType::SinglePlayer(t.value().into())
+            },
+            "pass_b" => {
+
+                game_elem.set_attribute("style","display:block;").unwrap();
+                break dom::GameType::PassPlay(t.value().into())
+            },
+            "ai_b" => {
+
+                game_elem.set_attribute("style","display:block;").unwrap();
+                break dom::GameType::AIBattle(t.value().into())
+            },
+            "map_b" => {
+                editor_elem.set_attribute("style","display:block;").unwrap();
+                break dom::GameType::MapEditor(t.value().into())
+            },
             _ => {
                 todo!()
             }
