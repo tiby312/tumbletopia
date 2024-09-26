@@ -484,40 +484,35 @@ pub enum UnitType {
 //need 8 layers of map
 //each map needs
 
+pub fn parse_replay_string(s: &str, world: &MyWorld) -> Option<(Map, MoveHistory)> {
+    let mut s = s.split(":");
 
+    let map = s.next()?;
 
-
-pub fn parse_replay_string(s:&str,world:&MyWorld)->Option<(Map,MoveHistory)>{
-    let mut s=s.split(":");
-
-    let map=s.next()?;
-
-    let Ok(map)=Map::load(&map,world) else{
-        return None
+    let Ok(map) = Map::load(&map, world) else {
+        return None;
     };
 
-    let moves=s.next()?;
+    let moves = s.next()?;
 
-
-    let (mut g,start_team)=GameState::new(world, &map);
-    let mut mh=MoveHistory::new();
-    for (f,team) in moves.split(',').zip(start_team.iter()){
-        let m=ActualMove::from_str(f)?;
-        let effect=m.apply(team,&mut g,world);
-        mh.inner.push((m,effect));
+    
+    let (mut g, start_team) = GameState::new(world, &map);
+    let mut mh = MoveHistory::new();
+    for (f, team) in moves.split_terminator(',').zip(start_team.iter()) {
+        
+        let m = ActualMove::from_str(f)?;
+        let effect = m.apply(team, &mut g, world);
+        mh.inner.push((m, effect));
     }
 
-    Some((map,mh))
-
+    Some((map, mh))
 }
-
 
 pub fn replay_string(
     map: &Map,
     moves: &MoveHistory,
     world: &MyWorld,
 ) -> Result<String, std::fmt::Error> {
-
     use std::fmt::Write;
     let mut s = String::new();
 
@@ -696,37 +691,35 @@ pub fn default_map(world: &board::MyWorld) -> Map {
     // }
 }
 
+impl GameState {
+    //TODO make part of GameState
+    pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameState, ActiveTeam) {
+        //let map = &world.map;
 
+        let mut cells = Tribe::new();
 
-impl GameState{
-//TODO make part of GameState
-pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameState,ActiveTeam) {
-    //let map = &world.map;
+        for f in map.white.iter_mesh(Axial::zero()) {
+            cells.add_cell(f, 1, ActiveTeam::White);
+        }
 
-    let mut cells = Tribe::new();
+        for f in map.black.iter_mesh(Axial::zero()) {
+            cells.add_cell(f, 1, ActiveTeam::Black);
+        }
 
-    for f in map.white.iter_mesh(Axial::zero()) {
-        cells.add_cell(f, 1, ActiveTeam::White);
+        for f in map.forests.iter_mesh(Axial::zero()) {
+            cells.add_cell(f, 2, ActiveTeam::Neutral);
+        }
+
+        for m in map.mountains.iter_mesh(Axial::zero()) {
+            cells.add_cell(m, 6, ActiveTeam::Neutral);
+        }
+
+        for w in map.water.iter_mesh(Axial::zero()) {
+            cells.water.add(w);
+        }
+
+        let game = GameState { factions: cells };
+
+        (game, ActiveTeam::White)
     }
-
-    for f in map.black.iter_mesh(Axial::zero()) {
-        cells.add_cell(f, 1, ActiveTeam::Black);
-    }
-
-    for f in map.forests.iter_mesh(Axial::zero()) {
-        cells.add_cell(f, 2, ActiveTeam::Neutral);
-    }
-
-    for m in map.mountains.iter_mesh(Axial::zero()) {
-        cells.add_cell(m, 6, ActiveTeam::Neutral);
-    }
-
-    for w in map.water.iter_mesh(Axial::zero()) {
-        cells.water.add(w);
-    }
-
-    let game = GameState { factions: cells };
-
-    (game,ActiveTeam::White)
-}
 }

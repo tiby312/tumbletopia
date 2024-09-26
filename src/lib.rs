@@ -33,18 +33,7 @@ use unit::*;
 pub async fn main_entry() {
     let (sender, mut receiver) = futures::channel::mpsc::unbounded();
 
-    fn doop<'b>(
-        sender: &'static futures::channel::mpsc::UnboundedSender<&'static str>,
-        s: &'static str,
-    ) -> impl Drop + 'static {
-        let undo = shogo::utils::get_by_id_elem(s);
-
-        gloo::events::EventListener::new(&undo, "click", move |_event| {
-            sender.unbounded_send(s).unwrap_throw();
-        })
-    }
-
-    let _listeners = ["single_b", "pass_b", "ai_b", "map_b"].map(|s| {
+    let _listeners = ["single_b", "pass_b", "ai_b", "map_b", "replaybutton"].map(|s| {
         let se = sender.clone();
         let undo = shogo::utils::get_by_id_elem(s);
         gloo::events::EventListener::new(&undo, "click", move |_event| {
@@ -63,13 +52,11 @@ pub async fn main_entry() {
             .unwrap(),
     );
 
-
     let editor_elem = shogo::utils::get_by_id_elem("editor");
     editor_elem.set_attribute("style", "display:none;").unwrap();
 
     let game_elem = shogo::utils::get_by_id_elem("game_b");
     game_elem.set_attribute("style", "display:none;").unwrap();
-
 
     let command = loop {
         let Some(r) = receiver.next().await else {
@@ -83,23 +70,31 @@ pub async fn main_entry() {
 
         match r {
             "single_b" => {
-                game_elem.set_attribute("style","display:block;").unwrap();
-                break dom::GameType::SinglePlayer(t.value().into())
-            },
+                game_elem.set_attribute("style", "display:block;").unwrap();
+                break dom::GameType::SinglePlayer(t.value().into());
+            }
             "pass_b" => {
-
-                game_elem.set_attribute("style","display:block;").unwrap();
-                break dom::GameType::PassPlay(t.value().into())
-            },
+                game_elem.set_attribute("style", "display:block;").unwrap();
+                break dom::GameType::PassPlay(t.value().into());
+            }
             "ai_b" => {
-
-                game_elem.set_attribute("style","display:block;").unwrap();
-                break dom::GameType::AIBattle(t.value().into())
-            },
+                game_elem.set_attribute("style", "display:block;").unwrap();
+                break dom::GameType::AIBattle(t.value().into());
+            }
             "map_b" => {
-                editor_elem.set_attribute("style","display:block;").unwrap();
-                break dom::GameType::MapEditor(t.value().into())
-            },
+                editor_elem
+                    .set_attribute("style", "display:block;")
+                    .unwrap();
+                break dom::GameType::MapEditor(t.value().into());
+            }
+            "replaybutton" => {
+                let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
+                    .get_element_by_id("textarea_r")
+                    .unwrap()
+                    .dyn_into()
+                    .unwrap();
+                break dom::GameType::Replay(t.value().into());
+            }
             _ => {
                 todo!()
             }
@@ -376,9 +371,7 @@ pub async fn worker_entry() {
             }
             engine::GameType::PassPlay(s)
             | engine::GameType::SinglePlayer(s)
-            | engine::GameType::AIBattle(s)
-            | engine::GameType::Replay(s) => {
-                console_dbg!("got map=", s);
+            | engine::GameType::AIBattle(s) => {
                 let map = Map::load(&s, &world).unwrap();
 
                 //TODO handle this error better
@@ -391,6 +384,15 @@ pub async fn worker_entry() {
                 )
                 .await;
                 Finish::GameFinish((res.0, res.1, map))
+            }
+            engine::GameType::Replay(s) => {
+                console_dbg!("got map=", s);
+
+                let (map, history) = unit::parse_replay_string(&s, &world).unwrap();
+
+                let res = engine::main_logic::replay(&map, &history, &world, doop).await;
+
+                Finish::GameFinish((res, history, map))
             }
         }
     };

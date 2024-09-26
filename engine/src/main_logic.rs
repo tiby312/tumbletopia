@@ -100,7 +100,7 @@ pub async fn map_editor(
     world: &board::MyWorld,
     map: unit::Map,
 ) -> unit::Map {
-    let (mut game,_starting_team) = GameState::new(&world, &map);
+    let (mut game, _starting_team) = GameState::new(&world, &map);
 
     enum TT {
         Water,
@@ -207,12 +207,8 @@ pub async fn game_play_thread(
     ai_int: &mut impl AiInterface,
 ) -> (unit::GameOver, MoveHistory) {
     console_dbg!("gameplay thread start");
-    // let (mut ai_worker, mut ai_response) =
-    //     worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;
 
-    // console_dbg!("created ai worker");
-
-    let (mut game,start_team) = GameState::new(&world, &map);
+    let (mut game, start_team) = GameState::new(&world, &map);
 
     let mut game_history = MoveHistory::new();
 
@@ -237,7 +233,6 @@ pub async fn game_play_thread(
 
         console_dbg!("main thread iter");
         if foo {
-            //let the_move = ai::iterative_deepening(&game, &world, team, &game_history);
             let the_move = {
                 ai_int.send_command(&game, &world, team, &game_history);
 
@@ -252,7 +247,6 @@ pub async fn game_play_thread(
             };
 
             console_dbg!("gmae thread has interrupted render thread");
-            //let the_move = .await;
 
             let effect_m = animate_move(&the_move, team, &mut game, &world, &mut doop)
                 .await
@@ -265,21 +259,6 @@ pub async fn game_play_thread(
 
         let r = handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
         game_history.push(r);
-
-        //let stest = serde_json::to_string(&game).unwrap();
-
-        //let mut e = engine::ai::Evaluator::default();
-        // console_dbg!(
-        //     "Game after player move:",
-        //     stest,
-        //     game.hash_me(),
-        //     e.absolute_evaluate(&mut game, &world, true)
-        // );
-
-        // console_dbg!(
-        //     "current position2:",
-        //     e.absolute_evaluate(&mut game, &world, true)
-        // );
     }
 }
 
@@ -619,20 +598,21 @@ pub async fn reselect_loop(
 }
 
 pub async fn replay(
+    map: &unit::Map,
+    history: &MoveHistory,
     world: &board::MyWorld,
     mut doop: WorkerManager,
-    just_logs: JustMoveLog,
-) -> (unit::GameOver, MoveHistory) {
-    let map = unit::default_map(world);
-    let (mut game,starting_team) = GameState::new(world, &map);
-    let mut game_history = MoveHistory::new();
+) -> unit::GameOver {
+    //let map = unit::default_map(world);
+    let (mut game, starting_team) = GameState::new(world, map);
+    //let mut game_history = MoveHistory::new();
 
     let mut team_gen = starting_team.iter();
 
     doop.send_command(starting_team, &mut game, Command::HideUndo)
         .await;
 
-    for the_move in just_logs.inner {
+    for (the_move, effect) in history.inner.iter() {
         let team = team_gen.next().unwrap();
 
         //let kk = the_move.as_move();
@@ -647,11 +627,11 @@ pub async fn replay(
         //     .await
         //     .apply(team, &mut game, world, &effect_m);
 
-        game_history.push((the_move, effect_m));
+        //game_history.push((the_move, effect_m));
     }
 
-    if let Some(g) = game.game_is_over(world, team_gen.next().unwrap(), &game_history) {
-        (g, game_history)
+    if let Some(g) = game.game_is_over(world, team_gen.next().unwrap(), &history) {
+        g
     } else {
         panic!("replay didnt end with game over state");
     }
