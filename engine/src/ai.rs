@@ -438,7 +438,6 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         if let Some(g) = game.game_is_over(self.world, team, self.history) {
-            console_dbg!("found game over!!!!");
             return (self.evaluator.cant_move(team), tinyvec::array_vec!());
         }
 
