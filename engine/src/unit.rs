@@ -628,7 +628,7 @@ impl Map {
                     ActiveTeam::Neutral => {
                         if height == 6 {
                             mountains.inner.set(a, true);
-                        } else if height == 2 {
+                        } else if height == 1 {
                             forests.inner.set(a, true);
                         }
                     }

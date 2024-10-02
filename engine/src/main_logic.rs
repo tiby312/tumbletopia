@@ -103,9 +103,9 @@ pub async fn map_editor(
     let (mut game, _starting_team) = GameState::new(&world, &map);
 
     enum TT {
-        Water,
+        Ice,
         Land,
-        Mountains,
+        Water,
         Forest,
         Start1,
         Start2,
@@ -120,9 +120,9 @@ pub async fn map_editor(
             MouseEvent::Button(s) => {
                 console_dbg!("map editor received", s);
                 tt = match s.as_str() {
-                    "b_water" => TT::Water,
+                    "b_ice" => TT::Ice,
                     "b_land" => TT::Land,
-                    "b_mountain" => TT::Mountains,
+                    "b_water" => TT::Water,
                     "b_forest" => TT::Forest,
                     "b_start1" => TT::Start1,
                     "b_start2" => TT::Start2,
@@ -140,7 +140,7 @@ pub async fn map_editor(
         };
 
         match tt {
-            TT::Water => {
+            TT::Ice => {
                 game.factions.remove(pos);
                 game.factions.ice.set_coord(pos, true)
             }
@@ -148,13 +148,13 @@ pub async fn map_editor(
                 game.factions.ice.set_coord(pos, false);
                 game.factions.remove(pos);
             }
-            TT::Mountains => {
+            TT::Water => {
                 game.factions.remove(pos);
                 game.factions.ice.set_coord(pos, false);
                 game.factions.add_cell(pos, 6, ActiveTeam::Neutral);
             }
             TT::Forest => {
-                game.factions.add_cell(pos, 2, ActiveTeam::Neutral);
+                game.factions.add_cell(pos, 1, ActiveTeam::Neutral);
             }
             TT::Start1 => {
                 game.factions.remove(pos);
