@@ -530,7 +530,7 @@ pub fn replay_string(
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Map {
     pub ice: SmallMesh,
-    pub mountains: SmallMesh,
+    pub water: SmallMesh,
     pub forests: SmallMesh,
     pub white: SmallMesh,
     pub black: SmallMesh,
@@ -557,9 +557,9 @@ impl unit::Map {
             };
 
             match c {
-                'w' => ice.inner.set(a, true),
+                'i' => ice.inner.set(a, true),
                 'f' => forests.inner.set(a, true),
-                'm' => mountains.inner.set(a, true),
+                'w' => mountains.inner.set(a, true),
                 '1' => white.inner.set(a, true),
                 '2' => black.inner.set(a, true),
                 '-' => continue,
@@ -569,7 +569,7 @@ impl unit::Map {
 
         Ok(unit::Map {
             ice,
-            mountains,
+            water: mountains,
             forests,
             white,
             black,
@@ -582,11 +582,11 @@ impl unit::Map {
         //write!(&mut s,"m{}=[",world.radius)?;
         for a in world.get_game_cells().inner.iter_ones() {
             if self.ice.inner[a] {
-                write!(&mut s, "w")?;
+                write!(&mut s, "i")?;
             } else if self.forests.inner[a] {
                 write!(&mut s, "f")?;
-            } else if self.mountains.inner[a] {
-                write!(&mut s, "m")?;
+            } else if self.water.inner[a] {
+                write!(&mut s, "w")?;
             } else if self.white.inner[a] {
                 write!(&mut s, "1")?;
             } else if self.black.inner[a] {
@@ -638,7 +638,7 @@ impl Map {
 
         Some(Map {
             ice: water,
-            mountains,
+            water: mountains,
             forests,
             white,
             black,
@@ -646,12 +646,10 @@ impl Map {
     }
 }
 
-pub const sample_replay:&'static str=":-----wwm--w---wwm-ww--m-www------w------m----m-----w2m--ww--m-w-w----------ww--w----f-----ww--wwm---m-m-w---ww--m---m1------w---m-----mmw------m--www-m-mm----w----------:D3,J14,L11,G11,J11,L12,J5,M12,L8,J10,J10,pp,pp,:";
-
 pub fn default_map(world: &board::MyWorld) -> Map {
     //Map::load("----------w-------ww--m----------w------m----m------2m--ww--m-w------------ww-------f-----ww--wwm---m-m-w---ww--m---m1------w---m-----mmw------m--www-m-mm----w----------",world).unwrap()
 
-    Map::load("----------wf------wwffm----------w------m----m----w-2m--ww--m-w-------f----ww------f------ww--wwm-ffm-m-w---ww--m---m1------w---m-----mmw-----1m--www-m-mm---fw-2-----ff-",world).unwrap()
+    Map::load("----------if------iiffw----------i------w----w----i-2w--ii--w-i-------f----ii------f------ii--iiw-ffw-w-i---ii--w---w1------i---w-----wwi-----1w--iii-w-ww---fi-2-----ff-",world).unwrap()
 
     // let mut mountains = SmallMesh::new();
     // let mut water = SmallMesh::new();
@@ -711,7 +709,7 @@ impl GameState {
             cells.add_cell(f, 1, ActiveTeam::Neutral);
         }
 
-        for m in map.mountains.iter_mesh(Axial::zero()) {
+        for m in map.water.iter_mesh(Axial::zero()) {
             cells.add_cell(m, 6, ActiveTeam::Neutral);
         }
 
