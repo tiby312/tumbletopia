@@ -900,7 +900,8 @@ async fn render_command(
                 .filter_map(|a| {
                     if let Some((val, tt)) = game.factions.get_cell(a) {
                         let xx = if val == 6 && tt == ActiveTeam::Neutral {
-                            1.3
+                            //1.3
+                            return None;
                         } else {
                             match val {
                                 1 | 2 => 0.6,
