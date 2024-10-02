@@ -43,7 +43,7 @@ pub struct Models<T> {
     pub drop_shadow: T,
     pub token_black: T,
     pub token_white: T,
-    pub mountain: T,
+    pub snow: T,
     pub token_neutral: T,
     pub water: T,
     pub land: T,
@@ -89,7 +89,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             token_white: quick_load(include_bytes!("../../assets/hex-white.glb"), RESIZE, None),
             token_neutral: quick_load(include_bytes!("../../assets/hex-neutral.glb"), RESIZE, None),
             // direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
-            mountain: quick_load(include_bytes!("../../assets/mountain.glb"), RESIZE, None),
+            snow: quick_load(include_bytes!("../../assets/ice.glb"), RESIZE, None),
             water: quick_load(include_bytes!("../../assets/water.glb"), RESIZE, None),
             land: quick_load(include_bytes!("../../assets/hex-grass.glb"), RESIZE, None),
         }

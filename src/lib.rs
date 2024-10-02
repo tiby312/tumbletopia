@@ -728,7 +728,17 @@ async fn render_command(
 
         let cell_height = models.token_neutral.height;
 
-        let land = world.land.inner & !game.factions.water.inner;
+        let mut water = mesh::small_mesh::SmallMesh::new();
+        for a in world.get_game_cells().inner.iter_ones() {
+            if let Some((height, team)) = game.factions.get_cell_inner(a) {
+                if height == 6 && team == ActiveTeam::Neutral {
+                    water.inner.set(a, true);
+                }
+            }
+        }
+        water.inner |= game.factions.ice.inner;
+
+        let land = world.land.inner & !water.inner; //& !game.factions.ice.inner;
         draw_sys
             .batch(
                 land.iter_ones()
@@ -926,7 +936,7 @@ async fn render_command(
         let mut white_team_cells = vec![];
         let mut black_team_cells = vec![];
         let mut neutral_team_cells = vec![];
-        let mut mountains = vec![];
+        //let mut mountains = vec![];
 
         if let Some((pos, ..)) = &unit_animation {
             let ss = 0.4;
@@ -955,7 +965,7 @@ async fn render_command(
                 let outer_stack = height.max(4) - 4;
 
                 if height == 6 && team2 == ActiveTeam::Neutral {
-                    mountains.push(grid_snap(a, models.land.height / 2.0).generate());
+                    //mountains.push(grid_snap(a, /*models.land.height / 2.0*/ 0.0).generate());
                     continue;
                 }
 
@@ -990,13 +1000,17 @@ async fn render_command(
             .batch(neutral_team_cells)
             .build(&models.token_neutral, &projjj);
 
-        draw_sys.batch(mountains).build(&models.mountain, &projjj);
-
         let mut water_pos = vec![];
-        for pos in game.factions.water.iter_mesh(Axial::zero()) {
-            water_pos.push(grid_snap(pos, -models.land.height / 2.0));
+        for a in water.iter_mesh(Axial::zero()) {
+            water_pos.push(grid_snap(a, -models.land.height));
         }
         draw_sys.batch(water_pos).build(&models.water, &projjj);
+
+        let mut ice_pos = vec![];
+        for pos in game.factions.ice.iter_mesh(Axial::zero()) {
+            ice_pos.push(grid_snap(pos, -models.land.height));
+        }
+        draw_sys.batch(ice_pos).build(&models.snow, &projjj);
 
         // draw_unit_type(
         //     UnitType::Mouse,

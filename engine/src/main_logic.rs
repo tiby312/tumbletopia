@@ -142,15 +142,15 @@ pub async fn map_editor(
         match tt {
             TT::Water => {
                 game.factions.remove(pos);
-                game.factions.water.set_coord(pos, true)
+                game.factions.ice.set_coord(pos, true)
             }
             TT::Land => {
-                game.factions.water.set_coord(pos, false);
+                game.factions.ice.set_coord(pos, false);
                 game.factions.remove(pos);
             }
             TT::Mountains => {
                 game.factions.remove(pos);
-                game.factions.water.set_coord(pos, false);
+                game.factions.ice.set_coord(pos, false);
                 game.factions.add_cell(pos, 6, ActiveTeam::Neutral);
             }
             TT::Forest => {
@@ -158,7 +158,7 @@ pub async fn map_editor(
             }
             TT::Start1 => {
                 game.factions.remove(pos);
-                game.factions.water.set_coord(pos, false);
+                game.factions.ice.set_coord(pos, false);
 
                 // for a in world.get_game_cells().inner.iter_ones() {
                 //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
@@ -171,7 +171,7 @@ pub async fn map_editor(
             }
             TT::Start2 => {
                 game.factions.remove(pos);
-                game.factions.water.set_coord(pos, false);
+                game.factions.ice.set_coord(pos, false);
 
                 // for a in world.get_game_cells().inner.iter_ones() {
                 //     if let Some((_, t)) = game.factions.get_cell_inner(a) {

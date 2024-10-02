@@ -315,7 +315,7 @@ impl GameState {
 pub struct Tribe {
     pub cells: [SmallMesh; 3],
     pub team: SmallMesh,
-    pub water: SmallMesh,
+    pub ice: SmallMesh,
     //This just signifies if there is a number in cells.
     //This way you can just check one mesh to see if a piece is there or not
     //instead of checking 3
@@ -382,7 +382,7 @@ impl Tribe {
         Tribe {
             cells: [0; 3].map(|_| SmallMesh::new()),
             team: SmallMesh::new(),
-            water: SmallMesh::new(),
+            ice: SmallMesh::new(),
             piece: SmallMesh::new(),
         }
     }
@@ -495,11 +495,9 @@ pub fn parse_replay_string(s: &str, world: &MyWorld) -> Option<(Map, MoveHistory
 
     let moves = s.next()?;
 
-    
     let (mut g, start_team) = GameState::new(world, &map);
     let mut mh = MoveHistory::new();
     for (f, team) in moves.split_terminator(',').zip(start_team.iter()) {
-        
         let m = ActualMove::from_str(f)?;
         let effect = m.apply(team, &mut g, world);
         mh.inner.push((m, effect));
@@ -531,7 +529,7 @@ pub fn replay_string(
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Map {
-    pub water: SmallMesh,
+    pub ice: SmallMesh,
     pub mountains: SmallMesh,
     pub forests: SmallMesh,
     pub white: SmallMesh,
@@ -545,7 +543,7 @@ impl unit::Map {
         // let k = miniz_oxide::inflate::decompress_to_vec(&k).map_err(|_| LoadError)?;
         // Ok(postcard::from_bytes(&k).map_err(|_| LoadError)?)
 
-        let mut water = SmallMesh::new();
+        let mut ice = SmallMesh::new();
         let mut forests = SmallMesh::new();
         let mut mountains = SmallMesh::new();
         let mut white = SmallMesh::new();
@@ -559,7 +557,7 @@ impl unit::Map {
             };
 
             match c {
-                'w' => water.inner.set(a, true),
+                'w' => ice.inner.set(a, true),
                 'f' => forests.inner.set(a, true),
                 'm' => mountains.inner.set(a, true),
                 '1' => white.inner.set(a, true),
@@ -570,7 +568,7 @@ impl unit::Map {
         }
 
         Ok(unit::Map {
-            water,
+            ice,
             mountains,
             forests,
             white,
@@ -583,7 +581,7 @@ impl unit::Map {
 
         //write!(&mut s,"m{}=[",world.radius)?;
         for a in world.get_game_cells().inner.iter_ones() {
-            if self.water.inner[a] {
+            if self.ice.inner[a] {
                 write!(&mut s, "w")?;
             } else if self.forests.inner[a] {
                 write!(&mut s, "f")?;
@@ -611,7 +609,7 @@ impl unit::Map {
 
 impl Map {
     pub fn from_game_state(game: &GameState, world: &board::MyWorld) -> Option<Map> {
-        let water = game.factions.water.clone();
+        let water = game.factions.ice.clone();
 
         let mut white = SmallMesh::new();
         let mut black = SmallMesh::new();
@@ -639,7 +637,7 @@ impl Map {
         }
 
         Some(Map {
-            water,
+            ice: water,
             mountains,
             forests,
             white,
@@ -651,7 +649,10 @@ impl Map {
 pub const sample_replay:&'static str=":-----wwm--w---wwm-ww--m-www------w------m----m-----w2m--ww--m-w-w----------ww--w----f-----ww--wwm---m-m-w---ww--m---m1------w---m-----mmw------m--www-m-mm----w----------:D3,J14,L11,G11,J11,L12,J5,M12,L8,J10,J10,pp,pp,:";
 
 pub fn default_map(world: &board::MyWorld) -> Map {
-    Map::load("----------w-------ww--m----------w------m----m------2m--ww--m-w------------ww-------f-----ww--wwm---m-m-w---ww--m---m1------w---m-----mmw------m--www-m-mm----w----------",world).unwrap()
+    //Map::load("----------w-------ww--m----------w------m----m------2m--ww--m-w------------ww-------f-----ww--wwm---m-m-w---ww--m---m1------w---m-----mmw------m--www-m-mm----w----------",world).unwrap()
+
+    Map::load("----------wf------wwffm----------w------m----m----w-2m--ww--m-w-------f----ww------f------ww--wwm-ffm-m-w---ww--m---m1------w---m-----mmw-----1m--www-m-mm---fw-2-----ff-",world).unwrap()
+
     // let mut mountains = SmallMesh::new();
     // let mut water = SmallMesh::new();
     // let mut forests = SmallMesh::new();
@@ -714,8 +715,8 @@ impl GameState {
             cells.add_cell(m, 6, ActiveTeam::Neutral);
         }
 
-        for w in map.water.iter_mesh(Axial::zero()) {
-            cells.water.add(w);
+        for w in map.ice.iter_mesh(Axial::zero()) {
+            cells.ice.add(w);
         }
 
         let game = GameState { factions: cells };

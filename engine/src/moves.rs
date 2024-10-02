@@ -78,7 +78,7 @@ impl GameState {
                 }
             }
 
-            if self.factions.water.inner[index] {
+            if self.factions.ice.inner[index] {
                 continue;
             }
 
