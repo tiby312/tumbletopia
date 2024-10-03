@@ -93,6 +93,11 @@ pub async fn main_entry() {
                     .unwrap()
                     .dyn_into()
                     .unwrap();
+
+                //TODO this is the proper place to unhide elements. do this elsewhere
+                let elem = shogo::utils::get_by_id_elem("replay_b");
+                elem.set_attribute("style", "display:block;").unwrap();
+
                 break dom::GameType::Replay(t.value().into());
             }
             _ => {
