@@ -612,29 +612,69 @@ pub async fn replay(
     doop.send_command(starting_team, &mut game, Command::HideUndo)
         .await;
 
-    for (the_move, effect) in history.inner.iter() {
-        let team = team_gen.next().unwrap();
+    let mut counter = 0;
 
-        //let kk = the_move.as_move();
+    let mut team_counter = starting_team;
+    loop {
+        let pos = doop.get_mouse(ActiveTeam::White, &mut game).await;
+        match pos {
+            MouseEvent::Normal(pos) => continue,
+            MouseEvent::Button(s) => {
+                match s.as_str() {
+                    "b_prev" => {
+                        if counter > 0 {
+                            counter -= 1;
+                            team_counter = team_counter.not();
 
-        let effect_m = animate_move(&the_move, team, &mut game, world, &mut doop)
-            .await
-            .apply(team, &mut game, world);
+                            let (the_move, effect) = &history.inner[counter];
 
-        // let effect_a = kk
-        //     .into_attack(the_move.attackto)
-        //     .animate(team, &mut game, world, &mut doop)
-        //     .await
-        //     .apply(team, &mut game, world, &effect_m);
+                            the_move.undo(team_counter, &effect, &mut game);
+                        }
+                    }
+                    "b_next" => {
+                        if counter < history.inner.len() {
+                            let (the_move, effect) = &history.inner[counter];
 
-        //game_history.push((the_move, effect_m));
+                            let effect_m =
+                                animate_move(&the_move, team_counter, &mut game, world, &mut doop)
+                                    .await
+                                    .apply(team_counter, &mut game, world);
+
+                            counter += 1;
+                            team_counter = team_counter.not();
+                        }
+                    }
+                    _ => panic!("Not supported!"),
+                };
+
+                continue;
+            }
+        };
     }
 
-    if let Some(g) = game.game_is_over(world, team_gen.next().unwrap(), &history) {
-        g
-    } else {
-        panic!("replay didnt end with game over state");
-    }
+    // for (the_move, effect) in history.inner.iter() {
+    //     let team = team_gen.next().unwrap();
+
+    //     //let kk = the_move.as_move();
+
+    //     let effect_m = animate_move(&the_move, team, &mut game, world, &mut doop)
+    //         .await
+    //         .apply(team, &mut game, world);
+
+    //     // let effect_a = kk
+    //     //     .into_attack(the_move.attackto)
+    //     //     .animate(team, &mut game, world, &mut doop)
+    //     //     .await
+    //     //     .apply(team, &mut game, world, &effect_m);
+
+    //     //game_history.push((the_move, effect_m));
+    // }
+
+    // if let Some(g) = game.game_is_over(world, team_gen.next().unwrap(), &history) {
+    //     g
+    // } else {
+    //     panic!("replay didnt end with game over state");
+    // }
 }
 
 pub async fn animate_move<'a>(

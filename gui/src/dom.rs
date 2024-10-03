@@ -196,6 +196,8 @@ fn engine_handlers(
         }),
         reg_button(worker, "undo"),
         reg_button(worker, "pass"),
+        reg_button(worker, "b_next"),
+        reg_button(worker, "b_prev"),
         reg_button(worker, "b_ice"),
         reg_button(worker, "b_land"),
         reg_button(worker, "b_water"),
@@ -297,13 +299,11 @@ pub async fn start_game(game_type: GameType, host: &str) {
                 replay_string,
                 result,
             } => {
-                
                 let team_str = match result {
                     GameOverGui::WhiteWon => "White Won!",
                     GameOverGui::BlackWon => "Black Won!",
                     GameOverGui::Tie => "Its a tie!",
                 };
-
 
                 let foo = shogo::utils::get_by_id_elem("gameover_popup");
                 foo.set_attribute("style", "display:grid").unwrap_throw();

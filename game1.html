@@ -153,6 +153,12 @@
         bottom:10px;
         right:10px;
       }
+      #replay_b{
+        display: inline-block;
+        position:absolute;
+        bottom:100px;
+        right:10px;
+      }
       .editor-button{
         z-index:10;
         background-color: #213022; /* Green */
@@ -188,6 +194,11 @@
   <div id="game_b">
     <button id="undo" class="editor-button">Undo</button>
     <button id="pass" class="editor-button">Pass</button>  
+  </div>
+
+  <div id="replay_b">
+    <button id="b_prev" class="editor-button">Prev</button>
+    <button id="b_next" class="editor-button">Next</button>  
   </div>
 
   <div id="popup" style="display:none;">
