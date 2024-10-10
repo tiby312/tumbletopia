@@ -6,5 +6,5 @@ rm ../gridlock-web/gridlock_worker.js
 
 cp -r pkg ../gridlock-web
 cp index.html ../gridlock-web
-cp game.html ../gridlock-web
+cp about.md ../gridlock-web
 cp gridlock_worker.js ../gridlock-web
