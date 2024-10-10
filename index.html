@@ -1,127 +1,256 @@
-
-
 <html>
 <head>
   <title>gridlock</title>
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
   <link rel="manifest" href="manifest.json" />
+  
   <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
   <meta name="viewport" content="user-scalable=no,width=device-width, initial-scale=1" />
-  <style>  
-    body, input, textarea, button{
-      font-family:"Lucida Console", Monaco, monospace;
-      background-color:#222;
-      color:white;
+  <style>
+    .unselectable {
+      user-select: none;
     }
-    div a {
-      padding:10px;
-      background-color: #4CAF50;
-      text-decoration: none;
-      max-width:400px;
-      border-radius: 5px;
-      color:white;
-      text-align: center;
-      font-size: 150%;
-      list-style-type:none;
-    }
-    div text{
-      display:block;
-      padding:10px;
-      margin:auto;
-      max-width: 400px;
-      text-align: center;
-      list-style-type:none;  
-      color:white;
-    }
-    .list{
-      display:block;
-      margin:auto;
-      margin-bottom:10px;
-      
-    }
-    button{
-      background-color: #04AA6D; /* Green */
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    }
-
-    .disabled {
-      pointer-events: none;
-      cursor: default;
-      background-color: gray;
-      
-    }
-
   </style>
-  <script>
-    function myFunction() {
-      var text=document.getElementById("textarea").value;
-
-
-
-      var rp=document.getElementById("replaybutton");
-      rp.setAttribute("href","http://localhost:8000/game1.html?v=replay&data="+text);
-      rp.setAttribute("class","list");
-      if (text==""){
-        rp.setAttribute("class","list disabled");
+    <style>
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0px;
+        border: 0;
+        background-color: #222;
+        overflow: hidden; /*  Disable scrollbars */
+        display: block;  /* No floating content on sides */
+        font-family:"Lucida Console", Monaco, monospace;
+        color:white;
       }
-
-
-      var rp=document.getElementById("map_b");
-      rp.setAttribute("href","http://localhost:8000/game1.html?v=mapeditor&data="+text);
-      rp.setAttribute("class","list");
-      if (text==""){
-        rp.setAttribute("class","list disabled");
+      body {
+        /*position: absolute;*/
       }
-
-
-      var rp=document.getElementById("ai_b");
-      rp.setAttribute("href","http://localhost:8000/game1.html?v=aibattle&data="+text);
-      rp.setAttribute("class","list");
-      if (text==""){
-        rp.setAttribute("class","list disabled");
+      /*
+      a {
+        color:white;
+        text-decoration: none;
+        background-color: #4CAF50;
+        padding:10px;
+        margin:10px;
+        border-radius: 5px;
       }
-
-
-      var rp=document.getElementById("pass_b");
-      rp.setAttribute("href","http://localhost:8000/game1.html?v=passplay&data="+text);
-      rp.setAttribute("class","list");
-      if (text==""){
-        rp.setAttribute("class","list disabled");
+        */
+      button{
+        color:white;
+        text-decoration: none;
+        background-color: gray;
+        border-style:ridge;
       }
-
-      var rp=document.getElementById("single_b");
-      rp.setAttribute("href","http://localhost:8000/game1.html?v=singleplayer&data="+text);
-      rp.setAttribute("class","list");
-      if (text==""){
-        rp.setAttribute("class","list disabled");
+      #mycanvas{
+        position: absolute;
+        top:0px;
+        left:0px;
+        z-index: 0;
+        width:100%;
+        height:100%;
       }
-    }
-    </script>
-</head>
-
-
-<body>
-  <div id="listdiv">
-    <text> Paste a map code here: </text>
-
-    <form>
-      <textarea class="list" oninput="myFunction()" id="textarea" rows="6" cols="30" placeholder="Paste the replay code here"></textarea>
-      </form>
-    <a class="list disabled" id="single_b" href="">single player</a>
-    <a class="list disabled" id="pass_b" href="">pass play</a>
-    <a class="list disabled" id="ai_b" href="">AI Battle</a>
-    <a class="list disabled" id="map_b" href="">Map Editor</a>
-    <a class="list disabled" id="replaybutton" href="" >replay</a>
+      #mybutton{
+        z-index: 10;
+        position: absolute;
+        top:90%;
+        left:50%;
+        font-size: 24px;
+        background-color: #213022; /* Green */
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        transform: translate(-50%, -50%);
+      }
+      #popup{
+        z-index: 10;
+        position: absolute;
+        top:50%;
+        left:50%;
+        background-color: #213022; /* Green */
+        border: none;
+        color: white;
+        transform: translate(-50%, -50%);
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        transform: translate(-50%, -50%);
+        display:grid;
+        
+      }
+      #gameover_popup{
+        z-index: 10;
+        display:block;
+        position:absolute;
+        padding:10px;
+        margin:auto;
+        background-color: #213022; /* Green */
+        
+        border-radius: 5px;
+        top:50%;
+        left:50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+      }
+      #undo{
+        /* z-index: 10;
+        position: absolute;
+        top:90%;
+        left:90%;
+        font-size: 24px;
+        background-color: #213022; 
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        transform: translate(-50%, -50%); */
+      }
+      textarea {
+        resize: none;
+      }
+      .foo{
+        display:list-item;
+        margin:auto;
+        list-style-type:none;
+        margin-top: 10px;
+        margin-bottom:10px;
+      }
+      #editor{
+        display: inline-block;
+        position:absolute;
+        bottom:10px;
+        right:10px;
+      }
+      #mainmenu{
+        background-color: black;
+        position: absolute;
+        top:50%;
+        left:50%;
+        z-index: 10;
+        left:50%;
+        transform: translate(-50%, -50%);
+        max-width:400px;
+        border-radius: 5px;
+        color:white;
+        text-align: center;
+        font-size: 150%;
+        list-style-type:none;
+        margin:auto;
+        margin-bottom:10px;
+        text-align: center;
+        display:block;
+      }
+      #game_b{
+        display: inline-block;
+        position:absolute;
+        bottom:10px;
+        right:10px;
+      }
+      #replay_b{
+        display: inline-block;
+        position:absolute;
+        bottom:10px;
+        right:10px;
+      }
+      .editor-button{
+        z-index:10;
+        background-color: #213022; /* Green */
+        position:relative;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+      }
+      .main-menu-button{
+        background-color: #213022; /* Green */
+        /*position:relative;*/
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        width:100%;
+        border:none;
+        margin:2px;
+      }
+    </style>
+  <script type=module>
+    import { default as init } from './pkg/gridlock.js';
+    var w=await init('pkg/gridlock_bg.wasm');
+    await w.main_entry();
     
-    <a class="list" href="http://localhost:8000/about.md" >about</a>
+  </script>
+</head>
+<body style="background-color:black;">
+
+  <div id="game_b">
+    <button id="undo" class="editor-button">Undo</button>
+    <button id="pass" class="editor-button">Pass</button>  
+  </div>
+
+  <div id="replay_b" style="display:none;">
+    <button id="b_prev" class="editor-button">Prev</button>
+    <button id="b_next" class="editor-button">Next</button>  
+  </div>
+
+  <div id="popup" style="display:none;">
+    <text>Here is your map export</text>
+    <form>
+    <textarea class="" id="textarea" rows="6" cols="30"></textarea>
+    </form>
+    <button onClick="window.location.reload();">Main Menu</button>
+  </div>
+
+  <div id="gameover_popup" style="display:none;">              
+    <text class="foo" id="gameover_title">GAME OVER</text>
+    <text class="foo">Game Replay Code</text>
+    <textarea class="foo" id="gameover_code" readonly="true" rows="6" cols="50">text</textarea>
+    <button onClick="window.location.reload();">Main Menu</button>
+  </div>
+  <div id="editor">
+  <button id="b_land" class="editor-button"> Land</button>
+  <button id="b_ice" class="editor-button"> Ice</button>
+  <button id="b_forest" class="editor-button"> Forest</button>
+  <button id="b_water" class="editor-button"> Water</button>
+  <button id="b_start1" class="editor-button"> Player1</button>
+  <button id="b_start2" class="editor-button"> Player2</button>
+  <button id="b_export" class="editor-button"> export</button>
+  </div>
+
+
+  <div id="mainmenu">
+    
+    <div style="background-color: grey;margin:10px;padding:10px;">
+      <text> Paste a map code here: </text>
+
+      <form>
+        <textarea class="" id="textarea_m" rows="6" cols="30" placeholder="Paste map code here"></textarea>
+        </form>
+      <div><button class="main-menu-button" id="single_b" href="">single player</button></div>
+      <div><button class="main-menu-button" id="pass_b" href="">pass play</button></div>
+      <div><button class="main-menu-button" id="ai_b" href="">AI Battle</button></div>
+      <div><button class="main-menu-button" id="map_b" href="">Map Editor</button></div>
+    </div>
+    <div style="background-color: grey;margin:10px;padding:10px;">
+      <form>
+        <textarea class="" id="textarea_r" rows="6" cols="30" placeholder="Paste the replay code here"></textarea>
+        </form>
+
+      <div><button class="main-menu-button" id="replaybutton" href="" >replay</button></div>
+    </div>
+    <div ><a style="display:block;padding-left: 0px;padding-right:0px" class="main-menu-button" href="http://localhost:8000/about.md" >about</a></div>
     
   </div>  
+
+  <canvas id="mycanvas" class="unselectable"></canvas>
+  
 </body>
 </html>
