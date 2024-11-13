@@ -723,7 +723,7 @@ async fn render_command(
 
         scroll_manager.step();
 
-        draw_sys.draw_clear([0.4, 0.1, 0.1, 0.0]);
+        draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
 
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);

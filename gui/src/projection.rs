@@ -62,7 +62,7 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> cgmath::Matrix4<f32
 
     use cgmath::*;
 
-    let start_zoom = 800.0;
+    let start_zoom = 1400.0;
 
     let cam = Point3::new(0.0, 0.0, 0.0);
     //let dir = Point3::new(-1.5, -0.0, -2.0);
