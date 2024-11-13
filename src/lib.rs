@@ -78,7 +78,7 @@ pub async fn main_entry() {
                 break dom::GameType::PassPlay(t.value().into());
             }
             "ai_b" => {
-                game_elem.set_attribute("style", "display:block;").unwrap();
+                //game_elem.set_attribute("style", "display:block;").unwrap();
                 break dom::GameType::AIBattle(t.value().into());
             }
             "map_b" => {
