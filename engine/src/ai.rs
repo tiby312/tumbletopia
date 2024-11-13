@@ -20,13 +20,21 @@ impl Default for Evaluator {
     }
 }
 impl Evaluator {
-    pub fn cant_move(&mut self, team: ActiveTeam) -> Eval {
-        match team {
-            ActiveTeam::White => -MATE,
-            ActiveTeam::Black => MATE,
-            ActiveTeam::Neutral => unreachable!(),
+    pub fn process_game_over(&mut self, a: unit::GameOver) -> Eval {
+        match a {
+            unit::GameOver::WhiteWon => MATE,
+            unit::GameOver::BlackWon => -MATE,
+            unit::GameOver::Tie => 0,
         }
     }
+
+    // pub fn cant_move(&mut self, team: ActiveTeam) -> Eval {
+    //     match team {
+    //         ActiveTeam::White => -MATE,
+    //         ActiveTeam::Black => MATE,
+    //         ActiveTeam::Neutral => unreachable!(),
+    //     }
+    // }
     //white maximizing
     //black minimizing
     pub fn absolute_evaluate(
@@ -372,7 +380,7 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         if let Some(g) = game.game_is_over(self.world, team, self.history) {
-            return (self.evaluator.cant_move(team), tinyvec::array_vec!());
+            return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
         }
 
         if depth == 0 {
@@ -438,7 +446,7 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         if let Some(g) = game.game_is_over(self.world, team, self.history) {
-            return (self.evaluator.cant_move(team), tinyvec::array_vec!());
+            return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
         }
 
         if depth == 0 {
