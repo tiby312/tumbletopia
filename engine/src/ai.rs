@@ -28,13 +28,6 @@ impl Evaluator {
         }
     }
 
-    // pub fn cant_move(&mut self, team: ActiveTeam) -> Eval {
-    //     match team {
-    //         ActiveTeam::White => -MATE,
-    //         ActiveTeam::Black => MATE,
-    //         ActiveTeam::Neutral => unreachable!(),
-    //     }
-    // }
     //white maximizing
     //black minimizing
     pub fn absolute_evaluate(
@@ -194,10 +187,8 @@ pub fn iterative_deepening(
 ) -> moves::ActualMove {
     let mut results = Vec::new();
 
-    let num_iter = 4;
-    //let max_depth = 2;
-
-    let mut foo1 = TranspositionTable {
+    
+    let mut table = TranspositionTable {
         a: std::collections::BTreeMap::new(),
     };
     let mut evaluator = Evaluator::default();
@@ -214,14 +205,15 @@ pub fn iterative_deepening(
     for depth in [1, 2, 3] {
         gloo_console::info!(format!("searching depth={}", depth));
 
-        let mut k = KillerMoves::new(num_iter + 4 + 4);
+        //3 = num iter
+        let mut killer = KillerMoves::new(3 + 4 + 4);
         assert!(moves.is_empty());
-        //assert!(history.inner.is_empty());
+        
         let mut history = history.clone();
 
         let mut aaaa = ai::AlphaBeta {
-            prev_cache: &mut foo1,
-            killer_moves: &mut k,
+            prev_cache: &mut table,
+            killer_moves: &mut killer,
             evaluator: &mut evaluator,
             world,
             moves: &mut moves,
@@ -233,6 +225,7 @@ pub fn iterative_deepening(
         assert_eq!(&kk, game);
 
         {
+            //Update the transposition table in the right order
             let mut gg = kk.clone();
             let mut tt = team;
             let mut vals = vec![];
@@ -242,51 +235,28 @@ pub fn iterative_deepening(
                 tt = tt.not();
             }
             for (v, k) in vals.into_iter().rev() {
-                foo1.update_inner(v, k);
+                table.update_inner(v, k);
             }
 
-            //Store the PV into the transposition table
-            // let mut tt = team;
-            // let mut gg = kk.clone();
-            // let mut effects = vec![];
-            // for m in mov.iter() {
-            //     let effect1 = m.apply(tt, &mut gg, world);
-            //     effects.push(effect1);
-            //     tt = tt.not();
-            // }
-
-            // for (m, effect) in mov.iter().rev().zip(effects.iter().rev()) {
-            //     tt = tt.not();
-            //     m.undo(tt, effect, &mut gg);
-            //     foo1.update(&gg, m.clone());
-
-            // }
-            // assert_eq!(gg, kk);
-            gloo_console::info!(format!("transpotion table size={}", foo1.a.len()));
+            
+            gloo_console::info!(format!("transpotion table size={}", table.a.len()));
         }
 
         let mov = mov.last().unwrap().clone();
 
-        // let Some(mov) = foo1.get(game).cloned() else {
-        //     console_dbg!("Couldnt find a move???");
-        //     panic!("OVER");
-        // };
         let res = EvalRet { mov, eval: res };
 
         let eval = res.eval;
-        //console_dbg!(eval);
 
         results.push(res);
 
         if eval.abs() == MATE {
             console_dbg!("found a mate");
-            //break;
         }
 
-        //doop.poke(team, game.clone()).await;
     }
 
-    console_dbg!("transpotiion table len=", foo1.a.len());
+    console_dbg!("transpotiion table len=", table.a.len());
 
     //console_dbg!(count);
     //console_dbg!(&results);
