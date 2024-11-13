@@ -279,13 +279,9 @@ impl MyWorld {
             //map,
         }
     }
-    // pub fn white_start(&self) -> &[Axial] {
-    //     &self.white_start
-    // }
-    // pub fn black_start(&self) -> &[Axial] {
-    //     &self.black_start
-    // }
 
+    
+    //TODO get rid of this???? use bounds checking instead???
     pub fn get_game_cells(&self) -> &mesh::small_mesh::SmallMesh {
         &self.land
     }
