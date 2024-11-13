@@ -187,7 +187,6 @@ pub fn iterative_deepening(
 ) -> moves::ActualMove {
     let mut results = Vec::new();
 
-    
     let mut table = TranspositionTable {
         a: std::collections::BTreeMap::new(),
     };
@@ -208,7 +207,7 @@ pub fn iterative_deepening(
         //3 = num iter
         let mut killer = KillerMoves::new(3 + 4 + 4);
         assert!(moves.is_empty());
-        
+
         let mut history = history.clone();
 
         let mut aaaa = ai::AlphaBeta {
@@ -238,7 +237,6 @@ pub fn iterative_deepening(
                 table.update_inner(v, k);
             }
 
-            
             gloo_console::info!(format!("transpotion table size={}", table.a.len()));
         }
 
@@ -246,7 +244,12 @@ pub fn iterative_deepening(
 
         let res = EvalRet { mov, eval: res };
 
-        console_dbg!("AI eval:",res,"Actual eval:",evaluator.absolute_evaluate(game, world, false));
+        console_dbg!(
+            "AI eval:",
+            res,
+            "Actual eval:",
+            evaluator.absolute_evaluate(game, world, false)
+        );
 
         let eval = res.eval;
 
@@ -255,7 +258,6 @@ pub fn iterative_deepening(
         if eval.abs() == MATE {
             console_dbg!("found a mate");
         }
-
     }
 
     console_dbg!("transpotiion table len=", table.a.len());
