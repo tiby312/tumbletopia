@@ -246,6 +246,8 @@ pub fn iterative_deepening(
 
         let res = EvalRet { mov, eval: res };
 
+        console_dbg!("AI eval:",res,"Actual eval:",evaluator.absolute_evaluate(game, world, false));
+
         let eval = res.eval;
 
         results.push(res);

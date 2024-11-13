@@ -8,7 +8,6 @@ Written in rust
 
 
 Contact me at:
-https://github.com/tiby312/gridlock
-
+https://github.com/tiby312/
 
 
