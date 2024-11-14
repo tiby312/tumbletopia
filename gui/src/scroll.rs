@@ -144,6 +144,9 @@ impl TouchController {
         match self.foo {
             Foo::OneTouchActive { touch_id } => {
                 if let Some(second_touch_id) = touches.select_lowest_touch_excluding(touch_id) {
+                    assert!(touches.get_pos(touch_id).is_some());
+                    assert!(touches.get_pos(second_touch_id).is_some());
+
                     let (dis, middle, rot) = compute_middle(touches, touch_id, second_touch_id);
 
                     //we don't want to propogate this click to the user.
@@ -205,6 +208,9 @@ impl TouchController {
                 first_touch_id,
                 second_touch_id,
             } => {
+                assert!(touches.get_pos(first_touch_id).is_some());
+                assert!(touches.get_pos(second_touch_id).is_some());
+
                 let (dis, middle, r) = compute_middle(touches, first_touch_id, second_touch_id);
                 self.inner
                     .handle_mouse_move(0.0, middle, view_projection, dim);

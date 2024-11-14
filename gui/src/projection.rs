@@ -86,7 +86,7 @@ pub fn projection(dim: [f32; 2]) -> model::matrix::Perspective {
     //https://docs.unity3d.com/Manual/FrustumSizeAtDistance.html
 
     let near = 10.0;
-    let far = 2000.0;
+    let far = 4000.0; //2000.0
 
     let fov_factor = 0.002;
     let dd = dim[1]; //.min(1200.0);
