@@ -31,6 +31,7 @@ use unit::*;
 
 #[wasm_bindgen]
 pub async fn main_entry() {
+    let world = board::MyWorld::new();
     let (sender, mut receiver) = futures::channel::mpsc::unbounded();
 
     let _listeners = ["single_b", "pass_b", "ai_b", "map_b", "replaybutton"].map(|s| {
@@ -46,11 +47,7 @@ pub async fn main_entry() {
         .unwrap()
         .dyn_into()
         .unwrap();
-    t.set_value(
-        &unit::default_map(&board::MyWorld::new())
-            .save(&board::MyWorld::new())
-            .unwrap(),
-    );
+    t.set_value(&unit::default_map(&world).save(&world).unwrap());
 
     let editor_elem = shogo::utils::get_by_id_elem("editor");
     editor_elem.set_attribute("style", "display:none;").unwrap();
@@ -68,23 +65,37 @@ pub async fn main_entry() {
             .dyn_into()
             .unwrap();
 
-        let main_ret = shogo::utils::get_by_id_elem("return-menu");
-        main_ret.set_attribute("style", "display:block;").unwrap();
+        let maps: String = t.value().into();
 
         match r {
             "single_b" => {
+                if Map::load(&maps, &world).is_err() {
+                    console_dbg!("Could not parse map");
+                    continue;
+                }
                 game_elem.set_attribute("style", "display:block;").unwrap();
                 break dom::GameType::SinglePlayer(t.value().into());
             }
             "pass_b" => {
+                if Map::load(&maps, &world).is_err() {
+                    console_dbg!("Could not parse map");
+                    continue;
+                }
                 game_elem.set_attribute("style", "display:block;").unwrap();
                 break dom::GameType::PassPlay(t.value().into());
             }
             "ai_b" => {
-                //game_elem.set_attribute("style", "display:block;").unwrap();
+                if Map::load(&maps, &world).is_err() {
+                    console_dbg!("Could not parse map");
+                    continue;
+                }
                 break dom::GameType::AIBattle(t.value().into());
             }
             "map_b" => {
+                if Map::load(&maps, &world).is_err() {
+                    console_dbg!("Could not parse map");
+                    continue;
+                }
                 editor_elem
                     .set_attribute("style", "display:block;")
                     .unwrap();
@@ -97,6 +108,13 @@ pub async fn main_entry() {
                     .dyn_into()
                     .unwrap();
 
+                let s: String = t.value().into();
+
+                let Some(_) = unit::parse_replay_string(&s, &world) else {
+                    console_dbg!("Could not part replay");
+                    continue;
+                };
+
                 //TODO this is the proper place to unhide elements. do this elsewhere
                 let elem = shogo::utils::get_by_id_elem("replay_b");
                 elem.set_attribute("style", "display:block;").unwrap();
@@ -108,6 +126,9 @@ pub async fn main_entry() {
             }
         }
     };
+
+    let main_ret = shogo::utils::get_by_id_elem("return-menu");
+    main_ret.set_attribute("style", "display:block;").unwrap();
 
     let elem = shogo::utils::get_by_id_elem("mainmenu");
     elem.set_attribute("style", "display:none;").unwrap();
