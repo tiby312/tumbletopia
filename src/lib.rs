@@ -68,6 +68,9 @@ pub async fn main_entry() {
             .dyn_into()
             .unwrap();
 
+        let main_ret = shogo::utils::get_by_id_elem("return-menu");
+        main_ret.set_attribute("style", "display:block;").unwrap();
+
         match r {
             "single_b" => {
                 game_elem.set_attribute("style", "display:block;").unwrap();

@@ -280,7 +280,6 @@ impl MyWorld {
         }
     }
 
-    
     //TODO get rid of this???? use bounds checking instead???
     pub fn get_game_cells(&self) -> &mesh::small_mesh::SmallMesh {
         &self.land
