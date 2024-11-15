@@ -1,10 +1,10 @@
 
 
-rm -r ../gridlock-web/pkg
-rm ../gridlock-web/index.html
-rm ../gridlock-web/gridlock_worker.js
+rm -r ../tumbletopia-web/pkg
+rm ../tumbletopia-web/index.html
+rm ../tumbletopia-web/gridlock_worker.js
 
-cp -r pkg ../gridlock-web
-cp index.html ../gridlock-web
-cp about.md ../gridlock-web
-cp gridlock_worker.js ../gridlock-web
+cp -r pkg ../tumbletopia-web
+cp index.html ../tumbletopia-web
+cp about.md ../tumbletopia-web
+cp gridlock_worker.js ../tumbletopia-web
