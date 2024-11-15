@@ -154,6 +154,8 @@ pub async fn map_editor(
                 game.factions.add_cell(pos, 6, ActiveTeam::Neutral);
             }
             TT::Forest => {
+                game.factions.ice.set_coord(pos, false);
+                game.factions.remove(pos);
                 game.factions.add_cell(pos, 1, ActiveTeam::Neutral);
             }
             TT::Start1 => {
