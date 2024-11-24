@@ -49,7 +49,7 @@ impl crate::unit::GameStateTotal {
     pub fn update_fog(&mut self, world: &board::MyWorld, team: ActiveTeam) {
         let res = self
             .tactical
-            .generate_possible_moves_movement(world, None, team, true);
+            .generate_possible_moves_movement(world, None, team, true,true);
 
         let fog = match team {
             ActiveTeam::White => &mut self.fog[0],
@@ -90,6 +90,7 @@ impl GameState {
         _unit: Option<Axial>,
         team: ActiveTeam,
         allow_suicidal: bool,
+        vision_mode:bool
     ) -> (SmallMesh, SmallMesh, SmallMesh) {
         let mut mesh = SmallMesh::new();
 
@@ -118,8 +119,10 @@ impl GameState {
                 }
             }
 
+            if !vision_mode{
             if self.factions.ice.inner[index] {
                 continue;
+            }
             }
 
             if potential_height == 0 {
