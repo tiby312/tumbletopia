@@ -1,3 +1,5 @@
+use mesh::small_mesh;
+
 use super::*;
 
 use crate::mesh::small_mesh::SmallMesh;
@@ -68,6 +70,17 @@ impl crate::unit::GameStateTotal {
         };
 
         fog.inner &= !pieces;
+
+        for a in pieces.iter_ones() {
+            let fa = mesh::small_mesh::inverse(a);
+
+            for j in fa.to_cube().ring(1) {
+                if !world.get_game_cells().is_set(j.to_axial()) {
+                    continue;
+                }
+                fog.inner.set(small_mesh::conv(j.to_axial()), false);
+            }
+        }
     }
 }
 impl GameState {
