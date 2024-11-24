@@ -47,6 +47,7 @@ pub struct Models<T> {
     pub token_neutral: T,
     pub water: T,
     pub land: T,
+    pub fog: T,
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
@@ -92,6 +93,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             snow: quick_load(include_bytes!("../../assets/ice.glb"), RESIZE, None),
             water: quick_load(include_bytes!("../../assets/water.glb"), RESIZE, None),
             land: quick_load(include_bytes!("../../assets/hex-grass.glb"), RESIZE, None),
+            fog: quick_load(include_bytes!("../../assets/fog.glb"), RESIZE, None),
         }
     }
 }

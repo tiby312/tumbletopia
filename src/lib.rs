@@ -469,7 +469,7 @@ pub struct EngineStuff {
 
 async fn render_command(
     command: ace::Command,
-    game: &GameState,
+    game_total: &GameStateTotal,
     team: ActiveTeam,
     e: &mut EngineStuff,
     world: &board::MyWorld,
@@ -479,6 +479,7 @@ async fn render_command(
     >,
     engine_worker: &mut shogo::EngineWorker<dom::DomToWorker, dom::WorkerToDom>,
 ) -> ace::Response {
+    let game = &game_total.tactical;
     //let mut x = 0.0;
     let scroll_manager = &mut e.scroll_manager;
     let last_matrix = &mut e.last_matrix;
@@ -1043,6 +1044,12 @@ async fn render_command(
             ice_pos.push(grid_snap(pos, -models.land.height));
         }
         draw_sys.batch(ice_pos).build(&models.snow, &projjj);
+
+        let mut fog_pos = vec![];
+        for pos in game_total.fog[0].iter_mesh(Axial::zero()) {
+            fog_pos.push(grid_snap(pos, 0.0));
+        }
+        draw_sys.batch(fog_pos).build(&models.fog, &projjj);
 
         // draw_unit_type(
         //     UnitType::Mouse,

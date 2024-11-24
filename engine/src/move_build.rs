@@ -487,6 +487,7 @@ impl ActualMove {
         } else {
             None
         };
+
         game.factions.remove_inner(target_cell);
         game.factions.add_cell_inner(target_cell, stack_size, team);
 

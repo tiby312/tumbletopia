@@ -122,11 +122,18 @@ impl ActiveTeam {
 //     pub powerups: Vec<Axial>,
 // }
 
+#[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
+
+pub struct GameStateTotal {
+    //0 is white fog. 1 is black fog
+    pub fog: [SmallMesh; 2],
+    pub tactical: GameState,
+}
+
 //Additionally removes need to special case animation.
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
     pub factions: Tribe,
-    //pub env: Environment,
 }
 
 #[must_use]
@@ -380,7 +387,7 @@ impl Tribe {
 
     pub fn new() -> Tribe {
         Tribe {
-            cells: [0; 3].map(|_| SmallMesh::new()),
+            cells: std::array::from_fn(|_| SmallMesh::new()),
             team: SmallMesh::new(),
             ice: SmallMesh::new(),
             piece: SmallMesh::new(),
@@ -495,11 +502,12 @@ pub fn parse_replay_string(s: &str, world: &MyWorld) -> Option<(Map, MoveHistory
 
     let moves = s.next()?;
 
-    let (mut g, start_team) = GameState::new(world, &map);
+    let (mut g, start_team) = GameStateTotal::new(world, &map);
     let mut mh = MoveHistory::new();
     for (f, team) in moves.split_terminator(',').zip(start_team.iter()) {
         let m = ActualMove::from_str(f)?;
-        let effect = m.apply(team, &mut g, world);
+        let effect = m.apply(team, &mut g.tactical, world);
+        g.update_fog(world, team);
         mh.inner.push((m, effect));
     }
 
@@ -691,9 +699,9 @@ pub fn default_map(world: &board::MyWorld) -> Map {
     // }
 }
 
-impl GameState {
+impl GameStateTotal {
     //TODO make part of GameState
-    pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameState, ActiveTeam) {
+    pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameStateTotal, ActiveTeam) {
         //let map = &world.map;
 
         let mut cells = Tribe::new();
@@ -720,6 +728,18 @@ impl GameState {
 
         let game = GameState { factions: cells };
 
-        (game, ActiveTeam::White)
+        let mut game_total = GameStateTotal {
+            tactical: game,
+            fog: std::array::from_fn(|_| SmallMesh::new()),
+        };
+
+        //Fill everything with fog.
+        game_total.fog[0].inner |= world.get_game_cells().inner;
+        game_total.fog[1].inner |= world.get_game_cells().inner;
+
+        game_total.update_fog(&world, ActiveTeam::White);
+        game_total.update_fog(&world, ActiveTeam::Black);
+
+        (game_total, ActiveTeam::White)
     }
 }

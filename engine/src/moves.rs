@@ -43,6 +43,33 @@ impl<T> EndPoints<T> {
 pub const PASS_MOVE: Axial = Axial { q: -5, r: 9 };
 pub const PASS_MOVE_INDEX: usize = const { mesh::small_mesh::conv(PASS_MOVE) };
 
+impl crate::unit::GameStateTotal {
+    pub fn update_fog(&mut self, world: &board::MyWorld, team: ActiveTeam) {
+        let res = self
+            .tactical
+            .generate_possible_moves_movement(world, None, team, true);
+
+        let fog = match team {
+            ActiveTeam::White => &mut self.fog[0],
+            ActiveTeam::Black => &mut self.fog[1],
+            ActiveTeam::Neutral => unreachable!(),
+        };
+
+        fog.inner &= !res.0.inner;
+
+        let pieces = match team {
+            ActiveTeam::White => {
+                self.tactical.factions.piece.inner & self.tactical.factions.team.inner
+            }
+            ActiveTeam::Black => {
+                self.tactical.factions.piece.inner & !self.tactical.factions.team.inner
+            }
+            ActiveTeam::Neutral => unreachable!(),
+        };
+
+        fog.inner &= !pieces;
+    }
+}
 impl GameState {
     pub fn generate_possible_moves_movement(
         &self,

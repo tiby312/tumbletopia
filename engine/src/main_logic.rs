@@ -50,7 +50,7 @@ pub struct HaveMoved {
 }
 
 pub struct GameWrap<T> {
-    pub game: GameState,
+    pub game: unit::GameStateTotal,
     pub team: ActiveTeam,
     pub data: T,
 }
@@ -100,7 +100,7 @@ pub async fn map_editor(
     world: &board::MyWorld,
     map: unit::Map,
 ) -> unit::Map {
-    let (mut game, _starting_team) = GameState::new(&world, &map);
+    let (mut game_total, _starting_team) = unit::GameStateTotal::new(&world, &map);
 
     enum TT {
         Ice,
@@ -114,7 +114,7 @@ pub async fn map_editor(
     let mut tt = TT::Water;
 
     loop {
-        let pos = doop.get_mouse(ActiveTeam::White, &mut game).await;
+        let pos = doop.get_mouse(ActiveTeam::White, &mut game_total).await;
         let pos = match pos {
             MouseEvent::Normal(pos) => pos,
             MouseEvent::Button(s) => {
@@ -127,7 +127,7 @@ pub async fn map_editor(
                     "b_start1" => TT::Start1,
                     "b_start2" => TT::Start2,
                     "b_export" => {
-                        if let Some(m) = unit::Map::from_game_state(&game, world) {
+                        if let Some(m) = unit::Map::from_game_state(&game_total.tactical, world) {
                             return m;
                         }
                         continue;
@@ -138,6 +138,8 @@ pub async fn map_editor(
                 continue;
             }
         };
+
+        let mut game = &mut game_total.tactical;
 
         match tt {
             TT::Ice => {
@@ -210,7 +212,7 @@ pub async fn game_play_thread(
 ) -> (unit::GameOver, MoveHistory) {
     console_dbg!("gameplay thread start");
 
-    let (mut game, start_team) = GameState::new(&world, &map);
+    let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
 
     let mut game_history = MoveHistory::new();
 
@@ -220,7 +222,7 @@ pub async fn game_play_thread(
     loop {
         let team = team_gen.next().unwrap();
 
-        if let Some(g) = game.game_is_over(&world, team, &game_history) {
+        if let Some(g) = game.tactical.game_is_over(&world, team, &game_history) {
             break (g, game_history);
         }
 
@@ -236,7 +238,7 @@ pub async fn game_play_thread(
         console_dbg!("main thread iter");
         if foo {
             let the_move = {
-                ai_int.send_command(&game, &world, team, &game_history);
+                ai_int.send_command(&game.tactical, &world, team, &game_history);
 
                 use futures::FutureExt;
                 let the_move = futures::select!(
@@ -252,14 +254,17 @@ pub async fn game_play_thread(
 
             let effect_m = animate_move(&the_move, team, &mut game, &world, &mut doop)
                 .await
-                .apply(team, &mut game, &world);
+                .apply(team, &mut game.tactical, &world);
 
+            game.update_fog(world, team);
             game_history.push((the_move, effect_m));
 
             continue;
         }
 
         let r = handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
+
+        game.update_fog(world, team);
         game_history.push(r);
     }
 }
@@ -274,7 +279,7 @@ impl WorkerManager {
         &mut self,
         animation: AnimationCommand,
         team: ActiveTeam,
-        game: &mut GameState,
+        game: &mut unit::GameStateTotal,
     ) {
         let data = self
             .send_command(team, game, Command::Animate(animation))
@@ -289,7 +294,7 @@ impl WorkerManager {
         &mut self,
         cell: &mut CellSelection,
         team: ActiveTeam,
-        game: &mut GameState,
+        game: &mut unit::GameStateTotal,
         grey: bool,
     ) -> MouseEvent<Axial> {
         let selection = std::mem::take(cell);
@@ -311,7 +316,11 @@ impl WorkerManager {
         o
     }
 
-    async fn get_mouse(&mut self, team: ActiveTeam, game: &mut GameState) -> MouseEvent<Axial> {
+    async fn get_mouse(
+        &mut self,
+        team: ActiveTeam,
+        game: &mut unit::GameStateTotal,
+    ) -> MouseEvent<Axial> {
         let b = self
             .send_command(team, game, Command::GetMouseInputNoSelect)
             .await;
@@ -340,7 +349,7 @@ impl WorkerManager {
     //     };
     // }
 
-    pub async fn wait_forever(&mut self, team: ActiveTeam, game: &mut GameState) {
+    pub async fn wait_forever(&mut self, team: ActiveTeam, game: &mut unit::GameStateTotal) {
         let data = self.send_command(team, game, Command::Wait).await;
 
         let Response::AnimationFinish = data else {
@@ -349,7 +358,11 @@ impl WorkerManager {
         //console_db
     }
 
-    pub async fn wait_ai(&mut self, team: ActiveTeam, game: &mut GameState) -> ActualMove {
+    pub async fn wait_ai(
+        &mut self,
+        team: ActiveTeam,
+        game: &mut unit::GameStateTotal,
+    ) -> ActualMove {
         let data = self.send_command(team, game, Command::WaitAI).await;
 
         let Response::AiFinish(the_move) = data else {
@@ -363,7 +376,7 @@ impl WorkerManager {
     async fn send_command(
         &mut self,
         team: ActiveTeam,
-        game1: &mut GameState,
+        game1: &mut unit::GameStateTotal,
         co: Command,
     ) -> Response {
         //let game2 = std::mem::take(game1);
@@ -401,7 +414,7 @@ pub enum LoopRes<T> {
 
 pub async fn reselect_loop(
     doop: &mut WorkerManager,
-    game: &mut GameState,
+    game: &mut unit::GameStateTotal,
     world: &board::MyWorld,
     team: ActiveTeam,
     have_moved: &mut Option<HaveMoved>,
@@ -447,7 +460,7 @@ pub async fn reselect_loop(
     // let cca = cca.unwrap_or_else(|| {
     //
     // });
-    let (mut cca, _, _) = game.generate_possible_moves_movement(
+    let (mut cca, _, _) = game.tactical.generate_possible_moves_movement(
         world,
         Some(unwrapped_selected_unit),
         selected_unit.team,
@@ -455,6 +468,7 @@ pub async fn reselect_loop(
     );
 
     let c2 = game
+        .tactical
         .factions
         .doop(mesh::small_mesh::conv(unwrapped_selected_unit), world);
 
@@ -498,7 +512,7 @@ pub async fn reselect_loop(
 
     //If we select a friendly unit quick swap
 
-    if let Some((_, team2)) = game.factions.get_cell(target_cell) {
+    if let Some((_, team2)) = game.tactical.factions.get_cell(target_cell) {
         if team2 == selected_unit.team {
             if !contains {
                 //it should be impossible for a unit to move onto a friendly
@@ -510,7 +524,7 @@ pub async fn reselect_loop(
     }
 
     //If we select an enemy unit quick swap
-    if let Some((_, team2)) = game.factions.get_cell(target_cell) {
+    if let Some((_, team2)) = game.tactical.factions.get_cell(target_cell) {
         if team2 == selected_unit.team {
             if selected_unit.team != team || !contains {
                 //If we select an enemy unit thats outside of our units range.
@@ -577,7 +591,7 @@ pub async fn reselect_loop(
 
     let effect = animate_move(&mp, selected_unit.team, game, world, doop)
         .await
-        .apply(selected_unit.team, game, world);
+        .apply(selected_unit.team, &mut game.tactical, world);
 
     {
         LoopRes::EndTurn((
@@ -606,7 +620,7 @@ pub async fn replay(
     mut doop: WorkerManager,
 ) -> unit::GameOver {
     //let map = unit::default_map(world);
-    let (mut game, starting_team) = GameState::new(world, map);
+    let (mut game, starting_team) = unit::GameStateTotal::new(world, map);
     //let mut game_history = MoveHistory::new();
 
     let mut team_gen = starting_team.iter();
@@ -630,7 +644,7 @@ pub async fn replay(
 
                             let (the_move, effect) = &history.inner[counter];
 
-                            the_move.undo(team_counter, &effect, &mut game);
+                            the_move.undo(team_counter, &effect, &mut game.tactical);
                         }
                     }
                     "b_next" => {
@@ -640,7 +654,7 @@ pub async fn replay(
                             let effect_m =
                                 animate_move(&the_move, team_counter, &mut game, world, &mut doop)
                                     .await
-                                    .apply(team_counter, &mut game, world);
+                                    .apply(team_counter, &mut game.tactical, world);
 
                             counter += 1;
                             team_counter = team_counter.not();
@@ -682,11 +696,11 @@ pub async fn replay(
 pub async fn animate_move<'a>(
     aa: &'a ActualMove,
     team: ActiveTeam,
-    state: &GameState,
+    state: &unit::GameStateTotal,
     world: &board::MyWorld,
     data: &mut WorkerManager,
 ) -> &'a ActualMove {
-    let end_points = state.factions.iter_end_points(world, aa.moveto);
+    let end_points = state.tactical.factions.iter_end_points(world, aa.moveto);
 
     let mut ss = state.clone();
 
@@ -714,17 +728,17 @@ pub async fn animate_move<'a>(
         .await;
 
         stack += 1;
-        if let Some(_) = state.factions.get_cell_inner(aa.moveto) {
-            ss.factions.remove_inner(aa.moveto);
+        if let Some(_) = state.tactical.factions.get_cell_inner(aa.moveto) {
+            ss.tactical.factions.remove_inner(aa.moveto);
         }
-        ss.factions.add_cell_inner(aa.moveto, stack, team);
+        ss.tactical.factions.add_cell_inner(aa.moveto, stack, team);
     }
 
     aa
 }
 
 pub async fn handle_player(
-    game: &mut GameState,
+    game: &mut unit::GameStateTotal,
     world: &board::MyWorld,
     doop: &mut WorkerManager,
     team: ActiveTeam,
@@ -762,7 +776,7 @@ pub async fn handle_player(
                     if s == "undo" {
                         assert!(extra_attack.is_none());
 
-                        undo(move_log, game);
+                        undo(move_log, &mut game.tactical);
 
                         continue 'outer;
                     } else if s == "pass" {
@@ -770,7 +784,7 @@ pub async fn handle_player(
                             moveto: moves::PASS_MOVE_INDEX,
                         };
 
-                        let me = mp.apply(team, game, world);
+                        let me = mp.apply(team, &mut game.tactical, world);
                         return (mp, me);
                     } else {
                         unreachable!();
@@ -778,7 +792,7 @@ pub async fn handle_player(
                 }
             };
 
-            if let Some((_, team2)) = game.factions.get_cell(cell) {
+            if let Some((_, team2)) = game.tactical.factions.get_cell(cell) {
                 break SelectType {
                     coord: cell,
                     team: team2,
@@ -806,7 +820,7 @@ pub async fn handle_player(
                 LoopRes::Undo => {
                     assert!(extra_attack.is_none());
 
-                    undo(move_log, game);
+                    undo(move_log, &mut game.tactical);
                     continue 'outer;
                 }
                 LoopRes::Pass => {
@@ -814,7 +828,7 @@ pub async fn handle_player(
                         moveto: moves::PASS_MOVE_INDEX,
                     };
 
-                    let me = mp.apply(team, game, world);
+                    let me = mp.apply(team, &mut game.tactical, world);
                     return (mp, me);
                 }
             };
