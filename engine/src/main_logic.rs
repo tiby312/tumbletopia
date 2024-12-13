@@ -465,7 +465,7 @@ pub async fn reselect_loop(
         Some(unwrapped_selected_unit),
         selected_unit.team,
         true,
-        false
+        false,
     );
 
     let c2 = game
