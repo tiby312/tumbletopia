@@ -48,6 +48,38 @@ pub const PASS_MOVE_INDEX: usize = const { mesh::small_mesh::conv(PASS_MOVE) };
 
 impl crate::unit::GameStateTotal {
     pub fn update_fog(&mut self, world: &board::MyWorld, team: ActiveTeam) {
+        let fog = match team {
+            ActiveTeam::White => &mut self.fog[0],
+            ActiveTeam::Black => &mut self.fog[1],
+            ActiveTeam::Neutral => unreachable!(),
+        };
+
+        let pieces = match team {
+            ActiveTeam::White => {
+                self.tactical.factions.piece.inner & self.tactical.factions.team.inner
+            }
+            ActiveTeam::Black => {
+                self.tactical.factions.piece.inner & !self.tactical.factions.team.inner
+            }
+            ActiveTeam::Neutral => unreachable!(),
+        };
+
+        for a in pieces.iter_ones() {
+            let fa = mesh::small_mesh::inverse(a);
+
+            let (val, _) = self.tactical.factions.get_cell_inner(a).unwrap();
+
+            for b in fa.to_cube().range(val.try_into().unwrap()) {
+                if !world.get_game_cells().is_set(*b) {
+                    continue;
+                }
+
+                fog.set_coord(*b, false);
+            }
+        }
+    }
+
+    pub fn update_fog_spokes(&mut self, world: &board::MyWorld, team: ActiveTeam) {
         let res = self
             .tactical
             .generate_possible_moves_movement(world, None, team, true, true);
