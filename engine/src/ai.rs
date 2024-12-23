@@ -365,7 +365,7 @@ impl<'a> AlphaBeta<'a> {
         }
 
         let (_, captures, _) =
-            game.generate_possible_moves_movement(self.world, None, team, false, false);
+            game.generate_possible_moves_movement(self.world, None, team, false, false, false);
 
         let start_move_index = self.moves.len();
 
@@ -428,8 +428,10 @@ impl<'a> AlphaBeta<'a> {
             return self.quiesance(game, ab, team, 4);
         }
 
+        //TODO don't allow pass. why waste tones of branching? There aren't any
+        //crazy tactical combinations involving passing
         let (all_moves, captures, reinfocements) =
-            game.generate_possible_moves_movement(self.world, None, team, false, false);
+            game.generate_possible_moves_movement(self.world, None, team, false, false, false);
 
         let start_move_index = self.moves.len();
 
@@ -443,7 +445,7 @@ impl<'a> AlphaBeta<'a> {
         let moves = &mut self.moves[start_move_index..end_move_index];
 
         //This is impossible since you can always pass
-        assert!(!moves.is_empty());
+        //assert!(!moves.is_empty());
 
         let move_value = |index: usize| {
             if captures.inner[index] {

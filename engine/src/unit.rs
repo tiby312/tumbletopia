@@ -130,6 +130,24 @@ pub struct GameStateTotal {
     pub tactical: GameState,
 }
 
+impl GameStateTotal {
+    pub fn create_ai_state(&self, team: ActiveTeam) -> GameState {
+        let mut gg = self.tactical.clone();
+        let fog = match team {
+            ActiveTeam::White => &self.fog[0],
+            ActiveTeam::Black => &self.fog[1],
+            ActiveTeam::Neutral => unreachable!(),
+        };
+
+        //TODO use bit and/oring
+        for a in fog.iter_mesh(Axial::zero()) {
+            gg.factions.remove(a);
+            gg.factions.add_cell(a, 6, ActiveTeam::Neutral);
+        }
+
+        gg
+    }
+}
 //Additionally removes need to special case animation.
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {

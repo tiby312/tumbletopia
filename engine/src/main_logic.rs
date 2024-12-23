@@ -238,7 +238,11 @@ pub async fn game_play_thread(
         console_dbg!("main thread iter");
         if foo {
             let the_move = {
-                ai_int.send_command(&game.tactical, &world, team, &game_history);
+                let ai_state = game.create_ai_state(team);
+
+                //ai::iterative_deepening(&ai_state, &world, team, &game_history)
+
+                ai_int.send_command(&ai_state, &world, team, &game_history);
 
                 use futures::FutureExt;
                 let the_move = futures::select!(
@@ -466,6 +470,7 @@ pub async fn reselect_loop(
         selected_unit.team,
         true,
         false,
+        true, //TODO should this be true?
     );
 
     let c2 = game

@@ -54,27 +54,30 @@ impl crate::unit::GameStateTotal {
             ActiveTeam::Neutral => unreachable!(),
         };
 
-        let pieces = match team {
-            ActiveTeam::White => {
-                self.tactical.factions.piece.inner & self.tactical.factions.team.inner
-            }
-            ActiveTeam::Black => {
-                self.tactical.factions.piece.inner & !self.tactical.factions.team.inner
-            }
-            ActiveTeam::Neutral => unreachable!(),
-        };
+        // let pieces = match team {
+        //     ActiveTeam::White => {
+        //         self.tactical.factions.piece.inner & self.tactical.factions.team.inner
+        //     }
+        //     ActiveTeam::Black => {
+        //         return;
+        //         self.tactical.factions.piece.inner & !self.tactical.factions.team.inner
+        //     }
+        //     ActiveTeam::Neutral => unreachable!(),
+        // };
 
-        for a in pieces.iter_ones() {
+        for a in world.get_game_cells().inner.iter_ones() {
             let fa = mesh::small_mesh::inverse(a);
 
-            let (val, _) = self.tactical.factions.get_cell_inner(a).unwrap();
+            if let Some((val, tt)) = self.tactical.factions.get_cell_inner(a) {
+                if tt == team {
+                    for b in fa.to_cube().range(val.try_into().unwrap()) {
+                        if !world.get_game_cells().is_set(*b) {
+                            continue;
+                        }
 
-            for b in fa.to_cube().range(val.try_into().unwrap()) {
-                if !world.get_game_cells().is_set(*b) {
-                    continue;
+                        fog.set_coord(*b, false);
+                    }
                 }
-
-                fog.set_coord(*b, false);
             }
         }
     }
@@ -82,7 +85,7 @@ impl crate::unit::GameStateTotal {
     pub fn update_fog_spokes(&mut self, world: &board::MyWorld, team: ActiveTeam) {
         let res = self
             .tactical
-            .generate_possible_moves_movement(world, None, team, true, true);
+            .generate_possible_moves_movement(world, None, team, true, true, false);
 
         let fog = match team {
             ActiveTeam::White => &mut self.fog[0],
@@ -137,10 +140,13 @@ impl GameState {
         team: ActiveTeam,
         allow_suicidal: bool,
         vision_mode: bool,
+        allow_pass: bool,
     ) -> (SmallMesh, SmallMesh, SmallMesh) {
         let mut mesh = SmallMesh::new();
 
-        mesh.inner.set(PASS_MOVE_INDEX, true);
+        if allow_pass {
+            mesh.inner.set(PASS_MOVE_INDEX, true);
+        }
 
         let mut captures = SmallMesh::new();
         let mut reinforcements = SmallMesh::new();

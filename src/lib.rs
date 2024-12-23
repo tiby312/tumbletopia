@@ -1046,7 +1046,12 @@ async fn render_command(
         draw_sys.batch(ice_pos).build(&models.snow, &projjj);
 
         let mut fog_pos = vec![];
-        for pos in game_total.fog[0].iter_mesh(Axial::zero()) {
+        let fogg = match team {
+            ActiveTeam::White => &game_total.fog[0],
+            ActiveTeam::Black => &game_total.fog[1],
+            ActiveTeam::Neutral => todo!(),
+        };
+        for pos in fogg.iter_mesh(Axial::zero()) {
             fog_pos.push(grid_snap(pos, 0.0));
         }
         draw_sys.batch(fog_pos).build(&models.fog, &projjj);
