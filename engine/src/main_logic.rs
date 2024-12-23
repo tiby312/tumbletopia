@@ -464,7 +464,8 @@ pub async fn reselect_loop(
     // let cca = cca.unwrap_or_else(|| {
     //
     // });
-    let (mut cca, _, _) = game.tactical.generate_possible_moves_movement(
+    //create_ai_state(team)
+    let (mut cca, _, _) = game.create_ai_state(team).generate_possible_moves_movement(
         world,
         Some(unwrapped_selected_unit),
         selected_unit.team,
