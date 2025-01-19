@@ -4,6 +4,7 @@ use gloo_console::console_dbg;
 
 pub type Eval = i64;
 const MATE: i64 = 1_000_000;
+use mesh::small_mesh::SmallMesh;
 use tinyvec::ArrayVec;
 pub struct Evaluator {
     // workspace: BitField,
@@ -181,6 +182,7 @@ const STACK_SIZE: usize = 5 + 4;
 
 pub fn iterative_deepening(
     game: &GameState,
+    fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
     team: ActiveTeam,
     move_history: &MoveHistory,
@@ -220,7 +222,7 @@ pub fn iterative_deepening(
         };
 
         let mut kk = game.clone();
-        let (res, mov) = aaaa.alpha_beta(&mut kk, ABAB::new(), team, depth);
+        let (res, mov) = aaaa.alpha_beta(&mut kk, fogs, ABAB::new(), team, depth);
         assert_eq!(&kk, game);
 
         {
@@ -230,7 +232,7 @@ pub fn iterative_deepening(
             let mut vals = vec![];
             for m in mov.iter().rev() {
                 vals.push((gg.hash_me(), m.clone()));
-                m.apply(tt, &mut gg, world);
+                m.apply(tt, &mut gg, &fogs[tt.index()], world);
                 tt = tt.not();
             }
             for (v, k) in vals.into_iter().rev() {
@@ -320,24 +322,24 @@ impl KillerMoves {
     }
 }
 
-pub fn evaluate_a_continuation(
-    game: &GameState,
-    world: &board::MyWorld,
-    team_to_play: ActiveTeam,
-    m: impl IntoIterator<Item = ActualMove>,
-) -> Eval {
-    let mut game = game.clone();
-    let mut team = team_to_play;
-    for cand in m {
-        {
-            let j = cand;
-            j.apply(team, &mut game, world)
-        };
-        team = team.not();
-    }
+// pub fn evaluate_a_continuation(
+//     game: &GameState,
+//     world: &board::MyWorld,
+//     team_to_play: ActiveTeam,
+//     m: impl IntoIterator<Item = ActualMove>,
+// ) -> Eval {
+//     let mut game = game.clone();
+//     let mut team = team_to_play;
+//     for cand in m {
+//         {
+//             let j = cand;
+//             j.apply(team, &mut game, world)
+//         };
+//         team = team.not();
+//     }
 
-    Evaluator::default().absolute_evaluate(&game, world, false)
-}
+//     Evaluator::default().absolute_evaluate(&game, world, false)
+// }
 
 #[derive(Debug, Clone)]
 struct EvalRet<T> {
@@ -349,6 +351,7 @@ impl<'a> AlphaBeta<'a> {
     fn quiesance(
         &mut self,
         game: &mut GameState,
+        fogs: &[SmallMesh; 2],
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
@@ -364,8 +367,15 @@ impl<'a> AlphaBeta<'a> {
             );
         }
 
-        let (_, captures, _) =
-            game.generate_possible_moves_movement(self.world, None, team, false, false, false);
+        let (_, captures, _) = game.generate_possible_moves_movement(
+            self.world,
+            None,
+            team,
+            false,
+            false,
+            false,
+            &fogs[team.index()],
+        );
 
         let start_move_index = self.moves.len();
 
@@ -390,9 +400,10 @@ impl<'a> AlphaBeta<'a> {
             let cand = ActualMove {
                 moveto: self.moves.pop().unwrap() as usize,
             };
-            let effect = cand.apply(team, game, self.world);
+            let effect = cand.apply(team, game, &fogs[team.index()], self.world);
 
-            let (eval, m) = self.quiesance(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
+            let (eval, m) =
+                self.quiesance(game, fogs, ab_iter.clone_ab_values(), team.not(), depth - 1);
 
             cand.undo(team, &effect, game);
 
@@ -416,6 +427,7 @@ impl<'a> AlphaBeta<'a> {
     fn alpha_beta(
         &mut self,
         game: &mut GameState,
+        fogs: &[SmallMesh; 2],
         mut ab: ABAB,
         team: ActiveTeam,
         depth: usize,
@@ -425,13 +437,20 @@ impl<'a> AlphaBeta<'a> {
         }
 
         if depth == 0 {
-            return self.quiesance(game, ab, team, 4);
+            return self.quiesance(game, fogs, ab, team, 4);
         }
 
         //TODO don't allow pass. why waste tones of branching? There aren't any
         //crazy tactical combinations involving passing
-        let (all_moves, captures, reinfocements) =
-            game.generate_possible_moves_movement(self.world, None, team, false, false, false);
+        let (all_moves, captures, reinfocements) = game.generate_possible_moves_movement(
+            self.world,
+            None,
+            team,
+            false,
+            false,
+            false,
+            &fogs[team.index()],
+        );
 
         let start_move_index = self.moves.len();
 
@@ -490,10 +509,12 @@ impl<'a> AlphaBeta<'a> {
             let cand = ActualMove {
                 moveto: self.moves.pop().unwrap() as usize,
             };
-            let effect: move_build::MoveEffect = cand.apply(team, game, self.world);
+            let effect: move_build::MoveEffect =
+                cand.apply(team, game, &fogs[team.index()], self.world);
             self.history.push((cand, effect));
 
-            let (eval, m) = self.alpha_beta(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
+            let (eval, m) =
+                self.alpha_beta(game, fogs, ab_iter.clone_ab_values(), team.not(), depth - 1);
 
             let (cand, effect) = self.history.inner.pop().unwrap();
 

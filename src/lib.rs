@@ -206,8 +206,13 @@ pub async fn worker_entry2() {
         //console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
         //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        let the_move =
-            engine::ai::iterative_deepening(&mut res.game, &res.world, res.team, &res.history);
+        let the_move = engine::ai::iterative_deepening(
+            &mut res.game,
+            &res.fogs,
+            &res.world,
+            res.team,
+            &res.history,
+        );
         //console_dbg!("worker:finished processing");
         worker.post_message(AiResponse { the_move });
     }
@@ -216,6 +221,7 @@ pub async fn worker_entry2() {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiCommand {
     game: GameState,
+    fogs: [mesh::small_mesh::SmallMesh; 2],
     world: board::MyWorld,
     team: ActiveTeam,
     history: MoveHistory,
@@ -272,12 +278,14 @@ pub async fn worker_entry() {
         fn send_command(
             &mut self,
             game: &GameState,
+            fogs: &[mesh::small_mesh::SmallMesh; 2],
             world: &board::MyWorld,
             team: ActiveTeam,
             history: &MoveHistory,
         ) {
             self.ai_worker.post_message(AiCommand {
                 game: game.clone(),
+                fogs: fogs.clone(),
                 world: world.clone(),
                 team,
                 history: history.clone(),

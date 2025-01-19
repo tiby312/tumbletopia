@@ -354,6 +354,7 @@ pub struct Tribe {
 }
 
 impl Tribe {
+    //TODO rename
     pub fn doop(&self, index: usize, world: &MyWorld) -> SmallMesh {
         let mut s = SmallMesh::new();
 
@@ -530,9 +531,11 @@ pub fn parse_replay_string(s: &str, world: &MyWorld) -> Option<(Map, MoveHistory
     let mut mh = MoveHistory::new();
     for (f, team) in moves.split_terminator(',').zip(start_team.iter()) {
         let m = ActualMove::from_str(f)?;
-        let effect = m.apply(team, &mut g.tactical, world);
-        g.update_fog(world, team);
-        mh.inner.push((m, effect));
+
+        todo!();
+        // let effect = m.apply(team, &mut g.tactical, world);
+        // g.update_fog(world, team);
+        // mh.inner.push((m, effect));
     }
 
     Some((map, mh))

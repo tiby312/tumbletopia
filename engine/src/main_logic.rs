@@ -195,6 +195,7 @@ pub trait AiInterface {
     fn send_command(
         &mut self,
         game: &GameState,
+        fogs: &[mesh::small_mesh::SmallMesh; 2],
         world: &MyWorld,
         team: ActiveTeam,
         history: &MoveHistory,
@@ -242,7 +243,7 @@ pub async fn game_play_thread(
 
                 //ai::iterative_deepening(&ai_state, &world, team, &game_history)
 
-                ai_int.send_command(&ai_state, &world, team, &game_history);
+                ai_int.send_command(&ai_state, &game.fog, &world, team, &game_history);
 
                 use futures::FutureExt;
                 let the_move = futures::select!(
@@ -258,7 +259,7 @@ pub async fn game_play_thread(
 
             let effect_m = animate_move(&the_move, team, &mut game, &world, &mut doop)
                 .await
-                .apply(team, &mut game.tactical, &world);
+                .apply(team, &mut game.tactical, &game.fog[team.index()], &world);
 
             game.update_fog(world, team);
             game_history.push((the_move, effect_m));
@@ -467,7 +468,7 @@ pub async fn reselect_loop(
     //create_ai_state(team)
     let (mut cca, _, _) = game
         .tactical
-        .bake_fog(&game.fog[team.index()])
+        //.bake_fog(&game.fog[team.index()])
         .generate_possible_moves_movement(
             world,
             Some(unwrapped_selected_unit),
@@ -475,10 +476,12 @@ pub async fn reselect_loop(
             true,
             false,
             true, //TODO should this be true?
+            &game.fog[team.index()],
         );
 
     let c2 = game
         .tactical
+        .bake_fog(&game.fog[team.index()])
         .factions
         .doop(mesh::small_mesh::conv(unwrapped_selected_unit), world);
 
@@ -601,7 +604,12 @@ pub async fn reselect_loop(
 
     let effect = animate_move(&mp, selected_unit.team, game, world, doop)
         .await
-        .apply(selected_unit.team, &mut game.tactical, world);
+        .apply(
+            selected_unit.team,
+            &mut game.tactical,
+            &game.fog[team.index()],
+            world,
+        );
 
     {
         LoopRes::EndTurn((
@@ -664,7 +672,12 @@ pub async fn replay(
                             let effect_m =
                                 animate_move(&the_move, team_counter, &mut game, world, &mut doop)
                                     .await
-                                    .apply(team_counter, &mut game.tactical, world);
+                                    .apply(
+                                        team_counter,
+                                        &mut game.tactical,
+                                        &game.fog[team_counter.index()],
+                                        world,
+                                    );
 
                             counter += 1;
                             team_counter = team_counter.not();
@@ -710,7 +723,11 @@ pub async fn animate_move<'a>(
     world: &board::MyWorld,
     data: &mut WorkerManager,
 ) -> &'a ActualMove {
-    let end_points = state.tactical.factions.iter_end_points(world, aa.moveto);
+    let end_points = state
+        .tactical
+        .bake_fog(&state.fog[team.index()])
+        .factions
+        .iter_end_points(world, aa.moveto);
 
     let mut ss = state.clone();
 
@@ -794,7 +811,7 @@ pub async fn handle_player(
                             moveto: moves::PASS_MOVE_INDEX,
                         };
 
-                        let me = mp.apply(team, &mut game.tactical, world);
+                        let me = mp.apply(team, &mut game.tactical, &game.fog[team.index()], world);
                         return (mp, me);
                     } else {
                         unreachable!();
@@ -838,7 +855,7 @@ pub async fn handle_player(
                         moveto: moves::PASS_MOVE_INDEX,
                     };
 
-                    let me = mp.apply(team, &mut game.tactical, world);
+                    let me = mp.apply(team, &mut game.tactical, &game.fog[team.index()], world);
                     return (mp, me);
                 }
             };

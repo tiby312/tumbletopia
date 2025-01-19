@@ -436,6 +436,7 @@ impl ActualMove {
         &self,
         team: ActiveTeam,
         game: &mut GameState,
+        fog: &mesh::small_mesh::SmallMesh,
         world: &board::MyWorld,
     ) -> MoveEffect {
         //this is a pass
@@ -453,7 +454,11 @@ impl ActualMove {
 
         let mut stack_size = 0;
 
-        for (_, rest) in game.factions.iter_end_points(world, target_cell) {
+        for (_, rest) in game
+            .bake_fog(fog)
+            .factions
+            .iter_end_points(world, target_cell)
+        {
             if let Some((_, tt)) = rest {
                 if tt == team {
                     stack_size += 1;
