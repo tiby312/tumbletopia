@@ -63,6 +63,13 @@ pub enum ActiveTeam {
     Neutral = 2,
 }
 impl ActiveTeam {
+    pub fn index(&self) -> usize {
+        match self {
+            ActiveTeam::White => 0,
+            ActiveTeam::Black => 1,
+            ActiveTeam::Neutral => unreachable!(),
+        }
+    }
     pub fn is_white(&self) -> bool {
         if let ActiveTeam::White = self {
             true
@@ -130,24 +137,7 @@ pub struct GameStateTotal {
     pub tactical: GameState,
 }
 
-impl GameStateTotal {
-    pub fn create_ai_state(&self, team: ActiveTeam) -> GameState {
-        let mut gg = self.tactical.clone();
-        let fog = match team {
-            ActiveTeam::White => &self.fog[0],
-            ActiveTeam::Black => &self.fog[1],
-            ActiveTeam::Neutral => unreachable!(),
-        };
-
-        //TODO use bit and/oring
-        for a in fog.iter_mesh(Axial::zero()) {
-            gg.factions.remove(a);
-            gg.factions.add_cell(a, 6, ActiveTeam::Neutral);
-        }
-
-        gg
-    }
-}
+impl GameStateTotal {}
 //Additionally removes need to special case animation.
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
@@ -163,6 +153,22 @@ pub enum GameOver {
 }
 
 impl GameState {
+    pub fn bake_fog(&self, fog: &SmallMesh) -> GameState {
+        let mut gg = self.clone();
+        // let fog = match team {
+        //     ActiveTeam::White => &self.fog[0],
+        //     ActiveTeam::Black => &self.fog[1],
+        //     ActiveTeam::Neutral => unreachable!(),
+        // };
+
+        //TODO use bit and/oring
+        for a in fog.iter_mesh(Axial::zero()) {
+            gg.factions.remove(a);
+            gg.factions.add_cell(a, 6, ActiveTeam::Neutral);
+        }
+
+        gg
+    }
     pub fn hash_me(&self) -> u64 {
         use std::hash::Hash;
         use std::hash::Hasher;

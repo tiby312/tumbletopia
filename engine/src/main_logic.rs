@@ -238,7 +238,7 @@ pub async fn game_play_thread(
         console_dbg!("main thread iter");
         if foo {
             let the_move = {
-                let ai_state = game.create_ai_state(team);
+                let ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
 
                 //ai::iterative_deepening(&ai_state, &world, team, &game_history)
 
@@ -465,14 +465,17 @@ pub async fn reselect_loop(
     //
     // });
     //create_ai_state(team)
-    let (mut cca, _, _) = game.create_ai_state(team).generate_possible_moves_movement(
-        world,
-        Some(unwrapped_selected_unit),
-        selected_unit.team,
-        true,
-        false,
-        true, //TODO should this be true?
-    );
+    let (mut cca, _, _) = game
+        .tactical
+        .bake_fog(&game.fog[team.index()])
+        .generate_possible_moves_movement(
+            world,
+            Some(unwrapped_selected_unit),
+            selected_unit.team,
+            true,
+            false,
+            true, //TODO should this be true?
+        );
 
     let c2 = game
         .tactical
