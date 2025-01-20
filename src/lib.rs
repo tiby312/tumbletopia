@@ -1010,6 +1010,20 @@ async fn render_command(
                     continue;
                 }
 
+                match team {
+                    ActiveTeam::White => {
+                        if game_total.fog[0].is_set(a) {
+                            continue;
+                        }
+                    }
+                    ActiveTeam::Black => {
+                        if game_total.fog[1].is_set(a) {
+                            continue;
+                        }
+                    }
+                    ActiveTeam::Neutral => todo!(),
+                }
+
                 let arr = match team2 {
                     ActiveTeam::White => &mut white_team_cells,
                     ActiveTeam::Black => &mut black_team_cells,
