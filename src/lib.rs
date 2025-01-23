@@ -928,6 +928,15 @@ async fn render_command(
             }
         }
 
+        let shown_team = team;
+        let shown_team = ActiveTeam::White;
+
+        let shown_fog = match shown_team {
+            ActiveTeam::White => &game_total.fog[0],
+            ActiveTeam::Black => &game_total.fog[1],
+            ActiveTeam::Neutral => todo!(),
+        };
+
         {
             let zzzz = 0.1;
 
@@ -961,12 +970,15 @@ async fn render_command(
                     }
                 });
 
-            let ani_drop_shadow = unit_animation.as_ref().map(|a| {
-                let pos = a.0;
-                matrix::translation(pos.x, pos.y, zzzz)
-                    .chain(matrix::scale(0.6, 0.6, 1.0))
-                    .generate()
-            });
+            let ani_drop_shadow = unit_animation
+                .as_ref()
+                .map(|a| {
+                    let pos = a.0;
+                    matrix::translation(pos.x, pos.y, zzzz)
+                        .chain(matrix::scale(0.6, 0.6, 1.0))
+                        .generate()
+                })
+                .filter(|_| team == shown_team);
 
             let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
 
@@ -979,22 +991,24 @@ async fn render_command(
         let mut neutral_team_cells = vec![];
         //let mut mountains = vec![];
 
-        if let Some((pos, ..)) = &unit_animation {
-            let ss = 0.4;
-            //Draw it a bit lower then static ones so there is no flickering
-            let first = matrix::translation(pos.x, pos.y, 1.0)
-                .chain(matrix::scale(ss, ss, 1.0))
-                .generate();
+        if team == shown_team {
+            if let Some((pos, ..)) = &unit_animation {
+                let ss = 0.4;
+                //Draw it a bit lower then static ones so there is no flickering
+                let first = matrix::translation(pos.x, pos.y, 1.0)
+                    .chain(matrix::scale(ss, ss, 1.0))
+                    .generate();
 
-            match team {
-                ActiveTeam::White => {
-                    white_team_cells.push(first);
-                }
-                ActiveTeam::Black => {
-                    black_team_cells.push(first);
-                }
-                ActiveTeam::Neutral => {
-                    neutral_team_cells.push(first);
+                match team {
+                    ActiveTeam::White => {
+                        white_team_cells.push(first);
+                    }
+                    ActiveTeam::Black => {
+                        black_team_cells.push(first);
+                    }
+                    ActiveTeam::Neutral => {
+                        neutral_team_cells.push(first);
+                    }
                 }
             }
         }
@@ -1010,18 +1024,8 @@ async fn render_command(
                     continue;
                 }
 
-                match team {
-                    ActiveTeam::White => {
-                        if game_total.fog[0].is_set(a) {
-                            continue;
-                        }
-                    }
-                    ActiveTeam::Black => {
-                        if game_total.fog[1].is_set(a) {
-                            continue;
-                        }
-                    }
-                    ActiveTeam::Neutral => todo!(),
+                if shown_fog.is_set(a) {
+                    continue;
                 }
 
                 let arr = match team2 {
@@ -1068,12 +1072,13 @@ async fn render_command(
         draw_sys.batch(ice_pos).build(&models.snow, &projjj);
 
         let mut fog_pos = vec![];
-        let fogg = match team {
-            ActiveTeam::White => &game_total.fog[0],
-            ActiveTeam::Black => &game_total.fog[1],
-            ActiveTeam::Neutral => todo!(),
-        };
-        for pos in fogg.iter_mesh(Axial::zero()) {
+        // let fogg = match team {
+        //     ActiveTeam::White => &game_total.fog[0],
+        //     ActiveTeam::Black => &game_total.fog[1],
+        //     ActiveTeam::Neutral => todo!(),
+        // };
+
+        for pos in shown_fog.iter_mesh(Axial::zero()) {
             fog_pos.push(grid_snap(pos, 0.0));
         }
         draw_sys.batch(fog_pos).build(&models.fog, &projjj);
