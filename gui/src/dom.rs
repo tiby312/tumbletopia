@@ -1,6 +1,6 @@
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::{JsCast, JsValue, UnwrapThrowExt};
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
 use super::*;
 
@@ -124,7 +124,7 @@ pub fn text_texture(text: &str, width: usize, height: usize) -> web_sys::HtmlCan
     ctx.set_font(text);
     ctx.set_text_align("center");
     ctx.set_text_baseline("middle");
-    ctx.set_fill_style(&JsValue::from_str("black"));
+    ctx.set_fill_style_str("black");
     ctx.clear_rect(0., 0., width as f64, height as f64);
     ctx.fill_text(text, width as f64 / 2., height as f64 / 2.)
         .unwrap();
