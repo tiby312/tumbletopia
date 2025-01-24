@@ -468,7 +468,7 @@ pub async fn reselect_loop(
     //create_ai_state(team)
     let (mut cca, _, _) = game
         .tactical
-        //.bake_fog(&game.fog[team.index()])
+        .bake_fog(&game.fog[team.index()])
         .generate_possible_moves_movement(
             world,
             Some(unwrapped_selected_unit),
@@ -481,7 +481,7 @@ pub async fn reselect_loop(
 
     let c2 = game
         .tactical
-        .bake_fog(&game.fog[team.index()])
+        //.bake_fog(&game.fog[team.index()])
         .factions
         .doop(mesh::small_mesh::conv(unwrapped_selected_unit), world);
 
