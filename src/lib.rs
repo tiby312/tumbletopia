@@ -102,24 +102,25 @@ pub async fn main_entry() {
                 break dom::GameType::MapEditor(t.value().into());
             }
             "replaybutton" => {
-                let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
-                    .get_element_by_id("textarea_r")
-                    .unwrap()
-                    .dyn_into()
-                    .unwrap();
+                // let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
+                //     .get_element_by_id("textarea_r")
+                //     .unwrap()
+                //     .dyn_into()
+                //     .unwrap();
 
-                let s: String = t.value().into();
+                todo!();
+                // let s: String = t.value().into();
 
-                let Some(_) = unit::parse_replay_string(&s, &world) else {
-                    console_dbg!("Could not part replay");
-                    continue;
-                };
+                // // let Some(_) = unit::parse_replay_string(&s, &world) else {
+                // //     console_dbg!("Could not part replay");
+                // //     continue;
+                // // };
 
-                //TODO this is the proper place to unhide elements. do this elsewhere
-                let elem = shogo::utils::get_by_id_elem("replay_b");
-                elem.set_attribute("style", "display:block;").unwrap();
+                // //TODO this is the proper place to unhide elements. do this elsewhere
+                // let elem = shogo::utils::get_by_id_elem("replay_b");
+                // elem.set_attribute("style", "display:block;").unwrap();
 
-                break dom::GameType::Replay(t.value().into());
+                // break dom::GameType::Replay(t.value().into());
             }
             _ => {
                 todo!()
@@ -424,12 +425,12 @@ pub async fn worker_entry() {
             }
             engine::GameType::Replay(s) => {
                 console_dbg!("got map=", s);
+                todo!();
+                // let (map, history) = unit::parse_replay_string(&s, &world).unwrap();
 
-                let (map, history) = unit::parse_replay_string(&s, &world).unwrap();
+                // let res = engine::main_logic::replay(&map, &history, &world, doop).await;
 
-                let res = engine::main_logic::replay(&map, &history, &world, doop).await;
-
-                Finish::GameFinish((res, history, map))
+                // Finish::GameFinish((res, history, map))
             }
         }
     };
@@ -511,7 +512,7 @@ async fn render_command(
     // let white_rabbit = &models.white_rabbit;
 
     //let fog_asset = &models.fog;
-    let water = &models.token_neutral;
+    // let water = &models.token_neutral;
     // let grass = &models.grass;
     // let mountain_asset = &models.mountain;
     // let snow = &models.snow;
@@ -928,7 +929,7 @@ async fn render_command(
             }
         }
 
-        let shown_team = team;
+        //let shown_team = team;
         let shown_team = ActiveTeam::White;
 
         let shown_fog = match shown_team {

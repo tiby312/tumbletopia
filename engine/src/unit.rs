@@ -193,11 +193,6 @@ impl GameState {
 
         let game = self;
         let mut score = 0;
-        let mut stack_count = 0;
-        let mut territory_count = 0;
-        let mut strength = 0;
-        let mut contested = 0;
-        let mut unseen = 0;
         for index in world.get_game_cells().inner.iter_ones() {
             let mut num_white = 0;
             let mut num_black = 0;
@@ -213,16 +208,6 @@ impl GameState {
 
             if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
-
-                let curr_strength = match tt {
-                    ActiveTeam::White => height.max(num_white - 1),
-                    ActiveTeam::Black => -height.max(num_black - 1),
-                    ActiveTeam::Neutral => 0,
-                };
-
-                strength += curr_strength;
-
-                stack_count += 1;
 
                 match tt {
                     ActiveTeam::White => {
@@ -246,17 +231,8 @@ impl GameState {
 
                 if ownership > 0 {
                     score += ownership;
-                    territory_count += 1;
                 } else if ownership < 0 {
                     score += ownership;
-                    territory_count += 1;
-                } else {
-                    //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
-                    if num_white > 0 {
-                        contested += 1
-                    } else {
-                        unseen += 1;
-                    }
                 }
             };
         }
@@ -369,12 +345,12 @@ impl Tribe {
             );
             let mut index2 = index as isize;
 
-            for d in 0..dis {
+            for _ in 0..dis {
                 index2 += stride;
 
                 s.inner.set(index2 as usize, true);
 
-                if let Some(pp) = self.get_cell_inner(index2 as usize) {
+                if let Some(_) = self.get_cell_inner(index2 as usize) {
                     break;
                 }
             }
@@ -516,30 +492,29 @@ pub enum UnitType {
 //need 8 layers of map
 //each map needs
 
-pub fn parse_replay_string(s: &str, world: &MyWorld) -> Option<(Map, MoveHistory)> {
-    let mut s = s.split(":");
+// pub fn parse_replay_string(s: &str, world: &MyWorld) -> Option<(Map, MoveHistory)> {
+//     let mut s = s.split(":");
 
-    let map = s.next()?;
+//     let map = s.next()?;
 
-    let Ok(map) = Map::load(&map, world) else {
-        return None;
-    };
+//     let Ok(map) = Map::load(&map, world) else {
+//         return None;
+//     };
 
-    let moves = s.next()?;
+//     let moves = s.next()?;
 
-    let (mut g, start_team) = GameStateTotal::new(world, &map);
-    let mut mh = MoveHistory::new();
-    for (f, team) in moves.split_terminator(',').zip(start_team.iter()) {
-        let m = ActualMove::from_str(f)?;
+//     let (mut g, start_team) = GameStateTotal::new(world, &map);
+//     let mut mh = MoveHistory::new();
+//     for (f, team) in moves.split_terminator(',').zip(start_team.iter()) {
+//         let m = ActualMove::from_str(f)?;
 
-        todo!();
-        // let effect = m.apply(team, &mut g.tactical, world);
-        // g.update_fog(world, team);
-        // mh.inner.push((m, effect));
-    }
+//         let effect = m.apply(team, &mut g.tactical, world);
+//         g.update_fog(world, team);
+//         mh.inner.push((m, effect));
+//     }
 
-    Some((map, mh))
-}
+//     Some((map, mh))
+// }
 
 pub fn replay_string(
     map: &Map,

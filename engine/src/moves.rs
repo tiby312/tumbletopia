@@ -1,6 +1,3 @@
-use hex::HDir;
-use mesh::small_mesh;
-
 use super::*;
 
 use crate::mesh::small_mesh::SmallMesh;

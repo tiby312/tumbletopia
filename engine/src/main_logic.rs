@@ -139,7 +139,7 @@ pub async fn map_editor(
             }
         };
 
-        let mut game = &mut game_total.tactical;
+        let game = &mut game_total.tactical;
 
         match tt {
             TT::Ice => {
@@ -394,7 +394,7 @@ impl WorkerManager {
             .await
             .unwrap();
 
-        let GameWrap { mut game, data, .. } = self.receiver.next().await.unwrap();
+        let GameWrap { data, .. } = self.receiver.next().await.unwrap();
 
         //std::mem::swap(&mut game, game1);
 
@@ -641,7 +641,7 @@ pub async fn replay(
     let (mut game, starting_team) = unit::GameStateTotal::new(world, map);
     //let mut game_history = MoveHistory::new();
 
-    let mut team_gen = starting_team.iter();
+    //let team_gen = starting_team.iter();
 
     doop.send_command(starting_team, &mut game, Command::HideUndo)
         .await;
@@ -652,7 +652,7 @@ pub async fn replay(
     loop {
         let pos = doop.get_mouse(ActiveTeam::White, &mut game).await;
         match pos {
-            MouseEvent::Normal(pos) => continue,
+            MouseEvent::Normal(_) => continue,
             MouseEvent::Button(s) => {
                 match s.as_str() {
                     "b_prev" => {
@@ -667,9 +667,9 @@ pub async fn replay(
                     }
                     "b_next" => {
                         if counter < history.inner.len() {
-                            let (the_move, effect) = &history.inner[counter];
+                            let (the_move, _) = &history.inner[counter];
 
-                            let effect_m =
+                            let _ =
                                 animate_move(&the_move, team_counter, &mut game, world, &mut doop)
                                     .await
                                     .apply(

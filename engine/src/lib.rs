@@ -26,11 +26,6 @@ pub mod share {
     #[derive(Debug)]
     pub struct LoadError;
 
-    //use std::ptr::metadata;
-
-    use board::MyWorld;
-    use mesh::small_mesh::SmallMesh;
-
     use super::*;
     pub fn load(s: &str) -> Result<JustMoveLog, LoadError> {
         use base64::prelude::*;
