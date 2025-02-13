@@ -79,55 +79,61 @@ impl crate::unit::GameStateTotal {
         }
     }
 
-    // pub fn update_fog_spokes(&mut self, world: &board::MyWorld, team: ActiveTeam) {
-    //     let res = self
-    //         .tactical
-    //         .generate_possible_moves_movement(world, None, team, true, true, false);
+    pub fn update_fog_spokes(&mut self, world: &board::MyWorld, team: ActiveTeam) {
+        let res = self.tactical.generate_possible_moves_movement(
+            world,
+            None,
+            team,
+            true,
+            true,
+            false,
+            &self.fog[team.index()],
+        );
 
-    //     let fog = match team {
-    //         ActiveTeam::White => &mut self.fog[0],
-    //         ActiveTeam::Black => &mut self.fog[1],
-    //         ActiveTeam::Neutral => unreachable!(),
-    //     };
+        let fog = match team {
+            ActiveTeam::White => &mut self.fog[0],
+            ActiveTeam::Black => &mut self.fog[1],
+            ActiveTeam::Neutral => unreachable!(),
+        };
 
-    //     fog.inner &= !res.0.inner;
+        fog.inner &= !res.0.inner;
 
-    //     let pieces = match team {
-    //         ActiveTeam::White => {
-    //             self.tactical.factions.piece.inner & self.tactical.factions.team.inner
-    //         }
-    //         ActiveTeam::Black => {
-    //             self.tactical.factions.piece.inner & !self.tactical.factions.team.inner
-    //         }
-    //         ActiveTeam::Neutral => unreachable!(),
-    //     };
+        let pieces = match team {
+            ActiveTeam::White => {
+                self.tactical.factions.piece.inner & self.tactical.factions.team.inner
+            }
+            ActiveTeam::Black => {
+                self.tactical.factions.piece.inner & !self.tactical.factions.team.inner
+            }
+            ActiveTeam::Neutral => unreachable!(),
+        };
 
-    //     fog.inner &= !pieces;
+        fog.inner &= !pieces;
 
-    //     for a in pieces.iter_ones() {
-    //         let fa = mesh::small_mesh::inverse(a);
+        for a in pieces.iter_ones() {
+            let fa = mesh::small_mesh::inverse(a);
 
-    //         for a in HDir::all() {
-    //             let mut pos = fa;
-    //             loop {
-    //                 pos = pos.advance(a);
+            for a in hex::HDir::all() {
+                let mut pos = fa;
+                loop {
+                    pos = pos.advance(a);
 
-    //                 if !world.get_game_cells().is_set(pos) {
-    //                     break;
-    //                 }
+                    if !world.get_game_cells().is_set(pos) {
+                        break;
+                    }
 
-    //                 if !res.0.is_set(pos) {
-    //                     let np = pos; //pos.advance(a);
-    //                     if fog.is_set(np) {
-    //                         fog.set_coord(np, false);
-    //                     }
+                    if !res.0.is_set(pos) {
+                        let np = pos; //pos.advance(a);
+                        if fog.is_set(np) {
+                            fog.set_coord(np, false);
+                        }
 
-    //                     break;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 impl GameState {
     pub fn generate_possible_moves_movement(

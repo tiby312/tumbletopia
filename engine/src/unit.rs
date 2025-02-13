@@ -661,7 +661,8 @@ pub fn default_map(world: &board::MyWorld) -> Map {
 
     //Map::load("----------if------iiffw----------i------w----w----i-2w--ii--w-i-------f----ii------f------ii--iiw-ffw-w-i---ii--w---w1------i---w-----wwi-----1w--iii-w-ww---fi-2-----ff-",world).unwrap()
 
-    Map::load("wwwwwwwww-if--wwwwiiffw-wwwww----iw-www-w----i--2ww-2w--iiw-w-ww------f----wwwwff--f-----wwwwfiiw-ffw-w-www-ii--w---w1ww----i---w-ww1-wwi----www--iii-wwww---fiwwwwwwwwww",world).unwrap()
+    //Map::load("wwwwwwwww-if--wwwwiiffw-wwwww----iw-www-w----i--2ww-2w--iiw-w-ww------f----wwwwff--f-----wwwwfiiw-ffw-w-www-ii--w---w1ww----i---w-ww1-wwi----www--iii-wwww---fiwwwwwwwwww",world).unwrap()
+    Map::load("wwwwwwwww-i---iiwwii--i-iiwwi----ii-iww-i----i--2ww-2i--iii-i-ww-----------iwwi-----f----iiww-iii---i-i-iww-ii--i---i1ww----i---i-ww1-iii----wwi--iii--wwi----i-wwwwwwwww",world).unwrap()
     // let mut mountains = SmallMesh::new();
     // let mut water = SmallMesh::new();
     // let mut forests = SmallMesh::new();
@@ -736,8 +737,8 @@ impl GameStateTotal {
         };
 
         //Fill everything with fog.
-        game_total.fog[0].inner |= world.get_game_cells().inner;
-        game_total.fog[1].inner |= world.get_game_cells().inner;
+        //game_total.fog[0].inner |= world.get_game_cells().inner;
+        //game_total.fog[1].inner |= world.get_game_cells().inner;
 
         game_total.update_fog(&world, ActiveTeam::White);
         game_total.update_fog(&world, ActiveTeam::Black);

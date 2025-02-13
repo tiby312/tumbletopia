@@ -187,6 +187,8 @@ fn engine_handlers(
             DomToWorker::TouchDown { touches }.some()
         }),
         worker.register_event(canvas, "touchmove", |e| {
+            redraw_text();
+
             let touches = convert_coord_touch(e.elem, e.event);
             DomToWorker::TouchMove { touches }.some()
         }),
@@ -213,11 +215,33 @@ fn engine_handlers(
     ]
 }
 
+fn redraw_text() {
+    let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
+    let context = canvas
+        .get_context("2d")
+        .unwrap()
+        .unwrap()
+        .dyn_into::<web_sys::CanvasRenderingContext2d>()
+        .unwrap();
+    context.set_font("70px Arial");
+    context.set_fill_style_str("purple");
+    context
+        .fill_text("testing testing 123", 400.0, 400.0)
+        .unwrap();
+}
+
 pub async fn start_game(game_type: GameType, host: &str) {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");
 
-    canvas.set_width(gloo::utils::body().client_width() as u32);
-    canvas.set_height(gloo::utils::body().client_height() as u32);
+    // canvas.set_width(gloo::utils::body().client_width() as u32);
+    // canvas.set_height(gloo::utils::body().client_height() as u32);
+
+    // {
+    // let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
+
+    // canvas.set_width(gloo::utils::body().client_width() as u32);
+    // canvas.set_height(gloo::utils::body().client_height() as u32);
+    // }
 
     let offscreen = canvas.transfer_control_to_offscreen().unwrap_throw();
 
@@ -240,7 +264,6 @@ pub async fn start_game(game_type: GameType, host: &str) {
 
     loop {
         let hay: WorkerToDom = response.next().await.unwrap_throw();
-
         match hay {
             WorkerToDom::Ack => {
                 unreachable!();
@@ -379,9 +402,17 @@ fn resize() -> DomToWorker {
     let gl_width = (width as f64 * realpixels).floor();
     let gl_height = (height as f64 * realpixels).floor();
 
+    let canvasx = gloo::utils::body().client_width() as u32;
+    let canvasy = gloo::utils::body().client_height() as u32;
+    {
+        let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
+        canvas.set_width((canvasx as f64 * realpixels) as u32);
+        canvas.set_height((canvasy as f64 * realpixels) as u32);
+    }
+
     DomToWorker::Resize {
-        canvasx: gloo::utils::body().client_width() as u32,
-        canvasy: gloo::utils::body().client_height() as u32,
+        canvasx,
+        canvasy,
         x: gl_width as f32,
         y: gl_height as f32,
     }
