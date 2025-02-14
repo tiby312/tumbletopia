@@ -156,8 +156,8 @@ pub enum WorkerToDom {
 fn engine_handlers(
     worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
     canvas: &web_sys::HtmlCanvasElement,
-    func: impl FnMut() + Clone + 'static,
-) -> impl std::any::Any {
+    func: impl FnMut(),
+) -> impl std::any::Any{
     let reg_button = |worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>, s: &'static str| {
         let undo = shogo::utils::get_by_id_elem(s);
         worker.register_event(&undo, "click", move |_| {
@@ -206,11 +206,7 @@ fn engine_handlers(
         reg_button(worker, "b_start1"),
         reg_button(worker, "b_start2"),
         reg_button(worker, "b_export"),
-        {
-            let w = gloo::utils::window();
-
-            worker.register_event(&w, "resize", move |_| resize(func.clone()).some())
-        },
+        
     )
 }
 
@@ -232,7 +228,14 @@ pub async fn start_game(game_type: GameType, host: &str) {
     let (mut worker, mut response) =
         shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
 
-    let _handlers = engine_handlers(&mut worker, &canvas, redraw_text);
+
+    {
+        let w = gloo::utils::window();
+        worker.register_event(&w, "resize",  |_| resize2(||{}).some());
+        //worker.register_event(&w, "resize", move |_| {func(); None})
+    }
+    
+    let _handlers = engine_handlers(&mut worker, &canvas, ||{});
 
     worker.post_message(DomToWorker::Start(game_type));
     let hay: WorkerToDom = response.next().await.unwrap_throw();
@@ -241,7 +244,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
     log!("dom:worker received the game");
 
     //TODO make this happen on start??
-    worker.post_message(resize(redraw_text));
+    worker.post_message(resize2(redraw_text));
 
     //TODO put somewhere else
     //let host = "http://localhost:8000";
@@ -375,7 +378,7 @@ fn redraw_text() {
         .unwrap();
 }
 
-fn resize(func: impl FnOnce() + 'static) -> DomToWorker {
+fn resize2(func: impl FnOnce() ) -> DomToWorker {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");
     //canvas.set_width(gloo::utils::body().client_width() as u32);
     //canvas.set_height(gloo::utils::body().client_height() as u32);
