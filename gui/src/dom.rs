@@ -212,27 +212,15 @@ fn engine_handlers(
 pub async fn start_game(game_type: GameType, host: &str) {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");
 
-    // canvas.set_width(gloo::utils::body().client_width() as u32);
-    // canvas.set_height(gloo::utils::body().client_height() as u32);
-
-    // {
-    // let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
-
-    // canvas.set_width(gloo::utils::body().client_width() as u32);
-    // canvas.set_height(gloo::utils::body().client_height() as u32);
-    // }
-
     let offscreen = canvas.transfer_control_to_offscreen().unwrap_throw();
 
     let (mut worker, mut response) =
         shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
 
-
-    {
+    let _h={
         let w = gloo::utils::window();
-        worker.register_event(&w, "resize",  |_| resize2().some());
-        //worker.register_event(&w, "resize", move |_| {func(); None})
-    }
+        worker.register_event(&w, "resize",  |_| resize2().some())
+    };
     
     let _handlers = engine_handlers(&mut worker, &canvas);
 
