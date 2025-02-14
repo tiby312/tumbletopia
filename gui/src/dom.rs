@@ -156,6 +156,7 @@ pub enum WorkerToDom {
 fn engine_handlers(
     worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
     canvas: &web_sys::HtmlCanvasElement,
+    func:impl FnMut()+Clone+'static
 ) -> impl std::any::Any {
     let reg_button = |worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>, s: &'static str| {
         let undo = shogo::utils::get_by_id_elem(s);
@@ -187,7 +188,7 @@ fn engine_handlers(
             DomToWorker::TouchDown { touches }.some()
         }),
         worker.register_event(canvas, "touchmove", |e| {
-            redraw_text();
+            
 
             let touches = convert_coord_touch(e.elem, e.event);
             DomToWorker::TouchMove { touches }.some()
@@ -210,27 +211,20 @@ fn engine_handlers(
         {
             let w = gloo::utils::window();
 
-            worker.register_event(&w, "resize", |_| resize().some())
+            worker.register_event(&w, "resize",  move |_| {
+                resize(func.clone()).some()
+            })
         },
     ]
 }
 
-fn redraw_text() {
-    let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
-    let context = canvas
-        .get_context("2d")
-        .unwrap()
-        .unwrap()
-        .dyn_into::<web_sys::CanvasRenderingContext2d>()
-        .unwrap();
-    context.set_font("70px Arial");
-    context.set_fill_style_str("purple");
-    context
-        .fill_text("testing testing 123", 400.0, 400.0)
-        .unwrap();
-}
 
 pub async fn start_game(game_type: GameType, host: &str) {
+
+    
+
+
+
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");
 
     // canvas.set_width(gloo::utils::body().client_width() as u32);
@@ -248,7 +242,12 @@ pub async fn start_game(game_type: GameType, host: &str) {
     let (mut worker, mut response) =
         shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
 
-    let _handlers = engine_handlers(&mut worker, &canvas);
+
+    
+
+    let _handlers = engine_handlers(&mut worker, &canvas,redraw_text);
+
+    
 
     worker.post_message(DomToWorker::Start(game_type));
     let hay: WorkerToDom = response.next().await.unwrap_throw();
@@ -257,7 +256,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
     log!("dom:worker received the game");
 
     //TODO make this happen on start??
-    worker.post_message(resize());
+    worker.post_message(resize(redraw_text));
 
     //TODO put somewhere else
     //let host = "http://localhost:8000";
@@ -374,9 +373,26 @@ pub enum GameType {
     Replay(String),
 }
 
-pub async fn main_entry() {}
+//pub async fn main_entry() {}
 
-fn resize() -> DomToWorker {
+fn redraw_text() {
+    let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
+    let context = canvas
+        .get_context("2d")
+        .unwrap()
+        .unwrap()
+        .dyn_into::<web_sys::CanvasRenderingContext2d>()
+        .unwrap();
+    context.set_font("70px Arial");
+    context.set_fill_style_str("purple");
+    context
+        .fill_text("testing testing 123", 400.0, 400.0)
+        .unwrap();
+}
+
+
+
+fn resize(func:impl FnOnce()+'static) -> DomToWorker {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");
     //canvas.set_width(gloo::utils::body().client_width() as u32);
     //canvas.set_height(gloo::utils::body().client_height() as u32);
@@ -409,6 +425,8 @@ fn resize() -> DomToWorker {
         canvas.set_width((canvasx as f64 * realpixels) as u32);
         canvas.set_height((canvasy as f64 * realpixels) as u32);
     }
+
+    func();
 
     DomToWorker::Resize {
         canvasx,

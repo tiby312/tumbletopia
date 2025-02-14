@@ -28,6 +28,7 @@ getrandom = { version = "0.2", features = ["js"] }
 querystring = "1.1.0"
 serde_json = "1.0.127"
 tinyvec = "1.8.0"
+gloop={path="../gloop"}
 
 [workspace]
 members = [ "gui","engine",
