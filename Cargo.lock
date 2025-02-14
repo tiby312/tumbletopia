@@ -1792,6 +1792,7 @@ dependencies = [
  "cgmath",
  "futures",
  "gloo 0.8.1",
+ "gloop",
  "image",
  "js-sys",
  "serde",

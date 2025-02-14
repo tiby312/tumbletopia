@@ -156,7 +156,7 @@ pub enum WorkerToDom {
 fn engine_handlers(
     worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
     canvas: &web_sys::HtmlCanvasElement,
-    func:impl FnMut()+Clone+'static
+    func: impl FnMut() + Clone + 'static,
 ) -> impl std::any::Any {
     let reg_button = |worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>, s: &'static str| {
         let undo = shogo::utils::get_by_id_elem(s);
@@ -165,12 +165,12 @@ fn engine_handlers(
         })
     };
 
-    [
-        worker.register_event(canvas, "mousemove", |e| {
+    (
+        worker.register_event(canvas, "mousemove", |e: shogo::EventData| {
             let [x, y] = convert_coord(e.elem, e.event);
             DomToWorker::CanvasMouseMove { x, y }.some()
         }),
-        worker.register_event(canvas, "mousedown", |e| {
+        worker.register_event(canvas, "mousedown", |e: shogo::EventData| {
             let [x, y] = convert_coord(e.elem, e.event);
             DomToWorker::CanvasMouseDown { x, y }.some()
         }),
@@ -188,8 +188,6 @@ fn engine_handlers(
             DomToWorker::TouchDown { touches }.some()
         }),
         worker.register_event(canvas, "touchmove", |e| {
-            
-
             let touches = convert_coord_touch(e.elem, e.event);
             DomToWorker::TouchMove { touches }.some()
         }),
@@ -211,20 +209,12 @@ fn engine_handlers(
         {
             let w = gloo::utils::window();
 
-            worker.register_event(&w, "resize",  move |_| {
-                resize(func.clone()).some()
-            })
+            worker.register_event(&w, "resize", move |_| resize(func.clone()).some())
         },
-    ]
+    )
 }
 
-
 pub async fn start_game(game_type: GameType, host: &str) {
-
-    
-
-
-
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");
 
     // canvas.set_width(gloo::utils::body().client_width() as u32);
@@ -242,12 +232,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
     let (mut worker, mut response) =
         shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
 
-
-    
-
-    let _handlers = engine_handlers(&mut worker, &canvas,redraw_text);
-
-    
+    let _handlers = engine_handlers(&mut worker, &canvas, redraw_text);
 
     worker.post_message(DomToWorker::Start(game_type));
     let hay: WorkerToDom = response.next().await.unwrap_throw();
@@ -390,9 +375,7 @@ fn redraw_text() {
         .unwrap();
 }
 
-
-
-fn resize(func:impl FnOnce()+'static) -> DomToWorker {
+fn resize(func: impl FnOnce() + 'static) -> DomToWorker {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");
     //canvas.set_width(gloo::utils::body().client_width() as u32);
     //canvas.set_height(gloo::utils::body().client_height() as u32);
