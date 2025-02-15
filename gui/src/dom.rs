@@ -153,46 +153,55 @@ pub enum WorkerToDom {
     Ack,
 }
 
-fn engine_handlers(
-    worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
-    canvas: &web_sys::HtmlCanvasElement,
-) -> impl std::any::Any {
-    let reg_button = |worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>, s: &'static str| {
+trait Any {}
+impl<T: ?Sized> Any for T {}
+
+fn engine_handlers<'a>(
+    worker: &'a shogo::EngineMain<DomToWorker, WorkerToDom>,
+    canvas: &'a web_sys::HtmlCanvasElement,
+) -> impl Any + 'a {
+    let reg_button = |worker: &'a shogo::EngineMain<DomToWorker, WorkerToDom>, s: &'static str| {
         let undo = shogo::utils::get_by_id_elem(s);
-        worker.register_event(&undo, "click", move |_| {
-            DomToWorker::Button(s.to_string()).some()
+        gloop::EventListenerWrapper2::new(&undo, "clock", move |_| {
+            worker.post_message(DomToWorker::Button(s.to_string()));
         })
     };
 
     (
-        worker.register_event(canvas, "mousemove", |e: shogo::EventData| {
-            let [x, y] = convert_coord(e.elem, e.event);
-            DomToWorker::CanvasMouseMove { x, y }.some()
+        gloop::EventListenerWrapper2::new(canvas, "mousemove", |e| {
+            let [x, y] = convert_coord(canvas, e);
+            worker.post_message(DomToWorker::CanvasMouseMove { x, y });
         }),
-        worker.register_event(canvas, "mousedown", |e: shogo::EventData| {
-            let [x, y] = convert_coord(e.elem, e.event);
-            DomToWorker::CanvasMouseDown { x, y }.some()
+        gloop::EventListenerWrapper2::new(canvas, "mousedown", |e| {
+            let [x, y] = convert_coord(canvas, e);
+            worker.post_message(DomToWorker::CanvasMouseDown { x, y });
         }),
-        worker.register_event(canvas, "wheel", |e| {
-            e.event.prevent_default();
-            e.event.stop_propagation();
-            None
+        // worker.register_event(canvas, "wheel", |e| {
+        //     e.event.prevent_default();
+        //     e.event.stop_propagation();
+        //     None
+        // }),
+        gloop::EventListenerWrapper2::new(canvas, "wheel", |e| {
+            e.prevent_default();
+            e.stop_propagation();
         }),
-        worker.register_event(canvas, "mouseup", |_| DomToWorker::CanvasMouseUp.some()),
-        worker.register_event(canvas, "mouseleave", |_| {
-            DomToWorker::CanvasMouseLeave.some()
+        gloop::EventListenerWrapper2::new(canvas, "mouseup", |e| {
+            worker.post_message(DomToWorker::CanvasMouseUp);
         }),
-        worker.register_event(canvas, "touchstart", |e| {
-            let touches = convert_coord_touch(e.elem, e.event);
-            DomToWorker::TouchDown { touches }.some()
+        gloop::EventListenerWrapper2::new(canvas, "mouseleave", |e| {
+            worker.post_message(DomToWorker::CanvasMouseLeave);
         }),
-        worker.register_event(canvas, "touchmove", |e| {
-            let touches = convert_coord_touch(e.elem, e.event);
-            DomToWorker::TouchMove { touches }.some()
+        gloop::EventListenerWrapper2::new(canvas, "touchstart", |e| {
+            let touches = convert_coord_touch(canvas, e);
+            worker.post_message(DomToWorker::TouchDown { touches })
         }),
-        worker.register_event(canvas, "touchend", |e| {
-            let touches = convert_coord_touch(e.elem, e.event);
-            DomToWorker::TouchEnd { touches }.some()
+        gloop::EventListenerWrapper2::new(canvas, "touchmove", |e| {
+            let touches = convert_coord_touch(canvas, e);
+            worker.post_message(DomToWorker::TouchMove { touches })
+        }),
+        gloop::EventListenerWrapper2::new(canvas, "touchend", |e| {
+            let touches = convert_coord_touch(canvas, e);
+            worker.post_message(DomToWorker::TouchEnd { touches })
         }),
         reg_button(worker, "undo"),
         reg_button(worker, "pass"),
@@ -228,7 +237,13 @@ pub async fn start_game(game_type: GameType, host: &str) {
         })
     };
 
-    let _handlers = engine_handlers(&mut worker, &canvas);
+    let _hh = gloop::EventListenerWrapper2::new(&canvas, "mousemove", |e| {
+        let [x, y] = convert_coord(&canvas, e);
+        worker.post_message(DomToWorker::CanvasMouseMove { x, y });
+        //console_dbg!("Hello");
+    });
+
+    let _handlers = engine_handlers(&worker, &canvas);
 
     worker.post_message(DomToWorker::Start(game_type));
     let hay: WorkerToDom = response.next().await.unwrap_throw();

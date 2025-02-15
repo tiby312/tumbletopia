@@ -983,6 +983,7 @@ dependencies = [
  "collision",
  "futures",
  "gloo 0.8.1",
+ "gloop",
  "hex",
  "js-sys",
  "model",
