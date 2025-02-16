@@ -53,8 +53,6 @@ fn convert_coord_touch(
     canvas: &web_sys::EventTarget,
     event: &web_sys::Event,
 ) -> gui::scroll::Touches {
-    event.prevent_default();
-    event.stop_propagation();
     convert_coord_touch_inner(canvas, event.dyn_ref().unwrap_throw())
 }
 
@@ -157,44 +155,49 @@ fn engine_handlers<'a>(
 ) -> impl Any + 'a {
     let reg_button = |worker: &'a shogo::EngineMain<DomToWorker, WorkerToDom>, s: &'static str| {
         let undo = shogo::utils::get_by_id_elem(s);
-        gloop::EventListenerWrapper::from_closure(&undo, "click", move |_| {
+        gloop::EventListen::from_closure(&undo, "click", move |_| {
             worker.post_message(DomToWorker::Button(s.to_string()));
         })
     };
 
+    let option = gloo::events::EventListenerOptions::enable_prevent_default();
     (
-        gloop::EventListenerWrapper::from_closure(canvas, "mousemove", |e| {
+        gloop::EventListen::from_closure(canvas, "mousemove", |e| {
             let [x, y] = convert_coord(canvas, e);
             worker.post_message(DomToWorker::CanvasMouseMove { x, y });
         }),
-        gloop::EventListenerWrapper::from_closure(canvas, "mousedown", |e| {
+        gloop::EventListen::from_closure(canvas, "mousedown", |e| {
             let [x, y] = convert_coord(canvas, e);
             worker.post_message(DomToWorker::CanvasMouseDown { x, y });
         }),
-        // worker.register_event(canvas, "wheel", |e| {
-        //     e.event.prevent_default();
-        //     e.event.stop_propagation();
-        //     None
-        // }),
-        gloop::EventListenerWrapper::from_closure(canvas, "wheel", |e| {
+        gloop::EventListen::from_closure_with_options(canvas, "wheel", option, |e| {
             e.prevent_default();
             e.stop_propagation();
         }),
-        gloop::EventListenerWrapper::from_closure(canvas, "mouseup", |_| {
+        gloop::EventListen::from_closure(canvas, "mouseup", |_| {
             worker.post_message(DomToWorker::CanvasMouseUp);
         }),
-        gloop::EventListenerWrapper::from_closure(canvas, "mouseleave", |_| {
+        gloop::EventListen::from_closure(canvas, "mouseleave", |_| {
             worker.post_message(DomToWorker::CanvasMouseLeave);
         }),
-        gloop::EventListenerWrapper::from_closure(canvas, "touchstart", |e| {
+        gloop::EventListen::from_closure_with_options(canvas, "touchstart", option, |e| {
+            e.prevent_default();
+            e.stop_propagation();
+
             let touches = convert_coord_touch(canvas, e);
             worker.post_message(DomToWorker::TouchDown { touches })
         }),
-        gloop::EventListenerWrapper::from_closure(canvas, "touchmove", |e| {
+        gloop::EventListen::from_closure_with_options(canvas, "touchmove", option, |e| {
+            e.prevent_default();
+            e.stop_propagation();
+
             let touches = convert_coord_touch(canvas, e);
             worker.post_message(DomToWorker::TouchMove { touches })
         }),
-        gloop::EventListenerWrapper::from_closure(canvas, "touchend", |e| {
+        gloop::EventListen::from_closure_with_options(canvas, "touchend", option, |e| {
+            e.prevent_default();
+            e.stop_propagation();
+
             let touches = convert_coord_touch(canvas, e);
             worker.post_message(DomToWorker::TouchEnd { touches })
         }),
@@ -217,8 +220,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
 
     let offscreen = canvas.transfer_control_to_offscreen().unwrap_throw();
 
-    let (worker, mut response) =
-        shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
+    let (worker, mut response) = shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
 
     let (mut repaint_text_send, mut repaint_text_recv) = futures::channel::mpsc::channel(20);
     let mut repaint_text_send2 = repaint_text_send.clone();
@@ -226,12 +228,12 @@ pub async fn start_game(game_type: GameType, host: &str) {
     use futures::SinkExt;
     let _h = {
         let w = gloo::utils::window();
-        gloop::EventListenerWrapper::from_closure(&w, "resize", |_| {
+        gloop::EventListen::from_closure(&w, "resize", |_| {
             repaint_text_send2.send(()).now_or_never().unwrap().unwrap()
         })
     };
 
-    let _hh = gloop::EventListenerWrapper::from_closure(&canvas, "mousemove", |e| {
+    let _hh = gloop::EventListen::from_closure(&canvas, "mousemove", |e| {
         let [x, y] = convert_coord(&canvas, e);
         worker.post_message(DomToWorker::CanvasMouseMove { x, y });
         //console_dbg!("Hello");

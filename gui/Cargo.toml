@@ -22,7 +22,7 @@ querystring = "1.1.0"
 gloop={path="../../gloop"}
 
 [dependencies.gloo]
-version = "0.8"
+version = "0.11"
 features=[
   'futures'
   ]

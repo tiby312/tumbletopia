@@ -672,6 +672,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97563d71863fb2824b2e974e754a81d19c4a7ec47b09ced8a0e6656b6d54bd1f"
 dependencies = [
+ "futures-channel",
  "gloo-events 0.2.0",
  "js-sys",
  "wasm-bindgen",
@@ -821,6 +822,8 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbb143cf96099802033e0d4f4963b19fd2e0b728bcf076cd9cf7f6634f092994"
 dependencies = [
+ "futures-channel",
+ "futures-core",
  "js-sys",
  "wasm-bindgen",
 ]
@@ -982,7 +985,7 @@ dependencies = [
  "cgmath",
  "collision",
  "futures",
- "gloo 0.8.1",
+ "gloo 0.11.0",
  "gloop",
  "hex",
  "js-sys",
@@ -1792,7 +1795,7 @@ dependencies = [
  "byte-slice-cast",
  "cgmath",
  "futures",
- "gloo 0.8.1",
+ "gloo 0.11.0",
  "gloop",
  "image",
  "js-sys",
