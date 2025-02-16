@@ -132,10 +132,19 @@ pub enum GameOverGui {
     Tie,
 }
 
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+
+pub struct Text{
+    text:String,
+    pos:[f32;2]
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum WorkerToDom {
     ShowUndo,
     HideUndo,
+    TextUpdate(Vec<Text>),
     GameFinish {
         replay_string: String,
         result: GameOverGui,
@@ -232,14 +241,10 @@ pub async fn start_game(game_type: GameType, host: &str) {
     let _h = {
         let w = gloo::utils::window();
         gloop::EventListen::from_closure(&w, "resize", |_| {
+            worker.post_message(resize2());
             repaint_text_send2.send(()).now_or_never().unwrap().unwrap()
         })
     };
-
-    let _hh = gloop::EventListen::from_closure(&canvas, "mousemove", |e| {
-        let [x, y] = convert_coord(&canvas, e);
-        worker.post_message(DomToWorker::CanvasMouseMove { x, y });
-    });
 
     let _handlers = engine_handlers(&worker, &canvas);
 
@@ -249,19 +254,26 @@ pub async fn start_game(game_type: GameType, host: &str) {
 
     log!("dom:worker received the game");
 
+    worker.post_message(resize2());
     repaint_text_send.send(()).await.unwrap();
 
+
+    let mut text=vec!();
+    text.push(Text{text:"Hello".to_string(),pos:[40.0,40.0]});
 
     loop {
         futures::select! {
             _ = repaint_text_recv.next() =>{
-                worker.post_message(resize2());
-                redraw_text();
+                redraw_text(&text);
             },
             hay = response.next() => {
-                let hay=hay.unwrap_throw();
+                let hay = hay.unwrap_throw();
 
                 match hay {
+                    WorkerToDom::TextUpdate(t)=>{
+                        text=t;
+                        repaint_text_send.send(()).await.unwrap();
+                    }
                     WorkerToDom::Ack => {
                         unreachable!();
                     }
@@ -372,9 +384,8 @@ pub enum GameType {
     Replay(String),
 }
 
-//pub async fn main_entry() {}
 
-fn redraw_text() {
+fn redraw_text(text:&Vec<Text>) {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
     let context = canvas
         .get_context("2d")
@@ -384,9 +395,12 @@ fn redraw_text() {
         .unwrap();
     context.set_font("70px Arial");
     context.set_fill_style_str("purple");
-    context
-        .fill_text("testing testing 123", 400.0, 400.0)
+
+    for a in text{
+        context
+        .fill_text(&a.text, a.pos[0] as f64, a.pos[1] as f64)
         .unwrap();
+    }
 }
 
 fn resize2() -> DomToWorker {
