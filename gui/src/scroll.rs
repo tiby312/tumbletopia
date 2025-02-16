@@ -1,3 +1,4 @@
+use cgmath::Transform;
 use cgmath::{InnerSpace, Vector2};
 use serde::Deserialize;
 use serde::Serialize;
@@ -489,4 +490,13 @@ pub fn mouse_to_world(
     let clip_x = mouse[0] / dim[0] * 2. - 1.;
     let clip_y = mouse[1] / dim[1] * -2. + 1.;
     super::projection::clip_to_world([clip_x, clip_y], view_projection)
+}
+
+
+
+pub fn world_to_mouse(world:[f32;2],dim:[f32;2],view_projection: &cgmath::Matrix4<f32>)->[f32;2]{
+    let p = view_projection.transform_point(cgmath::Point3{x:world[0],y:world[1],z:0.0});
+    let mouse_x=dim[0]*(p.x+1.0)/2.0;
+    let mouse_y=dim[1]*(p.y+1.0)/2.0;
+    [mouse_x,mouse_y]
 }

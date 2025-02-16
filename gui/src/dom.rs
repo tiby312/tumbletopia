@@ -258,6 +258,9 @@ pub async fn start_game(game_type: GameType, host: &str) {
     repaint_text_send.send(()).await.unwrap();
 
 
+    //text should be sent in world coordinates?
+    //mouse should be sent in world coordinates as well to worker?
+    
     let mut text=vec!();
     text.push(Text{text:"Hello".to_string(),pos:[40.0,40.0]});
 
