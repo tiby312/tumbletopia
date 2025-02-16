@@ -762,10 +762,14 @@ async fn render_command(
 
         match (camera_moving, camera_moving_last) {
             (scroll::CameraMoving::Stopped, scroll::CameraMoving::Moving) => {
-                let pos = scroll::world_to_mouse([0.0, 0.0], viewport, &my_matrix);
+
+                let a=mesh::small_mesh::inverse(ActualMove::from_str("A1").unwrap().moveto);
+
+                let pos=grid_matrix.hex_axial_to_world(&a);
+                let pos = scroll::world_to_mouse([pos.x,pos.y], viewport, &my_matrix);
                 let mut k = Vec::new();
                 k.push(dom::Text {
-                    text: "Hello".to_string(),
+                    text: "A1".to_string(),
                     pos,
                 });
                 engine_worker.post_message(dom::WorkerToDom::TextUpdate(k));
