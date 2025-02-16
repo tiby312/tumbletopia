@@ -393,6 +393,8 @@ fn redraw_text(text: &Vec<Text>) {
         .unwrap()
         .dyn_into::<web_sys::CanvasRenderingContext2d>()
         .unwrap();
+    context.clear_rect(0., 0., canvas.width() as f64, canvas.height() as f64);
+
     context.set_font("70px Arial");
     context.set_fill_style_str("purple");
 

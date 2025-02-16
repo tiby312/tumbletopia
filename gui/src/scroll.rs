@@ -302,7 +302,7 @@ impl TouchController {
         }
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> CameraMoving {
         // used
         // https://www.gamedev.net/forums/topic/370644-angle-between-two-vectors/3442782/
         // not used
@@ -319,7 +319,7 @@ impl TouchController {
         //let m=0.02;
         self.persistent_rot += angle * 0.05; //angle.clamp(-m,m);
 
-        self.inner.step();
+        self.inner.step()
     }
 
     pub fn zoom(&self) -> f32 {
@@ -463,14 +463,20 @@ impl ScrollController {
             }
         }
     }
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> CameraMoving {
         match self.scrolling {
-            Scrollin::Scrolling { .. } => {}
+            Scrollin::Scrolling { .. } => CameraMoving::Moving,
             _ => {
                 let delta = self.camera - self.last_camera;
                 self.last_camera = self.camera;
 
                 self.camera += delta * 0.9;
+
+                if delta.magnitude2() < TOUCH_RAD * TOUCH_RAD {
+                    CameraMoving::Stopped
+                } else {
+                    CameraMoving::Moving
+                }
             }
         }
     }
@@ -480,6 +486,11 @@ impl ScrollController {
     }
 }
 
+#[derive(Copy, Clone)]
+pub enum CameraMoving {
+    Moving,
+    Stopped,
+}
 //TODO don't do this every step, just when user clicks!!!
 pub fn mouse_to_world(
     mouse: [f32; 2],

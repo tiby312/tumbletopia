@@ -10,6 +10,7 @@ use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
 use gloo::console::log;
+use gui::scroll::CameraMoving;
 use gui::shader_sys::ShaderSystem;
 use hex::Axial;
 use model::matrix::{self, MyMatrix};
@@ -525,7 +526,7 @@ async fn render_command(
     let mut unit_animation = None;
     let mut terrain_animation = None;
     let mut poking = 0;
-
+    let mut camera_moving_last = scroll::CameraMoving::Stopped;
     let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
@@ -705,17 +706,6 @@ async fn render_command(
 
         if get_mouse_input.is_some() {
             if let Some(button) = button_pushed {
-                {
-                    //TEST
-                    let pos = scroll::world_to_mouse([0.0, 0.0], viewport, &my_matrix);
-                    let mut k = Vec::new();
-                    k.push(dom::Text {
-                        text: "Hello".to_string(),
-                        pos,
-                    });
-                    engine_worker.post_message(dom::WorkerToDom::TextUpdate(k));
-                }
-
                 return if let Some((selection, _grey)) = get_mouse_input.unwrap() {
                     ace::Response::MouseWithSelection(selection, MouseEvent::Button(button.clone()))
                 } else {
@@ -768,7 +758,24 @@ async fn render_command(
             }
         }
 
-        scroll_manager.step();
+        let camera_moving = scroll_manager.step();
+
+        match (camera_moving, camera_moving_last) {
+            (scroll::CameraMoving::Stopped, scroll::CameraMoving::Moving) => {
+                let pos = scroll::world_to_mouse([0.0, 0.0], viewport, &my_matrix);
+                let mut k = Vec::new();
+                k.push(dom::Text {
+                    text: "Hello".to_string(),
+                    pos,
+                });
+                engine_worker.post_message(dom::WorkerToDom::TextUpdate(k));
+            }
+            (scroll::CameraMoving::Moving, scroll::CameraMoving::Stopped) => {
+                engine_worker.post_message(dom::WorkerToDom::TextUpdate(vec![]));
+            }
+            _ => {}
+        }
+        camera_moving_last = camera_moving;
 
         draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
 
