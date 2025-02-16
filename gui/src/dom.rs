@@ -203,6 +203,7 @@ fn engine_handlers<'a>(
             let touches = convert_coord_touch(canvas, e);
             worker.post_message(DomToWorker::TouchEnd { touches })
         }),
+        //TODO register buttons based on game type
         reg_button(worker, "undo"),
         reg_button(worker, "pass"),
         reg_button(worker, "b_next"),
@@ -248,13 +249,8 @@ pub async fn start_game(game_type: GameType, host: &str) {
 
     log!("dom:worker received the game");
 
-    //TODO make this happen on start??
     repaint_text_send.send(()).await.unwrap();
 
-    //worker.post_message(resize2());
-
-    //TODO put somewhere else
-    //let host = "http://localhost:8000";
 
     loop {
         futures::select! {
@@ -364,12 +360,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
 
             }
         }
-
-        //let hay: WorkerToDom = response.next().await.unwrap_throw();
-
-        //log!(format!("main thread received={:?}", hay));
     }
-    //log!("main thread is closing");
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
