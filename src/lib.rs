@@ -705,6 +705,17 @@ async fn render_command(
 
         if get_mouse_input.is_some() {
             if let Some(button) = button_pushed {
+                {
+                    //TEST
+                    let pos = scroll::world_to_mouse([0.0, 0.0], viewport, &my_matrix);
+                    let mut k = Vec::new();
+                    k.push(dom::Text {
+                        text: "Hello".to_string(),
+                        pos,
+                    });
+                    engine_worker.post_message(dom::WorkerToDom::TextUpdate(k));
+                }
+
                 return if let Some((selection, _grey)) = get_mouse_input.unwrap() {
                     ace::Response::MouseWithSelection(selection, MouseEvent::Button(button.clone()))
                 } else {

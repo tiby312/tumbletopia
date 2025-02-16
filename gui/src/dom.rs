@@ -132,12 +132,11 @@ pub enum GameOverGui {
     Tie,
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 
-pub struct Text{
-    text:String,
-    pos:[f32;2]
+pub struct Text {
+    pub text: String,
+    pub pos: [f32; 2],
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -163,7 +162,7 @@ fn engine_handlers<'a>(
     canvas: &'a web_sys::HtmlCanvasElement,
 ) -> impl Any + 'a {
     use gloop::EventListen;
-    
+
     let reg_button = |worker: &'a shogo::EngineMain<DomToWorker, WorkerToDom>, s: &'static str| {
         let undo = shogo::utils::get_by_id_elem(s);
         gloop::EventListen::from_closure(&undo, "click", move |_| {
@@ -257,12 +256,11 @@ pub async fn start_game(game_type: GameType, host: &str) {
     worker.post_message(resize2());
     repaint_text_send.send(()).await.unwrap();
 
-
-    //text should be sent in world coordinates?
-    //mouse should be sent in world coordinates as well to worker?
-    
-    let mut text=vec!();
-    text.push(Text{text:"Hello".to_string(),pos:[40.0,40.0]});
+    let mut text = vec![];
+    text.push(Text {
+        text: "Hello".to_string(),
+        pos: [40.0, 40.0],
+    });
 
     loop {
         futures::select! {
@@ -387,8 +385,7 @@ pub enum GameType {
     Replay(String),
 }
 
-
-fn redraw_text(text:&Vec<Text>) {
+fn redraw_text(text: &Vec<Text>) {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
     let context = canvas
         .get_context("2d")
@@ -399,10 +396,10 @@ fn redraw_text(text:&Vec<Text>) {
     context.set_font("70px Arial");
     context.set_fill_style_str("purple");
 
-    for a in text{
+    for a in text {
         context
-        .fill_text(&a.text, a.pos[0] as f64, a.pos[1] as f64)
-        .unwrap();
+            .fill_text(&a.text, a.pos[0] as f64, a.pos[1] as f64)
+            .unwrap();
     }
 }
 
