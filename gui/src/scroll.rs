@@ -470,9 +470,11 @@ impl ScrollController {
                 let delta = self.camera - self.last_camera;
                 self.last_camera = self.camera;
 
-                self.camera += delta * 0.9;
-
-                if delta.magnitude2() < TOUCH_RAD * TOUCH_RAD {
+                let camera_before = self.camera;
+                if delta.magnitude2() > TOUCH_RAD * TOUCH_RAD * 0.1 {
+                    self.camera += delta * 0.9;
+                }
+                if camera_before == self.camera {
                     CameraMoving::Stopped
                 } else {
                     CameraMoving::Moving
