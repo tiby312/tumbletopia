@@ -763,15 +763,50 @@ async fn render_command(
         match (camera_moving, camera_moving_last) {
             (scroll::CameraMoving::Stopped, scroll::CameraMoving::Moving) => {
 
-                let a=mesh::small_mesh::inverse(ActualMove::from_str("A1").unwrap().moveto);
 
-                let pos=grid_matrix.hex_axial_to_world(&a);
-                let pos = scroll::world_to_mouse([pos.x,pos.y], viewport, &my_matrix);
+                fn anchor_points(radius:i8) -> impl Iterator<Item=hex::Cube>{
+                    
+                    let cube = hex::Cube::new(0,0);
+    
+                    let dir=hex::HDir::Top;
+
+                    let label_offset=hex::Cube::from_arr(hex::OFFSETS[dir.rotate60_right() as usize]);
+
+
+                    let counter=cube.add(hex::Cube::from_arr(hex::OFFSETS[dir as usize]).mul(radius).to_cube());
+                    let new_dir=dir.rotate60_right().rotate60_right();
+    
+                    let unit_vec=hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
+                    let first=(0..radius).map(move |x|{
+                        counter.add(unit_vec.mul(x).to_cube()).add(label_offset)
+                    });
+
+                    let counter=counter.add(unit_vec.mul(radius).to_cube());
+
+                    let new_dir=new_dir.rotate60_right();
+                    let unit_vec=hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
+                    
+                    let second=(0..radius+1).map(move |x|{
+                        counter.add(unit_vec.mul(x).to_cube()).add(label_offset)
+                    });
+
+                    first.chain(second)                    
+                }
+
+
+
                 let mut k = Vec::new();
-                k.push(dom::Text {
-                    text: "A1".to_string(),
-                    pos,
-                });
+                
+                let alphabet="abcdefghijklmnopqrstuvwxyz";
+                for (point,letter) in anchor_points(7).zip(alphabet.chars()){
+                    let pos=grid_matrix.hex_axial_to_world(&point);
+                    let pos = scroll::world_to_mouse([pos.x,pos.y], viewport, &my_matrix);
+                    k.push(dom::Text {
+                        text: letter.to_uppercase().to_string(),
+                        pos,
+                    });
+                }
+                
                 engine_worker.post_message(dom::WorkerToDom::TextUpdate(k));
             }
             (scroll::CameraMoving::Moving, scroll::CameraMoving::Stopped) => {

@@ -395,6 +395,8 @@ fn redraw_text(text: &Vec<Text>) {
         .unwrap();
     context.clear_rect(0., 0., canvas.width() as f64, canvas.height() as f64);
 
+    context.set_text_baseline("middle");
+    context.set_text_align("center");
     context.set_font("70px Arial");
     context.set_fill_style_str("purple");
 
