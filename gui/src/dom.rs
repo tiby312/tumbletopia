@@ -397,8 +397,8 @@ fn redraw_text(text: &Vec<Text>) {
 
     context.set_text_baseline("middle");
     context.set_text_align("center");
-    context.set_font("70px Arial");
-    context.set_fill_style_str("purple");
+    context.set_font("40px roboto");
+    context.set_fill_style_str("grey");
 
     for a in text {
         context

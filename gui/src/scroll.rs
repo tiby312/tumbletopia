@@ -506,14 +506,14 @@ pub fn mouse_to_world(
 }
 
 pub fn world_to_mouse(
-    world: [f32; 2],
+    world: [f32; 3],
     dim: [f32; 2],
     view_projection: &cgmath::Matrix4<f32>,
 ) -> [f32; 2] {
     let p = view_projection.transform_point(cgmath::Point3 {
         x: world[0],
         y: world[1],
-        z: 0.0,
+        z: world[2],
     });
     let mouse_x = dim[0] * (p.x + 1.0) / 2.0;
     let mouse_y = dim[1] * (p.y - 1.0) / -2.0;

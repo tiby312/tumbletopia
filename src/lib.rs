@@ -792,23 +792,23 @@ async fn render_command(
 
                 let make_text = |point: hex::Cube, text: String| {
                     let pos = grid_matrix.hex_axial_to_world(&point);
-                    let pos = scroll::world_to_mouse([pos.x, pos.y], viewport, &my_matrix);
+                    let pos = scroll::world_to_mouse([pos.x, pos.y, -10.0], viewport, &my_matrix);
                     dom::Text { text, pos }
                 };
 
                 let mut k = Vec::new();
 
-                let radius = 7;
+                let start_dir = hex::HDir::Top;
+                let radius = world.radius as i8;
                 let alphabet = "abcdefghijklmnopqrstuvwxyz";
                 for (point, letter) in
-                    anchor_points(radius, hex::HDir::Bottom.rotate60_right().rotate60_right())
+                    anchor_points(radius, start_dir.rotate60_right().rotate60_right())
                         .zip(alphabet.chars())
                 {
                     k.push(make_text(point, letter.to_uppercase().to_string()));
                 }
 
-                for (point, num) in
-                    anchor_points(radius, hex::HDir::Bottom).zip((0..radius * 2 + 1).rev())
+                for (point, num) in anchor_points(radius, start_dir).zip((0..radius * 2 + 1).rev())
                 {
                     let ss = format!("{}", num + 1);
                     k.push(make_text(point, ss));
