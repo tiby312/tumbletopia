@@ -616,7 +616,7 @@ async fn render_command(
         let mut button_pushed = None;
 
         let res = frame_timer.next().await;
-
+        let mut resize_text = false;
         for e in res {
             match e {
                 DomToWorker::Resize {
@@ -633,6 +633,8 @@ async fn render_command(
 
                     viewport = [xx as f32, yy as f32];
                     log!(format!("updating viewport to be:{:?}", viewport));
+
+                    resize_text = true;
                 }
                 DomToWorker::TouchMove { touches } => {
                     scroll_manager.on_touch_move(touches, last_matrix, viewport);
@@ -704,6 +706,11 @@ async fn render_command(
         let mouse_world =
             gui::scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
+        if resize_text {
+            let k = update_text(world, grid_matrix, viewport, &my_matrix);
+            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k));
+        }
+
         if get_mouse_input.is_some() {
             if let Some(button) = button_pushed {
                 return if let Some((selection, _grey)) = get_mouse_input.unwrap() {
@@ -762,58 +769,7 @@ async fn render_command(
 
         match (camera_moving, camera_moving_last) {
             (scroll::CameraMoving::Stopped, scroll::CameraMoving::Moving) => {
-                fn anchor_points(radius: i8, dir: hex::HDir) -> impl Iterator<Item = hex::Cube> {
-                    let cube = hex::Cube::new(0, 0);
-
-                    let label_offset =
-                        hex::Cube::from_arr(hex::OFFSETS[dir.rotate60_right() as usize]);
-
-                    let counter = cube.add(
-                        hex::Cube::from_arr(hex::OFFSETS[dir as usize])
-                            .mul(radius)
-                            .to_cube(),
-                    );
-                    let new_dir = dir.rotate60_right().rotate60_right();
-
-                    let unit_vec = hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
-                    let first = (0..radius)
-                        .map(move |x| counter.add(unit_vec.mul(x).to_cube()).add(label_offset));
-
-                    let counter = counter.add(unit_vec.mul(radius).to_cube());
-
-                    let new_dir = new_dir.rotate60_right();
-                    let unit_vec = hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
-
-                    let second = (0..radius + 1)
-                        .map(move |x| counter.add(unit_vec.mul(x).to_cube()).add(label_offset));
-
-                    first.chain(second)
-                }
-
-                let make_text = |point: hex::Cube, text: String| {
-                    let pos = grid_matrix.hex_axial_to_world(&point);
-                    let pos = scroll::world_to_mouse([pos.x, pos.y, -10.0], viewport, &my_matrix);
-                    dom::Text { text, pos }
-                };
-
-                let mut k = Vec::new();
-
-                let start_dir = hex::HDir::Top;
-                let radius = world.radius as i8;
-                let alphabet = "abcdefghijklmnopqrstuvwxyz";
-                for (point, letter) in
-                    anchor_points(radius, start_dir.rotate60_right().rotate60_right())
-                        .zip(alphabet.chars())
-                {
-                    k.push(make_text(point, letter.to_uppercase().to_string()));
-                }
-
-                for (point, num) in anchor_points(radius, start_dir).zip((0..radius * 2 + 1).rev())
-                {
-                    let ss = format!("{}", num + 1);
-                    k.push(make_text(point, ss));
-                }
-
+                let k = update_text(world, grid_matrix, viewport, &my_matrix);
                 engine_worker.post_message(dom::WorkerToDom::TextUpdate(k));
             }
             (scroll::CameraMoving::Moving, scroll::CameraMoving::Stopped) => {
@@ -1186,4 +1142,61 @@ async fn render_command(
 
         ctx.flush();
     }
+}
+
+fn update_text(
+    world: &board::MyWorld,
+    grid_matrix: &hex::HexConverter,
+    viewport: [f32; 2],
+    my_matrix: &cgmath::Matrix4<f32>,
+) -> Vec<dom::Text> {
+    fn anchor_points(radius: i8, dir: hex::HDir) -> impl Iterator<Item = hex::Cube> {
+        let cube = hex::Cube::new(0, 0);
+
+        let label_offset = hex::Cube::from_arr(hex::OFFSETS[dir.rotate60_right() as usize]);
+
+        let counter = cube.add(
+            hex::Cube::from_arr(hex::OFFSETS[dir as usize])
+                .mul(radius)
+                .to_cube(),
+        );
+        let new_dir = dir.rotate60_right().rotate60_right();
+
+        let unit_vec = hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
+        let first =
+            (0..radius).map(move |x| counter.add(unit_vec.mul(x).to_cube()).add(label_offset));
+
+        let counter = counter.add(unit_vec.mul(radius).to_cube());
+
+        let new_dir = new_dir.rotate60_right();
+        let unit_vec = hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
+
+        let second =
+            (0..radius + 1).map(move |x| counter.add(unit_vec.mul(x).to_cube()).add(label_offset));
+
+        first.chain(second)
+    }
+
+    let make_text = |point: hex::Cube, text: String| {
+        let pos = grid_matrix.hex_axial_to_world(&point);
+        let pos = scroll::world_to_mouse([pos.x, pos.y, -10.0], viewport, &my_matrix);
+        dom::Text { text, pos }
+    };
+
+    let mut k = Vec::new();
+
+    let start_dir = hex::HDir::Top;
+    let radius = world.radius as i8;
+    let alphabet = "abcdefghijklmnopqrstuvwxyz";
+    for (point, letter) in
+        anchor_points(radius, start_dir.rotate60_right().rotate60_right()).zip(alphabet.chars())
+    {
+        k.push(make_text(point, letter.to_uppercase().to_string()));
+    }
+
+    for (point, num) in anchor_points(radius, start_dir).zip((0..radius * 2 + 1).rev()) {
+        let ss = format!("{}", num + 1);
+        k.push(make_text(point, ss));
+    }
+    k
 }
