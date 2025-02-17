@@ -807,6 +807,9 @@ async fn render_command(
             )
             .build(&models.land, &projjj);
 
+        //TODO dont use this, also make sure to draw water tiles on the border that can be seen from the side?
+        water.inner |= world.get_game_cells().inner;
+
         // {
         //     //Draw grass
         //     let grass1 = game
@@ -1104,6 +1107,22 @@ async fn render_command(
         }
         draw_sys.batch(fog_pos).build(&models.fog, &projjj);
 
+        let mut label_arrows = vec![];
+        for (pos, hdir) in label_arrow_points(world) {
+            let pos = grid_matrix.hex_axial_to_world(&pos);
+            let t = matrix::translation(pos.x, pos.y, -10.0);
+            let r = matrix::z_rotation(
+                (((hdir as usize) + 2) % 6) as f32 * (std::f32::consts::TAU / 6.0),
+            );
+
+            let m = t.chain(r).generate();
+
+            label_arrows.push(m);
+        }
+        draw_sys
+            .batch(label_arrows)
+            .build(&models.label_arrow, &projjj);
+
         // draw_unit_type(
         //     UnitType::Mouse,
         //     ActiveTeam::White,
@@ -1144,39 +1163,24 @@ async fn render_command(
     }
 }
 
+pub fn label_arrow_points(world: &board::MyWorld) -> impl Iterator<Item = (hex::Cube, hex::HDir)> {
+    let start_dir = hex::HDir::Top;
+    let radius = world.radius as i8;
+
+    let other_dir = start_dir.rotate60_right().rotate60_right();
+    let first = anchor_points(radius, other_dir)
+        .map(move |x| (x, other_dir.rotate60_right().rotate60_right()));
+
+    let second = anchor_points(radius, start_dir).map(move |x| (x, start_dir));
+    first.chain(second)
+}
+
 fn update_text(
     world: &board::MyWorld,
     grid_matrix: &hex::HexConverter,
     viewport: [f32; 2],
     my_matrix: &cgmath::Matrix4<f32>,
 ) -> Vec<dom::Text> {
-    fn anchor_points(radius: i8, dir: hex::HDir) -> impl Iterator<Item = hex::Cube> {
-        let cube = hex::Cube::new(0, 0);
-
-        let label_offset = hex::Cube::from_arr(hex::OFFSETS[dir.rotate60_right() as usize]);
-
-        let counter = cube.add(
-            hex::Cube::from_arr(hex::OFFSETS[dir as usize])
-                .mul(radius)
-                .to_cube(),
-        );
-        let new_dir = dir.rotate60_right().rotate60_right();
-
-        let unit_vec = hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
-        let first =
-            (0..radius).map(move |x| counter.add(unit_vec.mul(x).to_cube()).add(label_offset));
-
-        let counter = counter.add(unit_vec.mul(radius).to_cube());
-
-        let new_dir = new_dir.rotate60_right();
-        let unit_vec = hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
-
-        let second =
-            (0..radius + 1).map(move |x| counter.add(unit_vec.mul(x).to_cube()).add(label_offset));
-
-        first.chain(second)
-    }
-
     let make_text = |point: hex::Cube, text: String| {
         let pos = grid_matrix.hex_axial_to_world(&point);
         let pos = scroll::world_to_mouse([pos.x, pos.y, -10.0], viewport, &my_matrix);
@@ -1199,4 +1203,30 @@ fn update_text(
         k.push(make_text(point, ss));
     }
     k
+}
+
+fn anchor_points(radius: i8, dir: hex::HDir) -> impl Iterator<Item = hex::Cube> {
+    let cube = hex::Cube::new(0, 0);
+
+    let label_offset = hex::Cube::from_arr(hex::OFFSETS[dir.rotate60_right() as usize]);
+
+    let counter = cube.add(
+        hex::Cube::from_arr(hex::OFFSETS[dir as usize])
+            .mul(radius)
+            .to_cube(),
+    );
+    let new_dir = dir.rotate60_right().rotate60_right();
+
+    let unit_vec = hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
+    let first = (0..radius).map(move |x| counter.add(unit_vec.mul(x).to_cube()).add(label_offset));
+
+    let counter = counter.add(unit_vec.mul(radius).to_cube());
+
+    let new_dir = new_dir.rotate60_right();
+    let unit_vec = hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
+
+    let second =
+        (0..radius + 1).map(move |x| counter.add(unit_vec.mul(x).to_cube()).add(label_offset));
+
+    first.chain(second)
 }
