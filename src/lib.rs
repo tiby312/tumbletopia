@@ -240,13 +240,14 @@ pub async fn worker_entry() {
 
     console_dbg!("num tiles={}", hex::Cube::new(0, 0).range(4).count());
 
-    let (mut wr, mut ss) = shogo::EngineWorker::new().await;
+    //let (mut wr, mut ss) = shogo::EngineWorker::new().await;
+    let (canvas, mut sender, mut recv) = shogo::worker::create_worker().await;
 
-    let k = ss.next().await.unwrap();
+    let k = recv.recv().next().await.unwrap();
     let DomToWorker::Start(game_type) = k else {
         unreachable!("worker:Didn't receive start")
     };
-    wr.post_message(dom::WorkerToDom::Ack);
+    sender.post_message(dom::WorkerToDom::Ack);
 
     console_dbg!("Found game thingy", game_type);
 
@@ -302,7 +303,7 @@ pub async fn worker_entry() {
     };
 
     let last_matrix = cgmath::Matrix4::identity();
-    let ctx = &utils::get_context_webgl2_offscreen(&wr.canvas());
+    let ctx = &utils::get_context_webgl2_offscreen(&canvas);
 
     let grid_matrix = hex::HexConverter::new();
 
@@ -314,7 +315,7 @@ pub async fn worker_entry() {
         grid_matrix,
         models,
         ctx: ctx.clone(),
-        canvas: wr.canvas(),
+        canvas,
         scroll_manager,
         last_matrix,
         shader,
@@ -354,8 +355,8 @@ pub async fn worker_entry() {
                 &mut render,
                 &world,
                 &mut timer,
-                &mut ss,
-                &mut wr,
+                &mut recv,
+                &mut sender,
             );
 
             if let engine::main_logic::Command::Wait = &data {
@@ -443,7 +444,7 @@ pub async fn worker_entry() {
 
     match gg {
         Finish::MapEditor(map) => {
-            wr.post_message(dom::WorkerToDom::ExportMap(map.save(&world).unwrap()));
+            sender.post_message(dom::WorkerToDom::ExportMap(map.save(&world).unwrap()));
             //console_dbg!("exported map", e.save(&world).unwrap());
         }
         Finish::GameFinish((result, g, map)) => {
@@ -453,7 +454,7 @@ pub async fn worker_entry() {
                 GameOver::Tie => dom::GameOverGui::Tie,
             };
             let replay_string = engine::unit::replay_string(&map, &g, &world).unwrap();
-            wr.post_message(dom::WorkerToDom::GameFinish {
+            sender.post_message(dom::WorkerToDom::GameFinish {
                 replay_string,
                 result,
             });
@@ -490,8 +491,8 @@ async fn render_command(
     //     ,
     // >,
     timer: &mut shogo::Timer,
-    dom_messages: &mut futures::channel::mpsc::UnboundedReceiver<DomToWorker>,
-    engine_worker: &mut shogo::EngineWorker<dom::DomToWorker, dom::WorkerToDom>,
+    dom_messages: &mut shogo::worker::WorkerRecv<DomToWorker>,
+    engine_worker: &mut shogo::worker::WorkerSender<dom::WorkerToDom>,
 ) -> ace::Response {
     let game = &game_total.tactical;
     //let mut x = 0.0;
@@ -626,7 +627,7 @@ async fn render_command(
                 () = timer.next().fuse() =>{
                     break;
                 },
-                k = dom_messages.next() =>{
+                k = dom_messages.recv().next() =>{
                     let k=k.unwrap();
                     let e=&k;
                     match e {
