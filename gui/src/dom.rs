@@ -254,7 +254,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
     log!("dom:worker received the game");
 
     worker.post_message(resize2());
-    
+
     //repaint_text_send.send(()).await.unwrap();
 
     let mut text = vec![];
@@ -266,7 +266,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
     loop {
         futures::select! {
             _ = repaint_text_recv.next() =>{
-                
+
                 redraw_text(&text);
             },
             hay = response.next() => {

@@ -250,7 +250,8 @@ pub async fn worker_entry() {
 
     console_dbg!("Found game thingy", game_type);
 
-    let mut frame_timer = shogo::FrameTimer::new(60, ss);
+    //let mut frame_timer = shogo::FrameTimer::new(60, ss);
+    let mut timer = shogo::Timer::new(60);
 
     let scroll_manager = gui::scroll::TouchController::new([0., 0.].into());
     use cgmath::SquareMatrix;
@@ -352,7 +353,8 @@ pub async fn worker_entry() {
                 team,
                 &mut render,
                 &world,
-                &mut frame_timer,
+                &mut timer,
+                &mut ss,
                 &mut wr,
             );
 
@@ -483,10 +485,12 @@ async fn render_command(
     team: ActiveTeam,
     e: &mut EngineStuff,
     world: &board::MyWorld,
-    frame_timer: &mut shogo::FrameTimer<
-        DomToWorker,
-        futures::channel::mpsc::UnboundedReceiver<DomToWorker>,
-    >,
+    // frame_timer: &mut shogo::FrameTimer<
+    //     DomToWorker,
+    //     ,
+    // >,
+    timer: &mut shogo::Timer,
+    dom_messages: &mut futures::channel::mpsc::UnboundedReceiver<DomToWorker>,
     engine_worker: &mut shogo::EngineWorker<dom::DomToWorker, dom::WorkerToDom>,
 ) -> ace::Response {
     let game = &game_total.tactical;
@@ -603,7 +607,6 @@ async fn render_command(
         }
     };
 
-
     loop {
         if poking == 1 {
             console_dbg!("we poked!");
@@ -616,81 +619,87 @@ async fn render_command(
         //let mut on_undo = false;
         let mut button_pushed = None;
 
-        let doop = frame_timer.next().await;
-
-        
         let mut resize_text = false;
-        for e in doop.events() {
-            console_dbg!(e);
-            match e {
-                DomToWorker::Resize {
-                    canvasx: _canvasx,
-                    canvasy: _canvasy,
-                    x,
-                    y,
-                } => {
-                    let xx = *x as u32;
-                    let yy = *y as u32;
-                    canvas.set_width(xx);
-                    canvas.set_height(yy);
-                    ctx.viewport(0, 0, xx as i32, yy as i32);
+        use futures::FutureExt;
+        loop {
+            futures::select! {
+                () = timer.next().fuse() =>{
+                    break;
+                },
+                k = dom_messages.next() =>{
+                    let k=k.unwrap();
+                    let e=&k;
+                    match e {
+                        DomToWorker::Resize {
+                            canvasx: _canvasx,
+                            canvasy: _canvasy,
+                            x,
+                            y,
+                        } => {
+                            let xx = *x as u32;
+                            let yy = *y as u32;
+                            canvas.set_width(xx);
+                            canvas.set_height(yy);
+                            ctx.viewport(0, 0, xx as i32, yy as i32);
 
-                    viewport = [xx as f32, yy as f32];
-                    log!(format!("updating viewport to be:{:?}", viewport));
-                    resize_text = true;
-                }
-                DomToWorker::TouchMove { touches } => {
-                    scroll_manager.on_touch_move(touches, last_matrix, viewport);
-                }
-                DomToWorker::TouchDown { touches } => {
-                    scroll_manager.on_new_touch(touches);
-                }
-                DomToWorker::TouchEnd { touches } => {
-                    if let gui::scroll::MouseUp::Select = scroll_manager.on_touch_up(touches) {
-                        on_select = true;
+                            viewport = [xx as f32, yy as f32];
+                            log!(format!("updating viewport to be:{:?}", viewport));
+                            resize_text = true;
+                        }
+                        DomToWorker::TouchMove { touches } => {
+                            scroll_manager.on_touch_move(touches, last_matrix, viewport);
+                        }
+                        DomToWorker::TouchDown { touches } => {
+                            scroll_manager.on_new_touch(touches);
+                        }
+                        DomToWorker::TouchEnd { touches } => {
+                            if let gui::scroll::MouseUp::Select = scroll_manager.on_touch_up(touches) {
+                                on_select = true;
+                            }
+                        }
+                        DomToWorker::CanvasMouseLeave => {
+                            log!("mouse leaving!");
+                            let _ = scroll_manager.on_mouse_up();
+                        }
+                        DomToWorker::CanvasMouseUp => {
+                            if let gui::scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
+                                on_select = true;
+                            }
+                        }
+                        DomToWorker::Button(s) => {
+                            button_pushed = Some(s.clone());
+
+                            // match s.as_str(){
+                            //     "undo"=>{
+                            //         butt=true
+                            //     },
+                            //     "b_water"=>{
+                            //         console_dbg!("clicked wattttrrrr");
+                            //     },
+                            //     _=>{
+                            //         panic!("not supported yet");
+                            //     }
+                            // }
+                        }
+                        DomToWorker::Ack => {
+                            //assert!(waiting_engine_ack);
+
+                            if waiting_engine_ack {
+                                return ace::Response::Ack;
+                            }
+                        }
+                        DomToWorker::CanvasMouseMove { x, y } => {
+                            scroll_manager.on_mouse_move([*x, *y], last_matrix, viewport);
+                        }
+
+                        DomToWorker::CanvasMouseDown { x, y } => {
+                            scroll_manager.on_mouse_down([*x, *y]);
+                        }
+                        DomToWorker::ButtonClick => {}
+                        DomToWorker::ShutdownClick => todo!(),
+                        DomToWorker::Start(_) => todo!(),
                     }
                 }
-                DomToWorker::CanvasMouseLeave => {
-                    log!("mouse leaving!");
-                    let _ = scroll_manager.on_mouse_up();
-                }
-                DomToWorker::CanvasMouseUp => {
-                    if let gui::scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
-                        on_select = true;
-                    }
-                }
-                DomToWorker::Button(s) => {
-                    button_pushed = Some(s);
-
-                    // match s.as_str(){
-                    //     "undo"=>{
-                    //         butt=true
-                    //     },
-                    //     "b_water"=>{
-                    //         console_dbg!("clicked wattttrrrr");
-                    //     },
-                    //     _=>{
-                    //         panic!("not supported yet");
-                    //     }
-                    // }
-                }
-                DomToWorker::Ack => {
-                    //assert!(waiting_engine_ack);
-
-                    if waiting_engine_ack {
-                        return ace::Response::Ack;
-                    }
-                }
-                DomToWorker::CanvasMouseMove { x, y } => {
-                    scroll_manager.on_mouse_move([*x, *y], last_matrix, viewport);
-                }
-
-                DomToWorker::CanvasMouseDown { x, y } => {
-                    scroll_manager.on_mouse_down([*x, *y]);
-                }
-                DomToWorker::ButtonClick => {}
-                DomToWorker::ShutdownClick => todo!(),
-                DomToWorker::Start(_) => todo!(),
             }
         }
 
