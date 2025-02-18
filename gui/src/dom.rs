@@ -158,12 +158,12 @@ trait Any {}
 impl<T: ?Sized> Any for T {}
 
 fn engine_handlers<'a>(
-    worker: &'a shogo::EngineMain<DomToWorker, WorkerToDom>,
+    worker: &'a shogo::main::MainSender<DomToWorker>,
     canvas: &'a web_sys::HtmlCanvasElement,
 ) -> impl Any + 'a {
     use gloop::EventListen;
 
-    let reg_button = |worker: &'a shogo::EngineMain<DomToWorker, WorkerToDom>, s: &'static str| {
+    let reg_button = |worker: &'a shogo::main::MainSender<DomToWorker>, s: &'static str| {
         let undo = shogo::utils::get_by_id_elem(s);
         gloop::EventListen::from_closure(&undo, "click", move |_| {
             worker.post_message(DomToWorker::Button(s.to_string()));
@@ -231,7 +231,9 @@ pub async fn start_game(game_type: GameType, host: &str) {
 
     let offscreen = canvas.transfer_control_to_offscreen().unwrap_throw();
 
-    let (worker, mut response) = shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
+    //let (worker, mut response) = shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
+
+    let (sender, mut recv) = shogo::main::create_main("./gridlock_worker.js", offscreen).await;
 
     let (mut repaint_text_send, mut repaint_text_recv) = futures::channel::mpsc::channel(20);
     let mut repaint_text_send2 = repaint_text_send.clone();
@@ -240,20 +242,20 @@ pub async fn start_game(game_type: GameType, host: &str) {
     let _h = {
         let w = gloo::utils::window();
         gloop::EventListen::from_closure(&w, "resize", |_| {
-            worker.post_message(resize2());
+            sender.post_message(resize2());
             repaint_text_send2.send(()).now_or_never().unwrap().unwrap()
         })
     };
 
-    let _handlers = engine_handlers(&worker, &canvas);
+    let _handlers = engine_handlers(&sender, &canvas);
 
-    worker.post_message(DomToWorker::Start(game_type));
-    let hay: WorkerToDom = response.next().await.unwrap_throw();
+    sender.post_message(DomToWorker::Start(game_type));
+    let hay: WorkerToDom = recv.recv().next().await.unwrap_throw();
     matches!(hay, WorkerToDom::Ack);
 
     log!("dom:worker received the game");
 
-    worker.post_message(resize2());
+    sender.post_message(resize2());
 
     //repaint_text_send.send(()).await.unwrap();
 
@@ -269,7 +271,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
 
                 redraw_text(&text);
             },
-            hay = response.next() => {
+            hay = recv.recv().next() => {
                 let hay = hay.unwrap_throw();
 
                 match hay {
@@ -358,7 +360,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         //body.insert_adjacent_html("beforeend",&k).expect("inserting undo fail");
                         //undo.set_attribute("hidden","false").unwrap();
 
-                        worker.post_message(DomToWorker::Ack);
+                        sender.post_message(DomToWorker::Ack);
                         //popup.set_text_content(Some(&text));
                     }
                     WorkerToDom::HideUndo => {
@@ -369,7 +371,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         undo.set_hidden(true);
                         //undo.set_attribute("hidden","true").unwrap();
 
-                        worker.post_message(DomToWorker::Ack);
+                        sender.post_message(DomToWorker::Ack);
                     }
                 }
 
