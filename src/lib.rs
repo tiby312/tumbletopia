@@ -527,18 +527,18 @@ async fn render_command(
     let mut terrain_animation = None;
     let mut poking = 0;
     let mut camera_moving_last = scroll::CameraMoving::Stopped;
-    //let mut waiting_engine_ack = false;
+    let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(dom::WorkerToDom::HideUndo);
-            //waiting_engine_ack = true;
-            //return ace::Response::Ack;
+            waiting_engine_ack = true;
+            return ace::Response::Ack;
         }
         ace::Command::ShowUndo => {
             engine_worker.post_message(dom::WorkerToDom::ShowUndo);
-            //waiting_engine_ack = true;
-            //return ace::Response::Ack;
+            waiting_engine_ack = true;
+            return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
             engine::main_logic::AnimationCommand::Movement { unit, end } => {
@@ -621,7 +621,7 @@ async fn render_command(
         
         let mut resize_text = false;
         for e in doop.events() {
-            //console_dbg!(e);
+            console_dbg!(e);
             match e {
                 DomToWorker::Resize {
                     canvasx: _canvasx,
@@ -677,9 +677,9 @@ async fn render_command(
                 DomToWorker::Ack => {
                     //assert!(waiting_engine_ack);
 
-                    // if waiting_engine_ack {
-                    //     return ace::Response::Ack;
-                    // }
+                    if waiting_engine_ack {
+                        return ace::Response::Ack;
+                    }
                 }
                 DomToWorker::CanvasMouseMove { x, y } => {
                     scroll_manager.on_mouse_move([*x, *y], last_matrix, viewport);

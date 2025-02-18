@@ -358,7 +358,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         //body.insert_adjacent_html("beforeend",&k).expect("inserting undo fail");
                         //undo.set_attribute("hidden","false").unwrap();
 
-                        //worker.post_message(DomToWorker::Ack);
+                        worker.post_message(DomToWorker::Ack);
                         //popup.set_text_content(Some(&text));
                     }
                     WorkerToDom::HideUndo => {
@@ -369,7 +369,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         undo.set_hidden(true);
                         //undo.set_attribute("hidden","true").unwrap();
 
-                        //worker.post_message(DomToWorker::Ack);
+                        worker.post_message(DomToWorker::Ack);
                     }
                 }
 
