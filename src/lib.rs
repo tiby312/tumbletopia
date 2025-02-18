@@ -527,17 +527,17 @@ async fn render_command(
     let mut terrain_animation = None;
     let mut poking = 0;
     let mut camera_moving_last = scroll::CameraMoving::Stopped;
-    let mut waiting_engine_ack = false;
+    //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(dom::WorkerToDom::HideUndo);
-            waiting_engine_ack = true;
+            //waiting_engine_ack = true;
             //return ace::Response::Ack;
         }
         ace::Command::ShowUndo => {
             engine_worker.post_message(dom::WorkerToDom::ShowUndo);
-            waiting_engine_ack = true;
+            //waiting_engine_ack = true;
             //return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
@@ -603,6 +603,7 @@ async fn render_command(
         }
     };
 
+
     loop {
         if poking == 1 {
             console_dbg!("we poked!");
@@ -615,9 +616,12 @@ async fn render_command(
         //let mut on_undo = false;
         let mut button_pushed = None;
 
-        let res = frame_timer.next().await;
+        let doop = frame_timer.next().await;
+
+        
         let mut resize_text = false;
-        for e in res {
+        for e in doop.events() {
+            //console_dbg!(e);
             match e {
                 DomToWorker::Resize {
                     canvasx: _canvasx,
@@ -633,7 +637,6 @@ async fn render_command(
 
                     viewport = [xx as f32, yy as f32];
                     log!(format!("updating viewport to be:{:?}", viewport));
-
                     resize_text = true;
                 }
                 DomToWorker::TouchMove { touches } => {
@@ -672,9 +675,11 @@ async fn render_command(
                     // }
                 }
                 DomToWorker::Ack => {
-                    if waiting_engine_ack {
-                        return ace::Response::Ack;
-                    }
+                    //assert!(waiting_engine_ack);
+
+                    // if waiting_engine_ack {
+                    //     return ace::Response::Ack;
+                    // }
                 }
                 DomToWorker::CanvasMouseMove { x, y } => {
                     scroll_manager.on_mouse_move([*x, *y], last_matrix, viewport);
@@ -707,6 +712,7 @@ async fn render_command(
             gui::scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
         if resize_text {
+            console_dbg!("RESIZING TEXT!!!!");
             let k = update_text(world, grid_matrix, viewport, &my_matrix);
             engine_worker.post_message(dom::WorkerToDom::TextUpdate(k));
         }
@@ -1121,6 +1127,7 @@ async fn render_command(
         }
         draw_sys
             .batch(label_arrows)
+            .no_lighting()
             .build(&models.label_arrow, &projjj);
 
         // draw_unit_type(

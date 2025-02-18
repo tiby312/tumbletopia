@@ -254,7 +254,8 @@ pub async fn start_game(game_type: GameType, host: &str) {
     log!("dom:worker received the game");
 
     worker.post_message(resize2());
-    repaint_text_send.send(()).await.unwrap();
+    
+    //repaint_text_send.send(()).await.unwrap();
 
     let mut text = vec![];
     // text.push(Text {
@@ -265,6 +266,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
     loop {
         futures::select! {
             _ = repaint_text_recv.next() =>{
+                
                 redraw_text(&text);
             },
             hay = response.next() => {
@@ -356,7 +358,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         //body.insert_adjacent_html("beforeend",&k).expect("inserting undo fail");
                         //undo.set_attribute("hidden","false").unwrap();
 
-                        worker.post_message(DomToWorker::Ack);
+                        //worker.post_message(DomToWorker::Ack);
                         //popup.set_text_content(Some(&text));
                     }
                     WorkerToDom::HideUndo => {
@@ -367,7 +369,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         undo.set_hidden(true);
                         //undo.set_attribute("hidden","true").unwrap();
 
-                        worker.post_message(DomToWorker::Ack);
+                        //worker.post_message(DomToWorker::Ack);
                     }
                 }
 
@@ -386,6 +388,7 @@ pub enum GameType {
 }
 
 fn redraw_text(text: &Vec<Text>) {
+    console_dbg!("Redrawing text");
     let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
     let context = canvas
         .get_context("2d")
