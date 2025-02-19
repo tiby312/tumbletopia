@@ -203,7 +203,7 @@ pub fn iterative_deepening(
     }
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3] {
+    for depth in [1, 2, 3,4,5,6] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         //3 = num iter
