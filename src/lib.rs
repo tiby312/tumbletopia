@@ -1247,8 +1247,8 @@ fn update_text(
         k.push(make_text(point, letter.to_uppercase().to_string()));
     }
 
-    for (point, num) in anchor_points(radius, start_dir).zip((0..radius * 2 + 1).rev()) {
-        let ss = format!("{}", num + 1);
+    for (num, point) in anchor_points(radius, start_dir).enumerate() {
+        let ss = format!("{}", (radius as usize * 2) - num - 1);
         k.push(make_text(point, ss));
     }
     k

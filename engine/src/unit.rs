@@ -425,7 +425,7 @@ impl Tribe {
         let val = bit0 | bit1 << 1 | bit2 << 2;
 
         if val == 7 {
-            return Some((1, ActiveTeam::Neutral));
+            return Some((2, ActiveTeam::Neutral));
         }
         if val == 0 {
             return Some((6, ActiveTeam::Neutral));
@@ -462,7 +462,7 @@ impl Tribe {
             ActiveTeam::White => self.team.inner.set(a, true),
             ActiveTeam::Black => self.team.inner.set(a, false),
             ActiveTeam::Neutral => {
-                let val = if stack == 1 {
+                let val = if stack == 2 {
                     7
                 } else if stack == 6 {
                     0
