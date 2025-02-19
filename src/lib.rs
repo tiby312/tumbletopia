@@ -32,7 +32,7 @@ use unit::*;
 
 #[wasm_bindgen]
 pub async fn main_entry() {
-    let world = board::MyWorld::new();
+    //let world = board::MyWorld::new();
     let (sender, mut receiver) = futures::channel::mpsc::unbounded();
 
     let _listeners = ["single_b", "pass_b", "ai_b", "map_b", "replaybutton"].map(|s| {
@@ -48,7 +48,8 @@ pub async fn main_entry() {
         .unwrap()
         .dyn_into()
         .unwrap();
-    t.set_value(&unit::default_map(&world).save(&world).unwrap());
+    //TODO set default map
+    //t.set_value(&unit::default_map(&world).save(&world).unwrap());
 
     let editor_elem = shogo::utils::get_by_id_elem("editor");
     editor_elem.set_attribute("style", "display:none;").unwrap();
@@ -70,33 +71,34 @@ pub async fn main_entry() {
 
         match r {
             "single_b" => {
-                if Map::load(&maps, &world).is_err() {
-                    console_dbg!("Could not parse map");
-                    continue;
-                }
+                //TODO add back
+                // if Map::load(&maps, &world).is_err() {
+                //     console_dbg!("Could not parse map");
+                //     continue;
+                // }
                 game_elem.set_attribute("style", "display:block;").unwrap();
                 break dom::GameType::SinglePlayer(t.value().into());
             }
             "pass_b" => {
-                if Map::load(&maps, &world).is_err() {
-                    console_dbg!("Could not parse map");
-                    continue;
-                }
+                // if Map::load(&maps, &world).is_err() {
+                //     console_dbg!("Could not parse map");
+                //     continue;
+                // }
                 game_elem.set_attribute("style", "display:block;").unwrap();
                 break dom::GameType::PassPlay(t.value().into());
             }
             "ai_b" => {
-                if Map::load(&maps, &world).is_err() {
-                    console_dbg!("Could not parse map");
-                    continue;
-                }
+                // if Map::load(&maps, &world).is_err() {
+                //     console_dbg!("Could not parse map");
+                //     continue;
+                // }
                 break dom::GameType::AIBattle(t.value().into());
             }
             "map_b" => {
-                if Map::load(&maps, &world).is_err() {
-                    console_dbg!("Could not parse map");
-                    continue;
-                }
+                // if Map::load(&maps, &world).is_err() {
+                //     console_dbg!("Could not parse map");
+                //     continue;
+                // }
                 editor_elem
                     .set_attribute("style", "display:block;")
                     .unwrap();
@@ -332,15 +334,64 @@ pub async fn worker_entry() {
     //     (board::WorldSeed::new(), None)
     // };
 
-    let world = board::MyWorld::new();
+    //let world = board::MyWorld::new();
 
-    let map = unit::default_map(&world);
-    console_dbg!("ma", map.save(&world).unwrap());
+    //let map = unit::default_map(&world);
+    //console_dbg!("ma", map.save(&world).unwrap());
 
     let (command_sender, mut command_recv) =
         futures::channel::mpsc::channel::<GameWrap<engine::main_logic::Command>>(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
+
+    let game_type = match game_type {
+        dom::GameType::SinglePlayer(s) => engine::GameType::SinglePlayer(s),
+        dom::GameType::PassPlay(s) => engine::GameType::PassPlay(s),
+        dom::GameType::AIBattle(s) => engine::GameType::AIBattle(s),
+        dom::GameType::Replay(o) => engine::GameType::Replay(o),
+        dom::GameType::MapEditor(s) => engine::GameType::MapEditor(s),
+    };
+
+    let world=match game_type.clone() {
+            engine::GameType::MapEditor(s) => {
+                //TODO handle this error better
+                //let map = Map::load(&s, &world).unwrap();
+
+                // let g = engine::main_logic::map_editor(doop, &world, map).await;
+                // Finish::MapEditor(g)
+                todo!();
+            }
+            engine::GameType::PassPlay(s)
+            | engine::GameType::SinglePlayer(s)
+            | engine::GameType::AIBattle(s) => {
+
+                let world=board::MyWorld::load_from_string(&s);
+
+                //let map = Map::load(&s, &world).unwrap();
+
+                //TODO handle this error better
+                // let res = engine::main_logic::game_play_thread(
+                //     doop,
+                //     &world,
+                //     game_type,
+                //     &mut ai_int,
+                // )
+                // .await;
+                // Finish::GameFinish((res.0, res.1, world))
+                world
+            }
+            engine::GameType::Replay(s) => {
+                console_dbg!("got map=", s);
+                todo!();
+                // let (map, history) = unit::parse_replay_string(&s, &world).unwrap();
+
+                // let res = engine::main_logic::replay(&map, &history, &world, doop).await;
+
+                // Finish::GameFinish((res, history, map))
+            }
+    };
+
+    
     let render_thead = async {
         while let Some(ace::GameWrap {
             mut game,
@@ -389,43 +440,39 @@ pub async fn worker_entry() {
         receiver: response_recv,
     };
 
-    let game_type = match game_type {
-        dom::GameType::SinglePlayer(s) => engine::GameType::SinglePlayer(s),
-        dom::GameType::PassPlay(s) => engine::GameType::PassPlay(s),
-        dom::GameType::AIBattle(s) => engine::GameType::AIBattle(s),
-        dom::GameType::Replay(o) => engine::GameType::Replay(o),
-        dom::GameType::MapEditor(s) => engine::GameType::MapEditor(s),
-    };
 
     enum Finish {
         MapEditor(Map),
-        GameFinish((GameOver, engine::MoveHistory, Map)),
+        GameFinish((GameOver, engine::MoveHistory)),
     }
 
     let gameplay_thread = async {
         match game_type.clone() {
             engine::GameType::MapEditor(s) => {
                 //TODO handle this error better
-                let map = Map::load(&s, &world).unwrap();
+                // let map = Map::load(&s, &world).unwrap();
 
-                let g = engine::main_logic::map_editor(doop, &world, map).await;
-                Finish::MapEditor(g)
+                // let g = engine::main_logic::map_editor(doop, &world, map).await;
+                // Finish::MapEditor(g)
+                todo!();
             }
             engine::GameType::PassPlay(s)
             | engine::GameType::SinglePlayer(s)
             | engine::GameType::AIBattle(s) => {
-                let map = Map::load(&s, &world).unwrap();
+
+                //let world=board::MyWorld::load_from_string(&s);
+
+                //let map = Map::load(&s, &world).unwrap();
 
                 //TODO handle this error better
                 let res = engine::main_logic::game_play_thread(
                     doop,
-                    &map,
                     &world,
                     game_type,
                     &mut ai_int,
                 )
                 .await;
-                Finish::GameFinish((res.0, res.1, map))
+                Finish::GameFinish((res.0, res.1))
             }
             engine::GameType::Replay(s) => {
                 console_dbg!("got map=", s);
@@ -447,13 +494,13 @@ pub async fn worker_entry() {
             sender.post_message(dom::WorkerToDom::ExportMap(map.save(&world).unwrap()));
             //console_dbg!("exported map", e.save(&world).unwrap());
         }
-        Finish::GameFinish((result, g, map)) => {
+        Finish::GameFinish((result, g)) => {
             let result = match result {
                 GameOver::WhiteWon => dom::GameOverGui::WhiteWon,
                 GameOver::BlackWon => dom::GameOverGui::BlackWon,
                 GameOver::Tie => dom::GameOverGui::Tie,
             };
-            let replay_string = engine::unit::replay_string(&map, &g, &world).unwrap();
+            let replay_string = engine::unit::replay_string(&g, &world).unwrap();
             sender.post_message(dom::WorkerToDom::GameFinish {
                 replay_string,
                 result,

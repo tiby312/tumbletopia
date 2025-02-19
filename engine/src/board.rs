@@ -4,6 +4,8 @@ use super::*;
 pub struct MyWorld {
     pub land: mesh::small_mesh::SmallMesh,
     pub radius: u8,
+    pub starting_team:ActiveTeam,
+    pub starting_state:unit::GameStateTotal
     //pub map: unit::Map,
 }
 
@@ -179,19 +181,101 @@ fn test_dis_to_hex_border() {
 }
 
 impl MyWorld {
-    pub fn with_size(s:i8) -> MyWorld {
-        let size=s;
+    // pub fn with_size(s:i8,starting_team:ActiveTeam) -> MyWorld {
+    //     let size=s;
+
+    //     let land = mesh::small_mesh::SmallMesh::from_iter(
+    //         hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()),
+    //     );
+
+    //     MyWorld {
+    //         land,
+    //         radius: size as u8,
+    //         starting_team
+    //     }
+    // }
+
+    pub fn load_from_string(s:&str)->MyWorld{
+        
+        let size = ((3. + (12. * s.len() as f64 - 3.)).sqrt() / 6.).ceil() as i8;
+    
+        //let world=MyWorld::with_size(size,ActiveTeam::White);
+    
+        let mut g=GameState::default();
+        for (i,a) in s.chars().enumerate(){
+            let (stack,team) = match a{
+                'k'=>{
+                    (2,ActiveTeam::Neutral)
+                },
+                'r'=>{
+                    (1,ActiveTeam::White)
+                },
+                's'=>{
+                    (2,ActiveTeam::White)
+                },
+                't'=>{
+                    (3,ActiveTeam::White)
+                },
+                'u'=>{
+                    (4,ActiveTeam::White)
+                },
+                'v'=>{
+                    (5,ActiveTeam::White)
+                },
+                'w'=>{
+                    (6,ActiveTeam::White)
+                },
+                'b'=>{
+                    (1,ActiveTeam::Black)
+                },
+                'c'=>{
+                    (2,ActiveTeam::Black)
+                },
+                'd'=>{
+                    (3,ActiveTeam::Black)
+                },
+                'e'=>{
+                    (4,ActiveTeam::Black)
+                },
+                'f'=>{
+                    (5,ActiveTeam::Black)
+                },
+                'g'=>{
+                    (6,ActiveTeam::Black)
+                },
+                '-'=>{
+                    continue;
+                },
+                _=>{
+                    unreachable!()
+                }
+            };
+            
+            gloo_console::console_dbg!("Adding {} {} {}",i,stack,team);
+            g.factions.add_cell_inner(i, stack, team);
+        }
+    
+        let g= unit::GameStateTotal{
+            tactical:g,
+            fog:std::array::from_fn(|_|mesh::small_mesh::SmallMesh::new())
+        };
+
 
         let land = mesh::small_mesh::SmallMesh::from_iter(
             hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()),
         );
 
-        MyWorld {
+        MyWorld{
             land,
-            radius: size as u8,
+            radius:size as u8,
+            starting_team:ActiveTeam::White,
+            starting_state:g
         }
+        
     }
-    pub fn new() -> MyWorld {
+    
+    #[deprecated]
+    pub fn new2() -> MyWorld {
         //let size = 3;
         let size = 3;
 
@@ -284,12 +368,14 @@ impl MyWorld {
         // for &a in black_start.iter() {
         //     w.set_coord(a, true);
         // }
+        todo!();
 
-        MyWorld {
-            land,
-            radius: size as u8,
-            //map,
-        }
+        // MyWorld {
+        //     land,
+        //     radius: size as u8,
+        //     starting_team:ActiveTeam::White
+        //     //map,
+        // }
     }
 
     //TODO get rid of this???? use bounds checking instead???

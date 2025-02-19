@@ -129,7 +129,7 @@ impl ActiveTeam {
 //     pub powerups: Vec<Axial>,
 // }
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize,Default, Clone, Debug, Hash, Eq, PartialEq)]
 
 pub struct GameStateTotal {
     //0 is white fog. 1 is black fog
@@ -521,89 +521,27 @@ pub enum UnitType {
 // }
 
 pub fn replay_string(
-    map: &Map,
     moves: &MoveHistory,
     world: &MyWorld,
 ) -> Result<String, std::fmt::Error> {
     use std::fmt::Write;
     let mut s = String::new();
 
-    let map_str = map.save(world).unwrap();
+    //let map_str = map.save(world).unwrap();
+    //TODO update this!!!
+    todo!();
+    // write!(&mut s, "{}:", map_str)?;
 
-    write!(&mut s, "{}:", map_str)?;
-
-    for m in moves.inner.iter() {
-        let mut kk = String::new();
-        m.0.as_text(&mut kk).unwrap();
-        write!(&mut s, "{},", kk)?;
-    }
+    // for m in moves.inner.iter() {
+    //     let mut kk = String::new();
+    //     m.0.as_text(&mut kk).unwrap();
+    //     write!(&mut s, "{},", kk)?;
+    // }
 
     Ok(s)
 }
 
 
-
-pub fn load_from_string(s:&str)->(MyWorld,GameState){
-        
-    let size = ((3. + (12. * s.len() as f64 - 3.)).sqrt() / 6.).ceil() as i8;
-
-    let world=MyWorld::with_size(size);
-
-    let mut g=GameState::default();
-    for (i,a) in s.chars().enumerate(){
-        let (stack,team) = match a{
-            'k'=>{
-                (2,ActiveTeam::Neutral)
-            },
-            'r'=>{
-                (1,ActiveTeam::White)
-            },
-            's'=>{
-                (2,ActiveTeam::White)
-            },
-            't'=>{
-                (3,ActiveTeam::White)
-            },
-            'u'=>{
-                (4,ActiveTeam::White)
-            },
-            'v'=>{
-                (5,ActiveTeam::White)
-            },
-            'w'=>{
-                (6,ActiveTeam::White)
-            },
-            'b'=>{
-                (1,ActiveTeam::Black)
-            },
-            'c'=>{
-                (2,ActiveTeam::Black)
-            },
-            'd'=>{
-                (3,ActiveTeam::Black)
-            },
-            'e'=>{
-                (4,ActiveTeam::Black)
-            },
-            'f'=>{
-                (5,ActiveTeam::Black)
-            },
-            'g'=>{
-                (6,ActiveTeam::Black)
-            },
-            '-'=>{
-                continue;
-            },
-            _=>{
-                unreachable!()
-            }
-        };
-
-        g.factions.add_cell_inner(i, stack, team);
-    }
-
-    (world,g)
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Map {

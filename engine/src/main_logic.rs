@@ -206,18 +206,18 @@ pub trait AiInterface {
 
 pub async fn game_play_thread(
     mut doop: WorkerManager,
-    map: &unit::Map,
     world: &board::MyWorld,
     game_type: GameType,
     ai_int: &mut impl AiInterface,
 ) -> (unit::GameOver, MoveHistory) {
     console_dbg!("gameplay thread start");
 
-    let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
+    //let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
+    let mut game=world.starting_state.clone();
 
     let mut game_history = MoveHistory::new();
 
-    let mut team_gen = start_team.iter();
+    let mut team_gen = world.starting_team.iter();
 
     //Loop over each team!
     loop {
