@@ -152,69 +152,9 @@ pub enum GameOver {
     Tie,
 }
 
+
 impl GameState {
 
-    pub fn load(s:&str)->(MyWorld,GameState){
-        
-        let size = ((3. + (12. * s.len() as f64 - 3.)).sqrt() / 6.).ceil() as i8;
-
-        let world=MyWorld::with_size(size);
-
-        let mut g=GameState::default();
-        for (i,a) in s.chars().enumerate(){
-            let (stack,team) = match a{
-                'k'=>{
-                    (2,ActiveTeam::Neutral)
-                },
-                'r'=>{
-                    (1,ActiveTeam::White)
-                },
-                's'=>{
-                    (2,ActiveTeam::White)
-                },
-                't'=>{
-                    (3,ActiveTeam::White)
-                },
-                'u'=>{
-                    (4,ActiveTeam::White)
-                },
-                'v'=>{
-                    (5,ActiveTeam::White)
-                },
-                'w'=>{
-                    (6,ActiveTeam::White)
-                },
-                'b'=>{
-                    (1,ActiveTeam::Black)
-                },
-                'c'=>{
-                    (2,ActiveTeam::Black)
-                },
-                'd'=>{
-                    (3,ActiveTeam::Black)
-                },
-                'e'=>{
-                    (4,ActiveTeam::Black)
-                },
-                'f'=>{
-                    (5,ActiveTeam::Black)
-                },
-                'g'=>{
-                    (6,ActiveTeam::Black)
-                },
-                '-'=>{
-                    continue;
-                },
-                _=>{
-                    unreachable!()
-                }
-            };
-
-            g.factions.add_cell_inner(i, stack, team);
-        }
-
-        (world,g)
-    }
 
 
     pub fn bake_fog(&self, fog: &SmallMesh) -> GameState {
@@ -599,6 +539,70 @@ pub fn replay_string(
     }
 
     Ok(s)
+}
+
+
+
+pub fn load_from_string(s:&str)->(MyWorld,GameState){
+        
+    let size = ((3. + (12. * s.len() as f64 - 3.)).sqrt() / 6.).ceil() as i8;
+
+    let world=MyWorld::with_size(size);
+
+    let mut g=GameState::default();
+    for (i,a) in s.chars().enumerate(){
+        let (stack,team) = match a{
+            'k'=>{
+                (2,ActiveTeam::Neutral)
+            },
+            'r'=>{
+                (1,ActiveTeam::White)
+            },
+            's'=>{
+                (2,ActiveTeam::White)
+            },
+            't'=>{
+                (3,ActiveTeam::White)
+            },
+            'u'=>{
+                (4,ActiveTeam::White)
+            },
+            'v'=>{
+                (5,ActiveTeam::White)
+            },
+            'w'=>{
+                (6,ActiveTeam::White)
+            },
+            'b'=>{
+                (1,ActiveTeam::Black)
+            },
+            'c'=>{
+                (2,ActiveTeam::Black)
+            },
+            'd'=>{
+                (3,ActiveTeam::Black)
+            },
+            'e'=>{
+                (4,ActiveTeam::Black)
+            },
+            'f'=>{
+                (5,ActiveTeam::Black)
+            },
+            'g'=>{
+                (6,ActiveTeam::Black)
+            },
+            '-'=>{
+                continue;
+            },
+            _=>{
+                unreachable!()
+            }
+        };
+
+        g.factions.add_cell_inner(i, stack, team);
+    }
+
+    (world,g)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
