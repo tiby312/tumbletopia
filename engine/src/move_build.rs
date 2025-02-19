@@ -314,45 +314,21 @@ impl ActualMove {
             moveto: mesh::small_mesh::conv(Axial { q, r }),
         })
     }
-    pub fn as_text(&self, mut w: impl std::fmt::Write) -> Result<(), std::fmt::Error> {
+    pub fn as_text(&self,world:&board::MyWorld, mut w: impl std::fmt::Write) -> Result<(), std::fmt::Error> {
+        
         if self.moveto == PASS_MOVE_INDEX {
             return write!(w, "pp");
         }
 
         let k = mesh::small_mesh::inverse(self.moveto).to_cube();
 
-        let s = k.s;
-        let r = k.r;
+        let letter_coordinates=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+        let number = k.r + world.radius as i8;
+        let letter = letter_coordinates[(k.q + number - 1) as usize];
 
-        let first = match r {
-            -7 => 'A',
-            -6 => 'B',
-            -5 => 'C',
-            -4 => 'D',
-            -3 => 'E',
-            -2 => 'F',
-            -1 => 'G',
-            0 => 'H',
-            1 => 'I',
-            2 => 'J',
-            3 => 'K',
-            4 => 'L',
-            5 => 'M',
-            6 => 'N',
-            7 => 'O',
-            _ => '?',
-        };
 
-        write!(w, "{}{}", first, (-s + 7) + 1)
+        write!(w,"{}{}",letter,number)
     }
-
-    // pub fn into_attack(self, target: Axial) -> ExtraPhase {
-    //     ExtraPhase {
-    //         original: self.original,
-    //         moveto: self.moveto,
-    //         target,
-    //     }
-    // }
 
     pub fn undo(&self, _team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;

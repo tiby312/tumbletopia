@@ -10,7 +10,6 @@ use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
 use gloo::console::log;
-use gui::scroll::CameraMoving;
 use gui::shader_sys::ShaderSystem;
 use hex::Axial;
 use model::matrix::{self, MyMatrix};
@@ -43,11 +42,11 @@ pub async fn main_entry() {
         })
     });
 
-    let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
-        .get_element_by_id("textarea_m")
-        .unwrap()
-        .dyn_into()
-        .unwrap();
+    // let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
+    //     .get_element_by_id("textarea_m")
+    //     .unwrap()
+    //     .dyn_into()
+    //     .unwrap();
     //TODO set default map
     //t.set_value(&unit::default_map(&world).save(&world).unwrap());
 
@@ -66,8 +65,6 @@ pub async fn main_entry() {
             .unwrap()
             .dyn_into()
             .unwrap();
-
-        let maps: String = t.value().into();
 
         match r {
             "single_b" => {
@@ -352,7 +349,7 @@ pub async fn worker_entry() {
     };
 
     let world = match game_type.clone() {
-        engine::GameType::MapEditor(s) => {
+        engine::GameType::MapEditor(_s) => {
             //TODO handle this error better
             //let map = Map::load(&s, &world).unwrap();
 
@@ -444,7 +441,7 @@ pub async fn worker_entry() {
 
     let gameplay_thread = async {
         match game_type.clone() {
-            engine::GameType::MapEditor(s) => {
+            engine::GameType::MapEditor(_s) => {
                 //TODO handle this error better
                 // let map = Map::load(&s, &world).unwrap();
 
@@ -452,9 +449,9 @@ pub async fn worker_entry() {
                 // Finish::MapEditor(g)
                 todo!();
             }
-            engine::GameType::PassPlay(s)
-            | engine::GameType::SinglePlayer(s)
-            | engine::GameType::AIBattle(s) => {
+            engine::GameType::PassPlay(_s)
+            | engine::GameType::SinglePlayer(_s)
+            | engine::GameType::AIBattle(_s) => {
                 //let world=board::MyWorld::load_from_string(&s);
 
                 //let map = Map::load(&s, &world).unwrap();
@@ -564,17 +561,17 @@ async fn render_command(
     let mut terrain_animation = None;
     let mut poking = 0;
     let mut camera_moving_last = scroll::CameraMoving::Stopped;
-    let mut waiting_engine_ack = false;
+    //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
         ace::Command::HideUndo => {
             engine_worker.post_message(dom::WorkerToDom::HideUndo);
-            waiting_engine_ack = true;
+            //waiting_engine_ack = true;
             return ace::Response::Ack;
         }
         ace::Command::ShowUndo => {
             engine_worker.post_message(dom::WorkerToDom::ShowUndo);
-            waiting_engine_ack = true;
+            //waiting_engine_ack = true;
             return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
@@ -717,9 +714,9 @@ async fn render_command(
                         DomToWorker::Ack => {
                             //assert!(waiting_engine_ack);
 
-                            if waiting_engine_ack {
-                                return ace::Response::Ack;
-                            }
+                            // if waiting_engine_ack {
+                            //     return ace::Response::Ack;
+                            // }
                         }
                         DomToWorker::CanvasMouseMove { x, y } => {
                             scroll_manager.on_mouse_move([*x, *y], last_matrix, viewport);
@@ -776,7 +773,7 @@ async fn render_command(
                     ActualMove {
                         moveto: mesh::small_mesh::conv(mouse),
                     }
-                    .as_text(&mut s)
+                    .as_text(&world,&mut s)
                     .unwrap();
 
                     let ff = ActualMove::from_str(&s).unwrap();
