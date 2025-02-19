@@ -314,18 +314,23 @@ impl ActualMove {
             moveto: mesh::small_mesh::conv(Axial { q, r }),
         })
     }
-    pub fn as_text(&self,world:&board::MyWorld, mut w: impl std::fmt::Write) -> Result<(), std::fmt::Error> {
-        
-        if self.moveto == PASS_MOVE_INDEX {
-            return write!(w, "pp");
-        }
+
+    pub fn to_letter_coord(&self,world:&board::MyWorld)->(char,i8){
 
         let k = mesh::small_mesh::inverse(self.moveto).to_cube();
 
         let letter_coordinates=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
         let number = k.r + world.radius as i8;
         let letter = letter_coordinates[(k.q + number - 1) as usize];
+        (letter,number)
+    }
+    pub fn as_text(&self,world:&board::MyWorld, mut w: impl std::fmt::Write) -> Result<(), std::fmt::Error> {
+        
+        if self.moveto == PASS_MOVE_INDEX {
+            return write!(w, "pp");
+        }
 
+        let (letter,number)=self.to_letter_coord(world);
 
         write!(w,"{}{}",letter,number)
     }
