@@ -129,7 +129,7 @@ impl ActiveTeam {
 //     pub powerups: Vec<Axial>,
 // }
 
-#[derive(Serialize, Deserialize,Default, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 
 pub struct GameStateTotal {
     //0 is white fog. 1 is black fog
@@ -152,11 +152,7 @@ pub enum GameOver {
     Tie,
 }
 
-
 impl GameState {
-
-
-
     pub fn bake_fog(&self, fog: &SmallMesh) -> GameState {
         let mut gg = self.clone();
         // let fog = match team {
@@ -520,10 +516,7 @@ pub enum UnitType {
 //     Some((map, mh))
 // }
 
-pub fn replay_string(
-    moves: &MoveHistory,
-    world: &MyWorld,
-) -> Result<String, std::fmt::Error> {
+pub fn replay_string(moves: &MoveHistory, world: &MyWorld) -> Result<String, std::fmt::Error> {
     use std::fmt::Write;
     let mut s = String::new();
 
@@ -540,8 +533,6 @@ pub fn replay_string(
 
     Ok(s)
 }
-
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Map {

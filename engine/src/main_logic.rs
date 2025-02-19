@@ -213,7 +213,7 @@ pub async fn game_play_thread(
     console_dbg!("gameplay thread start");
 
     //let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
-    let mut game=world.starting_state.clone();
+    let mut game = world.starting_state.clone();
 
     let mut game_history = MoveHistory::new();
 

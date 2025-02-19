@@ -343,7 +343,6 @@ pub async fn worker_entry() {
         futures::channel::mpsc::channel::<GameWrap<engine::main_logic::Command>>(5);
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
-
     let game_type = match game_type {
         dom::GameType::SinglePlayer(s) => engine::GameType::SinglePlayer(s),
         dom::GameType::PassPlay(s) => engine::GameType::PassPlay(s),
@@ -352,46 +351,44 @@ pub async fn worker_entry() {
         dom::GameType::MapEditor(s) => engine::GameType::MapEditor(s),
     };
 
-    let world=match game_type.clone() {
-            engine::GameType::MapEditor(s) => {
-                //TODO handle this error better
-                //let map = Map::load(&s, &world).unwrap();
+    let world = match game_type.clone() {
+        engine::GameType::MapEditor(s) => {
+            //TODO handle this error better
+            //let map = Map::load(&s, &world).unwrap();
 
-                // let g = engine::main_logic::map_editor(doop, &world, map).await;
-                // Finish::MapEditor(g)
-                todo!();
-            }
-            engine::GameType::PassPlay(s)
-            | engine::GameType::SinglePlayer(s)
-            | engine::GameType::AIBattle(s) => {
+            // let g = engine::main_logic::map_editor(doop, &world, map).await;
+            // Finish::MapEditor(g)
+            todo!();
+        }
+        engine::GameType::PassPlay(s)
+        | engine::GameType::SinglePlayer(s)
+        | engine::GameType::AIBattle(s) => {
+            let world = board::MyWorld::load_from_string(&s);
 
-                let world=board::MyWorld::load_from_string(&s);
+            //let map = Map::load(&s, &world).unwrap();
 
-                //let map = Map::load(&s, &world).unwrap();
+            //TODO handle this error better
+            // let res = engine::main_logic::game_play_thread(
+            //     doop,
+            //     &world,
+            //     game_type,
+            //     &mut ai_int,
+            // )
+            // .await;
+            // Finish::GameFinish((res.0, res.1, world))
+            world
+        }
+        engine::GameType::Replay(s) => {
+            console_dbg!("got map=", s);
+            todo!();
+            // let (map, history) = unit::parse_replay_string(&s, &world).unwrap();
 
-                //TODO handle this error better
-                // let res = engine::main_logic::game_play_thread(
-                //     doop,
-                //     &world,
-                //     game_type,
-                //     &mut ai_int,
-                // )
-                // .await;
-                // Finish::GameFinish((res.0, res.1, world))
-                world
-            }
-            engine::GameType::Replay(s) => {
-                console_dbg!("got map=", s);
-                todo!();
-                // let (map, history) = unit::parse_replay_string(&s, &world).unwrap();
+            // let res = engine::main_logic::replay(&map, &history, &world, doop).await;
 
-                // let res = engine::main_logic::replay(&map, &history, &world, doop).await;
-
-                // Finish::GameFinish((res, history, map))
-            }
+            // Finish::GameFinish((res, history, map))
+        }
     };
 
-    
     let render_thead = async {
         while let Some(ace::GameWrap {
             mut game,
@@ -440,7 +437,6 @@ pub async fn worker_entry() {
         receiver: response_recv,
     };
 
-
     enum Finish {
         MapEditor(Map),
         GameFinish((GameOver, engine::MoveHistory)),
@@ -459,19 +455,14 @@ pub async fn worker_entry() {
             engine::GameType::PassPlay(s)
             | engine::GameType::SinglePlayer(s)
             | engine::GameType::AIBattle(s) => {
-
                 //let world=board::MyWorld::load_from_string(&s);
 
                 //let map = Map::load(&s, &world).unwrap();
 
                 //TODO handle this error better
-                let res = engine::main_logic::game_play_thread(
-                    doop,
-                    &world,
-                    game_type,
-                    &mut ai_int,
-                )
-                .await;
+                let res =
+                    engine::main_logic::game_play_thread(doop, &world, game_type, &mut ai_int)
+                        .await;
                 Finish::GameFinish((res.0, res.1))
             }
             engine::GameType::Replay(s) => {
@@ -544,7 +535,7 @@ async fn render_command(
     let canvas = &e.canvas;
     let grid_matrix = &e.grid_matrix;
     let models = &e.models;
-    
+
     let draw_sys = &mut e.shader; //ctx.shader_system();
 
     let gl_width = canvas.width();
@@ -1264,6 +1255,7 @@ fn update_text(
 }
 
 fn anchor_points(radius: i8, dir: hex::HDir) -> impl Iterator<Item = hex::Cube> {
+    let radius = radius - 1;
     let cube = hex::Cube::new(0, 0);
 
     let label_offset = hex::Cube::from_arr(hex::OFFSETS[dir.rotate60_right() as usize]);
