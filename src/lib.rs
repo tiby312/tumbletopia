@@ -486,24 +486,18 @@ async fn render_command(
     team: ActiveTeam,
     e: &mut EngineStuff,
     world: &board::MyWorld,
-    // frame_timer: &mut shogo::FrameTimer<
-    //     DomToWorker,
-    //     ,
-    // >,
     timer: &mut shogo::Timer,
     dom_messages: &mut shogo::worker::WorkerRecv<DomToWorker>,
     engine_worker: &mut shogo::worker::WorkerSender<dom::WorkerToDom>,
 ) -> ace::Response {
     let game = &game_total.tactical;
-    //let mut x = 0.0;
     let scroll_manager = &mut e.scroll_manager;
     let last_matrix = &mut e.last_matrix;
     let ctx = &e.ctx;
     let canvas = &e.canvas;
     let grid_matrix = &e.grid_matrix;
     let models = &e.models;
-    //let numm = &e.numm;
-
+    
     let draw_sys = &mut e.shader; //ctx.shader_system();
 
     let gl_width = canvas.width();
