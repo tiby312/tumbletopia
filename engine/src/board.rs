@@ -179,6 +179,18 @@ fn test_dis_to_hex_border() {
 }
 
 impl MyWorld {
+    pub fn with_size(s:i8) -> MyWorld {
+        let size=s;
+
+        let land = mesh::small_mesh::SmallMesh::from_iter(
+            hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()),
+        );
+
+        MyWorld {
+            land,
+            radius: size as u8,
+        }
+    }
     pub fn new() -> MyWorld {
         //let size = 3;
         let size = 3;
