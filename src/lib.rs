@@ -4,6 +4,7 @@ use engine::main_logic::MouseEvent;
 
 use cgmath::Vector2;
 use engine::mesh;
+use engine::move_build;
 use engine::MoveHistory;
 use futures::channel::mpsc::UnboundedReceiver;
 use gloo::console::console_dbg;
@@ -1247,24 +1248,75 @@ fn update_text(
 
     // }
 
-
+    let radius = world.radius as i8;
+    
 
     let mut k = Vec::new();
-
-    let start_dir = hex::HDir::BottomRight;
-    let radius = world.radius as i8;
     let alphabet = "abcdefghijklmnopqrstuvwxyz";
-    for (point, letter) in
-        anchor_points(radius, start_dir).zip(alphabet.chars())
-    {
-        k.push(make_text(point, letter.to_uppercase().to_string()));
+    
+    let a11=move_build::from_letter_coord('A',1, &world);
+    let a22=move_build::from_letter_coord('C',1, &world);
+    let a33=move_build::from_letter_coord('E',3, &world);
+
+    let rr=radius-1;
+    let a1 = Axial{q:0,r:-rr};
+    let a2 = Axial{q:rr,r:-rr};
+    let a3 = Axial{q:rr,r:0};
+    
+    assert_eq!(a1,a11);
+    assert_eq!(a2,a22);
+    assert_eq!(a3,a33);
+    
+
+    for (a,letter) in anchor_points2(a1,a2,a3).zip(alphabet.chars()){
+        k.push(make_text(a.into(),letter.to_uppercase().to_string()))
     }
 
-    for (num, point) in anchor_points(radius, start_dir.rotate60_right().rotate60_right()).enumerate() {
-        let ss = format!("{}", (radius as usize * 2) - num - 1);
-        k.push(make_text(point, ss));
-    }
     k
+
+    // let start_dir = hex::HDir::BottomRight;
+    // let radius = world.radius as i8;
+    // let alphabet = "abcdefghijklmnopqrstuvwxyz";
+    // for (point, letter) in
+    //     anchor_points(radius, start_dir).zip(alphabet.chars())
+    // {
+    //     k.push(make_text(point, letter.to_uppercase().to_string()));
+    // }
+
+    // for (num, point) in anchor_points(radius, start_dir.rotate60_right().rotate60_right()).enumerate() {
+    //     let ss = format!("{}", (radius as usize * 2) - num - 1);
+    //     k.push(make_text(point, ss));
+    // }
+    // k
+}
+
+
+
+
+
+fn anchor_points2(start:Axial,bend_point:Axial,end:Axial)->impl Iterator<Item=hex::Axial>{
+
+
+    let offset=bend_point.sub(&start).to_cube();
+    
+    let unit=Axial{q:offset.q.clamp(-1,1),r:offset.r.clamp(-1,1)};
+
+    let dis=offset.q.abs()+offset.r.abs()+offset.s.abs();
+
+
+    let first=(0..dis-1).map(move |x|{
+        start.add(unit.mul(x))
+    });
+
+    let offset=end.sub(&bend_point);
+    let unit=Axial{q:offset.q.clamp(-1,1),r:offset.r.clamp(-1,1)};
+
+    let second=(1..dis-1).map(move |x|{
+        bend_point.add(unit.mul(x))
+    });
+
+    first.chain(second)
+
 }
 
 fn anchor_points(radius: i8, dir: hex::HDir) -> impl Iterator<Item = hex::Cube> {
