@@ -1156,7 +1156,7 @@ async fn render_command(
         let mut label_arrows = vec![];
         for (pos, hdir) in label_arrow_points(world) {
             let pos = grid_matrix.hex_axial_to_world(&pos);
-            let t = matrix::translation(pos.x, pos.y, -10.0);
+            let t = matrix::translation(pos.x, pos.y, -5.0);
             let r = matrix::z_rotation(
                 (((hdir as usize) + 2) % 6) as f32 * (std::f32::consts::TAU / 6.0),
             );
@@ -1211,14 +1211,31 @@ async fn render_command(
 }
 
 pub fn label_arrow_points(world: &board::MyWorld) -> impl Iterator<Item = (hex::Cube, hex::HDir)> {
-    let start_dir = hex::HDir::BottomRight;
-    let radius = world.radius as i8;
+   
+   
+    let rr=world.radius as i8-1;
+    let a1 = Axial{q:0,r:-rr};
+    let a2 = Axial{q:rr,r:-rr};
+    let a3 = Axial{q:rr,r:0};
+    
+    let first=anchor_points2(a1,a2,a3).map(|x|{
+        let x=x.add(Axial{q:1,r:-1});
+        
+        (x.to_cube(),hex::HDir::BottomRight)
+    });
 
-    let other_dir = start_dir.rotate60_right().rotate60_right();
-    let first = anchor_points(radius, other_dir)
-        .map(move |x| (x, other_dir.rotate60_right().rotate60_right()));
+    let a1 = Axial{q:0,r:-rr};
+    let a2 = Axial{q:-rr,r:0};
+    let a3 = Axial{q:-rr,r:rr};
 
-    let second = anchor_points(radius, start_dir).map(move |x| (x, other_dir));
+    let second=anchor_points2(a1,a2,a3).map(|x|{
+        let x=x.add(Axial{q:-1,r:0});
+        
+        (x.to_cube(),hex::HDir::BottomLeft)
+    });
+
+    //first.chain(second)
+    //std::iter::empty()
     first.chain(second)
 }
 
@@ -1231,22 +1248,10 @@ fn update_text(
 
     let make_text = |point: hex::Cube, text: String| {
         let pos = grid_matrix.hex_axial_to_world(&point);
-        let pos = scroll::world_to_mouse([pos.x, pos.y, -10.0], viewport, &my_matrix);
+        let pos = scroll::world_to_mouse([pos.x, pos.y, -5.0], viewport, &my_matrix);
         dom::Text { text, pos }
     };
 
-
-    // let mut k=Vec::new();
-    // for a in 0..world.radius as i8*2{
-    //     let mut coord=engine::move_build::from_letter_coord('A',a+1, world);
-    //     if coord.q< -2{
-    //         coord.r=-coord.r;
-    //     }
-    //     coord.q-=1;
-    //     let ss=format!("{}{}",'A',a);
-    //     k.push(make_text(coord.to_cube(),ss))
-
-    // }
 
     let radius = world.radius as i8;
     
@@ -1269,25 +1274,34 @@ fn update_text(
     
 
     for (a,letter) in anchor_points2(a1,a2,a3).zip(alphabet.chars()){
+        let a=a.add(Axial{q:1,r:-1});
         k.push(make_text(a.into(),letter.to_uppercase().to_string()))
     }
 
+
+
+    let a11=move_build::from_letter_coord('A',1, &world);
+    let a22=move_build::from_letter_coord('A',3, &world);
+    let a33=move_build::from_letter_coord('C',5, &world);
+
+    let rr=radius-1;
+    let a1 = Axial{q:0,r:-rr};
+    let a2 = Axial{q:-rr,r:0};
+    let a3 = Axial{q:-rr,r:rr};
+    
+    assert_eq!(a1,a11);
+    assert_eq!(a2,a22);
+    assert_eq!(a3,a33);
+    
+    for (a,num) in anchor_points2(a1,a2,a3).zip(1..){
+        let a=a.add(Axial{q:-1,r:0});
+        k.push(make_text(a.into(),num.to_string()))
+    }
+
+
+
     k
 
-    // let start_dir = hex::HDir::BottomRight;
-    // let radius = world.radius as i8;
-    // let alphabet = "abcdefghijklmnopqrstuvwxyz";
-    // for (point, letter) in
-    //     anchor_points(radius, start_dir).zip(alphabet.chars())
-    // {
-    //     k.push(make_text(point, letter.to_uppercase().to_string()));
-    // }
-
-    // for (num, point) in anchor_points(radius, start_dir.rotate60_right().rotate60_right()).enumerate() {
-    //     let ss = format!("{}", (radius as usize * 2) - num - 1);
-    //     k.push(make_text(point, ss));
-    // }
-    // k
 }
 
 
@@ -1317,31 +1331,4 @@ fn anchor_points2(start:Axial,bend_point:Axial,end:Axial)->impl Iterator<Item=he
 
     first.chain(second)
 
-}
-
-fn anchor_points(radius: i8, dir: hex::HDir) -> impl Iterator<Item = hex::Cube> {
-    let radius = radius - 1;
-    let cube = hex::Cube::new(0, 0);
-
-    let label_offset = hex::Cube::from_arr(hex::OFFSETS[dir.rotate60_right() as usize]);
-
-    let counter = cube.add(
-        hex::Cube::from_arr(hex::OFFSETS[dir as usize])
-            .mul(radius)
-            .to_cube(),
-    );
-    let new_dir = dir.rotate60_right().rotate60_right();
-
-    let unit_vec = hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
-    let first = (0..radius).map(move |x| counter.add(unit_vec.mul(x).to_cube()).add(label_offset));
-
-    let counter = counter.add(unit_vec.mul(radius).to_cube());
-
-    let new_dir = new_dir.rotate60_right();
-    let unit_vec = hex::Cube::from_arr(hex::OFFSETS[new_dir as usize]);
-
-    let second =
-        (0..radius + 1).map(move |x| counter.add(unit_vec.mul(x).to_cube()).add(label_offset));
-
-    first.chain(second)
 }
