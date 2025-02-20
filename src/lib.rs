@@ -1210,14 +1210,14 @@ async fn render_command(
 }
 
 pub fn label_arrow_points(world: &board::MyWorld) -> impl Iterator<Item = (hex::Cube, hex::HDir)> {
-    let start_dir = hex::HDir::Top;
+    let start_dir = hex::HDir::BottomRight;
     let radius = world.radius as i8;
 
     let other_dir = start_dir.rotate60_right().rotate60_right();
     let first = anchor_points(radius, other_dir)
         .map(move |x| (x, other_dir.rotate60_right().rotate60_right()));
 
-    let second = anchor_points(radius, start_dir).map(move |x| (x, start_dir));
+    let second = anchor_points(radius, start_dir).map(move |x| (x, other_dir));
     first.chain(second)
 }
 
@@ -1227,24 +1227,40 @@ fn update_text(
     viewport: [f32; 2],
     my_matrix: &cgmath::Matrix4<f32>,
 ) -> Vec<dom::Text> {
+
     let make_text = |point: hex::Cube, text: String| {
         let pos = grid_matrix.hex_axial_to_world(&point);
         let pos = scroll::world_to_mouse([pos.x, pos.y, -10.0], viewport, &my_matrix);
         dom::Text { text, pos }
     };
 
+
+    // let mut k=Vec::new();
+    // for a in 0..world.radius as i8*2{
+    //     let mut coord=engine::move_build::from_letter_coord('A',a+1, world);
+    //     if coord.q< -2{
+    //         coord.r=-coord.r;
+    //     }
+    //     coord.q-=1;
+    //     let ss=format!("{}{}",'A',a);
+    //     k.push(make_text(coord.to_cube(),ss))
+
+    // }
+
+
+
     let mut k = Vec::new();
 
-    let start_dir = hex::HDir::Top;
+    let start_dir = hex::HDir::BottomRight;
     let radius = world.radius as i8;
     let alphabet = "abcdefghijklmnopqrstuvwxyz";
     for (point, letter) in
-        anchor_points(radius, start_dir.rotate60_right().rotate60_right()).zip(alphabet.chars())
+        anchor_points(radius, start_dir).zip(alphabet.chars())
     {
         k.push(make_text(point, letter.to_uppercase().to_string()));
     }
 
-    for (num, point) in anchor_points(radius, start_dir).enumerate() {
+    for (num, point) in anchor_points(radius, start_dir.rotate60_right().rotate60_right()).enumerate() {
         let ss = format!("{}", (radius as usize * 2) - num - 1);
         k.push(make_text(point, ss));
     }

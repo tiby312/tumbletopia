@@ -24,7 +24,7 @@ impl Default for HexConverter {
 impl HexConverter {
     pub fn hex_axial_to_square_matrix(&self) -> cgmath::Matrix2<f32> {
         let sc = EPSILON * self.spacing() / FOO;
-        let scale = cgmath::Matrix2::new(sc, 0.0, 0.0, sc);
+        let scale = cgmath::Matrix2::new(-sc, 0.0, 0.0, sc);
         scale * hex::HEX_PROJ_FLAT
     }
 
