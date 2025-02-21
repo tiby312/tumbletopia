@@ -1212,7 +1212,7 @@ async fn render_command(
 
 pub fn label_arrow_points(world: &board::MyWorld) -> impl Iterator<Item = (hex::Cube, hex::HDir)> {
    
-   
+
     let rr=world.radius as i8-1;
     let a1 = Axial{q:0,r:-rr};
     let a2 = Axial{q:rr,r:-rr};
@@ -1248,7 +1248,7 @@ fn update_text(
 
     let make_text = |point: hex::Cube, text: String| {
         let pos = grid_matrix.hex_axial_to_world(&point);
-        let pos = scroll::world_to_mouse([pos.x, pos.y, -5.0], viewport, &my_matrix);
+        let pos = scroll::world_to_mouse([pos.x, pos.y, 0.0], viewport, &my_matrix);
         dom::Text { text, pos }
     };
 

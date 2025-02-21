@@ -400,11 +400,11 @@ fn redraw_text(text: &Vec<Text>) {
         .unwrap();
     context.clear_rect(0., 0., canvas.width() as f64, canvas.height() as f64);
 
-    context.set_text_baseline("middle");
     context.set_text_align("center");
     context.set_font("40px roboto");
     context.set_fill_style_str("grey");
-
+    context.set_text_baseline("middle");
+    
     for a in text {
         context
             .fill_text(&a.text, a.pos[0] as f64, a.pos[1] as f64)
