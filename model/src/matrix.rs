@@ -60,7 +60,7 @@ pub struct Perspective {
 
 impl MyMatrix for Perspective {
     fn generate(self) -> cgmath::Matrix4<f32> {
-        let rr=100.0;
+        //let rr=100.0;
         //cgmath::ortho(-rr,rr, -rr, rr, self.near, self.far)
         cgmath::perspective(
             cgmath::Rad(self.field_of_view_rad),
