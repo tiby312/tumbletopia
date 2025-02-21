@@ -401,7 +401,7 @@ fn redraw_text(text: &Vec<Text>) {
     context.clear_rect(0., 0., canvas.width() as f64, canvas.height() as f64);
 
     context.set_text_align("center");
-    context.set_font("40px roboto");
+    context.set_font("30px roboto");
     context.set_fill_style_str("grey");
     context.set_text_baseline("middle");
     
