@@ -59,31 +59,31 @@ impl Evaluator {
             }
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                match tt {
+                let foo=match tt {
                     ActiveTeam::Black => {
                         if height >= num_white {
-                            2
+                            1
                         } else {
-                            -2
+                            -1
                         }
                     }
                     ActiveTeam::White => {
                         if height >= num_black {
-                            2
+                            1
                         } else {
-                            -2
+                            -1
                         }
                     }
                     ActiveTeam::Neutral => {
                         if num_white > num_black {
                             if num_white > height {
-                                2
+                                1
                             } else {
                                 0
                             }
                         } else if num_black > num_white {
                             if num_black > height {
-                                -2
+                                -1
                             } else {
                                 0
                             }
@@ -91,7 +91,8 @@ impl Evaluator {
                             0
                         }
                     }
-                }
+                };
+                foo*10
             } else {
                 if num_white > num_black {
                     1
