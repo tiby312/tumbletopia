@@ -43,6 +43,8 @@ impl Evaluator {
         let mut strength = 0;
         let mut contested = 0;
         let mut unseen = 0;
+
+        let mut total_foo = 0;
         for index in world.get_game_cells().inner.iter_ones() {
             let mut num_white = 0;
             let mut num_black = 0;
@@ -56,57 +58,102 @@ impl Evaluator {
                 }
             }
 
-            if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                let height = height as i64;
-
-                let curr_strength = match tt {
-                    ActiveTeam::White => height.max(num_white - 1),
-                    ActiveTeam::Black => -height.max(num_black - 1),
-                    ActiveTeam::Neutral => 0,
-                };
-
-                strength += curr_strength;
-
-                stack_count += 1;
-
+            let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 match tt {
-                    ActiveTeam::White => {
-                        if num_black > height {
-                            score -= 1
-                        } else {
-                            score += 1
-                        }
-                    }
                     ActiveTeam::Black => {
-                        if num_white > height {
-                            score += 1
+                        if height >= num_white {
+                            2
                         } else {
-                            score -= 1
+                            -2
                         }
                     }
-                    ActiveTeam::Neutral => {}
+                    ActiveTeam::White => {
+                        if height >= num_black {
+                            2
+                        } else {
+                            -2
+                        }
+                    }
+                    ActiveTeam::Neutral => {
+                        if num_white > num_black {
+                            if num_white > height {
+                                2
+                            } else {
+                                0
+                            }
+                        } else if num_black > num_white {
+                            if num_black > height {
+                                -2
+                            } else {
+                                0
+                            }
+                        } else {
+                            0
+                        }
+                    }
                 }
             } else {
-                let ownership = num_white - num_black;
-
-                if ownership > 0 {
-                    score += ownership;
-                    territory_count += 1;
-                } else if ownership < 0 {
-                    score += ownership;
-                    territory_count += 1;
+                if num_white > num_black {
+                    1
+                } else if num_black > num_white {
+                    -1
                 } else {
-                    //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
-                    if num_white > 0 {
-                        contested += 1
-                    } else {
-                        unseen += 1;
-                    }
+                    0
                 }
             };
-        }
 
-        (stack_count + territory_count) * score + (unseen + contested) * strength
+            total_foo += temp_score;
+            // if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+            //     let height = height as i64;
+
+            //     let curr_strength = match tt {
+            //         ActiveTeam::White => height.max(num_white - 1),
+            //         ActiveTeam::Black => -height.max(num_black - 1),
+            //         ActiveTeam::Neutral => 0,
+            //     };
+
+            //     strength += curr_strength;
+
+            //     stack_count += 1;
+
+            //     match tt {
+            //         ActiveTeam::White => {
+            //             if num_black > height {
+            //                 score -= 1
+            //             } else {
+            //                 score += 1
+            //             }
+            //         }
+            //         ActiveTeam::Black => {
+            //             if num_white > height {
+            //                 score += 1
+            //             } else {
+            //                 score -= 1
+            //             }
+            //         }
+            //         ActiveTeam::Neutral => {}
+            //     }
+            // } else {
+            //     let ownership = num_white - num_black;
+
+            //     if ownership > 0 {
+            //         score += ownership;
+            //         territory_count += 1;
+            //     } else if ownership < 0 {
+            //         score += ownership;
+            //         territory_count += 1;
+            //     } else {
+            //         //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
+            //         if num_white > 0 {
+            //             contested += 1
+            //         } else {
+            //             unseen += 1;
+            //         }
+            //     }
+            // };
+        }
+        total_foo
+        //(stack_count + territory_count) * score + (unseen + contested) * strength
     }
 }
 
@@ -203,7 +250,7 @@ pub fn iterative_deepening(
     }
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3, 4, 5, 6] {
+    for depth in [1, 2, 3, 4, 5, 6, 7] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         //3 = num iter

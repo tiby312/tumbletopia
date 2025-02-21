@@ -239,24 +239,26 @@ impl MoveEffect {
     // }
 }
 
-pub fn from_letter_coord(foo:char,num:i8,world:&board::MyWorld)->Axial{
-    let r = num-world.radius as i8;
+pub fn from_letter_coord(foo: char, num: i8, world: &board::MyWorld) -> Axial {
+    let r = num - world.radius as i8;
 
-    let (index,_)=LETTER_COORDINATES.iter().enumerate().find(|(_,x)|**x==foo).unwrap();
-    
-    let q= index  as i8- (r+world.radius as i8) + 1;
+    let (index, _) = LETTER_COORDINATES
+        .iter()
+        .enumerate()
+        .find(|(_, x)| **x == foo)
+        .unwrap();
 
-    Axial{q,r}
+    let q = index as i8 - (r + world.radius as i8) + 1;
+
+    Axial { q, r }
 }
-pub fn to_letter_coord(ax:&Axial,world:&board::MyWorld)->(char,i8){
-
+pub fn to_letter_coord(ax: &Axial, world: &board::MyWorld) -> (char, i8) {
     let k = ax.to_cube();
 
     let number = k.r + world.radius as i8;
     let letter = LETTER_COORDINATES[(k.q + number - 1) as usize];
-    (letter,number)
+    (letter, number)
 }
-
 
 // #[derive(Clone, Debug)]
 // pub struct MovePhase {
@@ -264,8 +266,11 @@ pub fn to_letter_coord(ax:&Axial,world:&board::MyWorld)->(char,i8){
 //     pub moveto: Axial,
 // }
 
-const LETTER_COORDINATES:[char;26]=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
-        
+const LETTER_COORDINATES: [char; 26] = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+    'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+];
+
 #[test]
 fn test_move() {
     let k = mesh::small_mesh::inverse(ActualMove::from_str("A1").unwrap().moveto);
@@ -336,19 +341,19 @@ impl ActualMove {
         })
     }
 
-    pub fn as_text(&self,world:&board::MyWorld, mut w: impl std::fmt::Write) -> Result<(), std::fmt::Error> {
-    
+    pub fn as_text(
+        &self,
+        world: &board::MyWorld,
+        mut w: impl std::fmt::Write,
+    ) -> Result<(), std::fmt::Error> {
         if self.moveto == PASS_MOVE_INDEX {
             return write!(w, "pp");
         }
-    
-        let (letter,number)=to_letter_coord(&mesh::small_mesh::inverse(self.moveto), world);
-    
-        write!(w,"{}{}",letter,number)
-    }
-    
 
-    
+        let (letter, number) = to_letter_coord(&mesh::small_mesh::inverse(self.moveto), world);
+
+        write!(w, "{}{}", letter, number)
+    }
 
     pub fn undo(&self, _team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;

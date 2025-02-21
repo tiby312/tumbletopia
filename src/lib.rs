@@ -774,7 +774,7 @@ async fn render_command(
                     ActualMove {
                         moveto: mesh::small_mesh::conv(mouse),
                     }
-                    .as_text(&world,&mut s)
+                    .as_text(&world, &mut s)
                     .unwrap();
 
                     let ff = ActualMove::from_str(&s).unwrap();
@@ -1211,27 +1211,25 @@ async fn render_command(
 }
 
 pub fn label_arrow_points(world: &board::MyWorld) -> impl Iterator<Item = (hex::Cube, hex::HDir)> {
-   
+    let rr = world.radius as i8 - 1;
+    let a1 = Axial { q: 0, r: -rr };
+    let a2 = Axial { q: rr, r: -rr };
+    let a3 = Axial { q: rr, r: 0 };
 
-    let rr=world.radius as i8-1;
-    let a1 = Axial{q:0,r:-rr};
-    let a2 = Axial{q:rr,r:-rr};
-    let a3 = Axial{q:rr,r:0};
-    
-    let first=anchor_points2(a1,a2,a3).map(|x|{
-        let x=x.add(Axial{q:1,r:-1});
-        
-        (x.to_cube(),hex::HDir::BottomRight)
+    let first = anchor_points2(a1, a2, a3).map(|x| {
+        let x = x.add(Axial { q: 1, r: -1 });
+
+        (x.to_cube(), hex::HDir::BottomRight)
     });
 
-    let a1 = Axial{q:0,r:-rr};
-    let a2 = Axial{q:-rr,r:0};
-    let a3 = Axial{q:-rr,r:rr};
+    let a1 = Axial { q: 0, r: -rr };
+    let a2 = Axial { q: -rr, r: 0 };
+    let a3 = Axial { q: -rr, r: rr };
 
-    let second=anchor_points2(a1,a2,a3).map(|x|{
-        let x=x.add(Axial{q:-1,r:0});
-        
-        (x.to_cube(),hex::HDir::BottomLeft)
+    let second = anchor_points2(a1, a2, a3).map(|x| {
+        let x = x.add(Axial { q: -1, r: 0 });
+
+        (x.to_cube(), hex::HDir::BottomLeft)
     });
 
     //first.chain(second)
@@ -1245,90 +1243,75 @@ fn update_text(
     viewport: [f32; 2],
     my_matrix: &cgmath::Matrix4<f32>,
 ) -> Vec<dom::Text> {
-
     let make_text = |point: hex::Cube, text: String| {
         let pos = grid_matrix.hex_axial_to_world(&point);
         let pos = scroll::world_to_mouse([pos.x, pos.y, -5.0], viewport, &my_matrix);
         dom::Text { text, pos }
     };
 
-
     let radius = world.radius as i8;
-    
 
     let mut k = Vec::new();
     let alphabet = "abcdefghijklmnopqrstuvwxyz";
-    
-    let a11=move_build::from_letter_coord('A',1, &world);
-    let a22=move_build::from_letter_coord('C',1, &world);
-    let a33=move_build::from_letter_coord('E',3, &world);
 
-    let rr=radius-1;
-    let a1 = Axial{q:0,r:-rr};
-    let a2 = Axial{q:rr,r:-rr};
-    let a3 = Axial{q:rr,r:0};
-    
-    assert_eq!(a1,a11);
-    assert_eq!(a2,a22);
-    assert_eq!(a3,a33);
-    
+    let a11 = move_build::from_letter_coord('A', 1, &world);
+    let a22 = move_build::from_letter_coord('C', 1, &world);
+    let a33 = move_build::from_letter_coord('E', 3, &world);
 
-    for (a,letter) in anchor_points2(a1,a2,a3).zip(alphabet.chars()){
-        let a=a.add(Axial{q:1,r:-1});
-        k.push(make_text(a.into(),letter.to_uppercase().to_string()))
+    let rr = radius - 1;
+    let a1 = Axial { q: 0, r: -rr };
+    let a2 = Axial { q: rr, r: -rr };
+    let a3 = Axial { q: rr, r: 0 };
+
+    assert_eq!(a1, a11);
+    assert_eq!(a2, a22);
+    assert_eq!(a3, a33);
+
+    for (a, letter) in anchor_points2(a1, a2, a3).zip(alphabet.chars()) {
+        let a = a.add(Axial { q: 1, r: -1 });
+        k.push(make_text(a.into(), letter.to_uppercase().to_string()))
     }
 
+    let a11 = move_build::from_letter_coord('A', 1, &world);
+    let a22 = move_build::from_letter_coord('A', 3, &world);
+    let a33 = move_build::from_letter_coord('C', 5, &world);
 
+    let rr = radius - 1;
+    let a1 = Axial { q: 0, r: -rr };
+    let a2 = Axial { q: -rr, r: 0 };
+    let a3 = Axial { q: -rr, r: rr };
 
-    let a11=move_build::from_letter_coord('A',1, &world);
-    let a22=move_build::from_letter_coord('A',3, &world);
-    let a33=move_build::from_letter_coord('C',5, &world);
+    assert_eq!(a1, a11);
+    assert_eq!(a2, a22);
+    assert_eq!(a3, a33);
 
-    let rr=radius-1;
-    let a1 = Axial{q:0,r:-rr};
-    let a2 = Axial{q:-rr,r:0};
-    let a3 = Axial{q:-rr,r:rr};
-    
-    assert_eq!(a1,a11);
-    assert_eq!(a2,a22);
-    assert_eq!(a3,a33);
-    
-    for (a,num) in anchor_points2(a1,a2,a3).zip(1..){
-        let a=a.add(Axial{q:-1,r:0});
-        k.push(make_text(a.into(),num.to_string()))
+    for (a, num) in anchor_points2(a1, a2, a3).zip(1..) {
+        let a = a.add(Axial { q: -1, r: 0 });
+        k.push(make_text(a.into(), num.to_string()))
     }
-
-
 
     k
-
 }
 
+fn anchor_points2(start: Axial, bend_point: Axial, end: Axial) -> impl Iterator<Item = hex::Axial> {
+    let offset = bend_point.sub(&start).to_cube();
 
+    let unit = Axial {
+        q: offset.q.clamp(-1, 1),
+        r: offset.r.clamp(-1, 1),
+    };
 
+    let dis = offset.q.abs() + offset.r.abs() + offset.s.abs();
 
+    let first = (0..dis - 1).map(move |x| start.add(unit.mul(x)));
 
-fn anchor_points2(start:Axial,bend_point:Axial,end:Axial)->impl Iterator<Item=hex::Axial>{
+    let offset = end.sub(&bend_point);
+    let unit = Axial {
+        q: offset.q.clamp(-1, 1),
+        r: offset.r.clamp(-1, 1),
+    };
 
-
-    let offset=bend_point.sub(&start).to_cube();
-    
-    let unit=Axial{q:offset.q.clamp(-1,1),r:offset.r.clamp(-1,1)};
-
-    let dis=offset.q.abs()+offset.r.abs()+offset.s.abs();
-
-
-    let first=(0..dis-1).map(move |x|{
-        start.add(unit.mul(x))
-    });
-
-    let offset=end.sub(&bend_point);
-    let unit=Axial{q:offset.q.clamp(-1,1),r:offset.r.clamp(-1,1)};
-
-    let second=(1..dis-1).map(move |x|{
-        bend_point.add(unit.mul(x))
-    });
+    let second = (1..dis - 1).map(move |x| bend_point.add(unit.mul(x)));
 
     first.chain(second)
-
 }
