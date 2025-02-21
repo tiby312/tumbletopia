@@ -403,7 +403,7 @@ fn redraw_text(text: &Vec<Text>) {
     context.set_text_align("center");
     context.set_font("40px roboto");
     context.set_fill_style_str("grey");
-    context.set_text_baseline("alphabetical");
+    context.set_text_baseline("middle");
     
     for a in text {
         context
