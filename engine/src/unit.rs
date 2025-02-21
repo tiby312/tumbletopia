@@ -744,3 +744,77 @@ impl GameStateTotal {
         (game_total, ActiveTeam::White)
     }
 }
+
+mod test {
+
+    fn doop() {
+        let foo = "
+-----s--s-eb-ev-b--
+-c-c-s-tct---cs--c-
+tc-s-d-re-srces-s--
+--brc----dc--r-sr-r
+-r---s--rtd-bbb-c--
+cs--cs----s---csc--
+bs----s--d--c--s--c
+ducd-uc-d-ub-dubd-u
+test-est--erte-rte-
+b-rbbr---k---ds-tds
+c---rc-b-uc-r-s--sc
+s--cbs---ds---d--bs
+c--sc---s-e--ses-s-
+rr-dr----d----rr-dr
+ssetseteeessssettse
+d--sd-d-sdd--s---s-
+bcs-d-ss-e--sudtc--
+bb---cs--d----s---r
+-sr-se--se--se----r
+sccrbs--ses--ses-sc
+c-b--s-r-ts-ccd----
+rc-rr----d----rc-rr
+-r-e--rte--r-e--te-
+rdsr-ds--dd-r-ds-ds
+-bbrr----c-bs-rb-r-
+s-s-ddssd-ds-dd-s-s
+c-rse-rr-e-ss-e-s-c
+t---tt-d---d--dttd-
+d--d--t--d-t---dtt-
+-t--d--t---t-d-dd-t
+--t-td-t-t-dd--d---
+-rrs-r---cb---bb---
+s--c--s--t---cdbc--
+r--c----cs-r--d--b-
+s-cr-d---er-rtdt-c-
+-se-se--ser-se-t---
+--es-e--see--s-e-ss
+c--ct-------c-t--cc
+ccc-e-ss----s-----d
+--ttd-tt-d---dtdd--
+---d-c-s--d-rtst-dc
+c--ctc-c-d---ssss--
+tddt-t--dt---t-d-d-
+t-dt---t-t-d--dtdd-
+-tbc--b-s--c----b-t
+bbbr-rc--dt----r---
+--d---ss---s----bcb
+bb-t-bbsrd-s----s--
+dcc-surr-f-s--sd-sd
+s---s-bdd-tct---b-b
+-s--ds---cs-s-ds---
+--ddttt------d-e---
+----sc-s-----ccssc-
+duc----tt---e-b-td-
+-----ds--tdsc--er-t
+sdt--ect-----e-sc-s
+-tccd--t-t-ct--rdd-
+--s---s-cttc-d-cr-c
+cs--c----r--b----dr
+-r--r-rbbcr---dr-bs
+-r--r-r-bct---c--b-
+-r--r-r-d-t-c-d--b-
+"
+        .trim()
+        .split('\n');
+
+        //TODO make sure first player wins in all these cases using the AI.
+    }
+}

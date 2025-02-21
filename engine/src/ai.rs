@@ -37,12 +37,12 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-        let mut score = 0;
-        let mut stack_count = 0;
-        let mut territory_count = 0;
-        let mut strength = 0;
-        let mut contested = 0;
-        let mut unseen = 0;
+        // let mut score = 0;
+        // let mut stack_count = 0;
+        // let mut territory_count = 0;
+        // let mut strength = 0;
+        // let mut contested = 0;
+        // let mut unseen = 0;
 
         let mut total_foo = 0;
         for index in world.get_game_cells().inner.iter_ones() {
