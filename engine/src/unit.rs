@@ -237,7 +237,7 @@ impl GameState {
                         // }
                     }
                     ActiveTeam::Black => {
-                        black_score -= 1;
+                        black_score += 1;
                         // if num_white > height {
                         //     score += 1
                         // } else {
@@ -252,7 +252,7 @@ impl GameState {
                 if ownership > 0 {
                     white_score += 1;
                 } else if ownership < 0 {
-                    black_score -= 1;
+                    black_score += 1;
                 }
             };
         }

@@ -191,7 +191,7 @@ pub async fn map_editor(
 }
 
 pub trait AiInterface {
-    fn wait_response(&mut self) -> impl std::future::Future<Output = (ActualMove,i64)> + Send;
+    fn wait_response(&mut self) -> impl std::future::Future<Output = (ActualMove, i64)> + Send;
     fn send_command(
         &mut self,
         game: &GameState,
@@ -255,8 +255,17 @@ pub async fn game_play_thread(
                 the_move
             };
 
-            let the_move=the_move.0;
-            
+            let the_move = the_move.0;
+
+            let the_move = if ai::should_pass(&the_move, team, &mut game.tactical, world) {
+                console_dbg!("Choosing to pass!");
+                ActualMove {
+                    moveto: moves::PASS_MOVE_INDEX,
+                }
+            } else {
+                the_move
+            };
+
             console_dbg!("gmae thread has interrupted render thread");
 
             let effect_m = animate_move(&the_move, team, &mut game, &world, &mut doop)

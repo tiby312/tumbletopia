@@ -208,7 +208,7 @@ pub async fn worker_entry2() {
         //console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
         //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        let (the_move,eval) = engine::ai::iterative_deepening(
+        let (the_move, eval) = engine::ai::iterative_deepening(
             &mut res.game,
             &res.fogs,
             &res.world,
@@ -216,7 +216,7 @@ pub async fn worker_entry2() {
             &res.history,
         );
         //console_dbg!("worker:finished processing");
-        worker.post_message(AiResponse { the_move,eval });
+        worker.post_message(AiResponse { the_move, eval });
     }
 }
 
@@ -232,7 +232,7 @@ struct AiCommand {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiResponse {
     the_move: ActualMove,
-    eval:i64
+    eval: i64,
 }
 
 #[wasm_bindgen]
@@ -276,11 +276,11 @@ pub async fn worker_entry() {
                 .send(ace::Response::AnimationFinish)
                 .map(|_| ())
         }
-        fn wait_response(&mut self) -> impl std::future::Future<Output = (ActualMove,i64)> + Send {
+        fn wait_response(&mut self) -> impl std::future::Future<Output = (ActualMove, i64)> + Send {
             use futures::FutureExt;
             self.ai_response.next().map(|x| {
-                let k=x.unwrap();
-                (k.the_move,k.eval)
+                let k = x.unwrap();
+                (k.the_move, k.eval)
             })
         }
         fn send_command(

@@ -1,3 +1,5 @@
+use crate::board::MyWorld;
+
 use super::*;
 
 use gloo_console::console_dbg;
@@ -6,6 +8,28 @@ pub type Eval = i64;
 const MATE: i64 = 1_000_000;
 use mesh::small_mesh::SmallMesh;
 use tinyvec::ArrayVec;
+
+pub fn should_pass(
+    a: &ActualMove,
+    team: ActiveTeam,
+    game: &mut GameState,
+    world: &MyWorld,
+) -> bool {
+    let score_before = game.score(world);
+    let fog = SmallMesh::new();
+    let effect = a.apply(team, game, &fog, world);
+    let score_after = game.score(world);
+
+    console_dbg!(score_before, score_after);
+    let res = if score_after == score_before {
+        true
+    } else {
+        false
+    };
+    a.undo(team, &effect, game);
+    res
+}
+
 pub struct Evaluator {
     // workspace: BitField,
     // workspace2: BitField,
@@ -234,7 +258,7 @@ pub fn iterative_deepening(
     world: &board::MyWorld,
     team: ActiveTeam,
     move_history: &MoveHistory,
-) -> (moves::ActualMove,i64) {
+) -> (moves::ActualMove, i64) {
     let mut results = Vec::new();
 
     let mut table = TranspositionTable {
@@ -331,7 +355,7 @@ pub fn iterative_deepening(
 
     console_dbg!("AI evaluation::", m.mov, m.eval);
 
-    (m.mov,m.eval)
+    (m.mov, m.eval)
 }
 
 struct AlphaBeta<'a> {
