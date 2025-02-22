@@ -122,7 +122,7 @@ impl Evaluator {
                         }
                     }
                 };
-                foo * 10
+                foo * 2
             } else {
                 if num_white > num_black {
                     1
@@ -287,7 +287,7 @@ pub fn iterative_deepening(
     }
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3, 4, 5, 6, 7] {
+    for depth in [1, 2, 3, 4, 5] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         //3 = num iter
