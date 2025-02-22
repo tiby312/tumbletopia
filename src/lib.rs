@@ -208,7 +208,7 @@ pub async fn worker_entry2() {
         //console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
         //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        let the_move = engine::ai::iterative_deepening(
+        let (the_move,eval) = engine::ai::iterative_deepening(
             &mut res.game,
             &res.fogs,
             &res.world,

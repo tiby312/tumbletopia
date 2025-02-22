@@ -234,7 +234,7 @@ pub fn iterative_deepening(
     world: &board::MyWorld,
     team: ActiveTeam,
     move_history: &MoveHistory,
-) -> moves::ActualMove {
+) -> (moves::ActualMove,i64) {
     let mut results = Vec::new();
 
     let mut table = TranspositionTable {
@@ -315,7 +315,7 @@ pub fn iterative_deepening(
     //console_dbg!(count);
     //console_dbg!(&results);
 
-    let _target_eval = results.last().unwrap().eval;
+    //let _target_eval = results.last().unwrap().eval;
     // let mov = if let Some(a) = results
     //     .iter()
     //     .rev()
@@ -331,7 +331,7 @@ pub fn iterative_deepening(
 
     console_dbg!("AI evaluation::", m.mov, m.eval);
 
-    m.mov
+    (m.mov,m.eval)
 }
 
 struct AlphaBeta<'a> {
