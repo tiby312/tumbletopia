@@ -190,8 +190,9 @@ pub async fn map_editor(
     }
 }
 
+//purpose of this trait is to keep as much game logic in this crate without addign more dependencies to this crate
 pub trait AiInterface {
-    fn wait_response(&mut self) -> impl std::future::Future<Output = (ActualMove, i64)> + Send;
+    fn wait_response(&mut self) -> impl std::future::Future<Output = ai::Res> + Send;
     fn send_command(
         &mut self,
         game: &GameState,
@@ -255,7 +256,7 @@ pub async fn game_play_thread(
                 the_move
             };
 
-            let the_move = the_move.0;
+            let the_move = the_move.line[0].clone();
 
             let the_move = if ai::should_pass(&the_move, team, &mut game.tactical, world) {
                 console_dbg!("Choosing to pass!");

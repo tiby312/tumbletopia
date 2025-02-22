@@ -253,8 +253,9 @@ impl TranspositionTable {
 const STACK_SIZE: usize = 5 + 4;
 
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Res{
-    pub line:ArrayVec<[ActualMove;9]>,
+    pub line:Vec<ActualMove>,
     pub eval:i64
 }
 
@@ -339,7 +340,7 @@ pub fn iterative_deepening(
 
         // let eval = res.eval;
 
-        results=Some(Res{line:mov,eval:res});
+        results=Some(Res{line:mov.to_vec(),eval:res});
         //results.push(res);
 
         // if eval.abs() == MATE {
