@@ -216,7 +216,7 @@ pub async fn worker_entry2() {
             &res.history,
         );
         //console_dbg!("worker:finished processing");
-        worker.post_message(AiResponse { the_move });
+        worker.post_message(AiResponse { the_move,eval });
     }
 }
 
@@ -232,6 +232,7 @@ struct AiCommand {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiResponse {
     the_move: ActualMove,
+    eval:i64
 }
 
 #[wasm_bindgen]
@@ -275,9 +276,12 @@ pub async fn worker_entry() {
                 .send(ace::Response::AnimationFinish)
                 .map(|_| ())
         }
-        fn wait_response(&mut self) -> impl std::future::Future<Output = ActualMove> + Send {
+        fn wait_response(&mut self) -> impl std::future::Future<Output = (ActualMove,i64)> + Send {
             use futures::FutureExt;
-            self.ai_response.next().map(|x| x.unwrap().the_move)
+            self.ai_response.next().map(|x| {
+                let k=x.unwrap();
+                (k.the_move,k.eval)
+            })
         }
         fn send_command(
             &mut self,
