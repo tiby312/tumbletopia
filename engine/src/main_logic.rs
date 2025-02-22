@@ -256,7 +256,7 @@ pub async fn game_play_thread(
                 the_move
             };
 
-            let the_move = the_move.line[0].clone();
+            //let the_move = the_move.line[0].clone();
 
             let the_move = if ai::should_pass(&the_move, team, &mut game.tactical, world) {
                 console_dbg!("Choosing to pass!");
@@ -264,7 +264,7 @@ pub async fn game_play_thread(
                     moveto: moves::PASS_MOVE_INDEX,
                 }
             } else {
-                the_move
+                the_move.line[0].clone()
             };
 
             console_dbg!("gmae thread has interrupted render thread");

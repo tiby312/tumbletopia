@@ -212,8 +212,6 @@ impl GameState {
         let mut white_score = 0;
         let mut black_score = 0;
         for index in world.get_game_cells().inner.iter_ones() {
-            
-
             if let Some((_, tt)) = game.factions.get_cell_inner(index) {
                 match tt {
                     ActiveTeam::White => {
@@ -236,7 +234,7 @@ impl GameState {
                         }
                     }
                 }
-                
+
                 let ownership = num_white - num_black;
 
                 if ownership > 0 {
@@ -253,7 +251,6 @@ impl GameState {
         )
     }
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {

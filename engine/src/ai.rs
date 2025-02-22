@@ -10,14 +10,20 @@ use mesh::small_mesh::SmallMesh;
 use tinyvec::ArrayVec;
 
 pub fn should_pass(
-    a: &ActualMove,
-    team: ActiveTeam,
+    a: &ai::Res,
+    mut team: ActiveTeam,
     game: &mut GameState,
     world: &MyWorld,
 ) -> bool {
+    //TODO remove this clone
+    let mut game = game.clone();
     let score_before = game.score(world);
     let fog = SmallMesh::new();
-    let effect = a.apply(team, game, &fog, world);
+
+    for aa in a.line.iter() {
+        let _effect = aa.apply(team, &mut game, &fog, world);
+        team = team.not();
+    }
     let score_after = game.score(world);
 
     console_dbg!(score_before, score_after);
@@ -26,7 +32,7 @@ pub fn should_pass(
     } else {
         false
     };
-    a.undo(team, &effect, game);
+    //a.undo(team, &effect, game);
     res
 }
 
@@ -252,13 +258,11 @@ impl TranspositionTable {
 
 const STACK_SIZE: usize = 5 + 4;
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Res{
-    pub line:Vec<ActualMove>,
-    pub eval:i64
+pub struct Res {
+    pub line: Vec<ActualMove>,
+    pub eval: i64,
 }
-
 
 pub fn iterative_deepening(
     game: &GameState,
@@ -267,7 +271,7 @@ pub fn iterative_deepening(
     team: ActiveTeam,
     move_history: &MoveHistory,
 ) -> Res {
-    let mut results=None;// = Vec::new();
+    let mut results = None; // = Vec::new();
 
     let mut table = TranspositionTable {
         a: std::collections::BTreeMap::new(),
@@ -326,7 +330,6 @@ pub fn iterative_deepening(
         //reverse it so that the order is in the order of how they are played out.
         mov.reverse();
 
-        
         // let mov = mov.first().unwrap().clone();
 
         // let res = EvalRet { mov, eval: res };
@@ -340,7 +343,10 @@ pub fn iterative_deepening(
 
         // let eval = res.eval;
 
-        results=Some(Res{line:mov.to_vec(),eval:res});
+        results = Some(Res {
+            line: mov.to_vec(),
+            eval: res,
+        });
         //results.push(res);
 
         // if eval.abs() == MATE {
@@ -350,7 +356,6 @@ pub fn iterative_deepening(
 
     // console_dbg!("transpotiion table len=", table.a.len());
 
-   
     // let mov = results.unwrap();
 
     // let m = mov;

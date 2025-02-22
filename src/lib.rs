@@ -216,7 +216,7 @@ pub async fn worker_entry2() {
             &res.history,
         );
         //console_dbg!("worker:finished processing");
-        worker.post_message(AiResponse { inner:res });
+        worker.post_message(AiResponse { inner: res });
     }
 }
 
@@ -231,7 +231,7 @@ struct AiCommand {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiResponse {
-    inner:engine::ai::Res
+    inner: engine::ai::Res,
 }
 
 #[wasm_bindgen]
