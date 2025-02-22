@@ -252,14 +252,21 @@ impl TranspositionTable {
 
 const STACK_SIZE: usize = 5 + 4;
 
+
+pub struct Res{
+    pub line:ArrayVec<[ActualMove;9]>,
+    pub eval:i64
+}
+
+
 pub fn iterative_deepening(
     game: &GameState,
     fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
     team: ActiveTeam,
     move_history: &MoveHistory,
-) -> (moves::ActualMove, i64) {
-    let mut results = Vec::new();
+) -> Res {
+    let mut results=None;// = Vec::new();
 
     let mut table = TranspositionTable {
         a: std::collections::BTreeMap::new(),
@@ -294,7 +301,7 @@ pub fn iterative_deepening(
         };
 
         let mut kk = game.clone();
-        let (res, mov) = aaaa.alpha_beta(&mut kk, fogs, ABAB::new(), team, depth);
+        let (res, mut mov) = aaaa.alpha_beta(&mut kk, fogs, ABAB::new(), team, depth);
         assert_eq!(&kk, game);
 
         {
@@ -314,48 +321,44 @@ pub fn iterative_deepening(
             gloo_console::info!(format!("transpotion table size={}", table.a.len()));
         }
 
-        let mov = mov.last().unwrap().clone();
+        //alpha beta returns the main line with the first move at the end
+        //reverse it so that the order is in the order of how they are played out.
+        mov.reverse();
 
-        let res = EvalRet { mov, eval: res };
+        
+        // let mov = mov.first().unwrap().clone();
 
-        console_dbg!(
-            "AI eval:",
-            res,
-            "Actual eval:",
-            evaluator.absolute_evaluate(game, world, false)
-        );
+        // let res = EvalRet { mov, eval: res };
 
-        let eval = res.eval;
+        // console_dbg!(
+        //     "AI eval:",
+        //     res,
+        //     "Actual eval:",
+        //     evaluator.absolute_evaluate(game, world, false)
+        // );
 
-        results.push(res);
+        // let eval = res.eval;
 
-        if eval.abs() == MATE {
-            console_dbg!("found a mate");
-        }
+        results=Some(Res{line:mov,eval:res});
+        //results.push(res);
+
+        // if eval.abs() == MATE {
+        //     console_dbg!("found a mate");
+        // }
     }
 
-    console_dbg!("transpotiion table len=", table.a.len());
+    // console_dbg!("transpotiion table len=", table.a.len());
 
-    //console_dbg!(count);
-    //console_dbg!(&results);
+   
+    // let mov = results.unwrap();
 
-    //let _target_eval = results.last().unwrap().eval;
-    // let mov = if let Some(a) = results
-    //     .iter()
-    //     .rev()
-    //     .find(|a| a.eval == target_eval && a.mov != ActualMove::SkipTurn)
-    // {
-    //     a.clone()
-    // } else {
-    //     results.pop().unwrap()
-    // };
-    let mov = results.pop().unwrap();
+    // let m = mov;
 
-    let m = mov;
+    // console_dbg!("AI evaluation::", m.mov, m.eval);
 
-    console_dbg!("AI evaluation::", m.mov, m.eval);
-
-    (m.mov, m.eval)
+    // (m.mov, m.eval)
+    // Res { line: mov, eval: () }
+    results.unwrap()
 }
 
 struct AlphaBeta<'a> {
