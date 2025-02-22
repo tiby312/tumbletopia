@@ -212,41 +212,31 @@ impl GameState {
         let mut white_score = 0;
         let mut black_score = 0;
         for index in world.get_game_cells().inner.iter_ones() {
-            let mut num_white = 0;
-            let mut num_black = 0;
-            for (_, rest) in game.factions.iter_end_points(world, index) {
-                if let Some((_, team)) = rest {
-                    match team {
-                        ActiveTeam::White => num_white += 1,
-                        ActiveTeam::Black => num_black += 1,
-                        ActiveTeam::Neutral => {}
-                    }
-                }
-            }
+            
 
-            if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                let height = height as i64;
-
+            if let Some((_, tt)) = game.factions.get_cell_inner(index) {
                 match tt {
                     ActiveTeam::White => {
                         white_score += 1;
-                        // if num_black > height {
-                        //     score -= 1
-                        // } else {
-                        //     score += 1
-                        // }
                     }
                     ActiveTeam::Black => {
                         black_score += 1;
-                        // if num_white > height {
-                        //     score += 1
-                        // } else {
-                        //     score -= 1
-                        // }
                     }
                     ActiveTeam::Neutral => {}
                 }
             } else {
+                let mut num_white = 0;
+                let mut num_black = 0;
+                for (_, rest) in game.factions.iter_end_points(world, index) {
+                    if let Some((_, team)) = rest {
+                        match team {
+                            ActiveTeam::White => num_white += 1,
+                            ActiveTeam::Black => num_black += 1,
+                            ActiveTeam::Neutral => {}
+                        }
+                    }
+                }
+                
                 let ownership = num_white - num_black;
 
                 if ownership > 0 {
@@ -263,76 +253,7 @@ impl GameState {
         )
     }
 }
-// #[derive(Eq, PartialEq, Hash, Debug, Clone, Ord, PartialOrd)]
-// pub struct UnitData {
-//     pub position: Axial,
-//     pub typ: Type,
-// }
 
-// #[derive(Default, Clone)]
-// pub struct SpokeNode {
-//     spokes: [u8; 6],
-// }
-// impl SpokeNode {
-//     pub fn has_piece_at_end(&self, dir: usize) -> bool {
-//         self.spokes[dir] & (1 << 7) != 0
-//     }
-
-//     pub fn distance(&self, dir: usize) -> u8 {
-//         self.spokes[dir] & !(1 << 7)
-//     }
-// }
-
-// pub struct Spokes {
-//     inner: Vec<SpokeNode>,
-// }
-// impl Spokes {
-//     pub fn update_to_added_unit(&mut self, factions: &Tribe, ax: Axial, world: &board::MyWorld) {
-//         let s = self.get_spokes(ax).clone();
-
-//         for i in 0..6 {
-//             let dis = s.distance(i);
-
-//             for k in 0..dis {}
-//             let has_piece = s.has_piece_at_end(i);
-//             let j = (i + 3) % 6;
-//             // let end_point_ax=ax.add(hex::OFFSETS[i].mul(dis));
-
-//             // self.get_spokes_mut(end_point_ax).spokes[j]=dis;
-//         }
-//     }
-
-//     pub fn generate(factions: &Tribe, world: &board::MyWorld) -> Spokes {
-//         let mut s = Spokes {
-//             inner: vec![SpokeNode::default(); 256],
-//         };
-
-//         for unit in world.get_game_cells().iter_mesh() {
-//             let res = factions.iter_end_points(world, unit);
-
-//             let res = res.map(|(ax, foo)| {
-//                 let mut val = ax.to_cube().dist(&unit.to_cube()) as u8;
-
-//                 if foo.is_some() {
-//                     val |= 1 << 7;
-//                 }
-//                 val
-//             });
-
-//             s.get_spokes_mut(unit).spokes = res;
-//         }
-
-//         s
-//     }
-//     pub fn get_spokes(&self, a: Axial) -> &SpokeNode {
-//         let ind = mesh::small_mesh::conv(a);
-//         &self.inner[ind]
-//     }
-//     pub fn get_spokes_mut(&mut self, a: Axial) -> &mut SpokeNode {
-//         let ind = mesh::small_mesh::conv(a);
-//         &mut self.inner[ind]
-//     }
-// }
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
