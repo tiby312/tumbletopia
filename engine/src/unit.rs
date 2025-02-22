@@ -182,17 +182,35 @@ impl GameState {
         _team: ActiveTeam,
         history: &MoveHistory,
     ) -> Option<GameOver> {
+        let (white_score, black_score, _neutral) = self.score(world);
+
         let (a, b) = match &history.inner[..] {
             [.., a, b] => (a, b),
             _ => return None,
         };
 
-        if a.0.moveto != moves::PASS_MOVE_INDEX || b.0.moveto != moves::PASS_MOVE_INDEX {
-            return None;
+        if a.0.moveto == moves::PASS_MOVE_INDEX && b.0.moveto == moves::PASS_MOVE_INDEX {
+            //return None;
+            if white_score > black_score {
+                return Some(GameOver::WhiteWon);
+            } else if white_score < black_score {
+                return Some(GameOver::BlackWon);
+            } else {
+                return Some(GameOver::Tie);
+            }
         }
 
+        None
+    }
+}
+
+impl GameState {
+    pub fn score(&self, world: &MyWorld) -> (usize, usize, usize) {
+        let total_num = world.get_game_cells().inner.count_ones();
+
         let game = self;
-        let mut score = 0;
+        let mut white_score = 0;
+        let mut black_score = 0;
         for index in world.get_game_cells().inner.iter_ones() {
             let mut num_white = 0;
             let mut num_black = 0;
@@ -211,18 +229,20 @@ impl GameState {
 
                 match tt {
                     ActiveTeam::White => {
-                        if num_black > height {
-                            score -= 1
-                        } else {
-                            score += 1
-                        }
+                        white_score += 1;
+                        // if num_black > height {
+                        //     score -= 1
+                        // } else {
+                        //     score += 1
+                        // }
                     }
                     ActiveTeam::Black => {
-                        if num_white > height {
-                            score += 1
-                        } else {
-                            score -= 1
-                        }
+                        black_score -= 1;
+                        // if num_white > height {
+                        //     score += 1
+                        // } else {
+                        //     score -= 1
+                        // }
                     }
                     ActiveTeam::Neutral => {}
                 }
@@ -230,23 +250,19 @@ impl GameState {
                 let ownership = num_white - num_black;
 
                 if ownership > 0 {
-                    score += ownership;
+                    white_score += 1;
                 } else if ownership < 0 {
-                    score += ownership;
+                    black_score -= 1;
                 }
             };
         }
-
-        Some(if score > 0 {
-            GameOver::WhiteWon
-        } else if score < 0 {
-            GameOver::BlackWon
-        } else {
-            GameOver::Tie
-        })
+        (
+            white_score,
+            black_score,
+            total_num - (white_score + black_score),
+        )
     }
 }
-
 // #[derive(Eq, PartialEq, Hash, Debug, Clone, Ord, PartialOrd)]
 // pub struct UnitData {
 //     pub position: Axial,
@@ -522,7 +538,7 @@ pub fn replay_string(moves: &MoveHistory, world: &MyWorld) -> Result<String, std
 
     //let map_str = map.save(world).unwrap();
     //TODO update this!!!
-    todo!();
+    //todo!();
     // write!(&mut s, "{}:", map_str)?;
 
     // for m in moves.inner.iter() {
