@@ -182,7 +182,7 @@ impl GameState {
         _team: ActiveTeam,
         history: &MoveHistory,
     ) -> Option<GameOver> {
-        let (white_score, black_score, _neutral) = self.score(world);
+        let score_data = self.score(world);
 
         let (a, b) = match &history.inner[..] {
             [.., a, b] => (a, b),
@@ -191,9 +191,9 @@ impl GameState {
 
         if a.0.moveto == moves::PASS_MOVE_INDEX && b.0.moveto == moves::PASS_MOVE_INDEX {
             //return None;
-            if white_score > black_score {
+            if score_data.white > score_data.black {
                 return Some(GameOver::WhiteWon);
-            } else if white_score < black_score {
+            } else if score_data.white < score_data.black{
                 return Some(GameOver::BlackWon);
             } else {
                 return Some(GameOver::Tie);
@@ -204,8 +204,14 @@ impl GameState {
     }
 }
 
+
+pub struct ScoreData{
+    pub white:usize,
+    pub black:usize,
+    pub neutral:usize
+}
 impl GameState {
-    pub fn score(&self, world: &MyWorld) -> (usize, usize, usize) {
+    pub fn score(&self, world: &MyWorld) -> ScoreData {
         let total_num = world.get_game_cells().inner.count_ones();
 
         let game = self;
@@ -251,11 +257,11 @@ impl GameState {
                 }
             };
         }
-        (
-            white_score,
-            black_score,
-            total_num - (white_score + black_score),
-        )
+        ScoreData{
+            white:white_score,
+            black:black_score,
+            neutral:total_num-white_score+black_score
+        }
     }
     pub fn threat_score(&self, world: &MyWorld) -> (usize, usize, usize) {
         let total_num = world.get_game_cells().inner.count_ones();
