@@ -212,8 +212,8 @@ pub struct ScoreData{
 }
 impl GameState {
     pub fn score(&self, world: &MyWorld) -> ScoreData {
-        let total_num = world.get_game_cells().inner.count_ones();
-
+        //let total_num = world.get_game_cells().inner.count_ones();
+        let mut neutral=0;
         let game = self;
         let mut white_score = 0;
         let mut black_score = 0;
@@ -245,7 +245,9 @@ impl GameState {
                         //     white_score += 1;
                         // }
                     }
-                    ActiveTeam::Neutral => {}
+                    ActiveTeam::Neutral => {
+                        neutral+=1;
+                    }
                 }
             } else {
                 let ownership = num_white - num_black;
@@ -254,13 +256,15 @@ impl GameState {
                     white_score += 1;
                 } else if ownership < 0 {
                     black_score += 1;
+                }else{
+                    neutral+=1;
                 }
             };
         }
         ScoreData{
             white:white_score,
             black:black_score,
-            neutral:total_num-white_score+black_score
+            neutral
         }
     }
     pub fn threat_score(&self, world: &MyWorld) -> (usize, usize, usize) {
