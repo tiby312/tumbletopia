@@ -17,7 +17,6 @@ pub fn should_pass(
 ) -> bool {
     //try with d--sd-d-sdd--s---s-
 
-
     //TODO remove this clone
     //let mut game = game.clone();
     let score_before = game.threat_score(world);
@@ -39,9 +38,9 @@ pub fn should_pass(
         false
     };
     a.undo(team, &effect, game);
-    //res
+    res
 
-    false
+    //false
 }
 
 pub struct Evaluator {
@@ -142,7 +141,6 @@ impl Evaluator {
                 } else {
                     0
                 }
-                
             };
 
             total_foo += temp_score;
@@ -299,7 +297,7 @@ pub fn iterative_deepening(
     }
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3,4,5] {
+    for depth in [1, 2, 3, 4, 5] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         //3 = num iter
