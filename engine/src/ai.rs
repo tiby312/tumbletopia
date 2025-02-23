@@ -144,7 +144,8 @@ impl Evaluator {
                         // } else {
                         //     0
                         // }
-                        todo!();
+                        0
+                        //todo!();
                     }
                 };
                 foo
@@ -312,7 +313,7 @@ pub fn iterative_deepening(
     }
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3, 4, 5, 6, 7] {
+    for depth in [1, 2, 3, 4] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         //3 = num iter
