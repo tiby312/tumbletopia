@@ -258,6 +258,17 @@ pub async fn game_play_thread(
 
             //let the_move = the_move.line[0].clone();
 
+            let principal_variation: Vec<_> = the_move
+                .line
+                .iter()
+                .map(|x| {
+                    let res =
+                        move_build::to_letter_coord(&mesh::small_mesh::inverse(x.moveto), world);
+                    format!("{}{}", res.0, res.1)
+                })
+                .collect();
+            console_dbg!(principal_variation);
+
             let the_move = if ai::should_pass(&the_move, team, &mut game.tactical, world) {
                 console_dbg!("Choosing to pass!");
                 ActualMove {
@@ -276,6 +287,10 @@ pub async fn game_play_thread(
             game.update_fog(world, team);
             game_history.push((the_move, effect_m));
 
+            let curr_eval =
+                ai::Evaluator::default().absolute_evaluate(&game.tactical, world, false);
+            console_dbg!(curr_eval);
+
             continue;
         }
 
@@ -283,6 +298,10 @@ pub async fn game_play_thread(
 
         game.update_fog(world, team);
         game_history.push(r);
+
+        let curr_eval_player =
+            ai::Evaluator::default().absolute_evaluate(&game.tactical, world, false);
+        console_dbg!(curr_eval_player);
     }
 }
 

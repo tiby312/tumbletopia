@@ -18,26 +18,27 @@ pub fn should_pass(
     //try with d--sd-d-sdd--s---s-
 
     //TODO remove this clone
-    //let mut game = game.clone();
+    let mut game = game.clone();
     let score_before = game.threat_score(world);
     let fog = SmallMesh::new();
 
-    // for aa in a.line.iter() {
-    //     let _effect = aa.apply(team, &mut game, &fog, world);
-    //     team = team.not();
-    // }
+    for aa in a.line.iter() {
+        let _effect = aa.apply(team, &mut game, &fog, world);
+        team = team.not();
+    }
     let a = &a.line[0];
-    let effect = a.apply(team, game, &fog, world);
+    //let effect = a.apply(team, game, &fog, world);
 
     let score_after = game.threat_score(world);
 
     console_dbg!(score_before, score_after);
     let res = if score_after == score_before {
+        console_dbg!("I WANT TO PASS");
         true
     } else {
         false
     };
-    a.undo(team, &effect, game);
+    //a.undo(team, &effect, game);
     res
 
     //false
@@ -74,6 +75,11 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
+        //problematic game
+        // d--d--t--d-t---dtt-
+        // the ai is returning A1,D4,B4
+        // it should return B4,D4,C5/B2
+
         // let mut score = 0;
         // let mut stack_count = 0;
         // let mut territory_count = 0;
@@ -103,7 +109,7 @@ impl Evaluator {
                         // } else {
                         //     -1
                         // }
-                        -2
+                        -1
                     }
                     ActiveTeam::White => {
                         // if height >= num_black {
@@ -111,7 +117,7 @@ impl Evaluator {
                         // } else {
                         //     -1
                         // }
-                        2
+                        1
                     }
                     ActiveTeam::Neutral => {
                         // if num_white > num_black {
@@ -297,7 +303,7 @@ pub fn iterative_deepening(
     }
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3, 4, 5] {
+    for depth in [1, 2, 3] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         //3 = num iter
@@ -340,28 +346,10 @@ pub fn iterative_deepening(
         //reverse it so that the order is in the order of how they are played out.
         mov.reverse();
 
-        // let mov = mov.first().unwrap().clone();
-
-        // let res = EvalRet { mov, eval: res };
-
-        // console_dbg!(
-        //     "AI eval:",
-        //     res,
-        //     "Actual eval:",
-        //     evaluator.absolute_evaluate(game, world, false)
-        // );
-
-        // let eval = res.eval;
-
         results = Some(Res {
             line: mov.to_vec(),
             eval: res,
         });
-        //results.push(res);
-
-        // if eval.abs() == MATE {
-        //     console_dbg!("found a mate");
-        // }
     }
 
     // console_dbg!("transpotiion table len=", table.a.len());
