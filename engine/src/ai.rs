@@ -15,16 +15,22 @@ pub fn should_pass(
     game: &mut GameState,
     world: &MyWorld,
 ) -> bool {
+    //try with d--sd-d-sdd--s---s-
+
+
     //TODO remove this clone
-    let mut game = game.clone();
-    let score_before = game.score(world);
+    //let mut game = game.clone();
+    let score_before = game.threat_score(world);
     let fog = SmallMesh::new();
 
-    for aa in a.line.iter() {
-        let _effect = aa.apply(team, &mut game, &fog, world);
-        team = team.not();
-    }
-    let score_after = game.score(world);
+    // for aa in a.line.iter() {
+    //     let _effect = aa.apply(team, &mut game, &fog, world);
+    //     team = team.not();
+    // }
+    let a = &a.line[0];
+    let effect = a.apply(team, game, &fog, world);
+
+    let score_after = game.threat_score(world);
 
     console_dbg!(score_before, score_after);
     let res = if score_after == score_before {
@@ -32,8 +38,10 @@ pub fn should_pass(
     } else {
         false
     };
-    //a.undo(team, &effect, game);
-    res
+    a.undo(team, &effect, game);
+    //res
+
+    false
 }
 
 pub struct Evaluator {
@@ -91,38 +99,41 @@ impl Evaluator {
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let foo = match tt {
                     ActiveTeam::Black => {
-                        if height >= num_white {
-                            1
-                        } else {
-                            -1
-                        }
+                        // if height >= num_white {
+                        //     1
+                        // } else {
+                        //     -1
+                        // }
+                        -2
                     }
                     ActiveTeam::White => {
-                        if height >= num_black {
-                            1
-                        } else {
-                            -1
-                        }
+                        // if height >= num_black {
+                        //     1
+                        // } else {
+                        //     -1
+                        // }
+                        2
                     }
                     ActiveTeam::Neutral => {
-                        if num_white > num_black {
-                            if num_white > height {
-                                1
-                            } else {
-                                0
-                            }
-                        } else if num_black > num_white {
-                            if num_black > height {
-                                -1
-                            } else {
-                                0
-                            }
-                        } else {
-                            0
-                        }
+                        // if num_white > num_black {
+                        //     if num_white > height {
+                        //         1
+                        //     } else {
+                        //         0
+                        //     }
+                        // } else if num_black > num_white {
+                        //     if num_black > height {
+                        //         -1
+                        //     } else {
+                        //         0
+                        //     }
+                        // } else {
+                        //     0
+                        // }
+                        todo!();
                     }
                 };
-                foo * 2
+                foo
             } else {
                 if num_white > num_black {
                     1
@@ -131,6 +142,7 @@ impl Evaluator {
                 } else {
                     0
                 }
+                
             };
 
             total_foo += temp_score;
@@ -287,7 +299,7 @@ pub fn iterative_deepening(
     }
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3, 4, 5] {
+    for depth in [1, 2, 3,4,5] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         //3 = num iter

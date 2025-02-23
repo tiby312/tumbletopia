@@ -182,7 +182,7 @@ impl GameState {
         _team: ActiveTeam,
         history: &MoveHistory,
     ) -> Option<GameOver> {
-        let (white_score, black_score, _neutral) = self.score(world);
+        let (white_score, black_score, _neutral) = self.threat_score(world);
 
         let (a, b) = match &history.inner[..] {
             [.., a, b] => (a, b),
@@ -205,36 +205,43 @@ impl GameState {
 }
 
 impl GameState {
-    pub fn score(&self, world: &MyWorld) -> (usize, usize, usize) {
+    pub fn threat_score(&self, world: &MyWorld) -> (usize, usize, usize) {
         let total_num = world.get_game_cells().inner.count_ones();
 
         let game = self;
         let mut white_score = 0;
         let mut black_score = 0;
         for index in world.get_game_cells().inner.iter_ones() {
-            if let Some((_, tt)) = game.factions.get_cell_inner(index) {
+            let mut num_white = 0;
+            let mut num_black = 0;
+            for (_, rest) in game.factions.iter_end_points(world, index) {
+                if let Some((_, team)) = rest {
+                    match team {
+                        ActiveTeam::White => num_white += 1,
+                        ActiveTeam::Black => num_black += 1,
+                        ActiveTeam::Neutral => {}
+                    }
+                }
+            }
+
+            if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+                let height = height as i8;
                 match tt {
                     ActiveTeam::White => {
                         white_score += 1;
+                        if num_black > height {
+                            black_score += 1
+                        }
                     }
                     ActiveTeam::Black => {
                         black_score += 1;
+                        if num_white > height {
+                            white_score += 1;
+                        }
                     }
                     ActiveTeam::Neutral => {}
                 }
             } else {
-                let mut num_white = 0;
-                let mut num_black = 0;
-                for (_, rest) in game.factions.iter_end_points(world, index) {
-                    if let Some((_, team)) = rest {
-                        match team {
-                            ActiveTeam::White => num_white += 1,
-                            ActiveTeam::Black => num_black += 1,
-                            ActiveTeam::Neutral => {}
-                        }
-                    }
-                }
-
                 let ownership = num_white - num_black;
 
                 if ownership > 0 {
