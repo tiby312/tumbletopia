@@ -355,10 +355,15 @@ pub fn iterative_deepening(
         //reverse it so that the order is in the order of how they are played out.
         mov.reverse();
 
-        results = Some(Res {
-            line: mov.to_vec(),
-            eval: res,
-        });
+        if !mov.is_empty() {
+            results = Some(Res {
+                line: mov.to_vec(),
+                eval: res,
+            });
+        } else {
+            //if we can't find a solution now, not going to find it at higher depth i guess?
+            break;
+        }
     }
 
     // console_dbg!("transpotiion table len=", table.a.len());

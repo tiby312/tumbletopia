@@ -1088,9 +1088,11 @@ async fn render_command(
 
         for a in world.get_game_cells().iter_mesh(Axial::zero()) {
             if let Some((height, team2)) = game.factions.get_cell(a) {
-                let inner_stack = height.min(2);
-                let mid_stack = height.max(2).min(4) - 2;
-                let outer_stack = height.max(4) - 4;
+                // let inner_stack = height.min(2);
+                // let mid_stack = height.max(2).min(4) - 2;
+                // let outer_stack = height.max(4) - 4;
+                let inner_stack = height.min(3);
+                let mid_stack = height.max(3).min(6) - 3;
 
                 if height == 6 && team2 == ActiveTeam::Neutral {
                     //mountains.push(grid_snap(a, /*models.land.height / 2.0*/ 0.0).generate());
@@ -1109,7 +1111,7 @@ async fn render_command(
 
                 let radius = [0.4, 0.6, 0.8];
 
-                for (stack, radius) in [inner_stack, mid_stack, outer_stack].iter().zip(radius) {
+                for (stack, radius) in [inner_stack, mid_stack].iter().zip(radius) {
                     for k in 0..*stack {
                         arr.push(
                             grid_snap(a, k as f32 * cell_height)
