@@ -1,3 +1,5 @@
+use std::f64::consts::TAU;
+
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
@@ -410,6 +412,12 @@ fn redraw_text(text: &Vec<Text>) {
             .fill_text(&a.text, a.pos[0] as f64, a.pos[1] as f64)
             .unwrap();
     }
+
+    // context.begin_path();
+    // context
+    //     .arc(505., 50., 40., 0., std::f64::consts::TAU)
+    //     .unwrap();
+    // context.fill();
 }
 
 fn resize2() -> DomToWorker {
