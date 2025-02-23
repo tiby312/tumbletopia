@@ -504,7 +504,7 @@ pub async fn reselect_loop(
             world,
             Some(unwrapped_selected_unit),
             selected_unit.team,
-            true,
+            false,
             false,
             true, //TODO should this be true?
             &game.fog[team.index()],

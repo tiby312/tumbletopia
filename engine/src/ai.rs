@@ -45,6 +45,7 @@ pub fn should_pass(
     };
     //a.undo(team, &effect, game);
     res
+    //false
 
     //false
 }
@@ -80,6 +81,9 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
+        //white doesnt seem like it should win ai vs ai
+        //-tccd--t-t-ct--rdd-
+
         //problematic game
         // d--d--t--d-t---dtt-
         // the ai is returning A1,D4,B4
@@ -308,7 +312,7 @@ pub fn iterative_deepening(
     }
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3] {
+    for depth in [1, 2, 3, 4, 5, 6, 7] {
         gloo_console::info!(format!("searching depth={}", depth));
 
         //3 = num iter
