@@ -26,6 +26,11 @@ pub fn should_pass(
         let _effect = aa.apply(team, &mut game, &fog, world);
         team = team.not();
     }
+
+    if a.line.is_empty() {
+        return true;
+    }
+
     let a = &a.line[0];
     //let effect = a.apply(team, game, &fog, world);
 
