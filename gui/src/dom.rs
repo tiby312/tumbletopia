@@ -440,22 +440,41 @@ fn redraw_text(text: &Vec<Text>,data:&ScoreData) {
     let r1=std::f64::consts::TAU*white_percentage;
     let r2=std::f64::consts::TAU*(white_percentage+black_percentage);
 
+    let w=canvas.width() as f64;
+    let h=40.0;
+
+
     context.set_fill_style_str("white");
     context.begin_path();
-    context
-        .arc(x, y, radius, 0., r1)
-        .unwrap();
-    context.line_to(x,y);
+    context.rect(0.0,0.0,white_percentage*w,h);
     context.fill();
-
     context.set_fill_style_str("blue");
     context.begin_path();
-    context
-        .arc(x, y, radius, r1, r2)
-        .unwrap();
-
-        context.line_to(x,y);
+    context.rect((white_percentage+neutral_percentage)*w,0.0,black_percentage*w,h);
     context.fill();
+
+    context.set_stroke_style_str("gray");
+    context.set_line_width(10.);
+    context.begin_path();
+    context.move_to(0.5*w,0.0);
+    context.line_to(0.5*w,h);
+    context.stroke();
+
+    // context.begin_path();
+    // context
+    //     .arc(x, y, radius, 0., r1)
+    //     .unwrap();
+    // context.line_to(x,y);
+    // context.fill();
+
+    // context.set_fill_style_str("blue");
+    // context.begin_path();
+    // context
+    //     .arc(x, y, radius, r1, r2)
+    //     .unwrap();
+
+    //     context.line_to(x,y);
+    // context.fill();
 
 
 
