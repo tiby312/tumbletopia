@@ -1026,9 +1026,8 @@ async fn render_command(
                             return None;
                         } else {
                             match val {
-                                1 | 2 => 0.6,
-                                3 | 4 => 0.8,
-                                5 | 6 => 1.2,
+                                1 | 2 | 3 => 0.6,
+                                4 | 5 | 6 => 0.8,
                                 _ => unreachable!(),
                             }
                         };
@@ -1257,13 +1256,18 @@ fn update_text(
     let radius = world.radius as i8;
 
     let mut k = Vec::new();
-    let alphabet = "abcdefghijklmnopqrstuvwxyz";
-
-    let a11 = move_build::from_letter_coord('A', 1, &world);
-    let a22 = move_build::from_letter_coord('C', 1, &world);
-    let a33 = move_build::from_letter_coord('E', 3, &world);
+    let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     let rr = radius - 1;
+
+    let aaa = alphabet.chars().nth(0).unwrap();
+    let bbb = alphabet.chars().nth(rr as usize).unwrap();
+    let ccc = alphabet.chars().nth((rr * 2) as usize).unwrap();
+    console_dbg!(aaa, bbb, ccc);
+    let a11 = move_build::from_letter_coord(aaa, 1, &world);
+    let a22 = move_build::from_letter_coord(bbb, 1, &world);
+    let a33 = move_build::from_letter_coord(ccc, 1 + rr, &world);
+
     let a1 = Axial { q: 0, r: -rr };
     let a2 = Axial { q: rr, r: -rr };
     let a3 = Axial { q: rr, r: 0 };
@@ -1277,9 +1281,9 @@ fn update_text(
         k.push(make_text(a.into(), letter.to_uppercase().to_string()))
     }
 
-    let a11 = move_build::from_letter_coord('A', 1, &world);
-    let a22 = move_build::from_letter_coord('A', 3, &world);
-    let a33 = move_build::from_letter_coord('C', 5, &world);
+    let a11 = move_build::from_letter_coord(aaa, 1, &world);
+    let a22 = move_build::from_letter_coord(aaa, 1 + rr, &world);
+    let a33 = move_build::from_letter_coord(bbb, 1 + rr + rr, &world);
 
     let rr = radius - 1;
     let a1 = Axial { q: 0, r: -rr };
@@ -1306,9 +1310,9 @@ fn anchor_points2(start: Axial, bend_point: Axial, end: Axial) -> impl Iterator<
         r: offset.r.clamp(-1, 1),
     };
 
-    let dis = offset.q.abs() + offset.r.abs() + offset.s.abs();
-
-    let first = (0..dis - 1).map(move |x| start.add(unit.mul(x)));
+    let dis = (offset.q.abs() + offset.r.abs() + offset.s.abs()) / 2;
+    //console_dbg!(dis);
+    let first = (0..dis).map(move |x| start.add(unit.mul(x)));
 
     let offset = end.sub(&bend_point);
     let unit = Axial {
@@ -1316,7 +1320,7 @@ fn anchor_points2(start: Axial, bend_point: Axial, end: Axial) -> impl Iterator<
         r: offset.r.clamp(-1, 1),
     };
 
-    let second = (1..dis - 1).map(move |x| bend_point.add(unit.mul(x)));
+    let second = (0..dis + 1).map(move |x| bend_point.add(unit.mul(x)));
 
     first.chain(second)
 }
