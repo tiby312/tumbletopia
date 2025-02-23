@@ -296,7 +296,7 @@ pub fn iterative_deepening(
     world: &board::MyWorld,
     team: ActiveTeam,
     move_history: &MoveHistory,
-) -> Res {
+) -> Option<Res> {
     let mut results = None; // = Vec::new();
 
     let mut table = TranspositionTable {
@@ -377,7 +377,7 @@ pub fn iterative_deepening(
 
     // (m.mov, m.eval)
     // Res { line: mov, eval: () }
-    results.unwrap()
+    results
 }
 
 struct AlphaBeta<'a> {

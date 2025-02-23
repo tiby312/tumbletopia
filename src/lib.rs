@@ -217,7 +217,7 @@ pub async fn worker_entry2() {
             &res.history,
         );
         //console_dbg!("worker:finished processing");
-        worker.post_message(AiResponse { inner: res });
+        worker.post_message(AiResponse { inner: res.expect("Couldn't find a move") });
     }
 }
 
