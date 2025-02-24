@@ -623,7 +623,7 @@ async fn render_command(
     e: &mut EngineStuff,
     world: &board::MyWorld,
     timer: &mut shogo::Timer,
-    dom_messages: &mut shogo::worker::WorkerRecv<DomToWorker>,
+    dom_messages: &mut shogo::worker::WorkerRecv<DomToWorker,web_sys::OffscreenCanvas>,
     engine_worker: &mut shogo::worker::WorkerSender<dom::WorkerToDom>,
 ) -> ace::Response {
     let game = &game_total.tactical;
