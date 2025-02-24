@@ -223,6 +223,44 @@ pub async fn worker_entry2() {
     }
 }
 
+pub struct Doop3 {
+    pub ai_worker: WorkerInterface<AiCommand, AiResponse>,
+    pub ai_response: UnboundedReceiver<AiResponse>,
+    pub interrupt_sender: futures::channel::mpsc::Sender<ace::Response>,
+}
+impl Doop3 {
+    async fn interrupt_render_thread(&mut self) {
+        use futures::FutureExt;
+        self.interrupt_sender
+            .send(ace::Response::AnimationFinish)
+            .map(|_| ()).await
+    }
+    async fn wait_response(&mut self) -> engine::ai::Res {
+        use futures::FutureExt;
+        self.ai_response.next().map(|x| {
+            let k = x.unwrap();
+            k.inner
+        }).await
+    }
+    fn send_command(
+        &mut self,
+        game: &GameState,
+        fogs: &[mesh::small_mesh::SmallMesh; 2],
+        world: &board::MyWorld,
+        team: ActiveTeam,
+        history: &MoveHistory,
+    ) {
+        self.ai_worker.post_message(AiCommand {
+            game: game.clone(),
+            fogs: fogs.clone(),
+            world: world.clone(),
+            team,
+            history: history.clone(),
+        });
+    }
+}
+
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiCommand {
     game: GameState,
@@ -266,43 +304,8 @@ pub async fn worker_entry() {
 
     let (interrupt_sender, mut interrupt_recv) = futures::channel::mpsc::channel(5);
 
-    struct Doop {
-        ai_worker: WorkerInterface<AiCommand, AiResponse>,
-        ai_response: UnboundedReceiver<AiResponse>,
-        interrupt_sender: futures::channel::mpsc::Sender<ace::Response>,
-    }
-    impl engine::main_logic::AiInterface for Doop {
-        fn interrupt_render_thread(&mut self) -> impl std::future::Future<Output = ()> {
-            use futures::FutureExt;
-            self.interrupt_sender
-                .send(ace::Response::AnimationFinish)
-                .map(|_| ())
-        }
-        fn wait_response(&mut self) -> impl std::future::Future<Output = engine::ai::Res> + Send {
-            use futures::FutureExt;
-            self.ai_response.next().map(|x| {
-                let k = x.unwrap();
-                k.inner
-            })
-        }
-        fn send_command(
-            &mut self,
-            game: &GameState,
-            fogs: &[mesh::small_mesh::SmallMesh; 2],
-            world: &board::MyWorld,
-            team: ActiveTeam,
-            history: &MoveHistory,
-        ) {
-            self.ai_worker.post_message(AiCommand {
-                game: game.clone(),
-                fogs: fogs.clone(),
-                world: world.clone(),
-                team,
-                history: history.clone(),
-            });
-        }
-    }
-    let mut ai_int = Doop {
+    
+    let mut ai_int = Doop3 {
         ai_worker,
         ai_response,
         interrupt_sender,
@@ -509,7 +512,7 @@ pub async fn game_play_thread(
     mut doop: ace::CommandSender,
     world: &board::MyWorld,
     game_type: engine::GameType,
-    ai_int: &mut impl engine::main_logic::AiInterface,
+    ai_int: &mut Doop3,
 ) -> (unit::GameOver, MoveHistory) {
     console_dbg!("gameplay thread start");
 
