@@ -193,7 +193,7 @@ impl GameState {
             //return None;
             if score_data.white > score_data.black {
                 return Some(GameOver::WhiteWon);
-            } else if score_data.white < score_data.black{
+            } else if score_data.white < score_data.black {
                 return Some(GameOver::BlackWon);
             } else {
                 return Some(GameOver::Tie);
@@ -204,16 +204,15 @@ impl GameState {
     }
 }
 
-
-pub struct ScoreData{
-    pub white:usize,
-    pub black:usize,
-    pub neutral:usize
+pub struct ScoreData {
+    pub white: usize,
+    pub black: usize,
+    pub neutral: usize,
 }
 impl GameState {
     pub fn score(&self, world: &MyWorld) -> ScoreData {
         //let total_num = world.get_game_cells().inner.count_ones();
-        let mut neutral=0;
+        let mut neutral = 0;
         let game = self;
         let mut white_score = 0;
         let mut black_score = 0;
@@ -246,7 +245,7 @@ impl GameState {
                         // }
                     }
                     ActiveTeam::Neutral => {
-                        neutral+=1;
+                        neutral += 1;
                     }
                 }
             } else {
@@ -256,19 +255,18 @@ impl GameState {
                     white_score += 1;
                 } else if ownership < 0 {
                     black_score += 1;
-                }else{
-                    neutral+=1;
+                } else {
+                    neutral += 1;
                 }
             };
         }
-        ScoreData{
-            white:white_score,
-            black:black_score,
-            neutral
+        ScoreData {
+            white: white_score,
+            black: black_score,
+            neutral,
         }
     }
-    
-    
+
     pub fn threat_score(&self, world: &MyWorld) -> (usize, usize) {
         let total_num = world.get_game_cells().inner.count_ones();
 
@@ -293,15 +291,15 @@ impl GameState {
                 match tt {
                     ActiveTeam::White => {
                         white_score += 1;
-                        if num_black >= height {
-                            black_score += 1
-                        }
+                        // if num_black >= height {
+                        //     black_score += 1000
+                        // }
                     }
                     ActiveTeam::Black => {
                         black_score += 1;
-                        if num_white >= height {
-                            white_score += 1;
-                        }
+                        // if num_white >= height {
+                        //     white_score += 1000;
+                        // }
                     }
                     ActiveTeam::Neutral => {}
                 }
@@ -315,10 +313,7 @@ impl GameState {
                 }
             };
         }
-        (
-            white_score,
-            black_score,
-        )
+        (white_score, black_score)
     }
 }
 

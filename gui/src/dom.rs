@@ -145,7 +145,7 @@ pub struct Text {
 pub enum WorkerToDom {
     ShowUndo,
     HideUndo,
-    TextUpdate(Vec<Text>,ScoreData),
+    TextUpdate(Vec<Text>, ScoreData),
     GameFinish {
         replay_string: String,
         result: GameOverGui,
@@ -267,7 +267,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
     //     pos: [40.0, 40.0],
     // });
 
-    let mut score_data=None;
+    let mut score_data = None;
 
     loop {
         futures::select! {
@@ -396,15 +396,13 @@ pub enum GameType {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 
-pub struct ScoreData{
-    pub white:usize,
-    pub black:usize,
-    pub neutral:usize
+pub struct ScoreData {
+    pub white: usize,
+    pub black: usize,
+    pub neutral: usize,
 }
 
-
-
-fn redraw_text(text: &Vec<Text>,data:&ScoreData) {
+fn redraw_text(text: &Vec<Text>, data: &ScoreData) {
     console_dbg!("Redrawing text");
     let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
     let context = canvas
@@ -426,38 +424,41 @@ fn redraw_text(text: &Vec<Text>,data:&ScoreData) {
             .unwrap();
     }
 
-
-    let total=data.white+data.black+data.neutral;
-    let white_percentage=data.white as f64 / total as f64;
+    let total = data.white + data.black + data.neutral;
+    let white_percentage = data.white as f64 / total as f64;
     let black_percentage = data.black as f64 / total as f64;
-    let neutral_percentage = 1.0-(white_percentage+black_percentage);
+    let neutral_percentage = 1.0 - (white_percentage + black_percentage);
 
-    console_dbg!(white_percentage,black_percentage);
-    let radius=80.0;
-    let x=505.0;
-    let y=100.0;
+    console_dbg!(white_percentage, black_percentage);
+    let radius = 80.0;
+    let x = 505.0;
+    let y = 100.0;
 
-    let r1=std::f64::consts::TAU*white_percentage;
-    let r2=std::f64::consts::TAU*(white_percentage+black_percentage);
+    let r1 = std::f64::consts::TAU * white_percentage;
+    let r2 = std::f64::consts::TAU * (white_percentage + black_percentage);
 
-    let w=canvas.width() as f64;
-    let h=40.0;
-
+    let w = canvas.width() as f64;
+    let h = 40.0;
 
     context.set_fill_style_str("white");
     context.begin_path();
-    context.rect(0.0,0.0,white_percentage*w,h);
+    context.rect(0.0, 0.0, white_percentage * w, h);
     context.fill();
     context.set_fill_style_str("blue");
     context.begin_path();
-    context.rect((white_percentage+neutral_percentage)*w,0.0,black_percentage*w,h);
+    context.rect(
+        (white_percentage + neutral_percentage) * w,
+        0.0,
+        black_percentage * w,
+        h,
+    );
     context.fill();
 
     context.set_stroke_style_str("gray");
     context.set_line_width(10.);
     context.begin_path();
-    context.move_to(0.5*w,0.0);
-    context.line_to(0.5*w,h);
+    context.move_to(0.5 * w, 0.0);
+    context.line_to(0.5 * w, h);
     context.stroke();
 
     // context.begin_path();
@@ -475,9 +476,6 @@ fn redraw_text(text: &Vec<Text>,data:&ScoreData) {
 
     //     context.line_to(x,y);
     // context.fill();
-
-
-
 }
 
 fn resize2() -> DomToWorker {

@@ -200,7 +200,6 @@ pub async fn main_entry() {
     dom::start_game(command, &host).await;
 }
 
-
 #[wasm_bindgen]
 pub async fn worker_entry2() {
     let (mut worker, mut response) = gui::worker::Worker::<AiCommand, AiResponse>::new();
@@ -217,7 +216,9 @@ pub async fn worker_entry2() {
             &res.history,
         );
         //console_dbg!("worker:finished processing");
-        worker.post_message(AiResponse { inner: res.expect("Couldn't find a move") });
+        worker.post_message(AiResponse {
+            inner: res.expect("Couldn't find a move"),
+        });
     }
 }
 
@@ -344,7 +345,6 @@ pub async fn worker_entry() {
     let (command_sender, mut command_recv) =
         futures::channel::mpsc::channel::<GameWrap<engine::main_logic::Command>>(5);
 
-
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
     let game_type = match game_type {
@@ -464,9 +464,7 @@ pub async fn worker_entry() {
                 //let map = Map::load(&s, &world).unwrap();
 
                 //TODO handle this error better
-                let res =
-                    game_play_thread(doop, &world, game_type, &mut ai_int)
-                        .await;
+                let res = game_play_thread(doop, &world, game_type, &mut ai_int).await;
                 Finish::GameFinish((res.0, res.1))
             }
             engine::GameType::Replay(s) => {
@@ -506,7 +504,6 @@ pub async fn worker_entry() {
     log!("Worker thread closin");
 }
 
-
 pub async fn game_play_thread(
     mut doop: ace::CommandSender,
     world: &board::MyWorld,
@@ -524,11 +521,10 @@ pub async fn game_play_thread(
 
     //Loop over each team!
     loop {
-        
         let team = team_gen.next().unwrap();
 
         doop.repaint_ui(team, &mut game).await;
-        
+
         if let Some(g) = game.tactical.game_is_over(&world, team, &game_history) {
             break (g, game_history);
         }
@@ -599,7 +595,14 @@ pub async fn game_play_thread(
             continue;
         }
 
-        let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
+        let r = engine::main_logic::handle_player(
+            &mut game,
+            &world,
+            &mut doop,
+            team,
+            &mut game_history,
+        )
+        .await;
 
         game.update_fog(world, team);
         game_history.push(r);
@@ -609,8 +612,6 @@ pub async fn game_play_thread(
         console_dbg!(curr_eval_player);
     }
 }
-
-
 
 use gui::model_parse::*;
 use gui::*;
@@ -675,9 +676,12 @@ async fn render_command(
     let mut poking = 0;
     let mut camera_moving_last = scroll::CameraMoving::Stopped;
 
-    let score_data=game.score(world);
-    let score_data=dom::ScoreData{white:score_data.white,black:score_data.black,neutral:score_data.neutral};
-        
+    let score_data = game.score(world);
+    let score_data = dom::ScoreData {
+        white: score_data.white,
+        black: score_data.black,
+        neutral: score_data.neutral,
+    };
 
     let proj = gui::projection::projection(viewport).generate();
     let view_proj = gui::projection::view_matrix(
@@ -688,13 +692,12 @@ async fn render_command(
 
     let my_matrix = proj.chain(view_proj).generate();
 
-
     //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
-        ace::Command::RepaintUI=>{
+        ace::Command::RepaintUI => {
             let k = update_text(world, grid_matrix, viewport, &my_matrix);
-            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k,score_data.clone()));
+            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone()));
             return ace::Response::Ack;
         }
         ace::Command::HideUndo => {
@@ -830,7 +833,7 @@ async fn render_command(
                             }
                         }
                         DomToWorker::Button(s) => {
-                            
+
                             button_pushed = Some(s.clone());
 
                             // match s.as_str(){
@@ -883,12 +886,11 @@ async fn render_command(
 
         let mouse_world =
             gui::scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
-        
-            
+
         if resize_text {
             console_dbg!("RESIZING TEXT!!!!");
             let k = update_text(world, grid_matrix, viewport, &my_matrix);
-            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k,score_data.clone()));
+            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone()));
         }
 
         if get_mouse_input.is_some() {
@@ -950,10 +952,11 @@ async fn render_command(
         match (camera_moving, camera_moving_last) {
             (scroll::CameraMoving::Stopped, scroll::CameraMoving::Moving) => {
                 let k = update_text(world, grid_matrix, viewport, &my_matrix);
-                engine_worker.post_message(dom::WorkerToDom::TextUpdate(k,score_data.clone()));
+                engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone()));
             }
             (scroll::CameraMoving::Moving, scroll::CameraMoving::Stopped) => {
-                engine_worker.post_message(dom::WorkerToDom::TextUpdate(vec![],score_data.clone()));
+                engine_worker
+                    .post_message(dom::WorkerToDom::TextUpdate(vec![], score_data.clone()));
             }
             _ => {}
         }

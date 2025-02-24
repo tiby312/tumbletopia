@@ -78,7 +78,7 @@ pub enum Command {
     Popup(String),
     Poke,
     Wait,
-    RepaintUI
+    RepaintUI,
 }
 
 #[derive(Debug)]
@@ -227,7 +227,6 @@ impl CommandSender {
         };
     }
 
-
     async fn get_mouse_with_mesh(
         &mut self,
         cell: &mut CellSelection,
@@ -294,8 +293,6 @@ impl CommandSender {
         };
         //console_db
     }
-
-
 
     pub async fn wait_forever(&mut self, team: ActiveTeam, game: &mut unit::GameStateTotal) {
         let data = self.send_command(team, game, Command::Wait).await;
