@@ -434,7 +434,7 @@ pub async fn worker_entry() {
         }
     };
 
-    let doop = ace::WorkerManager {
+    let doop = ace::CommandSender {
         sender: command_sender,
         receiver: response_recv,
     };

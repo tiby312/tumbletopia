@@ -96,7 +96,7 @@ pub enum MouseEvent<T> {
 }
 
 pub async fn map_editor(
-    mut doop: WorkerManager,
+    mut doop: CommandSender,
     world: &board::MyWorld,
     map: unit::Map,
 ) -> unit::Map {
@@ -206,7 +206,7 @@ pub trait AiInterface {
 }
 
 pub async fn game_play_thread(
-    mut doop: WorkerManager,
+    mut doop: CommandSender,
     world: &board::MyWorld,
     game_type: GameType,
     ai_int: &mut impl AiInterface,
@@ -305,12 +305,12 @@ pub async fn game_play_thread(
     }
 }
 
-pub struct WorkerManager {
+pub struct CommandSender {
     pub sender: Sender<GameWrap<Command>>,
     pub receiver: Receiver<GameWrap<Response>>,
 }
 
-impl WorkerManager {
+impl CommandSender {
     pub async fn wait_animation(
         &mut self,
         animation: AnimationCommand,
@@ -449,7 +449,7 @@ pub enum LoopRes<T> {
 }
 
 pub async fn reselect_loop(
-    doop: &mut WorkerManager,
+    doop: &mut CommandSender,
     game: &mut unit::GameStateTotal,
     world: &board::MyWorld,
     team: ActiveTeam,
@@ -666,7 +666,7 @@ pub async fn replay(
     map: &unit::Map,
     history: &MoveHistory,
     world: &board::MyWorld,
-    mut doop: WorkerManager,
+    mut doop: CommandSender,
 ) -> unit::GameOver {
     //let map = unit::default_map(world);
     let (mut game, starting_team) = unit::GameStateTotal::new(world, map);
@@ -752,7 +752,7 @@ pub async fn animate_move<'a>(
     team: ActiveTeam,
     state: &unit::GameStateTotal,
     world: &board::MyWorld,
-    data: &mut WorkerManager,
+    data: &mut CommandSender,
 ) -> &'a ActualMove {
     let end_points = state
         .tactical
@@ -798,7 +798,7 @@ pub async fn animate_move<'a>(
 pub async fn handle_player(
     game: &mut unit::GameStateTotal,
     world: &board::MyWorld,
-    doop: &mut WorkerManager,
+    doop: &mut CommandSender,
     team: ActiveTeam,
     move_log: &mut MoveHistory,
 ) -> (moves::ActualMove, move_build::MoveEffect) {
