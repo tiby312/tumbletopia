@@ -343,6 +343,8 @@ pub async fn worker_entry() {
 
     let (command_sender, mut command_recv) =
         futures::channel::mpsc::channel::<GameWrap<engine::main_logic::Command>>(5);
+
+
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
 
     let game_type = match game_type {
@@ -463,7 +465,7 @@ pub async fn worker_entry() {
 
                 //TODO handle this error better
                 let res =
-                    engine::main_logic::game_play_thread(doop, &world, game_type, &mut ai_int)
+                    game_play_thread(doop, &world, game_type, &mut ai_int)
                         .await;
                 Finish::GameFinish((res.0, res.1))
             }
@@ -503,6 +505,112 @@ pub async fn worker_entry() {
 
     log!("Worker thread closin");
 }
+
+
+pub async fn game_play_thread(
+    mut doop: ace::CommandSender,
+    world: &board::MyWorld,
+    game_type: engine::GameType,
+    ai_int: &mut impl engine::main_logic::AiInterface,
+) -> (unit::GameOver, MoveHistory) {
+    console_dbg!("gameplay thread start");
+
+    //let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
+    let mut game = world.starting_state.clone();
+
+    let mut game_history = MoveHistory::new();
+
+    let mut team_gen = world.starting_team.iter();
+
+    //Loop over each team!
+    loop {
+        
+        let team = team_gen.next().unwrap();
+
+        doop.repaint_ui(team, &mut game).await;
+        
+        if let Some(g) = game.tactical.game_is_over(&world, team, &game_history) {
+            break (g, game_history);
+        }
+
+        //Add AIIIIII.
+        let foo = match game_type {
+            engine::GameType::SinglePlayer(_) => team == ActiveTeam::Black,
+            engine::GameType::PassPlay(_) => false,
+            engine::GameType::AIBattle(_) => true,
+            engine::GameType::MapEditor(_) => unreachable!(),
+            engine::GameType::Replay(_) => unreachable!(),
+        };
+
+        console_dbg!("main thread iter");
+        if foo {
+            let the_move = {
+                let ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
+
+                //ai::iterative_deepening(&ai_state, &world, team, &game_history)
+
+                ai_int.send_command(&ai_state, &game.fog, &world, team, &game_history);
+
+                use futures::FutureExt;
+                let the_move = futures::select!(
+                    _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                    x = ai_int.wait_response().fuse() => x
+                );
+
+                ai_int.interrupt_render_thread().await;
+                the_move
+            };
+
+            //let the_move = the_move.line[0].clone();
+
+            let principal_variation: Vec<_> = the_move
+                .line
+                .iter()
+                .map(|x| {
+                    let res =
+                        move_build::to_letter_coord(&mesh::small_mesh::inverse(x.moveto), world);
+                    format!("{}{}", res.0, res.1)
+                })
+                .collect();
+            console_dbg!(principal_variation);
+
+            let the_move = if engine::ai::should_pass(&the_move, team, &mut game.tactical, world) {
+                console_dbg!("Choosing to pass!");
+                ActualMove {
+                    moveto: moves::PASS_MOVE_INDEX,
+                }
+            } else {
+                the_move.line[0].clone()
+            };
+
+            console_dbg!("gmae thread has interrupted render thread");
+
+            let effect_m = ace::animate_move(&the_move, team, &mut game, &world, &mut doop)
+                .await
+                .apply(team, &mut game.tactical, &game.fog[team.index()], &world);
+
+            game.update_fog(world, team);
+            game_history.push((the_move, effect_m));
+
+            let curr_eval =
+                engine::ai::Evaluator::default().absolute_evaluate(&game.tactical, world, false);
+            console_dbg!(curr_eval);
+
+            continue;
+        }
+
+        let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
+
+        game.update_fog(world, team);
+        game_history.push(r);
+
+        let curr_eval_player =
+            engine::ai::Evaluator::default().absolute_evaluate(&game.tactical, world, false);
+        console_dbg!(curr_eval_player);
+    }
+}
+
+
 
 use gui::model_parse::*;
 use gui::*;
@@ -566,9 +674,29 @@ async fn render_command(
     let mut terrain_animation = None;
     let mut poking = 0;
     let mut camera_moving_last = scroll::CameraMoving::Stopped;
+
+    let score_data=game.score(world);
+    let score_data=dom::ScoreData{white:score_data.white,black:score_data.black,neutral:score_data.neutral};
+        
+
+    let proj = gui::projection::projection(viewport).generate();
+    let view_proj = gui::projection::view_matrix(
+        scroll_manager.camera(),
+        scroll_manager.zoom(),
+        scroll_manager.rot(),
+    );
+
+    let my_matrix = proj.chain(view_proj).generate();
+
+
     //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
+        ace::Command::RepaintUI=>{
+            let k = update_text(world, grid_matrix, viewport, &my_matrix);
+            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k,score_data.clone()));
+            return ace::Response::Ack;
+        }
         ace::Command::HideUndo => {
             engine_worker.post_message(dom::WorkerToDom::HideUndo);
             //waiting_engine_ack = true;
@@ -756,8 +884,6 @@ async fn render_command(
         let mouse_world =
             gui::scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
         
-        let score_data=game.score(world);
-        let score_data=dom::ScoreData{white:score_data.white,black:score_data.black,neutral:score_data.neutral};
             
         if resize_text {
             console_dbg!("RESIZING TEXT!!!!");
@@ -824,10 +950,10 @@ async fn render_command(
         match (camera_moving, camera_moving_last) {
             (scroll::CameraMoving::Stopped, scroll::CameraMoving::Moving) => {
                 let k = update_text(world, grid_matrix, viewport, &my_matrix);
-                engine_worker.post_message(dom::WorkerToDom::TextUpdate(k,score_data));
+                engine_worker.post_message(dom::WorkerToDom::TextUpdate(k,score_data.clone()));
             }
             (scroll::CameraMoving::Moving, scroll::CameraMoving::Stopped) => {
-                engine_worker.post_message(dom::WorkerToDom::TextUpdate(vec![],score_data));
+                engine_worker.post_message(dom::WorkerToDom::TextUpdate(vec![],score_data.clone()));
             }
             _ => {}
         }

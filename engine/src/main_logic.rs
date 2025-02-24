@@ -78,6 +78,7 @@ pub enum Command {
     Popup(String),
     Poke,
     Wait,
+    RepaintUI
 }
 
 #[derive(Debug)]
@@ -205,106 +206,6 @@ pub trait AiInterface {
     fn interrupt_render_thread(&mut self) -> impl std::future::Future<Output = ()>;
 }
 
-pub async fn game_play_thread(
-    mut doop: CommandSender,
-    world: &board::MyWorld,
-    game_type: GameType,
-    ai_int: &mut impl AiInterface,
-) -> (unit::GameOver, MoveHistory) {
-    console_dbg!("gameplay thread start");
-
-    //let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
-    let mut game = world.starting_state.clone();
-
-    let mut game_history = MoveHistory::new();
-
-    let mut team_gen = world.starting_team.iter();
-
-    //Loop over each team!
-    loop {
-        let team = team_gen.next().unwrap();
-
-        if let Some(g) = game.tactical.game_is_over(&world, team, &game_history) {
-            break (g, game_history);
-        }
-
-        //Add AIIIIII.
-        let foo = match game_type {
-            GameType::SinglePlayer(_) => team == ActiveTeam::Black,
-            GameType::PassPlay(_) => false,
-            GameType::AIBattle(_) => true,
-            GameType::MapEditor(_) => unreachable!(),
-            GameType::Replay(_) => unreachable!(),
-        };
-
-        console_dbg!("main thread iter");
-        if foo {
-            let the_move = {
-                let ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
-
-                //ai::iterative_deepening(&ai_state, &world, team, &game_history)
-
-                ai_int.send_command(&ai_state, &game.fog, &world, team, &game_history);
-
-                use futures::FutureExt;
-                let the_move = futures::select!(
-                    _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
-                    x = ai_int.wait_response().fuse() => x
-                );
-
-                ai_int.interrupt_render_thread().await;
-                the_move
-            };
-
-            //let the_move = the_move.line[0].clone();
-
-            let principal_variation: Vec<_> = the_move
-                .line
-                .iter()
-                .map(|x| {
-                    let res =
-                        move_build::to_letter_coord(&mesh::small_mesh::inverse(x.moveto), world);
-                    format!("{}{}", res.0, res.1)
-                })
-                .collect();
-            console_dbg!(principal_variation);
-
-            let the_move = if ai::should_pass(&the_move, team, &mut game.tactical, world) {
-                console_dbg!("Choosing to pass!");
-                ActualMove {
-                    moveto: moves::PASS_MOVE_INDEX,
-                }
-            } else {
-                the_move.line[0].clone()
-            };
-
-            console_dbg!("gmae thread has interrupted render thread");
-
-            let effect_m = animate_move(&the_move, team, &mut game, &world, &mut doop)
-                .await
-                .apply(team, &mut game.tactical, &game.fog[team.index()], &world);
-
-            game.update_fog(world, team);
-            game_history.push((the_move, effect_m));
-
-            let curr_eval =
-                ai::Evaluator::default().absolute_evaluate(&game.tactical, world, false);
-            console_dbg!(curr_eval);
-
-            continue;
-        }
-
-        let r = handle_player(&mut game, &world, &mut doop, team, &mut game_history).await;
-
-        game.update_fog(world, team);
-        game_history.push(r);
-
-        let curr_eval_player =
-            ai::Evaluator::default().absolute_evaluate(&game.tactical, world, false);
-        console_dbg!(curr_eval_player);
-    }
-}
-
 pub struct CommandSender {
     pub sender: Sender<GameWrap<Command>>,
     pub receiver: Receiver<GameWrap<Response>>,
@@ -325,6 +226,7 @@ impl CommandSender {
             unreachable!();
         };
     }
+
 
     async fn get_mouse_with_mesh(
         &mut self,
@@ -384,6 +286,16 @@ impl CommandSender {
     //         unreachable!();
     //     };
     // }
+    pub async fn repaint_ui(&mut self, team: ActiveTeam, game: &mut unit::GameStateTotal) {
+        let data = self.send_command(team, game, Command::RepaintUI).await;
+
+        let Response::Ack = data else {
+            unreachable!();
+        };
+        //console_db
+    }
+
+
 
     pub async fn wait_forever(&mut self, team: ActiveTeam, game: &mut unit::GameStateTotal) {
         let data = self.send_command(team, game, Command::Wait).await;

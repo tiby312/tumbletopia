@@ -267,7 +267,9 @@ impl GameState {
             neutral
         }
     }
-    pub fn threat_score(&self, world: &MyWorld) -> (usize, usize, usize) {
+    
+    
+    pub fn threat_score(&self, world: &MyWorld) -> (usize, usize) {
         let total_num = world.get_game_cells().inner.count_ones();
 
         let game = self;
@@ -316,7 +318,6 @@ impl GameState {
         (
             white_score,
             black_score,
-            total_num - (white_score + black_score),
         )
     }
 }

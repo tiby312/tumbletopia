@@ -15,14 +15,14 @@ pub fn should_pass(
     game: &mut GameState,
     world: &MyWorld,
 ) -> bool {
-    //try with d--sd-d-sdd--s---s-
+    //try with -sr-se--se--se----r
 
     //TODO remove this clone
     let mut game = game.clone();
     let score_before = game.threat_score(world);
     let fog = SmallMesh::new();
 
-    for aa in a.line.iter() {
+    for aa in a.line[0..3].iter() {
         let _effect = aa.apply(team, &mut game, &fog, world);
         team = team.not();
     }
@@ -355,6 +355,10 @@ pub fn iterative_deepening(
         //alpha beta returns the main line with the first move at the end
         //reverse it so that the order is in the order of how they are played out.
         mov.reverse();
+
+
+        //Can be larger due to quiesense
+        assert!(mov.len()>=depth);
 
         if !mov.is_empty() {
             results = Some(Res {
