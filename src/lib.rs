@@ -207,19 +207,19 @@ pub async fn worker_entry2() {
     loop {
         //console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
-        //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        todo!()
-        // let res = engine::ai::iterative_deepening(
-        //     &mut res.game,
-        //     &res.fogs,
-        //     &res.world,
-        //     res.team,
-        //     &res.history,
-        // );
-        // //console_dbg!("worker:finished processing");
-        // worker.post_message(AiResponse {
-        //     inner: res.expect("Couldn't find a move"),
-        // });
+        console_dbg!("worker:processing:", res.game.hash_me(), res.team);
+        
+        let res = engine::ai::calculate_move(
+            &mut res.game,
+            &res.fogs,
+            &res.world,
+            res.team,
+            &res.history,
+        );
+        //console_dbg!("worker:finished processing");
+        worker.post_message(AiResponse {
+            inner: res,
+        });
     }
 }
 
@@ -235,7 +235,7 @@ impl Doop3 {
             .send(ace::Response::AnimationFinish)
             .map(|_| ()).await
     }
-    async fn wait_response(&mut self) -> engine::ai::Res {
+    async fn wait_response(&mut self) -> ActualMove {
         use futures::FutureExt;
         self.ai_response.next().map(|x| {
             let k = x.unwrap();
@@ -272,7 +272,7 @@ struct AiCommand {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiResponse {
-    inner: engine::ai::Res,
+    inner:ActualMove,
 }
 
 #[wasm_bindgen]
@@ -547,23 +547,23 @@ pub async fn game_play_thread(
             let the_move = {
                 let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
 
-                let the_move = engine::ai::calculate_move(
-                    &mut ai_state,
-                    &game.fog,
-                    &world,
-                    team,
-                    &game_history,
-                );
-                //let the_move=the_move.unwrap();
-                // ai_int.send_command(&ai_state, &game.fog, &world, team, &game_history);
-
-                // use futures::FutureExt;
-                // let the_move = futures::select!(
-                //     _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
-                //     x = ai_int.wait_response().fuse() => x
+                // let the_move = engine::ai::calculate_move(
+                //     &mut ai_state,
+                //     &game.fog,
+                //     &world,
+                //     team,
+                //     &game_history,
                 // );
+                //let the_move=the_move.unwrap();
+                ai_int.send_command(&ai_state, &game.fog, &world, team, &game_history);
 
-                //ai_int.interrupt_render_thread().await;
+                use futures::FutureExt;
+                let the_move = futures::select!(
+                    _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                    x = ai_int.wait_response().fuse() => x
+                );
+
+                ai_int.interrupt_render_thread().await;
                 the_move
             };
 
