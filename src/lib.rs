@@ -208,17 +208,18 @@ pub async fn worker_entry2() {
         //console_dbg!("worker:waiting22222");
         let mut res = response.next().await.unwrap();
         //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        let res = engine::ai::iterative_deepening(
-            &mut res.game,
-            &res.fogs,
-            &res.world,
-            res.team,
-            &res.history,
-        );
-        //console_dbg!("worker:finished processing");
-        worker.post_message(AiResponse {
-            inner: res.expect("Couldn't find a move"),
-        });
+        todo!()
+        // let res = engine::ai::iterative_deepening(
+        //     &mut res.game,
+        //     &res.fogs,
+        //     &res.world,
+        //     res.team,
+        //     &res.history,
+        // );
+        // //console_dbg!("worker:finished processing");
+        // worker.post_message(AiResponse {
+        //     inner: res.expect("Couldn't find a move"),
+        // });
     }
 }
 
@@ -541,43 +542,29 @@ pub async fn game_play_thread(
         console_dbg!("main thread iter");
         if foo {
             let the_move = {
-                let ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
+                let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
 
-                //ai::iterative_deepening(&ai_state, &world, team, &game_history)
-
-                ai_int.send_command(&ai_state, &game.fog, &world, team, &game_history);
-
-                use futures::FutureExt;
-                let the_move = futures::select!(
-                    _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
-                    x = ai_int.wait_response().fuse() => x
+                let the_move = engine::ai::calculate_move(
+                    &mut ai_state,
+                    &game.fog,
+                    &world,
+                    team,
+                    &game_history,
                 );
+                //let the_move=the_move.unwrap();
+                // ai_int.send_command(&ai_state, &game.fog, &world, team, &game_history);
 
-                ai_int.interrupt_render_thread().await;
+                // use futures::FutureExt;
+                // let the_move = futures::select!(
+                //     _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                //     x = ai_int.wait_response().fuse() => x
+                // );
+
+                //ai_int.interrupt_render_thread().await;
                 the_move
             };
 
             //let the_move = the_move.line[0].clone();
-
-            let principal_variation: Vec<_> = the_move
-                .line
-                .iter()
-                .map(|x| {
-                    let res =
-                        move_build::to_letter_coord(&mesh::small_mesh::inverse(x.moveto), world);
-                    format!("{}{}", res.0, res.1)
-                })
-                .collect();
-            console_dbg!(principal_variation);
-
-            let the_move = if engine::ai::should_pass(&the_move, team, &mut game.tactical, world) {
-                console_dbg!("Choosing to pass!");
-                ActualMove {
-                    moveto: moves::PASS_MOVE_INDEX,
-                }
-            } else {
-                the_move.line[0].clone()
-            };
 
             console_dbg!("gmae thread has interrupted render thread");
 

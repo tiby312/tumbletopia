@@ -291,15 +291,15 @@ impl GameState {
                 match tt {
                     ActiveTeam::White => {
                         white_score += 1;
-                        // if num_black >= height {
-                        //     black_score += 1000
-                        // }
+                        if num_black >= height {
+                            black_score += 1000
+                        }
                     }
                     ActiveTeam::Black => {
                         black_score += 1;
-                        // if num_white >= height {
-                        //     white_score += 1000;
-                        // }
+                        if num_white >= height {
+                            white_score += 1000;
+                        }
                     }
                     ActiveTeam::Neutral => {}
                 }

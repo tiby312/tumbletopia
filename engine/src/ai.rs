@@ -23,7 +23,10 @@ pub fn should_pass(
     let fog = SmallMesh::new();
 
     for aa in a.line.iter() {
-        let _effect = aa.apply(team, &mut game, &fog, world);
+        let effect = aa.apply(team, &mut game, &fog, world);
+        if effect.destroyed_unit.is_some() {
+            return false;
+        }
         team = team.not();
     }
 
@@ -290,7 +293,39 @@ pub struct Res {
     pub eval: i64,
 }
 
-pub fn iterative_deepening(
+pub fn calculate_move(
+    game: &mut GameState,
+    fogs: &[mesh::small_mesh::SmallMesh; 2],
+    world: &board::MyWorld,
+    team: ActiveTeam,
+    move_history: &MoveHistory,
+) -> ActualMove {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team, move_history) {
+        let principal_variation: Vec<_> = mo
+            .line
+            .iter()
+            .map(|x| {
+                let res = move_build::to_letter_coord(&mesh::small_mesh::inverse(x.moveto), world);
+                format!("{}{}", res.0, res.1)
+            })
+            .collect();
+        console_dbg!(principal_variation);
+
+        if should_pass(&mo, team, game, world) {
+            console_dbg!("Choosing to pass!");
+            ActualMove {
+                moveto: moves::PASS_MOVE_INDEX,
+            }
+        } else {
+            mo.line[0].clone()
+        }
+    } else {
+        ActualMove {
+            moveto: moves::PASS_MOVE_INDEX,
+        }
+    }
+}
+pub fn iterative_deepening2(
     game: &GameState,
     fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
@@ -355,9 +390,6 @@ pub fn iterative_deepening(
         //alpha beta returns the main line with the first move at the end
         //reverse it so that the order is in the order of how they are played out.
         mov.reverse();
-
-        //Can be larger due to quiesense
-        assert!(mov.len() >= depth);
 
         if !mov.is_empty() {
             results = Some(Res {
@@ -560,6 +592,12 @@ impl<'a> AlphaBeta<'a> {
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
+        if moves.is_empty() {
+            return (
+                self.evaluator.absolute_evaluate(game, self.world, false),
+                tinyvec::array_vec![],
+            );
+        }
         //This is impossible since you can always pass
         //assert!(!moves.is_empty());
 
