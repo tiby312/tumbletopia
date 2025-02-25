@@ -14,6 +14,7 @@ pub fn should_pass(
     mut team: ActiveTeam,
     game: &mut GameState,
     world: &MyWorld,
+    //TODO pass in all history instead
     opponent_just_passed: bool,
 ) -> bool {
     //try with -sr-se--se--se----r
@@ -25,7 +26,7 @@ pub fn should_pass(
     let fog = SmallMesh::new();
 
     for aa in a.line.iter() {
-        let effect = aa.apply(team, &mut game, &fog, world);
+        let _effect = aa.apply(team, &mut game, &fog, world);
         let s = game.score(world);
 
         //dont pass if we forsee any fluctuation in the score
