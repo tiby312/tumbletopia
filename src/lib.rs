@@ -6,7 +6,6 @@ use cgmath::Vector2;
 use engine::mesh;
 use engine::move_build;
 use engine::MoveHistory;
-use futures::channel::mpsc::UnboundedReceiver;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -202,13 +201,19 @@ pub async fn main_entry() {
 
 #[wasm_bindgen]
 pub async fn worker_entry2() {
-    let (mut worker, mut response) = gui::worker::Worker::<AiCommand, AiResponse>::new();
+    //let (mut worker, mut response) = gui::worker::Worker::<AiCommand, AiResponse>::new();
+    use shogo::worker::*;
+    let (_, tx, mut rx): (
+        js_sys::ArrayBuffer,
+        WorkerSender<AiResponse>,
+        WorkerRecv<AiCommand, js_sys::ArrayBuffer>,
+    ) = shogo::worker::create_worker().await;
 
     loop {
         //console_dbg!("worker:waiting22222");
-        let mut res = response.next().await.unwrap();
+        let mut res = rx.recv().next().await.unwrap();
         console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        
+
         let res = engine::ai::calculate_move(
             &mut res.game,
             &res.fogs,
@@ -217,49 +222,50 @@ pub async fn worker_entry2() {
             &res.history,
         );
         //console_dbg!("worker:finished processing");
-        worker.post_message(AiResponse {
-            inner: res,
-        });
+        tx.post_message(AiResponse { inner: res });
     }
 }
 
-pub struct Doop3 {
-    pub ai_worker: WorkerInterface<AiCommand, AiResponse>,
-    pub ai_response: UnboundedReceiver<AiResponse>,
-    pub interrupt_sender: futures::channel::mpsc::Sender<ace::Response>,
-}
-impl Doop3 {
-    async fn interrupt_render_thread(&mut self) {
-        use futures::FutureExt;
-        self.interrupt_sender
-            .send(ace::Response::AnimationFinish)
-            .map(|_| ()).await
-    }
-    async fn wait_response(&mut self) -> ActualMove {
-        use futures::FutureExt;
-        self.ai_response.next().map(|x| {
-            let k = x.unwrap();
-            k.inner
-        }).await
-    }
-    fn send_command(
-        &mut self,
-        game: &GameState,
-        fogs: &[mesh::small_mesh::SmallMesh; 2],
-        world: &board::MyWorld,
-        team: ActiveTeam,
-        history: &MoveHistory,
-    ) {
-        self.ai_worker.post_message(AiCommand {
-            game: game.clone(),
-            fogs: fogs.clone(),
-            world: world.clone(),
-            team,
-            history: history.clone(),
-        });
-    }
-}
-
+// struct Doop3 {
+//     pub ai_worker: WorkerInterface<AiCommand, AiResponse>,
+//     pub ai_response: UnboundedReceiver<AiResponse>,
+//     pub interrupt_sender: futures::channel::mpsc::Sender<ace::Response>,
+// }
+// impl Doop3 {
+//     async fn interrupt_render_thread(&mut self) {
+//         use futures::FutureExt;
+//         self.interrupt_sender
+//             .send(ace::Response::AnimationFinish)
+//             .map(|_| ())
+//             .await
+//     }
+//     async fn wait_response(&mut self) -> ActualMove {
+//         use futures::FutureExt;
+//         self.ai_response
+//             .next()
+//             .map(|x| {
+//                 let k = x.unwrap();
+//                 k.inner
+//             })
+//             .await
+//     }
+//     fn send_command(
+//         &mut self,
+//         game: &GameState,
+//         fogs: &[mesh::small_mesh::SmallMesh; 2],
+//         world: &board::MyWorld,
+//         team: ActiveTeam,
+//         history: &MoveHistory,
+//     ) {
+//         self.ai_worker.post_message(AiCommand {
+//             game: game.clone(),
+//             fogs: fogs.clone(),
+//             world: world.clone(),
+//             team,
+//             history: history.clone(),
+//         });
+//     }
+// }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiCommand {
@@ -272,7 +278,7 @@ struct AiCommand {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiResponse {
-    inner:ActualMove,
+    inner: ActualMove,
 }
 
 #[wasm_bindgen]
@@ -298,18 +304,16 @@ pub async fn worker_entry() {
     let scroll_manager = gui::scroll::TouchController::new([0., 0.].into());
     use cgmath::SquareMatrix;
 
-    let (ai_worker, ai_response) =
-        worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;
-    console_dbg!("created ai worker");
+    // let (ai_worker, ai_response) =
+    //     worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;
 
-    let (interrupt_sender, mut interrupt_recv) = futures::channel::mpsc::channel(5);
+    let (interrupt_tx, mut interrupt_rx) = futures::channel::mpsc::channel(5);
 
-    
-    let mut ai_int = Doop3 {
-        ai_worker,
-        ai_response,
-        interrupt_sender,
-    };
+    // let mut ai_int = Doop3 {
+    //     ai_worker,
+    //     ai_response,
+    //     interrupt_sender,
+    // };
 
     let last_matrix = cgmath::Matrix4::identity();
     let ctx = &utils::get_context_webgl2_offscreen(&canvas);
@@ -413,30 +417,32 @@ pub async fn worker_entry() {
                 &mut timer,
                 &mut recv,
                 &mut sender,
+                &mut interrupt_rx,
             );
 
-            if let engine::main_logic::Command::Wait = &data {
-                let f2 = interrupt_recv.next().map(|x| x.unwrap());
-                use futures::FutureExt;
-                futures::select! {
-                    _= f1.fuse()=>{
-                        unreachable!()
-                        // response_sender
-                        // .send(ace::GameWrap { game, data, team })
-                        // .await
-                        // .unwrap();
-                    },
-                    _=f2.fuse()=>{
-                        //console_dbg!("render thread was interrupted!");
-                    }
-                };
-            } else {
-                let data = f1.await;
-                response_sender
-                    .send(ace::GameWrap { game, data, team })
-                    .await
-                    .unwrap();
-            }
+            // //TODO move this interrupt_recv into the render function.
+            // if let engine::main_logic::Command::Wait = &data {
+            //     let f2 = interrupt_recv.next().map(|x| x.unwrap());
+            //     use futures::FutureExt;
+            //     futures::select! {
+            //         _= f1.fuse()=>{
+            //             unreachable!()
+            //             // response_sender
+            //             // .send(ace::GameWrap { game, data, team })
+            //             // .await
+            //             // .unwrap();
+            //         },
+            //         _=f2.fuse()=>{
+            //             //console_dbg!("render thread was interrupted!");
+            //         }
+            //     };
+            // } else {
+            let data = f1.await;
+            response_sender
+                .send(ace::GameWrap { game, data, team })
+                .await
+                .unwrap();
+            //}
         }
     };
 
@@ -468,7 +474,7 @@ pub async fn worker_entry() {
                 //let map = Map::load(&s, &world).unwrap();
 
                 //TODO handle this error better
-                let res = game_play_thread(doop, &world, game_type, &mut ai_int).await;
+                let res = game_play_thread(doop, &world, game_type, interrupt_tx).await;
                 Finish::GameFinish((res.0, res.1))
             }
             engine::GameType::Replay(s) => {
@@ -512,9 +518,17 @@ pub async fn game_play_thread(
     mut doop: ace::CommandSender,
     world: &board::MyWorld,
     game_type: engine::GameType,
-    ai_int: &mut Doop3,
+    mut interrupt_tx: futures::channel::mpsc::Sender<()>,
 ) -> (unit::GameOver, MoveHistory) {
     console_dbg!("gameplay thread start");
+
+    let (ai_tx, mut ai_rx) = shogo::main::create_main::<AiCommand, AiResponse, _>(
+        "./gridlock_worker2.js",
+        js_sys::ArrayBuffer::new(0),
+    )
+    .await;
+
+    console_dbg!("created ai worker");
 
     //let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
     let mut game = world.starting_state.clone();
@@ -547,24 +561,32 @@ pub async fn game_play_thread(
             let the_move = {
                 let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
 
-                // let the_move = engine::ai::calculate_move(
-                //     &mut ai_state,
-                //     &game.fog,
-                //     &world,
-                //     team,
-                //     &game_history,
-                // );
-                //let the_move=the_move.unwrap();
-                ai_int.send_command(&ai_state, &game.fog, &world, team, &game_history);
+                engine::ai::calculate_move(&mut ai_state, &game.fog, &world, team, &game_history)
 
-                use futures::FutureExt;
-                let the_move = futures::select!(
-                    _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
-                    x = ai_int.wait_response().fuse() => x
-                );
+                // {
+                //     ai_tx.post_message(AiCommand {
+                //         game: ai_state,
+                //         fogs: game.fog.clone(),
+                //         world: world.clone(),
+                //         team,
+                //         history: game_history.clone(),
+                //     });
 
-                ai_int.interrupt_render_thread().await;
-                the_move
+                //     use futures::FutureExt;
+                //     let the_move = futures::select!(
+                //         _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                //         x = ai_rx.recv().next().fuse() => x
+                //     );
+
+                //     interrupt_tx.send(()).await.unwrap();
+
+                //     let k = doop.receiver.next().await;
+                //     matches!(k.unwrap().data, ace::Response::AnimationFinish);
+
+                //     //ai_int.interrupt_render_thread().await;
+
+                //     the_move.unwrap().inner
+                // }
             };
 
             //let the_move = the_move.line[0].clone();
@@ -607,7 +629,7 @@ use gui::model_parse::*;
 use gui::*;
 use web_sys::OffscreenCanvas;
 use web_sys::WebGl2RenderingContext;
-use worker::WorkerInterface;
+
 pub struct EngineStuff {
     grid_matrix: hex::HexConverter,
     models: Models<Foo<TextureGpu, ModelGpu>>,
@@ -626,8 +648,9 @@ async fn render_command(
     e: &mut EngineStuff,
     world: &board::MyWorld,
     timer: &mut shogo::Timer,
-    dom_messages: &mut shogo::worker::WorkerRecv<DomToWorker,web_sys::OffscreenCanvas>,
+    dom_messages: &mut shogo::worker::WorkerRecv<DomToWorker, web_sys::OffscreenCanvas>,
     engine_worker: &mut shogo::worker::WorkerSender<dom::WorkerToDom>,
+    interrupt_rx: &mut futures::channel::mpsc::Receiver<()>,
 ) -> ace::Response {
     let game = &game_total.tactical;
     let scroll_manager = &mut e.scroll_manager;
@@ -681,7 +704,8 @@ async fn render_command(
     );
 
     let my_matrix = proj.chain(view_proj).generate();
-
+    //TODO remove
+    let command_copy = command.clone();
     //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
@@ -779,6 +803,10 @@ async fn render_command(
         use futures::FutureExt;
         loop {
             futures::select! {
+                _ = interrupt_rx.next()=>{
+                    matches!(command_copy,ace::Command::Wait);
+                    return ace::Response::AnimationFinish;
+                },
                 () = timer.next().fuse() =>{
                     break;
                 },

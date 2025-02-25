@@ -14,32 +14,53 @@ pub fn should_pass(
     mut team: ActiveTeam,
     game: &mut GameState,
     world: &MyWorld,
+    opponent_just_passed: bool,
 ) -> bool {
     //try with -sr-se--se--se----r
 
     //TODO remove this clone
     let mut game = game.clone();
-    let score_before = game.threat_score(world);
+    let score_before = game.score(world);
+
     let fog = SmallMesh::new();
 
     for aa in a.line.iter() {
         let effect = aa.apply(team, &mut game, &fog, world);
-        if effect.destroyed_unit.is_some() {
-            return false;
+        if let Some((_, fa)) = effect.destroyed_unit {
+            if fa != team {
+                console_dbg!("Not passing because there are captures in principal variation");
+                return false;
+            }
         }
         team = team.not();
     }
+    let score_after = game.score(world);
+
+    console_dbg!(score_before, score_after);
 
     if a.line.is_empty() {
         return true;
     }
 
-    let a = &a.line[0];
+    if opponent_just_passed {
+        match team {
+            ActiveTeam::White => {
+                if score_before.white > score_before.black {
+                    return true;
+                }
+            }
+            ActiveTeam::Black => {
+                if score_before.black > score_before.white {
+                    return true;
+                }
+            }
+            ActiveTeam::Neutral => {}
+        }
+    }
+
+    //let a = &a.line[0];
     //let effect = a.apply(team, game, &fog, world);
 
-    let score_after = game.threat_score(world);
-
-    console_dbg!(score_before, score_after);
     let res = if score_after == score_before {
         console_dbg!("I WANT TO PASS");
         true
@@ -311,7 +332,13 @@ pub fn calculate_move(
             .collect();
         console_dbg!(principal_variation);
 
-        if should_pass(&mo, team, game, world) {
+        let opponent_just_passed = if let Some((k, _)) = move_history.inner.last() {
+            k.moveto == moves::PASS_MOVE_INDEX
+        } else {
+            false
+        };
+
+        if should_pass(&mo, team, game, world, opponent_just_passed) {
             console_dbg!("Choosing to pass!");
             ActualMove {
                 moveto: moves::PASS_MOVE_INDEX,
