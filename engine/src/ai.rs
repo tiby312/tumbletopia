@@ -26,12 +26,18 @@ pub fn should_pass(
 
     for aa in a.line.iter() {
         let effect = aa.apply(team, &mut game, &fog, world);
-        if let Some((_, fa)) = effect.destroyed_unit {
-            if fa != team {
-                console_dbg!("Not passing because there are captures in principal variation");
-                return false;
-            }
+        let s = game.score(world);
+
+        //dont pass if we forsee any fluctuation in the score
+        if s != score_before {
+            return false;
         }
+        // if let Some((_, fa)) = effect.destroyed_unit {
+        //     if fa != team {
+        //         console_dbg!("Not passing because there are captures in principal variation");
+        //         return false;
+        //     }
+        // }
         team = team.not();
     }
     let score_after = game.score(world);
@@ -105,6 +111,9 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
+        //white doesnt win with ai vs ai
+        //tc-s-d-re-srces-s--
+
         //white doesnt seem like it should win ai vs ai
         //-tccd--t-t-ct--rdd-
 
@@ -113,14 +122,14 @@ impl Evaluator {
         // the ai is returning A1,D4,B4
         // it should return B4,D4,C5/B2
 
-        // let mut score = 0;
-        // let mut stack_count = 0;
-        // let mut territory_count = 0;
-        // let mut strength = 0;
-        // let mut contested = 0;
-        // let mut unseen = 0;
+        let mut score = 0;
+        let mut stack_count = 0;
+        let mut territory_count = 0;
+        let mut strength = 0;
+        let mut contested = 0;
+        let mut unseen = 0;
 
-        let mut total_foo = 0;
+        //let mut total_foo = 0;
         for index in world.get_game_cells().inner.iter_ones() {
             let mut num_white = 0;
             let mut num_black = 0;
@@ -134,107 +143,81 @@ impl Evaluator {
                 }
             }
 
-            let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                let foo = match tt {
-                    ActiveTeam::Black => {
-                        // if height >= num_white {
-                        //     1
-                        // } else {
-                        //     -1
-                        // }
-                        -1
-                    }
-                    ActiveTeam::White => {
-                        // if height >= num_black {
-                        //     1
-                        // } else {
-                        //     -1
-                        // }
-                        1
-                    }
-                    ActiveTeam::Neutral => {
-                        // if num_white > num_black {
-                        //     if num_white > height {
-                        //         1
-                        //     } else {
-                        //         0
-                        //     }
-                        // } else if num_black > num_white {
-                        //     if num_black > height {
-                        //         -1
-                        //     } else {
-                        //         0
-                        //     }
-                        // } else {
-                        //     0
-                        // }
-                        0
-                        //todo!();
-                    }
-                };
-                foo
-            } else {
-                if num_white > num_black {
-                    1
-                } else if num_black > num_white {
-                    -1
-                } else {
-                    0
-                }
-            };
-
-            total_foo += temp_score;
-            // if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-            //     let height = height as i64;
-
-            //     let curr_strength = match tt {
-            //         ActiveTeam::White => height.max(num_white - 1),
-            //         ActiveTeam::Black => -height.max(num_black - 1),
-            //         ActiveTeam::Neutral => 0,
-            //     };
-
-            //     strength += curr_strength;
-
-            //     stack_count += 1;
-
-            //     match tt {
-            //         ActiveTeam::White => {
-            //             if num_black > height {
-            //                 score -= 1
-            //             } else {
-            //                 score += 1
-            //             }
-            //         }
+            // let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+            //     let foo = match tt {
             //         ActiveTeam::Black => {
-            //             if num_white > height {
-            //                 score += 1
-            //             } else {
-            //                 score -= 1
-            //             }
+            //             -1
             //         }
-            //         ActiveTeam::Neutral => {}
-            //     }
+            //         ActiveTeam::White => {
+            //             1
+            //         }
+            //         ActiveTeam::Neutral => {
+            //             0
+            //         }
+            //     };
+            //     foo
             // } else {
-            //     let ownership = num_white - num_black;
-
-            //     if ownership > 0 {
-            //         score += ownership;
-            //         territory_count += 1;
-            //     } else if ownership < 0 {
-            //         score += ownership;
-            //         territory_count += 1;
+            //     if num_white > num_black {
+            //         1
+            //     } else if num_black > num_white {
+            //         -1
             //     } else {
-            //         //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
-            //         if num_white > 0 {
-            //             contested += 1
-            //         } else {
-            //             unseen += 1;
-            //         }
+            //         0
             //     }
             // };
+
+            // total_foo += temp_score;
+            if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+                let height = height as i64;
+
+                let curr_strength = match tt {
+                    ActiveTeam::White => height.max(num_white - 1),
+                    ActiveTeam::Black => -height.max(num_black - 1),
+                    ActiveTeam::Neutral => 0,
+                };
+
+                strength += curr_strength;
+
+                stack_count += 1;
+
+                match tt {
+                    ActiveTeam::White => {
+                        if num_black > height {
+                            score -= 1
+                        } else {
+                            score += 1
+                        }
+                    }
+                    ActiveTeam::Black => {
+                        if num_white > height {
+                            score += 1
+                        } else {
+                            score -= 1
+                        }
+                    }
+                    ActiveTeam::Neutral => {}
+                }
+            } else {
+                let ownership = num_white - num_black;
+
+                if ownership > 0 {
+                    score += ownership;
+                    territory_count += 1;
+                } else if ownership < 0 {
+                    score += ownership;
+                    territory_count += 1;
+                } else {
+                    //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
+                    if num_white > 0 {
+                        contested += 1
+                    } else {
+                        unseen += 1;
+                    }
+                }
+            };
         }
-        total_foo
-        //(stack_count + territory_count) * score + (unseen + contested) * strength
+        //total_foo
+        (stack_count + territory_count) * score + (unseen + contested) * strength
     }
 }
 
