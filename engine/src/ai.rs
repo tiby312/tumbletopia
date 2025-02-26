@@ -26,18 +26,17 @@ pub fn should_pass(
     let mut game = game_orig.clone();
     let score_before = game.score(world);
 
-    let k = ActualMove {
-        moveto: moves::PASS_MOVE_INDEX,
-    };
+    // let k = ActualMove {
+    //     moveto: moves::PASS_MOVE_INDEX,
+    // };
     //let _e = k.apply(team, &mut game, &SmallMesh::new(), world);
 
     let fogs = std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new());
-    let foo = iterative_deepening2(&game, &fogs, world, team.not(), 2);
+    let foo = iterative_deepening2(&game, &fogs, world, team.not(), 3);
 
     let mut tt = team.not();
     if let Some(foo) = foo {
-        
-            let principal_variation: Vec<_> = foo
+        let principal_variation: Vec<_> = foo
             .line
             .iter()
             .map(|x| {
@@ -45,22 +44,20 @@ pub fn should_pass(
                 format!("{}{}", res.0, res.1)
             })
             .collect();
-        console_dbg!("should pass",principal_variation);
-
+        console_dbg!("should pass", principal_variation);
 
         for a in foo.line {
             let _ = a.apply(tt, &mut game, &SmallMesh::new(), world);
             tt = tt.not();
+
+            let score_after = game.score(world);
+
+            console_dbg!(score_before, score_after);
+
+            if score_after != score_before {
+                return false;
+            }
         }
-    }
-
-
-    let score_after = game.score(world);
-
-    console_dbg!(score_before,score_after);
-
-    if score_after != score_before {
-        return false;
     }
 
     // //If we do pass, what are the opponents best moves. And does it change the score?
@@ -173,7 +170,6 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
-
         //white doesnt win with ai vs ai
         //s--c--s--t---cdbc--
         //tc-s-d-re-srces-s--
@@ -209,15 +205,9 @@ impl Evaluator {
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let foo = match tt {
-                    ActiveTeam::Black => {
-                        -1
-                    }
-                    ActiveTeam::White => {
-                        1
-                    }
-                    ActiveTeam::Neutral => {
-                        0
-                    }
+                    ActiveTeam::Black => -1,
+                    ActiveTeam::White => 1,
+                    ActiveTeam::Neutral => 0,
                 };
                 foo
             } else {
@@ -353,7 +343,7 @@ impl TranspositionTable {
 //     }
 // }
 
-const STACK_SIZE: usize = 5 + 4;
+const STACK_SIZE: usize = 16;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Res {

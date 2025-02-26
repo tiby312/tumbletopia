@@ -559,34 +559,34 @@ pub async fn game_play_thread(
         console_dbg!("main thread iter");
         if foo {
             let the_move = {
-                let ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
+                let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
 
-                //engine::ai::calculate_move(&mut ai_state, &game.fog, &world, team, &game_history)
+                engine::ai::calculate_move(&mut ai_state, &game.fog, &world, team, &game_history)
 
-                {
-                    ai_tx.post_message(AiCommand {
-                        game: ai_state,
-                        fogs: game.fog.clone(),
-                        world: world.clone(),
-                        team,
-                        history: game_history.clone(),
-                    });
+                // {
+                //     ai_tx.post_message(AiCommand {
+                //         game: ai_state,
+                //         fogs: game.fog.clone(),
+                //         world: world.clone(),
+                //         team,
+                //         history: game_history.clone(),
+                //     });
 
-                    use futures::FutureExt;
-                    let the_move = futures::select!(
-                        _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
-                        x = ai_rx.recv().next().fuse() => x
-                    );
+                //     use futures::FutureExt;
+                //     let the_move = futures::select!(
+                //         _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                //         x = ai_rx.recv().next().fuse() => x
+                //     );
 
-                    interrupt_tx.send(()).await.unwrap();
+                //     interrupt_tx.send(()).await.unwrap();
 
-                    let k = doop.receiver.next().await;
-                    matches!(k.unwrap().data, ace::Response::AnimationFinish);
+                //     let k = doop.receiver.next().await;
+                //     matches!(k.unwrap().data, ace::Response::AnimationFinish);
 
-                    //ai_int.interrupt_render_thread().await;
+                //     //ai_int.interrupt_render_thread().await;
 
-                    the_move.unwrap().inner
-                }
+                //     the_move.unwrap().inner
+                // }
             };
 
             //let the_move = the_move.line[0].clone();
