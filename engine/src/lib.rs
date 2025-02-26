@@ -10,8 +10,8 @@ pub use hex::Axial;
 pub use moves::ActualMove;
 use serde::Deserialize;
 use serde::Serialize;
-pub use unit::ActiveTeam;
 pub use unit::GameState;
+pub use unit::Team;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum GameType {

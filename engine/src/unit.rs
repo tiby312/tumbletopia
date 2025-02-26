@@ -57,37 +57,37 @@ use super::*;
 
 #[must_use]
 #[derive(Serialize, Deserialize, Hash, Ord, PartialOrd, Debug, Copy, Clone, Eq, PartialEq)]
-pub enum ActiveTeam {
+pub enum Team {
     White = 0,
     Black = 1,
     Neutral = 2,
 }
 
-impl std::ops::Neg for ActiveTeam {
-    type Output = ActiveTeam;
+impl std::ops::Neg for Team {
+    type Output = Team;
 
     fn neg(self) -> Self::Output {
         self.not()
     }
 }
 
-impl<T> std::ops::IndexMut<ActiveTeam> for [T] {
-    fn index_mut(&mut self, index: ActiveTeam) -> &mut Self::Output {
+impl<T> std::ops::IndexMut<Team> for [T] {
+    fn index_mut(&mut self, index: Team) -> &mut Self::Output {
         match index {
-            ActiveTeam::White => &mut self[0],
-            ActiveTeam::Black => &mut self[1],
+            Team::White => &mut self[0],
+            Team::Black => &mut self[1],
             _ => {
                 unreachable!()
             }
         }
     }
 }
-impl<T> std::ops::Index<ActiveTeam> for [T] {
+impl<T> std::ops::Index<Team> for [T] {
     type Output = T;
-    fn index(&self, idx: ActiveTeam) -> &Self::Output {
+    fn index(&self, idx: Team) -> &Self::Output {
         match idx {
-            ActiveTeam::White => &self[0],
-            ActiveTeam::Black => &self[1],
+            Team::White => &self[0],
+            Team::Black => &self[1],
             _ => {
                 unreachable!()
             }
@@ -95,16 +95,16 @@ impl<T> std::ops::Index<ActiveTeam> for [T] {
     }
 }
 
-impl ActiveTeam {
+impl Team {
     pub fn index(&self) -> usize {
         match self {
-            ActiveTeam::White => 0,
-            ActiveTeam::Black => 1,
-            ActiveTeam::Neutral => unreachable!(),
+            Team::White => 0,
+            Team::Black => 1,
+            Team::Neutral => unreachable!(),
         }
     }
     pub fn is_white(&self) -> bool {
-        if let ActiveTeam::White = self {
+        if let Team::White = self {
             true
         } else {
             false
@@ -115,9 +115,9 @@ impl ActiveTeam {
     }
     pub fn not(&self) -> Self {
         match self {
-            ActiveTeam::White => ActiveTeam::Black,
-            ActiveTeam::Black => ActiveTeam::White,
-            ActiveTeam::Neutral => ActiveTeam::Neutral,
+            Team::White => Team::Black,
+            Team::Black => Team::White,
+            Team::Neutral => Team::Neutral,
         }
     }
 }
@@ -197,7 +197,7 @@ impl GameState {
         //TODO use bit and/oring
         for a in fog.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
-            gg.factions.add_cell(a, 6, ActiveTeam::Neutral);
+            gg.factions.add_cell(a, 6, Team::Neutral);
         }
 
         gg
@@ -212,7 +212,7 @@ impl GameState {
     pub fn game_is_over(
         &self,
         world: &board::MyWorld,
-        _team: ActiveTeam,
+        _team: Team,
         history: &MoveHistory,
     ) -> Option<GameOver> {
         let score_data = self.score(world);
@@ -256,9 +256,9 @@ impl GameState {
             for (_, rest) in game.factions.iter_end_points(world, index) {
                 if let Some((_, team)) = rest {
                     match team {
-                        ActiveTeam::White => num_white += 1,
-                        ActiveTeam::Black => num_black += 1,
-                        ActiveTeam::Neutral => {}
+                        Team::White => num_white += 1,
+                        Team::Black => num_black += 1,
+                        Team::Neutral => {}
                     }
                 }
             }
@@ -266,19 +266,19 @@ impl GameState {
             if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i8;
                 match tt {
-                    ActiveTeam::White => {
+                    Team::White => {
                         white_score += 1;
                         // if num_black >= height {
                         //     black_score += 1
                         // }
                     }
-                    ActiveTeam::Black => {
+                    Team::Black => {
                         black_score += 1;
                         // if num_white >= height {
                         //     white_score += 1;
                         // }
                     }
-                    ActiveTeam::Neutral => {
+                    Team::Neutral => {
                         neutral += 1;
                     }
                 }
@@ -395,7 +395,7 @@ impl Tribe {
         &self,
         world: &board::MyWorld,
         index: usize,
-    ) -> [(i8, Option<(u8, ActiveTeam)>); 6] {
+    ) -> [(i8, Option<(u8, Team)>); 6] {
         core::array::from_fn(|i| {
             let dd = hex::HDir::from(i as u8);
 
@@ -446,7 +446,7 @@ impl Tribe {
         self.piece.inner[index]
     }
 
-    pub fn get_cell_inner(&self, index: usize) -> Option<(u8, ActiveTeam)> {
+    pub fn get_cell_inner(&self, index: usize) -> Option<(u8, Team)> {
         if !self.piece.inner[index as usize] {
             return None;
         }
@@ -458,20 +458,20 @@ impl Tribe {
         let val = bit0 | bit1 << 1 | bit2 << 2;
 
         if val == 7 {
-            return Some((2, ActiveTeam::Neutral));
+            return Some((2, Team::Neutral));
         }
         if val == 0 {
-            return Some((6, ActiveTeam::Neutral));
+            return Some((6, Team::Neutral));
         }
 
         let team = if self.team.inner[index] {
-            ActiveTeam::White
+            Team::White
         } else {
-            ActiveTeam::Black
+            Team::Black
         };
         Some((val as u8, team))
     }
-    pub fn get_cell(&self, a: Axial) -> Option<(u8, ActiveTeam)> {
+    pub fn get_cell(&self, a: Axial) -> Option<(u8, Team)> {
         self.get_cell_inner(mesh::small_mesh::conv(a))
     }
 
@@ -490,11 +490,11 @@ impl Tribe {
         //}
     }
 
-    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: ActiveTeam) {
+    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: Team) {
         match team {
-            ActiveTeam::White => self.team.inner.set(a, true),
-            ActiveTeam::Black => self.team.inner.set(a, false),
-            ActiveTeam::Neutral => {
+            Team::White => self.team.inner.set(a, true),
+            Team::Black => self.team.inner.set(a, false),
+            Team::Neutral => {
                 let val = if stack == 2 {
                     7
                 } else if stack == 6 {
@@ -510,7 +510,7 @@ impl Tribe {
         }
         self.set_coord(a, stack);
     }
-    pub fn add_cell(&mut self, a: Axial, stack: u8, team: ActiveTeam) {
+    pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team) {
         let a = mesh::small_mesh::conv(a);
         self.add_cell_inner(a, stack, team);
     }
@@ -659,13 +659,13 @@ impl Map {
         for a in world.get_game_cells().inner.iter_ones() {
             if let Some((height, team)) = game.factions.get_cell_inner(a) {
                 match team {
-                    ActiveTeam::White => {
+                    Team::White => {
                         white.inner.set(a, true);
                     }
-                    ActiveTeam::Black => {
+                    Team::Black => {
                         black.inner.set(a, true);
                     }
-                    ActiveTeam::Neutral => {
+                    Team::Neutral => {
                         if height == 6 {
                             mountains.inner.set(a, true);
                         } else if height == 1 {
@@ -735,25 +735,25 @@ pub fn default_map(world: &board::MyWorld) -> Map {
 
 impl GameStateTotal {
     //TODO make part of GameState
-    pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameStateTotal, ActiveTeam) {
+    pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameStateTotal, Team) {
         //let map = &world.map;
 
         let mut cells = Tribe::new();
 
         for f in map.white.iter_mesh(Axial::zero()) {
-            cells.add_cell(f, 1, ActiveTeam::White);
+            cells.add_cell(f, 1, Team::White);
         }
 
         for f in map.black.iter_mesh(Axial::zero()) {
-            cells.add_cell(f, 1, ActiveTeam::Black);
+            cells.add_cell(f, 1, Team::Black);
         }
 
         for f in map.forests.iter_mesh(Axial::zero()) {
-            cells.add_cell(f, 1, ActiveTeam::Neutral);
+            cells.add_cell(f, 1, Team::Neutral);
         }
 
         for m in map.water.iter_mesh(Axial::zero()) {
-            cells.add_cell(m, 6, ActiveTeam::Neutral);
+            cells.add_cell(m, 6, Team::Neutral);
         }
 
         for w in map.ice.iter_mesh(Axial::zero()) {
@@ -771,10 +771,10 @@ impl GameStateTotal {
         //game_total.fog[0].inner |= world.get_game_cells().inner;
         //game_total.fog[1].inner |= world.get_game_cells().inner;
 
-        game_total.update_fog(&world, ActiveTeam::White);
-        game_total.update_fog(&world, ActiveTeam::Black);
+        game_total.update_fog(&world, Team::White);
+        game_total.update_fog(&world, Team::Black);
 
-        (game_total, ActiveTeam::White)
+        (game_total, Team::White)
     }
 }
 

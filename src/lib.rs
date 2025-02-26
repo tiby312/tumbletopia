@@ -272,7 +272,7 @@ struct AiCommand {
     game: GameState,
     fogs: [mesh::small_mesh::SmallMesh; 2],
     world: board::MyWorld,
-    team: ActiveTeam,
+    team: Team,
     history: MoveHistory,
 }
 
@@ -549,7 +549,7 @@ pub async fn game_play_thread(
 
         //Add AIIIIII.
         let foo = match game_type {
-            engine::GameType::SinglePlayer(_) => team == ActiveTeam::Black,
+            engine::GameType::SinglePlayer(_) => team == Team::Black,
             engine::GameType::PassPlay(_) => false,
             engine::GameType::AIBattle(_) => true,
             engine::GameType::MapEditor(_) => unreachable!(),
@@ -644,7 +644,7 @@ pub struct EngineStuff {
 async fn render_command(
     command: ace::Command,
     game_total: &GameStateTotal,
-    team: ActiveTeam,
+    team: Team,
     e: &mut EngineStuff,
     world: &board::MyWorld,
     timer: &mut shogo::Timer,
@@ -993,7 +993,7 @@ async fn render_command(
         let mut water = mesh::small_mesh::SmallMesh::new();
         for a in world.get_game_cells().inner.iter_ones() {
             if let Some((height, team)) = game.factions.get_cell_inner(a) {
-                if height == 6 && team == ActiveTeam::Neutral {
+                if height == 6 && team == Team::Neutral {
                     water.inner.set(a, true);
                 }
             }
@@ -1154,12 +1154,12 @@ async fn render_command(
         }
 
         //let shown_team = team;
-        let shown_team = ActiveTeam::White;
+        let shown_team = Team::White;
 
         let shown_fog = match shown_team {
-            ActiveTeam::White => &game_total.fog[0],
-            ActiveTeam::Black => &game_total.fog[1],
-            ActiveTeam::Neutral => todo!(),
+            Team::White => &game_total.fog[0],
+            Team::Black => &game_total.fog[1],
+            Team::Neutral => todo!(),
         };
 
         {
@@ -1173,7 +1173,7 @@ async fn render_command(
                 .iter_mesh(Axial::zero())
                 .filter_map(|a| {
                     if let Some((val, tt)) = game.factions.get_cell(a) {
-                        let xx = if val == 6 && tt == ActiveTeam::Neutral {
+                        let xx = if val == 6 && tt == Team::Neutral {
                             //1.3
                             return None;
                         } else {
@@ -1224,13 +1224,13 @@ async fn render_command(
                     .generate();
 
                 match team {
-                    ActiveTeam::White => {
+                    Team::White => {
                         white_team_cells.push(first);
                     }
-                    ActiveTeam::Black => {
+                    Team::Black => {
                         black_team_cells.push(first);
                     }
-                    ActiveTeam::Neutral => {
+                    Team::Neutral => {
                         neutral_team_cells.push(first);
                     }
                 }
@@ -1245,7 +1245,7 @@ async fn render_command(
                 let inner_stack = height.min(3);
                 let mid_stack = height.max(3).min(6) - 3;
 
-                if height == 6 && team2 == ActiveTeam::Neutral {
+                if height == 6 && team2 == Team::Neutral {
                     //mountains.push(grid_snap(a, /*models.land.height / 2.0*/ 0.0).generate());
                     continue;
                 }
@@ -1255,9 +1255,9 @@ async fn render_command(
                 }
 
                 let arr = match team2 {
-                    ActiveTeam::White => &mut white_team_cells,
-                    ActiveTeam::Black => &mut black_team_cells,
-                    ActiveTeam::Neutral => &mut neutral_team_cells,
+                    Team::White => &mut white_team_cells,
+                    Team::Black => &mut black_team_cells,
+                    Team::Neutral => &mut neutral_team_cells,
                 };
 
                 let radius = [0.4, 0.6, 0.8];

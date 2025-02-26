@@ -44,11 +44,11 @@ pub const PASS_MOVE: Axial = Axial { q: -5, r: 9 };
 pub const PASS_MOVE_INDEX: usize = const { mesh::small_mesh::conv(PASS_MOVE) };
 
 impl crate::unit::GameStateTotal {
-    pub fn update_fog(&mut self, world: &board::MyWorld, team: ActiveTeam) {
+    pub fn update_fog(&mut self, world: &board::MyWorld, team: Team) {
         let fog = match team {
-            ActiveTeam::White => &mut self.fog[0],
-            ActiveTeam::Black => &mut self.fog[1],
-            ActiveTeam::Neutral => unreachable!(),
+            Team::White => &mut self.fog[0],
+            Team::Black => &mut self.fog[1],
+            Team::Neutral => unreachable!(),
         };
 
         // let pieces = match team {
@@ -79,7 +79,7 @@ impl crate::unit::GameStateTotal {
         }
     }
 
-    pub fn update_fog_spokes(&mut self, world: &board::MyWorld, team: ActiveTeam) {
+    pub fn update_fog_spokes(&mut self, world: &board::MyWorld, team: Team) {
         let res = self.tactical.generate_possible_moves_movement(
             world,
             None,
@@ -91,21 +91,17 @@ impl crate::unit::GameStateTotal {
         );
 
         let fog = match team {
-            ActiveTeam::White => &mut self.fog[0],
-            ActiveTeam::Black => &mut self.fog[1],
-            ActiveTeam::Neutral => unreachable!(),
+            Team::White => &mut self.fog[0],
+            Team::Black => &mut self.fog[1],
+            Team::Neutral => unreachable!(),
         };
 
         fog.inner &= !res.0.inner;
 
         let pieces = match team {
-            ActiveTeam::White => {
-                self.tactical.factions.piece.inner & self.tactical.factions.team.inner
-            }
-            ActiveTeam::Black => {
-                self.tactical.factions.piece.inner & !self.tactical.factions.team.inner
-            }
-            ActiveTeam::Neutral => unreachable!(),
+            Team::White => self.tactical.factions.piece.inner & self.tactical.factions.team.inner,
+            Team::Black => self.tactical.factions.piece.inner & !self.tactical.factions.team.inner,
+            Team::Neutral => unreachable!(),
         };
 
         fog.inner &= !pieces;
@@ -140,7 +136,7 @@ impl GameState {
         &self,
         world: &board::MyWorld,
         _unit: Option<Axial>,
-        team: ActiveTeam,
+        team: Team,
         allow_suicidal: bool,
         vision_mode: bool,
         allow_pass: bool,
@@ -154,7 +150,7 @@ impl GameState {
 
         let mut captures = SmallMesh::new();
         let mut reinforcements = SmallMesh::new();
-        if team == ActiveTeam::Neutral {
+        if team == Team::Neutral {
             return (mesh, captures, reinforcements);
         }
 
@@ -168,7 +164,7 @@ impl GameState {
                     if tt == team {
                         potential_height += 1;
                     } else {
-                        if tt != ActiveTeam::Neutral {
+                        if tt != Team::Neutral {
                             num_enemy += 1;
                         }
                     }

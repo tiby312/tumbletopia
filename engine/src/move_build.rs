@@ -228,7 +228,7 @@ impl crate::moves::ActualMove {
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
-    pub destroyed_unit: Option<(u8, ActiveTeam)>,
+    pub destroyed_unit: Option<(u8, Team)>,
 }
 impl MoveEffect {
     // pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
@@ -355,7 +355,7 @@ impl ActualMove {
         write!(w, "{}{}", letter, number)
     }
 
-    pub fn undo(&self, _team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
+    pub fn undo(&self, _team_index: Team, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;
 
         if moveto == moves::PASS_MOVE_INDEX {
@@ -435,7 +435,7 @@ impl ActualMove {
 
     pub fn apply(
         &self,
-        team: ActiveTeam,
+        team: Team,
         game: &mut GameState,
         fog: &mesh::small_mesh::SmallMesh,
         world: &board::MyWorld,

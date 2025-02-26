@@ -11,7 +11,7 @@ use tinyvec::ArrayVec;
 
 pub fn should_pass(
     a: &ai::Res,
-    mut team: ActiveTeam,
+    mut team: Team,
     game_orig: &mut GameState,
     world: &MyWorld,
     //TODO pass in all history instead
@@ -213,15 +213,15 @@ impl Evaluator {
                 // }
 
                 let foo = match tt {
-                    ActiveTeam::Black => -1,
-                    ActiveTeam::White => 1,
-                    ActiveTeam::Neutral => 0,
+                    Team::Black => -1,
+                    Team::White => 1,
+                    Team::Neutral => 0,
                 };
                 foo
             } else {
-                if num_attack[ActiveTeam::White] > num_attack[ActiveTeam::Black] {
+                if num_attack[Team::White] > num_attack[Team::Black] {
                     1
-                } else if num_attack[ActiveTeam::Black] > num_attack[ActiveTeam::White] {
+                } else if num_attack[Team::Black] > num_attack[Team::White] {
                     -1
                 } else {
                     0
@@ -363,7 +363,7 @@ pub fn calculate_move(
     game: &mut GameState,
     fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
-    team: ActiveTeam,
+    team: Team,
     move_history: &MoveHistory,
 ) -> ActualMove {
     if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8) {
@@ -395,7 +395,7 @@ pub fn iterative_deepening2(
     game: &GameState,
     fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
-    team: ActiveTeam,
+    team: Team,
     len: usize, //move_history: &MoveHistory,
 ) -> Option<Res> {
     let mut results = None; // = Vec::new();
@@ -548,7 +548,7 @@ impl<'a> AlphaBeta<'a> {
         game: &mut GameState,
         fogs: &[SmallMesh; 2],
         mut ab: ABAB,
-        team: ActiveTeam,
+        team: Team,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         // if let Some(g) = game.game_is_over(self.world, team, self.history) {
@@ -624,7 +624,7 @@ impl<'a> AlphaBeta<'a> {
         game: &mut GameState,
         fogs: &[SmallMesh; 2],
         mut ab: ABAB,
-        team: ActiveTeam,
+        team: Team,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         // if let Some(g) = game.game_is_over(self.world, team, self.history) {

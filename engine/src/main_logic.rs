@@ -51,7 +51,7 @@ pub struct HaveMoved {
 
 pub struct GameWrap<T> {
     pub game: unit::GameStateTotal,
-    pub team: ActiveTeam,
+    pub team: Team,
     pub data: T,
 }
 impl<T> GameWrap<T> {
@@ -115,7 +115,7 @@ pub async fn map_editor(
     let mut tt = TT::Water;
 
     loop {
-        let pos = doop.get_mouse(ActiveTeam::White, &mut game_total).await;
+        let pos = doop.get_mouse(Team::White, &mut game_total).await;
         let pos = match pos {
             MouseEvent::Normal(pos) => pos,
             MouseEvent::Button(s) => {
@@ -154,12 +154,12 @@ pub async fn map_editor(
             TT::Water => {
                 game.factions.remove(pos);
                 game.factions.ice.set_coord(pos, false);
-                game.factions.add_cell(pos, 6, ActiveTeam::Neutral);
+                game.factions.add_cell(pos, 6, Team::Neutral);
             }
             TT::Forest => {
                 game.factions.ice.set_coord(pos, false);
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, 1, ActiveTeam::Neutral);
+                game.factions.add_cell(pos, 1, Team::Neutral);
             }
             TT::Start1 => {
                 game.factions.remove(pos);
@@ -172,7 +172,7 @@ pub async fn map_editor(
                 //         }
                 //     }
                 // }
-                game.factions.add_cell(pos, 1, ActiveTeam::White);
+                game.factions.add_cell(pos, 1, Team::White);
             }
             TT::Start2 => {
                 game.factions.remove(pos);
@@ -185,7 +185,7 @@ pub async fn map_editor(
                 //         }
                 //     }
                 // }
-                game.factions.add_cell(pos, 1, ActiveTeam::Black);
+                game.factions.add_cell(pos, 1, Team::Black);
             }
         }
     }
@@ -199,7 +199,7 @@ pub trait AiInterface {
         game: &GameState,
         fogs: &[mesh::small_mesh::SmallMesh; 2],
         world: &MyWorld,
-        team: ActiveTeam,
+        team: Team,
         history: &MoveHistory,
     );
     //fn interrupt_render_thread(&mut self);
@@ -215,7 +215,7 @@ impl CommandSender {
     pub async fn wait_animation(
         &mut self,
         animation: AnimationCommand,
-        team: ActiveTeam,
+        team: Team,
         game: &mut unit::GameStateTotal,
     ) {
         let data = self
@@ -230,7 +230,7 @@ impl CommandSender {
     async fn get_mouse_with_mesh(
         &mut self,
         cell: &mut CellSelection,
-        team: ActiveTeam,
+        team: Team,
         game: &mut unit::GameStateTotal,
         grey: bool,
     ) -> MouseEvent<Axial> {
@@ -255,7 +255,7 @@ impl CommandSender {
 
     async fn get_mouse(
         &mut self,
-        team: ActiveTeam,
+        team: Team,
         game: &mut unit::GameStateTotal,
     ) -> MouseEvent<Axial> {
         let b = self
@@ -285,7 +285,7 @@ impl CommandSender {
     //         unreachable!();
     //     };
     // }
-    pub async fn repaint_ui(&mut self, team: ActiveTeam, game: &mut unit::GameStateTotal) {
+    pub async fn repaint_ui(&mut self, team: Team, game: &mut unit::GameStateTotal) {
         let data = self.send_command(team, game, Command::RepaintUI).await;
 
         let Response::Ack = data else {
@@ -294,7 +294,7 @@ impl CommandSender {
         //console_db
     }
 
-    pub async fn wait_forever(&mut self, team: ActiveTeam, game: &mut unit::GameStateTotal) {
+    pub async fn wait_forever(&mut self, team: Team, game: &mut unit::GameStateTotal) {
         let data = self.send_command(team, game, Command::Wait).await;
 
         let Response::AnimationFinish = data else {
@@ -303,11 +303,7 @@ impl CommandSender {
         //console_db
     }
 
-    pub async fn wait_ai(
-        &mut self,
-        team: ActiveTeam,
-        game: &mut unit::GameStateTotal,
-    ) -> ActualMove {
+    pub async fn wait_ai(&mut self, team: Team, game: &mut unit::GameStateTotal) -> ActualMove {
         let data = self.send_command(team, game, Command::WaitAI).await;
 
         let Response::AiFinish(the_move) = data else {
@@ -320,7 +316,7 @@ impl CommandSender {
     //TODO use
     async fn send_command(
         &mut self,
-        team: ActiveTeam,
+        team: Team,
         game1: &mut unit::GameStateTotal,
         co: Command,
     ) -> Response {
@@ -345,7 +341,7 @@ impl CommandSender {
 #[derive(Debug)]
 pub struct SelectType {
     coord: Axial,
-    team: ActiveTeam,
+    team: Team,
 }
 
 #[derive(Debug)]
@@ -361,7 +357,7 @@ pub async fn reselect_loop(
     doop: &mut CommandSender,
     game: &mut unit::GameStateTotal,
     world: &board::MyWorld,
-    team: ActiveTeam,
+    team: Team,
     have_moved: &mut Option<HaveMoved>,
     mut selected_unit: SelectType,
 ) -> LoopRes<SelectType> {
@@ -590,7 +586,7 @@ pub async fn replay(
 
     let mut team_counter = starting_team;
     loop {
-        let pos = doop.get_mouse(ActiveTeam::White, &mut game).await;
+        let pos = doop.get_mouse(Team::White, &mut game).await;
         match pos {
             MouseEvent::Normal(_) => continue,
             MouseEvent::Button(s) => {
@@ -658,7 +654,7 @@ pub async fn replay(
 
 pub async fn animate_move<'a>(
     aa: &'a ActualMove,
-    team: ActiveTeam,
+    team: Team,
     state: &unit::GameStateTotal,
     world: &board::MyWorld,
     data: &mut CommandSender,
@@ -708,7 +704,7 @@ pub async fn handle_player(
     game: &mut unit::GameStateTotal,
     world: &board::MyWorld,
     doop: &mut CommandSender,
-    team: ActiveTeam,
+    team: Team,
     move_log: &mut MoveHistory,
 ) -> (moves::ActualMove, move_build::MoveEffect) {
     let undo = |move_log: &mut MoveHistory, game: &mut GameState| {

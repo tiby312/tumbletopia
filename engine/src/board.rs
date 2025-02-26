@@ -4,7 +4,7 @@ use super::*;
 pub struct MyWorld {
     pub land: mesh::small_mesh::SmallMesh,
     pub radius: u8,
-    pub starting_team: ActiveTeam,
+    pub starting_team: Team,
     pub starting_state: unit::GameStateTotal, //pub map: unit::Map,
 }
 
@@ -207,19 +207,19 @@ impl MyWorld {
         let mut g = GameState::default();
         for (a, i) in s.chars().zip(land.inner.iter_ones()) {
             let (stack, team) = match a {
-                'k' => (2, ActiveTeam::Neutral),
-                'r' => (1, ActiveTeam::White),
-                's' => (2, ActiveTeam::White),
-                't' => (3, ActiveTeam::White),
-                'u' => (4, ActiveTeam::White),
-                'v' => (5, ActiveTeam::White),
-                'w' => (6, ActiveTeam::White),
-                'b' => (1, ActiveTeam::Black),
-                'c' => (2, ActiveTeam::Black),
-                'd' => (3, ActiveTeam::Black),
-                'e' => (4, ActiveTeam::Black),
-                'f' => (5, ActiveTeam::Black),
-                'g' => (6, ActiveTeam::Black),
+                'k' => (2, Team::Neutral),
+                'r' => (1, Team::White),
+                's' => (2, Team::White),
+                't' => (3, Team::White),
+                'u' => (4, Team::White),
+                'v' => (5, Team::White),
+                'w' => (6, Team::White),
+                'b' => (1, Team::Black),
+                'c' => (2, Team::Black),
+                'd' => (3, Team::Black),
+                'e' => (4, Team::Black),
+                'f' => (5, Team::Black),
+                'g' => (6, Team::Black),
                 '-' => {
                     continue;
                 }
@@ -240,7 +240,7 @@ impl MyWorld {
         MyWorld {
             land,
             radius: size as u8,
-            starting_team: ActiveTeam::White,
+            starting_team: Team::White,
             starting_state: g,
         }
     }
