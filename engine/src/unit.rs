@@ -71,6 +71,32 @@ impl std::ops::Neg for Team {
     }
 }
 
+impl std::ops::SubAssign<unit::Team> for i64 {
+    fn sub_assign(&mut self, rhs: unit::Team) {
+        *self -= rhs.value();
+    }
+}
+impl std::ops::AddAssign<unit::Team> for i64 {
+    fn add_assign(&mut self, rhs: unit::Team) {
+        *self += rhs.value();
+    }
+}
+impl std::ops::Add<unit::Team> for i64 {
+    type Output = i64;
+
+    fn add(self, rhs: unit::Team) -> Self::Output {
+        self + rhs.value()
+    }
+}
+
+impl std::ops::Sub<unit::Team> for i64 {
+    type Output = i64;
+
+    fn sub(self, rhs: unit::Team) -> Self::Output {
+        self - rhs.value()
+    }
+}
+
 impl<T> std::ops::IndexMut<Team> for [T] {
     fn index_mut(&mut self, index: Team) -> &mut Self::Output {
         match index {
@@ -96,6 +122,14 @@ impl<T> std::ops::Index<Team> for [T] {
 }
 
 impl Team {
+    pub fn value(&self) -> i64 {
+        match self {
+            Team::White => 1,
+            Team::Black => -1,
+            Team::Neutral => unreachable!(),
+        }
+    }
+
     pub fn index(&self) -> usize {
         match self {
             Team::White => 0,
