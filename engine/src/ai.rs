@@ -200,13 +200,13 @@ impl Evaluator {
             }
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                let mut score: i64 = 0;
-                if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                    score -= tt;
-                } else {
-                    score += tt;
-                }
-
+                //let mut score: i64 = 0;
+                // if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
+                //     score -= tt;
+                // } else {
+                //     score += tt;
+                // }
+                tt.value()
                 // if (H[-H.color] > H.height && H[-H.color] >= H[H.color]) {
                 //     score -= H.color;
                 // } else {
@@ -219,7 +219,7 @@ impl Evaluator {
                 //     Team::Neutral => 0,
                 // };
                 // foo
-                score
+                //score
             } else {
                 if num_attack[Team::White] > num_attack[Team::Black] {
                     1
