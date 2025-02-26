@@ -191,19 +191,27 @@ impl Evaluator {
 
         let mut total_foo = 0;
         for index in world.get_game_cells().inner.iter_ones() {
-            let mut num_white = 0;
-            let mut num_black = 0;
+            let mut num_attack = [0, 0];
+
             for (_, rest) in game.factions.iter_end_points(world, index) {
                 if let Some((_, team)) = rest {
-                    match team {
-                        ActiveTeam::White => num_white += 1,
-                        ActiveTeam::Black => num_black += 1,
-                        ActiveTeam::Neutral => {}
-                    }
+                    num_attack[team.index()] += 1;
                 }
             }
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+                // if num_attack[tt.not().index()]> height && num_attack[tt.not().index()]>=num_attack[tt.index()]{
+                //     score-=tt.
+                // }else{
+                //     score+=tt
+                // }
+
+                // if (H[-H.color] > H.height && H[-H.color] >= H[H.color]) {
+                //     score -= H.color;
+                // } else {
+                //     score += H.color;
+                // }
+
                 let foo = match tt {
                     ActiveTeam::Black => -1,
                     ActiveTeam::White => 1,
@@ -211,9 +219,11 @@ impl Evaluator {
                 };
                 foo
             } else {
-                if num_white > num_black {
+                if num_attack[ActiveTeam::White.index()] > num_attack[ActiveTeam::Black.index()] {
                     1
-                } else if num_black > num_white {
+                } else if num_attack[ActiveTeam::Black.index()]
+                    > num_attack[ActiveTeam::White.index()]
+                {
                     -1
                 } else {
                     0
