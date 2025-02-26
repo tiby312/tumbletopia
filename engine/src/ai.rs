@@ -19,17 +19,51 @@ pub fn should_pass(
 ) -> bool {
     //try with -sr-se--se--se----r
 
-    let mut game = game_orig.clone();
-    let k = ActualMove {
-        moveto: moves::PASS_MOVE_INDEX,
-    };
-    let _e = k.apply(team, &mut game, &SmallMesh::new(), world);
-
-    // //If we do pass, what are the opponents best moves. And does it change the score?
-
     if a.line.is_empty() {
         return true;
     }
+
+    let mut game = game_orig.clone();
+    let score_before = game.score(world);
+
+    let k = ActualMove {
+        moveto: moves::PASS_MOVE_INDEX,
+    };
+    //let _e = k.apply(team, &mut game, &SmallMesh::new(), world);
+
+    let fogs = std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new());
+    let foo = iterative_deepening2(&game, &fogs, world, team.not(), 2);
+
+    let mut tt = team.not();
+    if let Some(foo) = foo {
+        
+            let principal_variation: Vec<_> = foo
+            .line
+            .iter()
+            .map(|x| {
+                let res = move_build::to_letter_coord(&mesh::small_mesh::inverse(x.moveto), world);
+                format!("{}{}", res.0, res.1)
+            })
+            .collect();
+        console_dbg!("should pass",principal_variation);
+
+
+        for a in foo.line {
+            let _ = a.apply(tt, &mut game, &SmallMesh::new(), world);
+            tt = tt.not();
+        }
+    }
+
+
+    let score_after = game.score(world);
+
+    console_dbg!(score_before,score_after);
+
+    if score_after != score_before {
+        return false;
+    }
+
+    // //If we do pass, what are the opponents best moves. And does it change the score?
 
     // let mut moves_to_use=a.line.clone();
     // let mut team_counter=team;
@@ -105,7 +139,7 @@ pub fn should_pass(
     // res
     // //false
 
-    false
+    true
 }
 
 pub struct Evaluator {
@@ -139,7 +173,9 @@ impl Evaluator {
         world: &board::MyWorld,
         _debug: bool,
     ) -> Eval {
+
         //white doesnt win with ai vs ai
+        //s--c--s--t---cdbc--
         //tc-s-d-re-srces-s--
 
         //white doesnt seem like it should win ai vs ai
@@ -150,14 +186,14 @@ impl Evaluator {
         // the ai is returning A1,D4,B4
         // it should return B4,D4,C5/B2
 
-        let mut score = 0;
-        let mut stack_count = 0;
-        let mut territory_count = 0;
-        let mut strength = 0;
-        let mut contested = 0;
-        let mut unseen = 0;
+        // let mut score = 0;
+        // let mut stack_count = 0;
+        // let mut territory_count = 0;
+        // let mut strength = 0;
+        // let mut contested = 0;
+        // let mut unseen = 0;
 
-        //let mut total_foo = 0;
+        let mut total_foo = 0;
         for index in world.get_game_cells().inner.iter_ones() {
             let mut num_white = 0;
             let mut num_black = 0;
@@ -171,81 +207,81 @@ impl Evaluator {
                 }
             }
 
-            // let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-            //     let foo = match tt {
-            //         ActiveTeam::Black => {
-            //             -1
-            //         }
-            //         ActiveTeam::White => {
-            //             1
-            //         }
-            //         ActiveTeam::Neutral => {
-            //             0
-            //         }
-            //     };
-            //     foo
-            // } else {
-            //     if num_white > num_black {
-            //         1
-            //     } else if num_black > num_white {
-            //         -1
-            //     } else {
-            //         0
-            //     }
-            // };
-
-            // total_foo += temp_score;
-            if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                let height = height as i64;
-
-                let curr_strength = match tt {
-                    ActiveTeam::White => height.max(num_white - 1),
-                    ActiveTeam::Black => -height.max(num_black - 1),
-                    ActiveTeam::Neutral => 0,
-                };
-
-                strength += curr_strength;
-
-                stack_count += 1;
-
-                match tt {
-                    ActiveTeam::White => {
-                        if num_black > height {
-                            score -= 1
-                        } else {
-                            score += 1
-                        }
-                    }
+            let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+                let foo = match tt {
                     ActiveTeam::Black => {
-                        if num_white > height {
-                            score += 1
-                        } else {
-                            score -= 1
-                        }
+                        -1
                     }
-                    ActiveTeam::Neutral => {}
-                }
+                    ActiveTeam::White => {
+                        1
+                    }
+                    ActiveTeam::Neutral => {
+                        0
+                    }
+                };
+                foo
             } else {
-                let ownership = num_white - num_black;
-
-                if ownership > 0 {
-                    score += ownership;
-                    territory_count += 1;
-                } else if ownership < 0 {
-                    score += ownership;
-                    territory_count += 1;
+                if num_white > num_black {
+                    1
+                } else if num_black > num_white {
+                    -1
                 } else {
-                    //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
-                    if num_white > 0 {
-                        contested += 1
-                    } else {
-                        unseen += 1;
-                    }
+                    0
                 }
             };
+
+            total_foo += temp_score;
+            // if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+            //     let height = height as i64;
+
+            //     let curr_strength = match tt {
+            //         ActiveTeam::White => height.max(num_white - 1),
+            //         ActiveTeam::Black => -height.max(num_black - 1),
+            //         ActiveTeam::Neutral => 0,
+            //     };
+
+            //     strength += curr_strength;
+
+            //     stack_count += 1;
+
+            //     match tt {
+            //         ActiveTeam::White => {
+            //             if num_black > height {
+            //                 score -= 1
+            //             } else {
+            //                 score += 1
+            //             }
+            //         }
+            //         ActiveTeam::Black => {
+            //             if num_white > height {
+            //                 score += 1
+            //             } else {
+            //                 score -= 1
+            //             }
+            //         }
+            //         ActiveTeam::Neutral => {}
+            //     }
+            // } else {
+            //     let ownership = num_white - num_black;
+
+            //     if ownership > 0 {
+            //         score += ownership;
+            //         territory_count += 1;
+            //     } else if ownership < 0 {
+            //         score += ownership;
+            //         territory_count += 1;
+            //     } else {
+            //         //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
+            //         if num_white > 0 {
+            //             contested += 1
+            //         } else {
+            //             unseen += 1;
+            //         }
+            //     }
+            // };
         }
-        //total_foo
-        (stack_count + territory_count) * score + (unseen + contested) * strength
+        total_foo
+        //(stack_count + territory_count) * score + (unseen + contested) * strength
     }
 }
 
@@ -332,7 +368,7 @@ pub fn calculate_move(
     team: ActiveTeam,
     move_history: &MoveHistory,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team) {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8) {
         let principal_variation: Vec<_> = mo
             .line
             .iter()
@@ -362,7 +398,7 @@ pub fn iterative_deepening2(
     fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
     team: ActiveTeam,
-    //move_history: &MoveHistory,
+    len: usize, //move_history: &MoveHistory,
 ) -> Option<Res> {
     let mut results = None; // = Vec::new();
 
@@ -380,7 +416,8 @@ pub fn iterative_deepening2(
     // }
 
     //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3, 4] {
+    for depth in 0..len {
+        let depth = depth + 1;
         gloo_console::info!(format!("searching depth={}", depth));
 
         //3 = num iter
