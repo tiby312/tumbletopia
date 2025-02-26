@@ -1,4 +1,4 @@
-use crate::board::MyWorld;
+use crate::{board::MyWorld, mesh::small_mesh};
 
 use super::*;
 
@@ -12,73 +12,100 @@ use tinyvec::ArrayVec;
 pub fn should_pass(
     a: &ai::Res,
     mut team: ActiveTeam,
-    game: &mut GameState,
+    game_orig: &mut GameState,
     world: &MyWorld,
     //TODO pass in all history instead
-    opponent_just_passed: bool,
+    move_history: &MoveHistory,
 ) -> bool {
     //try with -sr-se--se--se----r
 
-    //TODO remove this clone
-    let mut game = game.clone();
-    let score_before = game.score(world);
+    let mut game = game_orig.clone();
+    let k = ActualMove {
+        moveto: moves::PASS_MOVE_INDEX,
+    };
+    let _e = k.apply(team, &mut game, &SmallMesh::new(), world);
 
-    let fog = SmallMesh::new();
-
-    for aa in a.line.iter() {
-        let _effect = aa.apply(team, &mut game, &fog, world);
-        let s = game.score(world);
-
-        //dont pass if we forsee any fluctuation in the score
-        if s != score_before {
-            return false;
-        }
-        // if let Some((_, fa)) = effect.destroyed_unit {
-        //     if fa != team {
-        //         console_dbg!("Not passing because there are captures in principal variation");
-        //         return false;
-        //     }
-        // }
-        team = team.not();
-    }
-    let score_after = game.score(world);
-
-    console_dbg!(score_before, score_after);
+    // //If we do pass, what are the opponents best moves. And does it change the score?
 
     if a.line.is_empty() {
         return true;
     }
 
-    if opponent_just_passed {
-        match team {
-            ActiveTeam::White => {
-                if score_before.white > score_before.black {
-                    return true;
-                }
-            }
-            ActiveTeam::Black => {
-                if score_before.black > score_before.white {
-                    return true;
-                }
-            }
-            ActiveTeam::Neutral => {}
-        }
-    }
+    // let mut moves_to_use=a.line.clone();
+    // let mut team_counter=team;
+    // let mut game = game_orig.clone();
 
-    //let a = &a.line[0];
-    //let effect = a.apply(team, game, &fog, world);
+    // let opponent_just_passed = if let Some((k, e)) = move_history.inner.last() {
+    //     console_dbg!("last move",move_build::to_letter_coord(&small_mesh::inverse(k.moveto),world));
+    //     k.undo(team.not(), e, &mut game);
+    //     team_counter=team_counter.not();
+    //     moves_to_use.insert(0,k.clone());
 
-    let res = if score_after == score_before {
-        console_dbg!("I WANT TO PASS");
-        true
-    } else {
-        false
-    };
-    //a.undo(team, &effect, game);
-    res
-    //false
+    //     console_dbg!(moves_to_use,team_counter);
+    //     k.moveto == moves::PASS_MOVE_INDEX
+    // } else {
+    //     false
+    // };
 
-    //false
+    // //TODO remove this clone
+
+    // let score_before = game.score(world);
+
+    // let fog = SmallMesh::new();
+
+    // for (i,aa) in moves_to_use.into_iter().enumerate(){
+    //     let _effect = aa.apply(team_counter, &mut game, &fog, world);
+    //     let s = game.score(world);
+
+    //     if i==0{
+    //         assert_eq!(&game,game_orig);
+    //     }
+    //     //dont pass if we forsee any fluctuation in the score
+    //     if s != score_before {
+    //         return false;
+    //     }
+    //     // if let Some((_, fa)) = effect.destroyed_unit {
+    //     //     if fa != team {
+    //     //         console_dbg!("Not passing because there are captures in principal variation");
+    //     //         return false;
+    //     //     }
+    //     // }
+    //     team_counter = team_counter.not();
+    // }
+    // let score_after = game.score(world);
+
+    // console_dbg!(score_before, score_after);
+
+    // if opponent_just_passed {
+    //     match team {
+    //         ActiveTeam::White => {
+    //             if score_before.white > score_before.black {
+    //                 return true;
+    //             }
+    //         }
+    //         ActiveTeam::Black => {
+    //             if score_before.black > score_before.white {
+    //                 return true;
+    //             }
+    //         }
+    //         ActiveTeam::Neutral => {}
+    //     }
+    // }
+
+    // //let a = &a.line[0];
+    // //let effect = a.apply(team, game, &fog, world);
+
+    // let res = if score_after == score_before {
+    //     console_dbg!("I WANT TO PASS");
+    //     true
+    // } else {
+    //     false
+    // };
+    // //a.undo(team, &effect, game);
+    // res
+    // //false
+
+    false
 }
 
 pub struct Evaluator {
@@ -305,7 +332,7 @@ pub fn calculate_move(
     team: ActiveTeam,
     move_history: &MoveHistory,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team, move_history) {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team) {
         let principal_variation: Vec<_> = mo
             .line
             .iter()
@@ -316,13 +343,7 @@ pub fn calculate_move(
             .collect();
         console_dbg!(principal_variation);
 
-        let opponent_just_passed = if let Some((k, _)) = move_history.inner.last() {
-            k.moveto == moves::PASS_MOVE_INDEX
-        } else {
-            false
-        };
-
-        if should_pass(&mo, team, game, world, opponent_just_passed) {
+        if should_pass(&mo, team, game, world, move_history) {
             console_dbg!("Choosing to pass!");
             ActualMove {
                 moveto: moves::PASS_MOVE_INDEX,
@@ -341,7 +362,7 @@ pub fn iterative_deepening2(
     fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
     team: ActiveTeam,
-    move_history: &MoveHistory,
+    //move_history: &MoveHistory,
 ) -> Option<Res> {
     let mut results = None; // = Vec::new();
 
@@ -351,12 +372,12 @@ pub fn iterative_deepening2(
     let mut evaluator = Evaluator::default();
 
     let mut moves = vec![];
-    let mut history = MoveHistory::new();
+    // let mut history = MoveHistory::new();
 
-    //So that we can detect consecutive passes
-    if let Some(f) = move_history.inner.last() {
-        history.push(f.clone());
-    }
+    // //So that we can detect consecutive passes
+    // if let Some(f) = move_history.inner.last() {
+    //     history.push(f.clone());
+    // }
 
     //TODO stop searching if we found a game ending move.
     for depth in [1, 2, 3, 4] {
@@ -366,7 +387,7 @@ pub fn iterative_deepening2(
         let mut killer = KillerMoves::new(3 + 4 + 4);
         assert!(moves.is_empty());
 
-        let mut history = history.clone();
+        //let mut history = history.clone();
 
         let mut aaaa = ai::AlphaBeta {
             prev_cache: &mut table,
@@ -374,7 +395,6 @@ pub fn iterative_deepening2(
             evaluator: &mut evaluator,
             world,
             moves: &mut moves,
-            history: &mut history,
         };
 
         let mut kk = game.clone();
@@ -432,7 +452,7 @@ struct AlphaBeta<'a> {
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
     moves: &'a mut Vec<u8>,
-    history: &'a mut MoveHistory,
+    //history: &'a mut MoveHistory,
 }
 
 struct KillerMoves {
@@ -496,9 +516,9 @@ impl<'a> AlphaBeta<'a> {
         team: ActiveTeam,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        if let Some(g) = game.game_is_over(self.world, team, self.history) {
-            return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
-        }
+        // if let Some(g) = game.game_is_over(self.world, team, self.history) {
+        //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
+        // }
 
         if depth == 0 {
             return (
@@ -572,9 +592,9 @@ impl<'a> AlphaBeta<'a> {
         team: ActiveTeam,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        if let Some(g) = game.game_is_over(self.world, team, self.history) {
-            return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
-        }
+        // if let Some(g) = game.game_is_over(self.world, team, self.history) {
+        //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
+        // }
 
         if depth == 0 {
             return self.quiesance(game, fogs, ab, team, 4);
@@ -657,12 +677,12 @@ impl<'a> AlphaBeta<'a> {
             };
             let effect: move_build::MoveEffect =
                 cand.apply(team, game, &fogs[team.index()], self.world);
-            self.history.push((cand, effect));
+            //self.history.push((cand, effect));
 
             let (eval, m) =
                 self.alpha_beta(game, fogs, ab_iter.clone_ab_values(), team.not(), depth - 1);
 
-            let (cand, effect) = self.history.inner.pop().unwrap();
+            //let (cand, effect) = self.history.inner.pop().unwrap();
 
             cand.undo(team, &effect, game);
 
