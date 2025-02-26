@@ -195,7 +195,7 @@ impl Evaluator {
 
             for (_, rest) in game.factions.iter_end_points(world, index) {
                 if let Some((_, team)) = rest {
-                    num_attack[team.index()] += 1;
+                    num_attack[team] += 1;
                 }
             }
 
@@ -219,11 +219,9 @@ impl Evaluator {
                 };
                 foo
             } else {
-                if num_attack[ActiveTeam::White.index()] > num_attack[ActiveTeam::Black.index()] {
+                if num_attack[ActiveTeam::White] > num_attack[ActiveTeam::Black] {
                     1
-                } else if num_attack[ActiveTeam::Black.index()]
-                    > num_attack[ActiveTeam::White.index()]
-                {
+                } else if num_attack[ActiveTeam::Black] > num_attack[ActiveTeam::White] {
                     -1
                 } else {
                     0

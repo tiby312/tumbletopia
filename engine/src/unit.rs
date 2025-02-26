@@ -62,6 +62,39 @@ pub enum ActiveTeam {
     Black = 1,
     Neutral = 2,
 }
+
+impl std::ops::Neg for ActiveTeam {
+    type Output = ActiveTeam;
+
+    fn neg(self) -> Self::Output {
+        self.not()
+    }
+}
+
+impl<T> std::ops::IndexMut<ActiveTeam> for [T] {
+    fn index_mut(&mut self, index: ActiveTeam) -> &mut Self::Output {
+        match index {
+            ActiveTeam::White => &mut self[0],
+            ActiveTeam::Black => &mut self[1],
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+}
+impl<T> std::ops::Index<ActiveTeam> for [T] {
+    type Output = T;
+    fn index(&self, idx: ActiveTeam) -> &Self::Output {
+        match idx {
+            ActiveTeam::White => &self[0],
+            ActiveTeam::Black => &self[1],
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+}
+
 impl ActiveTeam {
     pub fn index(&self) -> usize {
         match self {
