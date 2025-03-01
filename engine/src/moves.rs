@@ -136,11 +136,17 @@ impl GameState {
 
     pub fn generate_loud_moves(){
 
-        //Add moves that are captures
+        //Add moves that are this team capture opponents.
 
-        //for all moves the opponent could play{
-        //   if we can also play that move, then its a loud move
-        //}
+        //For all opponent moves that would result in a capture of our pieces
+        //    If we can reinforce this move, add that
+        //    
+        //    if the opponent already has a massive advantage of LOS on the move, continue
+        //    so now we know the opponent only has a LOS that is one more than the height of this cell
+        //    
+        //    add all the moves coming out of that move
+        //
+        //
 
         //TODO DO THISSSSS
         
