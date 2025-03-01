@@ -81,10 +81,11 @@ impl crate::unit::GameStateTotal {
 
     pub fn update_fog_spokes(&mut self, world: &board::MyWorld, team: Team) {
         //TODO also need to convert ice blacks to grass blocks to emulate visition mode???
+        //TODO also replace enemy units with mountains to allow suicidal moves
         let res = self
             .tactical
             .bake_fog(&self.fog[team])
-            .generate_possible_moves_movement(world, team, true, false);
+            .generate_possible_moves_movement(world, team, false);
 
         let fog = match team {
             Team::White => &mut self.fog[0],
@@ -148,7 +149,6 @@ impl GameState {
         &self,
         world: &board::MyWorld,
         team: Team,
-        allow_suicidal: bool,
         allow_pass: bool,
     ) -> (SmallMesh, SmallMesh, SmallMesh) {
         let mut mesh = SmallMesh::new();
@@ -184,11 +184,11 @@ impl GameState {
                 continue;
             }
 
-            if !allow_suicidal {
-                if potential_height < num_enemy {
-                    continue;
-                }
+            //if !allow_suicidal {
+            if potential_height < num_enemy {
+                continue;
             }
+            //}
 
             if let Some((height, rest)) = self.factions.get_cell_inner(index) {
                 if potential_height <= height {

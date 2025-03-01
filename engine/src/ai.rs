@@ -572,8 +572,7 @@ impl<'a> AlphaBeta<'a> {
             );
         }
 
-        let (_, captures, _) =
-            game.generate_possible_moves_movement(self.world, team, false, false);
+        let (_, captures, _) = game.generate_possible_moves_movement(self.world, team, false);
 
         let start_move_index = self.moves.len();
 
@@ -641,7 +640,7 @@ impl<'a> AlphaBeta<'a> {
         //TODO don't allow pass. why waste tones of branching? There aren't any
         //crazy tactical combinations involving passing
         let (all_moves, captures, reinfocements) =
-            game.generate_possible_moves_movement(self.world, team, false, false);
+            game.generate_possible_moves_movement(self.world, team, false);
 
         let start_move_index = self.moves.len();
 

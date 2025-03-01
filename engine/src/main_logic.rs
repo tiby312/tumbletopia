@@ -408,7 +408,6 @@ pub async fn reselect_loop(
         .generate_possible_moves_movement(
             world,
             selected_unit.team,
-            false,
             true, //TODO should this be true?
         );
 
