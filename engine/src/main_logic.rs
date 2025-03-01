@@ -405,11 +405,8 @@ pub async fn reselect_loop(
     let (mut cca, _, _) = game
         .tactical
         .bake_fog(&game.fog[team.index()])
-        .generate_possible_moves_movement(
-            world,
-            selected_unit.team,
-            true, //TODO should this be true?
-        );
+        .generate_possible_moves_movement(world, selected_unit.team);
+    cca.inner.set(moves::PASS_MOVE_INDEX, true);
 
     let c2 = game
         .tactical

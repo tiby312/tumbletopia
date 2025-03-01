@@ -85,7 +85,7 @@ impl crate::unit::GameStateTotal {
         let res = self
             .tactical
             .bake_fog(&self.fog[team])
-            .generate_possible_moves_movement(world, team, false);
+            .generate_possible_moves_movement(world, team);
 
         let fog = match team {
             Team::White => &mut self.fog[0],
@@ -149,13 +149,13 @@ impl GameState {
         &self,
         world: &board::MyWorld,
         team: Team,
-        allow_pass: bool,
+        //allow_pass: bool,
     ) -> (SmallMesh, SmallMesh, SmallMesh) {
         let mut mesh = SmallMesh::new();
 
-        if allow_pass {
-            mesh.inner.set(PASS_MOVE_INDEX, true);
-        }
+        // if allow_pass {
+        //     mesh.inner.set(PASS_MOVE_INDEX, true);
+        // }
 
         let mut captures = SmallMesh::new();
         let mut reinforcements = SmallMesh::new();
