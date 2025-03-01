@@ -80,15 +80,11 @@ impl crate::unit::GameStateTotal {
     }
 
     pub fn update_fog_spokes(&mut self, world: &board::MyWorld, team: Team) {
-        let res = self.tactical.generate_possible_moves_movement(
-            world,
-            None,
-            team,
-            true,
-            true,
-            false,
-            &self.fog[team.index()],
-        );
+        //TODO also need to convert ice blacks to grass blocks to emulate visition mode???
+        let res = self
+            .tactical
+            .bake_fog(&self.fog[team])
+            .generate_possible_moves_movement(world, team, true, false);
 
         let fog = match team {
             Team::White => &mut self.fog[0],
@@ -132,35 +128,28 @@ impl crate::unit::GameStateTotal {
     }
 }
 impl GameState {
-
-
-    pub fn generate_loud_moves(){
+    pub fn generate_loud_moves() {
 
         //Add moves that are this team capture opponents.
 
         //For all opponent moves that would result in a capture of our pieces
         //    If we can reinforce this move, add that
-        //    
+        //
         //    if the opponent already has a massive advantage of LOS on the move, continue
         //    so now we know the opponent only has a LOS that is one more than the height of this cell
-        //    
+        //
         //    add all the moves coming out of that move
         //
         //
 
         //TODO DO THISSSSS
-        
-
     }
     pub fn generate_possible_moves_movement(
         &self,
         world: &board::MyWorld,
-        _unit: Option<Axial>,
         team: Team,
         allow_suicidal: bool,
-        vision_mode: bool,
         allow_pass: bool,
-        fog: &SmallMesh,
     ) -> (SmallMesh, SmallMesh, SmallMesh) {
         let mut mesh = SmallMesh::new();
 
@@ -175,7 +164,7 @@ impl GameState {
         }
 
         for index in world.get_game_cells().inner.iter_ones() {
-            let it = self.bake_fog(fog).factions.iter_end_points(world, index);
+            let it = self.factions.iter_end_points(world, index);
 
             let mut potential_height = 0;
             let mut num_enemy = 0;
@@ -188,12 +177,6 @@ impl GameState {
                             num_enemy += 1;
                         }
                     }
-                }
-            }
-
-            if !vision_mode {
-                if self.factions.ice.inner[index] {
-                    continue;
                 }
             }
 

@@ -407,12 +407,9 @@ pub async fn reselect_loop(
         .bake_fog(&game.fog[team.index()])
         .generate_possible_moves_movement(
             world,
-            Some(unwrapped_selected_unit),
             selected_unit.team,
             false,
-            false,
             true, //TODO should this be true?
-            &game.fog[team.index()],
         );
 
     let c2 = game

@@ -173,10 +173,8 @@ impl Evaluator {
         //white doesnt win with ai vs ai
         //s--c--s--t---cdbc--
 
-
         // if red plays e5, you end up with s--tscs-seds-cdbc--   -> 9/10
         // if red plays d4, you end up with s--ct-s--tss-cdcc-d   -> 9/9
-
 
         //tc-s-d-re-srces-s--
 
@@ -198,7 +196,7 @@ impl Evaluator {
         let mut total_foo = 0;
         let mut strength = 0;
         for index in world.get_game_cells().inner.iter_ones() {
-            let mut num_attack:[i64;2] = [0, 0];
+            let mut num_attack: [i64; 2] = [0, 0];
 
             for (_, rest) in game.factions.iter_end_points(world, index) {
                 if let Some((_, team)) = rest {
@@ -207,8 +205,8 @@ impl Evaluator {
             }
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                let height=height as i64;
-                strength+= 6i64-(num_attack[tt] - num_attack[tt.not()]).abs() ;
+                let height = height as i64;
+                strength += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
                 //let mut score: i64 = 0;
                 // if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
                 //     score -= tt;
@@ -241,8 +239,6 @@ impl Evaluator {
 
             total_foo += temp_score;
 
-
-            
             // if let Some((height, tt)) = game.factions.get_cell_inner(index) {
             //     let height = height as i64;
 
@@ -576,15 +572,8 @@ impl<'a> AlphaBeta<'a> {
             );
         }
 
-        let (_, captures, _) = game.generate_possible_moves_movement(
-            self.world,
-            None,
-            team,
-            false,
-            false,
-            false,
-            &fogs[team.index()],
-        );
+        let (_, captures, _) =
+            game.generate_possible_moves_movement(self.world, team, false, false);
 
         let start_move_index = self.moves.len();
 
@@ -651,15 +640,8 @@ impl<'a> AlphaBeta<'a> {
 
         //TODO don't allow pass. why waste tones of branching? There aren't any
         //crazy tactical combinations involving passing
-        let (all_moves, captures, reinfocements) = game.generate_possible_moves_movement(
-            self.world,
-            None,
-            team,
-            false,
-            false,
-            false,
-            &fogs[team.index()],
-        );
+        let (all_moves, captures, reinfocements) =
+            game.generate_possible_moves_movement(self.world, team, false, false);
 
         let start_move_index = self.moves.len();
 
@@ -732,10 +714,8 @@ impl<'a> AlphaBeta<'a> {
                 self.alpha_beta(game, fogs, ab_iter.clone_ab_values(), team.not(), depth - 1);
 
             //let (cand, effect) = self.history.inner.pop().unwrap();
-            
-            
-            //gloo_console::console!(m)
 
+            //gloo_console::console!(m)
 
             cand.undo(team, &effect, game);
 
