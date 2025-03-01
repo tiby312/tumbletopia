@@ -132,6 +132,20 @@ impl crate::unit::GameStateTotal {
     }
 }
 impl GameState {
+
+
+    pub fn generate_loud_moves(){
+
+        //Add moves that are captures
+
+        //for all moves the opponent could play{
+        //   if we can also play that move, then its a loud move
+        //}
+
+        //TODO DO THISSSSS
+        
+
+    }
     pub fn generate_possible_moves_movement(
         &self,
         world: &board::MyWorld,
