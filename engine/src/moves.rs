@@ -135,17 +135,9 @@ pub enum LoudMove {
 }
 
 impl GameState {
-    pub fn generate_loud_moves<'a>(
-        &'a self,
-        world: &'a board::MyWorld,
-        team: Team,
-    ) -> SmallMesh {
-        let mut ret=SmallMesh::new();
-        for index in world
-        .get_game_cells()
-        .inner
-        .iter_ones(){
-            
+    pub fn generate_loud_moves<'a>(&'a self, world: &'a board::MyWorld, team: Team) -> SmallMesh {
+        let mut ret = SmallMesh::new();
+        for index in world.get_game_cells().inner.iter_ones() {
             let mut num_attack: [i64; 2] = [0, 0];
 
             for (_, rest) in self.factions.iter_end_points(world, index) {
@@ -154,52 +146,42 @@ impl GameState {
                 }
             }
 
-
             if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-                let height=height as i64;
+                let height = height as i64;
                 // if num_attack[team] <= height as i64 {
                 //     continue;
                 // }
 
                 //if this is our piece
-                if rest==team{
+                if rest == team {
                     //if the enemy can capture it
-                    if num_attack[team.not()]> height && num_attack[team.not()]>=num_attack[team]{
-
+                    if num_attack[team.not()] > height && num_attack[team.not()] >= num_attack[team]
+                    {
                         //if we can reinforce, add that as a loud move
-                        if num_attack[team]==num_attack[team.not()]{
-                            ret.inner.set(index,true);
+                        if num_attack[team] == num_attack[team.not()] {
+                            ret.inner.set(index, true);
                         }
 
+                        if num_attack[team.not()] == num_attack[team] + 1 {
 
-                        if num_attack[team.not()]==num_attack[team]+1{
-
-                            
                             //TODO add every move coming out of this cell as a loud move
                         }
-
-                        
-
                     }
-
-
                 }
 
                 if rest != team {
                     //if num_attack[team.not()]>
 
                     //This is us capturing an enemy
-                    ret.inner.set(index,true);
+                    ret.inner.set(index, true);
                 } else {
                     //This is us reinforcing a friendly
-                    ret.inner.set(index,true);
+                    ret.inner.set(index, true);
                 }
             }
-
         }
 
         return ret;
-
 
         //Add moves that are this team capture opponents.
 

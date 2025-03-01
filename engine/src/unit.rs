@@ -430,24 +430,50 @@ impl Tribe {
         world: &board::MyWorld,
         index: usize,
     ) -> [(i8, Option<(u8, Team)>); 6] {
+        fn ray(
+            start: Axial,
+            dd: hex::HDir,
+            world: &board::MyWorld,
+        ) -> (i8, impl Iterator<Item = isize>) {
+            let stride = board::STRIDES[dd as usize] as isize;
+            let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
+            let mut index2 = mesh::small_mesh::conv(start) as isize;
+
+            (
+                dis,
+                (0..dis).map(move |d| {
+                    index2 += stride;
+
+                    index2
+                }),
+            )
+        }
+
         core::array::from_fn(|i| {
             let dd = hex::HDir::from(i as u8);
 
-            let stride = board::STRIDES[i] as isize;
-            let dis = board::dis_to_hex_of_hexagon(
-                mesh::small_mesh::inverse(index),
-                dd,
-                world.radius as i8,
-            );
-            let mut index2 = index as isize;
-
-            for d in 0..dis {
-                index2 += stride;
-
+            let (dis, it) = ray(mesh::small_mesh::inverse(index), dd, world);
+            for (d, index2) in it.enumerate() {
                 if let Some(pp) = self.get_cell_inner(index2 as usize) {
-                    return (d + 1, Some(pp));
+                    return (d as i8 + 1, Some(pp));
                 }
             }
+
+            // let stride = board::STRIDES[i] as isize;
+            // let dis = board::dis_to_hex_of_hexagon(
+            //     mesh::small_mesh::inverse(index),
+            //     dd,
+            //     world.radius as i8,
+            // );
+            // let mut index2 = index as isize;
+
+            // for d in 0..dis {
+            //     index2 += stride;
+
+            //     if let Some(pp) = self.get_cell_inner(index2 as usize) {
+            //         return (d + 1, Some(pp));
+            //     }
+            // }
 
             (dis, None)
         })
