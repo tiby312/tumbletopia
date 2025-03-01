@@ -149,7 +149,6 @@ impl GameState {
         &self,
         world: &board::MyWorld,
         team: Team,
-        //allow_pass: bool,
     ) -> (SmallMesh, SmallMesh, SmallMesh) {
         let mut mesh = SmallMesh::new();
 
@@ -160,7 +159,8 @@ impl GameState {
         let mut captures = SmallMesh::new();
         let mut reinforcements = SmallMesh::new();
         if team == Team::Neutral {
-            return (mesh, captures, reinforcements);
+            unreachable!();
+            //return (mesh, captures, reinforcements);
         }
 
         for index in world.get_game_cells().inner.iter_ones() {
