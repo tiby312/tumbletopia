@@ -23,42 +23,42 @@ pub fn should_pass(
         return true;
     }
 
-    let mut game = game_orig.clone();
-    let score_before = game.score(world);
+    // let mut game = game_orig.clone();
+    // let score_before = game.score(world);
 
-    // let k = ActualMove {
-    //     moveto: moves::PASS_MOVE_INDEX,
-    // };
-    //let _e = k.apply(team, &mut game, &SmallMesh::new(), world);
+    // // let k = ActualMove {
+    // //     moveto: moves::PASS_MOVE_INDEX,
+    // // };
+    // //let _e = k.apply(team, &mut game, &SmallMesh::new(), world);
 
-    let fogs = std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new());
-    let foo = iterative_deepening2(&game, &fogs, world, team.not(), 3);
+    // let fogs = std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new());
+    // let foo = iterative_deepening2(&game, &fogs, world, team.not(), 3);
 
-    let mut tt = team.not();
-    if let Some(foo) = foo {
-        let principal_variation: Vec<_> = foo
-            .line
-            .iter()
-            .map(|x| {
-                let res = move_build::to_letter_coord(&mesh::small_mesh::inverse(x.moveto), world);
-                format!("{}{}", res.0, res.1)
-            })
-            .collect();
-        console_dbg!("should pass", principal_variation);
+    // let mut tt = team.not();
+    // if let Some(foo) = foo {
+    //     let principal_variation: Vec<_> = foo
+    //         .line
+    //         .iter()
+    //         .map(|x| {
+    //             let res = move_build::to_letter_coord(&mesh::small_mesh::inverse(x.moveto), world);
+    //             format!("{}{}", res.0, res.1)
+    //         })
+    //         .collect();
+    //     console_dbg!("should pass", principal_variation);
 
-        for a in foo.line {
-            let _ = a.apply(tt, &mut game, &SmallMesh::new(), world);
-            tt = tt.not();
+    //     for a in foo.line {
+    //         let _ = a.apply(tt, &mut game, &SmallMesh::new(), world);
+    //         tt = tt.not();
 
-            let score_after = game.score(world);
+    //         let score_after = game.score(world);
 
-            console_dbg!(score_before, score_after);
+    //         console_dbg!(score_before, score_after);
 
-            if score_after != score_before {
-                return false;
-            }
-        }
-    }
+    //         if score_after != score_before {
+    //             return false;
+    //         }
+    //     }
+    // }
 
     // //If we do pass, what are the opponents best moves. And does it change the score?
 
@@ -136,7 +136,7 @@ pub fn should_pass(
     // res
     // //false
 
-    true
+    false
 }
 
 pub struct Evaluator {
@@ -172,6 +172,12 @@ impl Evaluator {
     ) -> Eval {
         //white doesnt win with ai vs ai
         //s--c--s--t---cdbc--
+
+
+        // if red plays e5, you end up with s--tscs-seds-cdbc--   -> 9/10
+        // if red plays d4, you end up with s--ct-s--tss-cdcc-d   -> 9/9
+
+
         //tc-s-d-re-srces-s--
 
         //white doesnt seem like it should win ai vs ai
@@ -190,8 +196,9 @@ impl Evaluator {
         // let mut unseen = 0;
 
         let mut total_foo = 0;
+        let mut strength = 0;
         for index in world.get_game_cells().inner.iter_ones() {
-            let mut num_attack = [0, 0];
+            let mut num_attack:[i64;2] = [0, 0];
 
             for (_, rest) in game.factions.iter_end_points(world, index) {
                 if let Some((_, team)) = rest {
@@ -200,6 +207,8 @@ impl Evaluator {
             }
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+                let height=height as i64;
+                strength+= 6i64-(num_attack[tt] - num_attack[tt.not()]).abs() ;
                 //let mut score: i64 = 0;
                 // if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
                 //     score -= tt;
@@ -231,6 +240,9 @@ impl Evaluator {
             };
 
             total_foo += temp_score;
+
+
+            
             // if let Some((height, tt)) = game.factions.get_cell_inner(index) {
             //     let height = height as i64;
 
@@ -280,7 +292,7 @@ impl Evaluator {
             //     }
             // };
         }
-        total_foo
+        total_foo * 100000 + strength
         //(stack_count + territory_count) * score + (unseen + contested) * strength
     }
 }
@@ -720,6 +732,10 @@ impl<'a> AlphaBeta<'a> {
                 self.alpha_beta(game, fogs, ab_iter.clone_ab_values(), team.not(), depth - 1);
 
             //let (cand, effect) = self.history.inner.pop().unwrap();
+            
+            
+            //gloo_console::console!(m)
+
 
             cand.undo(team, &effect, game);
 
