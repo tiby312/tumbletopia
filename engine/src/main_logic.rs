@@ -402,9 +402,15 @@ pub async fn reselect_loop(
     //
     // });
     //create_ai_state(team)
+
+    let _foo = game
+        .tactical
+        .bake_fog(&game.fog[team])
+        .generate_loud_moves(world, selected_unit.team);
+
     let (mut cca, _, _) = game
         .tactical
-        .bake_fog(&game.fog[team.index()])
+        .bake_fog(&game.fog[team])
         .generate_possible_moves_movement(world, selected_unit.team);
     cca.inner.set(moves::PASS_MOVE_INDEX, true);
 

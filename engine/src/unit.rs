@@ -400,16 +400,22 @@ pub fn ray(
     start: Axial,
     dd: hex::HDir,
     world: &board::MyWorld,
-) -> (i8, impl Iterator<Item = isize>) {
+) -> (i8, impl Iterator<Item = isize> + use<'_>) {
     let stride = board::STRIDES[dd as usize] as isize;
     let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
     let mut index2 = mesh::small_mesh::conv(start) as isize;
 
     (
         dis,
-        (0..dis).map(move |d| {
+        (1..dis).map(move |d| {
             index2 += stride;
 
+            assert!(
+                world.get_game_cells().inner[index2 as usize],
+                "fail {}:{}",
+                d,
+                dis
+            );
             index2
         }),
     )

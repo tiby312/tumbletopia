@@ -169,9 +169,7 @@ impl GameState {
     }
 
     pub fn generate_loud_moves(&self, world: &board::MyWorld, team: Team) -> SmallMesh {
-
         let (verif, _, _) = self.generate_possible_moves_movement(world, team);
-
 
         let mut ret = SmallMesh::new();
         for index in world.get_game_cells().inner.iter_ones() {
@@ -192,9 +190,9 @@ impl GameState {
                     if num_attack[team.not()] > height && num_attack[team.not()] >= num_attack[team]
                     {
                         //if we can reinforce, add that as a loud move
-                        // if num_attack[team] > height && num_attack[team] == num_attack[team.not()] {
-                        //     ret.inner.set(index, true);
-                        // }
+                        if num_attack[team] > height && num_attack[team] == num_attack[team.not()] {
+                            ret.inner.set(index, true);
+                        }
 
                         //If there is one more enemy LOS on this piece
                         if num_attack[team.not()] == num_attack[team] + 1 {
@@ -205,8 +203,7 @@ impl GameState {
                                 let (_, it) =
                                     unit::ray(mesh::small_mesh::inverse(index), dir, world);
                                 let mut cands = vec![];
-                                for index2 in it {
-                                    
+                                for (iii, index2) in it.enumerate() {
                                     if self.playable(index2 as usize, team, world) {
                                         cands.push(index2);
                                     }
@@ -231,19 +228,22 @@ impl GameState {
                     }
                 } else {
                     //If it is an enemy piece, then
-                    // if num_attack[team] > height && num_attack[team] >= num_attack[team.not()] {
-                    //     ret.inner.set(index, true);
-                    // }
+                    if num_attack[team] > height && num_attack[team] >= num_attack[team.not()] {
+                        ret.inner.set(index, true);
+                    }
                 }
             }
         }
 
-        
-        //
         // for a in ret.inner.iter_ones() {
-        //     assert!(verif.inner[a]);
+        //     if !verif.inner[a]{
+        //         let res = move_build::to_letter_coord(&mesh::small_mesh::inverse(a), world);
+        //         let k=format!("{}{}", res.0, res.1);
+        //         gloo_console::console_dbg!(k);
+        //         panic!("FAAAIL");
+        //     }
         // }
-        assert_eq!(((!verif.inner) & ret.inner).count_ones(),0);
+        assert_eq!(((!verif.inner) & ret.inner).count_ones(), 0);
 
         return ret;
 
@@ -280,8 +280,8 @@ impl GameState {
         }
 
         for index in world.get_game_cells().inner.iter_ones() {
-            if self.playable(index, team, world){
-                mesh.inner.set(index,true);
+            if self.playable(index, team, world) {
+                mesh.inner.set(index, true);
             }
             // let it = self.factions.iter_end_points(world, index);
 
