@@ -1,3 +1,4 @@
+use bitvec::array::BitArray;
 use hex::HDir;
 
 use super::*;
@@ -193,57 +194,64 @@ impl GameState {
 
                 //if this is our piece
                 if rest == team {
-                    // //if the enemy can capture it
-                    // if num_attack[team.not()] > height && num_attack[team.not()] >= num_attack[team]
-                    // {
-                    //     //if we can reinforce, add that as a loud move
-                    //     if num_attack[team] == num_attack[team.not()] {
-                    //         ret.inner.set(index, true);
-                    //     }
+                    //if the enemy can capture it
+                    if num_attack[team.not()] > height && num_attack[team.not()] >= num_attack[team]
+                    {
+                        //if we can reinforce, add that as a loud move
+                        if num_attack[team]>height && num_attack[team] == num_attack[team.not()] {
+                            ret.inner.set(index, true);
+                        }
 
-                    //     //If there is one more enemy LOS on this piece
-                    //     if num_attack[team.not()] == num_attack[team] + 1 {
+                        //If there is one more enemy LOS on this piece
+                        if num_attack[team.not()] == num_attack[team] + 1 {
 
 
-                    //         //add every move coming out of this cell as a loud move
-                    //         //that would increase the los of the cell being threatened.
+                            //add every move coming out of this cell as a loud move
+                            //that would increase the los of the cell being threatened.
                             
 
-                    //         'outer : for dir in HDir::all(){
-                    //             let (_,it)=unit::ray(mesh::small_mesh::inverse(index), dir, world);
-                    //             let mut cands=vec!();
-                    //             for index2 in it {
+                            'outer : for dir in HDir::all(){
+                                let (_,it)=unit::ray(mesh::small_mesh::inverse(index), dir, world);
+                                let mut cands=vec!();
+                                for index2 in it {
 
-                    //                 if self.playable(index2 as usize,team,world){
-                    //                     cands.push(index2);
-                    //                 }
-                    //                 if let Some((height,team2)) = self.factions.get_cell_inner(index2 as usize) {
-                    //                     //If we already have this LOS, then any move along this ray wont increase the LOS,
-                    //                     //so toss all of them.
-                    //                     if team2==team{
-                    //                         continue 'outer
-                    //                     }else{
-                    //                         break;
-                    //                     }
-                    //                 }
-                    //             }
-                    //             //Add all the moves that we know would actually increase the LOS to this piece
-                    //             for c in cands{
-                    //                 ret.inner.set(c as usize,true);
-                    //             }
-                    //         }
+                                    if self.playable(index2 as usize,team,world){
+                                        cands.push(index2);
+                                    }
+                                    if let Some((height,team2)) = self.factions.get_cell_inner(index2 as usize) {
+                                        //If we already have this LOS, then any move along this ray wont increase the LOS,
+                                        //so toss all of them.
+                                        if team2==team{
+                                            continue 'outer
+                                        }else{
+                                            break;
+                                        }
+                                    }
+                                }
+                                //Add all the moves that we know would actually increase the LOS to this piece
+                                for c in cands{
+                                    ret.inner.set(c as usize,true);
+                                }
+                            }
 
-                    //     }
-                    // }
+                        }
+                    }
                 }else{
                     //If it is an enemy piece, then 
-                    if num_attack[team]>=num_attack[team.not()]{
+                    if num_attack[team]>height && num_attack[team]>=num_attack[team.not()]{
                         ret.inner.set(index,true);
                     }
                 }
 
             }
         }
+
+
+        let (verif,_,_)=self.generate_possible_moves_movement(world, team);
+
+        //
+        assert_eq!(((!verif.inner) & ret.inner).count_ones(),0);
+
 
         return ret;
 

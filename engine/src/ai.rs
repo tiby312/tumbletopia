@@ -376,7 +376,7 @@ pub fn calculate_move(
     team: Team,
     move_history: &MoveHistory,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8) {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 4) {
         let principal_variation: Vec<_> = mo
             .line
             .iter()
