@@ -137,11 +137,11 @@ impl crate::unit::GameStateTotal {
 //     Reinforcement(usize),
 // }
 
-#[derive(Debug,Copy,Clone)]
-pub enum MoveType{
+#[derive(Debug, Copy, Clone)]
+pub enum MoveType {
     Capture,
     Reinforce,
-    Fresh
+    Fresh,
 }
 impl GameState {
     fn playable(&self, index: usize, team: Team, world: &board::MyWorld) -> Option<MoveType> {
@@ -168,9 +168,9 @@ impl GameState {
             assert!(height > 0);
             let height = height as i64;
             if num_attack[team] > height {
-                if rest==team{
+                if rest == team {
                     Some(MoveType::Reinforce)
-                }else{
+                } else {
                     Some(MoveType::Capture)
                 }
             } else {
@@ -313,10 +313,14 @@ impl GameState {
         }
 
         for index in world.get_game_cells().inner.iter_ones() {
-            if self.playable(index, team, world).is_some() {
+            if let Some(v) = self.playable(index, team, world) {
                 mesh.inner.set(index, true);
+                match v {
+                    MoveType::Capture => captures.inner.set(index, true),
+                    MoveType::Reinforce => reinforcements.inner.set(index, true),
+                    MoveType::Fresh => {}
+                }
             }
-       
         }
 
         (mesh, captures, reinforcements)
