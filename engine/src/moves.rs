@@ -1,3 +1,5 @@
+use hex::HDir;
+
 use super::*;
 
 use crate::mesh::small_mesh::SmallMesh;
@@ -135,7 +137,46 @@ pub enum LoudMove {
 }
 
 impl GameState {
-    pub fn generate_loud_moves<'a>(&'a self, world: &'a board::MyWorld, team: Team) -> SmallMesh {
+
+    fn playable(&self,index:usize,team:Team,world:&board::MyWorld)->bool{
+        let mut num_attack: [i64; 2] = [0, 0];
+
+        for (_, rest) in self.factions.iter_end_points(world, index) {
+            if let Some((_, team)) = rest {
+                num_attack[team] += 1;
+            }
+        }
+
+        if let Some((height, rest)) = self.factions.get_cell_inner(index) {
+            let height=height as i64;
+            if rest!=team{
+
+                if num_attack[team]> height && num_attack[team]>=num_attack[team.not()]{
+                    true
+                }else{
+                    false
+                }
+
+            }else{
+                if num_attack[team]>height{
+                    true
+                }else{
+                    false
+                }
+            }
+
+        }else{
+            if num_attack[team]>=num_attack[team.not()]{
+                true
+            }else{
+                false
+            }
+        }
+        
+    }
+
+
+    pub fn generate_loud_moves(&self, world: &board::MyWorld, team: Team) -> SmallMesh {
         let mut ret = SmallMesh::new();
         for index in world.get_game_cells().inner.iter_ones() {
             let mut num_attack: [i64; 2] = [0, 0];
@@ -148,36 +189,59 @@ impl GameState {
 
             if let Some((height, rest)) = self.factions.get_cell_inner(index) {
                 let height = height as i64;
-                // if num_attack[team] <= height as i64 {
-                //     continue;
-                // }
+                
 
                 //if this is our piece
                 if rest == team {
-                    //if the enemy can capture it
-                    if num_attack[team.not()] > height && num_attack[team.not()] >= num_attack[team]
-                    {
-                        //if we can reinforce, add that as a loud move
-                        if num_attack[team] == num_attack[team.not()] {
-                            ret.inner.set(index, true);
-                        }
+                    // //if the enemy can capture it
+                    // if num_attack[team.not()] > height && num_attack[team.not()] >= num_attack[team]
+                    // {
+                    //     //if we can reinforce, add that as a loud move
+                    //     if num_attack[team] == num_attack[team.not()] {
+                    //         ret.inner.set(index, true);
+                    //     }
 
-                        if num_attack[team.not()] == num_attack[team] + 1 {
+                    //     //If there is one more enemy LOS on this piece
+                    //     if num_attack[team.not()] == num_attack[team] + 1 {
 
-                            //TODO add every move coming out of this cell as a loud move
-                        }
+
+                    //         //add every move coming out of this cell as a loud move
+                    //         //that would increase the los of the cell being threatened.
+                            
+
+                    //         'outer : for dir in HDir::all(){
+                    //             let (_,it)=unit::ray(mesh::small_mesh::inverse(index), dir, world);
+                    //             let mut cands=vec!();
+                    //             for index2 in it {
+
+                    //                 if self.playable(index2 as usize,team,world){
+                    //                     cands.push(index2);
+                    //                 }
+                    //                 if let Some((height,team2)) = self.factions.get_cell_inner(index2 as usize) {
+                    //                     //If we already have this LOS, then any move along this ray wont increase the LOS,
+                    //                     //so toss all of them.
+                    //                     if team2==team{
+                    //                         continue 'outer
+                    //                     }else{
+                    //                         break;
+                    //                     }
+                    //                 }
+                    //             }
+                    //             //Add all the moves that we know would actually increase the LOS to this piece
+                    //             for c in cands{
+                    //                 ret.inner.set(c as usize,true);
+                    //             }
+                    //         }
+
+                    //     }
+                    // }
+                }else{
+                    //If it is an enemy piece, then 
+                    if num_attack[team]>=num_attack[team.not()]{
+                        ret.inner.set(index,true);
                     }
                 }
 
-                if rest != team {
-                    //if num_attack[team.not()]>
-
-                    //This is us capturing an enemy
-                    ret.inner.set(index, true);
-                } else {
-                    //This is us reinforcing a friendly
-                    ret.inner.set(index, true);
-                }
             }
         }
 

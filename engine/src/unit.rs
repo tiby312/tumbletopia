@@ -396,6 +396,25 @@ pub struct Tribe {
     pub piece: SmallMesh,
 }
 
+pub fn ray(
+    start: Axial,
+    dd: hex::HDir,
+    world: &board::MyWorld,
+) -> (i8, impl Iterator<Item = isize>) {
+    let stride = board::STRIDES[dd as usize] as isize;
+    let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
+    let mut index2 = mesh::small_mesh::conv(start) as isize;
+
+    (
+        dis,
+        (0..dis).map(move |d| {
+            index2 += stride;
+
+            index2
+        }),
+    )
+}
+
 impl Tribe {
     //TODO rename
     pub fn doop(&self, index: usize, world: &MyWorld) -> SmallMesh {
@@ -430,24 +449,7 @@ impl Tribe {
         world: &board::MyWorld,
         index: usize,
     ) -> [(i8, Option<(u8, Team)>); 6] {
-        fn ray(
-            start: Axial,
-            dd: hex::HDir,
-            world: &board::MyWorld,
-        ) -> (i8, impl Iterator<Item = isize>) {
-            let stride = board::STRIDES[dd as usize] as isize;
-            let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
-            let mut index2 = mesh::small_mesh::conv(start) as isize;
 
-            (
-                dis,
-                (0..dis).map(move |d| {
-                    index2 += stride;
-
-                    index2
-                }),
-            )
-        }
 
         core::array::from_fn(|i| {
             let dd = hex::HDir::from(i as u8);

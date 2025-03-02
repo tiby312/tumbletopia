@@ -572,7 +572,7 @@ impl<'a> AlphaBeta<'a> {
             );
         }
 
-        let (_, captures, _) = game.generate_possible_moves_movement(self.world, team);
+        let captures = game.generate_loud_moves(self.world, team);
 
         let start_move_index = self.moves.len();
 
