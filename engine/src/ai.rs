@@ -700,7 +700,7 @@ impl<'a> AlphaBeta<'a> {
             1 //+sum as isize
         };
 
-        moves.sort_by_cached_key(|&f| move_value(f as usize));
+        moves.sort_unstable_by_key(|&f| move_value(f as usize));
 
         // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
         // gloo::console::info!(format!("depth {} {:?}",depth,dbg));

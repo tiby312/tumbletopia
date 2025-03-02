@@ -132,13 +132,19 @@ impl crate::unit::GameStateTotal {
     }
 }
 
-pub enum LoudMove {
-    Capture(usize),
-    Reinforcement(usize),
-}
+// pub enum LoudMove {
+//     Capture(usize),
+//     Reinforcement(usize),
+// }
 
+#[derive(Debug,Copy,Clone)]
+pub enum MoveType{
+    Capture,
+    Reinforce,
+    Fresh
+}
 impl GameState {
-    fn playable(&self, index: usize, team: Team, world: &board::MyWorld) -> bool {
+    fn playable(&self, index: usize, team: Team, world: &board::MyWorld) -> Option<MoveType> {
         let mut num_attack: [i64; 2] = [0, 0];
 
         for (_, rest) in self.factions.iter_end_points(world, index) {
@@ -151,23 +157,27 @@ impl GameState {
         }
 
         if num_attack[team] == 0 {
-            return false;
+            return None;
         }
 
         if num_attack[team] < num_attack[!team] {
-            return false;
+            return None;
         }
 
         if let Some((height, rest)) = self.factions.get_cell_inner(index) {
             assert!(height > 0);
             let height = height as i64;
             if num_attack[team] > height {
-                true
+                if rest==team{
+                    Some(MoveType::Reinforce)
+                }else{
+                    Some(MoveType::Capture)
+                }
             } else {
-                false
+                None
             }
         } else {
-            true
+            Some(MoveType::Fresh)
         }
     }
 
@@ -181,7 +191,7 @@ impl GameState {
         'outer: for dir in HDir::all() {
             let mut cands = vec![];
             for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
-                if self.playable(index2 as usize, team, world) {
+                if self.playable(index2 as usize, team, world).is_some() {
                     cands.push(index2);
                 }
                 if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
@@ -303,48 +313,10 @@ impl GameState {
         }
 
         for index in world.get_game_cells().inner.iter_ones() {
-            if self.playable(index, team, world) {
+            if self.playable(index, team, world).is_some() {
                 mesh.inner.set(index, true);
             }
-            // let it = self.factions.iter_end_points(world, index);
-
-            // let mut potential_height = 0;
-            // let mut num_enemy = 0;
-            // for (_, rest) in it {
-            //     if let Some((_, tt)) = rest {
-            //         if tt == team {
-            //             potential_height += 1;
-            //         } else {
-            //             if tt != Team::Neutral {
-            //                 num_enemy += 1;
-            //             }
-            //         }
-            //     }
-            // }
-
-            // if potential_height == 0 {
-            //     continue;
-            // }
-
-            // //if !allow_suicidal {
-            // if potential_height < num_enemy {
-            //     continue;
-            // }
-            // //}
-
-            // if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-            //     if potential_height <= height {
-            //         continue;
-            //     }
-
-            //     if rest != team {
-            //         captures.inner.set(index, true);
-            //     } else {
-            //         reinforcements.inner.set(index, true);
-            //     }
-            // }
-
-            // mesh.inner.set(index, true);
+       
         }
 
         (mesh, captures, reinforcements)
