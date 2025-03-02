@@ -200,13 +200,18 @@ impl Evaluator {
 
             for (_, rest) in game.factions.iter_end_points(world, index) {
                 if let Some((_, team)) = rest {
+                    if team == Team::Neutral {
+                        continue;
+                    }
                     num_attack[team] += 1;
                 }
             }
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
-                strength += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
+                if tt != Team::Neutral {
+                    strength += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
+                }
                 //let mut score: i64 = 0;
                 // if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
                 //     score -= tt;
@@ -376,7 +381,7 @@ pub fn calculate_move(
     team: Team,
     move_history: &MoveHistory,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 4) {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 6) {
         let principal_variation: Vec<_> = mo
             .line
             .iter()

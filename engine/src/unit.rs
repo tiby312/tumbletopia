@@ -1,6 +1,8 @@
 use board::MyWorld;
 use mesh::small_mesh::SmallMesh;
 
+use crate::mesh::small_mesh;
+
 use super::*;
 
 // #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
@@ -61,6 +63,14 @@ pub enum Team {
     White = 0,
     Black = 1,
     Neutral = 2,
+}
+
+impl std::ops::Not for Team {
+    type Output = Team;
+
+    fn not(self) -> Self::Output {
+        Team::not(&self)
+    }
 }
 
 impl std::ops::Neg for Team {
@@ -126,7 +136,7 @@ impl Team {
         match self {
             Team::White => 1,
             Team::Black => -1,
-            Team::Neutral => unreachable!(),
+            Team::Neutral => 0,
         }
     }
 
@@ -405,16 +415,20 @@ pub fn ray(
     let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
     let mut index2 = mesh::small_mesh::conv(start) as isize;
 
+    assert!(world.get_game_cells().inner[index2 as usize],"uhoh {:?}",start);
     (
         dis,
         (1..dis).map(move |d| {
             index2 += stride;
+            assert!(index2>0);
 
             assert!(
                 world.get_game_cells().inner[index2 as usize],
-                "fail {}:{}",
+                "fail {}:{}:{:?}:{:?}",
                 d,
-                dis
+                dis,
+                dd,
+                move_build::to_letter_coord(&start, world)
             );
             index2
         }),
