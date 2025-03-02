@@ -415,12 +415,16 @@ pub fn ray(
     let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
     let mut index2 = mesh::small_mesh::conv(start) as isize;
 
-    assert!(world.get_game_cells().inner[index2 as usize],"uhoh {:?}",start);
+    assert!(
+        world.get_game_cells().inner[index2 as usize],
+        "uhoh {:?}",
+        start
+    );
     (
         dis,
         (1..dis).map(move |d| {
             index2 += stride;
-            assert!(index2>0);
+            assert!(index2 > 0);
 
             assert!(
                 world.get_game_cells().inner[index2 as usize],

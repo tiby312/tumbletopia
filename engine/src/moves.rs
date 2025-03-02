@@ -171,6 +171,36 @@ impl GameState {
         }
     }
 
+    fn moves_that_increase_los_by_one(
+        &self,
+        index: usize,
+        team: Team,
+        world: &board::MyWorld,
+        ret: &mut SmallMesh,
+    ) {
+        'outer: for dir in HDir::all() {
+            let mut cands = vec![];
+            for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
+                if self.playable(index2 as usize, team, world) {
+                    cands.push(index2);
+                }
+                if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
+                    //If we already have this LOS, then any move along this ray wont increase the LOS,
+                    //so toss all of them.
+                    if team2 == team {
+                        continue 'outer;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            //Add all the moves that we know would actually increase the LOS to this piece
+            for c in cands {
+                ret.inner.set(c as usize, true);
+            }
+        }
+    }
+
     pub fn generate_loud_moves(&self, world: &board::MyWorld, team: Team) -> SmallMesh {
         let (verif, _, _) = self.generate_possible_moves_movement(world, team);
 
@@ -210,36 +240,18 @@ impl GameState {
                     if num_attack[!team] == num_attack[team] + 1 {
                         //add every move coming out of this cell as a loud move
                         //that would increase the los of the cell being threatened.
-
-                        'outer: for dir in HDir::all() {
-                            let mut cands = vec![];
-                            for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1
-                            {
-                                if self.playable(index2 as usize, team, world) {
-                                    cands.push(index2);
-                                }
-                                if let Some((_, team2)) =
-                                    self.factions.get_cell_inner(index2 as usize)
-                                {
-                                    //If we already have this LOS, then any move along this ray wont increase the LOS,
-                                    //so toss all of them.
-                                    if team2 == team {
-                                        continue 'outer;
-                                    } else {
-                                        break;
-                                    }
-                                }
-                            }
-                            //Add all the moves that we know would actually increase the LOS to this piece
-                            for c in cands {
-                                ret.inner.set(c as usize, true);
-                            }
-                        }
+                        self.moves_that_increase_los_by_one(index, team, world, &mut ret);
                     }
                 } else {
                     //If it is an enemy piece, then
                     if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
                         ret.inner.set(index, true);
+                    }
+
+                    // if this is an enemy piece that is in contention
+                    // any move that adds a LOS on this piece is a loud move.
+                    if num_attack[team] == num_attack[!team] && num_attack[team] >= height {
+                        self.moves_that_increase_los_by_one(index, team, world, &mut ret);
                     }
                 }
             }

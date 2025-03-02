@@ -172,7 +172,8 @@ impl Evaluator {
     ) -> Eval {
         //white doesnt win with ai vs ai
         //s--c--s--t---cdbc--
-
+        //["E5", "C4", "B3", "E4", "B2", "D4", "C4"]
+        //["E5", "C4", "B3", "D4", "C4", "E4", "D4"]
         // if red plays e5, you end up with s--tscs-seds-cdbc--   -> 9/10
         // if red plays d4, you end up with s--ct-s--tss-cdcc-d   -> 9/9
 
@@ -639,7 +640,7 @@ impl<'a> AlphaBeta<'a> {
         // }
 
         if depth == 0 {
-            return self.quiesance(game, fogs, ab, team, 4);
+            return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
         //TODO don't allow pass. why waste tones of branching? There aren't any
