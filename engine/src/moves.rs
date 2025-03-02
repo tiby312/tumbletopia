@@ -138,8 +138,7 @@ pub enum LoudMove {
 }
 
 impl GameState {
-
-    fn playable(&self,index:usize,team:Team,world:&board::MyWorld)->bool{
+    fn playable(&self, index: usize, team: Team, world: &board::MyWorld) -> bool {
         let mut num_attack: [i64; 2] = [0, 0];
 
         for (_, rest) in self.factions.iter_end_points(world, index) {
@@ -148,36 +147,32 @@ impl GameState {
             }
         }
 
+        if num_attack[team] == 0 {
+            return false;
+        }
+
+        if num_attack[team] < num_attack[team.not()] {
+            return false;
+        }
+
         if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-            let height=height as i64;
-            if rest!=team{
-
-                if num_attack[team]> height && num_attack[team]>=num_attack[team.not()]{
-                    true
-                }else{
-                    false
-                }
-
-            }else{
-                if num_attack[team]>height{
-                    true
-                }else{
-                    false
-                }
-            }
-
-        }else{
-            if num_attack[team]>=num_attack[team.not()]{
+            assert!(height > 0);
+            let height = height as i64;
+            if num_attack[team] > height {
                 true
-            }else{
+            } else {
                 false
             }
+        } else {
+            true
         }
-        
     }
 
-
     pub fn generate_loud_moves(&self, world: &board::MyWorld, team: Team) -> SmallMesh {
+
+        let (verif, _, _) = self.generate_possible_moves_movement(world, team);
+
+
         let mut ret = SmallMesh::new();
         for index in world.get_game_cells().inner.iter_ones() {
             let mut num_attack: [i64; 2] = [0, 0];
@@ -190,7 +185,6 @@ impl GameState {
 
             if let Some((height, rest)) = self.factions.get_cell_inner(index) {
                 let height = height as i64;
-                
 
                 //if this is our piece
                 if rest == team {
@@ -198,60 +192,58 @@ impl GameState {
                     if num_attack[team.not()] > height && num_attack[team.not()] >= num_attack[team]
                     {
                         //if we can reinforce, add that as a loud move
-                        if num_attack[team]>height && num_attack[team] == num_attack[team.not()] {
-                            ret.inner.set(index, true);
-                        }
+                        // if num_attack[team] > height && num_attack[team] == num_attack[team.not()] {
+                        //     ret.inner.set(index, true);
+                        // }
 
                         //If there is one more enemy LOS on this piece
                         if num_attack[team.not()] == num_attack[team] + 1 {
-
-
                             //add every move coming out of this cell as a loud move
                             //that would increase the los of the cell being threatened.
-                            
 
-                            'outer : for dir in HDir::all(){
-                                let (_,it)=unit::ray(mesh::small_mesh::inverse(index), dir, world);
-                                let mut cands=vec!();
+                            'outer: for dir in HDir::all() {
+                                let (_, it) =
+                                    unit::ray(mesh::small_mesh::inverse(index), dir, world);
+                                let mut cands = vec![];
                                 for index2 in it {
-
-                                    if self.playable(index2 as usize,team,world){
+                                    
+                                    if self.playable(index2 as usize, team, world) {
                                         cands.push(index2);
                                     }
-                                    if let Some((height,team2)) = self.factions.get_cell_inner(index2 as usize) {
+                                    if let Some((height, team2)) =
+                                        self.factions.get_cell_inner(index2 as usize)
+                                    {
                                         //If we already have this LOS, then any move along this ray wont increase the LOS,
                                         //so toss all of them.
-                                        if team2==team{
-                                            continue 'outer
-                                        }else{
+                                        if team2 == team {
+                                            continue 'outer;
+                                        } else {
                                             break;
                                         }
                                     }
                                 }
                                 //Add all the moves that we know would actually increase the LOS to this piece
-                                for c in cands{
-                                    ret.inner.set(c as usize,true);
+                                for c in cands {
+                                    ret.inner.set(c as usize, true);
                                 }
                             }
-
                         }
                     }
-                }else{
-                    //If it is an enemy piece, then 
-                    if num_attack[team]>height && num_attack[team]>=num_attack[team.not()]{
-                        ret.inner.set(index,true);
-                    }
+                } else {
+                    //If it is an enemy piece, then
+                    // if num_attack[team] > height && num_attack[team] >= num_attack[team.not()] {
+                    //     ret.inner.set(index, true);
+                    // }
                 }
-
             }
         }
 
-
-        let (verif,_,_)=self.generate_possible_moves_movement(world, team);
-
+        
         //
+        // for a in ret.inner.iter_ones() {
+        //     assert!(verif.inner[a]);
+        // }
         assert_eq!(((!verif.inner) & ret.inner).count_ones(),0);
-
 
         return ret;
 
@@ -288,45 +280,48 @@ impl GameState {
         }
 
         for index in world.get_game_cells().inner.iter_ones() {
-            let it = self.factions.iter_end_points(world, index);
-
-            let mut potential_height = 0;
-            let mut num_enemy = 0;
-            for (_, rest) in it {
-                if let Some((_, tt)) = rest {
-                    if tt == team {
-                        potential_height += 1;
-                    } else {
-                        if tt != Team::Neutral {
-                            num_enemy += 1;
-                        }
-                    }
-                }
+            if self.playable(index, team, world){
+                mesh.inner.set(index,true);
             }
+            // let it = self.factions.iter_end_points(world, index);
 
-            if potential_height == 0 {
-                continue;
-            }
+            // let mut potential_height = 0;
+            // let mut num_enemy = 0;
+            // for (_, rest) in it {
+            //     if let Some((_, tt)) = rest {
+            //         if tt == team {
+            //             potential_height += 1;
+            //         } else {
+            //             if tt != Team::Neutral {
+            //                 num_enemy += 1;
+            //             }
+            //         }
+            //     }
+            // }
 
-            //if !allow_suicidal {
-            if potential_height < num_enemy {
-                continue;
-            }
-            //}
+            // if potential_height == 0 {
+            //     continue;
+            // }
 
-            if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-                if potential_height <= height {
-                    continue;
-                }
+            // //if !allow_suicidal {
+            // if potential_height < num_enemy {
+            //     continue;
+            // }
+            // //}
 
-                if rest != team {
-                    captures.inner.set(index, true);
-                } else {
-                    reinforcements.inner.set(index, true);
-                }
-            }
+            // if let Some((height, rest)) = self.factions.get_cell_inner(index) {
+            //     if potential_height <= height {
+            //         continue;
+            //     }
 
-            mesh.inner.set(index, true);
+            //     if rest != team {
+            //         captures.inner.set(index, true);
+            //     } else {
+            //         reinforcements.inner.set(index, true);
+            //     }
+            // }
+
+            // mesh.inner.set(index, true);
         }
 
         (mesh, captures, reinforcements)

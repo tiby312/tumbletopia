@@ -449,8 +449,6 @@ impl Tribe {
         world: &board::MyWorld,
         index: usize,
     ) -> [(i8, Option<(u8, Team)>); 6] {
-
-
         core::array::from_fn(|i| {
             let dd = hex::HDir::from(i as u8);
 
