@@ -144,19 +144,58 @@ pub enum MoveType {
     Fresh,
 }
 
-
-pub struct CellMeta{
-    dir:[Option<(Team,u8)>;6]
-
+struct SpokeInfo {
+    data: [SmallMesh; 2],
 }
-pub struct Connections{
 
+impl SpokeInfo {
+    pub fn insert(&mut self, index: usize, dir: HDir, val: Option<Team>) {
+        let (first_bit, second_bit) = match val {
+            None => (false, false),
+            Some(Team::White) => (false, true),
+            Some(Team::Black) => (true, false),
+            Some(Team::Neutral) => (true, true),
+        };
+        self.data[0].inner.set(6 * index + dir as usize, first_bit);
+        self.data[1].inner.set(6 * index + dir as usize, second_bit);
+    }
+    pub fn retrieve(&self, index: usize, dir: HDir) -> Option<Team> {
+        let first_bit = self.data[0].inner[6 * index + dir as usize];
+        let second_bit = self.data[1].inner[6 * index + dir as usize];
 
+        match (first_bit, second_bit) {
+            (false, false) => None,
+            (false, true) => Some(Team::White),
+            (true, false) => Some(Team::Black),
+            (true, true) => Some(Team::Neutral),
+        }
+    }
 }
+
+#[derive(Default, Clone, Copy)]
+pub struct CellMeta {
+    data: [i8; 6],
+}
+impl CellMeta {}
+
+pub struct Connections {
+    data: [CellMeta],
+}
+
+impl Connections {
+    fn doop(&mut self, index: usize, fo: &GameState) {}
+}
+
 impl GameState {
+    fn calculate_connections(&self, world: &board::MyWorld) {
+        let mut v = vec![CellMeta::default(); 256];
 
-    fn calculate_connections(&self){
+        for index in world.get_game_cells().inner.iter_ones() {
+            let mut num_attack: [i64; 2] = [0, 0];
 
+            let data = self.factions.iter_end_points(world, index).map(|x| x.0);
+            v[index].data = data;
+        }
     }
     fn playable(&self, index: usize, team: Team, world: &board::MyWorld) -> Option<MoveType> {
         let mut num_attack: [i64; 2] = [0, 0];
@@ -195,7 +234,13 @@ impl GameState {
         }
     }
 
-    fn moves_that_block(&self,index:usize,team:Team,world:&board::MyWorld,ret:&mut SmallMesh){
+    fn moves_that_block(
+        &self,
+        index: usize,
+        team: Team,
+        world: &board::MyWorld,
+        ret: &mut SmallMesh,
+    ) {
         for dir in HDir::all() {
             let mut cands = vec![];
             for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
@@ -203,7 +248,6 @@ impl GameState {
                     cands.push(index2);
                 }
                 if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
-                    
                     //If we already have this LOS, then any move along this ray wont increase the LOS,
                     //so toss all of them.
                     if team2 == !team {
@@ -216,7 +260,7 @@ impl GameState {
                         break;
                     }
                 }
-            }   
+            }
         }
     }
 
@@ -234,7 +278,6 @@ impl GameState {
                     cands.push(index2);
                 }
                 if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
-                    
                     //If we already have this LOS, then any move along this ray wont increase the LOS,
                     //so toss all of them.
                     if team2 == team {
@@ -252,7 +295,13 @@ impl GameState {
     }
 
     pub fn generate_loud_moves(&self, world: &board::MyWorld, team: Team) -> SmallMesh {
+        //TODO remove
         let (verif, _, _) = self.generate_possible_moves_movement(world, team);
+
+        // 6*3 possibiilties for each spoke.
+        // data structure will be 2 bitfields.
+        // it would be the size 6*n, where n is number of cells.
+        // los(n)=[6*n,6*n+1,6*n+2...6*n+5]
 
         let mut ret = SmallMesh::new();
         for index in world.get_game_cells().inner.iter_ones() {
@@ -288,15 +337,14 @@ impl GameState {
 
                     //If enemy is threatening to take and we have parity in LOS,
                     //if we increase our LOS, then we would be able to recapture this cell.
-                    if num_attack[!team] == num_attack[team]  {
+                    if num_attack[!team] == num_attack[team] {
                         //add every move coming out of this cell as a loud move
                         //that would increase the los of the cell being threatened.
                         self.moves_that_increase_los(index, team, world, &mut ret);
-
-                    } else if num_attack[!team]==num_attack[team]+1{
-                        //If the enemy has one more than us, our only option 
+                    } else if num_attack[!team] == num_attack[team] + 1 {
+                        //If the enemy has one more than us, our only option
                         //is to block (aside from reinforcing which we covered above)
-                        self.moves_that_block(index,team,world,&mut ret);
+                        self.moves_that_block(index, team, world, &mut ret);
                     }
                 } else {
                     //If it is an enemy piece, then

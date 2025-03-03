@@ -218,9 +218,11 @@ impl Evaluator {
                     } else {
                         tt.value()
                     }
-                }else{0}
+                } else {
+                    0
+                }
                 //let mut score: i64 = 0;
-                
+
                 //tt.value()
 
                 // if (H[-H.color] > H.height && H[-H.color] >= H[H.color]) {
