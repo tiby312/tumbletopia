@@ -214,12 +214,13 @@ impl Evaluator {
                     strength += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
                 }
                 //let mut score: i64 = 0;
-                // if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                //     score -= tt;
-                // } else {
-                //     score += tt;
-                // }
-                tt.value()
+                if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
+                    -tt.value()
+                } else {
+                    tt.value()
+                }
+                //tt.value()
+
                 // if (H[-H.color] > H.height && H[-H.color] >= H[H.color]) {
                 //     score -= H.color;
                 // } else {
@@ -382,7 +383,7 @@ pub fn calculate_move(
     team: Team,
     move_history: &MoveHistory,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 6) {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 4) {
         let principal_variation: Vec<_> = mo
             .line
             .iter()
