@@ -149,6 +149,11 @@ struct SpokeInfo {
 }
 
 impl SpokeInfo {
+    pub fn new()->Self{
+        SpokeInfo{
+            data:std::array::from_fn(|_|SmallMesh::new())
+        }
+    }
     pub fn insert(&mut self, index: usize, dir: HDir, val: Option<Team>) {
         let (first_bit, second_bit) = match val {
             None => (false, false),
@@ -297,6 +302,23 @@ impl GameState {
     pub fn generate_loud_moves(&self, world: &board::MyWorld, team: Team) -> SmallMesh {
         //TODO remove
         let (verif, _, _) = self.generate_possible_moves_movement(world, team);
+
+
+        let mut spoke_info=SpokeInfo::new();
+
+        for index in world.get_game_cells().inner.iter_ones() {
+            for (i,(_, rest)) in self.factions.iter_end_points(world, index).iter().enumerate() {
+                let v=if let Some((_, team)) = rest {
+                    Some(*team)
+                }else{
+                    None
+                };
+                spoke_info.insert(index, HDir::from(i as u8), v);
+            }
+        }
+        //Now spoke info is setup.
+
+        
 
         // 6*3 possibiilties for each spoke.
         // data structure will be 2 bitfields.
