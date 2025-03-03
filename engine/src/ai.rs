@@ -212,13 +212,15 @@ impl Evaluator {
                 let height = height as i64;
                 if tt != Team::Neutral {
                     strength += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
-                }
+
+                    if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
+                        -tt.value()
+                    } else {
+                        tt.value()
+                    }
+                }else{0}
                 //let mut score: i64 = 0;
-                if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                    -tt.value()
-                } else {
-                    tt.value()
-                }
+                
                 //tt.value()
 
                 // if (H[-H.color] > H.height && H[-H.color] >= H[H.color]) {
