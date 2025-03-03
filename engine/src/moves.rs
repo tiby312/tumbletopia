@@ -145,13 +145,13 @@ pub enum MoveType {
 }
 
 struct SpokeInfo {
-    data: [SmallMesh; 2],
+    data: [bitvec::BitArr!(for 256*6); 2],
 }
 
 impl SpokeInfo {
-    pub fn new()->Self{
-        SpokeInfo{
-            data:std::array::from_fn(|_|SmallMesh::new())
+    pub fn new() -> Self {
+        SpokeInfo {
+            data: std::array::from_fn(|_| bitvec::bitarr![0;256*6]),
         }
     }
     pub fn insert(&mut self, index: usize, dir: HDir, val: Option<Team>) {
@@ -161,12 +161,12 @@ impl SpokeInfo {
             Some(Team::Black) => (true, false),
             Some(Team::Neutral) => (true, true),
         };
-        self.data[0].inner.set(6 * index + dir as usize, first_bit);
-        self.data[1].inner.set(6 * index + dir as usize, second_bit);
+        self.data[0].set(6 * index + dir as usize, first_bit);
+        self.data[1].set(6 * index + dir as usize, second_bit);
     }
     pub fn retrieve(&self, index: usize, dir: HDir) -> Option<Team> {
-        let first_bit = self.data[0].inner[6 * index + dir as usize];
-        let second_bit = self.data[1].inner[6 * index + dir as usize];
+        let first_bit = self.data[0][6 * index + dir as usize];
+        let second_bit = self.data[1][6 * index + dir as usize];
 
         match (first_bit, second_bit) {
             (false, false) => None,
@@ -177,31 +177,41 @@ impl SpokeInfo {
     }
 }
 
-#[derive(Default, Clone, Copy)]
-pub struct CellMeta {
-    data: [i8; 6],
+fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, game: &GameState) {
+    //Update spoke info
+    for index in world.get_game_cells().inner.iter_ones() {
+        for (i, (_, rest)) in game
+            .factions
+            .iter_end_points(world, index)
+            .iter()
+            .enumerate()
+        {
+            let v = if let Some((_, team)) = rest {
+                Some(*team)
+            } else {
+                None
+            };
+            spoke_info.insert(index, HDir::from(i as u8), v);
+        }
+    }
 }
-impl CellMeta {}
 
-pub struct Connections {
-    data: [CellMeta],
-}
+fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> [i64; 2] {
+    let mut num_attack: [i64; 2] = [0, 0];
 
-impl Connections {
-    fn doop(&mut self, index: usize, fo: &GameState) {}
+    for dir in HDir::all() {
+        if let Some(team) = spoke_info.retrieve(index, dir) {
+            if team == Team::Neutral {
+                continue;
+            }
+            num_attack[team] += 1;
+            continue;
+        }
+    }
+    num_attack
 }
 
 impl GameState {
-    fn calculate_connections(&self, world: &board::MyWorld) {
-        let mut v = vec![CellMeta::default(); 256];
-
-        for index in world.get_game_cells().inner.iter_ones() {
-            let mut num_attack: [i64; 2] = [0, 0];
-
-            let data = self.factions.iter_end_points(world, index).map(|x| x.0);
-            v[index].data = data;
-        }
-    }
     fn playable(&self, index: usize, team: Team, world: &board::MyWorld) -> Option<MoveType> {
         let mut num_attack: [i64; 2] = [0, 0];
 
@@ -303,22 +313,9 @@ impl GameState {
         //TODO remove
         let (verif, _, _) = self.generate_possible_moves_movement(world, team);
 
+        let mut spoke_info = SpokeInfo::new();
 
-        let mut spoke_info=SpokeInfo::new();
-
-        for index in world.get_game_cells().inner.iter_ones() {
-            for (i,(_, rest)) in self.factions.iter_end_points(world, index).iter().enumerate() {
-                let v=if let Some((_, team)) = rest {
-                    Some(*team)
-                }else{
-                    None
-                };
-                spoke_info.insert(index, HDir::from(i as u8), v);
-            }
-        }
-        //Now spoke info is setup.
-
-        
+        update_spoke_info(&mut spoke_info, world, self);
 
         // 6*3 possibiilties for each spoke.
         // data structure will be 2 bitfields.
@@ -327,16 +324,20 @@ impl GameState {
 
         let mut ret = SmallMesh::new();
         for index in world.get_game_cells().inner.iter_ones() {
-            let mut num_attack: [i64; 2] = [0, 0];
+            // let mut num_attack: [i64; 2] = [0, 0];
 
-            for (_, rest) in self.factions.iter_end_points(world, index) {
-                if let Some((_, team)) = rest {
-                    if team == Team::Neutral {
-                        continue;
-                    }
-                    num_attack[team] += 1;
-                }
-            }
+            // for (_, rest) in self.factions.iter_end_points(world, index) {
+            //     if let Some((_, team)) = rest {
+            //         if team == Team::Neutral {
+            //             continue;
+            //         }
+            //         num_attack[team] += 1;
+            //     }
+            // }
+
+            let num_attack = get_num_attack(&spoke_info, index);
+
+            //assert_eq!(num_attack,num_attack2);
 
             if let Some((height, rest)) = self.factions.get_cell_inner(index) {
                 let height = height as i64;
