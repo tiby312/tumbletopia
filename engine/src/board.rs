@@ -194,6 +194,35 @@ impl MyWorld {
     //     }
     // }
 
+    pub fn into_string(&self, state: &unit::GameStateTotal) -> String {
+        let mut ret = String::new();
+        for index in self.get_game_cells().inner.iter_ones() {
+            let foo = if let Some(foo) = state.tactical.factions.get_cell_inner(index) {
+                match foo {
+                    (2, Team::Neutral) => 'k',
+                    (1, Team::White) => 'r',
+                    (2, Team::White) => 's',
+                    (3, Team::White) => 't',
+                    (4, Team::White) => 'u',
+                    (5, Team::White) => 'v',
+                    (6, Team::White) => 'w',
+                    (1, Team::Black) => 'b',
+                    (2, Team::Black) => 'c',
+                    (3, Team::Black) => 'd',
+                    (4, Team::Black) => 'e',
+                    (5, Team::Black) => 'f',
+                    (6, Team::Black) => 'g',
+                    _ => unreachable!(),
+                }
+            } else {
+                '-'
+            };
+
+            ret.push(foo);
+        }
+        ret
+    }
+
     pub fn load_from_string(s: &str) -> MyWorld {
         // Area = (3√3 / 2) x (Side Length)^2
         //

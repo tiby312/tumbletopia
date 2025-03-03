@@ -2,7 +2,12 @@ use super::*;
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
-    MoveSelection(Axial, mesh::small_mesh::SmallMesh, Option<HaveMoved>),
+    MoveSelection(
+        Axial,
+        mesh::small_mesh::SmallMesh,
+        mesh::small_mesh::SmallMesh,
+        Option<HaveMoved>,
+    ),
     BuildSelection(Axial),
 }
 impl Default for CellSelection {
@@ -422,7 +427,10 @@ pub async fn reselect_loop(
 
     cca.inner &= c2.inner;
 
-    let mut cell = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
+    let loud_moves = game.tactical.generate_loud_moves(world, selected_unit.team);
+
+    let mut cell =
+        CellSelection::MoveSelection(unwrapped_selected_unit, cca, loud_moves, have_moved.clone());
 
     let pototo = doop
         .get_mouse_with_mesh(&mut cell, selected_unit.team, game, grey)
@@ -447,7 +455,7 @@ pub async fn reselect_loop(
     let target_cell = mouse_world;
 
     //This is the cell the user selected from the pool of available moves for the unit
-    let CellSelection::MoveSelection(_, ss, _) = cell else {
+    let CellSelection::MoveSelection(_, ss, _, _) = cell else {
         unreachable!()
     };
 

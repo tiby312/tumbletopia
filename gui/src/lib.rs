@@ -49,6 +49,7 @@ pub struct Models<T> {
     pub land: T,
     pub fog: T,
     pub label_arrow: T,
+    pub donut: T,
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
@@ -96,6 +97,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             land: quick_load(include_bytes!("../../assets/hex-grass.glb"), RESIZE, None),
             fog: quick_load(include_bytes!("../../assets/fog.glb"), RESIZE, None),
             label_arrow: quick_load(include_bytes!("../../assets/label_arrow.glb"), RESIZE, None),
+            donut: quick_load(include_bytes!("../../assets/donut.glb"), RESIZE, None),
         }
     }
 }

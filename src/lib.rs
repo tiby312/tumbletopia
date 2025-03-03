@@ -541,6 +541,8 @@ pub async fn game_play_thread(
     loop {
         let team = team_gen.next().unwrap();
 
+        gloo::console::console!(format!("Current game [{}]", world.into_string(&game)));
+
         doop.repaint_ui(team, &mut game).await;
 
         if let Some(g) = game.tactical.game_is_over(&world, team, &game_history) {
@@ -1114,8 +1116,7 @@ async fn render_command(
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
                 match selection {
-                    engine::main_logic::CellSelection::MoveSelection(_, mesh, _) => {
-                        //console_dbg!("doo=",mesh);
+                    engine::main_logic::CellSelection::MoveSelection(_, mesh, loud, _) => {
                         let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
                             let zzzz = 0.0;
 
@@ -1128,6 +1129,21 @@ async fn render_command(
                             .no_lighting()
                             .grey(*grey)
                             .build(select_model, &projjj);
+
+                        {
+                            let cells = loud.iter_mesh(Axial::zero()).map(|e| {
+                                let zzzz = 0.0;
+
+                                grid_snap(e, zzzz)
+                                    .chain(matrix::scale(1.0, 1.0, 1.0))
+                                    .generate()
+                            });
+                            draw_sys
+                                .batch(cells)
+                                .no_lighting()
+                                .grey(*grey)
+                                .build(&models.donut, &projjj);
+                        }
 
                         // if let Some(k) = hh {
                         //     if k.the_move
