@@ -408,15 +408,18 @@ pub async fn reselect_loop(
     // });
     //create_ai_state(team)
 
-    let _foo = game
-        .tactical
-        .bake_fog(&game.fog[team])
-        .generate_loud_moves(world, selected_unit.team);
+    let mut spoke_info = moves::SpokeInfo::new();
+    moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+
+    // let _foo = game
+    //     .tactical
+    //     .bake_fog(&game.fog[team])
+    //     .generate_loud_moves(world, selected_unit.team,&spoke_info);
 
     let (mut cca, _, _) = game
         .tactical
         .bake_fog(&game.fog[team])
-        .generate_possible_moves_movement(world, selected_unit.team);
+        .generate_possible_moves_movement(world, selected_unit.team, &spoke_info);
     cca.inner.set(moves::PASS_MOVE_INDEX, true);
 
     let c2 = game
@@ -427,7 +430,9 @@ pub async fn reselect_loop(
 
     cca.inner &= c2.inner;
 
-    let loud_moves = game.tactical.generate_loud_moves(world, selected_unit.team);
+    let loud_moves = game
+        .tactical
+        .generate_loud_moves(world, selected_unit.team, &spoke_info);
 
     let mut cell =
         CellSelection::MoveSelection(unwrapped_selected_unit, cca, loud_moves, have_moved.clone());

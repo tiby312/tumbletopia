@@ -602,8 +602,14 @@ pub async fn game_play_thread(
             game.update_fog(world, team);
             game_history.push((the_move, effect_m));
 
-            let curr_eval =
-                engine::ai::Evaluator::default().absolute_evaluate(&game.tactical, world, false);
+            let mut spoke_info = moves::SpokeInfo::new();
+            moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+            let curr_eval = engine::ai::Evaluator::default().absolute_evaluate(
+                &game.tactical,
+                world,
+                &spoke_info,
+                false,
+            );
             console_dbg!(curr_eval);
 
             continue;
@@ -621,8 +627,14 @@ pub async fn game_play_thread(
         game.update_fog(world, team);
         game_history.push(r);
 
-        let curr_eval_player =
-            engine::ai::Evaluator::default().absolute_evaluate(&game.tactical, world, false);
+        let mut spoke_info = moves::SpokeInfo::new();
+        moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+        let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
+            &game.tactical,
+            world,
+            &spoke_info,
+            false,
+        );
         console_dbg!(curr_eval_player);
     }
 }

@@ -168,6 +168,7 @@ impl Evaluator {
         &mut self,
         game: &GameState,
         world: &board::MyWorld,
+        spoke_info: &moves::SpokeInfo,
         _debug: bool,
     ) -> Eval {
         //white doesnt win with ai vs ai
@@ -575,15 +576,18 @@ impl<'a> AlphaBeta<'a> {
         // if let Some(g) = game.game_is_over(self.world, team, self.history) {
         //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
         // }
+        let mut spoke_info = moves::SpokeInfo::new();
+        moves::update_spoke_info(&mut spoke_info, self.world, game);
 
         if depth == 0 {
             return (
-                self.evaluator.absolute_evaluate(game, self.world, false),
+                self.evaluator
+                    .absolute_evaluate(game, self.world, &spoke_info, false),
                 tinyvec::array_vec![],
             );
         }
 
-        let captures = game.generate_loud_moves(self.world, team);
+        let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
 
@@ -598,7 +602,8 @@ impl<'a> AlphaBeta<'a> {
 
         if moves.is_empty() {
             return (
-                self.evaluator.absolute_evaluate(game, self.world, false),
+                self.evaluator
+                    .absolute_evaluate(game, self.world, &spoke_info, false),
                 tinyvec::array_vec![],
             );
         }
@@ -648,10 +653,13 @@ impl<'a> AlphaBeta<'a> {
             return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
+        let mut spoke_info = moves::SpokeInfo::new();
+        moves::update_spoke_info(&mut spoke_info, self.world, game);
+
         //TODO don't allow pass. why waste tones of branching? There aren't any
         //crazy tactical combinations involving passing
         let (all_moves, captures, reinfocements) =
-            game.generate_possible_moves_movement(self.world, team);
+            game.generate_possible_moves_movement(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
 
@@ -666,7 +674,8 @@ impl<'a> AlphaBeta<'a> {
 
         if moves.is_empty() {
             return (
-                self.evaluator.absolute_evaluate(game, self.world, false),
+                self.evaluator
+                    .absolute_evaluate(game, self.world, &spoke_info, false),
                 tinyvec::array_vec![],
             );
         }
