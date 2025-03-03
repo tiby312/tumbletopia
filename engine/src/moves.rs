@@ -212,17 +212,28 @@ fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> [i64; 2] {
 }
 
 impl GameState {
-    fn playable(&self, index: usize, team: Team, world: &board::MyWorld) -> Option<MoveType> {
-        let mut num_attack: [i64; 2] = [0, 0];
+    fn playable(
+        &self,
+        index: usize,
+        team: Team,
+        world: &board::MyWorld,
+        spoke_info: Option<&SpokeInfo>,
+    ) -> Option<MoveType> {
+        let num_attack = if let Some(spoke_info) = spoke_info {
+            get_num_attack(spoke_info, index)
+        } else {
+            let mut num_attack: [i64; 2] = [0, 0];
 
-        for (_, rest) in self.factions.iter_end_points(world, index) {
-            if let Some((_, team)) = rest {
-                if team == Team::Neutral {
-                    continue;
+            for (_, rest) in self.factions.iter_end_points(world, index) {
+                if let Some((_, team)) = rest {
+                    if team == Team::Neutral {
+                        continue;
+                    }
+                    num_attack[team] += 1;
                 }
-                num_attack[team] += 1;
             }
-        }
+            num_attack
+        };
 
         if num_attack[team] == 0 {
             return None;
@@ -255,11 +266,15 @@ impl GameState {
         team: Team,
         world: &board::MyWorld,
         ret: &mut SmallMesh,
+        spoke_info: &SpokeInfo,
     ) {
         for dir in HDir::all() {
             let mut cands = vec![];
             for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
-                if self.playable(index2 as usize, team, world).is_some() {
+                if self
+                    .playable(index2 as usize, team, world, Some(spoke_info))
+                    .is_some()
+                {
                     cands.push(index2);
                 }
                 if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
@@ -285,11 +300,15 @@ impl GameState {
         team: Team,
         world: &board::MyWorld,
         ret: &mut SmallMesh,
+        spoke_info: &SpokeInfo,
     ) {
         'outer: for dir in HDir::all() {
             let mut cands = vec![];
             for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
-                if self.playable(index2 as usize, team, world).is_some() {
+                if self
+                    .playable(index2 as usize, team, world, Some(spoke_info))
+                    .is_some()
+                {
                     cands.push(index2);
                 }
                 if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
@@ -311,7 +330,7 @@ impl GameState {
 
     pub fn generate_loud_moves(&self, world: &board::MyWorld, team: Team) -> SmallMesh {
         //TODO remove
-        let (verif, _, _) = self.generate_possible_moves_movement(world, team);
+        //let (verif, _, _) = self.generate_possible_moves_movement(world, team);
 
         let mut spoke_info = SpokeInfo::new();
 
@@ -363,11 +382,11 @@ impl GameState {
                     if num_attack[!team] == num_attack[team] {
                         //add every move coming out of this cell as a loud move
                         //that would increase the los of the cell being threatened.
-                        self.moves_that_increase_los(index, team, world, &mut ret);
+                        self.moves_that_increase_los(index, team, world, &mut ret, &spoke_info);
                     } else if num_attack[!team] == num_attack[team] + 1 {
                         //If the enemy has one more than us, our only option
                         //is to block (aside from reinforcing which we covered above)
-                        self.moves_that_block(index, team, world, &mut ret);
+                        self.moves_that_block(index, team, world, &mut ret, &spoke_info);
                     }
                 } else {
                     //If it is an enemy piece, then
@@ -378,7 +397,7 @@ impl GameState {
                     // if this is an enemy piece that is in contention
                     // any move that adds a LOS on this piece is a loud move.
                     if num_attack[team] == num_attack[!team] && num_attack[team] >= height {
-                        self.moves_that_increase_los(index, team, world, &mut ret);
+                        self.moves_that_increase_los(index, team, world, &mut ret, &spoke_info);
                     }
                 }
             }
@@ -392,7 +411,7 @@ impl GameState {
         //         panic!("FAAAIL");
         //     }
         // }
-        assert_eq!(((!verif.inner) & ret.inner).count_ones(), 0);
+        //assert_eq!(((!verif.inner) & ret.inner).count_ones(), 0);
 
         //gloo_console::console_dbg!("num loud moves",ret.inner.count_ones());
         return ret;
@@ -430,7 +449,7 @@ impl GameState {
         }
 
         for index in world.get_game_cells().inner.iter_ones() {
-            if let Some(v) = self.playable(index, team, world) {
+            if let Some(v) = self.playable(index, team, world, None) {
                 mesh.inner.set(index, true);
                 match v {
                     MoveType::Capture => captures.inner.set(index, true),
