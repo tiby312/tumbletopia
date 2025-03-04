@@ -250,16 +250,18 @@ impl GameState {
                 let index = index as usize;
                 let num_attack = get_num_attack(spoke_info, index);
 
-                let start = move_build::to_letter_coord(&mesh::small_mesh::inverse(index2), world);
-                let ind = move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
+                // let start = move_build::to_letter_coord(&mesh::small_mesh::inverse(index2), world);
+                // let ind = move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
+                // assert!(
+                //     num_attack[team] > 0,
+                //     "game[{}] start[{:?}] ind[{:?}]",
+                //     self.into_string(world),
+                //     start,
+                //     ind
+                // );
+
                 //We know this is true becuase this is a LOS ray we are marching through
-                assert!(
-                    num_attack[team] > 0,
-                    "game[{}] start[{:?}] ind[{:?}]",
-                    self.into_string(world),
-                    start,
-                    ind
-                );
+                assert!(num_attack[team] > 0);
 
                 Some((
                     index,
@@ -396,12 +398,9 @@ impl GameState {
                 continue;
             }
 
-            gloo_console::console_dbg!(dir);
             //tddtuts-utusbtddcdc
             for (index2, fo) in self.los_ray(index, dir, team, world, spoke_info) {
                 let ind = move_build::to_letter_coord(&mesh::small_mesh::inverse(index2), world);
-
-                gloo_console::console_dbg!(ind, fo);
                 match fo {
                     LosRayItem::Skip => {}
                     LosRayItem::End(Some(_)) | LosRayItem::Move => {
@@ -443,12 +442,10 @@ impl GameState {
                 }
             }
 
-            gloo_console::console_dbg!(dir);
             //tddtuts-utusbtddcdc
             for (index2, fo) in self.los_ray(index, dir, team, world, spoke_info) {
                 let ind = move_build::to_letter_coord(&mesh::small_mesh::inverse(index2), world);
 
-                gloo_console::console_dbg!(ind, fo);
                 match fo {
                     LosRayItem::Skip => {}
                     LosRayItem::End(Some(_)) | LosRayItem::Move => {
@@ -568,66 +565,72 @@ impl GameState {
                     if num_attack[!team] == num_attack[team] {
                         //add every move coming out of this cell as a loud move
                         //that would increase the los of the cell being threatened.
-                        self.moves_that_increase_los(index, team, world, &mut ret, &spoke_info);
-
-                        let mut c1 = SmallMesh::new();
-                        self.moves_that_increase_los(index, team, world, &mut c1, spoke_info);
-                        let mut c2 = SmallMesh::new();
                         self.moves_that_increase_los_better(
-                            index, team, world, &mut c2, spoke_info,
-                        );
-                        //assert_eq!(c1, c2);
-                        use std::ops::BitXor;
-                        let c3 = c1.inner.bitxor(c2.inner);
-                        let k: Vec<_> = c3
-                            .iter_ones()
-                            .map(|ii| {
-                                move_build::to_letter_coord(&mesh::small_mesh::inverse(ii), world)
-                            })
-                            .collect();
-                        let ind =
-                            move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
-                        assert_eq!(
-                            c1,
-                            c2,
-                            "{}::{:?}::{:?}::index={:?}",
-                            self.into_string(world),
-                            k,
+                            index,
                             team,
-                            ind
+                            world,
+                            &mut ret,
+                            &spoke_info,
                         );
+
+                        // let mut c1 = SmallMesh::new();
+                        // self.moves_that_increase_los(index, team, world, &mut c1, spoke_info);
+                        // let mut c2 = SmallMesh::new();
+                        // self.moves_that_increase_los_better(
+                        //     index, team, world, &mut c2, spoke_info,
+                        // );
+                        // //assert_eq!(c1, c2);
+                        // use std::ops::BitXor;
+                        // let c3 = c1.inner.bitxor(c2.inner);
+                        // let k: Vec<_> = c3
+                        //     .iter_ones()
+                        //     .map(|ii| {
+                        //         move_build::to_letter_coord(&mesh::small_mesh::inverse(ii), world)
+                        //     })
+                        //     .collect();
+                        // let ind =
+                        //     move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
+                        // assert_eq!(
+                        //     c1,
+                        //     c2,
+                        //     "{}::{:?}::{:?}::index={:?}",
+                        //     self.into_string(world),
+                        //     k,
+                        //     team,
+                        //     ind
+                        // );
                     } else if num_attack[!team] == num_attack[team] + 1 {
                         //If the enemy has one more than us, our only option
                         //is to block (aside from reinforcing which we covered above)
-                        self.moves_that_block(index, team, world, &mut ret, &spoke_info);
+                        self.moves_that_block_better(index, team, world, &mut ret, &spoke_info);
 
-                        let mut c1 = SmallMesh::new();
-                        self.moves_that_block(index, team, world, &mut c1, spoke_info);
-                        let mut c2 = SmallMesh::new();
-                        self.moves_that_block_better(index, team, world, &mut c2, spoke_info);
+                        // let mut c1 = SmallMesh::new();
+                        // self.moves_that_block(index, team, world, &mut c1, spoke_info);
+                        // let mut c2 = SmallMesh::new();
+                        // self.moves_that_block_better(index, team, world, &mut c2, spoke_info);
 
-                        //tddtuts-utusbtddcdc
+                        // //tddtuts-utusbtddcdc
 
-                        //-------------b-r--k------------------
-                        let k: Vec<_> = c2
-                            .inner
-                            .iter_ones()
-                            .map(|ii| {
-                                move_build::to_letter_coord(&mesh::small_mesh::inverse(ii), world)
-                            })
-                            .collect();
-                        let ind =
-                            move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
-                        assert_eq!(
-                            c1,
-                            c2,
-                            "{}::{:?}::{:?}::index={:?}",
-                            self.into_string(world),
-                            k,
-                            team,
-                            ind
-                        );
-                        gloo_console::console_dbg!("passed test!");
+                        // //-------------b-r--k------------------
+                        // let k: Vec<_> = c2
+                        //     .inner
+                        //     .iter_ones()
+                        //     .map(|ii| {
+                        //         move_build::to_letter_coord(&mesh::small_mesh::inverse(ii), world)
+                        //     })
+                        //     .collect();
+                        // let ind =
+                        //     move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
+                        // assert_eq!(
+                        //     c1,
+                        //     c2,
+                        //     "{}::{:?}::{:?}::index={:?}",
+                        //     self.into_string(world),
+                        //     k,
+                        //     team,
+                        //     ind
+                        // );
+                        // gloo_console::console_dbg!("passed test!");
                     }
                 } else {
                     //If it is an enemy piece, then
