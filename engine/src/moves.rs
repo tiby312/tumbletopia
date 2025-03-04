@@ -3,7 +3,7 @@ use hex::HDir;
 
 use super::*;
 
-use crate::mesh::small_mesh::SmallMesh;
+use crate::{board::MyWorld, mesh::small_mesh::SmallMesh};
 
 pub struct EndPoints<T> {
     inner: [T; 6],
@@ -183,6 +183,8 @@ impl SpokeInfo {
 }
 
 pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, game: &GameState) {
+    //tddt-t--dt---t-d-d-
+
     //Update spoke info
     for index in world.get_game_cells().inner.iter_ones() {
         for (i, (_, rest)) in game
@@ -197,6 +199,7 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
                 None
             };
             spoke_info.insert(index, HDir::from(i as u8), v);
+            assert_eq!(v, spoke_info.retrieve(index, HDir::from(i as u8)));
         }
     }
 }
@@ -216,7 +219,77 @@ pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> [i64; 2] {
     num_attack
 }
 
+#[derive(Debug)]
+enum LosRayItem {
+    Skip,
+    End(Option<MoveType>),
+    Move,
+}
 impl GameState {
+    fn los_ray<'b>(
+        &'b self,
+        index2: usize,
+        dir: HDir,
+        team: Team,
+        world: &'b MyWorld,
+        spoke_info: &'b SpokeInfo,
+    ) -> impl Iterator<Item = (usize, LosRayItem)> + use<'b> {
+        let Some(foo) = self.factions.get_cell_inner(index2) else {
+            panic!("Issue");
+        };
+
+        assert_eq!(foo.1, team);
+        let mut blocked = false;
+        unit::ray(mesh::small_mesh::inverse(index2), dir, world)
+            .1
+            .filter_map(move |index| {
+                if blocked {
+                    return None;
+                }
+
+                let index = index as usize;
+                let num_attack = get_num_attack(spoke_info, index);
+
+                let start = move_build::to_letter_coord(&mesh::small_mesh::inverse(index2), world);
+                let ind = move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
+                //We know this is true becuase this is a LOS ray we are marching through
+                assert!(
+                    num_attack[team] > 0,
+                    "game[{}] start[{:?}] ind[{:?}]",
+                    self.into_string(world),
+                    start,
+                    ind
+                );
+
+                Some((
+                    index,
+                    if let Some((height, rest)) = self.factions.get_cell_inner(index) {
+                        assert!(height > 0);
+
+                        blocked = true;
+                        let height = height as i64;
+                        if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
+                            if rest == team {
+                                LosRayItem::End(Some(MoveType::Reinforce))
+                            } else {
+                                LosRayItem::End(Some(MoveType::Capture))
+                            }
+                        } else {
+                            LosRayItem::End(None)
+                        }
+                    } else {
+                        if num_attack[team] < num_attack[!team] {
+                            LosRayItem::Skip
+                        } else {
+                            LosRayItem::Move
+                        }
+                    },
+                ))
+            })
+            .fuse()
+    }
+
+    //TODO prefer los_ray
     fn playable(
         &self,
         index: usize,
@@ -276,6 +349,7 @@ impl GameState {
         spoke_info: &SpokeInfo,
     ) {
         for dir in HDir::all() {
+            //TODO there is a way to skip over spokes that we know are not opponent controlled.
             let mut cands = vec![];
             for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
                 if self
@@ -285,6 +359,7 @@ impl GameState {
                     cands.push(index2);
                 }
                 if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
+                    assert_eq!(spoke_info.retrieve(index, dir), Some(team2));
                     //If we already have this LOS, then any move along this ray wont increase the LOS,
                     //so toss all of them.
                     if team2 == !team {
@@ -296,11 +371,109 @@ impl GameState {
                     } else {
                         break;
                     }
+                } else {
+                    //assert_eq!(spoke_info.retrieve(index,dir),None);
                 }
             }
         }
     }
 
+    fn moves_that_block_better(
+        &self,
+        index: usize,
+        team: Team,
+        world: &board::MyWorld,
+        ret: &mut SmallMesh,
+        spoke_info: &SpokeInfo,
+    ) {
+        for dir in HDir::all() {
+            if let Some(team2) = spoke_info.retrieve(index, dir) {
+                if team2 == !team {
+                } else {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+
+            gloo_console::console_dbg!(dir);
+            //tddtuts-utusbtddcdc
+            for (index2, fo) in self.los_ray(index, dir, team, world, spoke_info) {
+                let ind = move_build::to_letter_coord(&mesh::small_mesh::inverse(index2), world);
+
+                gloo_console::console_dbg!(ind, fo);
+                match fo {
+                    LosRayItem::Skip => {}
+                    LosRayItem::End(Some(_)) | LosRayItem::Move => {
+                        ret.inner.set(index2 as usize, true);
+                    }
+                    _ => {}
+                }
+            }
+
+            // for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
+            //     if self
+            //         .playable(index2 as usize, team, world, spoke_info)
+            //         .is_some()
+            //     {
+            //         ret.inner.set(index2 as usize, true);
+            //     } else {
+            //         break;
+            //         // if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
+            //         //     assert!(team2!=team);
+            //         //     break;
+            //         // }
+            //     }
+            // }
+        }
+    }
+
+    fn moves_that_increase_los_better(
+        &self,
+        index: usize,
+        team: Team,
+        world: &board::MyWorld,
+        ret: &mut SmallMesh,
+        spoke_info: &SpokeInfo,
+    ) {
+        for dir in HDir::all() {
+            if let Some(team2) = spoke_info.retrieve(index, dir) {
+                if team2 == team {
+                    continue;
+                }
+            }
+
+            gloo_console::console_dbg!(dir);
+            //tddtuts-utusbtddcdc
+            for (index2, fo) in self.los_ray(index, dir, team, world, spoke_info) {
+                let ind = move_build::to_letter_coord(&mesh::small_mesh::inverse(index2), world);
+
+                gloo_console::console_dbg!(ind, fo);
+                match fo {
+                    LosRayItem::Skip => {}
+                    LosRayItem::End(Some(_)) | LosRayItem::Move => {
+                        ret.inner.set(index2 as usize, true);
+                    }
+                    _ => {}
+                }
+            }
+
+            // for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
+            //     if self
+            //         .playable(index2 as usize, team, world, spoke_info)
+            //         .is_some()
+            //     {
+            //         ret.inner.set(index2 as usize, true);
+            //     } else {
+            //         break;
+            //         // if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
+            //         //     assert!(team2!=team);
+            //         //     break;
+            //         // }
+            //     }
+            // }
+        }
+    }
     fn moves_that_increase_los(
         &self,
         index: usize,
@@ -310,6 +483,7 @@ impl GameState {
         spoke_info: &SpokeInfo,
     ) {
         'outer: for dir in HDir::all() {
+            //TODO there is a way to skip over spokes that we know are not opponent controlled.
             let mut cands = vec![];
             for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
                 if self
@@ -395,10 +569,65 @@ impl GameState {
                         //add every move coming out of this cell as a loud move
                         //that would increase the los of the cell being threatened.
                         self.moves_that_increase_los(index, team, world, &mut ret, &spoke_info);
+
+                        let mut c1 = SmallMesh::new();
+                        self.moves_that_increase_los(index, team, world, &mut c1, spoke_info);
+                        let mut c2 = SmallMesh::new();
+                        self.moves_that_increase_los_better(
+                            index, team, world, &mut c2, spoke_info,
+                        );
+                        //assert_eq!(c1, c2);
+                        use std::ops::BitXor;
+                        let c3 = c1.inner.bitxor(c2.inner);
+                        let k: Vec<_> = c3
+                            .iter_ones()
+                            .map(|ii| {
+                                move_build::to_letter_coord(&mesh::small_mesh::inverse(ii), world)
+                            })
+                            .collect();
+                        let ind =
+                            move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
+                        assert_eq!(
+                            c1,
+                            c2,
+                            "{}::{:?}::{:?}::index={:?}",
+                            self.into_string(world),
+                            k,
+                            team,
+                            ind
+                        );
                     } else if num_attack[!team] == num_attack[team] + 1 {
                         //If the enemy has one more than us, our only option
                         //is to block (aside from reinforcing which we covered above)
                         self.moves_that_block(index, team, world, &mut ret, &spoke_info);
+
+                        let mut c1 = SmallMesh::new();
+                        self.moves_that_block(index, team, world, &mut c1, spoke_info);
+                        let mut c2 = SmallMesh::new();
+                        self.moves_that_block_better(index, team, world, &mut c2, spoke_info);
+
+                        //tddtuts-utusbtddcdc
+
+                        //-------------b-r--k------------------
+                        let k: Vec<_> = c2
+                            .inner
+                            .iter_ones()
+                            .map(|ii| {
+                                move_build::to_letter_coord(&mesh::small_mesh::inverse(ii), world)
+                            })
+                            .collect();
+                        let ind =
+                            move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
+                        assert_eq!(
+                            c1,
+                            c2,
+                            "{}::{:?}::{:?}::index={:?}",
+                            self.into_string(world),
+                            k,
+                            team,
+                            ind
+                        );
+                        gloo_console::console_dbg!("passed test!");
                     }
                 } else {
                     //If it is an enemy piece, then

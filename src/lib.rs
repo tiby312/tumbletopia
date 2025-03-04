@@ -541,7 +541,10 @@ pub async fn game_play_thread(
     loop {
         let team = team_gen.next().unwrap();
 
-        gloo::console::console!(format!("Current game [{}]", world.into_string(&game)));
+        gloo::console::console!(format!(
+            "Current game [{}]",
+            game.tactical.into_string(world)
+        ));
 
         doop.repaint_ui(team, &mut game).await;
 

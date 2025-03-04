@@ -179,25 +179,11 @@ fn test_dis_to_hex_border() {
     //panic!("FIN");
 }
 
-impl MyWorld {
-    // pub fn with_size(s:i8,starting_team:ActiveTeam) -> MyWorld {
-    //     let size=s;
-
-    //     let land = mesh::small_mesh::SmallMesh::from_iter(
-    //         hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()),
-    //     );
-
-    //     MyWorld {
-    //         land,
-    //         radius: size as u8,
-    //         starting_team
-    //     }
-    // }
-
-    pub fn into_string(&self, state: &unit::GameStateTotal) -> String {
+impl GameState {
+    pub fn into_string(&self, world: &MyWorld) -> String {
         let mut ret = String::new();
-        for index in self.get_game_cells().inner.iter_ones() {
-            let foo = if let Some(foo) = state.tactical.factions.get_cell_inner(index) {
+        for index in world.get_game_cells().inner.iter_ones() {
+            let foo = if let Some(foo) = self.factions.get_cell_inner(index) {
                 match foo {
                     (2, Team::Neutral) => 'k',
                     (1, Team::White) => 'r',
@@ -222,6 +208,21 @@ impl MyWorld {
         }
         ret
     }
+}
+impl MyWorld {
+    // pub fn with_size(s:i8,starting_team:ActiveTeam) -> MyWorld {
+    //     let size=s;
+
+    //     let land = mesh::small_mesh::SmallMesh::from_iter(
+    //         hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()),
+    //     );
+
+    //     MyWorld {
+    //         land,
+    //         radius: size as u8,
+    //         starting_team
+    //     }
+    // }
 
     pub fn load_from_string(s: &str) -> MyWorld {
         // Area = (3√3 / 2) x (Side Length)^2
