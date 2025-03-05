@@ -283,7 +283,7 @@ impl Evaluator {
             //     }
             // } else {
             //     let ownership = num_white - num_black;
-            
+
             //     if ownership > 0 {
             //         score += ownership;
             //         territory_count += 1;
