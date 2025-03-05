@@ -196,7 +196,7 @@ impl Evaluator {
         // let mut unseen = 0;
 
         let mut total_foo = 0;
-        let mut strength = 0;
+        let mut strength_parity = 0;
         for index in world.get_game_cells().inner.iter_ones() {
             let mut num_attack: [i64; 2] = [0, 0];
 
@@ -212,7 +212,7 @@ impl Evaluator {
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
                 if tt != Team::Neutral {
-                    strength += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
+                    strength_parity += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
 
                     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
                         -tt.value()
@@ -300,7 +300,7 @@ impl Evaluator {
             //     }
             // };
         }
-        total_foo * 100000 + strength
+        total_foo * 100000 + strength_parity
         //(stack_count + territory_count) * score + (unseen + contested) * strength
     }
 }
