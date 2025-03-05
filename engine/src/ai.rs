@@ -1,4 +1,4 @@
-use crate::{board::MyWorld, mesh::small_mesh};
+use crate::{board::MyWorld, mesh::small_mesh, moves::get_num_attack};
 
 use super::*;
 
@@ -171,43 +171,21 @@ impl Evaluator {
         spoke_info: &moves::SpokeInfo,
         _debug: bool,
     ) -> Eval {
-        //white doesnt win with ai vs ai
-        //s--c--s--t---cdbc--
-        //["E5", "C4", "B3", "E4", "B2", "D4", "C4"]
-        //["E5", "C4", "B3", "D4", "C4", "E4", "D4"]
-        // if red plays e5, you end up with s--tscs-seds-cdbc--   -> 9/10
-        // if red plays d4, you end up with s--ct-s--tss-cdcc-d   -> 9/9
-
-        //tc-s-d-re-srces-s--
-
-        //white doesnt seem like it should win ai vs ai
-        //-tccd--t-t-ct--rdd-
-
-        //problematic game
-        // d--d--t--d-t---dtt-
-        // the ai is returning A1,D4,B4
-        // it should return B4,D4,C5/B2
-
-        // let mut score = 0;
-        // let mut stack_count = 0;
-        // let mut territory_count = 0;
-        // let mut strength = 0;
-        // let mut contested = 0;
-        // let mut unseen = 0;
-
         let mut total_foo = 0;
         let mut strength_parity = 0;
         for index in world.get_game_cells().inner.iter_ones() {
-            let mut num_attack: [i64; 2] = [0, 0];
+            let num_attack = get_num_attack(spoke_info, index);
 
-            for (_, rest) in game.factions.iter_end_points(world, index) {
-                if let Some((_, team)) = rest {
-                    if team == Team::Neutral {
-                        continue;
-                    }
-                    num_attack[team] += 1;
-                }
-            }
+            // let mut num_attack: [i64; 2] = [0, 0];
+
+            // for (_, rest) in game.factions.iter_end_points(world, index) {
+            //     if let Some((_, team)) = rest {
+            //         if team == Team::Neutral {
+            //             continue;
+            //         }
+            //         num_attack[team] += 1;
+            //     }
+            // }
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
@@ -222,23 +200,6 @@ impl Evaluator {
                 } else {
                     0
                 }
-                //let mut score: i64 = 0;
-
-                //tt.value()
-
-                // if (H[-H.color] > H.height && H[-H.color] >= H[H.color]) {
-                //     score -= H.color;
-                // } else {
-                //     score += H.color;
-                // }
-
-                // let foo = match tt {
-                //     Team::Black => -1,
-                //     Team::White => 1,
-                //     Team::Neutral => 0,
-                // };
-                // foo
-                //score
             } else {
                 if num_attack[Team::White] > num_attack[Team::Black] {
                     1
@@ -248,79 +209,11 @@ impl Evaluator {
                     0
                 }
             };
-
             total_foo += temp_score;
-
-            // if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-            //     let height = height as i64;
-
-            //     let curr_strength = match tt {
-            //         ActiveTeam::White => height.max(num_white - 1),
-            //         ActiveTeam::Black => -height.max(num_black - 1),
-            //         ActiveTeam::Neutral => 0,
-            //     };
-
-            //     strength += curr_strength;
-
-            //     stack_count += 1;
-
-            //     match tt {
-            //         ActiveTeam::White => {
-            //             if num_black > height {
-            //                 score -= 1
-            //             } else {
-            //                 score += 1
-            //             }
-            //         }
-            //         ActiveTeam::Black => {
-            //             if num_white > height {
-            //                 score += 1
-            //             } else {
-            //                 score -= 1
-            //             }
-            //         }
-            //         ActiveTeam::Neutral => {}
-            //     }
-            // } else {
-            //     let ownership = num_white - num_black;
-
-            //     if ownership > 0 {
-            //         score += ownership;
-            //         territory_count += 1;
-            //     } else if ownership < 0 {
-            //         score += ownership;
-            //         territory_count += 1;
-            //     } else {
-            //         //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
-            //         if num_white > 0 {
-            //             contested += 1
-            //         } else {
-            //             unseen += 1;
-            //         }
-            //     }
-            // };
         }
         total_foo * 100000 + strength_parity
-        //(stack_count + territory_count) * score + (unseen + contested) * strength
     }
 }
-
-// fn around(point: Axial) -> impl Iterator<Item = Axial> {
-//     point.to_cube().ring(1).map(|b| b.to_axial())
-// }
-
-// pub fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
-//     workspace.clear();
-//     workspace.union_with(mesh);
-
-//     for a in workspace.iter_mesh() {
-//         for b in around(a) {
-//             if mesh.valid_coord(b) {
-//                 mesh.set_coord(b, true);
-//             }
-//         }
-//     }
-// }
 
 struct TranspositionTable {
     a: std::collections::BTreeMap<u64, moves::ActualMove>,
@@ -340,38 +233,6 @@ impl TranspositionTable {
         self.a.get(&a.hash_me())
     }
 }
-
-// //TODO use bump allocator!!!!!
-// struct PrincipalVariation {
-//     a: std::collections::BTreeMap<Vec<moves::ActualMove>, (moves::ActualMove, Eval)>,
-// }
-// impl PrincipalVariation {
-//     pub fn get_best_prev_move(
-//         &self,
-//         path: &[moves::ActualMove],
-//     ) -> Option<&(moves::ActualMove, Eval)> {
-//         self.a.get(path)
-//     }
-//     pub fn get_best_prev_move_mut(
-//         &mut self,
-//         path: &[moves::ActualMove],
-//     ) -> Option<&mut (moves::ActualMove, Eval)> {
-//         self.a.get_mut(path)
-//     }
-
-//     pub fn update(&mut self, path: &[moves::ActualMove], aaa: &moves::ActualMove, eval: Eval) {
-//         //if let Some(aaa) = &ret {
-//         if let Some(foo) = self.get_best_prev_move_mut(path) {
-//             *foo = (aaa.clone(), eval);
-//         } else {
-//             self.insert(path, aaa.clone(), eval);
-//         }
-//         //}
-//     }
-//     pub fn insert(&mut self, path: &[moves::ActualMove], m: moves::ActualMove, eval: Eval) {
-//         self.a.insert(path.to_vec(), (m, eval));
-//     }
-// }
 
 const STACK_SIZE: usize = 16;
 
