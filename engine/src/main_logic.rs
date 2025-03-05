@@ -408,7 +408,7 @@ pub async fn reselect_loop(
     // });
     //create_ai_state(team)
 
-    let mut spoke_info = moves::SpokeInfo::new();
+    let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
     moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
 
     // let _foo = game

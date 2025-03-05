@@ -437,7 +437,7 @@ impl<'a> AlphaBeta<'a> {
         // if let Some(g) = game.game_is_over(self.world, team, self.history) {
         //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
         // }
-        let mut spoke_info = moves::SpokeInfo::new();
+        let mut spoke_info = moves::SpokeInfo::new(game);
         moves::update_spoke_info(&mut spoke_info, self.world, game);
 
         if depth == 0 {
@@ -514,7 +514,8 @@ impl<'a> AlphaBeta<'a> {
             return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
-        let mut spoke_info = moves::SpokeInfo::new();
+        let mut spoke_info = moves::SpokeInfo::new(game);
+
         moves::update_spoke_info(&mut spoke_info, self.world, game);
 
         //TODO don't allow pass. why waste tones of branching? There aren't any

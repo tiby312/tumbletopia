@@ -149,14 +149,16 @@ pub enum MoveType {
     Fresh,
 }
 
-pub struct SpokeInfo {
+pub struct SpokeInfo<'a> {
     data: [bitvec::BitArr!(for 256*6); 2],
+    _game: &'a GameState,
 }
 
-impl SpokeInfo {
-    pub fn new() -> Self {
+impl<'a> SpokeInfo<'a> {
+    pub fn new(game: &'a GameState) -> Self {
         SpokeInfo {
             data: std::array::from_fn(|_| bitvec::bitarr![0;256*6]),
+            _game: game,
         }
     }
     pub fn insert(&mut self, index: usize, dir: HDir, val: Option<Team>) {
