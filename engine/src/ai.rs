@@ -544,7 +544,15 @@ impl<'a> AlphaBeta<'a> {
         //This is impossible since you can always pass
         //assert!(!moves.is_empty());
 
+        //let loud_moves=game.generate_loud_moves(self.world, team, &spoke_info);
+
+
         let move_value = |index: usize| {
+            
+            // if loud_moves.inner[index]{
+            //     return 5;
+            // }
+            
             if captures.inner[index] {
                 return 4;
             }

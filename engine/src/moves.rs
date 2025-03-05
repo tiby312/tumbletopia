@@ -629,17 +629,6 @@ impl GameState {
             }
         }
 
-        // for a in ret.inner.iter_ones() {
-        //     if !verif.inner[a]{
-        //         let res = move_build::to_letter_coord(&mesh::small_mesh::inverse(a), world);
-        //         let k=format!("{}{}", res.0, res.1);
-        //         gloo_console::console_dbg!(k);
-        //         panic!("FAAAIL");
-        //     }
-        // }
-        //assert_eq!(((!verif.inner) & ret.inner).count_ones(), 0);
-
-        //gloo_console::console_dbg!("num loud moves",ret.inner.count_ones());
         return ret;
 
         //Add moves that are this team capture opponents.
