@@ -611,7 +611,10 @@ impl GameState {
 
                     // if this is an enemy piece that is in contention
                     // any move that adds a LOS on this piece is a loud move.
-                    if num_attack[team] == num_attack[!team] && num_attack[team] >= height {
+                    if (num_attack[team] == num_attack[!team]
+                        || num_attack[team] + 1 == num_attack[!team])
+                        && num_attack[team] >= height
+                    {
                         self.moves_that_increase_los_better(
                             index,
                             team,
