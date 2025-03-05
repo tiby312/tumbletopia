@@ -221,8 +221,8 @@ pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> [i64; 2] {
 
 #[derive(Debug)]
 enum LosRayItem {
-    Skip,
-    End(Option<MoveType>),
+    //Skip,
+    End { height: u8, team: Team },
     Move,
 }
 impl GameState {
@@ -230,15 +230,8 @@ impl GameState {
         &'b self,
         index2: usize,
         dir: HDir,
-        team: Team,
         world: &'b MyWorld,
-        spoke_info: &'b SpokeInfo,
     ) -> impl Iterator<Item = (usize, LosRayItem)> + use<'b> {
-        let Some(foo) = self.factions.get_cell_inner(index2) else {
-            panic!("Issue");
-        };
-
-        assert_eq!(foo.1, team);
         let mut blocked = false;
         unit::ray(mesh::small_mesh::inverse(index2), dir, world)
             .1
@@ -248,20 +241,6 @@ impl GameState {
                 }
 
                 let index = index as usize;
-                let num_attack = get_num_attack(spoke_info, index);
-
-                // let start = move_build::to_letter_coord(&mesh::small_mesh::inverse(index2), world);
-                // let ind = move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
-                // assert!(
-                //     num_attack[team] > 0,
-                //     "game[{}] start[{:?}] ind[{:?}]",
-                //     self.into_string(world),
-                //     start,
-                //     ind
-                // );
-
-                //We know this is true becuase this is a LOS ray we are marching through
-                assert!(num_attack[team] > 0);
 
                 Some((
                     index,
@@ -269,22 +248,24 @@ impl GameState {
                         assert!(height > 0);
 
                         blocked = true;
-                        let height = height as i64;
-                        if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
-                            if rest == team {
-                                LosRayItem::End(Some(MoveType::Reinforce))
-                            } else {
-                                LosRayItem::End(Some(MoveType::Capture))
-                            }
-                        } else {
-                            LosRayItem::End(None)
-                        }
+                        // let height = height as i64;
+                        // if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
+                        //     if rest == team {
+                        //         LosRayItem::End(Some(MoveType::Reinforce))
+                        //     } else {
+                        //         LosRayItem::End(Some(MoveType::Capture))
+                        //     }
+                        // } else {
+                        //     LosRayItem::End(None)
+                        // }
+                        LosRayItem::End { height, team: rest }
                     } else {
-                        if num_attack[team] < num_attack[!team] {
-                            LosRayItem::Skip
-                        } else {
-                            LosRayItem::Move
-                        }
+                        LosRayItem::Move
+                        // if num_attack[team] < num_attack[!team] {
+                        //     LosRayItem::Skip
+                        // } else {
+                        //     LosRayItem::Move
+                        // }
                     },
                 ))
             })
@@ -399,31 +380,26 @@ impl GameState {
             }
 
             //tddtuts-utusbtddcdc
-            for (index2, fo) in self.los_ray(index, dir, team, world, spoke_info) {
-                let ind = move_build::to_letter_coord(&mesh::small_mesh::inverse(index2), world);
+            for (index2, fo) in self.los_ray(index, dir, world) {
+                let num_attack = get_num_attack(spoke_info, index2);
+
                 match fo {
-                    LosRayItem::Skip => {}
-                    LosRayItem::End(Some(_)) | LosRayItem::Move => {
-                        ret.inner.set(index2 as usize, true);
+                    LosRayItem::Move => {
+                        if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+                            ret.inner.set(index2 as usize, true);
+                        }
                     }
-                    _ => {}
+                    LosRayItem::End {
+                        height,
+                        team: team2,
+                    } => {
+                        if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
+                        {
+                            ret.inner.set(index2 as usize, true);
+                        }
+                    }
                 }
             }
-
-            // for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
-            //     if self
-            //         .playable(index2 as usize, team, world, spoke_info)
-            //         .is_some()
-            //     {
-            //         ret.inner.set(index2 as usize, true);
-            //     } else {
-            //         break;
-            //         // if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
-            //         //     assert!(team2!=team);
-            //         //     break;
-            //         // }
-            //     }
-            // }
         }
     }
 
@@ -443,32 +419,27 @@ impl GameState {
             }
 
             //tddtuts-utusbtddcdc
-            for (index2, fo) in self.los_ray(index, dir, team, world, spoke_info) {
-                let ind = move_build::to_letter_coord(&mesh::small_mesh::inverse(index2), world);
+            for (index2, fo) in self.los_ray(index, dir, world) {
+                let num_attack = get_num_attack(spoke_info, index2);
 
                 match fo {
-                    LosRayItem::Skip => {}
-                    LosRayItem::End(Some(_)) | LosRayItem::Move => {
-                        ret.inner.set(index2 as usize, true);
+                    LosRayItem::Move => {
+                        if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+                            ret.inner.set(index2 as usize, true);
+                        }
+                    }
+                    LosRayItem::End {
+                        height,
+                        team: team2,
+                    } => {
+                        if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
+                        {
+                            ret.inner.set(index2 as usize, true);
+                        }
                     }
                     _ => {}
                 }
             }
-
-            // for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
-            //     if self
-            //         .playable(index2 as usize, team, world, spoke_info)
-            //         .is_some()
-            //     {
-            //         ret.inner.set(index2 as usize, true);
-            //     } else {
-            //         break;
-            //         // if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
-            //         //     assert!(team2!=team);
-            //         //     break;
-            //         // }
-            //     }
-            // }
         }
     }
     fn moves_that_increase_los(
@@ -641,7 +612,13 @@ impl GameState {
                     // if this is an enemy piece that is in contention
                     // any move that adds a LOS on this piece is a loud move.
                     if num_attack[team] == num_attack[!team] && num_attack[team] >= height {
-                        self.moves_that_increase_los(index, team, world, &mut ret, &spoke_info);
+                        self.moves_that_increase_los_better(
+                            index,
+                            team,
+                            world,
+                            &mut ret,
+                            &spoke_info,
+                        );
                     }
                 }
             }
