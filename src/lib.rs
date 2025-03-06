@@ -5,6 +5,7 @@ use engine::main_logic::MouseEvent;
 use cgmath::Vector2;
 use engine::mesh;
 use engine::move_build;
+use engine::move_build::GameAxial;
 use engine::MoveHistory;
 use gloo::console::console_dbg;
 
@@ -1447,9 +1448,9 @@ fn update_text(
     let bbb = alphabet.chars().nth(rr as usize).unwrap();
     let ccc = alphabet.chars().nth((rr * 2) as usize).unwrap();
     console_dbg!(aaa, bbb, ccc);
-    let a11 = move_build::from_letter_coord(aaa, 1, &world);
-    let a22 = move_build::from_letter_coord(bbb, 1, &world);
-    let a33 = move_build::from_letter_coord(ccc, 1 + rr, &world);
+    let a11 = Axial::from_letter_coord(aaa, 1, &world);
+    let a22 = Axial::from_letter_coord(bbb, 1, &world);
+    let a33 = Axial::from_letter_coord(ccc, 1 + rr, &world);
 
     let a1 = Axial { q: 0, r: -rr };
     let a2 = Axial { q: rr, r: -rr };
@@ -1464,9 +1465,9 @@ fn update_text(
         k.push(make_text(a.into(), letter.to_uppercase().to_string()))
     }
 
-    let a11 = move_build::from_letter_coord(aaa, 1, &world);
-    let a22 = move_build::from_letter_coord(aaa, 1 + rr, &world);
-    let a33 = move_build::from_letter_coord(bbb, 1 + rr + rr, &world);
+    let a11 = Axial::from_letter_coord(aaa, 1, &world);
+    let a22 = Axial::from_letter_coord(aaa, 1 + rr, &world);
+    let a33 = Axial::from_letter_coord(bbb, 1 + rr + rr, &world);
 
     let rr = radius - 1;
     let a1 = Axial { q: 0, r: -rr };

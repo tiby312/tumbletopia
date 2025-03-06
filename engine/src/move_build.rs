@@ -239,25 +239,34 @@ impl MoveEffect {
     // }
 }
 
-pub fn from_letter_coord(foo: char, num: i8, world: &board::MyWorld) -> Axial {
-    let r = num - world.radius as i8;
-
-    let (index, _) = LETTER_COORDINATES
-        .iter()
-        .enumerate()
-        .find(|(_, x)| **x == foo)
-        .unwrap();
-
-    let q = index as i8 - (r + world.radius as i8) + 1;
-
-    Axial { q, r }
+impl GameAxial for Axial {
+    fn get(&self) -> &Axial {
+        self
+    }
 }
-pub fn to_letter_coord(ax: &Axial, world: &board::MyWorld) -> (char, i8) {
-    let k = ax.to_cube();
+pub trait GameAxial {
+    fn get(&self) -> &Axial;
 
-    let number = k.r + world.radius as i8;
-    let letter = LETTER_COORDINATES[(k.q + number - 1) as usize];
-    (letter, number)
+    fn from_letter_coord(foo: char, num: i8, world: &board::MyWorld) -> Axial {
+        let r = num - world.radius as i8;
+
+        let (index, _) = LETTER_COORDINATES
+            .iter()
+            .enumerate()
+            .find(|(_, x)| **x == foo)
+            .unwrap();
+
+        let q = index as i8 - (r + world.radius as i8) + 1;
+
+        Axial { q, r }
+    }
+    fn to_letter_coord(&self, world: &board::MyWorld) -> (char, i8) {
+        let k = self.get().to_cube();
+
+        let number = k.r + world.radius as i8;
+        let letter = LETTER_COORDINATES[(k.q + number - 1) as usize];
+        (letter, number)
+    }
 }
 
 // #[derive(Clone, Debug)]
@@ -350,7 +359,7 @@ impl ActualMove {
             return write!(w, "pp");
         }
 
-        let (letter, number) = to_letter_coord(&mesh::small_mesh::inverse(self.moveto), world);
+        let (letter, number) = mesh::small_mesh::inverse(self.moveto).to_letter_coord(world);
 
         write!(w, "{}{}", letter, number)
     }

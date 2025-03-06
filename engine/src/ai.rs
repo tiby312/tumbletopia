@@ -1,4 +1,4 @@
-use crate::{board::MyWorld, mesh::small_mesh, moves::get_num_attack};
+use crate::{board::MyWorld, mesh::small_mesh, move_build::GameAxial, moves::get_num_attack};
 
 use super::*;
 
@@ -254,7 +254,7 @@ pub fn calculate_move(
             .line
             .iter()
             .map(|x| {
-                let res = move_build::to_letter_coord(&mesh::small_mesh::inverse(x.moveto), world);
+                let res = mesh::small_mesh::inverse(x.moveto).to_letter_coord(world);
                 format!("{}{}", res.0, res.1)
             })
             .collect();
@@ -296,7 +296,7 @@ pub fn iterative_deepening2(
     //     history.push(f.clone());
     // }
 
-    let mut nodes_visited_total=0;
+    let mut nodes_visited_total = 0;
 
     //TODO stop searching if we found a game ending move.
     for depth in 0..len {
@@ -315,14 +315,13 @@ pub fn iterative_deepening2(
             evaluator: &mut evaluator,
             world,
             moves: &mut moves,
-            nodes_visited:&mut nodes_visited_total
+            nodes_visited: &mut nodes_visited_total,
         };
 
         let mut kk = game.clone();
         let (res, mut mov) = aaaa.alpha_beta(&mut kk, fogs, ABAB::new(), team, depth);
         assert_eq!(&kk, game);
 
-        
         // with transpotiion table     212325
         // without transposition table 193238
         // {
@@ -357,7 +356,7 @@ pub fn iterative_deepening2(
         }
     }
 
-    gloo_console::info!(format!("nodes visited={}",nodes_visited_total));
+    gloo_console::info!(format!("nodes visited={}", nodes_visited_total));
 
     // console_dbg!("transpotiion table len=", table.a.len());
 
@@ -378,8 +377,7 @@ struct AlphaBeta<'a> {
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
     moves: &'a mut Vec<u8>,
-    nodes_visited: &'a mut usize
-    //history: &'a mut MoveHistory,
+    nodes_visited: &'a mut usize, //history: &'a mut MoveHistory,
 }
 
 struct KillerMoves {
@@ -443,8 +441,7 @@ impl<'a> AlphaBeta<'a> {
         team: Team,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-
-        *self.nodes_visited+=1;
+        *self.nodes_visited += 1;
 
         // if let Some(g) = game.game_is_over(self.world, team, self.history) {
         //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
@@ -526,8 +523,7 @@ impl<'a> AlphaBeta<'a> {
             return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
-        *self.nodes_visited+=1;
-
+        *self.nodes_visited += 1;
 
         let mut spoke_info = moves::SpokeInfo::new(game);
 
@@ -561,13 +557,11 @@ impl<'a> AlphaBeta<'a> {
 
         //let loud_moves=game.generate_loud_moves(self.world, team, &spoke_info);
 
-
         let move_value = |index: usize| {
-            
             // if loud_moves.inner[index]{
             //     return 5;
             // }
-            
+
             if captures.inner[index] {
                 return 4;
             }

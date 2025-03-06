@@ -1,7 +1,7 @@
 use board::MyWorld;
 use mesh::small_mesh::SmallMesh;
 
-use crate::mesh::small_mesh;
+use crate::{mesh::small_mesh, move_build::GameAxial};
 
 use super::*;
 
@@ -432,7 +432,7 @@ pub fn ray(
                 d,
                 dis,
                 dd,
-                move_build::to_letter_coord(&start, world)
+                start.to_letter_coord(world)
             );
             index2
         }),
