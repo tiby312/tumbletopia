@@ -296,6 +296,8 @@ pub fn iterative_deepening2(
     //     history.push(f.clone());
     // }
 
+    let mut nodes_visited_total=0;
+
     //TODO stop searching if we found a game ending move.
     for depth in 0..len {
         let depth = depth + 1;
@@ -313,28 +315,32 @@ pub fn iterative_deepening2(
             evaluator: &mut evaluator,
             world,
             moves: &mut moves,
+            nodes_visited:&mut nodes_visited_total
         };
 
         let mut kk = game.clone();
         let (res, mut mov) = aaaa.alpha_beta(&mut kk, fogs, ABAB::new(), team, depth);
         assert_eq!(&kk, game);
 
-        {
-            //Update the transposition table in the right order
-            let mut gg = kk.clone();
-            let mut tt = team;
-            let mut vals = vec![];
-            for m in mov.iter().rev() {
-                vals.push((gg.hash_me(), m.clone()));
-                m.apply(tt, &mut gg, &fogs[tt.index()], world);
-                tt = tt.not();
-            }
-            for (v, k) in vals.into_iter().rev() {
-                table.update_inner(v, k);
-            }
+        
+        // with transpotiion table     212325
+        // without transposition table 193238
+        // {
+        //     //Update the transposition table in the right order
+        //     let mut gg = kk.clone();
+        //     let mut tt = team;
+        //     let mut vals = vec![];
+        //     for m in mov.iter().rev() {
+        //         vals.push((gg.hash_me(), m.clone()));
+        //         m.apply(tt, &mut gg, &fogs[tt.index()], world);
+        //         tt = tt.not();
+        //     }
+        //     for (v, k) in vals.into_iter().rev() {
+        //         table.update_inner(v, k);
+        //     }
 
-            gloo_console::info!(format!("transpotion table size={}", table.a.len()));
-        }
+        //     //gloo_console::info!(format!("transpotion table size={}", table.a.len()));
+        // }
 
         //alpha beta returns the main line with the first move at the end
         //reverse it so that the order is in the order of how they are played out.
@@ -350,6 +356,8 @@ pub fn iterative_deepening2(
             break;
         }
     }
+
+    gloo_console::info!(format!("nodes visited={}",nodes_visited_total));
 
     // console_dbg!("transpotiion table len=", table.a.len());
 
@@ -370,6 +378,7 @@ struct AlphaBeta<'a> {
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
     moves: &'a mut Vec<u8>,
+    nodes_visited: &'a mut usize
     //history: &'a mut MoveHistory,
 }
 
@@ -434,6 +443,9 @@ impl<'a> AlphaBeta<'a> {
         team: Team,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
+
+        *self.nodes_visited+=1;
+
         // if let Some(g) = game.game_is_over(self.world, team, self.history) {
         //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
         // }
@@ -513,6 +525,9 @@ impl<'a> AlphaBeta<'a> {
         if depth == 0 {
             return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
+
+        *self.nodes_visited+=1;
+
 
         let mut spoke_info = moves::SpokeInfo::new(game);
 
