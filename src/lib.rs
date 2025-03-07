@@ -942,19 +942,16 @@ async fn render_command(
                 log!(format!("pos:{:?}", mouse.to_cube()));
 
                 if world.get_game_cells().is_set(mouse) {
-                    let mut s = String::new();
-                    ActualMove {
-                        moveto: mesh::small_mesh::conv(mouse),
-                    }
-                    .as_text(&world, &mut s)
-                    .unwrap();
-
-                    let ff = ActualMove::from_str(&s).unwrap();
+                    // let mut s = String::new();
+                    // ActualMove {
+                    //     moveto: mouse.to_index(),
+                    // }
+                    // .as_text(&world, &mut s)
+                    // .unwrap();
 
                     log!(format!(
-                        "game pos:{}  original hopefuly:{:?}",
-                        s,
-                        mesh::small_mesh::inverse(ff.moveto)
+                        "game pos:{:?}",
+                        mouse.to_letter_coord(world.radius as i8)
                     ));
 
                     let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
@@ -1022,7 +1019,7 @@ async fn render_command(
         draw_sys
             .batch(
                 land.iter_ones()
-                    .map(|e| grid_snap(mesh::small_mesh::inverse(e), -models.token_neutral.height)),
+                    .map(|e| grid_snap(Axial::from_index(e), -models.token_neutral.height)),
             )
             .build(&models.land, &projjj);
 
@@ -1448,9 +1445,9 @@ fn update_text(
     let bbb = alphabet.chars().nth(rr as usize).unwrap();
     let ccc = alphabet.chars().nth((rr * 2) as usize).unwrap();
     console_dbg!(aaa, bbb, ccc);
-    let a11 = Axial::from_letter_coord(aaa, 1, &world);
-    let a22 = Axial::from_letter_coord(bbb, 1, &world);
-    let a33 = Axial::from_letter_coord(ccc, 1 + rr, &world);
+    let a11 = Axial::from_letter_coord(aaa, 1, world.radius as i8);
+    let a22 = Axial::from_letter_coord(bbb, 1, world.radius as i8);
+    let a33 = Axial::from_letter_coord(ccc, 1 + rr, world.radius as i8);
 
     let a1 = Axial { q: 0, r: -rr };
     let a2 = Axial { q: rr, r: -rr };
@@ -1465,9 +1462,9 @@ fn update_text(
         k.push(make_text(a.into(), letter.to_uppercase().to_string()))
     }
 
-    let a11 = Axial::from_letter_coord(aaa, 1, &world);
-    let a22 = Axial::from_letter_coord(aaa, 1 + rr, &world);
-    let a33 = Axial::from_letter_coord(bbb, 1 + rr + rr, &world);
+    let a11 = Axial::from_letter_coord(aaa, 1, world.radius as i8);
+    let a22 = Axial::from_letter_coord(aaa, 1 + rr, world.radius as i8);
+    let a33 = Axial::from_letter_coord(bbb, 1 + rr + rr, world.radius as i8);
 
     let rr = radius - 1;
     let a1 = Axial { q: 0, r: -rr };

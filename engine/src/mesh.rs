@@ -80,8 +80,7 @@ pub mod small_mesh {
 
         #[must_use]
         pub fn validate_rel(a: Axial) -> bool {
-            let ind = conv(a);
-
+            let ind = a.to_index();
             ind < 256
 
             // let x = a.q;
@@ -96,7 +95,7 @@ pub mod small_mesh {
             //use std::ops::Shl;
             assert!(Self::validate_rel(a));
 
-            let ind = conv(a);
+            let ind = a.to_index();
 
             //*self.inner.as_mut_bitslice() |= U256::one() << ind;
 
@@ -111,7 +110,7 @@ pub mod small_mesh {
         }
         pub fn remove(&mut self, a: Axial) {
             assert!(Self::validate_rel(a));
-            let ind = conv(a);
+            let ind = a.to_index();
             //let (a, b) = ind_to_foo(ind);
             //self.inner &= !(U256::one() << ind);
             self.inner.set(ind, false);
@@ -124,7 +123,7 @@ pub mod small_mesh {
                 return false;
             }
 
-            let ind = conv(a);
+            let ind = a.to_index();
             //let (a, b) = ind_to_foo(ind);
 
             //self.inner & (U256::one() << ind) != U256::zero()
@@ -132,33 +131,15 @@ pub mod small_mesh {
         }
 
         pub fn iter_mesh(&self, point: Axial) -> impl Iterator<Item = Axial> + '_ {
-            self.inner.iter_ones().map(move |a| point.add(inverse(a)))
+            self.inner
+                .iter_ones()
+                .map(move |a| point.add(Axial::from_index(a)))
         }
     }
 
+    use crate::move_build::GameAxial;
+
     use super::Axial;
-
-    pub fn inverse(index: usize) -> Axial {
-        let x = index / 16;
-        let y = index % 16;
-        Axial::from_arr([(x as isize - 8) as i8, (y as isize - 8) as i8])
-    }
-
-    pub const fn conv(a: Axial) -> usize {
-        let Axial { q, r } = a;
-        //     let ind=x/7+y%7;
-        //     // -3 -2 -1 0 1 2 3
-        //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
-        // ind as usize
-        ((q as isize + 8) * 16 + (r as isize + 8)) as usize
-
-        // TABLE
-        //     .iter()
-        //     .enumerate()
-        //     .find(|(_, x)| **x == a.0)
-        //     .expect("Could not find the coord in table")
-        //     .0
-    }
 }
 
 // #[derive(Debug, Clone)]

@@ -246,27 +246,6 @@ impl GameAxial for Axial {
 }
 pub trait GameAxial {
     fn get(&self) -> &Axial;
-
-    fn from_letter_coord(foo: char, num: i8, world: &board::MyWorld) -> Axial {
-        let r = num - world.radius as i8;
-
-        let (index, _) = LETTER_COORDINATES
-            .iter()
-            .enumerate()
-            .find(|(_, x)| **x == foo)
-            .unwrap();
-
-        let q = index as i8 - (r + world.radius as i8) + 1;
-
-        Axial { q, r }
-    }
-    fn to_letter_coord(&self, world: &board::MyWorld) -> (char, i8) {
-        let k = self.get().to_cube();
-
-        let number = k.r + world.radius as i8;
-        let letter = LETTER_COORDINATES[(k.q + number - 1) as usize];
-        (letter, number)
-    }
 }
 
 // #[derive(Clone, Debug)]
@@ -275,94 +254,81 @@ pub trait GameAxial {
 //     pub moveto: Axial,
 // }
 
-const LETTER_COORDINATES: [char; 26] = [
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-    'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-];
-
-#[test]
-fn test_move() {
-    let k = mesh::small_mesh::inverse(ActualMove::from_str("A1").unwrap().moveto);
-    assert_eq!(k, Axial { q: 0, r: -7 });
-
-    let k = mesh::small_mesh::inverse(ActualMove::from_str("H15").unwrap().moveto);
-    assert_eq!(k, Axial { q: 7, r: 0 });
-}
 impl ActualMove {
-    pub fn from_str(foo: &str) -> Option<ActualMove> {
-        if "pp" == foo {
-            return Some(ActualMove {
-                moveto: PASS_MOVE_INDEX,
-            });
-        }
+    // pub fn from_str(foo: &str) -> Option<ActualMove> {
+    //     if "pp" == foo {
+    //         return Some(ActualMove {
+    //             moveto: PASS_MOVE_INDEX,
+    //         });
+    //     }
 
-        let mut char_iter = foo.chars();
+    //     let mut char_iter = foo.chars();
 
-        let Some(letter) = char_iter.next() else {
-            return None;
-        };
+    //     let Some(letter) = char_iter.next() else {
+    //         return None;
+    //     };
 
-        let r = match letter {
-            'A' => -7,
-            'B' => -6,
-            'C' => -5,
-            'D' => -4,
-            'E' => -3,
-            'F' => -2,
-            'G' => -1,
-            'H' => 0,
-            'I' => 1,
-            'J' => 2,
-            'K' => 3,
-            'L' => 4,
-            'M' => 5,
-            'N' => 6,
-            'O' => 7,
-            _ => return None,
-        };
+    //     let r = match letter {
+    //         'A' => -7,
+    //         'B' => -6,
+    //         'C' => -5,
+    //         'D' => -4,
+    //         'E' => -3,
+    //         'F' => -2,
+    //         'G' => -1,
+    //         'H' => 0,
+    //         'I' => 1,
+    //         'J' => 2,
+    //         'K' => 3,
+    //         'L' => 4,
+    //         'M' => 5,
+    //         'N' => 6,
+    //         'O' => 7,
+    //         _ => return None,
+    //     };
 
-        let Some(first_digit) = char_iter.next() else {
-            return None;
-        };
+    //     let Some(first_digit) = char_iter.next() else {
+    //         return None;
+    //     };
 
-        let s = if let Some(second_digit) = char_iter.next() {
-            let mut s = String::new();
-            s.push(first_digit);
-            s.push(second_digit);
-            let Ok(foo) = u8::from_str_radix(&s, 10) else {
-                return None;
-            };
-            foo
-        } else {
-            let Ok(foo) = u8::from_str_radix(&first_digit.to_string(), 10) else {
-                return None;
-            };
-            foo
-        };
+    //     let s = if let Some(second_digit) = char_iter.next() {
+    //         let mut s = String::new();
+    //         s.push(first_digit);
+    //         s.push(second_digit);
+    //         let Ok(foo) = u8::from_str_radix(&s, 10) else {
+    //             return None;
+    //         };
+    //         foo
+    //     } else {
+    //         let Ok(foo) = u8::from_str_radix(&first_digit.to_string(), 10) else {
+    //             return None;
+    //         };
+    //         foo
+    //     };
 
-        let s = -(s as i8 - 1 - 7);
+    //     let s = -(s as i8 - 1 - 7);
 
-        //q+r+s=0
-        let q = -r - s;
+    //     //q+r+s=0
+    //     let q = -r - s;
 
-        Some(ActualMove {
-            moveto: mesh::small_mesh::conv(Axial { q, r }),
-        })
-    }
+    //     Some(ActualMove {
+    //         moveto: Axial { q, r }.to_index(),
+    //     })
+    // }
 
-    pub fn as_text(
-        &self,
-        world: &board::MyWorld,
-        mut w: impl std::fmt::Write,
-    ) -> Result<(), std::fmt::Error> {
-        if self.moveto == PASS_MOVE_INDEX {
-            return write!(w, "pp");
-        }
+    // pub fn as_text(
+    //     &self,
+    //     world: &board::MyWorld,
+    //     mut w: impl std::fmt::Write,
+    // ) -> Result<(), std::fmt::Error> {
+    //     if self.moveto == PASS_MOVE_INDEX {
+    //         return write!(w, "pp");
+    //     }
 
-        let (letter, number) = mesh::small_mesh::inverse(self.moveto).to_letter_coord(world);
+    //     let (letter, number) = mesh::small_mesh::inverse(self.moveto).to_letter_coord(world.radius as i8);
 
-        write!(w, "{}{}", letter, number)
-    }
+    //     write!(w, "{}{}", letter, number)
+    // }
 
     pub fn undo(&self, _team_index: Team, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;

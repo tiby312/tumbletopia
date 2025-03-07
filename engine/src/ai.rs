@@ -254,7 +254,7 @@ pub fn calculate_move(
             .line
             .iter()
             .map(|x| {
-                let res = mesh::small_mesh::inverse(x.moveto).to_letter_coord(world);
+                let res = Axial::from_index(x.moveto).to_letter_coord(world.radius as i8);
                 format!("{}{}", res.0, res.1)
             })
             .collect();

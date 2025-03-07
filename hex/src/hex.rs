@@ -353,7 +353,61 @@ pub struct Axial {
     pub r: CoordNum,
 }
 
+const LETTER_COORDINATES: [char; 26] = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+    'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+];
+
+const fn inverse(index: usize) -> Axial {
+    let x = index / 16;
+    let y = index % 16;
+    Axial::from_arr([(x as isize - 8) as i8, (y as isize - 8) as i8])
+}
+
+const fn conv2(a: Axial) -> usize {
+    let Axial { q, r } = a;
+    //     let ind=x/7+y%7;
+    //     // -3 -2 -1 0 1 2 3
+    //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
+    // ind as usize
+    ((q as isize + 8) * 16 + (r as isize + 8)) as usize
+
+    // TABLE
+    //     .iter()
+    //     .enumerate()
+    //     .find(|(_, x)| **x == a.0)
+    //     .expect("Could not find the coord in table")
+    //     .0
+}
+
 impl Axial {
+    pub const fn from_index(index: usize) -> Axial {
+        inverse(index)
+    }
+    pub const fn to_index(&self) -> usize {
+        conv2(*self)
+    }
+
+    pub fn from_letter_coord(foo: char, num: i8, radius: i8) -> Axial {
+        let r = num - radius;
+
+        let (index, _) = LETTER_COORDINATES
+            .iter()
+            .enumerate()
+            .find(|(_, x)| **x == foo)
+            .unwrap();
+
+        let q = index as i8 - (r + radius) + 1;
+
+        Axial { q, r }
+    }
+    pub fn to_letter_coord(&self, radius: i8) -> (char, i8) {
+        let k = self.to_cube();
+
+        let number = k.r + radius;
+        let letter = LETTER_COORDINATES[(k.q + number - 1) as usize];
+        (letter, number)
+    }
     pub fn mul(&self, dis: i8) -> Axial {
         Axial {
             q: self.q * dis,

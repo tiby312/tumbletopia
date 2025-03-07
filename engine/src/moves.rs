@@ -3,7 +3,7 @@ use hex::HDir;
 
 use super::*;
 
-use crate::{board::MyWorld, mesh::small_mesh::SmallMesh};
+use crate::{board::MyWorld, mesh::small_mesh::SmallMesh, move_build::GameAxial};
 
 pub struct EndPoints<T> {
     inner: [T; 6],
@@ -44,7 +44,7 @@ impl<T> EndPoints<T> {
 }
 
 pub const PASS_MOVE: Axial = Axial { q: -5, r: 9 };
-pub const PASS_MOVE_INDEX: usize = const { mesh::small_mesh::conv(PASS_MOVE) };
+pub const PASS_MOVE_INDEX: usize = const { PASS_MOVE.to_index() };
 
 impl crate::unit::GameStateTotal {
     pub fn update_fog(&mut self, world: &board::MyWorld, team: Team) {
@@ -66,7 +66,7 @@ impl crate::unit::GameStateTotal {
         // };
 
         for a in world.get_game_cells().inner.iter_ones() {
-            let fa = mesh::small_mesh::inverse(a);
+            let fa = Axial::from_index(a);
 
             if let Some((val, tt)) = self.tactical.factions.get_cell_inner(a) {
                 if tt == team {
@@ -112,7 +112,7 @@ impl crate::unit::GameStateTotal {
         fog.inner &= !pieces;
 
         for a in pieces.iter_ones() {
-            let fa = mesh::small_mesh::inverse(a);
+            let fa = Axial::from_index(a);
 
             for a in hex::HDir::all() {
                 let mut pos = fa;
@@ -235,7 +235,7 @@ impl GameState {
         world: &'b MyWorld,
     ) -> impl Iterator<Item = (usize, LosRayItem)> + use<'b> {
         let mut blocked = false;
-        unit::ray(mesh::small_mesh::inverse(index2), dir, world)
+        unit::ray(Axial::from_index(index2), dir, world)
             .1
             .filter_map(move |index| {
                 if blocked {
@@ -336,7 +336,7 @@ impl GameState {
         for dir in HDir::all() {
             //TODO there is a way to skip over spokes that we know are not opponent controlled.
             let mut cands = vec![];
-            for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
+            for index2 in unit::ray(Axial::from_index(index), dir, world).1 {
                 if self
                     .playable(index2 as usize, team, world, spoke_info)
                     .is_some()
@@ -455,7 +455,7 @@ impl GameState {
         'outer: for dir in HDir::all() {
             //TODO there is a way to skip over spokes that we know are not opponent controlled.
             let mut cands = vec![];
-            for index2 in unit::ray(mesh::small_mesh::inverse(index), dir, world).1 {
+            for index2 in unit::ray(Axial::from_index(index), dir, world).1 {
                 if self
                     .playable(index2 as usize, team, world, spoke_info)
                     .is_some()

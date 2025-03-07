@@ -413,7 +413,7 @@ pub fn ray(
 ) -> (i8, impl Iterator<Item = isize> + use<'_>) {
     let stride = board::STRIDES[dd as usize] as isize;
     let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
-    let mut index2 = mesh::small_mesh::conv(start) as isize;
+    let mut index2 = start.to_index() as isize;
 
     assert!(
         world.get_game_cells().inner[index2 as usize],
@@ -432,7 +432,7 @@ pub fn ray(
                 d,
                 dis,
                 dd,
-                start.to_letter_coord(world)
+                start.to_letter_coord(world.radius as i8)
             );
             index2
         }),
@@ -448,11 +448,8 @@ impl Tribe {
             let dd = hex::HDir::from(i as u8);
 
             let stride = board::STRIDES[i] as isize;
-            let dis = board::dis_to_hex_of_hexagon(
-                mesh::small_mesh::inverse(index),
-                dd,
-                world.radius as i8,
-            );
+            let dis =
+                board::dis_to_hex_of_hexagon(Axial::from_index(index), dd, world.radius as i8);
             let mut index2 = index as isize;
 
             for _ in 0..dis {
@@ -476,7 +473,7 @@ impl Tribe {
         core::array::from_fn(|i| {
             let dd = hex::HDir::from(i as u8);
 
-            let (dis, it) = ray(mesh::small_mesh::inverse(index), dd, world);
+            let (dis, it) = ray(Axial::from_index(index), dd, world);
             for (d, index2) in it.enumerate() {
                 if let Some(pp) = self.get_cell_inner(index2 as usize) {
                     return (d as i8 + 1, Some(pp));
@@ -513,7 +510,7 @@ impl Tribe {
     }
 
     pub fn remove(&mut self, a: Axial) {
-        let a = mesh::small_mesh::conv(a);
+        let a = a.to_index();
         self.remove_inner(a);
     }
     pub fn remove_inner(&mut self, a: usize) {
@@ -556,7 +553,7 @@ impl Tribe {
         Some((val as u8, team))
     }
     pub fn get_cell(&self, a: Axial) -> Option<(u8, Team)> {
-        self.get_cell_inner(mesh::small_mesh::conv(a))
+        self.get_cell_inner(a.to_index())
     }
 
     fn set_coord(&mut self, index: usize, stack: u8) {
@@ -595,7 +592,7 @@ impl Tribe {
         self.set_coord(a, stack);
     }
     pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team) {
-        let a = mesh::small_mesh::conv(a);
+        let a = a.to_index();
         self.add_cell_inner(a, stack, team);
     }
 }

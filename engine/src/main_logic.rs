@@ -1,3 +1,5 @@
+use crate::move_build::GameAxial;
+
 use super::*;
 
 #[derive(Debug, Clone)]
@@ -382,7 +384,7 @@ pub async fn reselect_loop(
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
         if let Some(e) = have_moved {
-            e.the_move.moveto != mesh::small_mesh::conv(selected_unit.coord)
+            e.the_move.moveto != selected_unit.coord.to_index()
         } else {
             false
         }
@@ -426,7 +428,7 @@ pub async fn reselect_loop(
         .tactical
         //.bake_fog(&game.fog[team.index()])
         .factions
-        .doop(mesh::small_mesh::conv(unwrapped_selected_unit), world);
+        .doop(unwrapped_selected_unit.to_index(), world);
 
     cca.inner &= c2.inner;
 
@@ -509,7 +511,7 @@ pub async fn reselect_loop(
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
     if let Some(e) = have_moved {
-        if mesh::small_mesh::conv(unwrapped_selected_unit) != e.the_move.moveto {
+        if unwrapped_selected_unit.to_index() != e.the_move.moveto {
             return LoopRes::Deselect;
         }
     }
@@ -547,7 +549,7 @@ pub async fn reselect_loop(
 
     let mp = ActualMove {
         //original: unwrapped_selected_unit,
-        moveto: mesh::small_mesh::conv(target_cell),
+        moveto: target_cell.to_index(),
     };
 
     let effect = animate_move(&mp, selected_unit.team, game, world, doop)
@@ -689,13 +691,13 @@ pub async fn animate_move<'a>(
             continue;
         }
 
-        let unit = mesh::small_mesh::inverse(aa.moveto)
+        let unit = Axial::from_index(aa.moveto)
             .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
 
         data.wait_animation(
             AnimationCommand::Movement {
                 unit,
-                end: mesh::small_mesh::inverse(aa.moveto),
+                end: Axial::from_index(aa.moveto),
             },
             team,
             &mut ss,

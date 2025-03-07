@@ -1,3 +1,5 @@
+use crate::move_build::GameAxial;
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
@@ -123,7 +125,7 @@ fn test_dummy() {
     let bottom_right_stride = 16;
 
     let stride = bottom_right_stride;
-    let mut index = mesh::small_mesh::conv(unit) as isize;
+    let mut index = unit.to_index() as isize;
     for _ in 0..computed_dis {
         index += stride;
         mesh2.inner.set(index as usize, true);
