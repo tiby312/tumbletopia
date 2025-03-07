@@ -315,14 +315,9 @@ pub fn iterative_deepening2(
         };
 
         let mut kk = game.clone();
-        let (res, mut mov) = if team == Team::White {
-            let (res, mov) = aaaa.negamax(&mut kk, fogs, ABAB::new(), team, depth);
-            (res, mov)
-        } else {
-            let (res, mov) = aaaa.negamax(&mut kk, fogs, ABAB::new(), team, depth);
-            (res, mov)
-        };
-
+        
+        let (res, mut mov) = aaaa.negamax(&mut kk, fogs, ABAB::new(), team, depth);
+    
         assert_eq!(&kk, game);
 
         // with transpotiion table     2554
