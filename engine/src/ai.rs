@@ -256,8 +256,6 @@ pub fn calculate_move(
     move_history: &MoveHistory,
 ) -> ActualMove {
     if let Some(mo) = iterative_deepening2(game, fogs, world, team, 4) {
-        log!("ai result:{:?}", world.format(&mo.line));
-
         if should_pass(&mo, team, game, world, move_history) {
             console_dbg!("Choosing to pass!");
             ActualMove {
@@ -320,28 +318,34 @@ pub fn iterative_deepening2(
         let (res, mut mov) = aaaa.alpha_beta(&mut kk, fogs, ABAB::new(), team, depth);
         assert_eq!(&kk, game);
 
-        // with transpotiion table     212325
-        // without transposition table 193238
-        // {
-        //     //Update the transposition table in the right order
-        //     let mut gg = kk.clone();
-        //     let mut tt = team;
-        //     let mut vals = vec![];
-        //     for m in mov.iter().rev() {
-        //         vals.push((gg.hash_me(), m.clone()));
-        //         m.apply(tt, &mut gg, &fogs[tt.index()], world);
-        //         tt = tt.not();
-        //     }
-        //     for (v, k) in vals.into_iter().rev() {
-        //         table.update_inner(v, k);
-        //     }
+        // with transpotiion table     2554
+        // without transposition table 2569
+        {
+            //Update the transposition table in the right order
+            let mut gg = kk.clone();
+            let mut tt = team;
+            let mut vals = vec![];
+            for m in mov.iter().rev() {
+                vals.push((gg.hash_me(), m.clone()));
+                m.apply(tt, &mut gg, &fogs[tt.index()], world);
+                tt = tt.not();
+            }
+            for (v, k) in vals.into_iter().rev() {
+                table.update_inner(v, k);
+            }
 
-        //     //gloo_console::info!(format!("transpotion table size={}", table.a.len()));
-        // }
+            //gloo_console::info!(format!("transpotion table size={}", table.a.len()));
+        }
 
         //alpha beta returns the main line with the first move at the end
         //reverse it so that the order is in the order of how they are played out.
         mov.reverse();
+
+        log!(
+            "PV for depth {} :{:?}",
+            depth,
+            world.format(&mov.clone().to_vec())
+        );
 
         if !mov.is_empty() {
             results = Some(Res {
@@ -513,17 +517,18 @@ impl<'a> AlphaBeta<'a> {
         team: Team,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        // if let Some(g) = game.game_is_over(self.world, team, self.history) {
-        //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
-        // }
+        let mut spoke_info = moves::SpokeInfo::new(game);
 
         if depth == 0 {
+            // return (
+            //     self.evaluator
+            //         .absolute_evaluate(game, self.world, &spoke_info, false),
+            //     tinyvec::array_vec![],
+            // );
             return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
         *self.nodes_visited += 1;
-
-        let mut spoke_info = moves::SpokeInfo::new(game);
 
         moves::update_spoke_info(&mut spoke_info, self.world, game);
 
@@ -592,6 +597,8 @@ impl<'a> AlphaBeta<'a> {
         };
 
         moves.sort_unstable_by_key(|&f| move_value(f as usize));
+
+        //log!("first move alph_beta depth {},{:?}",depth,self.world.format(&ActualMove{moveto:*moves.last().unwrap() as usize}));
 
         // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
         // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
