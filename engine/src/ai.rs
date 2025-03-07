@@ -315,29 +315,29 @@ pub fn iterative_deepening2(
         };
 
         let mut kk = game.clone();
-        
+
         let (res, mut mov) = aaaa.negamax(&mut kk, fogs, ABAB::new(), team, depth);
-    
+
         assert_eq!(&kk, game);
 
         // with transpotiion table     2554
         // without transposition table 2569
-        {
-            //Update the transposition table in the right order
-            let mut gg = kk.clone();
-            let mut tt = team;
-            let mut vals = vec![];
-            for m in mov.iter().rev() {
-                vals.push((gg.hash_me(), m.clone()));
-                m.apply(tt, &mut gg, &fogs[tt.index()], world);
-                tt = tt.not();
-            }
-            for (v, k) in vals.into_iter().rev() {
-                table.update_inner(v, k);
-            }
+        // {
+        //     //Update the transposition table in the right order
+        //     let mut gg = kk.clone();
+        //     let mut tt = team;
+        //     let mut vals = vec![];
+        //     for m in mov.iter().rev() {
+        //         vals.push((gg.hash_me(), m.clone()));
+        //         m.apply(tt, &mut gg, &fogs[tt.index()], world);
+        //         tt = tt.not();
+        //     }
+        //     for (v, k) in vals.into_iter().rev() {
+        //         table.update_inner(v, k);
+        //     }
 
-            //gloo_console::info!(format!("transpotion table size={}", table.a.len()));
-        }
+        //     //gloo_console::info!(format!("transpotion table size={}", table.a.len()));
+        // }
 
         //alpha beta returns the main line with the first move at the end
         //reverse it so that the order is in the order of how they are played out.
@@ -521,6 +521,7 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         let mut spoke_info = moves::SpokeInfo::new(game);
+        moves::update_spoke_info(&mut spoke_info, self.world, game);
 
         if depth == 0 {
             return (
@@ -534,8 +535,6 @@ impl<'a> AlphaBeta<'a> {
         }
 
         *self.nodes_visited += 1;
-
-        moves::update_spoke_info(&mut spoke_info, self.world, game);
 
         //TODO don't allow pass. why waste tones of branching? There aren't any
         //crazy tactical combinations involving passing
@@ -580,22 +579,22 @@ impl<'a> AlphaBeta<'a> {
                 return 0;
             }
 
-            if let Some(a) = self.prev_cache.get(&game) {
-                if a.moveto == index {
-                    return 1000;
-                }
-            }
+            // if let Some(a) = self.prev_cache.get(&game) {
+            //     if a.moveto == index {
+            //         return 1000;
+            //     }
+            // }
 
-            for (i, a) in self
-                .killer_moves
-                .get(usize::try_from(depth).unwrap())
-                .iter()
-                .enumerate()
-            {
-                if a.moveto == index {
-                    return 800 - i as isize;
-                }
-            }
+            // for (i, a) in self
+            //     .killer_moves
+            //     .get(usize::try_from(depth).unwrap())
+            //     .iter()
+            //     .enumerate()
+            // {
+            //     if a.moveto == index {
+            //         return 800 - i as isize;
+            //     }
+            // }
 
             // let spokes=game.factions.iter_end_points(self.world, index);
             // let sum=spokes.into_iter().fold(0,|acc,f|acc+f.0);
@@ -610,7 +609,7 @@ impl<'a> AlphaBeta<'a> {
         // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
         // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
 
-        let mut ab_iter = ab.ab_iter(true);
+        let mut ab_iter = ab.ab_iter();
         for _ in start_move_index..end_move_index {
             //moves.into_iter()
             let cand = ActualMove {
@@ -634,11 +633,11 @@ impl<'a> AlphaBeta<'a> {
             cand.undo(team, &effect, game);
 
             if !ab_iter.consider((cand.clone(), m), eval) {
-                if effect.destroyed_unit.is_none() {
-                    self.killer_moves.consider(depth, cand.clone());
-                }
+                // if effect.destroyed_unit.is_none() {
+                //     self.killer_moves.consider(depth, cand.clone());
+                // }
 
-                self.prev_cache.update(game, cand);
+                // self.prev_cache.update(game, cand);
 
                 self.moves.drain(start_move_index..);
                 break;
@@ -687,7 +686,6 @@ mod abab {
         a: &'a mut ABAB,
         mm: Option<T>,
         keep_going: bool,
-        maximizing: bool,
     }
 
     impl<'a, T: Clone> ABIter<'a, T> {
@@ -698,35 +696,18 @@ mod abab {
             self.a.clone()
         }
         pub fn consider(&mut self, t: T, eval: Eval) -> bool {
-            //TODO monomorphize internally for maximizing and minimizing.
-
             //TODO should be less than or equal instead maybe?
-            let mmm = if self.maximizing {
-                eval > self.value
-            } else {
-                eval < self.value
-            };
-            if mmm {
+
+            if eval > self.value {
                 self.mm = Some(t);
                 self.value = eval;
             }
 
-            let cond = if self.maximizing {
-                eval > self.a.beta
-            } else {
-                eval < self.a.alpha
-            };
-
-            if cond {
-                assert!(mmm);
+            if eval > self.a.beta {
                 self.keep_going = false;
             }
 
-            if self.maximizing {
-                self.a.alpha = self.a.alpha.max(self.value);
-            } else {
-                self.a.beta = self.a.beta.min(self.value);
-            }
+            self.a.alpha = self.a.alpha.max(self.value);
 
             self.keep_going
         }
@@ -740,14 +721,14 @@ mod abab {
             }
         }
 
-        pub fn ab_iter<T: Clone>(&mut self, maximizing: bool) -> ABIter<T> {
-            let value = if maximizing { i64::MIN } else { i64::MAX };
+        //ALWAYS MAXIMIZE
+        pub fn ab_iter<T: Clone>(&mut self) -> ABIter<T> {
+            let value = i64::MIN;
             ABIter {
                 value,
                 a: self,
                 mm: None,
                 keep_going: true,
-                maximizing,
             }
         }
     }
