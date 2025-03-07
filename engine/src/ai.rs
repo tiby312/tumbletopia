@@ -685,7 +685,6 @@ mod abab {
         value: i64,
         a: &'a mut ABAB,
         mm: Option<T>,
-        keep_going: bool,
     }
 
     impl<'a, T: Clone> ABIter<'a, T> {
@@ -703,13 +702,13 @@ mod abab {
                 self.value = eval;
             }
 
-            if eval > self.a.beta {
-                self.keep_going = false;
-            }
-
             self.a.alpha = self.a.alpha.max(self.value);
 
-            self.keep_going
+            if self.a.alpha > self.a.beta {
+                false
+            } else {
+                true
+            }
         }
     }
 
@@ -728,7 +727,6 @@ mod abab {
                 value,
                 a: self,
                 mm: None,
-                keep_going: true,
             }
         }
     }
