@@ -519,6 +519,7 @@ impl<'a> AlphaBeta<'a> {
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         let mut spoke_info = moves::SpokeInfo::new(game);
 
+
         if depth == 0 {
             // return (
             //     self.evaluator
@@ -530,6 +531,7 @@ impl<'a> AlphaBeta<'a> {
 
         *self.nodes_visited += 1;
 
+        
         moves::update_spoke_info(&mut spoke_info, self.world, game);
 
         //TODO don't allow pass. why waste tones of branching? There aren't any
@@ -598,7 +600,9 @@ impl<'a> AlphaBeta<'a> {
 
         moves.sort_unstable_by_key(|&f| move_value(f as usize));
 
+
         //log!("first move alph_beta depth {},{:?}",depth,self.world.format(&ActualMove{moveto:*moves.last().unwrap() as usize}));
+
 
         // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
         // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
@@ -618,11 +622,14 @@ impl<'a> AlphaBeta<'a> {
 
             //let (cand, effect) = self.history.inner.pop().unwrap();
 
+
+            log!("consid depth:{} {:?}:{:?}",depth,self.world.format(&cand),self.world.format(&m.clone().to_vec()));
             //gloo_console::console!(m)
 
             cand.undo(team, &effect, game);
 
             if !ab_iter.consider((cand.clone(), m), eval) {
+
                 if effect.destroyed_unit.is_none() {
                     self.killer_moves.consider(depth, cand.clone());
                 }
@@ -639,6 +646,8 @@ impl<'a> AlphaBeta<'a> {
         let (eval, m) = ab_iter.finish();
 
         if let Some((cand, mut m)) = m {
+            log!("picked depth:{} {:?}:{:?}",depth,self.world.format(&cand),self.world.format(&m.clone().to_vec()));
+            
             m.push(cand);
             (eval, m)
         } else {
