@@ -418,7 +418,7 @@ pub fn ray(
     assert!(
         world.get_game_cells().inner[index2 as usize],
         "uhoh {:?}",
-        start
+        world.format(&start)
     );
     (
         dis,

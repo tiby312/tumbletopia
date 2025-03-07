@@ -315,7 +315,14 @@ pub fn iterative_deepening2(
         };
 
         let mut kk = game.clone();
-        let (res, mut mov) = aaaa.alpha_beta(&mut kk, fogs, ABAB::new(), team, depth);
+        let (res, mut mov) = if team == Team::White {
+            let (res, mov) = aaaa.negamax(&mut kk, fogs, ABAB::new(), team, depth);
+            (res, mov)
+        } else {
+            let (res, mov) = aaaa.negamax(&mut kk, fogs, ABAB::new(), team, depth);
+            (res, mov)
+        };
+
         assert_eq!(&kk, game);
 
         // with transpotiion table     2554
@@ -435,7 +442,82 @@ struct EvalRet<T> {
 }
 
 impl<'a> AlphaBeta<'a> {
-    fn quiesance(
+    // fn quiesance(
+    //     &mut self,
+    //     game: &mut GameState,
+    //     fogs: &[SmallMesh; 2],
+    //     mut ab: ABAB,
+    //     team: Team,
+    //     depth: usize,
+    // ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
+    //     *self.nodes_visited += 1;
+
+    //     // if let Some(g) = game.game_is_over(self.world, team, self.history) {
+    //     //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
+    //     // }
+    //     let mut spoke_info = moves::SpokeInfo::new(game);
+    //     moves::update_spoke_info(&mut spoke_info, self.world, game);
+
+    //     if depth == 0 {
+    //         return (
+    //             self.evaluator
+    //                 .absolute_evaluate(game, self.world, &spoke_info, false),
+    //             tinyvec::array_vec![],
+    //         );
+    //     }
+
+    //     let captures = game.generate_loud_moves(self.world, team, &spoke_info);
+
+    //     let start_move_index = self.moves.len();
+
+    //     self.moves.extend(captures.inner.iter_ones().map(|x| {
+    //         let x: u8 = x.try_into().unwrap();
+    //         x
+    //     }));
+
+    //     let end_move_index = self.moves.len();
+
+    //     let moves = &mut self.moves[start_move_index..end_move_index];
+
+    //     if moves.is_empty() {
+    //         return (
+    //             self.evaluator
+    //                 .absolute_evaluate(game, self.world, &spoke_info, false),
+    //             tinyvec::array_vec![],
+    //         );
+    //     }
+
+    //     let mut ab_iter = ab.ab_iter(team.is_white());
+    //     for _ in start_move_index..end_move_index {
+    //         let cand = ActualMove {
+    //             moveto: self.moves.pop().unwrap() as usize,
+    //         };
+    //         let effect = cand.apply(team, game, &fogs[team.index()], self.world);
+
+    //         let (eval, m) =
+    //             self.quiesance(game, fogs, ab_iter.clone_ab_values(), team.not(), depth - 1);
+
+    //         cand.undo(team, &effect, game);
+
+    //         if !ab_iter.consider((cand, m), eval) {
+    //             self.moves.drain(start_move_index..);
+    //             break;
+    //         }
+    //     }
+
+    //     assert_eq!(self.moves.len(), start_move_index);
+    //     //self.moves.drain(start_move_index..end_move_index);
+
+    //     let (eval, j) = ab_iter.finish();
+    //     if let Some((cand, mut m)) = j {
+    //         m.push(cand);
+    //         (eval, m)
+    //     } else {
+    //         (eval, tinyvec::array_vec![])
+    //     }
+    // }
+
+    fn negamax(
         &mut self,
         game: &mut GameState,
         fogs: &[SmallMesh; 2],
@@ -443,95 +525,21 @@ impl<'a> AlphaBeta<'a> {
         team: Team,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        *self.nodes_visited += 1;
-
-        // if let Some(g) = game.game_is_over(self.world, team, self.history) {
-        //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
-        // }
         let mut spoke_info = moves::SpokeInfo::new(game);
-        moves::update_spoke_info(&mut spoke_info, self.world, game);
 
         if depth == 0 {
             return (
-                self.evaluator
-                    .absolute_evaluate(game, self.world, &spoke_info, false),
+                team.value()
+                    * self
+                        .evaluator
+                        .absolute_evaluate(game, self.world, &spoke_info, false),
                 tinyvec::array_vec![],
             );
-        }
-
-        let captures = game.generate_loud_moves(self.world, team, &spoke_info);
-
-        let start_move_index = self.moves.len();
-
-        self.moves.extend(captures.inner.iter_ones().map(|x| {
-            let x: u8 = x.try_into().unwrap();
-            x
-        }));
-
-        let end_move_index = self.moves.len();
-
-        let moves = &mut self.moves[start_move_index..end_move_index];
-
-        if moves.is_empty() {
-            return (
-                self.evaluator
-                    .absolute_evaluate(game, self.world, &spoke_info, false),
-                tinyvec::array_vec![],
-            );
-        }
-
-        let mut ab_iter = ab.ab_iter(team.is_white());
-        for _ in start_move_index..end_move_index {
-            let cand = ActualMove {
-                moveto: self.moves.pop().unwrap() as usize,
-            };
-            let effect = cand.apply(team, game, &fogs[team.index()], self.world);
-
-            let (eval, m) =
-                self.quiesance(game, fogs, ab_iter.clone_ab_values(), team.not(), depth - 1);
-
-            cand.undo(team, &effect, game);
-
-            if !ab_iter.consider((cand, m), eval) {
-                self.moves.drain(start_move_index..);
-                break;
-            }
-        }
-
-        assert_eq!(self.moves.len(), start_move_index);
-        //self.moves.drain(start_move_index..end_move_index);
-
-        let (eval, j) = ab_iter.finish();
-        if let Some((cand, mut m)) = j {
-            m.push(cand);
-            (eval, m)
-        } else {
-            (eval, tinyvec::array_vec![])
-        }
-    }
-    fn alpha_beta(
-        &mut self,
-        game: &mut GameState,
-        fogs: &[SmallMesh; 2],
-        mut ab: ABAB,
-        team: Team,
-        depth: usize,
-    ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        let mut spoke_info = moves::SpokeInfo::new(game);
-
-
-        if depth == 0 {
-            // return (
-            //     self.evaluator
-            //         .absolute_evaluate(game, self.world, &spoke_info, false),
-            //     tinyvec::array_vec![],
-            // );
-            return self.quiesance(game, fogs, ab, team, /*4*/ 4);
+            //return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
         *self.nodes_visited += 1;
 
-        
         moves::update_spoke_info(&mut spoke_info, self.world, game);
 
         //TODO don't allow pass. why waste tones of branching? There aren't any
@@ -552,8 +560,10 @@ impl<'a> AlphaBeta<'a> {
 
         if moves.is_empty() {
             return (
-                self.evaluator
-                    .absolute_evaluate(game, self.world, &spoke_info, false),
+                team.value()
+                    * self
+                        .evaluator
+                        .absolute_evaluate(game, self.world, &spoke_info, false),
                 tinyvec::array_vec![],
             );
         }
@@ -600,14 +610,12 @@ impl<'a> AlphaBeta<'a> {
 
         moves.sort_unstable_by_key(|&f| move_value(f as usize));
 
-
         //log!("first move alph_beta depth {},{:?}",depth,self.world.format(&ActualMove{moveto:*moves.last().unwrap() as usize}));
-
 
         // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
         // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
 
-        let mut ab_iter = ab.ab_iter(team.is_white());
+        let mut ab_iter = ab.ab_iter(true);
         for _ in start_move_index..end_move_index {
             //moves.into_iter()
             let cand = ActualMove {
@@ -617,19 +625,20 @@ impl<'a> AlphaBeta<'a> {
                 cand.apply(team, game, &fogs[team.index()], self.world);
             //self.history.push((cand, effect));
 
-            let (eval, m) =
-                self.alpha_beta(game, fogs, ab_iter.clone_ab_values(), team.not(), depth - 1);
+            let (eval, m) = self.negamax(
+                game,
+                fogs,
+                -ab_iter.clone_ab_values(),
+                team.not(),
+                depth - 1,
+            );
+            let eval = -eval;
 
-            //let (cand, effect) = self.history.inner.pop().unwrap();
-
-
-            log!("consid depth:{} {:?}:{:?}",depth,self.world.format(&cand),self.world.format(&m.clone().to_vec()));
-            //gloo_console::console!(m)
+            //log!("consid depth:{} {:?}:{:?}",depth,self.world.format(&cand),self.world.format(&m.clone().to_vec()));
 
             cand.undo(team, &effect, game);
 
             if !ab_iter.consider((cand.clone(), m), eval) {
-
                 if effect.destroyed_unit.is_none() {
                     self.killer_moves.consider(depth, cand.clone());
                 }
@@ -646,8 +655,8 @@ impl<'a> AlphaBeta<'a> {
         let (eval, m) = ab_iter.finish();
 
         if let Some((cand, mut m)) = m {
-            log!("picked depth:{} {:?}:{:?}",depth,self.world.format(&cand),self.world.format(&m.clone().to_vec()));
-            
+            //log!("picked depth:{} {:?}:{:?}",depth,self.world.format(&cand),self.world.format(&m.clone().to_vec()));
+
             m.push(cand);
             (eval, m)
         } else {
@@ -658,11 +667,24 @@ impl<'a> AlphaBeta<'a> {
 
 use abab::ABAB;
 mod abab {
+    use std::ops::Neg;
+
     use super::*;
     #[derive(Clone)]
     pub struct ABAB {
         alpha: Eval,
         beta: Eval,
+    }
+
+    impl Neg for ABAB {
+        type Output = ABAB;
+
+        fn neg(self) -> Self::Output {
+            ABAB {
+                alpha: -self.alpha,
+                beta: -self.beta,
+            }
+        }
     }
 
     pub struct ABIter<'a, T> {
