@@ -253,12 +253,10 @@ pub fn calculate_move(
         let principal_variation: Vec<_> = mo
             .line
             .iter()
-            .map(|x| {
-                let res = Axial::from_index(x.moveto).to_letter_coord(world.radius as i8);
-                format!("{}{}", res.0, res.1)
-            })
+            .map(|x| Axial::from_index(x.moveto))
             .collect();
-        console_dbg!(principal_variation);
+
+        console_dbg!(hex::disp(principal_variation, world.radius as i8));
 
         if should_pass(&mo, team, game, world, move_history) {
             console_dbg!("Choosing to pass!");
