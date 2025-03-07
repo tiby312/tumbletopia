@@ -236,6 +236,12 @@ impl TranspositionTable {
 
 const STACK_SIZE: usize = 16;
 
+macro_rules! log {
+    ($($tt:tt)*) => {
+        gloo_console::log!(format!($($tt)*))
+    };
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Res {
     pub line: Vec<ActualMove>,
@@ -250,7 +256,7 @@ pub fn calculate_move(
     move_history: &MoveHistory,
 ) -> ActualMove {
     if let Some(mo) = iterative_deepening2(game, fogs, world, team, 4) {
-        console_dbg!(world.format(&mo.line));
+        log!("ai result:{:?}", world.format(&mo.line));
 
         if should_pass(&mo, team, game, world, move_history) {
             console_dbg!("Choosing to pass!");
