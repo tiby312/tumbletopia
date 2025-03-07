@@ -250,13 +250,7 @@ pub fn calculate_move(
     move_history: &MoveHistory,
 ) -> ActualMove {
     if let Some(mo) = iterative_deepening2(game, fogs, world, team, 4) {
-        let principal_variation: Vec<_> = mo
-            .line
-            .iter()
-            .map(|x| Axial::from_index(x.moveto))
-            .collect();
-
-        console_dbg!(hex::disp(principal_variation, world.radius as i8));
+        console_dbg!(world.format(&mo.line));
 
         if should_pass(&mo, team, game, world, move_history) {
             console_dbg!("Choosing to pass!");

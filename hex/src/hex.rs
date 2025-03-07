@@ -393,29 +393,29 @@ impl HexDraw for Axial {
 
 impl<H: HexDraw> HexDraw for Vec<H> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
-        write!(f,"{}","[")?;
+        write!(f, "{}", "[")?;
         for a in self.iter() {
             a.fmt(f, radius)?;
             write!(f, "{}", ",")?;
         }
-        write!(f,"{}","]")
+        write!(f, "{}", "]")
     }
 }
 
-pub fn disp<H: HexDraw>(a: H, radius: i8) -> Displayer<H> {
+pub fn disp<H: HexDraw>(a: &H, radius: i8) -> Displayer<H> {
     Displayer { ax: a, radius }
 }
 
-pub struct Displayer<H> {
-    ax: H,
+pub struct Displayer<'a, H> {
+    ax: &'a H,
     radius: i8,
 }
-impl<H: HexDraw> std::fmt::Display for Displayer<H> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.ax.fmt(f, self.radius)
-    }
-}
-impl<H: HexDraw> std::fmt::Debug for Displayer<H> {
+// impl<H: HexDraw> std::fmt::Display for Displayer<H> {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         self.ax.fmt(f, self.radius)
+//     }
+// }
+impl<H: HexDraw> std::fmt::Debug for Displayer<'_, H> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.ax.fmt(f, self.radius)
     }
@@ -423,7 +423,7 @@ impl<H: HexDraw> std::fmt::Debug for Displayer<H> {
 
 impl Axial {
     pub fn disp(&self, radius: i8) -> Displayer<Axial> {
-        Displayer { ax: *self, radius }
+        Displayer { ax: self, radius }
     }
     pub const fn from_index(index: usize) -> Axial {
         inverse(index)

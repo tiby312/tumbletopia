@@ -1,5 +1,5 @@
 use bitvec::array::BitArray;
-use hex::HDir;
+use hex::{HDir, HexDraw};
 
 use super::*;
 
@@ -715,6 +715,12 @@ impl GameState {
 //         }
 //     }
 // }
+
+impl hex::HexDraw for ActualMove {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
+        Axial::from_index(self.moveto).fmt(f, radius)
+    }
+}
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
 pub struct ActualMove {

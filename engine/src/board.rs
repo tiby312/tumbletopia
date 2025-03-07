@@ -212,6 +212,10 @@ impl GameState {
     }
 }
 impl MyWorld {
+    pub fn format<'a, H: hex::HexDraw>(&self, foo: &'a H) -> hex::Displayer<'a, H> {
+        hex::disp(foo, self.radius as i8)
+    }
+
     // pub fn with_size(s:i8,starting_team:ActiveTeam) -> MyWorld {
     //     let size=s;
 
