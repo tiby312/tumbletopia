@@ -577,6 +577,25 @@ impl<'a> AlphaBeta<'a> {
             //return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
+        //null move pruning
+        {
+            let r = 2;
+
+            //pos.make_null_move();
+            //int v = -search(pos, -beta, -(beta - 1), depth - r);
+            let mut ab2 = ab.clone();
+            ab2.alpha = -ab.beta;
+            ab2.beta = -(ab.beta - 1);
+            let (eval, m) = self.negamax(game, ab2, -team, depth.saturating_sub(r), false);
+            let eval = -eval;
+
+            //pos.undo_null_move();
+            if eval >= ab.beta {
+                //log!("NULL MOVE PRUNINGGG");
+                return (eval, m);
+            }
+        }
+        
         //https://en.wikipedia.org/wiki/Negamax
         let alpha_orig = ab.alpha;
         if let Some(entry) = self.prev_cache.get(game) {
@@ -601,24 +620,6 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
-        //null move pruning
-        {
-            let r = 2;
-
-            //pos.make_null_move();
-            //int v = -search(pos, -beta, -(beta - 1), depth - r);
-            let mut ab2 = ab.clone();
-            ab2.alpha = -ab.beta;
-            ab2.beta = -(ab.beta - 1);
-            let (eval, m) = self.negamax(game, ab2, -team, depth.saturating_sub(r), false);
-            let eval = -eval;
-
-            //pos.undo_null_move();
-            if eval >= ab.beta {
-                //log!("NULL MOVE PRUNINGGG");
-                return (eval, m);
-            }
-        }
 
         *self.nodes_visited += 1;
 
