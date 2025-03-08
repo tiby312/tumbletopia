@@ -408,7 +408,7 @@ struct AlphaBeta<'a> {
     killer_moves: &'a mut KillerMoves,
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
-    moves: &'a mut Vec<u8>,
+    moves: &'a mut Vec<ActualMove>,
     nodes_visited: &'a mut usize, //history: &'a mut MoveHistory,
 }
 
@@ -562,8 +562,6 @@ impl<'a> AlphaBeta<'a> {
             //return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
-        
-
         //https://en.wikipedia.org/wiki/Negamax
         let alpha_orig = ab.alpha;
         if let Some(entry) = self.prev_cache.get(game) {
@@ -597,10 +595,12 @@ impl<'a> AlphaBeta<'a> {
 
         let start_move_index = self.moves.len();
 
-        self.moves.extend(all_moves.inner.iter_ones().map(|x| {
-            let x: u8 = x.try_into().unwrap();
-            x
-        }));
+        self.moves.extend(
+            all_moves
+                .inner
+                .iter_ones()
+                .map(|x| ActualMove { moveto: x }),
+        );
 
         let end_move_index = self.moves.len();
 
@@ -616,13 +616,13 @@ impl<'a> AlphaBeta<'a> {
         //     );
         // }
 
-
         //This is impossible since you can always pass
         //assert!(!moves.is_empty());
 
         //let loud_moves=game.generate_loud_moves(self.world, team, &spoke_info);
 
-        let move_value = |index: usize| {
+        let move_value = |index: &ActualMove| {
+            let index = index.moveto;
             // if loud_moves.inner[index]{
             //     return 5;
             // }
@@ -643,11 +643,10 @@ impl<'a> AlphaBeta<'a> {
                 return 0;
             }
 
-
             1
         };
 
-        moves.sort_unstable_by_key(|&f| move_value(f as usize));
+        moves.sort_unstable_by_key(|f| move_value(f));
 
         // log!(
         //     "Move about to look:{:?}",
@@ -665,12 +664,10 @@ impl<'a> AlphaBeta<'a> {
         //tc-s-d-re-srces-s--
         let mut ab_iter = ab.ab_iter();
         for _ in start_move_index..end_move_index {
-            let cand = ActualMove {
-                moveto: self.moves.pop().unwrap() as usize,
-            };
-            let effect =
-                cand.apply(team, game, &fogs[team.index()], self.world);
-            
+            let cand = self.moves.pop().unwrap();
+
+            let effect = cand.apply(team, game, &fogs[team.index()], self.world);
+
             let (eval, m) = self.negamax(
                 game,
                 fogs,
@@ -690,7 +687,6 @@ impl<'a> AlphaBeta<'a> {
             cand.undo(team, &effect, game);
 
             if !ab_iter.keep_going((cand.clone(), m), eval) {
-                
                 self.moves.drain(start_move_index..);
                 break;
             }
