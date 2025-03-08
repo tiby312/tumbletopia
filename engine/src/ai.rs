@@ -5,9 +5,10 @@ use super::*;
 use gloo_console::console_dbg;
 
 pub type Eval = i64;
-const MATE: i64 = 1_000_000;
+//const MATE: i64 = 1_000_000;
 use mesh::small_mesh::SmallMesh;
 use tinyvec::ArrayVec;
+pub const MAX_NODE_VISIT: usize = 3000;
 
 pub fn should_pass(
     a: &ai::Res,
@@ -154,13 +155,13 @@ impl Default for Evaluator {
     }
 }
 impl Evaluator {
-    pub fn process_game_over(&mut self, a: unit::GameOver) -> Eval {
-        match a {
-            unit::GameOver::WhiteWon => MATE,
-            unit::GameOver::BlackWon => -MATE,
-            unit::GameOver::Tie => 0,
-        }
-    }
+    // pub fn process_game_over(&mut self, a: unit::GameOver) -> Eval {
+    //     match a {
+    //         unit::GameOver::WhiteWon => MATE,
+    //         unit::GameOver::BlackWon => -MATE,
+    //         unit::GameOver::Tie => 0,
+    //     }
+    // }
 
     //white maximizing
     //black minimizing
@@ -268,6 +269,7 @@ pub struct Res {
     pub eval: i64,
 }
 
+//TODO make the search depth be dependant on how many vacant cells there are!!!!
 pub fn calculate_move(
     game: &mut GameState,
     fogs: &[mesh::small_mesh::SmallMesh; 2],
@@ -290,6 +292,7 @@ pub fn calculate_move(
         }
     }
 }
+
 pub fn iterative_deepening2(
     game: &GameState,
     fogs: &[mesh::small_mesh::SmallMesh; 2],
@@ -340,6 +343,11 @@ pub fn iterative_deepening2(
         let (res, mut mov) = aaaa.negamax(&mut kk, ABAB::new(), team, depth);
 
         assert_eq!(&kk, game);
+
+        if *aaaa.nodes_visited >= MAX_NODE_VISIT {
+            log!("discarding depth {}", depth);
+            break;
+        }
 
         //alpha beta returns the main line with the first move at the end
         //reverse it so that the order is in the order of how they are played out.
@@ -549,6 +557,10 @@ impl<'a> AlphaBeta<'a> {
         team: Team,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
+        if *self.nodes_visited >= MAX_NODE_VISIT {
+            return (SMALL_VAL, tinyvec::array_vec!());
+        }
+
         let mut spoke_info = moves::SpokeInfo::new(game);
         moves::update_spoke_info(&mut spoke_info, self.world, game);
 
@@ -707,7 +719,7 @@ impl<'a> AlphaBeta<'a> {
     }
 }
 
-use abab::ABAB;
+use abab::{ABAB, SMALL_VAL};
 mod abab {
     use std::ops::Neg;
 
