@@ -606,15 +606,17 @@ impl<'a> AlphaBeta<'a> {
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
-        if moves.is_empty() {
-            return (
-                team.value()
-                    * self
-                        .evaluator
-                        .absolute_evaluate(game, self.world, &spoke_info, false),
-                tinyvec::array_vec![],
-            );
-        }
+        // if moves.is_empty() {
+        //     return (
+        //         team.value()
+        //             * self
+        //                 .evaluator
+        //                 .absolute_evaluate(game, self.world, &spoke_info, false),
+        //         tinyvec::array_vec![],
+        //     );
+        // }
+
+
         //This is impossible since you can always pass
         //assert!(!moves.is_empty());
 
@@ -632,7 +634,7 @@ impl<'a> AlphaBeta<'a> {
                     }
                 }
             }
-            
+
             if captures.inner[index] {
                 return 4;
             }
