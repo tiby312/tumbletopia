@@ -659,8 +659,7 @@ impl<'a> AlphaBeta<'a> {
 
             let effect = cand.apply(team, game, &self.fogs[team.index()], self.world);
 
-            let (eval, mut m) =
-                self.negamax(game, -ab_iter.clone_ab_values(), team.not(), depth - 1);
+            let (eval, mut m) = self.negamax(game, -ab_iter.clone_ab_values(), -team, depth - 1);
             let eval = -eval;
 
             // log!(
