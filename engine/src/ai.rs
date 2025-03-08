@@ -190,8 +190,13 @@ impl Evaluator {
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
                 if tt != Team::Neutral {
-                    strength_parity +=
-                        6i64 - ((height + 1).max(num_attack[tt]) - num_attack[tt.not()]).abs();
+                    // strength_parity +=
+                    //     6i64 - ((height + 1).max(num_attack[tt]) - num_attack[tt.not()]).abs();
+                    if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
+                        strength_parity += -tt.value();
+                    } else {
+                        strength_parity += tt.value();
+                    }
                 }
                 //     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
                 //         -tt.value()
