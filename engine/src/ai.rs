@@ -562,6 +562,8 @@ impl<'a> AlphaBeta<'a> {
             //return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
+        
+
         //https://en.wikipedia.org/wiki/Negamax
         let alpha_orig = ab.alpha;
         if let Some(entry) = self.prev_cache.get(game) {
@@ -634,27 +636,12 @@ impl<'a> AlphaBeta<'a> {
             if let Some(a) = self.prev_cache.get(&game) {
                 if let Flag::Exact = a.flag {
                     if a.pv.last().unwrap().moveto == index {
-                        //log!("found pv {:?}",self.world.format(&ActualMove{moveto:index}));
                         return 1000;
                     }
                 }
             }
 
-            // for (i, a) in self
-            //     .killer_moves
-            //     .get(usize::try_from(depth).unwrap())
-            //     .iter()
-            //     .enumerate()
-            // {
-            //     if a.moveto == index {
-            //         return 800 - i as isize;
-            //     }
-            // }
-
-            // let spokes=game.factions.iter_end_points(self.world, index);
-            // let sum=spokes.into_iter().fold(0,|acc,f|acc+f.0);
-
-            1 //+sum as isize
+            1
         };
 
         moves.sort_unstable_by_key(|&f| move_value(f as usize));
@@ -673,17 +660,14 @@ impl<'a> AlphaBeta<'a> {
 
         // alpha beta not workinggggggg
         //tc-s-d-re-srces-s--
-        let mut cut_off = false;
         let mut ab_iter = ab.ab_iter();
         for _ in start_move_index..end_move_index {
-            //moves.into_iter()
             let cand = ActualMove {
                 moveto: self.moves.pop().unwrap() as usize,
             };
             let effect: move_build::MoveEffect =
                 cand.apply(team, game, &fogs[team.index()], self.world);
-            //self.history.push((cand, effect));
-
+            
             let (eval, m) = self.negamax(
                 game,
                 fogs,
@@ -703,12 +687,8 @@ impl<'a> AlphaBeta<'a> {
             cand.undo(team, &effect, game);
 
             if !ab_iter.keep_going((cand.clone(), m), eval) {
-                // if effect.destroyed_unit.is_none() {
-                //     self.killer_moves.consider(depth, cand.clone());
-                // }
-
+                
                 self.moves.drain(start_move_index..);
-                cut_off = true;
                 break;
             }
         }
