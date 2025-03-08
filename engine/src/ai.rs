@@ -682,6 +682,7 @@ impl<'a> AlphaBeta<'a> {
         assert_eq!(self.moves.len(), start_move_index);
 
         let (eval, m) = ab_iter.finish();
+        let m = m.unwrap_or_else(|| tinyvec::array_vec![]);
 
         {
             //tc-s-d-re-srces-s--
@@ -693,33 +694,17 @@ impl<'a> AlphaBeta<'a> {
                 Flag::Exact
             };
 
-            let pv = if let Some(arr) = m.clone() {
-                arr
-            } else {
-                tinyvec::array_vec![]
-            };
-
             let entry = TTEntry {
                 value: eval,
                 depth,
                 flag,
-                pv,
+                pv: m.clone(),
             };
 
             self.prev_cache.update(game, entry);
         }
 
-        if let Some(m) = m {
-            // log!(
-            //     "picked depth:{} {:?}:{:?}",
-            //     depth,
-            //     self.world.format(&cand),
-            //     self.world.format(&m.clone().to_vec())
-            // );
-            (eval, m)
-        } else {
-            (eval, tinyvec::array_vec![])
-        }
+        (eval, m)
     }
 }
 
