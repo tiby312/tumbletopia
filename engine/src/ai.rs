@@ -254,7 +254,7 @@ impl TranspositionTable {
     }
 }
 
-const STACK_SIZE: usize = 16;
+const STACK_SIZE: usize = 8;
 
 macro_rules! log {
     ($($tt:tt)*) => {
@@ -668,7 +668,7 @@ impl<'a> AlphaBeta<'a> {
             let cand = ActualMove {
                 moveto: self.moves.pop().unwrap() as usize,
             };
-            let effect: move_build::MoveEffect =
+            let effect =
                 cand.apply(team, game, &fogs[team.index()], self.world);
             
             let (eval, m) = self.negamax(
