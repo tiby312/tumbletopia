@@ -188,18 +188,19 @@ impl Evaluator {
             // }
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                let height = height as i64;
+                // let height = height as i64;
                 if tt != Team::Neutral {
                     strength_parity += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
-
-                    if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                        -tt.value()
-                    } else {
-                        tt.value()
-                    }
-                } else {
-                    0
                 }
+                //     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
+                //         -tt.value()
+                //     } else {
+                //         tt.value()
+                //     }
+                // } else {
+                //     0
+                // }
+                tt.value()
             } else {
                 if num_attack[Team::White] > num_attack[Team::Black] {
                     1
@@ -215,21 +216,34 @@ impl Evaluator {
     }
 }
 
+pub enum Flag {
+    Exact,
+    UpperBound,
+    LowerBound,
+}
+pub struct TTEntry {
+    //mov: Option<moves::ActualMove>,
+    pv: ArrayVec<[moves::ActualMove; STACK_SIZE]>,
+    flag: Flag,
+    depth: usize,
+    value: i64,
+}
+
 struct TranspositionTable {
-    a: std::collections::BTreeMap<u64, moves::ActualMove>,
+    a: std::collections::BTreeMap<u64, TTEntry>,
 }
 impl TranspositionTable {
-    pub fn update_inner(&mut self, k: u64, m: moves::ActualMove) {
+    pub fn update_inner(&mut self, k: u64, m: TTEntry) {
         if let Some(foo) = self.a.get_mut(&k) {
             *foo = m;
         } else {
             self.a.insert(k, m);
         }
     }
-    pub fn update(&mut self, a: &GameState, m: moves::ActualMove) {
+    pub fn update(&mut self, a: &GameState, m: TTEntry) {
         self.update_inner(a.hash_me(), m)
     }
-    pub fn get(&self, a: &GameState) -> Option<&moves::ActualMove> {
+    pub fn get(&self, a: &GameState) -> Option<&TTEntry> {
         self.a.get(&a.hash_me())
     }
 }
@@ -255,7 +269,7 @@ pub fn calculate_move(
     team: Team,
     move_history: &MoveHistory,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 4) {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8) {
         if should_pass(&mo, team, game, world, move_history) {
             console_dbg!("Choosing to pass!");
             ActualMove {
@@ -320,28 +334,36 @@ pub fn iterative_deepening2(
 
         assert_eq!(&kk, game);
 
-        // with transpotiion table     2554
-        // without transposition table 2569
+        //alpha beta returns the main line with the first move at the end
+        //reverse it so that the order is in the order of how they are played out.
+        mov.reverse();
+
         // {
         //     //Update the transposition table in the right order
         //     let mut gg = kk.clone();
         //     let mut tt = team;
-        //     let mut vals = vec![];
-        //     for m in mov.iter().rev() {
-        //         vals.push((gg.hash_me(), m.clone()));
-        //         m.apply(tt, &mut gg, &fogs[tt.index()], world);
-        //         tt = tt.not();
-        //     }
-        //     for (v, k) in vals.into_iter().rev() {
-        //         table.update_inner(v, k);
+
+        //     let mut ggg=vec!();
+        //     for (i,m) in mov.iter().enumerate(){
+        //         m.apply(tt,&mut gg,&fogs[tt.index()],world);
+
+        //         let entry=TTEntry{
+        //             flag:Flag::Exact,
+        //             pv:tinyvec::ArrayVec::from_iter(mov[i..].iter().cloned()),
+        //             //TODO correct???
+        //             depth:depth,
+        //             value:res
+        //         };
+
+        //         ggg.push((gg.hash_me(),entry));
+
+        //         tt=tt.not();
         //     }
 
-        //     //gloo_console::info!(format!("transpotion table size={}", table.a.len()));
+        //     for (a,b) in ggg.into_iter().rev(){
+        //         table.update_inner(a, b);
+        //     }
         // }
-
-        //alpha beta returns the main line with the first move at the end
-        //reverse it so that the order is in the order of how they are played out.
-        mov.reverse();
 
         log!(
             "PV for depth {} :{:?}",
@@ -534,6 +556,30 @@ impl<'a> AlphaBeta<'a> {
             //return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
+        //https://en.wikipedia.org/wiki/Negamax
+        let alpha_orig = ab.alpha;
+        if let Some(entry) = self.prev_cache.get(game) {
+            if entry.depth >= depth {
+                match entry.flag {
+                    Flag::Exact => {
+                        entry.value;
+                    }
+                    Flag::UpperBound => {
+                        ab.alpha = ab.alpha.max(entry.value);
+                    }
+                    Flag::LowerBound => {
+                        ab.beta = ab.beta.min(entry.value);
+                    }
+                }
+            }
+
+            if ab.alpha >= ab.beta {
+                log!("Found a hit!");
+
+                return (entry.value, entry.pv.clone());
+            }
+        }
+
         *self.nodes_visited += 1;
 
         //TODO don't allow pass. why waste tones of branching? There aren't any
@@ -579,11 +625,13 @@ impl<'a> AlphaBeta<'a> {
                 return 0;
             }
 
-            // if let Some(a) = self.prev_cache.get(&game) {
-            //     if a.moveto == index {
-            //         return 1000;
-            //     }
-            // }
+            if let Some(a) = self.prev_cache.get(&game) {
+                if let Flag::Exact = a.flag {
+                    if a.pv.last().unwrap().moveto == index {
+                        return 1000;
+                    }
+                }
+            }
 
             // for (i, a) in self
             //     .killer_moves
@@ -604,11 +652,21 @@ impl<'a> AlphaBeta<'a> {
 
         moves.sort_unstable_by_key(|&f| move_value(f as usize));
 
-        //log!("first move alph_beta depth {},{:?}",depth,self.world.format(&ActualMove{moveto:*moves.last().unwrap() as usize}));
+        // log!(
+        //     "Move about to look:{:?}",
+        //     self.world.format(
+        //         &moves
+        //             .iter()
+        //             .map(|x| ActualMove {
+        //                 moveto: *x as usize
+        //             })
+        //             .collect::<Vec<_>>()
+        //     )
+        // );
 
-        // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
-        // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
-
+        // alpha beta not workinggggggg
+        //tc-s-d-re-srces-s--
+        let mut cut_off = false;
         let mut ab_iter = ab.ab_iter();
         for _ in start_move_index..end_move_index {
             //moves.into_iter()
@@ -628,18 +686,22 @@ impl<'a> AlphaBeta<'a> {
             );
             let eval = -eval;
 
-            //log!("consid depth:{} {:?}:{:?}",depth,self.world.format(&cand),self.world.format(&m.clone().to_vec()));
+            // log!(
+            //     "consid depth:{} {:?}:{:?}",
+            //     depth,
+            //     self.world.format(&cand),
+            //     self.world.format(&m.clone().to_vec())
+            // );
 
             cand.undo(team, &effect, game);
 
-            if !ab_iter.consider((cand.clone(), m), eval) {
+            if !ab_iter.keep_going((cand.clone(), m), eval) {
                 // if effect.destroyed_unit.is_none() {
                 //     self.killer_moves.consider(depth, cand.clone());
                 // }
 
-                // self.prev_cache.update(game, cand);
-
                 self.moves.drain(start_move_index..);
+                cut_off = true;
                 break;
             }
         }
@@ -648,8 +710,40 @@ impl<'a> AlphaBeta<'a> {
 
         let (eval, m) = ab_iter.finish();
 
+        {
+            //tc-s-d-re-srces-s--
+            let flag = if eval <= alpha_orig {
+                Flag::UpperBound
+            } else if eval >= ab.beta {
+                Flag::LowerBound
+            } else {
+                Flag::Exact
+            };
+
+            let pv = if let Some((x, mut arr)) = m.clone() {
+                arr.push(x);
+                arr
+            } else {
+                tinyvec::array_vec![]
+            };
+
+            let entry = TTEntry {
+                value: eval,
+                depth,
+                flag,
+                pv,
+            };
+
+            self.prev_cache.update(game, entry);
+        }
+
         if let Some((cand, mut m)) = m {
-            //log!("picked depth:{} {:?}:{:?}",depth,self.world.format(&cand),self.world.format(&m.clone().to_vec()));
+            // log!(
+            //     "picked depth:{} {:?}:{:?}",
+            //     depth,
+            //     self.world.format(&cand),
+            //     self.world.format(&m.clone().to_vec())
+            // );
 
             m.push(cand);
             (eval, m)
@@ -666,8 +760,8 @@ mod abab {
     use super::*;
     #[derive(Clone)]
     pub struct ABAB {
-        alpha: Eval,
-        beta: Eval,
+        pub alpha: Eval,
+        pub beta: Eval,
     }
 
     impl Neg for ABAB {
@@ -675,8 +769,8 @@ mod abab {
 
         fn neg(self) -> Self::Output {
             ABAB {
-                alpha: -self.alpha,
-                beta: -self.beta,
+                alpha: -self.beta,
+                beta: -self.alpha,
             }
         }
     }
@@ -694,7 +788,7 @@ mod abab {
         pub fn clone_ab_values(&self) -> ABAB {
             self.a.clone()
         }
-        pub fn consider(&mut self, t: T, eval: Eval) -> bool {
+        pub fn keep_going(&mut self, t: T, eval: Eval) -> bool {
             //TODO should be less than or equal instead maybe?
 
             if eval > self.value {
@@ -702,27 +796,29 @@ mod abab {
                 self.value = eval;
             }
 
-            self.a.alpha = self.a.alpha.max(self.value);
-
-            if self.a.alpha > self.a.beta {
+            let ret = if self.value >= self.a.beta {
                 false
             } else {
                 true
-            }
+            };
+
+            self.a.alpha = self.a.alpha.max(self.value);
+
+            ret
         }
     }
 
     impl ABAB {
         pub fn new() -> Self {
             ABAB {
-                alpha: Eval::MIN,
-                beta: Eval::MAX,
+                alpha: SMALL_VAL,
+                beta: BIG_VAL,
             }
         }
 
         //ALWAYS MAXIMIZE
         pub fn ab_iter<T: Clone>(&mut self) -> ABIter<T> {
-            let value = i64::MIN;
+            let value = SMALL_VAL;
             ABIter {
                 value,
                 a: self,
@@ -730,4 +826,7 @@ mod abab {
             }
         }
     }
+
+    pub const SMALL_VAL: i64 = Eval::MIN + 10;
+    pub const BIG_VAL: i64 = Eval::MAX - 10;
 }
