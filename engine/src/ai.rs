@@ -332,11 +332,12 @@ pub fn iterative_deepening2(
             world,
             moves: &mut moves,
             nodes_visited: &mut nodes_visited_total,
+            fogs,
         };
 
         let mut kk = game.clone();
 
-        let (res, mut mov) = aaaa.negamax(&mut kk, fogs, ABAB::new(), team, depth);
+        let (res, mut mov) = aaaa.negamax(&mut kk, ABAB::new(), team, depth);
 
         assert_eq!(&kk, game);
 
@@ -410,6 +411,7 @@ struct AlphaBeta<'a> {
     world: &'a board::MyWorld,
     moves: &'a mut Vec<ActualMove>,
     nodes_visited: &'a mut usize, //history: &'a mut MoveHistory,
+    fogs: &'a [mesh::small_mesh::SmallMesh; 2],
 }
 
 struct KillerMoves {
@@ -543,7 +545,6 @@ impl<'a> AlphaBeta<'a> {
     fn negamax(
         &mut self,
         game: &mut GameState,
-        fogs: &[SmallMesh; 2],
         mut ab: ABAB,
         team: Team,
         depth: usize,
@@ -656,15 +657,9 @@ impl<'a> AlphaBeta<'a> {
         for _ in start_move_index..end_move_index {
             let cand = self.moves.pop().unwrap();
 
-            let effect = cand.apply(team, game, &fogs[team.index()], self.world);
+            let effect = cand.apply(team, game, &self.fogs[team.index()], self.world);
 
-            let (eval, m) = self.negamax(
-                game,
-                fogs,
-                -ab_iter.clone_ab_values(),
-                team.not(),
-                depth - 1,
-            );
+            let (eval, m) = self.negamax(game, -ab_iter.clone_ab_values(), team.not(), depth - 1);
             let eval = -eval;
 
             // log!(
