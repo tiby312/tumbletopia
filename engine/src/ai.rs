@@ -659,7 +659,8 @@ impl<'a> AlphaBeta<'a> {
 
             let effect = cand.apply(team, game, &self.fogs[team.index()], self.world);
 
-            let (eval, m) = self.negamax(game, -ab_iter.clone_ab_values(), team.not(), depth - 1);
+            let (eval, mut m) =
+                self.negamax(game, -ab_iter.clone_ab_values(), team.not(), depth - 1);
             let eval = -eval;
 
             // log!(
@@ -671,7 +672,8 @@ impl<'a> AlphaBeta<'a> {
 
             cand.undo(team, &effect, game);
 
-            if !ab_iter.keep_going((cand.clone(), m), eval) {
+            m.push(cand);
+            if !ab_iter.keep_going(m, eval) {
                 self.moves.drain(start_move_index..);
                 break;
             }
@@ -691,8 +693,7 @@ impl<'a> AlphaBeta<'a> {
                 Flag::Exact
             };
 
-            let pv = if let Some((x, mut arr)) = m.clone() {
-                arr.push(x);
+            let pv = if let Some(arr) = m.clone() {
                 arr
             } else {
                 tinyvec::array_vec![]
@@ -708,15 +709,13 @@ impl<'a> AlphaBeta<'a> {
             self.prev_cache.update(game, entry);
         }
 
-        if let Some((cand, mut m)) = m {
+        if let Some(m) = m {
             // log!(
             //     "picked depth:{} {:?}:{:?}",
             //     depth,
             //     self.world.format(&cand),
             //     self.world.format(&m.clone().to_vec())
             // );
-
-            m.push(cand);
             (eval, m)
         } else {
             (eval, tinyvec::array_vec![])
