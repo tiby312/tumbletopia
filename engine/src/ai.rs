@@ -625,6 +625,14 @@ impl<'a> AlphaBeta<'a> {
             //     return 5;
             // }
 
+            if let Some(a) = self.prev_cache.get(&game) {
+                if let Flag::Exact = a.flag {
+                    if a.pv.last().unwrap().moveto == index {
+                        return 1000;
+                    }
+                }
+            }
+            
             if captures.inner[index] {
                 return 4;
             }
@@ -633,13 +641,6 @@ impl<'a> AlphaBeta<'a> {
                 return 0;
             }
 
-            if let Some(a) = self.prev_cache.get(&game) {
-                if let Flag::Exact = a.flag {
-                    if a.pv.last().unwrap().moveto == index {
-                        return 1000;
-                    }
-                }
-            }
 
             1
         };
