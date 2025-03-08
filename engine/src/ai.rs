@@ -344,10 +344,10 @@ pub fn iterative_deepening2(
 
         assert_eq!(&kk, game);
 
-        if *aaaa.nodes_visited >= MAX_NODE_VISIT {
-            log!("discarding depth {}", depth);
-            break;
-        }
+        // if *aaaa.nodes_visited >= MAX_NODE_VISIT {
+        //     log!("discarding depth {}", depth);
+        //     break;
+        // }
 
         //alpha beta returns the main line with the first move at the end
         //reverse it so that the order is in the order of how they are played out.
@@ -557,9 +557,11 @@ impl<'a> AlphaBeta<'a> {
         team: Team,
         depth: usize,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        if *self.nodes_visited >= MAX_NODE_VISIT {
-            return (SMALL_VAL, tinyvec::array_vec!());
-        }
+        // 1107 with TT
+        // 1117
+        // if *self.nodes_visited >= MAX_NODE_VISIT {
+        //     return (SMALL_VAL, tinyvec::array_vec!());
+        // }
 
         let mut spoke_info = moves::SpokeInfo::new(game);
         moves::update_spoke_info(&mut spoke_info, self.world, game);
@@ -604,6 +606,8 @@ impl<'a> AlphaBeta<'a> {
         let (all_moves, captures, reinfocements) =
             game.generate_possible_moves_movement(self.world, team, &spoke_info);
 
+        let loud_moves = game.generate_loud_moves(self.world, team, &spoke_info);
+
         let start_move_index = self.moves.len();
 
         self.moves.extend(
@@ -631,19 +635,15 @@ impl<'a> AlphaBeta<'a> {
             let index = index.moveto;
 
             if let Some(a) = self.prev_cache.get(&game) {
-                if let Flag::Exact = a.flag {
-                    if a.pv.last().unwrap().moveto == index {
+                if let Some(p) = a.pv.last() {
+                    if p.moveto == index {
                         return 1000;
                     }
                 }
             }
 
-            if captures.inner[index] {
+            if loud_moves.inner[index] {
                 return 4;
-            }
-
-            if reinfocements.inner[index] {
-                return 0;
             }
 
             1
