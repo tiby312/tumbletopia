@@ -767,15 +767,13 @@ mod abab {
                 self.value = eval;
             }
 
-            let ret = if self.value >= self.a.beta {
+            self.a.alpha = self.a.alpha.max(self.value);
+
+            if self.a.alpha >= self.a.beta {
                 false
             } else {
                 true
-            };
-
-            self.a.alpha = self.a.alpha.max(self.value);
-
-            ret
+            }
         }
     }
 
