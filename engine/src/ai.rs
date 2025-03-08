@@ -188,19 +188,19 @@ impl Evaluator {
             // }
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                // let height = height as i64;
+                let height = height as i64;
                 if tt != Team::Neutral {
                     strength_parity += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
+                
+                    if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
+                        -tt.value()
+                    } else {
+                        tt.value()
+                    }
+                } else {
+                    0
                 }
-                //     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                //         -tt.value()
-                //     } else {
-                //         tt.value()
-                //     }
-                // } else {
-                //     0
-                // }
-                tt.value()
+                //tt.value()
             } else {
                 if num_attack[Team::White] > num_attack[Team::Black] {
                     1
@@ -628,6 +628,7 @@ impl<'a> AlphaBeta<'a> {
             if let Some(a) = self.prev_cache.get(&game) {
                 if let Flag::Exact = a.flag {
                     if a.pv.last().unwrap().moveto == index {
+                        //log!("found pv {:?}",self.world.format(&ActualMove{moveto:index}));
                         return 1000;
                     }
                 }
