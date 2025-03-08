@@ -269,7 +269,7 @@ pub fn calculate_move(
     team: Team,
     move_history: &MoveHistory,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8) {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 4) {
         if should_pass(&mo, team, game, world, move_history) {
             console_dbg!("Choosing to pass!");
             ActualMove {
