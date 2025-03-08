@@ -588,8 +588,6 @@ impl<'a> AlphaBeta<'a> {
 
         *self.nodes_visited += 1;
 
-        //TODO don't allow pass. why waste tones of branching? There aren't any
-        //crazy tactical combinations involving passing
         let (all_moves, captures, reinfocements) =
             game.generate_possible_moves_movement(self.world, team, &spoke_info);
 
@@ -616,16 +614,8 @@ impl<'a> AlphaBeta<'a> {
         //     );
         // }
 
-        //This is impossible since you can always pass
-        //assert!(!moves.is_empty());
-
-        //let loud_moves=game.generate_loud_moves(self.world, team, &spoke_info);
-
         let move_value = |index: &ActualMove| {
             let index = index.moveto;
-            // if loud_moves.inner[index]{
-            //     return 5;
-            // }
 
             if let Some(a) = self.prev_cache.get(&game) {
                 if let Flag::Exact = a.flag {
