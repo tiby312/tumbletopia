@@ -190,17 +190,18 @@ impl Evaluator {
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
                 if tt != Team::Neutral {
-                    strength_parity += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
-
-                    if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                        -tt.value()
-                    } else {
-                        tt.value()
-                    }
-                } else {
-                    0
+                    strength_parity +=
+                        6i64 - ((height + 1).max(num_attack[tt]) - num_attack[tt.not()]).abs();
                 }
-                //tt.value()
+                //     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
+                //         -tt.value()
+                //     } else {
+                //         tt.value()
+                //     }
+                // } else {
+                //     0
+                // }
+                tt.value()
             } else {
                 if num_attack[Team::White] > num_attack[Team::Black] {
                     1
@@ -269,7 +270,7 @@ pub fn calculate_move(
     team: Team,
     move_history: &MoveHistory,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 4) {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8) {
         if should_pass(&mo, team, game, world, move_history) {
             console_dbg!("Choosing to pass!");
             ActualMove {
