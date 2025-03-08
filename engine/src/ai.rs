@@ -191,7 +191,7 @@ impl Evaluator {
                 let height = height as i64;
                 if tt != Team::Neutral {
                     strength_parity += 6i64 - (num_attack[tt] - num_attack[tt.not()]).abs();
-                
+
                     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
                         -tt.value()
                     } else {
