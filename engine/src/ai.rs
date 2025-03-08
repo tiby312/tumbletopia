@@ -340,7 +340,7 @@ pub fn iterative_deepening2(
 
         let mut kk = game.clone();
 
-        let (res, mut mov) = aaaa.negamax(&mut kk, ABAB::new(), team, depth);
+        let (res, mut mov) = aaaa.negamax(&mut kk, ABAB::new(), team, depth, true);
 
         assert_eq!(&kk, game);
 
@@ -556,13 +556,13 @@ impl<'a> AlphaBeta<'a> {
         mut ab: ABAB,
         team: Team,
         depth: usize,
+        update_tt: bool,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         // 1107 with TT
         // 1117
         // if *self.nodes_visited >= MAX_NODE_VISIT {
         //     return (SMALL_VAL, tinyvec::array_vec!());
         // }
-
         let mut spoke_info = moves::SpokeInfo::new(game);
         moves::update_spoke_info(&mut spoke_info, self.world, game);
 
@@ -598,6 +598,25 @@ impl<'a> AlphaBeta<'a> {
                 log!("Found a hit!");
 
                 return (entry.value, entry.pv.clone());
+            }
+        }
+
+        //null move pruning
+        {
+            let r = 2;
+
+            //pos.make_null_move();
+            //int v = -search(pos, -beta, -(beta - 1), depth - r);
+            let mut ab2 = ab.clone();
+            ab2.alpha = -ab.beta;
+            ab2.beta = -(ab.beta - 1);
+            let (eval, m) = self.negamax(game, ab2, -team, depth.saturating_sub(r), false);
+            let eval = -eval;
+
+            //pos.undo_null_move();
+            if eval >= ab.beta {
+                //log!("NULL MOVE PRUNINGGG");
+                return (eval, m);
             }
         }
 
@@ -671,7 +690,8 @@ impl<'a> AlphaBeta<'a> {
 
             let effect = cand.apply(team, game, &self.fogs[team.index()], self.world);
 
-            let (eval, mut m) = self.negamax(game, -ab_iter.clone_ab_values(), -team, depth - 1);
+            let (eval, mut m) =
+                self.negamax(game, -ab_iter.clone_ab_values(), -team, depth - 1, true);
             let eval = -eval;
 
             // log!(
@@ -695,7 +715,7 @@ impl<'a> AlphaBeta<'a> {
         let (eval, m) = ab_iter.finish();
         let m = m.unwrap_or_else(|| tinyvec::array_vec![]);
 
-        {
+        if update_tt {
             //tc-s-d-re-srces-s--
             let flag = if eval <= alpha_orig {
                 Flag::UpperBound
