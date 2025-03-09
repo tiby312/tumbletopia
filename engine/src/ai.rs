@@ -193,21 +193,22 @@ impl Evaluator {
                 if tt != Team::Neutral {
                     // strength_parity +=
                     //     6i64 - ((height + 1).max(num_attack[tt]) - num_attack[tt.not()]).abs();
+                    // if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
+                    //     strength_parity += -tt.value();
+                    // } else {
+                    //     strength_parity += tt.value();
+                    // }
+                    //}
                     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                        strength_parity += -tt.value();
+                        -tt.value()
                     } else {
-                        strength_parity += tt.value();
+                        tt.value()
                     }
+                } else {
+                    0
                 }
-                //     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                //         -tt.value()
-                //     } else {
-                //         tt.value()
-                //     }
-                // } else {
-                //     0
-                // }
-                tt.value()
+
+                //tt.value()
             } else {
                 if num_attack[Team::White] > num_attack[Team::Black] {
                     1
@@ -381,7 +382,9 @@ pub fn iterative_deepening2(
         // }
 
         log!(
-            "PV for depth {} :{:?}",
+            "num visited {} eval {} PV for depth {} :{:?}",
+            *aaaa.nodes_visited,
+            res * team.value(),
             depth,
             world.format(&mov.clone().to_vec())
         );
@@ -595,7 +598,7 @@ impl<'a> AlphaBeta<'a> {
                 return (eval, m);
             }
         }
-        
+
         //https://en.wikipedia.org/wiki/Negamax
         let alpha_orig = ab.alpha;
         if let Some(entry) = self.prev_cache.get(game) {
@@ -614,12 +617,11 @@ impl<'a> AlphaBeta<'a> {
             }
 
             if ab.alpha >= ab.beta {
-                log!("Found a hit!");
+                //log!("Found a hit!");
 
                 return (entry.value, entry.pv.clone());
             }
         }
-
 
         *self.nodes_visited += 1;
 
@@ -663,7 +665,18 @@ impl<'a> AlphaBeta<'a> {
             }
 
             if loud_moves.inner[index] {
-                return 4;
+                return 10;
+            }
+
+            for (i, a) in self
+                .killer_moves
+                .get(usize::try_from(depth).unwrap())
+                .iter()
+                .enumerate()
+            {
+                if a.moveto == index {
+                    return 4 - i as isize;
+                }
             }
 
             1
@@ -702,10 +715,16 @@ impl<'a> AlphaBeta<'a> {
             //     self.world.format(&m.clone().to_vec())
             // );
 
+            let cc = cand.clone();
             cand.undo(team, &effect, game);
 
             m.push(cand);
             if !ab_iter.keep_going(m, eval) {
+                //2007 without
+                if !loud_moves.inner[cc.moveto] {
+                    self.killer_moves.consider(depth, cc);
+                }
+
                 self.moves.drain(start_move_index..);
                 break;
             }
