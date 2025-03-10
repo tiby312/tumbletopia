@@ -43,8 +43,6 @@ impl<T> EndPoints<T> {
     }
 }
 
-pub const PASS_MOVE: Axial = Axial { q: -5, r: 9 };
-pub const PASS_MOVE_INDEX: usize = const { PASS_MOVE.to_index() };
 
 impl crate::unit::GameStateTotal {
     pub fn update_fog(&mut self, world: &board::MyWorld, team: Team) {
@@ -437,7 +435,6 @@ impl GameState {
                             ret.inner.set(index2 as usize, true);
                         }
                     }
-                    _ => {}
                 }
             }
         }

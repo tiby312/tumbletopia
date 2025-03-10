@@ -1,4 +1,4 @@
-use moves::PASS_MOVE_INDEX;
+use hex::PASS_MOVE_INDEX;
 
 use super::*;
 
@@ -333,7 +333,7 @@ impl ActualMove {
     pub fn undo(&self, _team_index: Team, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.moveto;
 
-        if moveto == moves::PASS_MOVE_INDEX {
+        if moveto == hex::PASS_MOVE_INDEX {
             return;
         }
 
@@ -416,7 +416,7 @@ impl ActualMove {
         world: &board::MyWorld,
     ) -> MoveEffect {
         //this is a pass
-        if self.moveto == moves::PASS_MOVE_INDEX {
+        if self.moveto == hex::PASS_MOVE_INDEX {
             return MoveEffect {
                 pushpull: PushInfo::None,
                 powerup: PowerupAction::None,

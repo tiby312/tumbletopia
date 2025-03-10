@@ -2,7 +2,7 @@ use crate::{board::MyWorld, mesh::small_mesh, move_build::GameAxial, moves::get_
 
 use super::*;
 
-use gloo_console::console_dbg;
+
 
 pub type Eval = i64;
 //const MATE: i64 = 1_000_000;
@@ -258,12 +258,6 @@ impl TranspositionTable {
 
 const STACK_SIZE: usize = 8;
 
-macro_rules! log {
-    ($($tt:tt)*) => {
-        gloo_console::log!(format!($($tt)*))
-    };
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Res {
     pub line: Vec<ActualMove>,
@@ -280,16 +274,16 @@ pub fn calculate_move(
 ) -> ActualMove {
     if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8) {
         if should_pass(&mo, team, game, world, move_history) {
-            console_dbg!("Choosing to pass!");
+            log!("Choosing to pass!");
             ActualMove {
-                moveto: moves::PASS_MOVE_INDEX,
+                moveto: hex::PASS_MOVE_INDEX,
             }
         } else {
             mo.line[0].clone()
         }
     } else {
         ActualMove {
-            moveto: moves::PASS_MOVE_INDEX,
+            moveto: hex::PASS_MOVE_INDEX,
         }
     }
 }
@@ -321,7 +315,7 @@ pub fn iterative_deepening2(
     //TODO stop searching if we found a game ending move.
     for depth in 0..len {
         let depth = depth + 1;
-        gloo_console::info!(format!("searching depth={}", depth));
+        log!("searching depth={}", depth);
 
         //3 = num iter
         let mut killer = KillerMoves::new(3 + 4 + 4);
@@ -400,7 +394,7 @@ pub fn iterative_deepening2(
         }
     }
 
-    gloo_console::info!(format!("nodes visited={}", nodes_visited_total));
+    log!("nodes visited={}", nodes_visited_total);
 
     // console_dbg!("transpotiion table len=", table.a.len());
 

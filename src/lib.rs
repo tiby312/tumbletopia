@@ -1,3 +1,4 @@
+use engine::board::MyWorld;
 use engine::main_logic as ace;
 use engine::main_logic::GameWrap;
 use engine::main_logic::MouseEvent;
@@ -514,6 +515,8 @@ pub async fn worker_entry() {
 
     log!("Worker thread closin");
 }
+
+
 
 pub async fn game_play_thread(
     mut doop: ace::CommandSender,

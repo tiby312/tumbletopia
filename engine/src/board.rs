@@ -234,7 +234,7 @@ impl MyWorld {
         // Area = (3√3 / 2) x (Side Length)^2
         //
         let size = ((3. + (12. * s.len() as f64 - 3.)).sqrt() / 6.).ceil() as i8;
-        gloo_console::console_dbg!("SIZE OF HEX={}", size);
+        log!("SIZE OF HEX={}", size);
         //let world=MyWorld::with_size(size,ActiveTeam::White);
         let land = mesh::small_mesh::SmallMesh::from_iter(
             hex::Cube::new(0, 0).range(size - 1).map(|x| x.to_axial()),
@@ -264,7 +264,7 @@ impl MyWorld {
                 }
             };
 
-            gloo_console::console_dbg!("Adding {} {} {}", i, stack, team);
+            log!("Adding {} {} {}", i, stack, team);
             g.factions.add_cell_inner(i, stack, team);
         }
 

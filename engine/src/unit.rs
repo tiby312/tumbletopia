@@ -266,7 +266,7 @@ impl GameState {
             _ => return None,
         };
 
-        if a.0.moveto == moves::PASS_MOVE_INDEX && b.0.moveto == moves::PASS_MOVE_INDEX {
+        if a.0.moveto == hex::PASS_MOVE_INDEX && b.0.moveto == hex::PASS_MOVE_INDEX {
             //return None;
             if score_data.white > score_data.black {
                 return Some(GameOver::WhiteWon);

@@ -23,7 +23,6 @@ use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
 };
-use gloo_console::console_dbg;
 
 #[derive(Debug, Clone)]
 pub enum AnimationCommand {
@@ -126,7 +125,7 @@ pub async fn map_editor(
         let pos = match pos {
             MouseEvent::Normal(pos) => pos,
             MouseEvent::Button(s) => {
-                console_dbg!("map editor received", s);
+                log!("map editor received", s);
                 tt = match s.as_str() {
                     "b_ice" => TT::Ice,
                     "b_land" => TT::Land,
@@ -422,7 +421,7 @@ pub async fn reselect_loop(
         .tactical
         .bake_fog(&game.fog[team])
         .generate_possible_moves_movement(world, selected_unit.team, &spoke_info);
-    cca.inner.set(moves::PASS_MOVE_INDEX, true);
+    cca.inner.set(hex::PASS_MOVE_INDEX, true);
 
     let c2 = game
         .tactical
@@ -758,7 +757,7 @@ pub async fn handle_player(
                         continue 'outer;
                     } else if s == "pass" {
                         let mp = ActualMove {
-                            moveto: moves::PASS_MOVE_INDEX,
+                            moveto: hex::PASS_MOVE_INDEX,
                         };
 
                         let me = mp.apply(team, &mut game.tactical, &game.fog[team.index()], world);
@@ -802,7 +801,7 @@ pub async fn handle_player(
                 }
                 LoopRes::Pass => {
                     let mp = ActualMove {
-                        moveto: moves::PASS_MOVE_INDEX,
+                        moveto: hex::PASS_MOVE_INDEX,
                     };
 
                     let me = mp.apply(team, &mut game.tactical, &game.fog[team.index()], world);
