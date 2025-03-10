@@ -1,4 +1,4 @@
-use crate::{board::MyWorld, moves::get_num_attack};
+use crate::{board::MyWorld, moves::{get_num_attack, SpokeInfo}};
 
 use super::*;
 
@@ -551,9 +551,12 @@ impl<'a> AlphaBeta<'a> {
         // if *self.nodes_visited >= MAX_NODE_VISIT {
         //     return (SMALL_VAL, tinyvec::array_vec!());
         // }
+
+
         let mut spoke_info = moves::SpokeInfo::new(game);
         moves::update_spoke_info(&mut spoke_info, self.world, game);
 
+        
         if depth == 0 {
             return (
                 team.value()
@@ -692,6 +695,69 @@ impl<'a> AlphaBeta<'a> {
         let mut ab_iter = ab.ab_iter();
         for _ in start_move_index..end_move_index {
             let cand = self.moves.pop().unwrap();
+
+
+            {
+                let mut kk=spoke_info.clone();
+                kk.process_move(cand.clone(),team,self.world,game);
+                
+                
+                let mut gg=game.clone();
+                cand.apply(team,&mut gg,&self.fogs[team],self.world);
+                let mut kk2=SpokeInfo::new(&gg);
+                moves::update_spoke_info(&mut kk2, self.world, &mut gg);
+                //println!("ok");
+
+
+                for index in self.world.get_game_cells().inner.iter_ones(){
+                //let index=cand.clone().moveto;
+                    for dir in hex::HDir::all(){
+
+                        let a=kk.get(index,dir);
+                        let b=kk2.get(index,dir);
+                        
+                        assert_eq!(a,b);
+                    }
+                    
+                    for (i, (_, rest)) in game
+                        .factions
+                        .iter_end_points(self.world, index)
+                        .iter()
+                        .enumerate()
+                    {
+                        //let hexdir=hex::HDir::from(i as u8);
+
+                        if let Some(rest)=rest{
+                            // let a=kk.get(rest.index,dir);
+                            // let b=kk2.get(rest.index,dir);
+                            for dir in hex::HDir::all(){
+
+                                let a=kk.get(rest.index,dir);
+                                let b=kk2.get(rest.index,dir);
+                                
+                                assert_eq!(a,b,"{:?}",self.world.format(&ActualMove{moveto:rest.index}));
+                            }
+                        }
+                    }
+                }
+                
+
+                //let j=kk.data & kk2.data;
+                //println!("{:?}",j.iter_ones().map())
+                // for a in kk.data.iter(){
+
+                // }
+                assert_eq!(kk.data[0],kk2.data[0]);
+
+                // for (a,b) in kk.data[1].iter_ones().zip(kk2.data[1].iter_ones()){
+                //     let ff=vec![ActualMove{moveto:a},ActualMove{moveto:b}];
+
+                //     assert_eq!(a,b,"issue:{:?}",self.world.format(&ff));
+                // }
+                assert_eq!(kk.data[1],kk2.data[1]);
+                
+    
+            }
 
             let effect = cand.apply(team, game, &self.fogs[team.index()], self.world);
 

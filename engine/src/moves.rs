@@ -145,10 +145,16 @@ pub enum MoveType {
     Fresh,
 }
 
+#[derive(Copy,Clone,Debug)]
 pub struct SpokeInfo {
-    data: [bitvec::BitArr!(for 256*6); 2],
+    pub data: [bitvec::BitArr!(for 256*6); 2],
 }
 
+impl std::cmp::PartialEq for SpokeInfo{
+    fn eq(&self, other: &Self) -> bool {
+        self.data == other.data
+    }
+}
 impl SpokeInfo {
     pub fn new(_game: &GameState) -> Self {
         SpokeInfo {
@@ -156,22 +162,33 @@ impl SpokeInfo {
         }
     }
 
-    pub fn process_move(&mut self,a:ActualMove,world:&board::MyWorld,game:&GameState){
+    pub fn process_move(&mut self,a:ActualMove,team:Team,world:&board::MyWorld,game:&GameState){
         let index=a.moveto;
 
-        for (i, (_, rest)) in game
+        for (i, (dis, rest)) in game
             .factions
             .iter_end_points(world, index)
             .iter()
             .enumerate()
         {
-            let v = if let Some(unit::EndPoint{team,..}) = rest {
-                Some(*team)
+            let hexdir=HDir::from(i as u8);
+
+            let st=if let &Some(unit::EndPoint{team:tt,index:_,..}) = rest {
+                self.set(index,hexdir,Some(tt));
+                0
             } else {
-                None
+                self.set(index,hexdir,None);
+                1
             };
-            // spoke_info.insert(index, HDir::from(i as u8), v);
-            // assert_eq!(v, spoke_info.retrieve(index, HDir::from(i as u8)));
+
+            let stride = board::STRIDES[hexdir as usize] as isize;
+
+            let mut index2: isize = index as isize;
+
+            for _ in st..*dis{
+                index2+=stride;
+                self.set(index2 as usize,hexdir.rotate_180(),Some(team));
+            }
         }
     }
 
@@ -181,7 +198,7 @@ impl SpokeInfo {
     }
 
 
-    fn insert(&mut self, index: usize, dir: HDir, val: Option<Team>) {
+    fn set(&mut self, index: usize, dir: HDir, val: Option<Team>) {
         let (first_bit, second_bit) = match val {
             None => (false, false),
             Some(Team::White) => (false, true),
@@ -191,7 +208,7 @@ impl SpokeInfo {
         self.data[0].set(6 * index + dir as usize, first_bit);
         self.data[1].set(6 * index + dir as usize, second_bit);
     }
-    fn retrieve(&self, index: usize, dir: HDir) -> Option<Team> {
+    pub fn get(&self, index: usize, dir: HDir) -> Option<Team> {
         let first_bit = self.data[0][6 * index + dir as usize];
         let second_bit = self.data[1][6 * index + dir as usize];
 
@@ -220,8 +237,8 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
             } else {
                 None
             };
-            spoke_info.insert(index, HDir::from(i as u8), v);
-            assert_eq!(v, spoke_info.retrieve(index, HDir::from(i as u8)));
+            spoke_info.set(index, HDir::from(i as u8), v);
+            assert_eq!(v, spoke_info.get(index, HDir::from(i as u8)));
         }
     }
 }
@@ -230,7 +247,7 @@ pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> [i64; 2] {
     let mut num_attack: [i64; 2] = [0, 0];
 
     for dir in HDir::all() {
-        if let Some(team) = spoke_info.retrieve(index, dir) {
+        if let Some(team) = spoke_info.get(index, dir) {
             if team == Team::Neutral {
                 continue;
             }
@@ -392,7 +409,7 @@ impl GameState {
         spoke_info: &SpokeInfo,
     ) {
         for dir in HDir::all() {
-            if let Some(team2) = spoke_info.retrieve(index, dir) {
+            if let Some(team2) = spoke_info.get(index, dir) {
                 if team2 == !team {
                 } else {
                     continue;
@@ -435,7 +452,7 @@ impl GameState {
         spoke_info: &SpokeInfo,
     ) {
         for dir in HDir::all() {
-            if let Some(team2) = spoke_info.retrieve(index, dir) {
+            if let Some(team2) = spoke_info.get(index, dir) {
                 if team2 == team {
                     continue;
                 }

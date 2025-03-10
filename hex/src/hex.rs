@@ -56,6 +56,10 @@ impl HDir {
     pub fn all() -> impl Iterator<Item = HDir> {
         (0..6).map(HDir::from)
     }
+    pub fn rotate_180(&self)->HDir{
+        //TODO optimize
+        self.rotate60_right().rotate60_right().rotate60_right()
+    }
     pub fn rotate60_right(&self) -> HDir {
         // 0->4
         // 1->5

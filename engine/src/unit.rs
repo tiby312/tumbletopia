@@ -443,6 +443,7 @@ pub struct EndPoint{
     pub team:Team
 }
 
+
 impl Tribe {
     //TODO rename
     pub fn doop(&self, index: usize, world: &MyWorld) -> SmallMesh {
@@ -484,21 +485,6 @@ impl Tribe {
                 }
             }
 
-            // let stride = board::STRIDES[i] as isize;
-            // let dis = board::dis_to_hex_of_hexagon(
-            //     mesh::small_mesh::inverse(index),
-            //     dd,
-            //     world.radius as i8,
-            // );
-            // let mut index2 = index as isize;
-
-            // for d in 0..dis {
-            //     index2 += stride;
-
-            //     if let Some(pp) = self.get_cell_inner(index2 as usize) {
-            //         return (d + 1, Some(pp));
-            //     }
-            // }
 
             (dis, None)
         })
