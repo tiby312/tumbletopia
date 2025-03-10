@@ -696,13 +696,17 @@ impl<'a> AlphaBeta<'a> {
         for _ in start_move_index..end_move_index {
             let cand = self.moves.pop().unwrap();
 
+            let mut gg=game.clone();
+                
+            let effect = cand.apply(team, game, &self.fogs[team.index()], self.world);
 
             {
                 let mut kk=spoke_info.clone();
                 kk.process_move(cand.clone(),team,self.world,game);
+                kk.undo_move(cand.clone(), effect.clone(), team, self.world, game);
+                kk.process_move(cand.clone(),team,self.world,game);
                 
-                
-                let mut gg=game.clone();
+
                 cand.apply(team,&mut gg,&self.fogs[team],self.world);
                 let mut kk2=SpokeInfo::new(&gg);
                 moves::update_spoke_info(&mut kk2, self.world, &mut gg);
@@ -759,8 +763,7 @@ impl<'a> AlphaBeta<'a> {
     
             }
 
-            let effect = cand.apply(team, game, &self.fogs[team.index()], self.world);
-
+            
             let (eval, mut m) =
                 self.negamax(game, -ab_iter.clone_ab_values(), -team, depth - 1, true);
             let eval = -eval;

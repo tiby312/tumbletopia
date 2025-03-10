@@ -193,7 +193,73 @@ impl SpokeInfo {
     }
 
 
-    pub fn undo_move(&mut self,a:ActualMove,effect:move_build::MoveEffect){
+    pub fn undo_move(&mut self,a:ActualMove,effect:move_build::MoveEffect,team:Team,world:&board::MyWorld,game:&GameState){
+        if let Some((_,t2))=effect.destroyed_unit{
+
+
+            let index=a.moveto;
+
+            for (i, (dis, rest)) in game
+                .factions
+                .iter_end_points(world, index)
+                .iter()
+                .enumerate()
+            {
+                let hexdir=HDir::from(i as u8);
+    
+                let st=if let &Some(unit::EndPoint{team:tt,index:_,..}) = rest {
+                    1
+                } else {
+                    0
+                };
+    
+                let stride = board::STRIDES[hexdir as usize] as isize;
+    
+                let mut index2: isize = index as isize;
+    
+                for _ in 0..*dis-1+st{
+                    index2+=stride;
+                    self.set(index2 as usize,hexdir.rotate_180(),Some(t2));
+                }
+            }
+        }else{
+
+            let index=a.moveto;
+
+            let arr=game
+            .factions
+            .iter_end_points(world, index);
+
+
+            for (i, (dis, rest)) in 
+                arr.iter()
+                .enumerate()
+            {
+                let hexdir=HDir::from(i as u8);
+    
+                let st=if let &Some(unit::EndPoint{team:tt,index:_,..}) = rest {
+                    1
+                } else {
+                    0
+                };
+    
+                let stride = board::STRIDES[hexdir as usize] as isize;
+    
+                let mut index2: isize = index as isize;
+    
+                let oppt=if let (_,Some(unit::EndPoint{team:t,..}))=arr[hexdir.rotate_180() as usize]{
+                    Some(t)
+                }else{
+                    None
+                };
+
+                for _ in 0..*dis-1+st{
+                    index2+=stride;
+                    self.set(index2 as usize,hexdir.rotate_180(),oppt);
+                }
+            }
+        }
+
 
     }
 
