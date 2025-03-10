@@ -145,12 +145,12 @@ pub enum MoveType {
     Fresh,
 }
 
-#[derive(Copy,Clone,Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct SpokeInfo {
     pub data: [bitvec::BitArr!(for 256*6); 2],
 }
 
-impl std::cmp::PartialEq for SpokeInfo{
+impl std::cmp::PartialEq for SpokeInfo {
     fn eq(&self, other: &Self) -> bool {
         self.data == other.data
     }
@@ -162,8 +162,14 @@ impl SpokeInfo {
         }
     }
 
-    pub fn process_move(&mut self,a:ActualMove,team:Team,world:&board::MyWorld,game:&GameState){
-        let index=a.moveto;
+    pub fn process_move(
+        &mut self,
+        a: ActualMove,
+        team: Team,
+        world: &board::MyWorld,
+        game: &GameState,
+    ) {
+        let index = a.moveto;
 
         for (i, (dis, rest)) in game
             .factions
@@ -171,13 +177,16 @@ impl SpokeInfo {
             .iter()
             .enumerate()
         {
-            let hexdir=HDir::from(i as u8);
+            let hexdir = HDir::from(i as u8);
 
-            let st=if let &Some(unit::EndPoint{team:tt,index:_,..}) = rest {
-                self.set(index,hexdir,Some(tt));
+            let st = if let &Some(unit::EndPoint {
+                team: tt, index: _, ..
+            }) = rest
+            {
+                self.set(index, hexdir, Some(tt));
                 1
             } else {
-                self.set(index,hexdir,None);
+                self.set(index, hexdir, None);
                 0
             };
 
@@ -185,84 +194,58 @@ impl SpokeInfo {
 
             let mut index2: isize = index as isize;
 
-            for _ in 0..*dis-1+st{
-                index2+=stride;
-                self.set(index2 as usize,hexdir.rotate_180(),Some(team));
+            for _ in 0..*dis - 1 + st {
+                index2 += stride;
+                self.set(index2 as usize, hexdir.rotate_180(), Some(team));
             }
         }
     }
 
+    pub fn undo_move(
+        &mut self,
+        a: ActualMove,
+        effect: move_build::MoveEffect,
+        team: Team,
+        world: &board::MyWorld,
+        game: &GameState,
+    ) {
+        let index = a.moveto;
 
-    pub fn undo_move(&mut self,a:ActualMove,effect:move_build::MoveEffect,team:Team,world:&board::MyWorld,game:&GameState){
-        if let Some((_,t2))=effect.destroyed_unit{
+        let arr = game.factions.iter_end_points(world, index);
 
+        for (i, (dis, rest)) in arr.iter().enumerate() {
+            let hexdir = HDir::from(i as u8);
 
-            let index=a.moveto;
-
-            for (i, (dis, rest)) in game
-                .factions
-                .iter_end_points(world, index)
-                .iter()
-                .enumerate()
+            let st = if let &Some(unit::EndPoint {
+                team: tt, index: _, ..
+            }) = rest
             {
-                let hexdir=HDir::from(i as u8);
-    
-                let st=if let &Some(unit::EndPoint{team:tt,index:_,..}) = rest {
-                    1
-                } else {
-                    0
-                };
-    
-                let stride = board::STRIDES[hexdir as usize] as isize;
-    
-                let mut index2: isize = index as isize;
-    
-                for _ in 0..*dis-1+st{
-                    index2+=stride;
-                    self.set(index2 as usize,hexdir.rotate_180(),Some(t2));
-                }
-            }
-        }else{
+                1
+            } else {
+                0
+            };
 
-            let index=a.moveto;
+            let stride = board::STRIDES[hexdir as usize] as isize;
 
-            let arr=game
-            .factions
-            .iter_end_points(world, index);
+            let mut index2: isize = index as isize;
 
-
-            for (i, (dis, rest)) in 
-                arr.iter()
-                .enumerate()
-            {
-                let hexdir=HDir::from(i as u8);
-    
-                let st=if let &Some(unit::EndPoint{team:tt,index:_,..}) = rest {
-                    1
-                } else {
-                    0
-                };
-    
-                let stride = board::STRIDES[hexdir as usize] as isize;
-    
-                let mut index2: isize = index as isize;
-    
-                let oppt=if let (_,Some(unit::EndPoint{team:t,..}))=arr[hexdir.rotate_180() as usize]{
+            let oppt = if let Some((_, t2)) = effect.destroyed_unit {
+                Some(t2)
+            } else {
+                if let (_, Some(unit::EndPoint { team: t, .. })) = arr[hexdir.rotate_180() as usize]
+                {
                     Some(t)
-                }else{
+                } else {
                     None
-                };
-
-                for _ in 0..*dis-1+st{
-                    index2+=stride;
-                    self.set(index2 as usize,hexdir.rotate_180(),oppt);
                 }
+            };
+
+            for _ in 0..*dis - 1 + st {
+                index2 += stride;
+                self.set(index2 as usize, hexdir.rotate_180(), oppt);
             }
         }
-
-
     }
-
 
     fn set(&mut self, index: usize, dir: HDir, val: Option<Team>) {
         let (first_bit, second_bit) = match val {
@@ -298,7 +281,7 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
             .iter()
             .enumerate()
         {
-            let v = if let Some(unit::EndPoint{team,..}) = rest {
+            let v = if let Some(unit::EndPoint { team, .. }) = rest {
                 Some(*team)
             } else {
                 None

@@ -680,7 +680,7 @@ pub async fn animate_move<'a>(
 
     let mut stack = 0;
     for (i, (dis, rest)) in end_points.into_iter().enumerate() {
-        let Some(unit::EndPoint{team:team2,..}) = rest else {
+        let Some(unit::EndPoint { team: team2, .. }) = rest else {
             continue;
         };
 
