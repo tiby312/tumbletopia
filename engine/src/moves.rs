@@ -1,4 +1,4 @@
-use hex::{HDir, HexDraw};
+use hex::{HDir};
 
 use super::*;
 
@@ -151,7 +151,7 @@ pub struct SpokeInfo {
 }
 
 impl SpokeInfo {
-    pub fn new(game: &GameState) -> Self {
+    pub fn new(_game: &GameState) -> Self {
         SpokeInfo {
             data: std::array::from_fn(|_| bitvec::bitarr![0;256*6]),
         }
@@ -274,7 +274,7 @@ impl GameState {
         &self,
         index: usize,
         team: Team,
-        world: &board::MyWorld,
+        _world: &board::MyWorld,
         spoke_info: &SpokeInfo,
     ) -> Option<MoveType> {
         let num_attack = get_num_attack(spoke_info, index);
@@ -320,43 +320,43 @@ impl GameState {
         }
     }
 
-    fn moves_that_block(
-        &self,
-        index: usize,
-        team: Team,
-        world: &board::MyWorld,
-        ret: &mut SmallMesh,
-        spoke_info: &SpokeInfo,
-    ) {
-        for dir in HDir::all() {
-            //TODO there is a way to skip over spokes that we know are not opponent controlled.
-            let mut cands = vec![];
-            for index2 in unit::ray(Axial::from_index(index), dir, world).1 {
-                if self
-                    .playable(index2 as usize, team, world, spoke_info)
-                    .is_some()
-                {
-                    cands.push(index2);
-                }
-                if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
-                    assert_eq!(spoke_info.retrieve(index, dir), Some(team2));
-                    //If we already have this LOS, then any move along this ray wont increase the LOS,
-                    //so toss all of them.
-                    if team2 == !team {
-                        //Add all the moves that we know would actually increase the LOS to this piece
-                        for c in cands {
-                            ret.inner.set(c as usize, true);
-                        }
-                        break;
-                    } else {
-                        break;
-                    }
-                } else {
-                    //assert_eq!(spoke_info.retrieve(index,dir),None);
-                }
-            }
-        }
-    }
+    // fn moves_that_block(
+    //     &self,
+    //     index: usize,
+    //     team: Team,
+    //     world: &board::MyWorld,
+    //     ret: &mut SmallMesh,
+    //     spoke_info: &SpokeInfo,
+    // ) {
+    //     for dir in HDir::all() {
+    //         //TODO there is a way to skip over spokes that we know are not opponent controlled.
+    //         let mut cands = vec![];
+    //         for index2 in unit::ray(Axial::from_index(index), dir, world).1 {
+    //             if self
+    //                 .playable(index2 as usize, team, world, spoke_info)
+    //                 .is_some()
+    //             {
+    //                 cands.push(index2);
+    //             }
+    //             if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
+    //                 assert_eq!(spoke_info.retrieve(index, dir), Some(team2));
+    //                 //If we already have this LOS, then any move along this ray wont increase the LOS,
+    //                 //so toss all of them.
+    //                 if team2 == !team {
+    //                     //Add all the moves that we know would actually increase the LOS to this piece
+    //                     for c in cands {
+    //                         ret.inner.set(c as usize, true);
+    //                     }
+    //                     break;
+    //                 } else {
+    //                     break;
+    //                 }
+    //             } else {
+    //                 //assert_eq!(spoke_info.retrieve(index,dir),None);
+    //             }
+    //         }
+    //     }
+    // }
 
     fn moves_that_block_better(
         &self,
@@ -390,6 +390,7 @@ impl GameState {
                         height,
                         team: team2,
                     } => {
+                        assert_eq!(team2,!team);
                         if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
                         {
                             ret.inner.set(index2 as usize, true);
@@ -429,6 +430,7 @@ impl GameState {
                         height,
                         team: team2,
                     } => {
+                        assert!(team2!=team);
                         if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
                         {
                             ret.inner.set(index2 as usize, true);
@@ -438,40 +440,40 @@ impl GameState {
             }
         }
     }
-    fn moves_that_increase_los(
-        &self,
-        index: usize,
-        team: Team,
-        world: &board::MyWorld,
-        ret: &mut SmallMesh,
-        spoke_info: &SpokeInfo,
-    ) {
-        'outer: for dir in HDir::all() {
-            //TODO there is a way to skip over spokes that we know are not opponent controlled.
-            let mut cands = vec![];
-            for index2 in unit::ray(Axial::from_index(index), dir, world).1 {
-                if self
-                    .playable(index2 as usize, team, world, spoke_info)
-                    .is_some()
-                {
-                    cands.push(index2);
-                }
-                if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
-                    //If we already have this LOS, then any move along this ray wont increase the LOS,
-                    //so toss all of them.
-                    if team2 == team {
-                        continue 'outer;
-                    } else {
-                        break;
-                    }
-                }
-            }
-            //Add all the moves that we know would actually increase the LOS to this piece
-            for c in cands {
-                ret.inner.set(c as usize, true);
-            }
-        }
-    }
+    // fn moves_that_increase_los(
+    //     &self,
+    //     index: usize,
+    //     team: Team,
+    //     world: &board::MyWorld,
+    //     ret: &mut SmallMesh,
+    //     spoke_info: &SpokeInfo,
+    // ) {
+    //     'outer: for dir in HDir::all() {
+    //         //TODO there is a way to skip over spokes that we know are not opponent controlled.
+    //         let mut cands = vec![];
+    //         for index2 in unit::ray(Axial::from_index(index), dir, world).1 {
+    //             if self
+    //                 .playable(index2 as usize, team, world, spoke_info)
+    //                 .is_some()
+    //             {
+    //                 cands.push(index2);
+    //             }
+    //             if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
+    //                 //If we already have this LOS, then any move along this ray wont increase the LOS,
+    //                 //so toss all of them.
+    //                 if team2 == team {
+    //                     continue 'outer;
+    //                 } else {
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //         //Add all the moves that we know would actually increase the LOS to this piece
+    //         for c in cands {
+    //             ret.inner.set(c as usize, true);
+    //         }
+    //     }
+    // }
 
     pub fn generate_loud_moves(
         &self,

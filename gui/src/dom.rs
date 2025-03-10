@@ -1,4 +1,3 @@
-use std::f64::consts::TAU;
 
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -430,12 +429,12 @@ fn redraw_text(text: &Vec<Text>, data: &ScoreData) {
     let neutral_percentage = 1.0 - (white_percentage + black_percentage);
 
     console_dbg!(white_percentage, black_percentage);
-    let radius = 80.0;
-    let x = 505.0;
-    let y = 100.0;
+    // let radius = 80.0;
+    // let x = 505.0;
+    // let y = 100.0;
 
-    let r1 = std::f64::consts::TAU * white_percentage;
-    let r2 = std::f64::consts::TAU * (white_percentage + black_percentage);
+    // let r1 = std::f64::consts::TAU * white_percentage;
+    // let r2 = std::f64::consts::TAU * (white_percentage + black_percentage);
 
     let w = canvas.width() as f64;
     let h = 40.0;

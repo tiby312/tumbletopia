@@ -290,7 +290,7 @@ impl MyWorld {
         //for size 3 use this
         //let j = [[-1, -2], [-3, 1], [-2, 3], [1, 2], [3, -1], [2, -3]];
 
-        let land = mesh::small_mesh::SmallMesh::from_iter(
+        let _land = mesh::small_mesh::SmallMesh::from_iter(
             hex::Cube::new(0, 0).range(size).map(|x| x.to_axial()),
         );
         //w.set_coord(Axial::zero(), false);

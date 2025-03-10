@@ -1,4 +1,4 @@
-use crate::{board::MyWorld, move_build::GameAxial, moves::get_num_attack};
+use crate::{board::MyWorld, moves::get_num_attack};
 
 use super::*;
 
@@ -11,11 +11,11 @@ pub const MAX_NODE_VISIT: usize = 3000;
 
 pub fn should_pass(
     a: &ai::Res,
-    team: Team,
-    game_orig: &mut GameState,
-    world: &MyWorld,
+    _team: Team,
+    _game_orig: &mut GameState,
+    _world: &MyWorld,
     //TODO pass in all history instead
-    move_history: &MoveHistory,
+    _move_history: &MoveHistory,
 ) -> bool {
     //try with -sr-se--se--se----r
 
@@ -464,11 +464,6 @@ impl KillerMoves {
 //     Evaluator::default().absolute_evaluate(&game, world, false)
 // }
 
-#[derive(Debug, Clone)]
-struct EvalRet<T> {
-    pub mov: T,
-    pub eval: Eval,
-}
 
 impl<'a> AlphaBeta<'a> {
     // fn quiesance(
@@ -618,7 +613,7 @@ impl<'a> AlphaBeta<'a> {
 
         *self.nodes_visited += 1;
 
-        let (all_moves, captures, reinfocements) =
+        let (all_moves, captures, _reinfocements) =
             game.generate_possible_moves_movement(self.world, team, &spoke_info);
 
         let loud_moves = game.generate_loud_moves(self.world, team, &spoke_info);
@@ -655,6 +650,11 @@ impl<'a> AlphaBeta<'a> {
                         return 1000;
                     }
                 }
+            }
+
+            //TODO actually tes this one
+            if captures.inner[index]{
+                return 11;
             }
 
             if loud_moves.inner[index] {
