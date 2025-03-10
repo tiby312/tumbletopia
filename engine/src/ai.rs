@@ -638,10 +638,11 @@ impl<'a> AlphaBeta<'a> {
         //     );
         // }
 
+        let fa=self.prev_cache.get(&game);
         let move_value = |index: &ActualMove| {
             let index = index.moveto;
 
-            if let Some(a) = self.prev_cache.get(&game) {
+            if let Some(a) = fa {
                 if let Some(p) = a.pv.last() {
                     if p.moveto == index {
                         return 1000;
