@@ -519,11 +519,11 @@ pub async fn game_play_thread(
     mut doop: ace::CommandSender,
     world: &board::MyWorld,
     game_type: engine::GameType,
-    mut interrupt_tx: futures::channel::mpsc::Sender<()>,
+    interrupt_tx: futures::channel::mpsc::Sender<()>,
 ) -> (unit::GameOver, MoveHistory) {
     console_dbg!("gameplay thread start");
 
-    let (ai_tx, mut ai_rx) = shogo::main::create_main::<AiCommand, AiResponse, _>(
+    let (ai_tx, ai_rx) = shogo::main::create_main::<AiCommand, AiResponse, _>(
         "./gridlock_worker2.js",
         js_sys::ArrayBuffer::new(0),
     )
