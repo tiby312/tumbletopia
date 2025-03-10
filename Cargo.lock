@@ -905,6 +905,7 @@ dependencies = [
 [[package]]
 name = "gloop"
 version = "0.1.0"
+source = "git+https://github.com/tiby312/gloop.git#69e329822aecd377f3748fdcacb4aad7eaec060a"
 dependencies = [
  "gloo 0.11.0",
  "web-sys",
