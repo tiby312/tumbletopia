@@ -155,7 +155,33 @@ impl SpokeInfo {
             data: std::array::from_fn(|_| bitvec::bitarr![0;256*6]),
         }
     }
-    pub fn insert(&mut self, index: usize, dir: HDir, val: Option<Team>) {
+
+    pub fn process_move(&mut self,a:ActualMove,world:&board::MyWorld,game:&GameState){
+        let index=a.moveto;
+
+        for (i, (_, rest)) in game
+            .factions
+            .iter_end_points(world, index)
+            .iter()
+            .enumerate()
+        {
+            let v = if let Some(unit::EndPoint{team,..}) = rest {
+                Some(*team)
+            } else {
+                None
+            };
+            // spoke_info.insert(index, HDir::from(i as u8), v);
+            // assert_eq!(v, spoke_info.retrieve(index, HDir::from(i as u8)));
+        }
+    }
+
+
+    pub fn undo_move(&mut self,a:ActualMove,effect:move_build::MoveEffect){
+
+    }
+
+
+    fn insert(&mut self, index: usize, dir: HDir, val: Option<Team>) {
         let (first_bit, second_bit) = match val {
             None => (false, false),
             Some(Team::White) => (false, true),
@@ -165,7 +191,7 @@ impl SpokeInfo {
         self.data[0].set(6 * index + dir as usize, first_bit);
         self.data[1].set(6 * index + dir as usize, second_bit);
     }
-    pub fn retrieve(&self, index: usize, dir: HDir) -> Option<Team> {
+    fn retrieve(&self, index: usize, dir: HDir) -> Option<Team> {
         let first_bit = self.data[0][6 * index + dir as usize];
         let second_bit = self.data[1][6 * index + dir as usize];
 
@@ -189,7 +215,7 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
             .iter()
             .enumerate()
         {
-            let v = if let Some((_, team)) = rest {
+            let v = if let Some(unit::EndPoint{team,..}) = rest {
                 Some(*team)
             } else {
                 None

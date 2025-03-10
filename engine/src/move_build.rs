@@ -433,7 +433,7 @@ impl ActualMove {
             .factions
             .iter_end_points(world, target_cell)
         {
-            if let Some((_, tt)) = rest {
+            if let Some(unit::EndPoint{team:tt,..}) = rest {
                 if tt == team {
                     stack_size += 1;
                 }

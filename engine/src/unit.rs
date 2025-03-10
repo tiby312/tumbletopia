@@ -296,7 +296,7 @@ impl GameState {
             let mut num_white = 0;
             let mut num_black = 0;
             for (_, rest) in game.factions.iter_end_points(world, index) {
-                if let Some((_, team)) = rest {
+                if let Some(EndPoint{team,..}) = rest {
                     match team {
                         Team::White => num_white += 1,
                         Team::Black => num_black += 1,
@@ -437,6 +437,12 @@ pub fn ray(
     )
 }
 
+pub struct EndPoint{
+    pub index:usize,
+    pub height:i8,
+    pub team:Team
+}
+
 impl Tribe {
     //TODO rename
     pub fn doop(&self, index: usize, world: &MyWorld) -> SmallMesh {
@@ -467,14 +473,14 @@ impl Tribe {
         &self,
         world: &board::MyWorld,
         index: usize,
-    ) -> [(i8, Option<(u8, Team)>); 6] {
+    ) -> [(i8, Option<EndPoint>); 6] {
         core::array::from_fn(|i| {
             let dd = hex::HDir::from(i as u8);
 
             let (dis, it) = ray(Axial::from_index(index), dd, world);
             for (d, index2) in it.enumerate() {
                 if let Some(pp) = self.get_cell_inner(index2 as usize) {
-                    return (d as i8 + 1, Some(pp));
+                    return (d as i8 + 1, Some(EndPoint { index: index2 as usize, height: pp.0 as i8, team: pp.1 }));
                 }
             }
 
