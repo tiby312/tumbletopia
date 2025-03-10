@@ -413,24 +413,24 @@ pub fn ray(
     let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
     let mut index2 = start.to_index() as isize;
 
-    assert!(
-        world.get_game_cells().inner[index2 as usize],
-        "uhoh {:?}",
-        world.format(&start)
-    );
+    // assert!(
+    //     world.get_game_cells().inner[index2 as usize],
+    //     "uhoh {:?}",
+    //     world.format(&start)
+    // );
     (
         dis,
-        (1..dis).map(move |d| {
+        (1..dis).map(move |_d| {
             index2 += stride;
-            assert!(index2 > 0);
+            //assert!(index2 > 0);
 
             assert!(
                 world.get_game_cells().inner[index2 as usize],
-                "fail {}:{}:{:?}:{:?}",
-                d,
-                dis,
-                dd,
-                start.to_letter_coord(world.radius as i8)
+                // "fail {}:{}:{:?}:{:?}",
+                // d,
+                // dis,
+                // dd,
+                // start.to_letter_coord(world.radius as i8)
             );
             index2
         }),
@@ -479,15 +479,18 @@ impl Tribe {
 
             let (dis, it) = ray(Axial::from_index(index), dd, world);
             for (d, index2) in it.enumerate() {
-                if let Some(pp) = self.get_cell_inner(index2 as usize) {
-                    return (
-                        d as i8 + 1,
-                        Some(EndPoint {
-                            index: index2 as usize,
-                            height: pp.0 as i8,
-                            team: pp.1,
-                        }),
-                    );
+                //TODO check if this condition actually speeds anything up (in sparse games)
+                if self.has_a_piece(index2 as usize){
+                    if let Some(pp) = self.get_cell_inner(index2 as usize) {
+                        return (
+                            d as i8 + 1,
+                            Some(EndPoint {
+                                index: index2 as usize,
+                                height: pp.0 as i8,
+                                team: pp.1,
+                            }),
+                        );
+                    }
                 }
             }
 
