@@ -970,7 +970,7 @@ dependencies = [
  "querystring",
  "serde",
  "serde_json",
- "shogo",
+ "shogo 0.5.1",
  "tinyvec",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -994,7 +994,7 @@ dependencies = [
  "querystring",
  "serde",
  "serde_json",
- "shogo",
+ "shogo 0.5.1 (git+https://github.com/tiby312/shogo.git)",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -1798,6 +1798,25 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 [[package]]
 name = "shogo"
 version = "0.5.1"
+dependencies = [
+ "axgeom",
+ "byte-slice-cast",
+ "cgmath",
+ "futures",
+ "gloo 0.11.0",
+ "gloop",
+ "image",
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "shogo"
+version = "0.5.1"
+source = "git+https://github.com/tiby312/shogo.git#b02260b7b1dee56bd60d4c862d319d9076078421"
 dependencies = [
  "axgeom",
  "byte-slice-cast",

@@ -72,7 +72,7 @@ opt-level = 2
 
 
 [patch.crates-io]
-shogo={path="../shogo"}
+shogo={git="https://github.com/tiby312/shogo.git"}
 
 
 # [package.metadata.wasm-pack.profile.release]
