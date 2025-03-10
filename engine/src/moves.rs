@@ -175,17 +175,17 @@ impl SpokeInfo {
 
             let st=if let &Some(unit::EndPoint{team:tt,index:_,..}) = rest {
                 self.set(index,hexdir,Some(tt));
-                0
+                1
             } else {
                 self.set(index,hexdir,None);
-                1
+                0
             };
 
             let stride = board::STRIDES[hexdir as usize] as isize;
 
             let mut index2: isize = index as isize;
 
-            for _ in st..*dis{
+            for _ in 0..*dis-1+st{
                 index2+=stride;
                 self.set(index2 as usize,hexdir.rotate_180(),Some(team));
             }
