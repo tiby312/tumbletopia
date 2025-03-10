@@ -13,17 +13,13 @@ use serde::Serialize;
 pub use unit::GameState;
 pub use unit::Team;
 
- 
 macro_rules! log {
     ($($tt:tt)*) => {
-        
         //gloo_console::log!(format!($($tt)*))
     };
 }
 
 pub(crate) use log;
-
-
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum GameType {

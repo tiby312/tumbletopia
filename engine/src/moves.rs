@@ -42,7 +42,6 @@ impl<T> EndPoints<T> {
     }
 }
 
-
 impl crate::unit::GameStateTotal {
     pub fn update_fog(&mut self, world: &board::MyWorld, team: Team) {
         let fog = match team {
@@ -390,7 +389,7 @@ impl GameState {
                         height,
                         team: team2,
                     } => {
-                        assert_eq!(team2,!team);
+                        assert_eq!(team2, !team);
                         if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
                         {
                             ret.inner.set(index2 as usize, true);
@@ -430,7 +429,7 @@ impl GameState {
                         height,
                         team: team2,
                     } => {
-                        assert!(team2!=team);
+                        assert!(team2 != team);
                         if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
                         {
                             ret.inner.set(index2 as usize, true);

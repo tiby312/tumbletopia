@@ -1,4 +1,3 @@
-
 use super::*;
 
 impl crate::moves::ActualMove {

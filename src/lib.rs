@@ -513,8 +513,6 @@ pub async fn worker_entry() {
     log!("Worker thread closin");
 }
 
-
-
 pub async fn game_play_thread(
     mut doop: ace::CommandSender,
     world: &board::MyWorld,
@@ -567,7 +565,7 @@ pub async fn game_play_thread(
             let the_move = {
                 let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
 
-                if false{
+                if false {
                     ai_tx.post_message(AiCommand {
                         game: ai_state,
                         fogs: game.fog.clone(),
@@ -590,13 +588,15 @@ pub async fn game_play_thread(
                     //ai_int.interrupt_render_thread().await;
 
                     the_move.unwrap().inner
-                }else{
-                    engine::ai::calculate_move(&mut ai_state, &game.fog, &world, team, &game_history)
-
+                } else {
+                    engine::ai::calculate_move(
+                        &mut ai_state,
+                        &game.fog,
+                        &world,
+                        team,
+                        &game_history,
+                    )
                 }
-
-
-                
             };
 
             //let the_move = the_move.line[0].clone();

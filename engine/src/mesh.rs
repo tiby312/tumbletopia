@@ -137,8 +137,6 @@ pub mod small_mesh {
         }
     }
 
-    
-
     use super::Axial;
 }
 

@@ -386,15 +386,14 @@ pub trait HexDraw {
 
 impl HexDraw for Axial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
-        match self.to_letter_coord(radius){
-            TextMove::Move(a,b )=>{
+        match self.to_letter_coord(radius) {
+            TextMove::Move(a, b) => {
                 write!(f, "{}{}", a, b)
-            },
-            TextMove::Pass=>{
+            }
+            TextMove::Pass => {
                 write!(f, "pp")
             }
         }
-
     }
 }
 
@@ -431,13 +430,11 @@ impl<H: HexDraw> std::fmt::Debug for Displayer<'_, H> {
 pub const PASS_MOVE: Axial = Axial { q: -5, r: -5 };
 pub const PASS_MOVE_INDEX: usize = const { PASS_MOVE.to_index() };
 
-
-#[derive(Debug,Clone)]
-pub enum TextMove{
+#[derive(Debug, Clone)]
+pub enum TextMove {
     Pass,
-    Move(char,i8)
+    Move(char, i8),
 }
-
 
 impl Axial {
     pub fn disp(&self, radius: i8) -> Displayer<Axial> {
@@ -464,7 +461,7 @@ impl Axial {
         Axial { q, r }
     }
     pub fn to_letter_coord(&self, radius: i8) -> TextMove {
-        if *self==PASS_MOVE{
+        if *self == PASS_MOVE {
             return TextMove::Pass;
         }
         let k = self.to_cube();

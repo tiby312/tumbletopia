@@ -2,8 +2,6 @@ use crate::{board::MyWorld, moves::get_num_attack};
 
 use super::*;
 
-
-
 pub type Eval = i64;
 //const MATE: i64 = 1_000_000;
 use tinyvec::ArrayVec;
@@ -464,7 +462,6 @@ impl KillerMoves {
 //     Evaluator::default().absolute_evaluate(&game, world, false)
 // }
 
-
 impl<'a> AlphaBeta<'a> {
     // fn quiesance(
     //     &mut self,
@@ -653,7 +650,7 @@ impl<'a> AlphaBeta<'a> {
             }
 
             //TODO actually tes this one
-            if captures.inner[index]{
+            if captures.inner[index] {
                 return 11;
             }
 

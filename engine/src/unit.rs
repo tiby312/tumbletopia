@@ -1,7 +1,6 @@
 use board::MyWorld;
 use mesh::small_mesh::SmallMesh;
 
-
 use super::*;
 
 // #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
@@ -630,9 +629,8 @@ pub enum UnitType {
 // }
 
 pub fn replay_string(_moves: &MoveHistory, _world: &MyWorld) -> Result<String, std::fmt::Error> {
-    
     let s = String::new();
-    
+
     //let map_str = map.save(world).unwrap();
     //TODO update this!!!
     //todo!();
