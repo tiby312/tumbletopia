@@ -1,7 +1,6 @@
 use board::MyWorld;
 use mesh::small_mesh::SmallMesh;
 
-use crate::{mesh::small_mesh, move_build::GameAxial};
 
 use super::*;
 
@@ -631,8 +630,8 @@ pub enum UnitType {
 // }
 
 pub fn replay_string(moves: &MoveHistory, world: &MyWorld) -> Result<String, std::fmt::Error> {
-    use std::fmt::Write;
-    let mut s = String::new();
+    
+    let s = String::new();
 
     //let map_str = map.save(world).unwrap();
     //TODO update this!!!

@@ -1,4 +1,3 @@
-use hex::PASS_MOVE_INDEX;
 
 use super::*;
 

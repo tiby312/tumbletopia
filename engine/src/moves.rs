@@ -1,9 +1,8 @@
-use bitvec::array::BitArray;
 use hex::{HDir, HexDraw};
 
 use super::*;
 
-use crate::{board::MyWorld, mesh::small_mesh::SmallMesh, move_build::GameAxial};
+use crate::{board::MyWorld, mesh::small_mesh::SmallMesh};
 
 pub struct EndPoints<T> {
     inner: [T; 6],

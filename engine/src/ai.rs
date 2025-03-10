@@ -1,4 +1,4 @@
-use crate::{board::MyWorld, mesh::small_mesh, move_build::GameAxial, moves::get_num_attack};
+use crate::{board::MyWorld, move_build::GameAxial, moves::get_num_attack};
 
 use super::*;
 
@@ -6,13 +6,12 @@ use super::*;
 
 pub type Eval = i64;
 //const MATE: i64 = 1_000_000;
-use mesh::small_mesh::SmallMesh;
 use tinyvec::ArrayVec;
 pub const MAX_NODE_VISIT: usize = 3000;
 
 pub fn should_pass(
     a: &ai::Res,
-    mut team: Team,
+    team: Team,
     game_orig: &mut GameState,
     world: &MyWorld,
     //TODO pass in all history instead
@@ -173,7 +172,7 @@ impl Evaluator {
         _debug: bool,
     ) -> Eval {
         let mut total_foo = 0;
-        let mut strength_parity = 0;
+        let strength_parity = 0;
         for index in world.get_game_cells().inner.iter_ones() {
             let num_attack = get_num_attack(spoke_info, index);
 
@@ -753,7 +752,7 @@ impl<'a> AlphaBeta<'a> {
     }
 }
 
-use abab::{ABAB, SMALL_VAL};
+use abab::ABAB;
 mod abab {
     use std::ops::Neg;
 
