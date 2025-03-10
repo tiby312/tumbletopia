@@ -123,7 +123,7 @@ pub async fn map_editor(
         let pos = match pos {
             MouseEvent::Normal(pos) => pos,
             MouseEvent::Button(s) => {
-                log!("map editor received", s);
+                log!("map editor received: {}", s);
                 tt = match s.as_str() {
                     "b_ice" => TT::Ice,
                     "b_land" => TT::Land,

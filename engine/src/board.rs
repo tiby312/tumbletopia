@@ -262,7 +262,7 @@ impl MyWorld {
                 }
             };
 
-            log!("Adding {} {} {}", i, stack, team);
+            log!("Adding {} {} {:?}", i, stack, team);
             g.factions.add_cell_inner(i, stack, team);
         }
 

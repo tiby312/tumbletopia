@@ -310,6 +310,9 @@ pub fn iterative_deepening2(
     //     history.push(f.clone());
     // }
 
+    let mut ss = SpokeInfo::new(game);
+    moves::update_spoke_info(&mut ss, world, game);
+
     let mut nodes_visited_total = 0;
 
     //TODO stop searching if we found a game ending move.
@@ -335,8 +338,9 @@ pub fn iterative_deepening2(
 
         let mut kk = game.clone();
 
-        let (res, mut mov) = aaaa.negamax(&mut kk, ABAB::new(), team, depth, true);
-
+        let mut ss2 = ss.clone();
+        let (res, mut mov) = aaaa.negamax(&mut kk, &mut ss, ABAB::new(), team, depth, true);
+        assert_eq!(ss, ss2);
         assert_eq!(&kk, game);
 
         // if *aaaa.nodes_visited >= MAX_NODE_VISIT {
@@ -544,6 +548,7 @@ impl<'a> AlphaBeta<'a> {
     fn negamax(
         &mut self,
         game: &mut GameState,
+        spoke_info: &mut SpokeInfo,
         mut ab: ABAB,
         team: Team,
         depth: usize,
@@ -555,8 +560,8 @@ impl<'a> AlphaBeta<'a> {
         //     return (SMALL_VAL, tinyvec::array_vec!());
         // }
 
-        let mut spoke_info = moves::SpokeInfo::new(game);
-        moves::update_spoke_info(&mut spoke_info, self.world, game);
+        // let mut spoke_info = moves::SpokeInfo::new(game);
+        // moves::update_spoke_info(&mut spoke_info, self.world, game);
 
         if depth == 0 {
             return (
@@ -578,7 +583,8 @@ impl<'a> AlphaBeta<'a> {
             let mut ab2 = ab.clone();
             ab2.alpha = -ab.beta;
             ab2.beta = -(ab.beta - 1);
-            let (eval, m) = self.negamax(game, ab2, -team, depth.saturating_sub(r), false);
+            let (eval, m) =
+                self.negamax(game, spoke_info, ab2, -team, depth.saturating_sub(r), false);
             let eval = -eval;
 
             //pos.undo_null_move();
@@ -701,71 +707,79 @@ impl<'a> AlphaBeta<'a> {
 
             let effect = cand.apply(team, game, &self.fogs[team.index()], self.world);
 
-            {
-                let mut kk = spoke_info.clone();
-                kk.process_move(cand.clone(), team, self.world, game);
-                kk.undo_move(cand.clone(), effect.clone(), team, self.world, game);
-                kk.process_move(cand.clone(), team, self.world, game);
+            spoke_info.process_move(cand.clone(), team, self.world, game);
+            // {
+            //     let mut kk = spoke_info.clone();
+            //     kk.process_move(cand.clone(), team, self.world, game);
+            //     kk.undo_move(cand.clone(), effect.clone(), team, self.world, game);
+            //     kk.process_move(cand.clone(), team, self.world, game);
 
-                cand.apply(team, &mut gg, &self.fogs[team], self.world);
-                let mut kk2 = SpokeInfo::new(&gg);
-                moves::update_spoke_info(&mut kk2, self.world, &mut gg);
-                //println!("ok");
+            //     cand.apply(team, &mut gg, &self.fogs[team], self.world);
+            //     let mut kk2 = SpokeInfo::new(&gg);
+            //     moves::update_spoke_info(&mut kk2, self.world, &mut gg);
+            //     //println!("ok");
 
-                for index in self.world.get_game_cells().inner.iter_ones() {
-                    //let index=cand.clone().moveto;
-                    for dir in hex::HDir::all() {
-                        let a = kk.get(index, dir);
-                        let b = kk2.get(index, dir);
+            //     for index in self.world.get_game_cells().inner.iter_ones() {
+            //         //let index=cand.clone().moveto;
+            //         for dir in hex::HDir::all() {
+            //             let a = kk.get(index, dir);
+            //             let b = kk2.get(index, dir);
 
-                        assert_eq!(a, b);
-                    }
+            //             assert_eq!(a, b);
+            //         }
 
-                    for (i, (_, rest)) in game
-                        .factions
-                        .iter_end_points(self.world, index)
-                        .iter()
-                        .enumerate()
-                    {
-                        //let hexdir=hex::HDir::from(i as u8);
+            //         for (i, (_, rest)) in game
+            //             .factions
+            //             .iter_end_points(self.world, index)
+            //             .iter()
+            //             .enumerate()
+            //         {
+            //             //let hexdir=hex::HDir::from(i as u8);
 
-                        if let Some(rest) = rest {
-                            // let a=kk.get(rest.index,dir);
-                            // let b=kk2.get(rest.index,dir);
-                            for dir in hex::HDir::all() {
-                                let a = kk.get(rest.index, dir);
-                                let b = kk2.get(rest.index, dir);
+            //             if let Some(rest) = rest {
+            //                 // let a=kk.get(rest.index,dir);
+            //                 // let b=kk2.get(rest.index,dir);
+            //                 for dir in hex::HDir::all() {
+            //                     let a = kk.get(rest.index, dir);
+            //                     let b = kk2.get(rest.index, dir);
 
-                                assert_eq!(
-                                    a,
-                                    b,
-                                    "{:?}",
-                                    self.world.format(&ActualMove { moveto: rest.index })
-                                );
-                            }
-                        }
-                    }
-                }
+            //                     assert_eq!(
+            //                         a,
+            //                         b,
+            //                         "{:?}",
+            //                         self.world.format(&ActualMove { moveto: rest.index })
+            //                     );
+            //                 }
+            //             }
+            //         }
+            //     }
 
-                //let j=kk.data & kk2.data;
-                //println!("{:?}",j.iter_ones().map())
-                // for a in kk.data.iter(){
+            //     //let j=kk.data & kk2.data;
+            //     //println!("{:?}",j.iter_ones().map())
+            //     // for a in kk.data.iter(){
 
-                // }
-                assert_eq!(kk.data[0], kk2.data[0]);
+            //     // }
+            //     assert_eq!(kk.data[0], kk2.data[0]);
 
-                // for (a,b) in kk.data[1].iter_ones().zip(kk2.data[1].iter_ones()){
-                //     let ff=vec![ActualMove{moveto:a},ActualMove{moveto:b}];
+            //     // for (a,b) in kk.data[1].iter_ones().zip(kk2.data[1].iter_ones()){
+            //     //     let ff=vec![ActualMove{moveto:a},ActualMove{moveto:b}];
 
-                //     assert_eq!(a,b,"issue:{:?}",self.world.format(&ff));
-                // }
-                assert_eq!(kk.data[1], kk2.data[1]);
-            }
+            //     //     assert_eq!(a,b,"issue:{:?}",self.world.format(&ff));
+            //     // }
+            //     assert_eq!(kk.data[1], kk2.data[1]);
+            // }
 
-            let (eval, mut m) =
-                self.negamax(game, -ab_iter.clone_ab_values(), -team, depth - 1, true);
+            let (eval, mut m) = self.negamax(
+                game,
+                spoke_info,
+                -ab_iter.clone_ab_values(),
+                -team,
+                depth - 1,
+                true,
+            );
             let eval = -eval;
 
+            spoke_info.undo_move(cand.clone(), effect.clone(), team, self.world, game);
             // log!(
             //     "consid depth:{} {:?}:{:?}",
             //     depth,
