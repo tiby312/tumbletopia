@@ -479,19 +479,17 @@ impl Tribe {
 
             let (dis, it) = ray(Axial::from_index(index), dd, world);
             for (d, index2) in it.enumerate() {
-                //TODO check if this condition actually speeds anything up (in sparse games)
-                if self.has_a_piece(index2 as usize){
-                    if let Some(pp) = self.get_cell_inner(index2 as usize) {
-                        return (
-                            d as i8 + 1,
-                            Some(EndPoint {
-                                index: index2 as usize,
-                                height: pp.0 as i8,
-                                team: pp.1,
-                            }),
-                        );
-                    }
+                if let Some(pp) = self.get_cell_inner(index2 as usize) {
+                    return (
+                        d as i8 + 1,
+                        Some(EndPoint {
+                            index: index2 as usize,
+                            height: pp.0 as i8,
+                            team: pp.1,
+                        }),
+                    );
                 }
+            
             }
 
             (dis, None)
