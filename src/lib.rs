@@ -519,11 +519,11 @@ pub async fn game_play_thread(
     mut doop: ace::CommandSender,
     world: &board::MyWorld,
     game_type: engine::GameType,
-    interrupt_tx: futures::channel::mpsc::Sender<()>,
+    mut interrupt_tx: futures::channel::mpsc::Sender<()>,
 ) -> (unit::GameOver, MoveHistory) {
     console_dbg!("gameplay thread start");
 
-    let (ai_tx, ai_rx) = shogo::main::create_main::<AiCommand, AiResponse, _>(
+    let (ai_tx, mut ai_rx) = shogo::main::create_main::<AiCommand, AiResponse, _>(
         "./gridlock_worker2.js",
         js_sys::ArrayBuffer::new(0),
     )
@@ -567,32 +567,36 @@ pub async fn game_play_thread(
             let the_move = {
                 let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
 
-                engine::ai::calculate_move(&mut ai_state, &game.fog, &world, team, &game_history)
+                if false{
+                    ai_tx.post_message(AiCommand {
+                        game: ai_state,
+                        fogs: game.fog.clone(),
+                        world: world.clone(),
+                        team,
+                        history: game_history.clone(),
+                    });
 
-                // {
-                //     ai_tx.post_message(AiCommand {
-                //         game: ai_state,
-                //         fogs: game.fog.clone(),
-                //         world: world.clone(),
-                //         team,
-                //         history: game_history.clone(),
-                //     });
+                    use futures::FutureExt;
+                    let the_move = futures::select!(
+                        _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                        x = ai_rx.recv().next().fuse() => x
+                    );
 
-                //     use futures::FutureExt;
-                //     let the_move = futures::select!(
-                //         _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
-                //         x = ai_rx.recv().next().fuse() => x
-                //     );
+                    interrupt_tx.send(()).await.unwrap();
 
-                //     interrupt_tx.send(()).await.unwrap();
+                    let k = doop.receiver.next().await;
+                    matches!(k.unwrap().data, ace::Response::AnimationFinish);
 
-                //     let k = doop.receiver.next().await;
-                //     matches!(k.unwrap().data, ace::Response::AnimationFinish);
+                    //ai_int.interrupt_render_thread().await;
 
-                //     //ai_int.interrupt_render_thread().await;
+                    the_move.unwrap().inner
+                }else{
+                    engine::ai::calculate_move(&mut ai_state, &game.fog, &world, team, &game_history)
 
-                //     the_move.unwrap().inner
-                // }
+                }
+
+
+                
             };
 
             //let the_move = the_move.line[0].clone();

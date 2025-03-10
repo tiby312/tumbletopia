@@ -1,4 +1,4 @@
-use hex::{HDir};
+use hex::HDir;
 
 use super::*;
 
