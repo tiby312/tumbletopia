@@ -6,6 +6,7 @@ pub mod mesh;
 pub mod move_build;
 pub mod moves;
 pub mod unit;
+use board::MyWorld;
 pub use hex::Axial;
 use move_build::MoveEffect;
 pub use moves::ActualMove;
@@ -19,21 +20,34 @@ pub use unit::Team;
 
 
 pub fn get_index(height:u8,team:Team)->usize{
-    todo!();
+    assert!(height>0 && height<=6);
+    let k=(height-1)  as usize +6*team.index();
+    assert!(k>=0 && k<12);
+    k
 }
 
 struct Zobrist{
-    inner:[[u64;6];board::NUM_CELLS]
+    inner:[[u64;12];crate::board::TABLE_SIZE]
 }
 
+#[derive(Copy,Clone,PartialEq,Eq,Debug)]
 struct Key{
     key:u64
 }
 
 impl Key{
-    pub fn from_scratch(base:&Zobrist,game:&GameState)->Key{
+    pub fn from_scratch(base:&Zobrist,game:&GameState,world:&MyWorld)->Key{
+        let mut k=Key{key:0};
 
-        todo!();
+        for index in world.get_game_cells().inner.iter_ones(){
+
+            if let Some((h,t))=game.factions.get_cell_inner(index){
+                k.key^=base.inner[index][get_index(h,t)];
+            }
+
+
+        }
+        k
     }
     pub fn move_update(&mut self,base:&Zobrist,m:ActualMove,height:u8,team:Team,effect:&MoveEffect){
 
@@ -58,10 +72,54 @@ impl Key{
     }
 }
 
+
+
+//const FOO:Zobrist=get_zobrist();
+
+
+#[test]
+fn test_zobrist(){
+
+    let world = &board::MyWorld::load_from_string("bb-t-bbsrd-s----s--");
+    let mut game = world.starting_state.clone();
+
+    let base=Zobrist::new();
+
+    let mut k=Key::from_scratch(&base, &game.tactical, world);
+
+    let a=Axial::from_letter_coord('B', 2, world.radius as i8);
+    let m=ActualMove{moveto:a.to_index()};
+
+    let team=Team::White;
+    let height=2;
+    let effect=m.apply(team,&mut game.tactical,&game.fog[0],world);
+
+    let orig=k.clone();
+    k.move_update(&base,m.clone(),height,team,&effect);
+    k.move_undo(&base, m, height, team, &effect);
+
+
+
+    assert_eq!(orig,k);
+
+}
+
+
+
 impl Zobrist{
     pub fn new()->Zobrist{
+        //https://www.browserling.com/tools/random-bin
+        use rand_chacha::rand_core::SeedableRng;
+        use rand_chacha::rand_core::RngCore;
+        let mut rng = rand_chacha::ChaCha12Rng::seed_from_u64(0x42);
+        
+        let inner=std::array::from_fn(|jj|{
+            std::array::from_fn(|i|{
+                rng.next_u64()
+            })
+        });
 
-        todo!();
+        Zobrist{inner}
     }
 }
 
