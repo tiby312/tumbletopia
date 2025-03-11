@@ -50,14 +50,14 @@ pub mod small_mesh {
     pub struct SmallMesh {
         //pub inner: [u64; 4],
         //pub inner: BitBox,
-        pub inner: BitArr!(for 256),
+        pub inner: BitArr!(for crate::board::TABLE_SIZE),
     }
 
     use bitvec::prelude::*;
     impl SmallMesh {
         pub fn new() -> SmallMesh {
             SmallMesh {
-                inner: bitarr![0;256],
+                inner: bitarr![0;crate::board::TABLE_SIZE],
             }
         }
         pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SmallMesh {
@@ -81,7 +81,7 @@ pub mod small_mesh {
         #[must_use]
         pub fn validate_rel(a: Axial) -> bool {
             let ind = a.to_index();
-            ind < 256
+            ind < crate::board::TABLE_SIZE
 
             // let x = a.q;
             // let y = a.r;

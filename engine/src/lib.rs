@@ -7,11 +7,71 @@ pub mod move_build;
 pub mod moves;
 pub mod unit;
 pub use hex::Axial;
+use move_build::MoveEffect;
 pub use moves::ActualMove;
 use serde::Deserialize;
 use serde::Serialize;
 pub use unit::GameState;
 pub use unit::Team;
+
+
+
+
+
+pub fn get_index(height:u8,team:Team)->usize{
+    todo!();
+}
+
+struct Zobrist{
+    inner:[[u64;6];board::NUM_CELLS]
+}
+
+struct Key{
+    key:u64
+}
+
+impl Key{
+    pub fn from_scratch(base:&Zobrist,game:&GameState)->Key{
+
+        todo!();
+    }
+    pub fn move_update(&mut self,base:&Zobrist,m:ActualMove,height:u8,team:Team,effect:&MoveEffect){
+
+        if let Some(a)=effect.destroyed_unit{
+            //xor out what piece was there
+            self.key^=base.inner[m.moveto][get_index(a.0,a.1)];
+        }
+
+        //xor in the new piece
+        self.key^=base.inner[m.moveto][get_index(height,team)];
+    }
+
+    pub fn move_undo(&mut self,base:&Zobrist,m:ActualMove,height:u8,team:Team,effect:&MoveEffect){
+
+        //xor out the new piece
+        self.key^=base.inner[m.moveto][get_index(height,team)];
+        
+        if let Some(a)=effect.destroyed_unit{
+            //xor in what piece was there
+            self.key^=base.inner[m.moveto][get_index(a.0,a.1)];
+        }
+    }
+}
+
+impl Zobrist{
+    pub fn new()->Zobrist{
+
+        todo!();
+    }
+}
+
+
+
+
+
+
+
+
 
 macro_rules! log {
     ($($tt:tt)*) => {

@@ -10,6 +10,8 @@ pub struct MyWorld {
 
 pub const NUM_CELLS: usize = 128;
 
+pub const TABLE_SIZE:usize=256;
+
 #[test]
 fn foo() {
     //let i=234314;
