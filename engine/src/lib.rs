@@ -19,19 +19,19 @@ pub use unit::Team;
 
 
 
-pub fn get_index(height:u8,team:Team)->usize{
+fn get_index(height:u8,team:Team)->usize{
     assert!(height>0 && height<=6);
     let k=(height-1)  as usize +6*team.index();
-    assert!(k>=0 && k<12);
+    assert!(k<12);
     k
 }
 
-struct Zobrist{
+pub struct Zobrist{
     inner:[[u64;12];crate::board::TABLE_SIZE]
 }
 
 #[derive(Copy,Clone,PartialEq,Eq,Debug)]
-struct Key{
+pub struct Key{
     key:u64
 }
 
@@ -40,12 +40,9 @@ impl Key{
         let mut k=Key{key:0};
 
         for index in world.get_game_cells().inner.iter_ones(){
-
             if let Some((h,t))=game.factions.get_cell_inner(index){
                 k.key^=base.inner[index][get_index(h,t)];
             }
-
-
         }
         k
     }
