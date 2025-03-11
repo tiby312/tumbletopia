@@ -51,6 +51,7 @@ impl Key {
         effect: &MoveEffect,
     ) {
         if let Some(a) = effect.destroyed_unit {
+            //panic!();
             //xor out what piece was there
             self.key ^= base.inner[m.moveto][get_index(a.0, a.1)];
         }
@@ -71,6 +72,7 @@ impl Key {
         self.key ^= base.inner[m.moveto][get_index(height, team)];
 
         if let Some(a) = effect.destroyed_unit {
+            
             //xor in what piece was there
             self.key ^= base.inner[m.moveto][get_index(a.0, a.1)];
         }
@@ -97,11 +99,13 @@ fn test_zobrist() {
     let height = 2;
     let effect = m.apply(team, &mut game.tactical, &game.fog[0], world);
 
+    //dbg!(game.tactical.into_string(world));
     let orig = k.clone();
     k.move_update(&base, m.clone(), height, team, &effect);
     k.move_undo(&base, m, height, team, &effect);
 
     assert_eq!(orig, k);
+    //panic!();
 }
 
 impl Zobrist {
