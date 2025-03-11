@@ -15,118 +15,107 @@ use serde::Serialize;
 pub use unit::GameState;
 pub use unit::Team;
 
-
-
-
-
-fn get_index(height:u8,team:Team)->usize{
-    assert!(height>0 && height<=6);
-    let k=(height-1)  as usize +6*team.index();
-    assert!(k<12);
+fn get_index(height: u8, team: Team) -> usize {
+    assert!(height > 0 && height <= 6);
+    let k = (height - 1) as usize + 6 * team.index();
+    assert!(k < 12);
     k
 }
 
-pub struct Zobrist{
-    inner:[[u64;12];crate::board::TABLE_SIZE]
+pub struct Zobrist {
+    inner: [[u64; 12]; crate::board::TABLE_SIZE],
 }
 
-#[derive(Copy,Clone,PartialEq,Eq,Debug)]
-pub struct Key{
-    key:u64
+#[derive(Hash, Copy, Clone, PartialEq, Eq, Debug)]
+pub struct Key {
+    key: u64,
 }
 
-impl Key{
-    pub fn from_scratch(base:&Zobrist,game:&GameState,world:&MyWorld)->Key{
-        let mut k=Key{key:0};
+impl Key {
+    pub fn from_scratch(base: &Zobrist, game: &GameState, world: &MyWorld) -> Key {
+        let mut k = Key { key: 0 };
 
-        for index in world.get_game_cells().inner.iter_ones(){
-            if let Some((h,t))=game.factions.get_cell_inner(index){
-                k.key^=base.inner[index][get_index(h,t)];
+        for index in world.get_game_cells().inner.iter_ones() {
+            if let Some((h, t)) = game.factions.get_cell_inner(index) {
+                k.key ^= base.inner[index][get_index(h, t)];
             }
         }
         k
     }
-    pub fn move_update(&mut self,base:&Zobrist,m:ActualMove,height:u8,team:Team,effect:&MoveEffect){
-
-        if let Some(a)=effect.destroyed_unit{
+    pub fn move_update(
+        &mut self,
+        base: &Zobrist,
+        m: ActualMove,
+        height: u8,
+        team: Team,
+        effect: &MoveEffect,
+    ) {
+        if let Some(a) = effect.destroyed_unit {
             //xor out what piece was there
-            self.key^=base.inner[m.moveto][get_index(a.0,a.1)];
+            self.key ^= base.inner[m.moveto][get_index(a.0, a.1)];
         }
 
         //xor in the new piece
-        self.key^=base.inner[m.moveto][get_index(height,team)];
+        self.key ^= base.inner[m.moveto][get_index(height, team)];
     }
 
-    pub fn move_undo(&mut self,base:&Zobrist,m:ActualMove,height:u8,team:Team,effect:&MoveEffect){
-
+    pub fn move_undo(
+        &mut self,
+        base: &Zobrist,
+        m: ActualMove,
+        height: u8,
+        team: Team,
+        effect: &MoveEffect,
+    ) {
         //xor out the new piece
-        self.key^=base.inner[m.moveto][get_index(height,team)];
-        
-        if let Some(a)=effect.destroyed_unit{
+        self.key ^= base.inner[m.moveto][get_index(height, team)];
+
+        if let Some(a) = effect.destroyed_unit {
             //xor in what piece was there
-            self.key^=base.inner[m.moveto][get_index(a.0,a.1)];
+            self.key ^= base.inner[m.moveto][get_index(a.0, a.1)];
         }
     }
 }
 
-
-
 //const FOO:Zobrist=get_zobrist();
 
-
 #[test]
-fn test_zobrist(){
-
+fn test_zobrist() {
     let world = &board::MyWorld::load_from_string("bb-t-bbsrd-s----s--");
     let mut game = world.starting_state.clone();
 
-    let base=Zobrist::new();
+    let base = Zobrist::new();
 
-    let mut k=Key::from_scratch(&base, &game.tactical, world);
+    let mut k = Key::from_scratch(&base, &game.tactical, world);
 
-    let a=Axial::from_letter_coord('B', 2, world.radius as i8);
-    let m=ActualMove{moveto:a.to_index()};
+    let a = Axial::from_letter_coord('B', 2, world.radius as i8);
+    let m = ActualMove {
+        moveto: a.to_index(),
+    };
 
-    let team=Team::White;
-    let height=2;
-    let effect=m.apply(team,&mut game.tactical,&game.fog[0],world);
+    let team = Team::White;
+    let height = 2;
+    let effect = m.apply(team, &mut game.tactical, &game.fog[0], world);
 
-    let orig=k.clone();
-    k.move_update(&base,m.clone(),height,team,&effect);
+    let orig = k.clone();
+    k.move_update(&base, m.clone(), height, team, &effect);
     k.move_undo(&base, m, height, team, &effect);
 
-
-
-    assert_eq!(orig,k);
-
+    assert_eq!(orig, k);
 }
 
-
-
-impl Zobrist{
-    pub fn new()->Zobrist{
+impl Zobrist {
+    pub fn new() -> Zobrist {
         //https://www.browserling.com/tools/random-bin
-        use rand_chacha::rand_core::SeedableRng;
         use rand_chacha::rand_core::RngCore;
+        use rand_chacha::rand_core::SeedableRng;
         let mut rng = rand_chacha::ChaCha12Rng::seed_from_u64(0x42);
-        
-        let inner=std::array::from_fn(|jj|{
-            std::array::from_fn(|i|{
-                rng.next_u64()
-            })
-        });
 
-        Zobrist{inner}
+        let inner = std::array::from_fn(|jj| std::array::from_fn(|i| rng.next_u64()));
+
+        Zobrist { inner }
     }
 }
-
-
-
-
-
-
-
-
 
 macro_rules! log {
     ($($tt:tt)*) => {

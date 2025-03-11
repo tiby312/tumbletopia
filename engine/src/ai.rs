@@ -238,22 +238,22 @@ pub struct TTEntry {
 }
 
 struct TranspositionTable {
-    a: std::collections::BTreeMap<u64, TTEntry>,
+    a: std::collections::HashMap<Key, TTEntry>,
 }
 impl TranspositionTable {
-    pub fn update_inner(&mut self, k: u64, m: TTEntry) {
-        if let Some(foo) = self.a.get_mut(&k) {
-            *foo = m;
-        } else {
-            self.a.insert(k, m);
-        }
-    }
-    pub fn update(&mut self, a: &GameState, m: TTEntry) {
-        self.update_inner(a.hash_me(), m)
-    }
-    pub fn get(&self, a: &GameState) -> Option<&TTEntry> {
-        self.a.get(&a.hash_me())
-    }
+    // pub fn update_inner(&mut self, k: Key, m: TTEntry) {
+    //     if let Some(foo) = self.a.get_mut(&k) {
+    //         *foo = m;
+    //     } else {
+    //         self.a.insert(k, m);
+    //     }
+    // }
+    // pub fn update(&mut self, a: &Key, m: TTEntry) {
+    //     self.update_inner(a, m)
+    // }
+    // pub fn get(&self, a: &GameState) -> Option<&TTEntry> {
+    //     self.a.get(&a.hash_me())
+    // }
 }
 
 const STACK_SIZE: usize = 8;
@@ -298,7 +298,7 @@ pub fn iterative_deepening2(
     let mut results = None; // = Vec::new();
 
     let mut table = TranspositionTable {
-        a: std::collections::BTreeMap::new(),
+        a: std::collections::HashMap::new(),
     };
     let mut evaluator = Evaluator::default();
 
@@ -309,6 +309,8 @@ pub fn iterative_deepening2(
     // if let Some(f) = move_history.inner.last() {
     //     history.push(f.clone());
     // }
+
+    let zobrist = &Zobrist::new();
 
     let mut ss = SpokeInfo::new(game);
     moves::update_spoke_info(&mut ss, world, game);
@@ -334,6 +336,7 @@ pub fn iterative_deepening2(
             moves: &mut moves,
             nodes_visited: &mut nodes_visited_total,
             fogs,
+            zobrist,
         };
 
         let mut kk = game.clone();
@@ -421,6 +424,7 @@ struct AlphaBeta<'a> {
     moves: &'a mut Vec<ActualMove>,
     nodes_visited: &'a mut usize, //history: &'a mut MoveHistory,
     fogs: &'a [mesh::small_mesh::SmallMesh; 2],
+    zobrist: &'a Zobrist,
 }
 
 struct KillerMoves {
@@ -594,9 +598,14 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
+        let entry = self
+            .prev_cache
+            .a
+            .get(&Key::from_scratch(&self.zobrist, game, self.world));
+
         //https://en.wikipedia.org/wiki/Negamax
         let alpha_orig = ab.alpha;
-        if let Some(entry) = self.prev_cache.get(game) {
+        if let Some(entry) = entry {
             if entry.depth >= depth {
                 match entry.flag {
                     Flag::Exact => {
@@ -648,11 +657,11 @@ impl<'a> AlphaBeta<'a> {
         //     );
         // }
 
-        let fa = self.prev_cache.get(&game);
+        //let fa = self.prev_cache.get(&game);
         let move_value = |index: &ActualMove| {
             let index = index.moveto;
 
-            if let Some(a) = fa {
+            if let Some(a) = entry {
                 if let Some(p) = a.pv.last() {
                     if p.moveto == index {
                         return 1000;
@@ -824,7 +833,9 @@ impl<'a> AlphaBeta<'a> {
                 pv: m.clone(),
             };
 
-            self.prev_cache.update(game, entry);
+            self.prev_cache
+                .a
+                .insert(Key::from_scratch(&self.zobrist, game, self.world), entry);
         }
 
         (eval, m)
