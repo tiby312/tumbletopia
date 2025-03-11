@@ -226,6 +226,7 @@ impl crate::moves::ActualMove {
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
+    pub height: u8,
     pub destroyed_unit: Option<(u8, Team)>,
 }
 impl MoveEffect {
@@ -419,6 +420,7 @@ impl ActualMove {
                 pushpull: PushInfo::None,
                 powerup: PowerupAction::None,
                 destroyed_unit: None,
+                height: 0,
             };
         }
 
@@ -474,6 +476,7 @@ impl ActualMove {
             pushpull: e,
             powerup: PowerupAction::None,
             destroyed_unit,
+            height: stack_size,
         }
     }
 }

@@ -317,6 +317,8 @@ pub fn iterative_deepening2(
 
     let mut nodes_visited_total = 0;
 
+    let key = Key::from_scratch(&zobrist, game, world);
+
     //TODO stop searching if we found a game ending move.
     for depth in 0..len {
         let depth = depth + 1;
@@ -342,7 +344,7 @@ pub fn iterative_deepening2(
         let mut kk = game.clone();
 
         let mut ss2 = ss.clone();
-        let (res, mut mov) = aaaa.negamax(&mut kk, &mut ss, ABAB::new(), team, depth, true);
+        let (res, mut mov) = aaaa.negamax(&mut kk, key, &mut ss, ABAB::new(), team, depth, true);
         assert_eq!(ss, ss2);
         assert_eq!(&kk, game);
 
@@ -552,6 +554,7 @@ impl<'a> AlphaBeta<'a> {
     fn negamax(
         &mut self,
         game: &mut GameState,
+        mut key: Key,
         spoke_info: &mut SpokeInfo,
         mut ab: ABAB,
         team: Team,
@@ -587,8 +590,15 @@ impl<'a> AlphaBeta<'a> {
             let mut ab2 = ab.clone();
             ab2.alpha = -ab.beta;
             ab2.beta = -(ab.beta - 1);
-            let (eval, m) =
-                self.negamax(game, spoke_info, ab2, -team, depth.saturating_sub(r), false);
+            let (eval, m) = self.negamax(
+                game,
+                key,
+                spoke_info,
+                ab2,
+                -team,
+                depth.saturating_sub(r),
+                false,
+            );
             let eval = -eval;
 
             //pos.undo_null_move();
@@ -716,6 +726,8 @@ impl<'a> AlphaBeta<'a> {
 
             let effect = cand.apply(team, game, &self.fogs[team.index()], self.world);
 
+            key.move_update(&self.zobrist, cand.clone(), team, &effect);
+
             spoke_info.process_move(cand.clone(), team, self.world, game);
             // {
             //     let mut kk = spoke_info.clone();
@@ -780,6 +792,7 @@ impl<'a> AlphaBeta<'a> {
 
             let (eval, mut m) = self.negamax(
                 game,
+                key,
                 spoke_info,
                 -ab_iter.clone_ab_values(),
                 -team,
@@ -799,6 +812,7 @@ impl<'a> AlphaBeta<'a> {
             let cc = cand.clone();
             cand.undo(team, &effect, game);
 
+            key.move_undo(&self.zobrist, cand.clone(), team, &effect);
             m.push(cand);
             if !ab_iter.keep_going(m, eval) {
                 //2007 without

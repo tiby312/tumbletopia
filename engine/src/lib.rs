@@ -17,13 +17,13 @@ pub use unit::Team;
 
 fn get_index(height: u8, team: Team) -> usize {
     assert!(height > 0 && height <= 6);
-    let k = (height - 1) as usize + 6 * team.index();
-    assert!(k < 12);
+    let k = (height - 1) as usize + 6 * ((team.value() + 1) as usize);
+    assert!(k < 6 * 3);
     k
 }
 
 pub struct Zobrist {
-    inner: [[u64; 12]; crate::board::TABLE_SIZE],
+    inner: [[u64; 6 * 3]; crate::board::TABLE_SIZE],
 }
 
 #[derive(Hash, Copy, Clone, PartialEq, Eq, Debug)]
@@ -42,14 +42,7 @@ impl Key {
         }
         k
     }
-    pub fn move_update(
-        &mut self,
-        base: &Zobrist,
-        m: ActualMove,
-        height: u8,
-        team: Team,
-        effect: &MoveEffect,
-    ) {
+    pub fn move_update(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
         if let Some(a) = effect.destroyed_unit {
             //panic!();
             //xor out what piece was there
@@ -57,22 +50,14 @@ impl Key {
         }
 
         //xor in the new piece
-        self.key ^= base.inner[m.moveto][get_index(height, team)];
+        self.key ^= base.inner[m.moveto][get_index(effect.height, team)];
     }
 
-    pub fn move_undo(
-        &mut self,
-        base: &Zobrist,
-        m: ActualMove,
-        height: u8,
-        team: Team,
-        effect: &MoveEffect,
-    ) {
+    pub fn move_undo(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
         //xor out the new piece
-        self.key ^= base.inner[m.moveto][get_index(height, team)];
+        self.key ^= base.inner[m.moveto][get_index(effect.height, team)];
 
         if let Some(a) = effect.destroyed_unit {
-            
             //xor in what piece was there
             self.key ^= base.inner[m.moveto][get_index(a.0, a.1)];
         }
@@ -96,13 +81,12 @@ fn test_zobrist() {
     };
 
     let team = Team::White;
-    let height = 2;
     let effect = m.apply(team, &mut game.tactical, &game.fog[0], world);
 
     //dbg!(game.tactical.into_string(world));
     let orig = k.clone();
-    k.move_update(&base, m.clone(), height, team, &effect);
-    k.move_undo(&base, m, height, team, &effect);
+    k.move_update(&base, m.clone(), team, &effect);
+    k.move_undo(&base, m, team, &effect);
 
     assert_eq!(orig, k);
     //panic!();
@@ -123,7 +107,7 @@ impl Zobrist {
 
 macro_rules! log {
     ($($tt:tt)*) => {
-        //gloo_console::log!(format!($($tt)*))
+        gloo_console::log!(format!($($tt)*))
     };
 }
 
