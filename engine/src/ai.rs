@@ -584,7 +584,7 @@ impl<'a> AlphaBeta<'a> {
 
         *self.nodes_visited += 1;
 
-        let (all_moves, captures, _reinfocements) =
+        let (all_moves, _captures, _reinfocements) =
             game.generate_possible_moves_movement(self.world, team, &spoke_info);
 
         let loud_moves = game.generate_loud_moves(self.world, team, &spoke_info);
@@ -602,17 +602,6 @@ impl<'a> AlphaBeta<'a> {
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
-        // if moves.is_empty() {
-        //     return (
-        //         team.value()
-        //             * self
-        //                 .evaluator
-        //                 .absolute_evaluate(game, self.world, &spoke_info, false),
-        //         tinyvec::array_vec![],
-        //     );
-        // }
-
-        //let fa = self.prev_cache.get(&game);
         let move_value = |index: &ActualMove| {
             let index = index.moveto;
 
@@ -622,11 +611,6 @@ impl<'a> AlphaBeta<'a> {
                         return 1000;
                     }
                 }
-            }
-
-            //TODO actually tes this one
-            if captures.inner[index] {
-                return 11;
             }
 
             if loud_moves.inner[index] {
