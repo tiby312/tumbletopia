@@ -269,9 +269,8 @@ impl SpokeInfo {
         // assert!(kk==&arr);
         let arr = &spoke_temp.data;
 
-        for (i, (dis, rest)) in arr.iter().enumerate() {
-            let hexdir = HDir::from(i as u8);
-
+        for (hexdir,(i, (dis, rest))) in HDir::all().zip(arr.iter().enumerate()) {
+            
             let st = if let &Some(unit::EndPoint {
                 team: tt, index: _, ..
             }) = rest
