@@ -307,6 +307,7 @@ pub fn iterative_deepening2(
     let spoke_orig = spoke_info.clone();
     let key_orig = key.clone();
 
+    let mut history_heur:Vec<_>=(0..board::TABLE_SIZE).map(|_|0).collect();
     //TODO stop searching if we found a game ending move.
     for depth in 0..len {
         let depth = depth + 1;
@@ -323,6 +324,7 @@ pub fn iterative_deepening2(
             nodes_visited: &mut nodes_visited_total,
             fogs,
             zobrist,
+            history_heur:&mut history_heur
         };
 
         let (res, mut mov) = aaaa.negamax(
@@ -380,6 +382,7 @@ struct AlphaBeta<'a> {
     nodes_visited: &'a mut usize,
     fogs: &'a [mesh::small_mesh::SmallMesh; 2],
     zobrist: &'a Zobrist,
+    history_heur:&'a mut [usize]
 }
 
 struct KillerMoves {
@@ -583,13 +586,13 @@ impl<'a> AlphaBeta<'a> {
             if let Some(a) = entry {
                 if let Some(p) = a.pv.last() {
                     if p.moveto == index {
-                        return 1000;
+                        return 10_001;
                     }
                 }
             }
 
             if loud_moves.inner[index] {
-                return 10;
+                return 10_000;
             }
 
             for (i, a) in self
@@ -599,7 +602,7 @@ impl<'a> AlphaBeta<'a> {
                 .enumerate()
             {
                 if a.moveto == index {
-                    return 4 - i as isize;
+                    return 9_000 - i as isize;
                 }
             }
 
@@ -608,7 +611,7 @@ impl<'a> AlphaBeta<'a> {
 
         //TODO https://www.chessprogramming.org/History_Heuristic
 
-        
+
         moves.sort_unstable_by_key(|f| move_value(f));
 
         // log!(
@@ -661,7 +664,9 @@ impl<'a> AlphaBeta<'a> {
             if !ab_iter.keep_going(m, eval) {
                 //2007 without
                 if !loud_moves.inner[cc.moveto] {
-                    self.killer_moves.consider(depth, cc);
+                    self.killer_moves.consider(depth, cc.clone());
+
+                    self.history_heur[cc.moveto]+=depth*depth;
                 }
 
                 self.moves.drain(start_move_index..);
