@@ -556,6 +556,7 @@ pub async fn reselect_loop(
             &mut game.tactical,
             &game.fog[team.index()],
             world,
+            None,
         );
 
     {
@@ -624,6 +625,7 @@ pub async fn replay(
                                         &mut game.tactical,
                                         &game.fog[team_counter.index()],
                                         world,
+                                        None,
                                     );
 
                             counter += 1;
@@ -758,7 +760,13 @@ pub async fn handle_player(
                             moveto: hex::PASS_MOVE_INDEX,
                         };
 
-                        let me = mp.apply(team, &mut game.tactical, &game.fog[team.index()], world);
+                        let me = mp.apply(
+                            team,
+                            &mut game.tactical,
+                            &game.fog[team.index()],
+                            world,
+                            None,
+                        );
                         return (mp, me);
                     } else {
                         unreachable!();
@@ -802,7 +810,13 @@ pub async fn handle_player(
                         moveto: hex::PASS_MOVE_INDEX,
                     };
 
-                    let me = mp.apply(team, &mut game.tactical, &game.fog[team.index()], world);
+                    let me = mp.apply(
+                        team,
+                        &mut game.tactical,
+                        &game.fog[team.index()],
+                        world,
+                        None,
+                    );
                     return (mp, me);
                 }
             };

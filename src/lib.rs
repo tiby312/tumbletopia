@@ -605,7 +605,13 @@ pub async fn game_play_thread(
 
             let effect_m = ace::animate_move(&the_move, team, &mut game, &world, &mut doop)
                 .await
-                .apply(team, &mut game.tactical, &game.fog[team.index()], &world);
+                .apply(
+                    team,
+                    &mut game.tactical,
+                    &game.fog[team.index()],
+                    &world,
+                    None,
+                );
 
             game.update_fog(world, team);
             game_history.push((the_move, effect_m));

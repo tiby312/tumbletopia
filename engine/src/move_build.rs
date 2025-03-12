@@ -1,3 +1,5 @@
+use crate::moves::SpokeInfo;
+
 use super::*;
 
 impl crate::moves::ActualMove {
@@ -413,6 +415,7 @@ impl ActualMove {
         game: &mut GameState,
         fog: &mesh::small_mesh::SmallMesh,
         world: &board::MyWorld,
+        spoke_info: Option<&SpokeInfo>,
     ) -> MoveEffect {
         //this is a pass
         if self.moveto == hex::PASS_MOVE_INDEX {
@@ -428,19 +431,24 @@ impl ActualMove {
         let target_cell = self.moveto;
         let e = PushInfo::None;
 
-        let mut stack_size = 0;
+        let stack_size = if let Some(sp) = spoke_info {
+            sp.data[self.moveto].num_attack[team]
+        } else {
+            let mut stack_size = 0;
 
-        for (_, rest) in game
-            .bake_fog(fog)
-            .factions
-            .iter_end_points(world, target_cell)
-        {
-            if let Some(unit::EndPoint { team: tt, .. }) = rest {
-                if tt == team {
-                    stack_size += 1;
+            for (_, rest) in game
+                .bake_fog(fog)
+                .factions
+                .iter_end_points(world, target_cell)
+            {
+                if let Some(unit::EndPoint { team: tt, .. }) = rest {
+                    if tt == team {
+                        stack_size += 1;
+                    }
                 }
             }
-        }
+            stack_size
+        };
 
         // for (i, h) in hex::OFFSETS.into_iter().enumerate() {
         //     for k in target_cell

@@ -19,7 +19,7 @@ pub fn test_run() {
         let mut ai_state = game.tactical.bake_fog(&game.fog[team]);
         let m = engine::ai::calculate_move(&mut ai_state, &game.fog, world, team, &game_history);
         //println!("team {:?} made move {:?}",team,&world.format(&m));
-        let effect = m.apply(team, &mut game.tactical, &game.fog[team], world);
+        let effect = m.apply(team, &mut game.tactical, &game.fog[team], world, None);
         game_history.push((m, effect));
     };
     //

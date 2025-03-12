@@ -723,7 +723,13 @@ impl<'a> AlphaBeta<'a> {
 
             let mut gg = game.clone();
 
-            let effect = cand.apply(team, game, &self.fogs[team.index()], self.world);
+            let effect = cand.apply(
+                team,
+                game,
+                &self.fogs[team.index()],
+                self.world,
+                Some(&spoke_info),
+            );
 
             key.move_update(&self.zobrist, cand.clone(), team, &effect);
 

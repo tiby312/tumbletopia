@@ -194,9 +194,9 @@ impl Thing {
     }
 }
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
-struct SpokeCell {
+pub struct SpokeCell {
     raw: [Thing; 6],
-    num_attack: [u8; 2],
+    pub num_attack: [u8; 2],
 }
 
 impl SpokeInfo {

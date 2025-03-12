@@ -81,7 +81,7 @@ fn test_zobrist() {
     };
 
     let team = Team::White;
-    let effect = m.apply(team, &mut game.tactical, &game.fog[0], world);
+    let effect = m.apply(team, &mut game.tactical, &game.fog[0], world, None);
 
     //dbg!(game.tactical.into_string(world));
     let orig = k.clone();
