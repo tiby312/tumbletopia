@@ -174,7 +174,9 @@ impl Evaluator {
     ) -> Eval {
         let mut total_foo = 0;
         let strength_parity = 0;
-        for &index in world.land_as_vec.iter() /*world.get_game_cells().inner.iter_ones()*/ {
+        for &index in world.land_as_vec.iter()
+        /*world.get_game_cells().inner.iter_ones()*/
+        {
             let num_attack = get_num_attack(spoke_info, index);
 
             // let mut num_attack: [i64; 2] = [0, 0];
@@ -608,10 +610,7 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
-        let entry = self
-            .prev_cache
-            .a
-            .get(&key);
+        let entry = self.prev_cache.a.get(&key);
 
         //https://en.wikipedia.org/wiki/Negamax
         let alpha_orig = ab.alpha;
@@ -847,9 +846,7 @@ impl<'a> AlphaBeta<'a> {
                 pv: m.clone(),
             };
 
-            self.prev_cache
-                .a
-                .insert(key, entry);
+            self.prev_cache.a.insert(key, entry);
         }
 
         (eval, m)

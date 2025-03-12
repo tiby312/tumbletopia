@@ -6,7 +6,7 @@ pub struct MyWorld {
     pub radius: u8,
     pub starting_team: Team,
     pub starting_state: unit::GameStateTotal, //pub map: unit::Map,
-    pub land_as_vec:Vec<usize>
+    pub land_as_vec: Vec<usize>,
 }
 
 pub const NUM_CELLS: usize = 128;
@@ -241,7 +241,7 @@ impl MyWorld {
             hex::Cube::new(0, 0).range(size - 1).map(|x| x.to_axial()),
         );
 
-        let land_as_vec=land.inner.iter_ones().collect();
+        let land_as_vec = land.inner.iter_ones().collect();
 
         let mut g = GameState::default();
         for (a, i) in s.chars().zip(land.inner.iter_ones()) {
@@ -281,7 +281,7 @@ impl MyWorld {
             radius: size as u8,
             starting_team: Team::White,
             starting_state: g,
-            land_as_vec
+            land_as_vec,
         }
     }
 
