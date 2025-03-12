@@ -148,7 +148,7 @@ pub enum MoveType {
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct SpokeInfo {
     //pub data: [bitvec::BitArr!(for 256*6); 2],
-    pub data: [[Thing; 6]; 256],
+    pub data: [SpokeCell; 256],
 }
 
 // 3 bits for num white
@@ -183,10 +183,29 @@ pub enum Thing {
     Neutral,
 }
 
+impl Thing {
+    pub fn value(&self) -> i64 {
+        match self {
+            Thing::None => 0,
+            Thing::White => 1,
+            Thing::Black => -1,
+            Thing::Neutral => 0,
+        }
+    }
+}
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
+struct SpokeCell {
+    raw: [Thing; 6],
+    num_attack: [u8; 2],
+}
+
 impl SpokeInfo {
     pub fn new(_game: &GameState) -> Self {
         SpokeInfo {
-            data: [[Thing::None; 6]; 256],
+            data: [SpokeCell {
+                raw: [Thing::None; 6],
+                num_attack: [0; 2],
+            }; 256],
         }
     }
 
@@ -283,10 +302,43 @@ impl SpokeInfo {
             Some(Team::Neutral) => Thing::Neutral,
         };
 
-        self.data[index][dir as usize] = tt;
+        let new_value = tt.value();
+        let old_value = self.data[index].raw[dir as usize].value();
+
+        match (old_value, new_value) {
+            (-1, -1) => {}
+            (-1, 0) => {
+                self.data[index].num_attack[1] -= 1;
+            }
+            (0, -1) => {
+                self.data[index].num_attack[1] += 1;
+            }
+            (-1, 1) => {
+                self.data[index].num_attack[0] += 1;
+                self.data[index].num_attack[1] -= 1;
+            }
+            (1, 1) => {}
+            (1, 0) => {
+                self.data[index].num_attack[0] -= 1;
+            }
+            (0, 1) => {
+                self.data[index].num_attack[0] += 1;
+            }
+            (1, -1) => {
+                self.data[index].num_attack[0] -= 1;
+                self.data[index].num_attack[1] += 1;
+            }
+            (0, 0) => {}
+            _ => unreachable!("{:?} {:?}", old_value, new_value),
+        }
+
+        //let diff=new_value-old_value;
+        //self.data[index].num_attack
+
+        self.data[index].raw[dir as usize] = tt;
     }
     pub fn get(&self, index: usize, dir: HDir) -> Option<Team> {
-        match self.data[index][dir as usize] {
+        match self.data[index].raw[dir as usize] {
             Thing::None => None,
             Thing::White => Some(Team::White),
             Thing::Black => Some(Team::Black),
@@ -318,17 +370,18 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
 }
 
 pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> [i64; 2] {
-    let mut num_attack: [i64; 2] = [0, 0];
+    //let mut num_attack: [i64; 2] = [0, 0];
     let foo = &spoke_info.data[index];
-    for t in foo.iter() {
-        match t {
-            Thing::None => {}
-            Thing::White => num_attack[0] += 1,
-            Thing::Black => num_attack[1] += 1,
-            Thing::Neutral => {}
-        }
-    }
-    num_attack
+    foo.num_attack.map(|x| x as i64)
+    // for t in foo.iter() {
+    //     match t {
+    //         Thing::None => {}
+    //         Thing::White => num_attack[0] += 1,
+    //         Thing::Black => num_attack[1] += 1,
+    //         Thing::Neutral => {}
+    //     }
+    // }
+    // num_attack
 }
 
 #[derive(Debug)]
