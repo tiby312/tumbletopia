@@ -124,7 +124,6 @@ macro_rules! log {
     };
 }
 
-
 pub(crate) use log;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]

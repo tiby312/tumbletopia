@@ -295,13 +295,17 @@ pub fn iterative_deepening2(
 
     //let zobrist = &Zobrist::new();
 
-    let mut ss = SpokeInfo::new(game);
-    moves::update_spoke_info(&mut ss, world, game);
+    let mut spoke_info = SpokeInfo::new(game);
+    moves::update_spoke_info(&mut spoke_info, world, game);
 
     let mut nodes_visited_total = 0;
 
     let mut key = Key::from_scratch(&zobrist, game, world);
     let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
+
+    let mut game_orig = game.clone();
+    let spoke_orig = spoke_info.clone();
+    let key_orig = key.clone();
 
     //TODO stop searching if we found a game ending move.
     for depth in 0..len {
@@ -321,14 +325,18 @@ pub fn iterative_deepening2(
             zobrist,
         };
 
-        let mut kk = game.clone();
-        let ss2 = ss.clone();
-        let key_orig = key.clone();
-        let (res, mut mov) =
-            aaaa.negamax(&mut kk, &mut key, &mut ss, ABAB::new(), team, depth, true);
-        assert_eq!(ss, ss2);
+        let (res, mut mov) = aaaa.negamax(
+            &mut game_orig,
+            &mut key,
+            &mut spoke_info,
+            ABAB::new(),
+            team,
+            depth,
+            true,
+        );
+        assert_eq!(spoke_info, spoke_orig);
         assert_eq!(key_orig, key);
-        assert_eq!(&kk, game);
+        assert_eq!(&game_orig, game);
 
         // if *aaaa.nodes_visited >= MAX_NODE_VISIT {
         //     log!("discarding depth {}", depth);
@@ -487,7 +495,6 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
         update_tt: bool,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-
         // if *self.nodes_visited >= MAX_NODE_VISIT {
         //     return (SMALL_VAL, tinyvec::array_vec!());
         // }
@@ -501,7 +508,6 @@ impl<'a> AlphaBeta<'a> {
                 tinyvec::array_vec![],
             );
         }
-
 
         //null move pruning
         //https://www.chessprogramming.org/Null_Move_Pruning#Pseudocode
@@ -624,7 +630,7 @@ impl<'a> AlphaBeta<'a> {
             key.move_update(&self.zobrist, cand.clone(), team, &effect);
 
             spoke_info.process_move(cand.clone(), team, self.world, game);
-            
+
             let (eval, mut m) = self.negamax(
                 game,
                 key,
