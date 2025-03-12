@@ -258,7 +258,7 @@ impl TranspositionTable {
     // }
 }
 
-const STACK_SIZE: usize = 8;
+const STACK_SIZE: usize = 9;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Res {
@@ -275,7 +275,7 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8, zobrist) {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team, STACK_SIZE, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove {
@@ -329,7 +329,7 @@ pub fn iterative_deepening2(
         log!("searching depth={}", depth);
 
         //3 = num iter
-        let mut killer = KillerMoves::new(3 + 4 + 4);
+        let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
         assert!(moves.is_empty());
 
         //let mut history = history.clone();
