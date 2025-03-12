@@ -611,7 +611,7 @@ impl<'a> AlphaBeta<'a> {
         let entry = self
             .prev_cache
             .a
-            .get(&Key::from_scratch(&self.zobrist, game, self.world));
+            .get(&key);
 
         //https://en.wikipedia.org/wiki/Negamax
         let alpha_orig = ab.alpha;
@@ -849,7 +849,7 @@ impl<'a> AlphaBeta<'a> {
 
             self.prev_cache
                 .a
-                .insert(Key::from_scratch(&self.zobrist, game, self.world), entry);
+                .insert(key, entry);
         }
 
         (eval, m)
