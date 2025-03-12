@@ -69,8 +69,14 @@ impl HDir {
         //(0..6).map(HDir::from)
     }
     pub fn rotate_180(&self) -> HDir {
-        //TODO optimize
-        self.rotate60_right().rotate60_right().rotate60_right()
+        match self{
+            HDir::BottomRight => HDir::TopLeft,
+            HDir::Bottom => HDir::Top,
+            HDir::BottomLeft => HDir::TopRight,
+            HDir::TopLeft => HDir::BottomRight,
+            HDir::Top => HDir::Bottom,
+            HDir::TopRight => HDir::BottomLeft,
+        }
     }
     pub fn rotate60_right(&self) -> HDir {
         // 0->4
