@@ -474,6 +474,8 @@ impl Tribe {
         world: &board::MyWorld,
         index: usize,
     ) -> [(i8, Option<EndPoint>); 6] {
+        //hex::HDir::all()
+
         core::array::from_fn(|i| {
             let dd = hex::HDir::from(i as u8);
 

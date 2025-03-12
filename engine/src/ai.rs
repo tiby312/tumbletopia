@@ -239,25 +239,6 @@ pub struct TTEntry {
     value: i64,
 }
 
-struct TranspositionTable {
-    a: std::collections::HashMap<Key, TTEntry>,
-}
-impl TranspositionTable {
-    // pub fn update_inner(&mut self, k: Key, m: TTEntry) {
-    //     if let Some(foo) = self.a.get_mut(&k) {
-    //         *foo = m;
-    //     } else {
-    //         self.a.insert(k, m);
-    //     }
-    // }
-    // pub fn update(&mut self, a: &Key, m: TTEntry) {
-    //     self.update_inner(a, m)
-    // }
-    // pub fn get(&self, a: &GameState) -> Option<&TTEntry> {
-    //     self.a.get(&a.hash_me())
-    // }
-}
-
 const STACK_SIZE: usize = 9;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -301,9 +282,7 @@ pub fn iterative_deepening2(
 ) -> Option<Res> {
     let mut results = None; // = Vec::new();
 
-    let mut table = TranspositionTable {
-        a: std::collections::HashMap::new(),
-    };
+    let mut table = std::collections::HashMap::new();
     let mut evaluator = Evaluator::default();
 
     let mut moves = vec![];
@@ -323,16 +302,16 @@ pub fn iterative_deepening2(
 
     let mut key = Key::from_scratch(&zobrist, game, world);
     let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
-        
+
     //TODO stop searching if we found a game ending move.
     for depth in 0..len {
         let depth = depth + 1;
         log!("searching depth={}", depth);
-    
+
         assert!(moves.is_empty());
 
         let mut aaaa = ai::AlphaBeta {
-            prev_cache: &mut table,
+            ttable: &mut table,
             killer_moves: &mut killer,
             evaluator: &mut evaluator,
             world,
@@ -344,10 +323,11 @@ pub fn iterative_deepening2(
 
         let mut kk = game.clone();
         let ss2 = ss.clone();
-        let key_orig=key.clone();
-        let (res, mut mov) = aaaa.negamax(&mut kk, &mut key, &mut ss, ABAB::new(), team, depth, true);
+        let key_orig = key.clone();
+        let (res, mut mov) =
+            aaaa.negamax(&mut kk, &mut key, &mut ss, ABAB::new(), team, depth, true);
         assert_eq!(ss, ss2);
-        assert_eq!(key_orig,key);
+        assert_eq!(key_orig, key);
         assert_eq!(&kk, game);
 
         // if *aaaa.nodes_visited >= MAX_NODE_VISIT {
@@ -358,7 +338,6 @@ pub fn iterative_deepening2(
         //alpha beta returns the main line with the first move at the end
         //reverse it so that the order is in the order of how they are played out.
         mov.reverse();
-
 
         log!(
             "num visited {} eval {} PV for depth {} :{:?}",
@@ -385,7 +364,7 @@ pub fn iterative_deepening2(
 }
 
 struct AlphaBeta<'a> {
-    prev_cache: &'a mut TranspositionTable,
+    ttable: &'a mut std::collections::HashMap<Key, TTEntry>,
     killer_moves: &'a mut KillerMoves,
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
@@ -421,7 +400,6 @@ impl KillerMoves {
         }
     }
 }
-
 
 impl<'a> AlphaBeta<'a> {
     // fn quiesance(
@@ -556,7 +534,7 @@ impl<'a> AlphaBeta<'a> {
             }
         }
 
-        let entry = self.prev_cache.a.get(&key);
+        let entry = self.ttable.get(&key);
 
         //https://en.wikipedia.org/wiki/Negamax
         let alpha_orig = ab.alpha;
@@ -651,13 +629,7 @@ impl<'a> AlphaBeta<'a> {
         for _ in start_move_index..end_move_index {
             let cand = self.moves.pop().unwrap();
 
-            let effect = cand.apply(
-                team,
-                game,
-                &self.fogs[team],
-                self.world,
-                Some(&spoke_info),
-            );
+            let effect = cand.apply(team, game, &self.fogs[team], self.world, Some(&spoke_info));
 
             key.move_update(&self.zobrist, cand.clone(), team, &effect);
 
@@ -780,7 +752,7 @@ impl<'a> AlphaBeta<'a> {
                 pv: m.clone(),
             };
 
-            self.prev_cache.a.insert(*key, entry);
+            self.ttable.insert(*key, entry);
         }
 
         (eval, m)

@@ -28,7 +28,6 @@ pub fn test_run() {
             &zobrist,
         );
 
-        
         //println!("team {:?} made move {:?}",team,&world.format(&m));
         let effect = m.apply(team, &mut game.tactical, &game.fog[team], world, None);
         game_history.push((m, effect));
