@@ -199,6 +199,10 @@ pub struct SpokeCell {
     pub num_attack: [i64; 2],
 }
 
+pub struct SpokeTempInfo {
+    data: [(i8, Option<unit::EndPoint>); 6],
+}
+
 impl SpokeInfo {
     pub fn new(_game: &GameState) -> Self {
         SpokeInfo {
@@ -215,13 +219,16 @@ impl SpokeInfo {
         team: Team,
         world: &board::MyWorld,
         game: &GameState,
-    ) {
+    ) -> SpokeTempInfo {
         let index = a.moveto;
 
-        for (i, (dis, rest)) in game.factions.iter_end_points(world, index).enumerate() {
+        let mut it = game.factions.iter_end_points(world, index);
+        let arr = std::array::from_fn(|_| it.next().unwrap());
+
+        for (i, (dis, rest)) in arr.iter().enumerate() {
             let hexdir = HDir::from(i as u8);
 
-            let st = if let Some(unit::EndPoint {
+            let st = if let &Some(unit::EndPoint {
                 team: tt, index: _, ..
             }) = rest
             {
@@ -241,6 +248,8 @@ impl SpokeInfo {
                 self.set(index2 as usize, hexdir.rotate_180(), Some(team));
             }
         }
+
+        SpokeTempInfo { data: arr }
     }
 
     pub fn undo_move(
@@ -250,11 +259,15 @@ impl SpokeInfo {
         team: Team,
         world: &board::MyWorld,
         game: &GameState,
+        spoke_temp: SpokeTempInfo,
     ) {
         let index = a.moveto;
 
-        let mut it = game.factions.iter_end_points(world, index);
-        let arr: [_; 6] = std::array::from_fn(|_| it.next().unwrap());
+        // let mut it = game.factions.iter_end_points(world, index);
+        // let arr: [(i8, Option<unit::EndPoint>); 6] = std::array::from_fn(|_| it.next().unwrap());
+        // let kk:&[(i8, Option<unit::EndPoint>); 6]=&spoke_temp.data;
+        // assert!(kk==&arr);
+        let arr = &spoke_temp.data;
 
         for (i, (dis, rest)) in arr.iter().enumerate() {
             let hexdir = HDir::from(i as u8);

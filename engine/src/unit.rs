@@ -437,6 +437,7 @@ pub fn ray(
     )
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct EndPoint {
     pub index: usize,
     pub height: i8,

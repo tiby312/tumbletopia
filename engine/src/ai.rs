@@ -629,7 +629,7 @@ impl<'a> AlphaBeta<'a> {
 
             key.move_update(&self.zobrist, cand.clone(), team, &effect);
 
-            spoke_info.process_move(cand.clone(), team, self.world, game);
+            let temp = spoke_info.process_move(cand.clone(), team, self.world, game);
 
             let (eval, mut m) = self.negamax(
                 game,
@@ -642,7 +642,7 @@ impl<'a> AlphaBeta<'a> {
             );
             let eval = -eval;
 
-            spoke_info.undo_move(cand.clone(), effect.clone(), team, self.world, game);
+            spoke_info.undo_move(cand.clone(), effect.clone(), team, self.world, game, temp);
             // log!(
             //     "consid depth:{} {:?}:{:?}",
             //     depth,
