@@ -469,16 +469,12 @@ impl Tribe {
 
         s
     }
-    pub fn iter_end_points(
-        &self,
-        world: &board::MyWorld,
+    pub fn iter_end_points<'a>(
+        &'a self,
+        world: &'a board::MyWorld,
         index: usize,
-    ) -> [(i8, Option<EndPoint>); 6] {
-        //hex::HDir::all()
-
-        core::array::from_fn(|i| {
-            let dd = hex::HDir::from(i as u8);
-
+    ) -> impl Iterator<Item = (i8, Option<EndPoint>)> + use<'a> {
+        hex::HDir::all().map(move |dd| {
             let (dis, it) = ray(Axial::from_index(index), dd, world);
             for (d, index2) in it.enumerate() {
                 if let Some(pp) = self.get_cell_inner(index2 as usize) {
@@ -495,6 +491,10 @@ impl Tribe {
 
             (dis, None)
         })
+
+        // core::array::from_fn(|i| {
+
+        // })
     }
 
     pub fn new() -> Tribe {

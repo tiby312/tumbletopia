@@ -218,15 +218,10 @@ impl SpokeInfo {
     ) {
         let index = a.moveto;
 
-        for (i, (dis, rest)) in game
-            .factions
-            .iter_end_points(world, index)
-            .iter()
-            .enumerate()
-        {
+        for (i, (dis, rest)) in game.factions.iter_end_points(world, index).enumerate() {
             let hexdir = HDir::from(i as u8);
 
-            let st = if let &Some(unit::EndPoint {
+            let st = if let Some(unit::EndPoint {
                 team: tt, index: _, ..
             }) = rest
             {
@@ -241,7 +236,7 @@ impl SpokeInfo {
 
             let mut index2: isize = index as isize;
 
-            for _ in 0..*dis - 1 + st {
+            for _ in 0..dis - 1 + st {
                 index2 += stride;
                 self.set(index2 as usize, hexdir.rotate_180(), Some(team));
             }
@@ -258,7 +253,8 @@ impl SpokeInfo {
     ) {
         let index = a.moveto;
 
-        let arr = game.factions.iter_end_points(world, index);
+        let mut it = game.factions.iter_end_points(world, index);
+        let arr: [_; 6] = std::array::from_fn(|_| it.next().unwrap());
 
         for (i, (dis, rest)) in arr.iter().enumerate() {
             let hexdir = HDir::from(i as u8);
@@ -352,14 +348,9 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
 
     //Update spoke info
     for index in world.get_game_cells().inner.iter_ones() {
-        for (i, (_, rest)) in game
-            .factions
-            .iter_end_points(world, index)
-            .iter()
-            .enumerate()
-        {
+        for (i, (_, rest)) in game.factions.iter_end_points(world, index).enumerate() {
             let v = if let Some(unit::EndPoint { team, .. }) = rest {
-                Some(*team)
+                Some(team)
             } else {
                 None
             };
