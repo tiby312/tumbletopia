@@ -487,14 +487,10 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
         update_tt: bool,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        // 1107 with TT
-        // 1117
+
         // if *self.nodes_visited >= MAX_NODE_VISIT {
         //     return (SMALL_VAL, tinyvec::array_vec!());
         // }
-
-        // let mut spoke_info = moves::SpokeInfo::new(game);
-        // moves::update_spoke_info(&mut spoke_info, self.world, game);
 
         if depth == 0 {
             return (
@@ -504,15 +500,14 @@ impl<'a> AlphaBeta<'a> {
                         .absolute_evaluate(game, self.world, &spoke_info, false),
                 tinyvec::array_vec![],
             );
-            //return self.quiesance(game, fogs, ab, team, /*4*/ 4);
         }
 
+
         //null move pruning
+        //https://www.chessprogramming.org/Null_Move_Pruning#Pseudocode
         {
             let r = 2;
 
-            //pos.make_null_move();
-            //int v = -search(pos, -beta, -(beta - 1), depth - r);
             let mut ab2 = ab.clone();
             ab2.alpha = -ab.beta;
             ab2.beta = -(ab.beta - 1);
@@ -527,9 +522,7 @@ impl<'a> AlphaBeta<'a> {
             );
             let eval = -eval;
 
-            //pos.undo_null_move();
             if eval >= ab.beta {
-                //log!("NULL MOVE PRUNINGGG");
                 return (eval, m);
             }
         }
@@ -554,8 +547,6 @@ impl<'a> AlphaBeta<'a> {
             }
 
             if ab.alpha >= ab.beta {
-                //log!("Found a hit!");
-
                 return (entry.value, entry.pv.clone());
             }
         }
@@ -623,7 +614,6 @@ impl<'a> AlphaBeta<'a> {
         //     )
         // );
 
-        // alpha beta not workinggggggg
         //tc-s-d-re-srces-s--
         let mut ab_iter = ab.ab_iter();
         for _ in start_move_index..end_move_index {
@@ -634,67 +624,7 @@ impl<'a> AlphaBeta<'a> {
             key.move_update(&self.zobrist, cand.clone(), team, &effect);
 
             spoke_info.process_move(cand.clone(), team, self.world, game);
-            // {
-            //     let mut kk = spoke_info.clone();
-            //     kk.process_move(cand.clone(), team, self.world, game);
-            //     kk.undo_move(cand.clone(), effect.clone(), team, self.world, game);
-            //     kk.process_move(cand.clone(), team, self.world, game);
-
-            //     cand.apply(team, &mut gg, &self.fogs[team], self.world);
-            //     let mut kk2 = SpokeInfo::new(&gg);
-            //     moves::update_spoke_info(&mut kk2, self.world, &mut gg);
-            //     //println!("ok");
-
-            //     for index in self.world.get_game_cells().inner.iter_ones() {
-            //         //let index=cand.clone().moveto;
-            //         for dir in hex::HDir::all() {
-            //             let a = kk.get(index, dir);
-            //             let b = kk2.get(index, dir);
-
-            //             assert_eq!(a, b);
-            //         }
-
-            //         for (i, (_, rest)) in game
-            //             .factions
-            //             .iter_end_points(self.world, index)
-            //             .iter()
-            //             .enumerate()
-            //         {
-            //             //let hexdir=hex::HDir::from(i as u8);
-
-            //             if let Some(rest) = rest {
-            //                 // let a=kk.get(rest.index,dir);
-            //                 // let b=kk2.get(rest.index,dir);
-            //                 for dir in hex::HDir::all() {
-            //                     let a = kk.get(rest.index, dir);
-            //                     let b = kk2.get(rest.index, dir);
-
-            //                     assert_eq!(
-            //                         a,
-            //                         b,
-            //                         "{:?}",
-            //                         self.world.format(&ActualMove { moveto: rest.index })
-            //                     );
-            //                 }
-            //             }
-            //         }
-            //     }
-
-            //     //let j=kk.data & kk2.data;
-            //     //println!("{:?}",j.iter_ones().map())
-            //     // for a in kk.data.iter(){
-
-            //     // }
-            //     assert_eq!(kk.data[0], kk2.data[0]);
-
-            //     // for (a,b) in kk.data[1].iter_ones().zip(kk2.data[1].iter_ones()){
-            //     //     let ff=vec![ActualMove{moveto:a},ActualMove{moveto:b}];
-
-            //     //     assert_eq!(a,b,"issue:{:?}",self.world.format(&ff));
-            //     // }
-            //     assert_eq!(kk.data[1], kk2.data[1]);
-            // }
-
+            
             let (eval, mut m) = self.negamax(
                 game,
                 key,

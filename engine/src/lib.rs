@@ -108,12 +108,22 @@ impl Zobrist {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
+macro_rules! log {
+    ($($tt:tt)*) => {
+        gloo_console::log!(format!($($tt)*))
+        //println!($($tt)*)
+    };
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 macro_rules! log {
     ($($tt:tt)*) => {
         //gloo_console::log!(format!($($tt)*))
         println!($($tt)*)
     };
 }
+
 
 pub(crate) use log;
 
