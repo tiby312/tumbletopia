@@ -478,13 +478,13 @@ impl ActualMove {
         };
 
         game.factions.remove_inner(target_cell);
-        game.factions.add_cell_inner(target_cell, stack_size, team);
+        game.factions.add_cell_inner(target_cell, stack_size as u8, team);
 
         MoveEffect {
             pushpull: e,
             powerup: PowerupAction::None,
             destroyed_unit,
-            height: stack_size,
+            height: stack_size as u8,
         }
     }
 }

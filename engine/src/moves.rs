@@ -196,7 +196,7 @@ impl Thing {
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct SpokeCell {
     raw: [Thing; 6],
-    pub num_attack: [u8; 2],
+    pub num_attack: [i64; 2],
 }
 
 impl SpokeInfo {
@@ -360,10 +360,10 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
     }
 }
 
-pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> [i64; 2] {
+pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> &[i64; 2] {
     //let mut num_attack: [i64; 2] = [0, 0];
     let foo = &spoke_info.data[index];
-    foo.num_attack.map(|x| x as i64)
+    &foo.num_attack
     // for t in foo.iter() {
     //     match t {
     //         Thing::None => {}
