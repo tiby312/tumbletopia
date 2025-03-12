@@ -52,9 +52,22 @@ pub enum HDir {
     Top = 4,
     TopRight = 5,
 }
+
+const ALL:[HDir;6]=[
+    HDir::BottomRight,
+    HDir::Bottom,
+    HDir::BottomLeft,
+    HDir::TopLeft,
+    HDir::Top,
+    HDir::TopRight
+];
+
+
 impl HDir {
     pub fn all() -> impl Iterator<Item = HDir> {
-        (0..6).map(HDir::from)
+        ALL.iter().copied()
+        
+        //(0..6).map(HDir::from)
     }
     pub fn rotate_180(&self) -> HDir {
         //TODO optimize

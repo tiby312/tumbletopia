@@ -297,11 +297,9 @@ pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> [i64; 2] {
 
     for dir in HDir::all() {
         if let Some(team) = spoke_info.get(index, dir) {
-            if team == Team::Neutral {
-                continue;
+            if team != Team::Neutral {
+                num_attack[team] += 1;
             }
-            num_attack[team] += 1;
-            continue;
         }
     }
     num_attack
