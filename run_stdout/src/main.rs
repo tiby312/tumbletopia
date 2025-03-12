@@ -7,7 +7,7 @@ fn main() {
 }
 
 pub fn test_run() {
-    let world = &engine::board::MyWorld::load_from_string("ddsss-r--fuc--scr-d");
+    let world = &engine::board::MyWorld::load_from_string("bb-t-bbsrd-s----s--");
 
     let mut game_history = engine::MoveHistory::new();
     let mut game = world.starting_state.clone();
@@ -28,9 +28,7 @@ pub fn test_run() {
             &zobrist,
         );
 
-        panic!();
-
-
+        
         //println!("team {:?} made move {:?}",team,&world.format(&m));
         let effect = m.apply(team, &mut game.tactical, &game.fog[team], world, None);
         game_history.push((m, effect));
