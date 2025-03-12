@@ -322,17 +322,14 @@ pub fn iterative_deepening2(
     let mut nodes_visited_total = 0;
 
     let key = Key::from_scratch(&zobrist, game, world);
-
+    let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
+        
     //TODO stop searching if we found a game ending move.
     for depth in 0..len {
         let depth = depth + 1;
         log!("searching depth={}", depth);
-
-        //3 = num iter
-        let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
+    
         assert!(moves.is_empty());
-
-        //let mut history = history.clone();
 
         let mut aaaa = ai::AlphaBeta {
             prev_cache: &mut table,
@@ -346,8 +343,8 @@ pub fn iterative_deepening2(
         };
 
         let mut kk = game.clone();
-
-        let mut ss2 = ss.clone();
+        let ss2 = ss.clone();
+        
         let (res, mut mov) = aaaa.negamax(&mut kk, key, &mut ss, ABAB::new(), team, depth, true);
         assert_eq!(ss, ss2);
         assert_eq!(&kk, game);
@@ -361,32 +358,6 @@ pub fn iterative_deepening2(
         //reverse it so that the order is in the order of how they are played out.
         mov.reverse();
 
-        // {
-        //     //Update the transposition table in the right order
-        //     let mut gg = kk.clone();
-        //     let mut tt = team;
-
-        //     let mut ggg=vec!();
-        //     for (i,m) in mov.iter().enumerate(){
-        //         m.apply(tt,&mut gg,&fogs[tt.index()],world);
-
-        //         let entry=TTEntry{
-        //             flag:Flag::Exact,
-        //             pv:tinyvec::ArrayVec::from_iter(mov[i..].iter().cloned()),
-        //             //TODO correct???
-        //             depth:depth,
-        //             value:res
-        //         };
-
-        //         ggg.push((gg.hash_me(),entry));
-
-        //         tt=tt.not();
-        //     }
-
-        //     for (a,b) in ggg.into_iter().rev(){
-        //         table.update_inner(a, b);
-        //     }
-        // }
 
         log!(
             "num visited {} eval {} PV for depth {} :{:?}",
@@ -409,16 +380,6 @@ pub fn iterative_deepening2(
 
     log!("nodes visited={}", nodes_visited_total);
 
-    // console_dbg!("transpotiion table len=", table.a.len());
-
-    // let mov = results.unwrap();
-
-    // let m = mov;
-
-    // console_dbg!("AI evaluation::", m.mov, m.eval);
-
-    // (m.mov, m.eval)
-    // Res { line: mov, eval: () }
     results
 }
 

@@ -111,6 +111,7 @@ impl Zobrist {
 macro_rules! log {
     ($($tt:tt)*) => {
         //gloo_console::log!(format!($($tt)*))
+        println!($($tt)*)
     };
 }
 
