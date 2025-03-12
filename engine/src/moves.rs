@@ -213,6 +213,41 @@ impl SpokeInfo {
         }
     }
 
+    pub fn process_move_better(
+        &mut self,
+        a: ActualMove,
+        team: Team,
+        world: &board::MyWorld,
+        game: &GameState,
+    ) -> SpokeTempInfo {
+        let index = a.moveto;
+        let mut it = hex::HDir::all().map(move |dd| {
+            let (dis, it) = unit::ray(Axial::from_index(index), dd, world);
+            for (d, index2) in it.enumerate() {
+                assert!(index != index2 as usize);
+                self.set(index2 as usize, dd.rotate_180(), Some(team));
+                if let Some((hh, tt)) = game.factions.get_cell_inner(index2 as usize) {
+                    self.set(index, dd, Some(tt));
+
+                    return (
+                        d as i8 + 1,
+                        Some(unit::EndPoint {
+                            index: index2 as usize,
+                            height: hh as i8,
+                            team: tt,
+                        }),
+                    );
+                }
+            }
+            self.set(index, dd, None);
+            (dis, None)
+        });
+
+        SpokeTempInfo {
+            data: std::array::from_fn(|_| it.next().unwrap()),
+        }
+    }
+
     pub fn process_move(
         &mut self,
         a: ActualMove,
@@ -225,7 +260,7 @@ impl SpokeInfo {
         //TODO this is iterating twice.
         //instead of finding end points then backtracking
         //should instead update as you go.
-        
+
         let mut it = game.factions.iter_end_points(world, index);
         let arr = std::array::from_fn(|_| it.next().unwrap());
 
@@ -273,8 +308,7 @@ impl SpokeInfo {
         // assert!(kk==&arr);
         let arr = &spoke_temp.data;
 
-        for (hexdir,(i, (dis, rest))) in HDir::all().zip(arr.iter().enumerate()) {
-            
+        for (hexdir, (i, (dis, rest))) in HDir::all().zip(arr.iter().enumerate()) {
             let st = if let &Some(unit::EndPoint {
                 team: tt, index: _, ..
             }) = rest

@@ -307,7 +307,7 @@ pub fn iterative_deepening2(
     let spoke_orig = spoke_info.clone();
     let key_orig = key.clone();
 
-    let mut history_heur:Vec<_>=(0..board::TABLE_SIZE).map(|_|0).collect();
+    let mut history_heur: Vec<_> = (0..board::TABLE_SIZE).map(|_| 0).collect();
     //TODO stop searching if we found a game ending move.
     for depth in 0..len {
         let depth = depth + 1;
@@ -324,7 +324,7 @@ pub fn iterative_deepening2(
             nodes_visited: &mut nodes_visited_total,
             fogs,
             zobrist,
-            history_heur:&mut history_heur
+            history_heur: &mut history_heur,
         };
 
         let (res, mut mov) = aaaa.negamax(
@@ -382,7 +382,7 @@ struct AlphaBeta<'a> {
     nodes_visited: &'a mut usize,
     fogs: &'a [mesh::small_mesh::SmallMesh; 2],
     zobrist: &'a Zobrist,
-    history_heur:&'a mut [usize]
+    history_heur: &'a mut [usize],
 }
 
 struct KillerMoves {
@@ -611,7 +611,6 @@ impl<'a> AlphaBeta<'a> {
 
         //TODO https://www.chessprogramming.org/History_Heuristic
 
-
         moves.sort_unstable_by_key(|f| move_value(f));
 
         // log!(
@@ -635,7 +634,7 @@ impl<'a> AlphaBeta<'a> {
 
             key.move_update(&self.zobrist, cand.clone(), team, &effect);
 
-            let temp = spoke_info.process_move(cand.clone(), team, self.world, game);
+            let temp = spoke_info.process_move_better(cand.clone(), team, self.world, game);
 
             let (eval, mut m) = self.negamax(
                 game,
@@ -666,7 +665,7 @@ impl<'a> AlphaBeta<'a> {
                 if !loud_moves.inner[cc.moveto] {
                     self.killer_moves.consider(depth, cc.clone());
 
-                    self.history_heur[cc.moveto]+=depth*depth;
+                    self.history_heur[cc.moveto] += depth * depth;
                 }
 
                 self.moves.drain(start_move_index..);
