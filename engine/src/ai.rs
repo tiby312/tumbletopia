@@ -321,7 +321,7 @@ pub fn iterative_deepening2(
 
     let mut nodes_visited_total = 0;
 
-    let key = Key::from_scratch(&zobrist, game, world);
+    let mut key = Key::from_scratch(&zobrist, game, world);
     let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
         
     //TODO stop searching if we found a game ending move.
@@ -344,9 +344,10 @@ pub fn iterative_deepening2(
 
         let mut kk = game.clone();
         let ss2 = ss.clone();
-        
-        let (res, mut mov) = aaaa.negamax(&mut kk, key, &mut ss, ABAB::new(), team, depth, true);
+        let key_orig=key.clone();
+        let (res, mut mov) = aaaa.negamax(&mut kk, &mut key, &mut ss, ABAB::new(), team, depth, true);
         assert_eq!(ss, ss2);
+        assert_eq!(key_orig,key);
         assert_eq!(&kk, game);
 
         // if *aaaa.nodes_visited >= MAX_NODE_VISIT {
@@ -389,7 +390,7 @@ struct AlphaBeta<'a> {
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
     moves: &'a mut Vec<ActualMove>,
-    nodes_visited: &'a mut usize, //history: &'a mut MoveHistory,
+    nodes_visited: &'a mut usize,
     fogs: &'a [mesh::small_mesh::SmallMesh; 2],
     zobrist: &'a Zobrist,
 }
@@ -421,24 +422,6 @@ impl KillerMoves {
     }
 }
 
-// pub fn evaluate_a_continuation(
-//     game: &GameState,
-//     world: &board::MyWorld,
-//     team_to_play: ActiveTeam,
-//     m: impl IntoIterator<Item = ActualMove>,
-// ) -> Eval {
-//     let mut game = game.clone();
-//     let mut team = team_to_play;
-//     for cand in m {
-//         {
-//             let j = cand;
-//             j.apply(team, &mut game, world)
-//         };
-//         team = team.not();
-//     }
-
-//     Evaluator::default().absolute_evaluate(&game, world, false)
-// }
 
 impl<'a> AlphaBeta<'a> {
     // fn quiesance(
@@ -519,7 +502,7 @@ impl<'a> AlphaBeta<'a> {
     fn negamax(
         &mut self,
         game: &mut GameState,
-        mut key: Key,
+        key: &mut Key,
         spoke_info: &mut SpokeInfo,
         mut ab: ABAB,
         team: Team,
@@ -684,12 +667,10 @@ impl<'a> AlphaBeta<'a> {
         for _ in start_move_index..end_move_index {
             let cand = self.moves.pop().unwrap();
 
-            let mut gg = game.clone();
-
             let effect = cand.apply(
                 team,
                 game,
-                &self.fogs[team.index()],
+                &self.fogs[team],
                 self.world,
                 Some(&spoke_info),
             );
@@ -815,7 +796,7 @@ impl<'a> AlphaBeta<'a> {
                 pv: m.clone(),
             };
 
-            self.prev_cache.a.insert(key, entry);
+            self.prev_cache.a.insert(*key, entry);
         }
 
         (eval, m)
