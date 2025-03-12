@@ -145,30 +145,48 @@ pub enum MoveType {
     Fresh,
 }
 
-#[derive(PartialEq, Eq,Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct SpokeInfo {
     //pub data: [bitvec::BitArr!(for 256*6); 2],
-    pub data:[[Thing;6];256]
+    pub data: [[Thing; 6]; 256],
 }
 
+// 3 bits for num white
+// 3 bits for num black
+// 2 bits left over
+
+//0
+//1
+//2
+//3
+//4
+//5
+//6
+
+//   5   5   5   5   5   5
+// |---|---|---|---|---|---|
+//
+//
+//
+//
 // impl std::cmp::PartialEq for SpokeInfo {
 //     fn eq(&self, other: &Self) -> bool {
 //         self.data == other.data
 //     }
 // }
 
-#[derive(Copy,Clone,Debug,PartialEq,Eq)]
-pub enum Thing{
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Thing {
     None,
     White,
     Black,
-    Neutral
+    Neutral,
 }
 
 impl SpokeInfo {
     pub fn new(_game: &GameState) -> Self {
         SpokeInfo {
-            data: [[Thing::None;6];256],
+            data: [[Thing::None; 6]; 256],
         }
     }
 
@@ -265,24 +283,15 @@ impl SpokeInfo {
             Some(Team::Neutral) => Thing::Neutral,
         };
 
-        self.data[index][dir as usize]=tt;
+        self.data[index][dir as usize] = tt;
     }
     pub fn get(&self, index: usize, dir: HDir) -> Option<Team> {
-        match self.data[index][dir as usize]{
+        match self.data[index][dir as usize] {
             Thing::None => None,
             Thing::White => Some(Team::White),
             Thing::Black => Some(Team::Black),
             Thing::Neutral => Some(Team::Neutral),
         }
-        // let first_bit = self.data[0][6 * index + dir as usize];
-        // let second_bit = self.data[1][6 * index + dir as usize];
-
-        // match (first_bit, second_bit) {
-        //     (false, false) => None,
-        //     (false, true) => Some(Team::White),
-        //     (true, false) => Some(Team::Black),
-        //     (true, true) => Some(Team::Neutral),
-        // }
     }
 }
 
@@ -310,12 +319,13 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
 
 pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> [i64; 2] {
     let mut num_attack: [i64; 2] = [0, 0];
-
-    for dir in HDir::all() {
-        if let Some(team) = spoke_info.get(index, dir) {
-            if team != Team::Neutral {
-                num_attack[team] += 1;
-            }
+    let foo = &spoke_info.data[index];
+    for t in foo.iter() {
+        match t {
+            Thing::None => {}
+            Thing::White => num_attack[0] += 1,
+            Thing::Black => num_attack[1] += 1,
+            Thing::Neutral => {}
         }
     }
     num_attack
