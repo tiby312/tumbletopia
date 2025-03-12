@@ -1,3 +1,5 @@
+use engine::Zobrist;
+
 fn main() {
     for _ in 0..30 {
         test_run();
@@ -9,7 +11,7 @@ pub fn test_run() {
 
     let mut game_history = engine::MoveHistory::new();
     let mut game = world.starting_state.clone();
-
+    let zobrist = Zobrist::new();
     let mut team_iter = engine::Team::White.iter();
     let foo = loop {
         let team = team_iter.next().unwrap();
@@ -17,7 +19,14 @@ pub fn test_run() {
             break foo;
         }
         let mut ai_state = game.tactical.bake_fog(&game.fog[team]);
-        let m = engine::ai::calculate_move(&mut ai_state, &game.fog, world, team, &game_history);
+        let m = engine::ai::calculate_move(
+            &mut ai_state,
+            &game.fog,
+            world,
+            team,
+            &game_history,
+            &zobrist,
+        );
         //println!("team {:?} made move {:?}",team,&world.format(&m));
         let effect = m.apply(team, &mut game.tactical, &game.fog[team], world, None);
         game_history.push((m, effect));

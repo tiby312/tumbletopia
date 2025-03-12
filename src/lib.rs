@@ -5,6 +5,7 @@ use engine::main_logic::MouseEvent;
 use cgmath::Vector2;
 use engine::mesh;
 use engine::MoveHistory;
+use engine::Zobrist;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -219,6 +220,7 @@ pub async fn worker_entry2() {
             &res.world,
             res.team,
             &res.history,
+            &res.zobrist,
         );
         //console_dbg!("worker:finished processing");
         tx.post_message(AiResponse { inner: res });
@@ -273,6 +275,7 @@ struct AiCommand {
     world: board::MyWorld,
     team: Team,
     history: MoveHistory,
+    zobrist: Zobrist,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -536,6 +539,7 @@ pub async fn game_play_thread(
 
     let mut team_gen = world.starting_team.iter();
 
+    let zobrist = Zobrist::new();
     //Loop over each team!
     loop {
         let team = team_gen.next().unwrap();
@@ -572,6 +576,7 @@ pub async fn game_play_thread(
                         world: world.clone(),
                         team,
                         history: game_history.clone(),
+                        zobrist: zobrist.clone(),
                     });
 
                     use futures::FutureExt;
@@ -595,6 +600,7 @@ pub async fn game_play_thread(
                         &world,
                         team,
                         &game_history,
+                        &zobrist,
                     )
                 }
             };

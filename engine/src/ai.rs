@@ -273,8 +273,9 @@ pub fn calculate_move(
     world: &board::MyWorld,
     team: Team,
     move_history: &MoveHistory,
+    zobrist: &Zobrist,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8) {
+    if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove {
@@ -296,6 +297,7 @@ pub fn iterative_deepening2(
     world: &board::MyWorld,
     team: Team,
     len: usize, //move_history: &MoveHistory,
+    zobrist: &Zobrist,
 ) -> Option<Res> {
     let mut results = None; // = Vec::new();
 
@@ -312,7 +314,7 @@ pub fn iterative_deepening2(
     //     history.push(f.clone());
     // }
 
-    let zobrist = &Zobrist::new();
+    //let zobrist = &Zobrist::new();
 
     let mut ss = SpokeInfo::new(game);
     moves::update_spoke_info(&mut ss, world, game);

@@ -22,8 +22,9 @@ fn get_index(height: u8, team: Team) -> usize {
     k
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Zobrist {
-    inner: [[u64; 6 * 3]; crate::board::TABLE_SIZE],
+    inner: Vec<[u64; 6 * 3]>,
 }
 
 #[derive(Hash, Copy, Clone, PartialEq, Eq, Debug)]
@@ -99,7 +100,9 @@ impl Zobrist {
         use rand_chacha::rand_core::SeedableRng;
         let mut rng = rand_chacha::ChaCha12Rng::seed_from_u64(0x42);
 
-        let inner = std::array::from_fn(|jj| std::array::from_fn(|i| rng.next_u64()));
+        let inner = (0..board::TABLE_SIZE)
+            .map(|_| std::array::from_fn(|i| rng.next_u64()))
+            .collect();
 
         Zobrist { inner }
     }
