@@ -222,6 +222,10 @@ impl SpokeInfo {
     ) -> SpokeTempInfo {
         let index = a.moveto;
 
+        //TODO this is iterating twice.
+        //instead of finding end points then backtracking
+        //should instead update as you go.
+        
         let mut it = game.factions.iter_end_points(world, index);
         let arr = std::array::from_fn(|_| it.next().unwrap());
 
