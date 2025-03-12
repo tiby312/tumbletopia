@@ -145,20 +145,30 @@ pub enum MoveType {
     Fresh,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(PartialEq, Eq,Copy, Clone, Debug)]
 pub struct SpokeInfo {
-    pub data: [bitvec::BitArr!(for 256*6); 2],
+    //pub data: [bitvec::BitArr!(for 256*6); 2],
+    pub data:[[Thing;6];256]
 }
 
-impl std::cmp::PartialEq for SpokeInfo {
-    fn eq(&self, other: &Self) -> bool {
-        self.data == other.data
-    }
+// impl std::cmp::PartialEq for SpokeInfo {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.data == other.data
+//     }
+// }
+
+#[derive(Copy,Clone,Debug,PartialEq,Eq)]
+pub enum Thing{
+    None,
+    White,
+    Black,
+    Neutral
 }
+
 impl SpokeInfo {
     pub fn new(_game: &GameState) -> Self {
         SpokeInfo {
-            data: std::array::from_fn(|_| bitvec::bitarr![0;256*6]),
+            data: [[Thing::None;6];256],
         }
     }
 
@@ -248,25 +258,31 @@ impl SpokeInfo {
     }
 
     fn set(&mut self, index: usize, dir: HDir, val: Option<Team>) {
-        let (first_bit, second_bit) = match val {
-            None => (false, false),
-            Some(Team::White) => (false, true),
-            Some(Team::Black) => (true, false),
-            Some(Team::Neutral) => (true, true),
+        let tt = match val {
+            None => Thing::None,
+            Some(Team::White) => Thing::White,
+            Some(Team::Black) => Thing::Black,
+            Some(Team::Neutral) => Thing::Neutral,
         };
-        self.data[0].set(6 * index + dir as usize, first_bit);
-        self.data[1].set(6 * index + dir as usize, second_bit);
+
+        self.data[index][dir as usize]=tt;
     }
     pub fn get(&self, index: usize, dir: HDir) -> Option<Team> {
-        let first_bit = self.data[0][6 * index + dir as usize];
-        let second_bit = self.data[1][6 * index + dir as usize];
-
-        match (first_bit, second_bit) {
-            (false, false) => None,
-            (false, true) => Some(Team::White),
-            (true, false) => Some(Team::Black),
-            (true, true) => Some(Team::Neutral),
+        match self.data[index][dir as usize]{
+            Thing::None => None,
+            Thing::White => Some(Team::White),
+            Thing::Black => Some(Team::Black),
+            Thing::Neutral => Some(Team::Neutral),
         }
+        // let first_bit = self.data[0][6 * index + dir as usize];
+        // let second_bit = self.data[1][6 * index + dir as usize];
+
+        // match (first_bit, second_bit) {
+        //     (false, false) => None,
+        //     (false, true) => Some(Team::White),
+        //     (true, false) => Some(Team::Black),
+        //     (true, true) => Some(Team::Neutral),
+        // }
     }
 }
 
