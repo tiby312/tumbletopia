@@ -256,7 +256,7 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
-    if let Some(mo) = iterative_deepening2(game, fogs, world, team, STACK_SIZE, zobrist) {
+    let m=if let Some(mo) = iterative_deepening2(game, fogs, world, team, STACK_SIZE, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove {
@@ -269,7 +269,10 @@ pub fn calculate_move(
         ActualMove {
             moveto: hex::PASS_MOVE_INDEX,
         }
-    }
+    };
+
+    log!("Ai {:?} has selected move = {:?}",team,world.format(&m));
+    m
 }
 
 pub fn iterative_deepening2(
@@ -568,6 +571,12 @@ impl<'a> AlphaBeta<'a> {
         let loud_moves = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
+
+        // let all_moves=if depth<3{
+        //     loud_moves.clone()
+        // }else{
+        //     all_moves
+        // };
 
         self.moves.extend(
             all_moves

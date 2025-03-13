@@ -21,6 +21,7 @@ use futures::{
     channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
 };
+use hex::PASS_MOVE_INDEX;
 
 #[derive(Debug, Clone)]
 pub enum AnimationCommand {
@@ -672,6 +673,16 @@ pub async fn animate_move<'a>(
     world: &board::MyWorld,
     data: &mut CommandSender,
 ) -> &'a ActualMove {
+
+    if aa.moveto==PASS_MOVE_INDEX{
+        return aa;
+    }
+    assert!(
+        world.get_game_cells().inner[aa.moveto as usize],
+        "uhoh {:?}",
+        world.format(aa)
+    );
+    
     let ff = state.tactical.bake_fog(&state.fog[team.index()]);
 
     let end_points = ff.factions.iter_end_points(world, aa.moveto);

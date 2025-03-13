@@ -221,6 +221,11 @@ impl SpokeInfo {
         game: &GameState,
     ) -> SpokeTempInfo {
         let index = a.moveto;
+        assert!(
+            world.get_game_cells().inner[index as usize],
+            "uhoh {:?}",
+            world.format(&a)
+        );
         let mut it = hex::HDir::all().map(move |dd| {
             let (dis, it) = unit::ray(Axial::from_index(index), dd, world);
             for (d, index2) in it.enumerate() {
