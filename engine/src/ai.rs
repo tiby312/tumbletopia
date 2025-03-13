@@ -676,7 +676,18 @@ impl<'a> AlphaBeta<'a> {
         assert_eq!(self.moves.len(), start_move_index);
 
         let (eval, m) = ab_iter.finish();
+        
+        let eval=if m.is_none(){
+            team.value()
+                    * self
+                        .evaluator
+                        .absolute_evaluate(game, self.world, &spoke_info, false)
+        }else{
+            eval
+        };
+
         let m = m.unwrap_or_else(|| tinyvec::array_vec![]);
+
 
         if update_tt {
             //tc-s-d-re-srces-s--
