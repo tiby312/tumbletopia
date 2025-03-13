@@ -256,7 +256,7 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
-    let m=if let Some(mo) = iterative_deepening2(game, fogs, world, team, STACK_SIZE, zobrist) {
+    let m=if let Some(mo) = iterative_deepening2(game, fogs, world, team, 6, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove {
@@ -415,81 +415,103 @@ impl KillerMoves {
     }
 }
 
+
 impl<'a> AlphaBeta<'a> {
-    // fn quiesance(
-    //     &mut self,
-    //     game: &mut GameState,
-    //     fogs: &[SmallMesh; 2],
-    //     mut ab: ABAB,
-    //     team: Team,
-    //     depth: usize,
-    // ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-    //     *self.nodes_visited += 1;
+    fn quiesance(
+        &mut self,
+        game: &mut GameState,
+        key: &mut Key,
+        spoke_info: &mut SpokeInfo,
+        mut ab: ABAB,
+        team: Team,
+        depth: usize,
+    ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
+        *self.nodes_visited += 1;
 
-    //     // if let Some(g) = game.game_is_over(self.world, team, self.history) {
-    //     //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
-    //     // }
-    //     let mut spoke_info = moves::SpokeInfo::new(game);
-    //     moves::update_spoke_info(&mut spoke_info, self.world, game);
+        // if let Some(g) = game.game_is_over(self.world, team, self.history) {
+        //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
+        // }
+        // let mut spoke_info = moves::SpokeInfo::new(game);
+        // moves::update_spoke_info(&mut spoke_info, self.world, game);
 
-    //     if depth == 0 {
-    //         return (
-    //             self.evaluator
-    //                 .absolute_evaluate(game, self.world, &spoke_info, false),
-    //             tinyvec::array_vec![],
-    //         );
-    //     }
+        if depth == 0 {
+            return (
+                team.value()*self.evaluator
+                    .absolute_evaluate(game, self.world, &spoke_info, false),
+                tinyvec::array_vec![],
+            );
+        }
 
-    //     let captures = game.generate_loud_moves(self.world, team, &spoke_info);
+        let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
-    //     let start_move_index = self.moves.len();
+        let start_move_index = self.moves.len();
 
-    //     self.moves.extend(captures.inner.iter_ones().map(|x| {
-    //         let x: u8 = x.try_into().unwrap();
-    //         x
-    //     }));
+        self.moves.extend(captures.inner.iter_ones().map(|x| {
+            ActualMove{moveto:x}
+        }));
 
-    //     let end_move_index = self.moves.len();
+        let end_move_index = self.moves.len();
 
-    //     let moves = &mut self.moves[start_move_index..end_move_index];
+        let moves = &mut self.moves[start_move_index..end_move_index];
 
-    //     if moves.is_empty() {
-    //         return (
-    //             self.evaluator
-    //                 .absolute_evaluate(game, self.world, &spoke_info, false),
-    //             tinyvec::array_vec![],
-    //         );
-    //     }
+        if moves.is_empty() {
+            return (
+                team.value()*self.evaluator
+                    .absolute_evaluate(game, self.world, &spoke_info, false),
+                tinyvec::array_vec![],
+            );
+        }
 
-    //     let mut ab_iter = ab.ab_iter(team.is_white());
-    //     for _ in start_move_index..end_move_index {
-    //         let cand = ActualMove {
-    //             moveto: self.moves.pop().unwrap() as usize,
-    //         };
-    //         let effect = cand.apply(team, game, &fogs[team.index()], self.world);
+        let mut ab_iter = ab.ab_iter();
+        for _ in start_move_index..end_move_index {
+            let cand = self.moves.pop().unwrap();
 
-    //         let (eval, m) =
-    //             self.quiesance(game, fogs, ab_iter.clone_ab_values(), team.not(), depth - 1);
+            let effect = cand.apply(team, game, &self.fogs[team], self.world, Some(&spoke_info));
 
-    //         cand.undo(team, &effect, game);
+            key.move_update(&self.zobrist, cand.clone(), team, &effect);
 
-    //         if !ab_iter.consider((cand, m), eval) {
-    //             self.moves.drain(start_move_index..);
-    //             break;
-    //         }
-    //     }
+            let temp = spoke_info.process_move_better(cand.clone(), team, self.world, game);
 
-    //     assert_eq!(self.moves.len(), start_move_index);
-    //     //self.moves.drain(start_move_index..end_move_index);
+            let (eval, mut m) = self.quiesance(
+                game,
+                key,
+                spoke_info,
+                -ab_iter.clone_ab_values(),
+                -team,
+                depth - 1,
+            );
+            let eval = -eval;
 
-    //     let (eval, j) = ab_iter.finish();
-    //     if let Some((cand, mut m)) = j {
-    //         m.push(cand);
-    //         (eval, m)
-    //     } else {
-    //         (eval, tinyvec::array_vec![])
-    //     }
-    // }
+            spoke_info.undo_move(cand.clone(), effect.clone(), team, self.world, game, temp);
+            // log!(
+            //     "consid depth:{} {:?}:{:?}",
+            //     depth,
+            //     self.world.format(&cand),
+            //     self.world.format(&m.clone().to_vec())
+            // );
+
+            let cc = cand.clone();
+            cand.undo(team, &effect, game);
+
+            key.move_undo(&self.zobrist, cand.clone(), team, &effect);
+            m.push(cand);
+
+            if !ab_iter.keep_going( m, eval) {
+                self.moves.drain(start_move_index..);
+                break;
+            }
+        }
+
+        assert_eq!(self.moves.len(), start_move_index);
+        //self.moves.drain(start_move_index..end_move_index);
+
+        let (eval, j) = ab_iter.finish();
+        if let Some(m) = j {
+            (eval, m)
+        } else {
+            (eval, tinyvec::array_vec![])
+        }
+    }
 
     fn negamax(
         &mut self,
@@ -506,13 +528,14 @@ impl<'a> AlphaBeta<'a> {
         // }
 
         if depth == 0 {
-            return (
-                team.value()
-                    * self
-                        .evaluator
-                        .absolute_evaluate(game, self.world, &spoke_info, false),
-                tinyvec::array_vec![],
-            );
+            return self.quiesance(game, key, spoke_info, ab, team, 3)
+            // return (
+            //     team.value()
+            //         * self
+            //             .evaluator
+            //             .absolute_evaluate(game, self.world, &spoke_info, false),
+            //     tinyvec::array_vec![],
+            // );
         }
 
         //null move pruning
