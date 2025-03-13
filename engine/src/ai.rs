@@ -583,8 +583,6 @@ impl<'a> AlphaBeta<'a> {
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
-        //TODO don't sort the whole thing since
-        //the node will likely get cutoff
         let move_value = |index: &ActualMove| {
             let index = index.moveto;
 
