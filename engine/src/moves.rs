@@ -248,48 +248,48 @@ impl SpokeInfo {
         }
     }
 
-    pub fn process_move(
-        &mut self,
-        a: ActualMove,
-        team: Team,
-        world: &board::MyWorld,
-        game: &GameState,
-    ) -> SpokeTempInfo {
-        let index = a.moveto;
+    // pub fn process_move(
+    //     &mut self,
+    //     a: ActualMove,
+    //     team: Team,
+    //     world: &board::MyWorld,
+    //     game: &GameState,
+    // ) -> SpokeTempInfo {
+    //     let index = a.moveto;
 
-        //TODO this is iterating twice.
-        //instead of finding end points then backtracking
-        //should instead update as you go.
+    //     //TODO this is iterating twice.
+    //     //instead of finding end points then backtracking
+    //     //should instead update as you go.
 
-        let mut it = game.factions.iter_end_points(world, index);
-        let arr = std::array::from_fn(|_| it.next().unwrap());
+    //     let mut it = game.factions.iter_end_points(world, index);
+    //     let arr = std::array::from_fn(|_| it.next().unwrap());
 
-        for (i, (dis, rest)) in arr.iter().enumerate() {
-            let hexdir = HDir::from(i as u8);
+    //     for (i, (dis, rest)) in arr.iter().enumerate() {
+    //         let hexdir = HDir::from(i as u8);
 
-            let st = if let &Some(unit::EndPoint {
-                team: tt, index: _, ..
-            }) = rest
-            {
-                self.set(index, hexdir, Some(tt));
-                1
-            } else {
-                self.set(index, hexdir, None);
-                0
-            };
+    //         let st = if let &Some(unit::EndPoint {
+    //             team: tt, index: _, ..
+    //         }) = rest
+    //         {
+    //             self.set(index, hexdir, Some(tt));
+    //             1
+    //         } else {
+    //             self.set(index, hexdir, None);
+    //             0
+    //         };
 
-            let stride = board::STRIDES[hexdir as usize] as isize;
+    //         let stride = board::STRIDES[hexdir as usize] as isize;
 
-            let mut index2: isize = index as isize;
+    //         let mut index2: isize = index as isize;
 
-            for _ in 0..dis - 1 + st {
-                index2 += stride;
-                self.set(index2 as usize, hexdir.rotate_180(), Some(team));
-            }
-        }
+    //         for _ in 0..dis - 1 + st {
+    //             index2 += stride;
+    //             self.set(index2 as usize, hexdir.rotate_180(), Some(team));
+    //         }
+    //     }
 
-        SpokeTempInfo { data: arr }
-    }
+    //     SpokeTempInfo { data: arr }
+    // }
 
     pub fn undo_move(
         &mut self,
