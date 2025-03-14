@@ -221,7 +221,7 @@ impl SpokeInfo {
         game: &GameState,
     ) -> SpokeTempInfo {
         let index = a.moveto;
-        assert!(
+        debug_assert!(
             world.get_game_cells().inner[index as usize],
             "uhoh {:?}",
             world.format(&a)
@@ -229,7 +229,7 @@ impl SpokeInfo {
         let mut it = hex::HDir::all().map(move |dd| {
             let (dis, it) = unit::ray(Axial::from_index(index), dd, world);
             for (d, index2) in it.enumerate() {
-                assert!(index != index2 as usize);
+                debug_assert!(index != index2 as usize);
                 self.set(index2 as usize, dd.rotate_180(), Some(team));
                 if let Some((hh, tt)) = game.factions.get_cell_inner(index2 as usize) {
                     self.set(index, dd, Some(tt));
@@ -410,7 +410,7 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
                 None
             };
             spoke_info.set(index, HDir::from(i as u8), v);
-            assert_eq!(v, spoke_info.get(index, HDir::from(i as u8)));
+            debug_assert_eq!(v, spoke_info.get(index, HDir::from(i as u8)));
         }
     }
 }
@@ -456,7 +456,7 @@ impl GameState {
                 Some((
                     index,
                     if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-                        assert!(height > 0);
+                        debug_assert!(height > 0);
 
                         blocked = true;
                         // let height = height as i64;
@@ -518,7 +518,7 @@ impl GameState {
         }
 
         if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-            assert!(height > 0);
+            debug_assert!(height > 0);
             let height = height as i64;
             if num_attack[team] > height {
                 if rest == team {
@@ -604,7 +604,7 @@ impl GameState {
                         height,
                         team: team2,
                     } => {
-                        assert_eq!(team2, !team);
+                        debug_assert_eq!(team2, !team);
                         if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
                         {
                             ret.inner.set(index2 as usize, true);
@@ -644,7 +644,7 @@ impl GameState {
                         height,
                         team: team2,
                     } => {
-                        assert!(team2 != team);
+                        debug_assert!(team2 != team);
                         if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
                         {
                             ret.inner.set(index2 as usize, true);
