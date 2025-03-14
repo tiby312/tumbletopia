@@ -259,16 +259,12 @@ pub fn calculate_move(
     let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 6, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
-            ActualMove {
-                moveto: hex::PASS_MOVE_INDEX,
-            }
+            ActualMove(hex::PASS_MOVE_INDEX)
         } else {
             mo.line[0].clone()
         }
     } else {
-        ActualMove {
-            moveto: hex::PASS_MOVE_INDEX,
-        }
+        ActualMove(hex::PASS_MOVE_INDEX)
     };
 
     log!("Ai {:?} has selected move = {:?}", team, world.format(&m));
@@ -463,11 +459,11 @@ impl<'a> AlphaBeta<'a> {
         let start_move_index = self.moves.len();
 
         self.moves
-            .extend(captures.inner.iter_ones().map(|x| ActualMove { moveto: x }));
+            .extend(captures.inner.iter_ones().map(|x| ActualMove(x)));
 
         let end_move_index = self.moves.len();
 
-        let moves = &mut self.moves[start_move_index..end_move_index];
+        //let moves = &mut self.moves[start_move_index..end_move_index];
 
         // if moves.is_empty() {
         //     return (
@@ -615,23 +611,19 @@ impl<'a> AlphaBeta<'a> {
 
         let start_move_index = self.moves.len();
 
-        self.moves.extend(
-            all_moves
-                .inner
-                .iter_ones()
-                .map(|x| ActualMove { moveto: x }),
-        );
+        self.moves
+            .extend(all_moves.inner.iter_ones().map(|x| ActualMove(x)));
 
         let end_move_index = self.moves.len();
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
         let move_value = |index: &ActualMove| {
-            let index = index.moveto;
+            let index = index.0;
 
             if let Some(a) = entry {
                 if let Some(p) = a.pv.last() {
-                    if p.moveto == index {
+                    if p.0 == index {
                         return 10_001;
                     }
                 }
@@ -647,7 +639,7 @@ impl<'a> AlphaBeta<'a> {
                 .iter()
                 .enumerate()
             {
-                if a.moveto == index {
+                if a.0 == index {
                     return 9_000 - i as isize;
                 }
             }
@@ -708,10 +700,10 @@ impl<'a> AlphaBeta<'a> {
             m.push(cand);
             if !ab_iter.keep_going(m, eval) {
                 //2007 without
-                if !loud_moves.inner[cc.moveto] {
+                if !loud_moves.inner[cc.0] {
                     self.killer_moves.consider(depth, cc.clone());
 
-                    self.history_heur[cc.moveto] += depth * depth;
+                    self.history_heur[cc.0] += depth * depth;
                 }
 
                 self.moves.drain(start_move_index..);

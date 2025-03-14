@@ -47,20 +47,20 @@ impl Key {
         if let Some(a) = effect.destroyed_unit {
             //panic!();
             //xor out what piece was there
-            self.key ^= base.inner[m.moveto][get_index(a.0, a.1)];
+            self.key ^= base.inner[m.0][get_index(a.0, a.1)];
         }
 
         //xor in the new piece
-        self.key ^= base.inner[m.moveto][get_index(effect.height, team)];
+        self.key ^= base.inner[m.0][get_index(effect.height, team)];
     }
 
     pub fn move_undo(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
         //xor out the new piece
-        self.key ^= base.inner[m.moveto][get_index(effect.height, team)];
+        self.key ^= base.inner[m.0][get_index(effect.height, team)];
 
         if let Some(a) = effect.destroyed_unit {
             //xor in what piece was there
-            self.key ^= base.inner[m.moveto][get_index(a.0, a.1)];
+            self.key ^= base.inner[m.0][get_index(a.0, a.1)];
         }
     }
 }
@@ -77,9 +77,7 @@ fn test_zobrist() {
     let mut k = Key::from_scratch(&base, &game.tactical, world);
 
     let a = Axial::from_letter_coord('B', 2, world.radius as i8);
-    let m = ActualMove {
-        moveto: a.to_index(),
-    };
+    let m = ActualMove(a.to_index());
 
     let team = Team::White;
     let effect = m.apply(team, &mut game.tactical, &game.fog[0], world, None);

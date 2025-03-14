@@ -1036,7 +1036,7 @@ async fn render_command(
         draw_sys
             .batch(
                 land.iter_ones()
-                    .map(|e| grid_snap(Axial::from_index(e), -models.token_neutral.height)),
+                    .map(|e| grid_snap(Axial::from_index(&e), -models.token_neutral.height)),
             )
             .build(&models.land, &projjj);
 

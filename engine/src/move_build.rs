@@ -332,7 +332,7 @@ impl ActualMove {
     // }
 
     pub fn undo(&self, _team_index: Team, effect: &MoveEffect, state: &mut GameState) {
-        let moveto = self.moveto;
+        let moveto = self.0;
 
         if moveto == hex::PASS_MOVE_INDEX {
             return;
@@ -418,7 +418,7 @@ impl ActualMove {
         spoke_info: Option<&SpokeInfo>,
     ) -> MoveEffect {
         //this is a pass
-        if self.moveto == hex::PASS_MOVE_INDEX {
+        if self.0 == hex::PASS_MOVE_INDEX {
             return MoveEffect {
                 pushpull: PushInfo::None,
                 powerup: PowerupAction::None,
@@ -428,11 +428,11 @@ impl ActualMove {
         }
 
         //let env = &mut game.env;
-        let target_cell = self.moveto;
+        let target_cell = self.0;
         let e = PushInfo::None;
 
         let stack_size = if let Some(sp) = spoke_info {
-            sp.data[self.moveto].num_attack[team]
+            sp.data[self.0].num_attack[team]
         } else {
             let mut stack_size = 0;
 

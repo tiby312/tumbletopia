@@ -384,7 +384,7 @@ pub async fn reselect_loop(
         //no other friendly unit is selectable until we finish moving the
         //the unit that has been partially moved.
         if let Some(e) = have_moved {
-            e.the_move.moveto != selected_unit.coord.to_index()
+            e.the_move.0 != selected_unit.coord.to_index()
         } else {
             false
         }
@@ -511,7 +511,7 @@ pub async fn reselect_loop(
     // If we are trying to move a piece while in the middle of another
     // piece move, deselect.
     if let Some(e) = have_moved {
-        if unwrapped_selected_unit.to_index() != e.the_move.moveto {
+        if unwrapped_selected_unit.to_index() != e.the_move.0 {
             return LoopRes::Deselect;
         }
     }
@@ -547,10 +547,7 @@ pub async fn reselect_loop(
 
     //let c = target_cell;
 
-    let mp = ActualMove {
-        //original: unwrapped_selected_unit,
-        moveto: target_cell.to_index(),
-    };
+    let mp = ActualMove(target_cell.to_index());
 
     let effect = animate_move(&mp, selected_unit.team, game, world, doop)
         .await
@@ -563,14 +560,7 @@ pub async fn reselect_loop(
         );
 
     {
-        LoopRes::EndTurn((
-            moves::ActualMove {
-                //original: mp.original,
-                moveto: mp.moveto,
-                //attackto: target_cell,
-            },
-            effect,
-        ))
+        LoopRes::EndTurn((moves::ActualMove(mp.0), effect))
         // *have_moved = Some(selection::HaveMoved {
         //     the_move: mp,
         //     effect,
@@ -675,18 +665,18 @@ pub async fn animate_move<'a>(
     world: &board::MyWorld,
     data: &mut CommandSender,
 ) -> &'a ActualMove {
-    if aa.moveto == PASS_MOVE_INDEX {
+    if aa.0 == PASS_MOVE_INDEX {
         return aa;
     }
     assert!(
-        world.get_game_cells().inner[aa.moveto as usize],
+        world.get_game_cells().inner[aa.0 as usize],
         "uhoh {:?}",
         world.format(aa)
     );
 
     let ff = state.tactical.bake_fog(&state.fog[team.index()]);
 
-    let end_points = ff.factions.iter_end_points(world, aa.moveto);
+    let end_points = ff.factions.iter_end_points(world, aa.0);
 
     let mut ss = state.clone();
 
@@ -700,13 +690,13 @@ pub async fn animate_move<'a>(
             continue;
         }
 
-        let unit = Axial::from_index(aa.moveto)
-            .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
+        let unit =
+            Axial::from_index(&aa).add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
 
         data.wait_animation(
             AnimationCommand::Movement {
                 unit,
-                end: Axial::from_index(aa.moveto),
+                end: Axial::from_index(&aa),
             },
             team,
             &mut ss,
@@ -714,10 +704,10 @@ pub async fn animate_move<'a>(
         .await;
 
         stack += 1;
-        if let Some(_) = state.tactical.factions.get_cell_inner(aa.moveto) {
-            ss.tactical.factions.remove_inner(aa.moveto);
+        if let Some(_) = state.tactical.factions.get_cell_inner(aa.0) {
+            ss.tactical.factions.remove_inner(aa.0);
         }
-        ss.tactical.factions.add_cell_inner(aa.moveto, stack, team);
+        ss.tactical.factions.add_cell_inner(aa.0, stack, team);
     }
 
     aa
@@ -766,9 +756,7 @@ pub async fn handle_player(
 
                         continue 'outer;
                     } else if s == "pass" {
-                        let mp = ActualMove {
-                            moveto: hex::PASS_MOVE_INDEX,
-                        };
+                        let mp = ActualMove(hex::PASS_MOVE_INDEX);
 
                         let me = mp.apply(
                             team,
@@ -816,9 +804,7 @@ pub async fn handle_player(
                     continue 'outer;
                 }
                 LoopRes::Pass => {
-                    let mp = ActualMove {
-                        moveto: hex::PASS_MOVE_INDEX,
-                    };
+                    let mp = ActualMove(hex::PASS_MOVE_INDEX);
 
                     let me = mp.apply(
                         team,

@@ -269,7 +269,7 @@ impl GameState {
             _ => return None,
         };
 
-        if a.0.moveto == hex::PASS_MOVE_INDEX && b.0.moveto == hex::PASS_MOVE_INDEX {
+        if a.0 .0 == hex::PASS_MOVE_INDEX && b.0 .0 == hex::PASS_MOVE_INDEX {
             //return None;
             if score_data.white > score_data.black {
                 return Some(GameOver::WhiteWon);
@@ -478,7 +478,7 @@ impl Tribe {
 
             let stride = board::STRIDES[i] as isize;
             let dis =
-                board::dis_to_hex_of_hexagon(Axial::from_index(index), dd, world.radius as i8);
+                board::dis_to_hex_of_hexagon(Axial::from_index(&index), dd, world.radius as i8);
             let mut index2 = index as isize;
 
             for _ in 0..dis {
@@ -502,10 +502,10 @@ impl Tribe {
         assert!(
             world.get_game_cells().inner[index as usize],
             "uhoh {:?}",
-            world.format(&ActualMove { moveto: index })
+            world.format(&ActualMove(index))
         );
         hex::HDir::all().map(move |dd| {
-            let (dis, it) = ray(Axial::from_index(index), dd, world);
+            let (dis, it) = ray(Axial::from_index(&index), dd, world);
             for (d, index2) in it.enumerate() {
                 if let Some(pp) = self.get_cell_inner(index2 as usize) {
                     return (

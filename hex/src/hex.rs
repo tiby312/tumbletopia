@@ -462,8 +462,8 @@ impl Axial {
     pub fn disp(&self, radius: i8) -> Displayer<Axial> {
         Displayer { ax: self, radius }
     }
-    pub const fn from_index(index: usize) -> Axial {
-        inverse(index)
+    pub const fn from_index(index: &usize) -> Axial {
+        inverse(*index)
     }
     pub const fn to_index(&self) -> usize {
         conv2(*self)

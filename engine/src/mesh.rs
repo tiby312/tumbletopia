@@ -133,7 +133,7 @@ pub mod small_mesh {
         pub fn iter_mesh(&self, point: Axial) -> impl Iterator<Item = Axial> + '_ {
             self.inner
                 .iter_ones()
-                .map(move |a| point.add(Axial::from_index(a)))
+                .map(move |a| point.add(Axial::from_index(&a)))
         }
     }
 

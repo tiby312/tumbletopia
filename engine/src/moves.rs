@@ -62,7 +62,7 @@ impl crate::unit::GameStateTotal {
         // };
 
         for a in world.get_game_cells().inner.iter_ones() {
-            let fa = Axial::from_index(a);
+            let fa = Axial::from_index(&a);
 
             if let Some((val, tt)) = self.tactical.factions.get_cell_inner(a) {
                 if tt == team {
@@ -221,14 +221,14 @@ impl SpokeInfo {
         world: &board::MyWorld,
         game: &GameState,
     ) -> SpokeTempInfo {
-        let index = a.moveto;
+        let index = a.0;
         debug_assert!(
             world.get_game_cells().inner[index as usize],
             "uhoh {:?}",
             world.format(&a)
         );
         let mut it = hex::HDir::all().map(move |dd| {
-            let (dis, it) = unit::ray(Axial::from_index(index), dd, world);
+            let (dis, it) = unit::ray(Axial::from_index(&index), dd, world);
             for (d, index2) in it.enumerate() {
                 debug_assert!(index != index2 as usize);
                 self.set(index2 as usize, dd.rotate_180(), Some(team));
@@ -306,7 +306,7 @@ impl SpokeInfo {
         game: &GameState,
         spoke_temp: SpokeTempInfo,
     ) {
-        let index = a.moveto;
+        let index = a.0;
 
         // let mut it = game.factions.iter_end_points(world, index);
         // let arr: [(i8, Option<unit::EndPoint>); 6] = std::array::from_fn(|_| it.next().unwrap());
@@ -445,7 +445,7 @@ impl GameState {
         world: &'b MyWorld,
     ) -> impl Iterator<Item = (usize, LosRayItem)> + use<'b> {
         let mut blocked = false;
-        unit::ray(Axial::from_index(index2), dir, world)
+        unit::ray(Axial::from_index(&index2), dir, world)
             .1
             .filter_map(move |index| {
                 if blocked {
@@ -929,19 +929,22 @@ impl GameState {
 
 impl hex::HexDraw for ActualMove {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
-        Axial::from_index(self.moveto).fmt(f, radius)
+        Axial::from_index(self).fmt(f, radius)
     }
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, PartialOrd, Ord)]
-pub struct ActualMove {
-    pub moveto: usize,
+#[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
+pub struct ActualMove(pub usize);
+
+impl std::ops::Deref for ActualMove {
+    type Target = usize;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 impl Default for ActualMove {
     fn default() -> Self {
-        Self {
-            moveto: Default::default(),
-        }
+        Self(Default::default())
     }
 }
 
