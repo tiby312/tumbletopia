@@ -69,7 +69,7 @@ impl HDir {
         //(0..6).map(HDir::from)
     }
     pub fn rotate_180(&self) -> HDir {
-        match self{
+        match self {
             HDir::BottomRight => HDir::TopLeft,
             HDir::Bottom => HDir::Top,
             HDir::BottomLeft => HDir::TopRight,

@@ -256,7 +256,7 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
-    let m=if let Some(mo) = iterative_deepening2(game, fogs, world, team, 6, zobrist) {
+    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 6, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove {
@@ -271,7 +271,7 @@ pub fn calculate_move(
         }
     };
 
-    log!("Ai {:?} has selected move = {:?}",team,world.format(&m));
+    log!("Ai {:?} has selected move = {:?}", team, world.format(&m));
     m
 }
 
@@ -415,7 +415,6 @@ impl KillerMoves {
     }
 }
 
-
 impl<'a> AlphaBeta<'a> {
     fn quiesance(
         &mut self,
@@ -428,41 +427,57 @@ impl<'a> AlphaBeta<'a> {
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
         *self.nodes_visited += 1;
 
+        let stand_pat = team.value()
+            * self
+                .evaluator
+                .absolute_evaluate(game, self.world, &spoke_info, false);
+
+        if depth == 0 {
+            return (stand_pat, tinyvec::ArrayVec::new());
+        }
+        let mut best_value = stand_pat;
+
+        if stand_pat >= ab.beta {
+            return (stand_pat, tinyvec::ArrayVec::new());
+        }
+        if ab.alpha < stand_pat {
+            ab.alpha = stand_pat
+        }
+
         // if let Some(g) = game.game_is_over(self.world, team, self.history) {
         //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
         // }
         // let mut spoke_info = moves::SpokeInfo::new(game);
         // moves::update_spoke_info(&mut spoke_info, self.world, game);
 
-        if depth == 0 {
-            return (
-                team.value()*self.evaluator
-                    .absolute_evaluate(game, self.world, &spoke_info, false),
-                tinyvec::array_vec![],
-            );
-        }
+        // if depth == 0 {
+        //     return (
+        //         team.value()*self.evaluator
+        //             .absolute_evaluate(game, self.world, &spoke_info, false),
+        //         tinyvec::array_vec![],
+        //     );
+        // }
 
         let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
 
-        self.moves.extend(captures.inner.iter_ones().map(|x| {
-            ActualMove{moveto:x}
-        }));
+        self.moves
+            .extend(captures.inner.iter_ones().map(|x| ActualMove { moveto: x }));
 
         let end_move_index = self.moves.len();
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
-        if moves.is_empty() {
-            return (
-                team.value()*self.evaluator
-                    .absolute_evaluate(game, self.world, &spoke_info, false),
-                tinyvec::array_vec![],
-            );
-        }
+        // if moves.is_empty() {
+        //     return (
+        //         team.value()*self.evaluator
+        //             .absolute_evaluate(game, self.world, &spoke_info, false),
+        //         tinyvec::array_vec![],
+        //     );
+        // }
 
-        let mut ab_iter = ab.ab_iter();
+        //let mut ab_iter = ab.ab_iter();
         for _ in start_move_index..end_move_index {
             let cand = self.moves.pop().unwrap();
 
@@ -472,14 +487,8 @@ impl<'a> AlphaBeta<'a> {
 
             let temp = spoke_info.process_move_better(cand.clone(), team, self.world, game);
 
-            let (eval, mut m) = self.quiesance(
-                game,
-                key,
-                spoke_info,
-                -ab_iter.clone_ab_values(),
-                -team,
-                depth - 1,
-            );
+            let (eval, mut m) =
+                self.quiesance(game, key, spoke_info, -ab.clone(), -team, depth - 1);
             let eval = -eval;
 
             spoke_info.undo_move(cand.clone(), effect.clone(), team, self.world, game, temp);
@@ -496,21 +505,32 @@ impl<'a> AlphaBeta<'a> {
             key.move_undo(&self.zobrist, cand.clone(), team, &effect);
             m.push(cand);
 
-            if !ab_iter.keep_going( m, eval) {
+            if eval >= ab.beta {
                 self.moves.drain(start_move_index..);
-                break;
+                return (eval, m);
             }
-        }
+            if eval > best_value {
+                best_value = eval
+            }
+            if eval > ab.alpha {
+                ab.alpha = eval;
+            }
 
-        assert_eq!(self.moves.len(), start_move_index);
-        //self.moves.drain(start_move_index..end_move_index);
-
-        let (eval, j) = ab_iter.finish();
-        if let Some(m) = j {
-            (eval, m)
-        } else {
-            (eval, tinyvec::array_vec![])
+            // if !ab_iter.keep_going( m, eval) {
+            //     self.moves.drain(start_move_index..);
+            //     break;
+            // }
         }
+        return (best_value, tinyvec::array_vec!());
+        // assert_eq!(self.moves.len(), start_move_index);
+        // //self.moves.drain(start_move_index..end_move_index);
+
+        // let (eval, j) = ab_iter.finish();
+        // if let Some(m) = j {
+        //     (eval, m)
+        // } else {
+        //     (eval, tinyvec::array_vec![])
+        // }
     }
 
     fn negamax(
@@ -528,7 +548,7 @@ impl<'a> AlphaBeta<'a> {
         // }
 
         if depth == 0 {
-            return self.quiesance(game, key, spoke_info, ab, team, 3)
+            return self.quiesance(game, key, spoke_info, ab, team, 3);
             // return (
             //     team.value()
             //         * self
@@ -702,18 +722,17 @@ impl<'a> AlphaBeta<'a> {
         assert_eq!(self.moves.len(), start_move_index);
 
         let (eval, m) = ab_iter.finish();
-        
-        let eval=if m.is_none(){
+
+        let eval = if m.is_none() {
             team.value()
-                    * self
-                        .evaluator
-                        .absolute_evaluate(game, self.world, &spoke_info, false)
-        }else{
+                * self
+                    .evaluator
+                    .absolute_evaluate(game, self.world, &spoke_info, false)
+        } else {
             eval
         };
 
         let m = m.unwrap_or_else(|| tinyvec::array_vec![]);
-
 
         if update_tt {
             //tc-s-d-re-srces-s--

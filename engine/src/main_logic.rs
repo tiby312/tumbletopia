@@ -673,8 +673,7 @@ pub async fn animate_move<'a>(
     world: &board::MyWorld,
     data: &mut CommandSender,
 ) -> &'a ActualMove {
-
-    if aa.moveto==PASS_MOVE_INDEX{
+    if aa.moveto == PASS_MOVE_INDEX {
         return aa;
     }
     assert!(
@@ -682,7 +681,7 @@ pub async fn animate_move<'a>(
         "uhoh {:?}",
         world.format(aa)
     );
-    
+
     let ff = state.tactical.bake_fog(&state.fog[team.index()]);
 
     let end_points = ff.factions.iter_end_points(world, aa.moveto);

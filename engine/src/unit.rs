@@ -409,7 +409,6 @@ pub fn ray(
     dd: hex::HDir,
     world: &board::MyWorld,
 ) -> (i8, impl Iterator<Item = isize> + use<'_>) {
-    
     let stride = board::STRIDES[dd as usize] as isize;
     let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
     let mut index2 = start.to_index() as isize;
@@ -479,7 +478,7 @@ impl Tribe {
         assert!(
             world.get_game_cells().inner[index as usize],
             "uhoh {:?}",
-            world.format(&ActualMove{moveto:index})
+            world.format(&ActualMove { moveto: index })
         );
         hex::HDir::all().map(move |dd| {
             let (dis, it) = ray(Axial::from_index(index), dd, world);
