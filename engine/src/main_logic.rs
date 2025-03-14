@@ -133,9 +133,10 @@ pub async fn map_editor(
                     "b_start1" => TT::Start1,
                     "b_start2" => TT::Start2,
                     "b_export" => {
-                        if let Some(m) = unit::Map::from_game_state(&game_total.tactical, world) {
-                            return m;
-                        }
+                        todo!();
+                        // if let Some(m) = unit::Map::from_game_state(&game_total.tactical, world) {
+                        //     return m;
+                        // }
                         continue;
                     }
                     _ => panic!("Not supported!"),
@@ -147,52 +148,53 @@ pub async fn map_editor(
 
         let game = &mut game_total.tactical;
 
-        match tt {
-            TT::Ice => {
-                game.factions.remove(pos);
-                game.factions.ice.set_coord(pos, true)
-            }
-            TT::Land => {
-                game.factions.ice.set_coord(pos, false);
-                game.factions.remove(pos);
-            }
-            TT::Water => {
-                game.factions.remove(pos);
-                game.factions.ice.set_coord(pos, false);
-                game.factions.add_cell(pos, 6, Team::Neutral);
-            }
-            TT::Forest => {
-                game.factions.ice.set_coord(pos, false);
-                game.factions.remove(pos);
-                game.factions.add_cell(pos, 1, Team::Neutral);
-            }
-            TT::Start1 => {
-                game.factions.remove(pos);
-                game.factions.ice.set_coord(pos, false);
+        todo!()
+        // match tt {
+        //     TT::Ice => {
+        //         game.factions.remove(pos);
+        //         game.factions.ice.set_coord(pos, true)
+        //     }
+        //     TT::Land => {
+        //         game.factions.ice.set_coord(pos, false);
+        //         game.factions.remove(pos);
+        //     }
+        //     TT::Water => {
+        //         game.factions.remove(pos);
+        //         game.factions.ice.set_coord(pos, false);
+        //         game.factions.add_cell(pos, 6, Team::Neutral);
+        //     }
+        //     TT::Forest => {
+        //         game.factions.ice.set_coord(pos, false);
+        //         game.factions.remove(pos);
+        //         game.factions.add_cell(pos, 1, Team::Neutral);
+        //     }
+        //     TT::Start1 => {
+        //         game.factions.remove(pos);
+        //         game.factions.ice.set_coord(pos, false);
 
-                // for a in world.get_game_cells().inner.iter_ones() {
-                //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
-                //         if t == ActiveTeam::White {
-                //             game.factions.remove_inner(a);
-                //         }
-                //     }
-                // }
-                game.factions.add_cell(pos, 1, Team::White);
-            }
-            TT::Start2 => {
-                game.factions.remove(pos);
-                game.factions.ice.set_coord(pos, false);
+        //         // for a in world.get_game_cells().inner.iter_ones() {
+        //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
+        //         //         if t == ActiveTeam::White {
+        //         //             game.factions.remove_inner(a);
+        //         //         }
+        //         //     }
+        //         // }
+        //         game.factions.add_cell(pos, 1, Team::White);
+        //     }
+        //     TT::Start2 => {
+        //         game.factions.remove(pos);
+        //         game.factions.ice.set_coord(pos, false);
 
-                // for a in world.get_game_cells().inner.iter_ones() {
-                //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
-                //         if t == ActiveTeam::Black {
-                //             game.factions.remove_inner(a);
-                //         }
-                //     }
-                // }
-                game.factions.add_cell(pos, 1, Team::Black);
-            }
-        }
+        //         // for a in world.get_game_cells().inner.iter_ones() {
+        //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
+        //         //         if t == ActiveTeam::Black {
+        //         //             game.factions.remove_inner(a);
+        //         //         }
+        //         //     }
+        //         // }
+        //         game.factions.add_cell(pos, 1, Team::Black);
+        //     }
+        // }
     }
 }
 

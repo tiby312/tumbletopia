@@ -666,7 +666,7 @@ use web_sys::WebGl2RenderingContext;
 
 pub struct EngineStuff {
     grid_matrix: hex::HexConverter,
-    models: Models<Foo<TextureGpu, ModelGpu>>,
+    models: Models<gui::model_parse::Foo<TextureGpu, ModelGpu>>,
     //numm: Numm,
     ctx: WebGl2RenderingContext,
     canvas: OffscreenCanvas,
@@ -1029,7 +1029,8 @@ async fn render_command(
                 }
             }
         }
-        water.inner |= game.factions.ice.inner;
+
+        //water.inner |= game.factions.ice.inner;
 
         let land = world.land.inner & !water.inner; //& !game.factions.ice.inner;
         draw_sys
@@ -1336,11 +1337,11 @@ async fn render_command(
         }
         draw_sys.batch(water_pos).build(&models.water, &projjj);
 
-        let mut ice_pos = vec![];
-        for pos in game.factions.ice.iter_mesh(Axial::zero()) {
-            ice_pos.push(grid_snap(pos, -models.land.height));
-        }
-        draw_sys.batch(ice_pos).build(&models.snow, &projjj);
+        // let mut ice_pos = vec![];
+        // for pos in game.factions.ice.iter_mesh(Axial::zero()) {
+        //     ice_pos.push(grid_snap(pos, -models.land.height));
+        // }
+        // draw_sys.batch(ice_pos).build(&models.snow, &projjj);
 
         let mut fog_pos = vec![];
         // let fogg = match team {

@@ -243,7 +243,7 @@ impl MyWorld {
 
         let land_as_vec = land.inner.iter_ones().collect();
 
-        let mut g = GameState::default();
+        let mut g = GameState::new();
         for (a, i) in s.chars().zip(land.inner.iter_ones()) {
             let (stack, team) = match a {
                 'k' => (2, Team::Neutral),

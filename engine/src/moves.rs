@@ -84,6 +84,8 @@ impl crate::unit::GameStateTotal {
         team: Team,
         spoke_info: &moves::SpokeInfo,
     ) {
+        return;
+
         //TODO also need to convert ice blacks to grass blocks to emulate visition mode???
         //TODO also replace enemy units with mountains to allow suicidal moves
         let res = self
@@ -99,37 +101,36 @@ impl crate::unit::GameStateTotal {
 
         fog.inner &= !res.0.inner;
 
-        let pieces = match team {
-            Team::White => self.tactical.factions.piece.inner & self.tactical.factions.team.inner,
-            Team::Black => self.tactical.factions.piece.inner & !self.tactical.factions.team.inner,
-            Team::Neutral => unreachable!(),
-        };
+        // let pieces = match team {
+        //     Team::White => self.tactical.factions.piece.inner & self.tactical.factions.team.inner,
+        //     Team::Black => self.tactical.factions.piece.inner & !self.tactical.factions.team.inner,
+        //     Team::Neutral => unreachable!(),
+        // };
+        // fog.inner &= !pieces;
 
-        fog.inner &= !pieces;
+        // for a in pieces.iter_ones() {
+        //     let fa = Axial::from_index(a);
 
-        for a in pieces.iter_ones() {
-            let fa = Axial::from_index(a);
+        //     for a in hex::HDir::all() {
+        //         let mut pos = fa;
+        //         loop {
+        //             pos = pos.advance(a);
 
-            for a in hex::HDir::all() {
-                let mut pos = fa;
-                loop {
-                    pos = pos.advance(a);
+        //             if !world.get_game_cells().is_set(pos) {
+        //                 break;
+        //             }
 
-                    if !world.get_game_cells().is_set(pos) {
-                        break;
-                    }
+        //             if !res.0.is_set(pos) {
+        //                 let np = pos; //pos.advance(a);
+        //                 if fog.is_set(np) {
+        //                     fog.set_coord(np, false);
+        //                 }
 
-                    if !res.0.is_set(pos) {
-                        let np = pos; //pos.advance(a);
-                        if fog.is_set(np) {
-                            fog.set_coord(np, false);
-                        }
-
-                        break;
-                    }
-                }
-            }
-        }
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
     }
 }
 

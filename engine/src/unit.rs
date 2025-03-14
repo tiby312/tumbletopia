@@ -204,7 +204,7 @@ impl Team {
 //     pub powerups: Vec<Axial>,
 // }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 
 pub struct GameStateTotal {
     //0 is white fog. 1 is black fog
@@ -214,7 +214,7 @@ pub struct GameStateTotal {
 
 impl GameStateTotal {}
 //Additionally removes need to special case animation.
-#[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
     pub factions: Tribe,
 }
@@ -228,6 +228,11 @@ pub enum GameOver {
 }
 
 impl GameState {
+    pub fn new() -> GameState {
+        GameState {
+            factions: Tribe::new(),
+        }
+    }
     pub fn bake_fog(&self, fog: &SmallMesh) -> GameState {
         let mut gg = self.clone();
         // let fog = match team {
@@ -393,15 +398,34 @@ impl GameState {
     // }
 }
 
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
+
+pub enum StackHeight {
+    Stack1 = 0,
+    Stack2 = 1,
+    Stack3 = 2,
+    Stack4 = 3,
+    Stack5 = 4,
+    Stack6 = 5,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
+
+pub enum GameCell {
+    Piece(StackHeight, Team),
+    #[default]
+    Empty,
+}
+
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub cells: [SmallMesh; 3],
-    pub team: SmallMesh,
-    pub ice: SmallMesh,
-    //This just signifies if there is a number in cells.
-    //This way you can just check one mesh to see if a piece is there or not
-    //instead of checking 3
-    pub piece: SmallMesh,
+    pub cells: Vec<GameCell>, // pub cells: [SmallMesh; 3],
+                              // pub team: SmallMesh,
+                              // pub ice: SmallMesh,
+                              // //This just signifies if there is a number in cells.
+                              // //This way you can just check one mesh to see if a piece is there or not
+                              // //instead of checking 3
+                              // pub piece: SmallMesh,
 }
 
 pub fn ray(
@@ -504,12 +528,9 @@ impl Tribe {
     }
 
     pub fn new() -> Tribe {
-        Tribe {
-            cells: std::array::from_fn(|_| SmallMesh::new()),
-            team: SmallMesh::new(),
-            ice: SmallMesh::new(),
-            piece: SmallMesh::new(),
-        }
+        let cells: Vec<_> = (0..board::TABLE_SIZE).map(|_| GameCell::Empty).collect();
+        assert_eq!(cells.len(), board::TABLE_SIZE);
+        Tribe { cells }
     }
 
     pub fn remove(&mut self, a: Axial) {
@@ -517,82 +538,100 @@ impl Tribe {
         self.remove_inner(a);
     }
     pub fn remove_inner(&mut self, a: usize) {
-        self.cells[0].inner.set(a, false);
-        self.cells[1].inner.set(a, false);
-        self.cells[2].inner.set(a, false);
-        self.piece.inner.set(a, false);
-        self.team.inner.set(a, false);
+        self.cells[a] = GameCell::Empty;
+        // self.cells[0].inner.set(a, false);
+        // self.cells[1].inner.set(a, false);
+        // self.cells[2].inner.set(a, false);
+        // self.piece.inner.set(a, false);
+        // self.team.inner.set(a, false);
     }
-    pub fn has_a_piece(&self, index: usize) -> bool {
-        //TODO worth having a seperate piece bitfield????
-        //Check smaller bits first. more likely to be set.
-        //self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
-        self.piece.inner[index]
-    }
+    // pub fn has_a_piece(&self, index: usize) -> bool {
+    //     //TODO worth having a seperate piece bitfield????
+    //     //Check smaller bits first. more likely to be set.
+    //     //self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
+    //     self.piece.inner[index]
+    // }
 
     pub fn get_cell_inner(&self, index: usize) -> Option<(u8, Team)> {
-        if !self.piece.inner[index as usize] {
-            return None;
+        match &self.cells[index] {
+            GameCell::Empty => None,
+            GameCell::Piece(height, team) => Some((height.clone() as u8 + 1, *team)),
         }
 
-        let bit0 = self.cells[0].inner[index] as usize;
-        let bit1 = self.cells[1].inner[index] as usize;
-        let bit2 = self.cells[2].inner[index] as usize;
+        // if !self.piece.inner[index as usize] {
+        //     return None;
+        // }
 
-        let val = bit0 | bit1 << 1 | bit2 << 2;
+        // let bit0 = self.cells[0].inner[index] as usize;
+        // let bit1 = self.cells[1].inner[index] as usize;
+        // let bit2 = self.cells[2].inner[index] as usize;
 
-        if val == 7 {
-            return Some((2, Team::Neutral));
-        }
-        if val == 0 {
-            return Some((6, Team::Neutral));
-        }
+        // let val = bit0 | bit1 << 1 | bit2 << 2;
 
-        let team = if self.team.inner[index] {
-            Team::White
-        } else {
-            Team::Black
-        };
-        Some((val as u8, team))
+        // if val == 7 {
+        //     return Some((2, Team::Neutral));
+        // }
+        // if val == 0 {
+        //     return Some((6, Team::Neutral));
+        // }
+
+        // let team = if self.team.inner[index] {
+        //     Team::White
+        // } else {
+        //     Team::Black
+        // };
+        // Some((val as u8, team))
     }
     pub fn get_cell(&self, a: Axial) -> Option<(u8, Team)> {
         self.get_cell_inner(a.to_index())
     }
 
-    fn set_coord(&mut self, index: usize, stack: u8) {
-        assert!(stack <= 7);
-        let bit2 = ((stack >> 2) & 1) != 0;
-        let bit1 = ((stack >> 1) & 1) != 0;
-        let bit0 = ((stack >> 0) & 1) != 0;
+    // fn set_coord(&mut self, index: usize, stack: u8) {
+    //     self.cells[index]=GameCell::P
+    //     // assert!(stack <= 7);
+    //     // let bit2 = ((stack >> 2) & 1) != 0;
+    //     // let bit1 = ((stack >> 1) & 1) != 0;
+    //     // let bit0 = ((stack >> 0) & 1) != 0;
 
-        self.cells[0].inner.set(index, bit0);
-        self.cells[1].inner.set(index, bit1);
-        self.cells[2].inner.set(index, bit2);
+    //     // self.cells[0].inner.set(index, bit0);
+    //     // self.cells[1].inner.set(index, bit1);
+    //     // self.cells[2].inner.set(index, bit2);
 
-        //if stack != 0 {
-        self.piece.inner.set(index, true);
-        //}
-    }
+    //     // //if stack != 0 {
+    //     // self.piece.inner.set(index, true);
+    //     // //}
+    // }
 
     pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: Team) {
-        match team {
-            Team::White => self.team.inner.set(a, true),
-            Team::Black => self.team.inner.set(a, false),
-            Team::Neutral => {
-                let val = if stack == 2 {
-                    7
-                } else if stack == 6 {
-                    0
-                } else {
-                    panic!("impossible")
-                };
+        let s = match stack {
+            1 => StackHeight::Stack1,
+            2 => StackHeight::Stack2,
+            3 => StackHeight::Stack3,
+            4 => StackHeight::Stack4,
+            5 => StackHeight::Stack5,
+            6 => StackHeight::Stack6,
+            _ => unreachable!(),
+        };
 
-                self.set_coord(a, val);
-                self.team.inner.set(a, false);
-                return;
-            }
-        }
-        self.set_coord(a, stack);
+        self.cells[a] = GameCell::Piece(s, team);
+        // match team {
+        //     Team::White => self.team.inner.set(a, true),
+        //     Team::Black => self.team.inner.set(a, false),
+        //     Team::Neutral => {
+        //         let val = if stack == 2 {
+        //             7
+        //         } else if stack == 6 {
+        //             0
+        //         } else {
+        //             panic!("impossible")
+        //         };
+
+        //         self.set_coord(a, val);
+        //         self.team.inner.set(a, false);
+        //         return;
+        //     }
+        // }
+        // self.set_coord(a, stack);
     }
     pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team) {
         let a = a.to_index();
@@ -731,42 +770,42 @@ impl unit::Map {
 }
 
 impl Map {
-    pub fn from_game_state(game: &GameState, world: &board::MyWorld) -> Option<Map> {
-        let water = game.factions.ice.clone();
+    // pub fn from_game_state(game: &GameState, world: &board::MyWorld) -> Option<Map> {
+    //     let water = game.factions.ice.clone();
 
-        let mut white = SmallMesh::new();
-        let mut black = SmallMesh::new();
-        let mut mountains = SmallMesh::new();
-        let mut forests = SmallMesh::new();
+    //     let mut white = SmallMesh::new();
+    //     let mut black = SmallMesh::new();
+    //     let mut mountains = SmallMesh::new();
+    //     let mut forests = SmallMesh::new();
 
-        for a in world.get_game_cells().inner.iter_ones() {
-            if let Some((height, team)) = game.factions.get_cell_inner(a) {
-                match team {
-                    Team::White => {
-                        white.inner.set(a, true);
-                    }
-                    Team::Black => {
-                        black.inner.set(a, true);
-                    }
-                    Team::Neutral => {
-                        if height == 6 {
-                            mountains.inner.set(a, true);
-                        } else if height == 1 {
-                            forests.inner.set(a, true);
-                        }
-                    }
-                }
-            }
-        }
+    //     for a in world.get_game_cells().inner.iter_ones() {
+    //         if let Some((height, team)) = game.factions.get_cell_inner(a) {
+    //             match team {
+    //                 Team::White => {
+    //                     white.inner.set(a, true);
+    //                 }
+    //                 Team::Black => {
+    //                     black.inner.set(a, true);
+    //                 }
+    //                 Team::Neutral => {
+    //                     if height == 6 {
+    //                         mountains.inner.set(a, true);
+    //                     } else if height == 1 {
+    //                         forests.inner.set(a, true);
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        Some(Map {
-            ice: water,
-            water: mountains,
-            forests,
-            white,
-            black,
-        })
-    }
+    //     Some(Map {
+    //         ice: water,
+    //         water: mountains,
+    //         forests,
+    //         white,
+    //         black,
+    //     })
+    // }
 }
 
 pub fn default_map(world: &board::MyWorld) -> Map {
@@ -839,9 +878,9 @@ impl GameStateTotal {
             cells.add_cell(m, 6, Team::Neutral);
         }
 
-        for w in map.ice.iter_mesh(Axial::zero()) {
-            cells.ice.add(w);
-        }
+        // for w in map.ice.iter_mesh(Axial::zero()) {
+        //     cells.ice.add(w);
+        // }
 
         let game = GameState { factions: cells };
 
