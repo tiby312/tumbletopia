@@ -239,7 +239,7 @@ pub struct TTEntry {
     value: i64,
 }
 
-const STACK_SIZE: usize = 9;
+const STACK_SIZE: usize = 7;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Res {
@@ -256,7 +256,7 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
-    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 6, zobrist) {
+    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, STACK_SIZE, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove(hex::PASS_MOVE_INDEX)
@@ -503,7 +503,7 @@ impl<'a> AlphaBeta<'a> {
 
             if eval >= ab.beta {
                 self.moves.drain(start_move_index..);
-                return (eval, m);
+                return (eval, tinyvec::array_vec!());
             }
             if eval > best_value {
                 best_value = eval

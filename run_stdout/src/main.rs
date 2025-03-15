@@ -1,7 +1,7 @@
 use engine::Zobrist;
 
-    fn doop() ->impl Iterator<Item=&'static str>{
-        "
+fn doop() -> impl Iterator<Item = &'static str> {
+    "
 -----s--s-eb-ev-b--
 -c-c-s-tct---cs--c-
 tc-s-d-re-srces-s--
@@ -65,46 +65,54 @@ cs--c----r--b----dr
 -r--r-r-bct---c--b-
 -r--r-r-d-t-c-d--b-
 "
-        .trim()
-        .split('\n')
+    .trim()
+    .split('\n')
 
-        //TODO make sure first player wins in all these cases using the AI.
-    }
-
-
-
+    //TODO make sure first player wins in all these cases using the AI.
+}
 
 fn main() {
-    test_wins()
+    test_wins();
 }
 
-fn test_wins(){
-
-    for g in doop(){
-        let (gg,hist,world)=test_run(g);
-        let engine::unit::GameOver::WhiteWon=gg else{
+fn test_wins() {
+    for g in doop() {
+        let (gg, hist, world) = test_run(g);
+        let engine::unit::GameOver::WhiteWon = gg else {
             let s = format!("{:?}", world.format(&hist));
-        
-            panic!("failed {} hist {:?}",g,s);
+
+            panic!("failed {} hist {:?}", g, s);
         };
 
-        println!("passed for {}",g);
+        //println!("passed for {}",g);
     }
 }
 
-fn bench(){
+fn test_hard_one() {
+    let (gg, hist, world) = test_run("c--ct-------c-t--cc");
+    matches!(gg, engine::unit::GameOver::WhiteWon);
+
+    let s = format!("{:?}", world.format(&hist));
+    assert_eq!(s,"[E3,D3,E4,B2,D2,C2,B1,D3,B2,D4,C2,C3,D3,D5,E3,C4,D2,B3,C1,C4,E4,C5,C2,D5,B1,C4,B2,B4,A1,A3,pp,pp,]");
+}
+
+fn bench() {
     for _ in 0..30 {
-        let (gg,hist,world)=test_run("bb-t-bbsrd-s----s--");
-        matches!(gg,engine::unit::GameOver::WhiteWon);
+        let (gg, hist, world) = test_run("bb-t-bbsrd-s----s--");
+        matches!(gg, engine::unit::GameOver::WhiteWon);
 
         let s = format!("{:?}", world.format(&hist));
         assert_eq!(s,"[E3,D3,E4,B2,D2,C2,B1,D3,B2,D4,C2,C3,D3,D5,E3,C4,D2,B3,C1,C4,E4,C5,C2,D5,B1,C4,B2,B4,A1,A3,pp,pp,]");
-
     }
 }
 
-
-pub fn test_run(game:&str)->(engine::unit::GameOver,Vec<engine::ActualMove>,engine::board::MyWorld) {
+pub fn test_run(
+    game: &str,
+) -> (
+    engine::unit::GameOver,
+    Vec<engine::ActualMove>,
+    engine::board::MyWorld,
+) {
     let world = engine::board::MyWorld::load_from_string(game);
 
     let mut game_history = engine::MoveHistory::new();
@@ -140,5 +148,5 @@ pub fn test_run(game:&str)->(engine::unit::GameOver,Vec<engine::ActualMove>,engi
     // //     panic!("Foo")
     // // };
     //println!("Result {:?},Game history {:?}",foo,world.format(&history));
-    (foo,history,world)
+    (foo, history, world)
 }
