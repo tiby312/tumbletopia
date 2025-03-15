@@ -431,58 +431,58 @@ pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> &[i64; 2] {
     // num_attack
 }
 
-#[derive(Debug)]
-enum LosRayItem {
-    //Skip,
-    End { height: u8, team: Team },
-    Move,
-}
+// #[derive(Debug)]
+// enum LosRayItem {
+//     //Skip,
+//     End { height: u8, team: Team },
+//     Move,
+// }
 impl GameState {
-    fn los_ray<'b>(
-        &'b self,
-        index2: usize,
-        dir: HDir,
-        world: &'b MyWorld,
-    ) -> impl Iterator<Item = (usize, LosRayItem)> + use<'b> {
-        let mut blocked = false;
-        unit::ray(Axial::from_index(&index2), dir, world)
-            .1
-            .filter_map(move |index| {
-                if blocked {
-                    return None;
-                }
+    // fn los_ray<'b>(
+    //     &'b self,
+    //     index2: usize,
+    //     dir: HDir,
+    //     world: &'b MyWorld,
+    // ) -> impl Iterator<Item = (usize, LosRayItem)> + use<'b> {
+    //     let mut blocked = false;
+    //     unit::ray(Axial::from_index(&index2), dir, world)
+    //         .1
+    //         .filter_map(move |index| {
+    //             if blocked {
+    //                 return None;
+    //             }
 
-                let index = index as usize;
+    //             let index = index as usize;
 
-                Some((
-                    index,
-                    if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-                        debug_assert!(height > 0);
+    //             Some((
+    //                 index,
+    //                 if let Some((height, rest)) = self.factions.get_cell_inner(index) {
+    //                     debug_assert!(height > 0);
 
-                        blocked = true;
-                        // let height = height as i64;
-                        // if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
-                        //     if rest == team {
-                        //         LosRayItem::End(Some(MoveType::Reinforce))
-                        //     } else {
-                        //         LosRayItem::End(Some(MoveType::Capture))
-                        //     }
-                        // } else {
-                        //     LosRayItem::End(None)
-                        // }
-                        LosRayItem::End { height, team: rest }
-                    } else {
-                        LosRayItem::Move
-                        // if num_attack[team] < num_attack[!team] {
-                        //     LosRayItem::Skip
-                        // } else {
-                        //     LosRayItem::Move
-                        // }
-                    },
-                ))
-            })
-            .fuse()
-    }
+    //                     blocked = true;
+    //                     // let height = height as i64;
+    //                     // if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
+    //                     //     if rest == team {
+    //                     //         LosRayItem::End(Some(MoveType::Reinforce))
+    //                     //     } else {
+    //                     //         LosRayItem::End(Some(MoveType::Capture))
+    //                     //     }
+    //                     // } else {
+    //                     //     LosRayItem::End(None)
+    //                     // }
+    //                     LosRayItem::End { height, team: rest }
+    //                 } else {
+    //                     LosRayItem::Move
+    //                     // if num_attack[team] < num_attack[!team] {
+    //                     //     LosRayItem::Skip
+    //                     // } else {
+    //                     //     LosRayItem::Move
+    //                     // }
+    //                 },
+    //             ))
+    //         })
+    //         .fuse()
+    // }
 
     //TODO prefer los_ray
     fn playable(
