@@ -434,10 +434,12 @@ pub fn ray(
     world: &board::MyWorld,
 ) -> (i8, impl Iterator<Item = isize> + use<'_>) {
     let stride = board::STRIDES[dd as usize] as isize;
+    //TODO make this uncecessary by putting walls all around the perimiter of the map
+    //so that they act as a sentinel
     let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
     let mut index2 = start.to_index() as isize;
 
-    assert!(
+    debug_assert!(
         world.get_game_cells().inner[index2 as usize],
         "uhoh {:?}",
         world.format(&start)
@@ -448,7 +450,7 @@ pub fn ray(
             index2 += stride;
             //assert!(index2 > 0);
 
-            assert!(
+            debug_assert!(
                 world.get_game_cells().inner[index2 as usize],
                 // "fail {}:{}:{:?}:{:?}",
                 // d,
