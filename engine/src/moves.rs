@@ -709,7 +709,8 @@ impl GameState {
         // los(n)=[6*n,6*n+1,6*n+2...6*n+5]
 
         let mut ret = SmallMesh::new();
-        for index in world.get_game_cells().inner.iter_ones() {
+        for &index in world.land_as_vec.iter() {
+            //for index in world.get_game_cells().inner.iter_ones() {
             // let mut num_attack: [i64; 2] = [0, 0];
 
             // for (_, rest) in self.factions.iter_end_points(world, index) {
@@ -875,7 +876,8 @@ impl GameState {
             //return (mesh, captures, reinforcements);
         }
 
-        for index in world.get_game_cells().inner.iter_ones() {
+        for &index in world.land_as_vec.iter() {
+            //for index in world.get_game_cells().inner.iter_ones() {
             if let Some(v) = self.playable(index, team, world, spoke_info) {
                 mesh.inner.set(index, true);
                 match v {
