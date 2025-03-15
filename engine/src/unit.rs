@@ -61,7 +61,6 @@ pub enum Team {
     White = 0,
     Black = 1,
     Neutral = 2,
-    
 }
 
 impl std::ops::Not for Team {
@@ -399,7 +398,7 @@ impl GameState {
     // }
 }
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash,Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 
 pub enum StackHeight {
     Stack1 = 0,

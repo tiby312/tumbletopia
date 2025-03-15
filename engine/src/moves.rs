@@ -592,27 +592,44 @@ impl GameState {
             }
 
             //tddtuts-utusbtddcdc
-            for (index2, fo) in self.los_ray(index, dir, world) {
+            for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
+                let index2 = index2 as usize;
                 let num_attack = get_num_attack(spoke_info, index2);
 
-                match fo {
-                    LosRayItem::Move => {
-                        if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
-                            ret.inner.set(index2 as usize, true);
-                        }
+                if let Some((height, team2)) = self.factions.get_cell_inner(index2) {
+                    debug_assert_eq!(team2, !team);
+                    if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team] {
+                        ret.inner.set(index2 as usize, true);
                     }
-                    LosRayItem::End {
-                        height,
-                        team: team2,
-                    } => {
-                        debug_assert_eq!(team2, !team);
-                        if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
-                        {
-                            ret.inner.set(index2 as usize, true);
-                        }
+                    break;
+                } else {
+                    if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+                        ret.inner.set(index2 as usize, true);
                     }
                 }
             }
+
+            // for (index2, fo) in self.los_ray(index, dir, world) {
+            //     let num_attack = get_num_attack(spoke_info, index2);
+
+            //     match fo {
+            //         LosRayItem::Move => {
+            //             if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+            //                 ret.inner.set(index2 as usize, true);
+            //             }
+            //         }
+            //         LosRayItem::End {
+            //             height,
+            //             team: team2,
+            //         } => {
+            //             debug_assert_eq!(team2, !team);
+            //             if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
+            //             {
+            //                 ret.inner.set(index2 as usize, true);
+            //             }
+            //         }
+            //     }
+            // }
         }
     }
 
@@ -631,28 +648,45 @@ impl GameState {
                 }
             }
 
-            //tddtuts-utusbtddcdc
-            for (index2, fo) in self.los_ray(index, dir, world) {
+            for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
+                let index2 = index2 as usize;
                 let num_attack = get_num_attack(spoke_info, index2);
 
-                match fo {
-                    LosRayItem::Move => {
-                        if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
-                            ret.inner.set(index2 as usize, true);
-                        }
+                if let Some((height, team2)) = self.factions.get_cell_inner(index2) {
+                    debug_assert!(team2 != team);
+
+                    if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team] {
+                        ret.inner.set(index2 as usize, true);
                     }
-                    LosRayItem::End {
-                        height,
-                        team: team2,
-                    } => {
-                        debug_assert!(team2 != team);
-                        if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
-                        {
-                            ret.inner.set(index2 as usize, true);
-                        }
+                    break;
+                } else {
+                    if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+                        ret.inner.set(index2 as usize, true);
                     }
                 }
             }
+            //tddtuts-utusbtddcdc
+            // for (index2, fo) in self.los_ray(index, dir, world) {
+            //     let num_attack = get_num_attack(spoke_info, index2);
+
+            //     match fo {
+            //         LosRayItem::Move => {
+            //             if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+            //                 ret.inner.set(index2 as usize, true);
+            //             }
+            //         }
+            //         LosRayItem::End {
+            //             height,
+            //             team: team2,
+            //         } => {
+            //             debug_assert!(team2 != team);
+            //             if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
+            //             {
+            //                 ret.inner.set(index2 as usize, true);
+            //             }
+            //         }
+            //     }
+            // }
         }
     }
     // fn moves_that_increase_los(

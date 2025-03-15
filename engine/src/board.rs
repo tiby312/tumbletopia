@@ -271,14 +271,13 @@ impl MyWorld {
             g.factions.add_cell_inner(i, stack, team);
         }
 
-        let s=mesh::small_mesh::SmallMesh::from_iter(
-            hex::Cube::new(0,0).ring(size).map(|x|x.to_axial())
+        let s = mesh::small_mesh::SmallMesh::from_iter(
+            hex::Cube::new(0, 0).ring(size).map(|x| x.to_axial()),
         );
-        for c in s.inner.iter_ones(){
-            //land.inner.set(c,true);
-            g.factions.add_cell_inner(c,6,Team::Neutral)
-        }
-
+        // for c in s.inner.iter_ones(){
+        //     //land.inner.set(c,true);
+        //     g.factions.add_cell_inner(c,6,Team::Neutral)
+        // }
 
         let g = unit::GameStateTotal {
             tactical: g,
