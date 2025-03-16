@@ -176,27 +176,27 @@ pub struct SpokeInfo {
 //     }
 // }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum Thing {
-    None,
-    White,
-    Black,
-    Neutral,
-}
+// #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+// pub enum Thing {
+//     None,
+//     White,
+//     Black,
+//     Neutral,
+// }
 
-impl Thing {
-    pub fn value(&self) -> i64 {
-        match self {
-            Thing::None => 0,
-            Thing::White => 1,
-            Thing::Black => -1,
-            Thing::Neutral => 0,
-        }
-    }
-}
+// impl Thing {
+//     pub fn value(&self) -> i64 {
+//         match self {
+//             Thing::None => 0,
+//             Thing::White => 1,
+//             Thing::Black => -1,
+//             Thing::Neutral => 0,
+//         }
+//     }
+// }
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct SpokeCell {
-    raw: [Thing; 6],
+    raw: [Team; 6],
     pub num_attack: [i64; 2],
 }
 
@@ -208,7 +208,7 @@ impl SpokeInfo {
     pub fn new(_game: &GameState) -> Self {
         SpokeInfo {
             data: [SpokeCell {
-                raw: [Thing::None; 6],
+                raw: [Team::Neutral; 6],
                 num_attack: [0; 2],
             }; 256],
         }
@@ -229,7 +229,7 @@ impl SpokeInfo {
         );
         let mut it = hex::HDir::all().map(move |dd| {
             let (dis, it) = unit::ray(Axial::from_index(&index), dd, world);
-            let mut it=it.peekable();
+            //let mut it=it.peekable();
 
             // if let Some(&index2)=it.peek(){
             //     if game.factions.get_cell_inner(index2 as usize).is_none() {
@@ -309,7 +309,7 @@ impl SpokeInfo {
                 {
                     Some(t)
                 } else {
-                    None
+                    Some(Team::Neutral)
                 }
             };
 
@@ -321,55 +321,72 @@ impl SpokeInfo {
     }
 
     fn set(&mut self, index: usize, dir: HDir, val: Option<Team>) {
-        let tt = match val {
-            None => Thing::None,
-            Some(Team::White) => Thing::White,
-            Some(Team::Black) => Thing::Black,
-            Some(Team::Neutral) => Thing::Neutral,
-        };
+        let cc = &mut self.data[index];
 
-        let new_value = tt.value();
-        let old_value = self.data[index].raw[dir as usize].value();
+        let new_team = val.unwrap_or_else(|| Team::Neutral);
 
-        match (old_value, new_value) {
-            (-1, -1) => {}
-            (-1, 0) => {
-                self.data[index].num_attack[1] -= 1;
-            }
-            (0, -1) => {
-                self.data[index].num_attack[1] += 1;
-            }
-            (-1, 1) => {
-                self.data[index].num_attack[0] += 1;
-                self.data[index].num_attack[1] -= 1;
-            }
-            (1, 1) => {}
-            (1, 0) => {
-                self.data[index].num_attack[0] -= 1;
-            }
-            (0, 1) => {
-                self.data[index].num_attack[0] += 1;
-            }
-            (1, -1) => {
-                self.data[index].num_attack[0] -= 1;
-                self.data[index].num_attack[1] += 1;
-            }
-            (0, 0) => {}
-            _ => unreachable!("{:?} {:?}", old_value, new_value),
+        let curr_team = cc.raw[dir as usize];
+
+        if new_team == curr_team {
+            return;
         }
 
-        //let diff=new_value-old_value;
-        //self.data[index].num_attack
+        if new_team != Team::Neutral {
+            cc.num_attack[new_team] += 1;
+        }
 
-        self.data[index].raw[dir as usize] = tt;
+        if curr_team != Team::Neutral {
+            cc.num_attack[curr_team] -= 1;
+        }
+        cc.raw[dir as usize] = new_team;
+
+        // let tt = match val {
+        //     None => Thing::None,
+        //     Some(Team::White) => Thing::White,
+        //     Some(Team::Black) => Thing::Black,
+        //     Some(Team::Neutral) => Thing::Neutral,
+        // };
+
+        // let new_value = tt.value();
+        // let old_value = self.data[index].raw[dir as usize].value();
+
+        // match (old_value, new_value) {
+        //     (-1, -1) => {}
+        //     (-1, 0) => {
+        //         self.data[index].num_attack[1] -= 1;
+        //     }
+        //     (0, -1) => {
+        //         self.data[index].num_attack[1] += 1;
+        //     }
+        //     (-1, 1) => {
+        //         self.data[index].num_attack[0] += 1;
+        //         self.data[index].num_attack[1] -= 1;
+        //     }
+        //     (1, 1) => {}
+        //     (1, 0) => {
+        //         self.data[index].num_attack[0] -= 1;
+        //     }
+        //     (0, 1) => {
+        //         self.data[index].num_attack[0] += 1;
+        //     }
+        //     (1, -1) => {
+        //         self.data[index].num_attack[0] -= 1;
+        //         self.data[index].num_attack[1] += 1;
+        //     }
+        //     (0, 0) => {}
+        //     _ => unreachable!("{:?} {:?}", old_value, new_value),
+        // }
+
+        // self.data[index].raw[dir as usize] = tt;
     }
     pub fn get(&self, index: usize, dir: HDir) -> Option<Team> {
-        match self.data[index].raw[dir as usize] {
-            Thing::None => None,
-            Thing::White => Some(Team::White),
-            Thing::Black => Some(Team::Black),
-            Thing::Neutral => Some(Team::Neutral),
-        }
+        Some(self.data[index].raw[dir as usize])
+        // match self.data[index].raw[dir as usize] {
+        //     Thing::None => None,
+        //     Thing::White => Some(Team::White),
+        //     Thing::Black => Some(Team::Black),
+        //     Thing::Neutral => Some(Team::Neutral),
+        // }
     }
 }
 
@@ -382,7 +399,7 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
             let v = if let Some(unit::EndPoint { team, .. }) = rest {
                 Some(team)
             } else {
-                None
+                Some(Team::Neutral)
             };
             spoke_info.set(index, HDir::from(i as u8), v);
             debug_assert_eq!(v, spoke_info.get(index, HDir::from(i as u8)));
