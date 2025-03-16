@@ -440,19 +440,6 @@ impl<'a> AlphaBeta<'a> {
             ab.alpha = stand_pat
         }
 
-        // if let Some(g) = game.game_is_over(self.world, team, self.history) {
-        //     return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
-        // }
-        // let mut spoke_info = moves::SpokeInfo::new(game);
-        // moves::update_spoke_info(&mut spoke_info, self.world, game);
-
-        // if depth == 0 {
-        //     return (
-        //         team.value()*self.evaluator
-        //             .absolute_evaluate(game, self.world, &spoke_info, false),
-        //         tinyvec::array_vec![],
-        //     );
-        // }
 
         let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
