@@ -739,32 +739,33 @@ impl GameState {
 
         //TODO DO THISSSSS
     }
-    pub fn generate_possible_moves_movement(
-        &self,
-        world: &board::MyWorld,
+    pub fn generate_possible_moves_movement<'b>(
+        &'b self,
+        world: &'b board::MyWorld,
         team: Team,
-        spoke_info: &SpokeInfo,
-    ) -> (SmallMesh, SmallMesh, SmallMesh) {
-        let mut mesh = SmallMesh::new();
+        spoke_info: &'b SpokeInfo,
+    ) -> impl Iterator<Item = ActualMove> + use<'b> {
+        //let mut mesh = SmallMesh::new();
 
-        let mut captures = SmallMesh::new();
-        let mut reinforcements = SmallMesh::new();
+        // let mut captures = SmallMesh::new();
+        // let mut reinforcements = SmallMesh::new();
         if team == Team::Neutral {
             unreachable!();
         }
 
-        for &index in world.land_as_vec.iter() {
+        world.land_as_vec.iter().filter_map(move |&index| {
             if let Some(v) = self.playable(index, team, world, spoke_info) {
-                mesh.inner.set(index, true);
-                match v {
-                    MoveType::Capture => captures.inner.set(index, true),
-                    MoveType::Reinforce => reinforcements.inner.set(index, true),
-                    MoveType::Fresh => {}
-                }
+                //mesh.inner.set(index, true);
+                // match v {
+                //     MoveType::Capture => captures.inner.set(index, true),
+                //     MoveType::Reinforce => reinforcements.inner.set(index, true),
+                //     MoveType::Fresh => {}
+                // }
+                Some(ActualMove(index))
+            } else {
+                None
             }
-        }
-
-        (mesh, captures, reinforcements)
+        })
     }
 }
 

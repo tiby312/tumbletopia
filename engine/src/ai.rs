@@ -572,15 +572,12 @@ impl<'a> AlphaBeta<'a> {
 
         *self.nodes_visited += 1;
 
-        let (all_moves, _captures, _reinfocements) =
-            game.generate_possible_moves_movement(self.world, team, &spoke_info);
-
         let loud_moves = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
 
         self.moves
-            .extend(all_moves.inner.iter_ones().map(|x| ActualMove(x)));
+            .extend(game.generate_possible_moves_movement(self.world, team, &spoke_info));
 
         let end_move_index = self.moves.len();
 

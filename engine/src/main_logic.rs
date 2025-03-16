@@ -1,3 +1,5 @@
+use crate::mesh::small_mesh::SmallMesh;
+
 use super::*;
 
 #[derive(Debug, Clone)]
@@ -418,10 +420,13 @@ pub async fn reselect_loop(
     //     .bake_fog(&game.fog[team])
     //     .generate_loud_moves(world, selected_unit.team,&spoke_info);
 
-    let (mut cca, _, _) = game
-        .tactical
-        .bake_fog(&game.fog[team])
-        .generate_possible_moves_movement(world, selected_unit.team, &spoke_info);
+    //let (mut cca, _, _) = ;
+    let mut cca = SmallMesh::from_iter_move(
+        game.tactical
+            .bake_fog(&game.fog[team])
+            .generate_possible_moves_movement(world, selected_unit.team, &spoke_info),
+    );
+
     cca.inner.set(hex::PASS_MOVE_INDEX, true);
 
     let c2 = game

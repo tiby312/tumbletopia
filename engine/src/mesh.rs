@@ -60,6 +60,13 @@ pub mod small_mesh {
                 inner: bitarr![0;crate::board::TABLE_SIZE],
             }
         }
+        pub fn from_iter_move(it: impl IntoIterator<Item = crate::ActualMove>) -> SmallMesh {
+            let mut m = SmallMesh::new();
+            for a in it {
+                m.inner.set(a.0, true);
+            }
+            m
+        }
         pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SmallMesh {
             let mut m = SmallMesh::new();
             for a in it {
