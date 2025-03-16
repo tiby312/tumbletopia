@@ -650,64 +650,8 @@ impl GameState {
                     }
                 }
             }
-            //tddtuts-utusbtddcdc
-            // for (index2, fo) in self.los_ray(index, dir, world) {
-            //     let num_attack = get_num_attack(spoke_info, index2);
-
-            //     match fo {
-            //         LosRayItem::Move => {
-            //             if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
-            //                 ret.inner.set(index2 as usize, true);
-            //             }
-            //         }
-            //         LosRayItem::End {
-            //             height,
-            //             team: team2,
-            //         } => {
-            //             debug_assert!(team2 != team);
-            //             if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
-            //             {
-            //                 ret.inner.set(index2 as usize, true);
-            //             }
-            //         }
-            //     }
-            // }
         }
     }
-    // fn moves_that_increase_los(
-    //     &self,
-    //     index: usize,
-    //     team: Team,
-    //     world: &board::MyWorld,
-    //     ret: &mut SmallMesh,
-    //     spoke_info: &SpokeInfo,
-    // ) {
-    //     'outer: for dir in HDir::all() {
-    //         //TODO there is a way to skip over spokes that we know are not opponent controlled.
-    //         let mut cands = vec![];
-    //         for index2 in unit::ray(Axial::from_index(index), dir, world).1 {
-    //             if self
-    //                 .playable(index2 as usize, team, world, spoke_info)
-    //                 .is_some()
-    //             {
-    //                 cands.push(index2);
-    //             }
-    //             if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
-    //                 //If we already have this LOS, then any move along this ray wont increase the LOS,
-    //                 //so toss all of them.
-    //                 if team2 == team {
-    //                     continue 'outer;
-    //                 } else {
-    //                     break;
-    //                 }
-    //             }
-    //         }
-    //         //Add all the moves that we know would actually increase the LOS to this piece
-    //         for c in cands {
-    //             ret.inner.set(c as usize, true);
-    //         }
-    //     }
-    // }
 
     pub fn generate_loud_moves(
         &self,
@@ -715,35 +659,9 @@ impl GameState {
         team: Team,
         spoke_info: &SpokeInfo,
     ) -> SmallMesh {
-        //TODO remove
-        //let (verif, _, _) = self.generate_possible_moves_movement(world, team);
-
-        //let mut spoke_info = SpokeInfo::new();
-
-        //update_spoke_info(&mut spoke_info, world, self);
-
-        // 6*3 possibiilties for each spoke.
-        // data structure will be 2 bitfields.
-        // it would be the size 6*n, where n is number of cells.
-        // los(n)=[6*n,6*n+1,6*n+2...6*n+5]
-
         let mut ret = SmallMesh::new();
         for &index in world.land_as_vec.iter() {
-            //for index in world.get_game_cells().inner.iter_ones() {
-            // let mut num_attack: [i64; 2] = [0, 0];
-
-            // for (_, rest) in self.factions.iter_end_points(world, index) {
-            //     if let Some((_, team)) = rest {
-            //         if team == Team::Neutral {
-            //             continue;
-            //         }
-            //         num_attack[team] += 1;
-            //     }
-            // }
-
             let num_attack = get_num_attack(&spoke_info, index);
-
-            //assert_eq!(num_attack,num_attack2);
 
             if let Some((height, rest)) = self.factions.get_cell_inner(index) {
                 let height = height as i64;
@@ -776,65 +694,10 @@ impl GameState {
                             &mut ret,
                             &spoke_info,
                         );
-
-                        // let mut c1 = SmallMesh::new();
-                        // self.moves_that_increase_los(index, team, world, &mut c1, spoke_info);
-                        // let mut c2 = SmallMesh::new();
-                        // self.moves_that_increase_los_better(
-                        //     index, team, world, &mut c2, spoke_info,
-                        // );
-                        // //assert_eq!(c1, c2);
-                        // use std::ops::BitXor;
-                        // let c3 = c1.inner.bitxor(c2.inner);
-                        // let k: Vec<_> = c3
-                        //     .iter_ones()
-                        //     .map(|ii| {
-                        //         move_build::to_letter_coord(&mesh::small_mesh::inverse(ii), world)
-                        //     })
-                        //     .collect();
-                        // let ind =
-                        //     move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
-                        // assert_eq!(
-                        //     c1,
-                        //     c2,
-                        //     "{}::{:?}::{:?}::index={:?}",
-                        //     self.into_string(world),
-                        //     k,
-                        //     team,
-                        //     ind
-                        // );
                     } else if num_attack[!team] == num_attack[team] + 1 {
                         //If the enemy has one more than us, our only option
                         //is to block (aside from reinforcing which we covered above)
                         self.moves_that_block_better(index, team, world, &mut ret, &spoke_info);
-
-                        // let mut c1 = SmallMesh::new();
-                        // self.moves_that_block(index, team, world, &mut c1, spoke_info);
-                        // let mut c2 = SmallMesh::new();
-                        // self.moves_that_block_better(index, team, world, &mut c2, spoke_info);
-
-                        // //tddtuts-utusbtddcdc
-
-                        // //-------------b-r--k------------------
-                        // let k: Vec<_> = c2
-                        //     .inner
-                        //     .iter_ones()
-                        //     .map(|ii| {
-                        //         move_build::to_letter_coord(&mesh::small_mesh::inverse(ii), world)
-                        //     })
-                        //     .collect();
-                        // let ind =
-                        //     move_build::to_letter_coord(&mesh::small_mesh::inverse(index), world);
-                        // assert_eq!(
-                        //     c1,
-                        //     c2,
-                        //     "{}::{:?}::{:?}::index={:?}",
-                        //     self.into_string(world),
-                        //     k,
-                        //     team,
-                        //     ind
-                        // );
-                        // gloo_console::console_dbg!("passed test!");
                     }
                 } else {
                     //If it is an enemy piece, then
@@ -884,19 +747,13 @@ impl GameState {
     ) -> (SmallMesh, SmallMesh, SmallMesh) {
         let mut mesh = SmallMesh::new();
 
-        // if allow_pass {
-        //     mesh.inner.set(PASS_MOVE_INDEX, true);
-        // }
-
         let mut captures = SmallMesh::new();
         let mut reinforcements = SmallMesh::new();
         if team == Team::Neutral {
             unreachable!();
-            //return (mesh, captures, reinforcements);
         }
 
         for &index in world.land_as_vec.iter() {
-            //for index in world.get_game_cells().inner.iter_ones() {
             if let Some(v) = self.playable(index, team, world, spoke_info) {
                 mesh.inner.set(index, true);
                 match v {
@@ -910,43 +767,6 @@ impl GameState {
         (mesh, captures, reinforcements)
     }
 }
-
-// fn for_every_cell(unit: Axial, mut func: impl FnMut(Axial, &[HDir]) -> bool) {
-//     for a in unit.to_cube().neighbours2() {
-//         let a = a.to_axial();
-//         let dir = unit.dir_to(&a);
-
-//         if func(a, &[dir]) {
-//             continue;
-//         }
-
-//         for b in a.to_cube().neighbours2() {
-//             let b = b.to_axial();
-//             let dir2 = a.dir_to(&b);
-
-//             if b.to_cube().dist(&unit.to_cube()) < a.to_cube().dist(&unit.to_cube()) {
-//                 continue;
-//             }
-
-//             if func(b, &[dir, dir2]) {
-//                 continue;
-//             }
-
-//             for c in b.to_cube().neighbours2() {
-//                 let c = c.to_axial();
-//                 let dir3 = b.dir_to(&c);
-
-//                 if c.to_cube().dist(&unit.to_cube()) < b.to_cube().dist(&unit.to_cube()) {
-//                     continue;
-//                 }
-
-//                 if func(c, &[dir, dir2, dir3]) {
-//                     continue;
-//                 }
-//             }
-//         }
-//     }
-// }
 
 impl hex::HexDraw for ActualMove {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
@@ -967,30 +787,4 @@ impl Default for ActualMove {
     fn default() -> Self {
         Self(Default::default())
     }
-}
-
-impl GameState {
-    // pub fn for_all_moves_fast(
-    //     &mut self,
-    //     team: ActiveTeam,
-    //     world: &board::MyWorld,
-    //     mut func: impl FnMut(moves::ActualMove, &move_build::MoveEffect, &GameState),
-    // ) {
-    //     //let state = self;
-
-    //     for mm in self
-    //         .generate_possible_moves_movement(world, None, team).0
-    //         .iter_mesh(Axial::zero())
-    //     {
-    //         let mut mmm = ActualMove { moveto: mm };
-
-    //         let mut effect = mmm.apply(team, self, world);
-
-    //         let mmo = moves::ActualMove { moveto: mm };
-
-    //         func(mmo, &effect, self);
-
-    //         mmm.undo(team, &effect, self);
-    //     }
-    // }
 }

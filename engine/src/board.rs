@@ -237,7 +237,7 @@ impl MyWorld {
         let size = ((3. + (12. * s.len() as f64 - 3.)).sqrt() / 6.).ceil() as i8;
         log!("SIZE OF HEX={}", size);
         //let world=MyWorld::with_size(size,ActiveTeam::White);
-        let mut land = mesh::small_mesh::SmallMesh::from_iter(
+        let land = mesh::small_mesh::SmallMesh::from_iter(
             hex::Cube::new(0, 0).range(size - 1).map(|x| x.to_axial()),
         );
 
@@ -270,14 +270,6 @@ impl MyWorld {
             log!("Adding {} {} {:?}", i, stack, team);
             g.factions.add_cell_inner(i, stack, team);
         }
-
-        let s = mesh::small_mesh::SmallMesh::from_iter(
-            hex::Cube::new(0, 0).ring(size).map(|x| x.to_axial()),
-        );
-        // for c in s.inner.iter_ones(){
-        //     //land.inner.set(c,true);
-        //     g.factions.add_cell_inner(c,6,Team::Neutral)
-        // }
 
         let g = unit::GameStateTotal {
             tactical: g,
