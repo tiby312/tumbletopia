@@ -394,33 +394,11 @@ pub async fn reselect_loop(
         true
     };
 
-    // let cca = if let Some(have_moved) = have_moved {
-    //     (selected_unit.coord == have_moved.the_move.moveto).then(|| {
-    //         game.generate_possible_moves_extra(
-    //             world,
-    //             &have_moved.the_move,
-    //             &have_moved.effect,
-    //             selected_unit.team,
-    //         )
-    //     })
-    // } else {
-    //     None
-    // };
-
-    // let cca = cca.unwrap_or_else(|| {
-    //
-    // });
-    //create_ai_state(team)
 
     let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
     moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
 
-    // let _foo = game
-    //     .tactical
-    //     .bake_fog(&game.fog[team])
-    //     .generate_loud_moves(world, selected_unit.team,&spoke_info);
-
-    //let (mut cca, _, _) = ;
+   
     let mut cca = SmallMesh::from_iter_move(
         game.tactical
             .bake_fog(&game.fog[team])

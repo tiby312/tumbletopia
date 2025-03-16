@@ -427,53 +427,8 @@ pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> &[i64; 2] {
 //     Move,
 // }
 impl GameState {
-    // fn los_ray<'b>(
-    //     &'b self,
-    //     index2: usize,
-    //     dir: HDir,
-    //     world: &'b MyWorld,
-    // ) -> impl Iterator<Item = (usize, LosRayItem)> + use<'b> {
-    //     let mut blocked = false;
-    //     unit::ray(Axial::from_index(&index2), dir, world)
-    //         .1
-    //         .filter_map(move |index| {
-    //             if blocked {
-    //                 return None;
-    //             }
+    
 
-    //             let index = index as usize;
-
-    //             Some((
-    //                 index,
-    //                 if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-    //                     debug_assert!(height > 0);
-
-    //                     blocked = true;
-    //                     // let height = height as i64;
-    //                     // if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
-    //                     //     if rest == team {
-    //                     //         LosRayItem::End(Some(MoveType::Reinforce))
-    //                     //     } else {
-    //                     //         LosRayItem::End(Some(MoveType::Capture))
-    //                     //     }
-    //                     // } else {
-    //                     //     LosRayItem::End(None)
-    //                     // }
-    //                     LosRayItem::End { height, team: rest }
-    //                 } else {
-    //                     LosRayItem::Move
-    //                     // if num_attack[team] < num_attack[!team] {
-    //                     //     LosRayItem::Skip
-    //                     // } else {
-    //                     //     LosRayItem::Move
-    //                     // }
-    //                 },
-    //             ))
-    //         })
-    //         .fuse()
-    // }
-
-    //TODO prefer los_ray
     fn playable(
         &self,
         index: usize,
@@ -483,21 +438,6 @@ impl GameState {
     ) -> Option<MoveType> {
         let num_attack = get_num_attack(spoke_info, index);
 
-        // let num_attack = if let Some(spoke_info) = spoke_info {
-        //     get_num_attack(spoke_info, index)
-        // } else {
-        //     let mut num_attack: [i64; 2] = [0, 0];
-
-        //     for (_, rest) in self.factions.iter_end_points(world, index) {
-        //         if let Some((_, team)) = rest {
-        //             if team == Team::Neutral {
-        //                 continue;
-        //             }
-        //             num_attack[team] += 1;
-        //         }
-        //     }
-        //     num_attack
-        // };
 
         if num_attack[team] == 0 {
             return None;
@@ -745,16 +685,13 @@ impl GameState {
         team: Team,
         spoke_info: &'b SpokeInfo,
     ) -> impl Iterator<Item = ActualMove> + use<'b> {
-        //let mut mesh = SmallMesh::new();
 
-        // let mut captures = SmallMesh::new();
-        // let mut reinforcements = SmallMesh::new();
         if team == Team::Neutral {
             unreachable!();
         }
 
         world.land_as_vec.iter().filter_map(move |&index| {
-            if let Some(v) = self.playable(index, team, world, spoke_info) {
+            if let Some(_) = self.playable(index, team, world, spoke_info) {
                 //mesh.inner.set(index, true);
                 // match v {
                 //     MoveType::Capture => captures.inner.set(index, true),
