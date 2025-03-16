@@ -229,6 +229,30 @@ impl SpokeInfo {
         );
         let mut it = hex::HDir::all().map(move |dd| {
             let (dis, it) = unit::ray(Axial::from_index(&index), dd, world);
+            let mut it=it.peekable();
+
+            // if let Some(&index2)=it.peek(){
+            //     if game.factions.get_cell_inner(index2 as usize).is_none() {
+            //         if let Some(foo)=self.get(index2 as usize,dd.rotate_180()){
+            //             match foo{
+            //                 Team::White | Team::Black=> {
+            //                     if foo==team{
+            //                         // don't need to do anything for empty cells
+            //                     }else{
+            //                         //add one to this team
+            //                         //subtract one from that team
+            //                     }
+            //                 },
+            //                 Team::Neutral => {
+            //                     //just add one for this team to all empty cells
+            //                 },
+            //             }
+            //         }else{
+            //             //just add one for this team to all the empty cells
+            //         }
+            //     }
+            // }
+
             for (d, index2) in it.enumerate() {
                 debug_assert!(index != index2 as usize);
                 self.set(index2 as usize, dd.rotate_180(), Some(team));
