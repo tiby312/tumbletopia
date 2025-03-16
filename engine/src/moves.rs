@@ -427,8 +427,6 @@ pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> &[i64; 2] {
 //     Move,
 // }
 impl GameState {
-    
-
     fn playable(
         &self,
         index: usize,
@@ -437,7 +435,6 @@ impl GameState {
         spoke_info: &SpokeInfo,
     ) -> Option<MoveType> {
         let num_attack = get_num_attack(spoke_info, index);
-
 
         if num_attack[team] == 0 {
             return None;
@@ -685,7 +682,6 @@ impl GameState {
         team: Team,
         spoke_info: &'b SpokeInfo,
     ) -> impl Iterator<Item = ActualMove> + use<'b> {
-
         if team == Team::Neutral {
             unreachable!();
         }

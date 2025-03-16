@@ -394,11 +394,9 @@ pub async fn reselect_loop(
         true
     };
 
-
     let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
     moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
 
-   
     let mut cca = SmallMesh::from_iter_move(
         game.tactical
             .bake_fog(&game.fog[team])
