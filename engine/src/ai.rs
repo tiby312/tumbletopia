@@ -458,16 +458,14 @@ impl<'a> AlphaBeta<'a> {
 
             let temp = spoke_info.process_move_better(cand, team, self.world, game);
 
-            let eval = self.quiesance(game, key, spoke_info, -ab.clone(), -team, depth - 1);
-            let eval = -eval;
-
+            let eval = -self.quiesance(game, key, spoke_info, -ab.clone(), -team, depth - 1);
+            
             spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
 
             cand.undo(team, &effect, game);
 
             key.move_undo(&self.zobrist, cand, team, &effect);
-            //m.push(cand);
-
+            
             if eval >= ab.beta {
                 self.moves.drain(start_move_index..);
                 return eval;
