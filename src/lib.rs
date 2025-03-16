@@ -1261,27 +1261,27 @@ async fn render_command(
         let mut neutral_team_cells = vec![];
         //let mut mountains = vec![];
 
-        if team == shown_team {
-            if let Some((pos, ..)) = &unit_animation {
-                let ss = 0.4;
-                //Draw it a bit lower then static ones so there is no flickering
-                let first = matrix::translation(pos.x, pos.y, 1.0)
-                    .chain(matrix::scale(ss, ss, 1.0))
-                    .generate();
+        //if team == shown_team {
+        if let Some((pos, ..)) = &unit_animation {
+            let ss = 0.4;
+            //Draw it a bit lower then static ones so there is no flickering
+            let first = matrix::translation(pos.x, pos.y, 1.0)
+                .chain(matrix::scale(ss, ss, 1.0))
+                .generate();
 
-                match team {
-                    Team::White => {
-                        white_team_cells.push(first);
-                    }
-                    Team::Black => {
-                        black_team_cells.push(first);
-                    }
-                    Team::Neutral => {
-                        neutral_team_cells.push(first);
-                    }
+            match team {
+                Team::White => {
+                    white_team_cells.push(first);
+                }
+                Team::Black => {
+                    black_team_cells.push(first);
+                }
+                Team::Neutral => {
+                    neutral_team_cells.push(first);
                 }
             }
         }
+        //}
 
         //for a in world.get_game_cells().iter_mesh(Axial::zero()) {
         for (index, height, team2) in
