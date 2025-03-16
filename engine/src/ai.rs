@@ -638,9 +638,9 @@ impl<'a> AlphaBeta<'a> {
 
             let effect = cand.apply(team, game, &self.fogs[team], self.world, Some(&spoke_info));
 
-            key.move_update(&self.zobrist, cand.clone(), team, &effect);
+            key.move_update(&self.zobrist, cand, team, &effect);
 
-            let temp = spoke_info.process_move_better(cand.clone(), team, self.world, game);
+            let temp = spoke_info.process_move_better(cand, team, self.world, game);
 
             let (eval, mut m) = self.negamax(
                 game,
