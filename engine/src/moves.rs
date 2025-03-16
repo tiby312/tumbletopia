@@ -255,9 +255,9 @@ impl SpokeInfo {
 
             for (d, index2) in it.enumerate() {
                 debug_assert!(index != index2 as usize);
-                self.set(index2 as usize, dd.rotate_180(), Some(team));
+                self.set(index2 as usize, dd.rotate_180(), team);
                 if let Some((hh, tt)) = game.factions.get_cell_inner(index2 as usize) {
-                    self.set(index, dd, Some(tt));
+                    self.set(index, dd, tt);
 
                     return (
                         d as i8 + 1,
@@ -269,7 +269,7 @@ impl SpokeInfo {
                     );
                 }
             }
-            self.set(index, dd, None);
+            self.set(index, dd, Team::Neutral);
             (dis, None)
         });
 
@@ -303,13 +303,13 @@ impl SpokeInfo {
             let mut index2: isize = index as isize;
 
             let oppt = if let Some((_, t2)) = effect.destroyed_unit {
-                Some(t2)
+                t2
             } else {
                 if let (_, Some(unit::EndPoint { team: t, .. })) = arr[hexdir.rotate_180() as usize]
                 {
-                    Some(t)
+                    t
                 } else {
-                    Some(Team::Neutral)
+                    Team::Neutral
                 }
             };
 
@@ -320,10 +320,8 @@ impl SpokeInfo {
         }
     }
 
-    fn set(&mut self, index: usize, dir: HDir, val: Option<Team>) {
+    fn set(&mut self, index: usize, dir: HDir, new_team: Team) {
         let cc = &mut self.data[index];
-
-        let new_team = val.unwrap_or_else(|| Team::Neutral);
 
         let curr_team = cc.raw[dir as usize];
 
@@ -379,8 +377,8 @@ impl SpokeInfo {
 
         // self.data[index].raw[dir as usize] = tt;
     }
-    pub fn get(&self, index: usize, dir: HDir) -> Option<Team> {
-        Some(self.data[index].raw[dir as usize])
+    pub fn get(&self, index: usize, dir: HDir) -> Team {
+        self.data[index].raw[dir as usize]
         // match self.data[index].raw[dir as usize] {
         //     Thing::None => None,
         //     Thing::White => Some(Team::White),
@@ -397,9 +395,9 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
     for index in world.get_game_cells().inner.iter_ones() {
         for (i, (_, rest)) in game.factions.iter_end_points(world, index).enumerate() {
             let v = if let Some(unit::EndPoint { team, .. }) = rest {
-                Some(team)
+                team
             } else {
-                Some(Team::Neutral)
+                Team::Neutral
             };
             spoke_info.set(index, HDir::from(i as u8), v);
             debug_assert_eq!(v, spoke_info.get(index, HDir::from(i as u8)));
@@ -573,11 +571,8 @@ impl GameState {
         spoke_info: &SpokeInfo,
     ) {
         for dir in HDir::all() {
-            if let Some(team2) = spoke_info.get(index, dir) {
-                if team2 == !team {
-                } else {
-                    continue;
-                }
+            let team2 = spoke_info.get(index, dir);
+            if team2 == !team {
             } else {
                 continue;
             }
@@ -633,10 +628,9 @@ impl GameState {
         spoke_info: &SpokeInfo,
     ) {
         for dir in HDir::all() {
-            if let Some(team2) = spoke_info.get(index, dir) {
-                if team2 == team {
-                    continue;
-                }
+            let team2 = spoke_info.get(index, dir);
+            if team2 == team {
+                continue;
             }
 
             for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
