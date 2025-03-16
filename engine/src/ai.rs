@@ -463,42 +463,24 @@ impl<'a> AlphaBeta<'a> {
 
         let end_move_index = self.moves.len();
 
-        //let moves = &mut self.moves[start_move_index..end_move_index];
-
-        // if moves.is_empty() {
-        //     return (
-        //         team.value()*self.evaluator
-        //             .absolute_evaluate(game, self.world, &spoke_info, false),
-        //         tinyvec::array_vec![],
-        //     );
-        // }
-
-        //let mut ab_iter = ab.ab_iter();
         for _ in start_move_index..end_move_index {
             let cand = self.moves.pop().unwrap();
 
             let effect = cand.apply(team, game, &self.fogs[team], self.world, Some(&spoke_info));
 
-            key.move_update(&self.zobrist, cand.clone(), team, &effect);
+            key.move_update(&self.zobrist, cand, team, &effect);
 
-            let temp = spoke_info.process_move_better(cand.clone(), team, self.world, game);
+            let temp = spoke_info.process_move_better(cand, team, self.world, game);
 
             let (eval, mut m) =
                 self.quiesance(game, key, spoke_info, -ab.clone(), -team, depth - 1);
             let eval = -eval;
 
-            spoke_info.undo_move(cand.clone(), effect.clone(), team, self.world, game, temp);
-            // log!(
-            //     "consid depth:{} {:?}:{:?}",
-            //     depth,
-            //     self.world.format(&cand),
-            //     self.world.format(&m.clone().to_vec())
-            // );
+            spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
 
-            let cc = cand.clone();
             cand.undo(team, &effect, game);
 
-            key.move_undo(&self.zobrist, cand.clone(), team, &effect);
+            key.move_undo(&self.zobrist, cand, team, &effect);
             m.push(cand);
 
             if eval >= ab.beta {
@@ -511,22 +493,8 @@ impl<'a> AlphaBeta<'a> {
             if eval > ab.alpha {
                 ab.alpha = eval;
             }
-
-            // if !ab_iter.keep_going( m, eval) {
-            //     self.moves.drain(start_move_index..);
-            //     break;
-            // }
         }
         return (best_value, tinyvec::array_vec!());
-        // assert_eq!(self.moves.len(), start_move_index);
-        // //self.moves.drain(start_move_index..end_move_index);
-
-        // let (eval, j) = ab_iter.finish();
-        // if let Some(m) = j {
-        //     (eval, m)
-        // } else {
-        //     (eval, tinyvec::array_vec![])
-        // }
     }
 
     fn negamax(
@@ -685,7 +653,7 @@ impl<'a> AlphaBeta<'a> {
             );
             let eval = -eval;
 
-            spoke_info.undo_move(cand.clone(), effect.clone(), team, self.world, game, temp);
+            spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
             // log!(
             //     "consid depth:{} {:?}:{:?}",
             //     depth,
@@ -693,17 +661,16 @@ impl<'a> AlphaBeta<'a> {
             //     self.world.format(&m.clone().to_vec())
             // );
 
-            let cc = cand.clone();
             cand.undo(team, &effect, game);
 
-            key.move_undo(&self.zobrist, cand.clone(), team, &effect);
+            key.move_undo(&self.zobrist, cand, team, &effect);
             m.push(cand);
             if !ab_iter.keep_going(m, eval) {
                 //2007 without
-                if !loud_moves.inner[cc.0] {
-                    self.killer_moves.consider(depth, cc.clone());
+                if !loud_moves.inner[cand.0] {
+                    self.killer_moves.consider(depth, cand);
 
-                    self.history_heur[cc.0] += depth * depth;
+                    self.history_heur[cand.0] += depth * depth;
                 }
 
                 self.moves.drain(start_move_index..);

@@ -99,7 +99,7 @@ impl Zobrist {
         let mut rng = rand_chacha::ChaCha12Rng::seed_from_u64(0x42);
 
         let inner = (0..board::TABLE_SIZE)
-            .map(|_| std::array::from_fn(|i| rng.next_u64()))
+            .map(|_| std::array::from_fn(|_| rng.next_u64()))
             .collect();
 
         Zobrist { inner }

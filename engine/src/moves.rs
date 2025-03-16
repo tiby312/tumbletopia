@@ -2,7 +2,7 @@ use hex::HDir;
 
 use super::*;
 
-use crate::{board::MyWorld, mesh::small_mesh::SmallMesh};
+use crate::mesh::small_mesh::SmallMesh;
 
 pub struct EndPoints<T> {
     inner: [T; 6],
@@ -80,26 +80,26 @@ impl crate::unit::GameStateTotal {
 
     pub fn update_fog_spokes(
         &mut self,
-        world: &board::MyWorld,
-        team: Team,
-        spoke_info: &moves::SpokeInfo,
+        _world: &board::MyWorld,
+        _team: Team,
+        _spoke_info: &moves::SpokeInfo,
     ) {
         return;
 
         //TODO also need to convert ice blacks to grass blocks to emulate visition mode???
         //TODO also replace enemy units with mountains to allow suicidal moves
-        let res = self
-            .tactical
-            .bake_fog(&self.fog[team])
-            .generate_possible_moves_movement(world, team, spoke_info);
+        // let res = self
+        //     .tactical
+        //     .bake_fog(&self.fog[team])
+        //     .generate_possible_moves_movement(world, team, spoke_info);
 
-        let fog = match team {
-            Team::White => &mut self.fog[0],
-            Team::Black => &mut self.fog[1],
-            Team::Neutral => unreachable!(),
-        };
+        // let fog = match team {
+        //     Team::White => &mut self.fog[0],
+        //     Team::Black => &mut self.fog[1],
+        //     Team::Neutral => unreachable!(),
+        // };
 
-        fog.inner &= !res.0.inner;
+        // fog.inner &= !res.0.inner;
 
         // let pieces = match team {
         //     Team::White => self.tactical.factions.piece.inner & self.tactical.factions.team.inner,
@@ -254,71 +254,21 @@ impl SpokeInfo {
         }
     }
 
-    // pub fn process_move(
-    //     &mut self,
-    //     a: ActualMove,
-    //     team: Team,
-    //     world: &board::MyWorld,
-    //     game: &GameState,
-    // ) -> SpokeTempInfo {
-    //     let index = a.moveto;
-
-    //     //TODO this is iterating twice.
-    //     //instead of finding end points then backtracking
-    //     //should instead update as you go.
-
-    //     let mut it = game.factions.iter_end_points(world, index);
-    //     let arr = std::array::from_fn(|_| it.next().unwrap());
-
-    //     for (i, (dis, rest)) in arr.iter().enumerate() {
-    //         let hexdir = HDir::from(i as u8);
-
-    //         let st = if let &Some(unit::EndPoint {
-    //             team: tt, index: _, ..
-    //         }) = rest
-    //         {
-    //             self.set(index, hexdir, Some(tt));
-    //             1
-    //         } else {
-    //             self.set(index, hexdir, None);
-    //             0
-    //         };
-
-    //         let stride = board::STRIDES[hexdir as usize] as isize;
-
-    //         let mut index2: isize = index as isize;
-
-    //         for _ in 0..dis - 1 + st {
-    //             index2 += stride;
-    //             self.set(index2 as usize, hexdir.rotate_180(), Some(team));
-    //         }
-    //     }
-
-    //     SpokeTempInfo { data: arr }
-    // }
-
     pub fn undo_move(
         &mut self,
         a: ActualMove,
-        effect: move_build::MoveEffect,
-        team: Team,
-        world: &board::MyWorld,
-        game: &GameState,
+        effect: &move_build::MoveEffect,
+        _team: Team,
+        _world: &board::MyWorld,
+        _game: &GameState,
         spoke_temp: SpokeTempInfo,
     ) {
         let index = a.0;
 
-        // let mut it = game.factions.iter_end_points(world, index);
-        // let arr: [(i8, Option<unit::EndPoint>); 6] = std::array::from_fn(|_| it.next().unwrap());
-        // let kk:&[(i8, Option<unit::EndPoint>); 6]=&spoke_temp.data;
-        // assert!(kk==&arr);
         let arr = &spoke_temp.data;
 
-        for (hexdir, (i, (dis, rest))) in HDir::all().zip(arr.iter().enumerate()) {
-            let st = if let &Some(unit::EndPoint {
-                team: tt, index: _, ..
-            }) = rest
-            {
+        for (hexdir, (dis, rest)) in HDir::all().zip(arr.iter()) {
+            let st = if let &Some(unit::EndPoint { .. }) = rest {
                 1
             } else {
                 0
