@@ -420,7 +420,7 @@ impl<'a> AlphaBeta<'a> {
         mut ab: ABAB,
         team: Team,
         depth: usize,
-    ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
+    ) -> Eval {
         *self.nodes_visited += 1;
 
         let stand_pat = team.value()
@@ -429,17 +429,16 @@ impl<'a> AlphaBeta<'a> {
                 .absolute_evaluate(game, self.world, &spoke_info, false);
 
         if depth == 0 {
-            return (stand_pat, tinyvec::ArrayVec::new());
+            return stand_pat;
         }
         let mut best_value = stand_pat;
 
         if stand_pat >= ab.beta {
-            return (stand_pat, tinyvec::ArrayVec::new());
+            return stand_pat;
         }
         if ab.alpha < stand_pat {
             ab.alpha = stand_pat
         }
-
 
         let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
@@ -459,8 +458,7 @@ impl<'a> AlphaBeta<'a> {
 
             let temp = spoke_info.process_move_better(cand, team, self.world, game);
 
-            let (eval, mut m) =
-                self.quiesance(game, key, spoke_info, -ab.clone(), -team, depth - 1);
+            let eval = self.quiesance(game, key, spoke_info, -ab.clone(), -team, depth - 1);
             let eval = -eval;
 
             spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
@@ -468,11 +466,11 @@ impl<'a> AlphaBeta<'a> {
             cand.undo(team, &effect, game);
 
             key.move_undo(&self.zobrist, cand, team, &effect);
-            m.push(cand);
+            //m.push(cand);
 
             if eval >= ab.beta {
                 self.moves.drain(start_move_index..);
-                return (eval, tinyvec::array_vec!());
+                return eval;
             }
             if eval > best_value {
                 best_value = eval
@@ -481,7 +479,7 @@ impl<'a> AlphaBeta<'a> {
                 ab.alpha = eval;
             }
         }
-        return (best_value, tinyvec::array_vec!());
+        return best_value;
     }
 
     fn negamax(
@@ -499,7 +497,10 @@ impl<'a> AlphaBeta<'a> {
         // }
 
         if depth == 0 {
-            return self.quiesance(game, key, spoke_info, ab, team, 3);
+            return (
+                self.quiesance(game, key, spoke_info, ab, team, 3),
+                tinyvec::array_vec!(),
+            );
             // return (
             //     team.value()
             //         * self
