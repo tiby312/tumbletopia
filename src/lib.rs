@@ -936,6 +936,8 @@ async fn render_command(
         let lll = my_matrix.generate(); //matrix::scale(0.0, 0.0, 0.0).generate();
         let projjj = lll.as_ref();
 
+        let piece_scale: f32 = 0.8;
+
         let mouse_world =
             gui::scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
@@ -1214,6 +1216,8 @@ async fn render_command(
             // Draw shadows
             let _d = DepthDisabler::new(ctx);
 
+            let small_shadow = 0.6;
+            let large_shadow = 0.8;
             let shadows = world
                 .get_game_cells()
                 .iter_mesh(Axial::zero())
@@ -1224,8 +1228,8 @@ async fn render_command(
                             return None;
                         } else {
                             match val {
-                                1 | 2 | 3 => 0.6,
-                                4 | 5 | 6 => 0.8,
+                                1 | 2 | 3 => small_shadow * piece_scale,
+                                4 | 5 | 6 => large_shadow * piece_scale,
                                 _ => unreachable!(),
                             }
                         };
@@ -1245,7 +1249,11 @@ async fn render_command(
                 .map(|a| {
                     let pos = a.0;
                     matrix::translation(pos.x, pos.y, zzzz)
-                        .chain(matrix::scale(0.6, 0.6, 1.0))
+                        .chain(matrix::scale(
+                            small_shadow * piece_scale,
+                            small_shadow * piece_scale,
+                            1.0,
+                        ))
                         .generate()
                 })
                 .filter(|_| team == shown_team);
@@ -1261,76 +1269,76 @@ async fn render_command(
         let mut neutral_team_cells = vec![];
         //let mut mountains = vec![];
 
-        //if team == shown_team {
-        if let Some((pos, ..)) = &unit_animation {
-            let ss = 0.4;
-            //Draw it a bit lower then static ones so there is no flickering
-            let first = matrix::translation(pos.x, pos.y, 1.0)
-                .chain(matrix::scale(ss, ss, 1.0))
-                .generate();
-
-            match team {
-                Team::White => {
-                    white_team_cells.push(first);
-                }
-                Team::Black => {
-                    black_team_cells.push(first);
-                }
-                Team::Neutral => {
-                    neutral_team_cells.push(first);
-                }
-            }
-        }
-        //}
-
-        //for a in world.get_game_cells().iter_mesh(Axial::zero()) {
-        for (index, height, team2) in
-            game.factions
-                .cells
-                .iter()
-                .enumerate()
-                .filter_map(|(index, x)| match x {
-                    GameCell::Piece(stack_height, team) => {
-                        Some((index, *stack_height as u8 + 1, *team))
-                    }
-                    GameCell::Empty => None,
-                })
         {
-            let a = Axial::from_index(&index);
-            //if let Some((height, team2)) = game.factions.get_cell(a) {
-            // let inner_stack = height.min(2);
-            // let mid_stack = height.max(2).min(4) - 2;
-            // let outer_stack = height.max(4) - 4;
-            let inner_stack = height.min(3);
-            let mid_stack = height.max(3).min(6) - 3;
-
-            // if height == 6 && team2 == Team::Neutral {
-            //     //mountains.push(grid_snap(a, /*models.land.height / 2.0*/ 0.0).generate());
-            //     continue;
-            // }
-
-            // if shown_fog.is_set(a) {
-            //     continue;
-            // }
-
-            let arr = match team2 {
-                Team::White => &mut white_team_cells,
-                Team::Black => &mut black_team_cells,
-                Team::Neutral => &mut neutral_team_cells,
-            };
-
             let radius = [0.4, 0.6, 0.8];
 
-            for (stack, radius) in [inner_stack, mid_stack].iter().zip(radius) {
-                for k in 0..*stack {
-                    arr.push(
-                        grid_snap(a, k as f32 * cell_height)
-                            .chain(matrix::scale(radius, radius, 1.0))
-                            .generate(),
-                    );
+            if let Some((pos, ..)) = &unit_animation {
+                let ss = radius[0];
+                //Draw it a bit lower then static ones so there is no flickering
+                let first = matrix::translation(pos.x, pos.y, 1.0)
+                    .chain(matrix::scale(ss, ss, 1.0))
+                    .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
+                    .generate();
+
+                match team {
+                    Team::White => {
+                        white_team_cells.push(first);
+                    }
+                    Team::Black => {
+                        black_team_cells.push(first);
+                    }
+                    Team::Neutral => {
+                        neutral_team_cells.push(first);
+                    }
                 }
             }
-            //}
+
+            for (index, height, team2) in
+                game.factions
+                    .cells
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, x)| match x {
+                        GameCell::Piece(stack_height, team) => {
+                            Some((index, *stack_height as u8 + 1, *team))
+                        }
+                        GameCell::Empty => None,
+                    })
+            {
+                let a = Axial::from_index(&index);
+                //if let Some((height, team2)) = game.factions.get_cell(a) {
+                // let inner_stack = height.min(2);
+                // let mid_stack = height.max(2).min(4) - 2;
+                // let outer_stack = height.max(4) - 4;
+                let inner_stack = height.min(3);
+                let mid_stack = height.max(3).min(6) - 3;
+
+                // if height == 6 && team2 == Team::Neutral {
+                //     //mountains.push(grid_snap(a, /*models.land.height / 2.0*/ 0.0).generate());
+                //     continue;
+                // }
+
+                // if shown_fog.is_set(a) {
+                //     continue;
+                // }
+
+                let arr = match team2 {
+                    Team::White => &mut white_team_cells,
+                    Team::Black => &mut black_team_cells,
+                    Team::Neutral => &mut neutral_team_cells,
+                };
+
+                for (stack, radius) in [inner_stack, mid_stack].iter().zip(radius) {
+                    for k in 0..*stack {
+                        arr.push(
+                            grid_snap(a, k as f32 * cell_height * piece_scale)
+                                .chain(matrix::scale(radius, radius, 1.0))
+                                .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
+                                .generate(),
+                        );
+                    }
+                }
+            }
         }
 
         draw_sys
