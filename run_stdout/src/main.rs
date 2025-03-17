@@ -2,6 +2,7 @@ use engine::Zobrist;
 
 fn doop() -> impl Iterator<Item = &'static str> {
     "
+rrrrfrrrrdfrrfrrrrr
 -----s--s-eb-ev-b--
 -c-c-s-tct---cs--c-
 tc-s-d-re-srces-s--
