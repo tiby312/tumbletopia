@@ -413,14 +413,15 @@ pub async fn reselect_loop(
 
     cca.inner &= c2.inner;
 
-    let loud_moves = game
-        .tactical
-        .generate_loud_moves(world, selected_unit.team, &spoke_info);
+    // let loud_moves = game
+    //     .tactical
+    //     .generate_loud_moves(world, selected_unit.team, &spoke_info);
 
     let mut cell = CellSelection::MoveSelection(
         unwrapped_selected_unit,
         cca,
-        loud_moves.0,
+        //loud_moves.0,
+        SmallMesh::new(),
         have_moved.clone(),
     );
 
