@@ -417,8 +417,12 @@ pub async fn reselect_loop(
         .tactical
         .generate_loud_moves(world, selected_unit.team, &spoke_info);
 
-    let mut cell =
-        CellSelection::MoveSelection(unwrapped_selected_unit, cca, loud_moves, have_moved.clone());
+    let mut cell = CellSelection::MoveSelection(
+        unwrapped_selected_unit,
+        cca,
+        loud_moves.0,
+        have_moved.clone(),
+    );
 
     let pototo = doop
         .get_mouse_with_mesh(&mut cell, selected_unit.team, game, grey)

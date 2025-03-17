@@ -73,6 +73,7 @@ cs--c----r--b----dr
 
 fn main() {
     test_wins();
+    //play_large();
 }
 
 fn test_wins() {
@@ -86,6 +87,11 @@ fn test_wins() {
 
         //println!("passed for {}",g);
     }
+}
+
+fn play_large() {
+    let (gg, hist, world) =
+        test_run("---------------------b----r---k------------------------------");
 }
 
 fn test_hard_one() {

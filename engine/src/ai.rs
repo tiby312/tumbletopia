@@ -348,13 +348,13 @@ pub fn iterative_deepening2(
         //reverse it so that the order is in the order of how they are played out.
         mov.reverse();
 
-        log!(
-            "num visited {} eval {} PV for depth {} :{:?}",
-            *aaaa.nodes_visited,
-            res * team.value(),
-            depth,
-            world.format(&mov.clone().to_vec())
-        );
+        // log!(
+        //     "num visited {} eval {} PV for depth {} :{:?}",
+        //     *aaaa.nodes_visited,
+        //     res * team.value(),
+        //     depth,
+        //     world.format(&mov.clone().to_vec())
+        // );
 
         if !mov.is_empty() {
             results = Some(Res {
@@ -440,7 +440,7 @@ impl<'a> AlphaBeta<'a> {
             ab.alpha = stand_pat
         }
 
-        let captures = game.generate_loud_moves(self.world, team, &spoke_info);
+        let (captures, _) = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
 
@@ -558,7 +558,7 @@ impl<'a> AlphaBeta<'a> {
 
         *self.nodes_visited += 1;
 
-        let loud_moves = game.generate_loud_moves(self.world, team, &spoke_info);
+        let (loud_moves, defensive_moves) = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
 
@@ -582,6 +582,10 @@ impl<'a> AlphaBeta<'a> {
 
             if loud_moves.inner[index] {
                 return 10_000;
+            }
+
+            if defensive_moves.inner[index] {
+                return 8_000;
             }
 
             for (i, a) in self

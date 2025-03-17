@@ -595,8 +595,10 @@ impl GameState {
         world: &board::MyWorld,
         team: Team,
         spoke_info: &SpokeInfo,
-    ) -> SmallMesh {
+    ) -> (SmallMesh, SmallMesh) {
         let mut ret = SmallMesh::new();
+        let mut ret2 = SmallMesh::new();
+
         for &index in world.land_as_vec.iter() {
             let num_attack = get_num_attack(&spoke_info, index);
 
@@ -628,13 +630,13 @@ impl GameState {
                             index,
                             team,
                             world,
-                            &mut ret,
+                            &mut ret2,
                             &spoke_info,
                         );
                     } else if num_attack[!team] == num_attack[team] + 1 {
                         //If the enemy has one more than us, our only option
                         //is to block (aside from reinforcing which we covered above)
-                        self.moves_that_block_better(index, team, world, &mut ret, &spoke_info);
+                        self.moves_that_block_better(index, team, world, &mut ret2, &spoke_info);
                     }
                 } else {
                     //If it is an enemy piece, then
@@ -660,7 +662,7 @@ impl GameState {
             }
         }
 
-        return ret;
+        return (ret, ret2);
 
         //Add moves that are this team capture opponents.
 
