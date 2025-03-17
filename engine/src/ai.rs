@@ -348,13 +348,13 @@ pub fn iterative_deepening2(
         //reverse it so that the order is in the order of how they are played out.
         mov.reverse();
 
-        // log!(
-        //     "num visited {} eval {} PV for depth {} :{:?}",
-        //     *aaaa.nodes_visited,
-        //     res * team.value(),
-        //     depth,
-        //     world.format(&mov.clone().to_vec())
-        // );
+        log!(
+            "num visited {} eval {} PV for depth {} :{:?}",
+            *aaaa.nodes_visited,
+            res * team.value(),
+            depth,
+            world.format(&mov.clone().to_vec())
+        );
 
         if !mov.is_empty() {
             results = Some(Res {
