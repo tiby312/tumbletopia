@@ -239,7 +239,7 @@ pub struct TTEntry {
     value: i64,
 }
 
-const STACK_SIZE: usize = 7;
+const STACK_SIZE: usize = 9;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Res {
