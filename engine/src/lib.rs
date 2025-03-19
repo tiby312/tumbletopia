@@ -25,6 +25,7 @@ fn get_index(height: u8, team: Team) -> usize {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Zobrist {
     inner: Vec<[u64; 6 * 3]>,
+    white_to_move: u64,
     pass: u64,
 }
 
@@ -34,7 +35,7 @@ pub struct Key {
 }
 
 impl Key {
-    pub fn from_scratch(base: &Zobrist, game: &GameState, world: &MyWorld) -> Key {
+    pub fn from_scratch(base: &Zobrist, game: &GameState, world: &MyWorld, team: Team) -> Key {
         let mut k = Key { key: 0 };
 
         for index in world.get_game_cells().inner.iter_ones() {
@@ -42,36 +43,46 @@ impl Key {
                 k.key ^= base.inner[index][get_index(h, t)];
             }
         }
+
+        if let Team::White = team {
+            k.key ^= base.white_to_move
+        }
+
         k
     }
     pub fn move_update(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
+        if let Team::White = team {
+            self.key ^= base.white_to_move
+        }
         if m.0 == hex::PASS_MOVE_INDEX {
             self.key ^= base.pass;
-            return;
-        }
+        } else {
+            if let Some(a) = effect.destroyed_unit {
+                //panic!();
+                //xor out what piece was there
+                self.key ^= base.inner[m.0][get_index(a.0, a.1)];
+            }
 
-        if let Some(a) = effect.destroyed_unit {
-            //panic!();
-            //xor out what piece was there
-            self.key ^= base.inner[m.0][get_index(a.0, a.1)];
+            //xor in the new piece
+            self.key ^= base.inner[m.0][get_index(effect.height, team)];
         }
-
-        //xor in the new piece
-        self.key ^= base.inner[m.0][get_index(effect.height, team)];
     }
 
     pub fn move_undo(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
         if m.0 == hex::PASS_MOVE_INDEX {
             self.key ^= base.pass;
-            return;
+        } else {
+            //xor out the new piece
+            self.key ^= base.inner[m.0][get_index(effect.height, team)];
+
+            if let Some(a) = effect.destroyed_unit {
+                //xor in what piece was there
+                self.key ^= base.inner[m.0][get_index(a.0, a.1)];
+            }
         }
 
-        //xor out the new piece
-        self.key ^= base.inner[m.0][get_index(effect.height, team)];
-
-        if let Some(a) = effect.destroyed_unit {
-            //xor in what piece was there
-            self.key ^= base.inner[m.0][get_index(a.0, a.1)];
+        if let Team::White = team {
+            self.key ^= base.white_to_move
         }
     }
 }
@@ -85,7 +96,7 @@ fn test_zobrist() {
 
     let base = Zobrist::new();
 
-    let mut k = Key::from_scratch(&base, &game.tactical, world);
+    let mut k = Key::from_scratch(&base, &game.tactical, world, Team::White);
 
     let a = Axial::from_letter_coord('B', 2, world.radius as i8);
     let m = ActualMove(a.to_index());
@@ -116,6 +127,7 @@ impl Zobrist {
         Zobrist {
             inner,
             pass: rng.next_u64(),
+            white_to_move: rng.next_u64(),
         }
     }
 }

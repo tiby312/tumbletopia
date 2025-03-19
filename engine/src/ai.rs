@@ -303,7 +303,7 @@ pub fn iterative_deepening2(
 
     let mut nodes_visited_total = 0;
 
-    let mut key = Key::from_scratch(&zobrist, game, world);
+    let mut key = Key::from_scratch(&zobrist, game, world, team);
     let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
 
     let mut game_orig = game.clone();
