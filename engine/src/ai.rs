@@ -260,13 +260,11 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
-
     //TODO after a 4 depth search, compare the eval of the first 4 moves.
     //if there is a big disparity in those moves, then the position is sharp
     //in which case we should probably search deeper.
 
-
-    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 9, zobrist) {
+    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove(hex::PASS_MOVE_INDEX)
@@ -431,24 +429,34 @@ impl<'a> AlphaBeta<'a> {
         team: Team,
         depth: usize,
     ) -> Eval {
+        if depth == 0 {
+            // return (
+            //     self.quiesance(game, key, spoke_info, ab, team, 6),
+            //     tinyvec::array_vec!(),
+            // );
+            return team.value()
+                * self
+                    .evaluator
+                    .absolute_evaluate(game, self.world, &spoke_info, false);
+        }
         *self.nodes_visited += 1;
 
-        let stand_pat = team.value()
-            * self
-                .evaluator
-                .absolute_evaluate(game, self.world, &spoke_info, false);
+        // let stand_pat = team.value()
+        //     * self
+        //         .evaluator
+        //         .absolute_evaluate(game, self.world, &spoke_info, false);
 
-        if depth == 0 {
-            return stand_pat;
-        }
-        let mut best_value = stand_pat;
+        // if depth == 0 {
+        //     return stand_pat;
+        // }
+        // let mut best_value = stand_pat;
 
-        if stand_pat >= ab.beta {
-            return stand_pat;
-        }
-        if ab.alpha < stand_pat {
-            ab.alpha = stand_pat
-        }
+        // if stand_pat >= ab.beta {
+        //     return stand_pat;
+        // }
+        // if ab.alpha < stand_pat {
+        //     ab.alpha = stand_pat
+        // }
 
         let (captures, defensive) = game.generate_loud_moves(self.world, team, &spoke_info);
 
@@ -462,6 +470,7 @@ impl<'a> AlphaBeta<'a> {
             .extend(captures.inner.iter_ones().map(|x| ActualMove(x)));
 
         let end_move_index = self.moves.len();
+        let mut ab_iter = ab.ab_iter();
 
         for _ in start_move_index..end_move_index {
             let cand = self.moves.pop().unwrap();
@@ -472,7 +481,14 @@ impl<'a> AlphaBeta<'a> {
 
             let temp = spoke_info.process_move_better(cand, team, self.world, game);
 
-            let eval = -self.quiesance(game, key, spoke_info, -ab.clone(), -team, depth - 1);
+            let eval = -self.quiesance(
+                game,
+                key,
+                spoke_info,
+                -ab_iter.clone_ab_values(),
+                -team,
+                depth - 1,
+            );
 
             spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
 
@@ -480,18 +496,51 @@ impl<'a> AlphaBeta<'a> {
 
             key.move_undo(&self.zobrist, cand, team, &effect);
 
-            if eval >= ab.beta {
+            // if eval >= ab.beta {
+            //     self.moves.drain(start_move_index..);
+            //     return eval;
+            // }
+            // if eval > best_value {
+            //     best_value = eval
+            // }
+            // if eval > ab.alpha {
+            //     ab.alpha = eval;
+            // }
+            if !ab_iter.keep_going((), eval) {
+                //2007 without
+                // if !loud_moves.inner[cand.0] {
+                //     self.killer_moves.consider(depth, cand);
+
+                //     self.history_heur[cand.0] += depth * depth;
+                // }
+
                 self.moves.drain(start_move_index..);
-                return eval;
-            }
-            if eval > best_value {
-                best_value = eval
-            }
-            if eval > ab.alpha {
-                ab.alpha = eval;
+                break;
             }
         }
-        return best_value;
+
+        assert_eq!(self.moves.len(), start_move_index);
+
+        let (eval, m) = ab_iter.finish();
+
+        let eval = if m.is_none() {
+            //assert!(beta_cutoff);
+
+            //If we have no more moves, then we need to evaluate what happens,
+            //if black plays a bunch of moves. at this point.
+            team.value()
+                * self
+                    .evaluator
+                    .absolute_evaluate(game, self.world, &spoke_info, false)
+            //team.value()*eval
+            //eval
+        } else {
+            eval
+        };
+
+        eval
+
+        //return best_value;
     }
 
     fn negamax(

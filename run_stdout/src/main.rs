@@ -45,7 +45,6 @@ s-cr-d---er-rtdt-c-
 -se-se--ser-se-t---
 --es-e--see--s-e-ss
 c--ct-------c-t--cc
-ccc-e-ss----s-----d
 --ttd-tt-d---dtdd--
 ---d-c-s--d-rtst-dc
 c--ctc-c-d---ssss--
@@ -69,6 +68,7 @@ cs--c----r--b----dr
 -r--r-r-bct---c--b-
 -r--r-r-d-t-c-d--b-
 duc----tt---e-b-td-
+ccc-e-ss----s-----d
 "
     .trim()
     .split('\n')
@@ -79,7 +79,18 @@ duc----tt---e-b-td-
 fn main() {
     //eval("dut-s-stt-dcedbbtd-");
     test_wins();
+    //test_pass("c--ct-------c-t--cc");
+
     //play_large();
+}
+
+fn test_pass(game_s: &str) {
+    let (gg, hist, world) = test_run(game_s);
+    let engine::unit::GameOver::WhiteWon = gg else {
+        let s = format!("{:?}", world.format(&hist));
+
+        panic!("failed {} hist {:?}", game_s, s);
+    };
 }
 
 fn eval(game_s: &str) {
@@ -95,13 +106,7 @@ fn eval(game_s: &str) {
 
 fn test_wins() {
     for g in doop() {
-        let (gg, hist, world) = test_run(g);
-        let engine::unit::GameOver::WhiteWon = gg else {
-            let s = format!("{:?}", world.format(&hist));
-
-            panic!("failed {} hist {:?}", g, s);
-        };
-
+        test_pass(g);
         //println!("passed for {}",g);
     }
 }
