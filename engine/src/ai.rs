@@ -8,7 +8,7 @@ use super::*;
 pub type Eval = i64;
 
 use tinyvec::ArrayVec;
-pub const MAX_NODE_VISIT: usize = 3000;
+pub const MAX_NODE_VISIT: usize = 1_000_000;
 
 pub fn reinforce(team: Team, game: &mut GameState, world: &MyWorld) {
     let mut spoke = SpokeInfo::new(game);
@@ -229,11 +229,9 @@ impl Evaluator {
         spoke_info: &moves::SpokeInfo,
         _debug: bool,
     ) -> Eval {
-        
         let mut total_foo = 0;
         let strength_parity = 0;
-        for &index in world.land_as_vec.iter()
-        {
+        for &index in world.land_as_vec.iter() {
             let num_attack = get_num_attack(spoke_info, index);
 
             const TERR: i64 = 10;
@@ -242,7 +240,6 @@ impl Evaluator {
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
                 if tt != Team::Neutral {
-                  
                     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
                         ACT * -tt.value()
                     } else {
@@ -295,7 +292,6 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
-    
     let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 9, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
@@ -325,7 +321,7 @@ pub fn iterative_deepening2(
     let mut evaluator = Evaluator::default();
 
     let mut moves = vec![];
-    
+
     let mut spoke_info = SpokeInfo::new(game);
     moves::update_spoke_info(&mut spoke_info, world, game);
 
@@ -340,7 +336,7 @@ pub fn iterative_deepening2(
     let key_orig = key.clone();
 
     let mut history_heur: Vec<_> = (0..board::TABLE_SIZE).map(|_| 0).collect();
-    
+
     for depth in 0..len {
         let depth = depth + 1;
         log!("searching depth={}", depth);
@@ -374,10 +370,10 @@ pub fn iterative_deepening2(
         assert_eq!(key_orig, key);
         assert_eq!(&game_orig, game);
 
-        // if *aaaa.nodes_visited >= MAX_NODE_VISIT {
-        //     log!("discarding depth {}", depth);
-        //     break;
-        // }
+        if *aaaa.nodes_visited >= MAX_NODE_VISIT {
+            log!("discarding depth {}", depth);
+            break;
+        }
 
         //alpha beta returns the main line with the first move at the end
         //reverse it so that the order is in the order of how they are played out.
@@ -557,9 +553,6 @@ impl<'a> AlphaBeta<'a> {
         team: Team,
         depth: usize,
     ) -> Eval {
-        *self.nodes_visited += 1;
-
-
         let stand_pat = team.value()
             * self
                 .evaluator
@@ -569,7 +562,13 @@ impl<'a> AlphaBeta<'a> {
             return stand_pat;
         }
 
-        *self.qui_nodes_visited+=1;
+        if *self.nodes_visited >= MAX_NODE_VISIT {
+            return abab::SMALL_VAL;
+        }
+
+        *self.nodes_visited += 1;
+
+        *self.qui_nodes_visited += 1;
 
         let mut best_value = stand_pat;
 
@@ -631,23 +630,15 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
         update_tt: bool,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        // if *self.nodes_visited >= MAX_NODE_VISIT {
-        //     return (SMALL_VAL, tinyvec::array_vec!());
-        // }
+        if *self.nodes_visited >= MAX_NODE_VISIT {
+            return (abab::SMALL_VAL, tinyvec::array_vec!());
+        }
 
         if depth == 0 {
             return (
                 self.quiesance(game, key, spoke_info, ab, team, 2),
                 tinyvec::array_vec!(),
             );
-            
-            // return (
-            //     team.value()
-            //         * self
-            //             .evaluator
-            //             .absolute_evaluate(game, self.world, &spoke_info, false),
-            //     tinyvec::array_vec![],
-            // );
         }
 
         //null move pruning
