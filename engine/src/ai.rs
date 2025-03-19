@@ -190,8 +190,8 @@ impl Evaluator {
             //         num_attack[team] += 1;
             //     }
             // }
-            const TERR: i64 = 9;
-            const ACT: i64 = 10;
+            const TERR: i64 = 10;
+            const ACT: i64 = 9;
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
@@ -205,9 +205,9 @@ impl Evaluator {
                     // }
                     //}
                     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                        TERR * -tt.value()
+                        ACT * -tt.value()
                     } else {
-                        ACT * tt.value()
+                        TERR * tt.value()
                     }
                     // tt.value()
                 } else {
@@ -260,7 +260,7 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
-    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 11, zobrist) {
+    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 9, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove(hex::PASS_MOVE_INDEX)
@@ -500,17 +500,17 @@ impl<'a> AlphaBeta<'a> {
         // }
 
         if depth == 0 {
-            // return (
-            //     self.quiesance(game, key, spoke_info, ab, team, 3),
-            //     tinyvec::array_vec!(),
-            // );
             return (
-                team.value()
-                    * self
-                        .evaluator
-                        .absolute_evaluate(game, self.world, &spoke_info, false),
-                tinyvec::array_vec![],
+                self.quiesance(game, key, spoke_info, ab, team, 3),
+                tinyvec::array_vec!(),
             );
+            // return (
+            //     team.value()
+            //         * self
+            //             .evaluator
+            //             .absolute_evaluate(game, self.world, &spoke_info, false),
+            //     tinyvec::array_vec![],
+            // );
         }
 
         //null move pruning

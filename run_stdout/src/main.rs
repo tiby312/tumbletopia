@@ -1,4 +1,4 @@
-use engine::Zobrist;
+use engine::{ai::Evaluator, moves::SpokeInfo, Zobrist};
 
 //-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
 
@@ -60,7 +60,6 @@ s---s-bdd-tct---b-b
 -s--ds---cs-s-ds---
 --ddttt------d-e---
 ----sc-s-----ccssc-
-duc----tt---e-b-td-
 -----ds--tdsc--er-t
 sdt--ect-----e-sc-s
 -tccd--t-t-ct--rdd-
@@ -69,6 +68,7 @@ cs--c----r--b----dr
 -r--r-rbbcr---dr-bs
 -r--r-r-bct---c--b-
 -r--r-r-d-t-c-d--b-
+duc----tt---e-b-td-
 "
     .trim()
     .split('\n')
@@ -77,8 +77,20 @@ cs--c----r--b----dr
 }
 
 fn main() {
+    //eval("dut-s-stt-dcedbbtd-");
     test_wins();
     //play_large();
+}
+
+fn eval(game_s: &str) {
+    let world = engine::board::MyWorld::load_from_string(game_s);
+
+    let mut game = world.starting_state.clone();
+
+    let mut spoke_info = SpokeInfo::new(&game.tactical);
+    engine::moves::update_spoke_info(&mut spoke_info, &world, &game.tactical);
+    let eval = Evaluator::default().absolute_evaluate(&game.tactical, &world, &spoke_info, false);
+    println!("eval for {} is {} from white perpsective", game_s, eval);
 }
 
 fn test_wins() {
