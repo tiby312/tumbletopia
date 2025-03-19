@@ -264,7 +264,7 @@ pub fn calculate_move(
     //if there is a big disparity in those moves, then the position is sharp
     //in which case we should probably search deeper.
 
-    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 8, zobrist) {
+    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 7, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove(hex::PASS_MOVE_INDEX)
@@ -458,13 +458,10 @@ impl<'a> AlphaBeta<'a> {
         //     ab.alpha = stand_pat
         // }
 
-        let (captures, defensive) = game.generate_loud_moves(self.world, team, &spoke_info);
+        let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
         self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
-
-        // self.moves
-        //     .extend(defensive.inner.iter_ones().map(|x| ActualMove(x)));
 
         self.moves
             .extend(captures.inner.iter_ones().map(|x| ActualMove(x)));
@@ -559,7 +556,7 @@ impl<'a> AlphaBeta<'a> {
 
         if depth == 0 {
             return (
-                self.quiesance(game, key, spoke_info, ab, team, 3),
+                self.quiesance(game, key, spoke_info, ab, team, 5),
                 tinyvec::array_vec!(),
             );
             // return (
@@ -621,7 +618,7 @@ impl<'a> AlphaBeta<'a> {
 
         *self.nodes_visited += 1;
 
-        let (loud_moves, defensive_moves) = game.generate_loud_moves(self.world, team, &spoke_info);
+        let loud_moves = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
 
@@ -648,9 +645,9 @@ impl<'a> AlphaBeta<'a> {
                 return 10_000;
             }
 
-            if defensive_moves.inner[index] {
-                return 8_000;
-            }
+            // if defensive_moves.inner[index] {
+            //     return 8_000;
+            // }
 
             for (i, a) in self
                 .killer_moves

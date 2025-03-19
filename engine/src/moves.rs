@@ -603,9 +603,8 @@ impl GameState {
         world: &board::MyWorld,
         team: Team,
         spoke_info: &SpokeInfo,
-    ) -> (SmallMesh, SmallMesh) {
+    ) -> SmallMesh {
         let mut ret = SmallMesh::new();
-        let mut ret2 = SmallMesh::new();
 
         for &index in world.land_as_vec.iter() {
             let num_attack = get_num_attack(&spoke_info, index);
@@ -629,23 +628,37 @@ impl GameState {
                         continue;
                     }
 
-                    //If enemy is threatening to take and we have parity in LOS,
-                    //if we increase our LOS, then we would be able to recapture this cell.
-                    if num_attack[!team] == num_attack[team] {
-                        //add every move coming out of this cell as a loud move
-                        //that would increase the los of the cell being threatened.
-                        self.moves_that_increase_los_better(
-                            index,
-                            team,
-                            world,
-                            &mut ret2,
-                            &spoke_info,
-                        );
-                    } else if num_attack[!team] == num_attack[team] + 1 {
-                        //If the enemy has one more than us, our only option
-                        //is to block (aside from reinforcing which we covered above)
-                        self.moves_that_block_better(index, team, world, &mut ret2, &spoke_info);
+                    //Also add moves where lets say this piece is going to die.
+                    //we might want to use it to reinforce another piece before it dies.
+                    //this such moves would also be a forcing/loud/defensive move
+                    for dir in HDir::all() {
+                        for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
+                            let index2 = index2 as usize;
+                            if self.playable(index2, team, world, spoke_info).is_some() {
+                                ret.inner.set(index2, true);
+                            }
+                        }
                     }
+
+                    // //If enemy is threatening to take and we have parity in LOS,
+                    // //if we increase our LOS, then we would be able to recapture this cell.
+                    // if num_attack[!team] == num_attack[team] {
+                    //     //add every move coming out of this cell as a loud move
+                    //     //that would increase the los of the cell being threatened.
+                    //     self.moves_that_increase_los_better(
+                    //         index,
+                    //         team,
+                    //         world,
+                    //         &mut ret2,
+                    //         &spoke_info,
+                    //     );
+                    // } else if num_attack[!team] == num_attack[team] + 1 {
+                    //     //If the enemy has one more than us, our only option
+                    //     //is to block (aside from reinforcing which we covered above)
+                    //     self.moves_that_block_better(index, team, world, &mut ret2, &spoke_info);
+                    // }else{
+
+                    // }
                 } else {
                     //If it is an enemy piece, then
                     if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
@@ -654,10 +667,11 @@ impl GameState {
 
                     // if this is an enemy piece that is in contention
                     // any move that adds a LOS on this piece is a loud move.
-                    if (num_attack[team] == num_attack[!team]
-                        || num_attack[team] + 1 == num_attack[!team])
-                        && num_attack[team] >= height
-                    {
+                    // if (num_attack[team] == num_attack[!team]
+                    //     || num_attack[team] + 1 == num_attack[!team])
+                    //     && num_attack[team] >= height
+                    // {
+                    if num_attack[team] == height {
                         self.moves_that_increase_los_better(
                             index,
                             team,
@@ -670,7 +684,7 @@ impl GameState {
             }
         }
 
-        return (ret, ret2);
+        return ret;
 
         //Add moves that are this team capture opponents.
 
