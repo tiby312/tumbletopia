@@ -1,8 +1,11 @@
 use engine::Zobrist;
 
+//-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
+
+//B5,D6,E6,C6,D6,F7,C6,
 fn doop() -> impl Iterator<Item = &'static str> {
     "
--r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
+-r-sgg---wwg---wwwgg-swwwwg-wwwwgwwww
 rrrrfrrrrdfrrfrrrrr
 -----s--s-eb-ev-b--
 -c-c-s-tct---cs--c-

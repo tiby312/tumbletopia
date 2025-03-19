@@ -221,6 +221,11 @@ impl SpokeInfo {
         world: &board::MyWorld,
         game: &GameState,
     ) -> SpokeTempInfo {
+        if a.0 == hex::PASS_MOVE_INDEX {
+            return SpokeTempInfo {
+                data: std::array::from_fn(|_| (0, None)),
+            };
+        }
         let index = a.0;
         debug_assert!(
             world.get_game_cells().inner[index as usize],
@@ -287,6 +292,9 @@ impl SpokeInfo {
         _game: &GameState,
         spoke_temp: SpokeTempInfo,
     ) {
+        if a.0 == hex::PASS_MOVE_INDEX {
+            return;
+        }
         let index = a.0;
 
         let arr = &spoke_temp.data;

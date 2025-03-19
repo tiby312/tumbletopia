@@ -16,7 +16,7 @@ pub use unit::GameState;
 pub use unit::Team;
 
 fn get_index(height: u8, team: Team) -> usize {
-    assert!(height > 0 && height <= 6);
+    assert!(height > 0 && height <= 6, "uhoh:{}", height);
     let k = (height - 1) as usize + 6 * ((team.value() + 1) as usize);
     assert!(k < 6 * 3);
     k
@@ -25,6 +25,7 @@ fn get_index(height: u8, team: Team) -> usize {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Zobrist {
     inner: Vec<[u64; 6 * 3]>,
+    pass: u64,
 }
 
 #[derive(Hash, Copy, Clone, PartialEq, Eq, Debug)]
@@ -44,6 +45,11 @@ impl Key {
         k
     }
     pub fn move_update(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
+        if m.0 == hex::PASS_MOVE_INDEX {
+            self.key ^= base.pass;
+            return;
+        }
+
         if let Some(a) = effect.destroyed_unit {
             //panic!();
             //xor out what piece was there
@@ -55,6 +61,11 @@ impl Key {
     }
 
     pub fn move_undo(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
+        if m.0 == hex::PASS_MOVE_INDEX {
+            self.key ^= base.pass;
+            return;
+        }
+
         //xor out the new piece
         self.key ^= base.inner[m.0][get_index(effect.height, team)];
 
@@ -102,7 +113,10 @@ impl Zobrist {
             .map(|_| std::array::from_fn(|_| rng.next_u64()))
             .collect();
 
-        Zobrist { inner }
+        Zobrist {
+            inner,
+            pass: rng.next_u64(),
+        }
     }
 }
 

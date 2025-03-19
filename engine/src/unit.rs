@@ -553,6 +553,7 @@ impl Tribe {
     // }
 
     pub fn get_cell_inner(&self, index: usize) -> Option<(u8, Team)> {
+        assert!(index != hex::PASS_MOVE_INDEX);
         match &self.cells[index] {
             GameCell::Empty => None,
             GameCell::Piece(height, team) => Some((height.clone() as u8 + 1, *team)),

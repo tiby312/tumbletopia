@@ -6,6 +6,7 @@ use crate::{
 use super::*;
 
 pub type Eval = i64;
+use hex::PASS_MOVE_INDEX;
 //const MATE: i64 = 1_000_000;
 use tinyvec::ArrayVec;
 pub const MAX_NODE_VISIT: usize = 3000;
@@ -189,6 +190,8 @@ impl Evaluator {
             //         num_attack[team] += 1;
             //     }
             // }
+            const TERR: i64 = 9;
+            const ACT: i64 = 10;
 
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
@@ -202,10 +205,11 @@ impl Evaluator {
                     // }
                     //}
                     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                        -tt.value()
+                        TERR * -tt.value()
                     } else {
-                        tt.value()
+                        ACT * tt.value()
                     }
+                    // tt.value()
                 } else {
                     0
                 }
@@ -213,9 +217,9 @@ impl Evaluator {
                 //tt.value()
             } else {
                 if num_attack[Team::White] > num_attack[Team::Black] {
-                    1
+                    TERR
                 } else if num_attack[Team::Black] > num_attack[Team::White] {
-                    -1
+                    -TERR
                 } else {
                     0
                 }
@@ -239,7 +243,7 @@ pub struct TTEntry {
     value: i64,
 }
 
-const STACK_SIZE: usize = 9;
+const STACK_SIZE: usize = 15;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Res {
@@ -256,7 +260,7 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
-    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, STACK_SIZE, zobrist) {
+    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 11, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove(hex::PASS_MOVE_INDEX)
@@ -443,6 +447,7 @@ impl<'a> AlphaBeta<'a> {
         let (captures, _) = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
+        self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
 
         self.moves
             .extend(captures.inner.iter_ones().map(|x| ActualMove(x)));
@@ -495,17 +500,17 @@ impl<'a> AlphaBeta<'a> {
         // }
 
         if depth == 0 {
-            return (
-                self.quiesance(game, key, spoke_info, ab, team, 3),
-                tinyvec::array_vec!(),
-            );
             // return (
-            //     team.value()
-            //         * self
-            //             .evaluator
-            //             .absolute_evaluate(game, self.world, &spoke_info, false),
-            //     tinyvec::array_vec![],
+            //     self.quiesance(game, key, spoke_info, ab, team, 3),
+            //     tinyvec::array_vec!(),
             // );
+            return (
+                team.value()
+                    * self
+                        .evaluator
+                        .absolute_evaluate(game, self.world, &spoke_info, false),
+                tinyvec::array_vec![],
+            );
         }
 
         //null move pruning
@@ -562,6 +567,7 @@ impl<'a> AlphaBeta<'a> {
 
         let start_move_index = self.moves.len();
 
+        self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
         self.moves
             .extend(game.generate_possible_moves_movement(self.world, team, &spoke_info));
 
@@ -599,7 +605,11 @@ impl<'a> AlphaBeta<'a> {
                 }
             }
 
-            1
+            if index == hex::PASS_MOVE_INDEX {
+                return 1;
+            }
+
+            3
         };
 
         //TODO https://www.chessprogramming.org/History_Heuristic
@@ -617,7 +627,7 @@ impl<'a> AlphaBeta<'a> {
         //             .collect::<Vec<_>>()
         //     )
         // );
-
+        let mut beta_cutoff = false;
         //tc-s-d-re-srces-s--
         let mut ab_iter = ab.ab_iter();
         for _ in start_move_index..end_move_index {
@@ -653,6 +663,7 @@ impl<'a> AlphaBeta<'a> {
             key.move_undo(&self.zobrist, cand, team, &effect);
             m.push(cand);
             if !ab_iter.keep_going(m, eval) {
+                beta_cutoff = true;
                 //2007 without
                 if !loud_moves.inner[cand.0] {
                     self.killer_moves.consider(depth, cand);
@@ -670,10 +681,16 @@ impl<'a> AlphaBeta<'a> {
         let (eval, m) = ab_iter.finish();
 
         let eval = if m.is_none() {
-            team.value()
-                * self
-                    .evaluator
-                    .absolute_evaluate(game, self.world, &spoke_info, false)
+            assert!(beta_cutoff);
+
+            //If we have no more moves, then we need to evaluate what happens,
+            //if black plays a bunch of moves. at this point.
+            // team.value()
+            //     * self
+            //         .evaluator
+            //         .absolute_evaluate(game, self.world, &spoke_info, false)
+            //team.value()*eval
+            eval
         } else {
             eval
         };
