@@ -264,7 +264,7 @@ pub fn calculate_move(
     //if there is a big disparity in those moves, then the position is sharp
     //in which case we should probably search deeper.
 
-    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 7, zobrist) {
+    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 6, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove(hex::PASS_MOVE_INDEX)
@@ -556,7 +556,7 @@ impl<'a> AlphaBeta<'a> {
 
         if depth == 0 {
             return (
-                self.quiesance(game, key, spoke_info, ab, team, 5),
+                self.quiesance(game, key, spoke_info, ab, team, 4),
                 tinyvec::array_vec!(),
             );
             // return (

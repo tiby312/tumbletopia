@@ -615,7 +615,8 @@ impl GameState {
                 //if this is our piece
                 if rest == team {
                     //if we can reinforce, add that as a loud move
-                    if num_attack[team] > height && num_attack[team] == num_attack[!team] {
+                    if num_attack[team] > height {
+                        //&& num_attack[team] == num_attack[!team]
                         ret.inner.set(index, true);
                     }
 
@@ -680,6 +681,11 @@ impl GameState {
                             &spoke_info,
                         );
                     }
+                }
+            } else {
+                //TODO slows things down too much?
+                if num_attack[team] == num_attack[!team] && num_attack[team] >= 1 {
+                    ret.inner.set(index, true);
                 }
             }
         }

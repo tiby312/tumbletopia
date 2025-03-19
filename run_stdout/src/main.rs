@@ -58,7 +58,6 @@ dcc-surr-f-s--sd-sd
 s---s-bdd-tct---b-b
 -s--ds---cs-s-ds---
 --ddttt------d-e---
-----sc-s-----ccssc-
 -----ds--tdsc--er-t
 sdt--ect-----e-sc-s
 -tccd--t-t-ct--rdd-
@@ -69,6 +68,7 @@ cs--c----r--b----dr
 -r--r-r-d-t-c-d--b-
 duc----tt---e-b-td-
 ccc-e-ss----s-----d
+----sc-s-----ccssc-
 "
     .trim()
     .split('\n')
