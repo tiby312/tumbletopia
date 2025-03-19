@@ -1,4 +1,4 @@
-use engine::{ai::Evaluator, moves::SpokeInfo, Zobrist};
+use engine::{ai::Evaluator, board::MyWorld, moves::SpokeInfo, Zobrist};
 
 //-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
 
@@ -78,8 +78,10 @@ ccc-e-ss----s-----d
 
 fn main() {
     //eval("dut-s-stt-dcedbbtd-");
-    //test_wins();
-    test_pass("c--ct-------c-t--cc");
+    test_wins();
+    // test_pass("--t-td-t-t-dd--d---");
+    //test_pass("c--ct-------c-t--cc");
+    //test_pass("-----ds--tdsc--er-t");
 
     //play_large();
 }
