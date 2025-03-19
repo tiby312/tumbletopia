@@ -229,9 +229,7 @@ impl Evaluator {
         spoke_info: &moves::SpokeInfo,
         _debug: bool,
     ) -> Eval {
-        // let [white, black] = calculate_secure_points(game, world);
-        // return white - black;
-
+        
         let mut total_foo = 0;
         let strength_parity = 0;
         for &index in world.land_as_vec.iter()
@@ -244,25 +242,15 @@ impl Evaluator {
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
                 if tt != Team::Neutral {
-                    // strength_parity +=
-                    //     6i64 - ((height + 1).max(num_attack[tt]) - num_attack[tt.not()]).abs();
-                    // if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                    //     strength_parity += -tt.value();
-                    // } else {
-                    //     strength_parity += tt.value();
-                    // }
-                    //}
+                  
                     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
                         ACT * -tt.value()
                     } else {
                         TERR * tt.value()
                     }
-                    // tt.value()
                 } else {
                     0
                 }
-
-                //tt.value()
             } else {
                 if num_attack[Team::White] > num_attack[Team::Black] {
                     TERR
@@ -284,7 +272,6 @@ pub enum Flag {
     LowerBound,
 }
 pub struct TTEntry {
-    //mov: Option<moves::ActualMove>,
     pv: ArrayVec<[moves::ActualMove; STACK_SIZE]>,
     flag: Flag,
     depth: usize,
@@ -308,10 +295,7 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
-    //TODO after a 4 depth search, compare the eval of the first 4 moves.
-    //if there is a big disparity in those moves, then the position is sharp
-    //in which case we should probably search deeper.
-
+    
     let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 9, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
@@ -332,24 +316,16 @@ pub fn iterative_deepening2(
     fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
     team: Team,
-    len: usize, //move_history: &MoveHistory,
+    len: usize,
     zobrist: &Zobrist,
 ) -> Option<Res> {
-    let mut results = None; // = Vec::new();
+    let mut results = None;
 
     let mut table = std::collections::HashMap::new();
     let mut evaluator = Evaluator::default();
 
     let mut moves = vec![];
-    // let mut history = MoveHistory::new();
-
-    // //So that we can detect consecutive passes
-    // if let Some(f) = move_history.inner.last() {
-    //     history.push(f.clone());
-    // }
-
-    //let zobrist = &Zobrist::new();
-
+    
     let mut spoke_info = SpokeInfo::new(game);
     moves::update_spoke_info(&mut spoke_info, world, game);
 
@@ -364,7 +340,7 @@ pub fn iterative_deepening2(
     let key_orig = key.clone();
 
     let mut history_heur: Vec<_> = (0..board::TABLE_SIZE).map(|_| 0).collect();
-    //TODO stop searching if we found a game ending move.
+    
     for depth in 0..len {
         let depth = depth + 1;
         log!("searching depth={}", depth);
