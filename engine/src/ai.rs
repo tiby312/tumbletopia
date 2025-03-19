@@ -264,7 +264,7 @@ pub fn calculate_move(
     //if there is a big disparity in those moves, then the position is sharp
     //in which case we should probably search deeper.
 
-    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 6, zobrist) {
+    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 12, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             ActualMove(hex::PASS_MOVE_INDEX)
@@ -306,7 +306,7 @@ pub fn iterative_deepening2(
     moves::update_spoke_info(&mut spoke_info, world, game);
 
     let mut nodes_visited_total = 0;
-
+    let mut qui_nodes_visited_total=0;
     let mut key = Key::from_scratch(&zobrist, game, world, team);
     let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
 
@@ -329,6 +329,7 @@ pub fn iterative_deepening2(
             world,
             moves: &mut moves,
             nodes_visited: &mut nodes_visited_total,
+            qui_nodes_visited:&mut qui_nodes_visited_total,
             fogs,
             zobrist,
             history_heur: &mut history_heur,
@@ -357,8 +358,9 @@ pub fn iterative_deepening2(
         mov.reverse();
 
         log!(
-            "num visited {} eval {} PV for depth {} :{:?}",
+            "regular nodes visited {} quiescence search nodes visited {} eval {} PV for depth {} :{:?}",
             *aaaa.nodes_visited,
+            *aaaa.qui_nodes_visited,
             res * team.value(),
             depth,
             world.format(&mov.clone().to_vec())
@@ -375,7 +377,7 @@ pub fn iterative_deepening2(
         }
     }
 
-    log!("nodes visited={}", nodes_visited_total);
+    log!("total regular nodes visited={} total quiet visited={}", nodes_visited_total,qui_nodes_visited_total);
 
     results
 }
@@ -387,6 +389,7 @@ struct AlphaBeta<'a> {
     world: &'a board::MyWorld,
     moves: &'a mut Vec<ActualMove>,
     nodes_visited: &'a mut usize,
+    qui_nodes_visited:&'a mut usize,
     fogs: &'a [mesh::small_mesh::SmallMesh; 2],
     zobrist: &'a Zobrist,
     history_heur: &'a mut [usize],
@@ -435,7 +438,29 @@ impl<'a> AlphaBeta<'a> {
                     .evaluator
                     .absolute_evaluate(game, self.world, &spoke_info, false);
         }
-        *self.nodes_visited += 1;
+        *self.qui_nodes_visited += 1;
+
+        {
+            let r = 2;
+
+            let mut ab2 = ab.clone();
+            ab2.alpha = -ab.beta;
+            ab2.beta = -(ab.beta - 1);
+            let eval = self.quiesance(
+                game,
+                key,
+                spoke_info,
+                ab2,
+                -team,
+                depth.saturating_sub(r),
+            );
+            let eval = -eval;
+
+            if eval >= ab.beta {
+                return eval;
+            }
+        }
+
 
         let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
@@ -514,17 +539,17 @@ impl<'a> AlphaBeta<'a> {
         // }
 
         if depth == 0 {
-            return (
-                self.quiesance(game, key, spoke_info, ab, team, 4),
-                tinyvec::array_vec!(),
-            );
             // return (
-            //     team.value()
-            //         * self
-            //             .evaluator
-            //             .absolute_evaluate(game, self.world, &spoke_info, false),
-            //     tinyvec::array_vec![],
+            //     self.quiesance(game, key, spoke_info, ab, team, 2),
+            //     tinyvec::array_vec!(),
             // );
+            return (
+                team.value()
+                    * self
+                        .evaluator
+                        .absolute_evaluate(game, self.world, &spoke_info, false),
+                tinyvec::array_vec![],
+            );
         }
 
         //null move pruning
