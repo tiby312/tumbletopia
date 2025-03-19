@@ -435,7 +435,7 @@ pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> &[i64; 2] {
 //     Move,
 // }
 impl GameState {
-    fn playable(
+    pub fn playable(
         &self,
         index: usize,
         team: Team,

@@ -6,10 +6,66 @@ use crate::{
 use super::*;
 
 pub type Eval = i64;
-use hex::PASS_MOVE_INDEX;
-//const MATE: i64 = 1_000_000;
+
 use tinyvec::ArrayVec;
 pub const MAX_NODE_VISIT: usize = 3000;
+
+
+
+
+pub fn reinforce(team:Team,game: &mut GameState,world:&MyWorld){
+    let mut spoke=SpokeInfo::new(game);
+    moves::update_spoke_info(&mut spoke, world, game);
+    let fog=&mesh::small_mesh::SmallMesh::new();
+    
+    for &index in world.land_as_vec.iter(){
+        let n=get_num_attack(&spoke, index);
+        
+        if let Some((h,m))=game.factions.get_cell_inner(index){
+            if m==team && n[team]>h as i64{
+                ActualMove(index).apply(team,game,fog,world,Some(&spoke));
+                let _s=spoke.process_move_better(ActualMove(index), team, world, game);
+            }
+        }
+    }
+}
+
+pub fn expand(team:Team,game: &mut GameState,world:&MyWorld){
+    let fog=&mesh::small_mesh::SmallMesh::new();
+    let mut progress=true;
+
+    let mut spoke=SpokeInfo::new(game);
+    moves::update_spoke_info(&mut spoke, world, game);
+    
+    while progress{
+        progress=false;
+        for &index in world.land_as_vec.iter(){
+            if game.playable(index, team, world, &spoke).is_some(){
+                let _e=ActualMove(index).apply(team,game,fog,world,Some(&spoke));
+                let _s=spoke.process_move_better(ActualMove(index), team, world, game);
+            }
+        }
+    }
+}
+
+//TODO use this!!!!!
+pub fn calculate_secure_points(game:&GameState,world:&MyWorld)->[i64;2]{
+    let mut game=game.clone();
+    for team in [Team::White,Team::Black]{
+        expand(!team,&mut game,world);
+        reinforce(!team, &mut game, world);
+        expand(team,&mut game,world);
+    }
+    let mut score=[0i64;2];
+    for &index in world.land_as_vec.iter(){
+        if let Some((_,f))=game.factions.get_cell_inner(index){
+            score[f]+=1;
+        }
+    }
+    score
+}
+
+
 
 pub fn should_pass(
     a: &ai::Res,
@@ -307,6 +363,7 @@ pub fn iterative_deepening2(
 
     let mut nodes_visited_total = 0;
     let mut qui_nodes_visited_total=0;
+    let mut eval_count_total=0;
     let mut key = Key::from_scratch(&zobrist, game, world, team);
     let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
 
@@ -333,6 +390,7 @@ pub fn iterative_deepening2(
             fogs,
             zobrist,
             history_heur: &mut history_heur,
+            eval_count:&mut eval_count_total
         };
 
         let (res, mut mov) = aaaa.negamax(
@@ -377,7 +435,7 @@ pub fn iterative_deepening2(
         }
     }
 
-    log!("total regular nodes visited={} total quiet visited={}", nodes_visited_total,qui_nodes_visited_total);
+    log!("total regular nodes visited={} total quiet visited={} total eval={}", nodes_visited_total,qui_nodes_visited_total,eval_count_total);
 
     results
 }
@@ -393,6 +451,7 @@ struct AlphaBeta<'a> {
     fogs: &'a [mesh::small_mesh::SmallMesh; 2],
     zobrist: &'a Zobrist,
     history_heur: &'a mut [usize],
+    eval_count:&'a mut usize,
 }
 
 struct KillerMoves {
@@ -543,6 +602,7 @@ impl<'a> AlphaBeta<'a> {
             //     self.quiesance(game, key, spoke_info, ab, team, 2),
             //     tinyvec::array_vec!(),
             // );
+            *self.eval_count+=1;
             return (
                 team.value()
                     * self
