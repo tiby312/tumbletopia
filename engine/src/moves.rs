@@ -684,9 +684,9 @@ impl GameState {
                 }
             } else {
                 //TODO slows things down too much?
-                if num_attack[team] == num_attack[!team] && num_attack[team] >= 1 {
-                    ret.inner.set(index, true);
-                }
+                // if num_attack[team] == num_attack[!team] && num_attack[team] >= 1 {
+                //     ret.inner.set(index, true);
+                // }
             }
         }
 
