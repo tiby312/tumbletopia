@@ -444,10 +444,13 @@ impl<'a> AlphaBeta<'a> {
             ab.alpha = stand_pat
         }
 
-        let (captures, _) = game.generate_loud_moves(self.world, team, &spoke_info);
+        let (captures, defensive) = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
         self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
+
+        // self.moves
+        //     .extend(defensive.inner.iter_ones().map(|x| ActualMove(x)));
 
         self.moves
             .extend(captures.inner.iter_ones().map(|x| ActualMove(x)));
