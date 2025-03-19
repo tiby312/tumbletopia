@@ -430,33 +430,12 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
     ) -> Eval {
         if depth == 0 {
-            // return (
-            //     self.quiesance(game, key, spoke_info, ab, team, 6),
-            //     tinyvec::array_vec!(),
-            // );
             return team.value()
                 * self
                     .evaluator
                     .absolute_evaluate(game, self.world, &spoke_info, false);
         }
         *self.nodes_visited += 1;
-
-        // let stand_pat = team.value()
-        //     * self
-        //         .evaluator
-        //         .absolute_evaluate(game, self.world, &spoke_info, false);
-
-        // if depth == 0 {
-        //     return stand_pat;
-        // }
-        // let mut best_value = stand_pat;
-
-        // if stand_pat >= ab.beta {
-        //     return stand_pat;
-        // }
-        // if ab.alpha < stand_pat {
-        //     ab.alpha = stand_pat
-        // }
 
         let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
@@ -467,6 +446,7 @@ impl<'a> AlphaBeta<'a> {
             .extend(captures.inner.iter_ones().map(|x| ActualMove(x)));
 
         let end_move_index = self.moves.len();
+
         let mut ab_iter = ab.ab_iter();
 
         for _ in start_move_index..end_move_index {
@@ -493,24 +473,7 @@ impl<'a> AlphaBeta<'a> {
 
             key.move_undo(&self.zobrist, cand, team, &effect);
 
-            // if eval >= ab.beta {
-            //     self.moves.drain(start_move_index..);
-            //     return eval;
-            // }
-            // if eval > best_value {
-            //     best_value = eval
-            // }
-            // if eval > ab.alpha {
-            //     ab.alpha = eval;
-            // }
             if !ab_iter.keep_going((), eval) {
-                //2007 without
-                // if !loud_moves.inner[cand.0] {
-                //     self.killer_moves.consider(depth, cand);
-
-                //     self.history_heur[cand.0] += depth * depth;
-                // }
-
                 self.moves.drain(start_move_index..);
                 break;
             }
@@ -529,15 +492,11 @@ impl<'a> AlphaBeta<'a> {
                 * self
                     .evaluator
                     .absolute_evaluate(game, self.world, &spoke_info, false)
-            //team.value()*eval
-            //eval
         } else {
             eval
         };
 
         eval
-
-        //return best_value;
     }
 
     fn negamax(
@@ -594,8 +553,9 @@ impl<'a> AlphaBeta<'a> {
 
         let entry = self.ttable.get(&key);
 
-        //https://en.wikipedia.org/wiki/Negamax
         let alpha_orig = ab.alpha;
+
+        //https://en.wikipedia.org/wiki/Negamax
         if let Some(entry) = entry {
             if entry.depth >= depth {
                 match entry.flag {
