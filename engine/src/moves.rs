@@ -632,14 +632,14 @@ impl GameState {
                     //Also add moves where lets say this piece is going to die.
                     //we might want to use it to reinforce another piece before it dies.
                     //this such moves would also be a forcing/loud/defensive move
-                    for dir in HDir::all() {
-                        for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
-                            let index2 = index2 as usize;
-                            if self.playable(index2, team, world, spoke_info).is_some() {
-                                ret.inner.set(index2, true);
-                            }
-                        }
-                    }
+                    // for dir in HDir::all() {
+                    //     for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
+                    //         let index2 = index2 as usize;
+                    //         if self.playable(index2, team, world, spoke_info).is_some() {
+                    //             ret.inner.set(index2, true);
+                    //         }
+                    //     }
+                    // }
 
                     // //If enemy is threatening to take and we have parity in LOS,
                     // //if we increase our LOS, then we would be able to recapture this cell.

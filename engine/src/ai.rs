@@ -235,20 +235,9 @@ impl Evaluator {
         let mut total_foo = 0;
         let strength_parity = 0;
         for &index in world.land_as_vec.iter()
-        /*world.get_game_cells().inner.iter_ones()*/
         {
             let num_attack = get_num_attack(spoke_info, index);
 
-            // let mut num_attack: [i64; 2] = [0, 0];
-
-            // for (_, rest) in game.factions.iter_end_points(world, index) {
-            //     if let Some((_, team)) = rest {
-            //         if team == Team::Neutral {
-            //             continue;
-            //         }
-            //         num_attack[team] += 1;
-            //     }
-            // }
             const TERR: i64 = 10;
             const ACT: i64 = 9;
 
@@ -594,6 +583,7 @@ impl<'a> AlphaBeta<'a> {
     ) -> Eval {
         *self.nodes_visited += 1;
 
+
         let stand_pat = team.value()
             * self
                 .evaluator
@@ -602,6 +592,9 @@ impl<'a> AlphaBeta<'a> {
         if depth == 0 {
             return stand_pat;
         }
+
+        *self.qui_nodes_visited+=1;
+
         let mut best_value = stand_pat;
 
         if stand_pat >= ab.beta {
@@ -668,11 +661,10 @@ impl<'a> AlphaBeta<'a> {
 
         if depth == 0 {
             return (
-                self.quiesance(game, key, spoke_info, ab, team, 6),
+                self.quiesance(game, key, spoke_info, ab, team, 2),
                 tinyvec::array_vec!(),
             );
-            // *self.eval_count += 1;
-
+            
             // return (
             //     team.value()
             //         * self
