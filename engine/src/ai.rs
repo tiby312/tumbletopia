@@ -260,6 +260,12 @@ pub fn calculate_move(
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> ActualMove {
+
+    //TODO after a 4 depth search, compare the eval of the first 4 moves.
+    //if there is a big disparity in those moves, then the position is sharp
+    //in which case we should probably search deeper.
+
+
     let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 9, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
