@@ -81,21 +81,21 @@ pub fn should_pass(
         return true;
     }
 
-    let points = calculate_secure_points(game_orig, world);
+    // let points = calculate_secure_points(game_orig, world);
 
-    let mut winner = None;
-    for team in [Team::White, Team::Black] {
-        if 2 * points[team] as usize > world.land_as_vec.len() {
-            winner = Some(team);
-            break;
-        }
-    }
+    // let mut winner = None;
+    // for team in [Team::White, Team::Black] {
+    //     if 2 * points[team] as usize > world.land_as_vec.len() {
+    //         winner = Some(team);
+    //         break;
+    //     }
+    // }
 
-    if let Some(_win) = winner {
-        log!("Found a winner. {:?}. choosing to pass.", _win);
+    // if let Some(_win) = winner {
+    //     log!("Found a winner. {:?}. choosing to pass.", _win);
 
-        return true;
-    }
+    //     return true;
+    // }
 
     false
 }
@@ -501,6 +501,9 @@ impl<'a> AlphaBeta<'a> {
 
         let loud_moves = game.generate_loud_moves(self.world, team, &spoke_info);
 
+        let interest_moves=game.generate_interesting_moves(self.world,team,&spoke_info);
+
+
         let start_move_index = self.moves.len();
 
         self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
@@ -526,9 +529,9 @@ impl<'a> AlphaBeta<'a> {
                 return 10_000;
             }
 
-            // if defensive_moves.inner[index] {
-            //     return 8_000;
-            // }
+            if interest_moves.inner[index] {
+                return 8_000;
+            }
 
             for (i, a) in self
                 .killer_moves
