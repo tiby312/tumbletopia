@@ -78,7 +78,18 @@ ccc-e-ss----s-----d
 
 fn main() {
     //eval("dut-s-stt-dcedbbtd-");
-    test_wins();
+    
+    let start = std::time::Instant::now();
+
+    for _ in 0..10{
+        test_wins();
+    }
+
+
+    let elapsed = start.elapsed(); // Get the elapsed time
+
+    println!("Elapsed time: {:?}", elapsed);
+
     // test_pass("--t-td-t-t-dd--d---");
     //test_pass("c--ct-------c-t--cc");
     //test_pass("-----ds--tdsc--er-t");

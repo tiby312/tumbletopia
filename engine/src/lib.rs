@@ -142,7 +142,7 @@ macro_rules! log {
 #[cfg(not(target_arch = "wasm32"))]
 macro_rules! log {
     ($($tt:tt)*) => {
-        println!($($tt)*)
+        //println!($($tt)*)
     };
 }
 
