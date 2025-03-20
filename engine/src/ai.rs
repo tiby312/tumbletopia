@@ -70,8 +70,8 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
 pub fn should_pass(
     a: &ai::Res,
     _team: Team,
-    _game_orig: &mut GameState,
-    _world: &MyWorld,
+    game_orig: &mut GameState,
+    world: &MyWorld,
     //TODO pass in all history instead
     _move_history: &MoveHistory,
 ) -> bool {
@@ -81,119 +81,23 @@ pub fn should_pass(
         return true;
     }
 
-    // let mut game = game_orig.clone();
-    // let score_before = game.score(world);
 
-    // // let k = ActualMove {
-    // //     moveto: moves::PASS_MOVE_INDEX,
-    // // };
-    // //let _e = k.apply(team, &mut game, &SmallMesh::new(), world);
+    let points=calculate_secure_points(game_orig, world);
 
-    // let fogs = std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new());
-    // let foo = iterative_deepening2(&game, &fogs, world, team.not(), 3);
 
-    // let mut tt = team.not();
-    // if let Some(foo) = foo {
-    //     let principal_variation: Vec<_> = foo
-    //         .line
-    //         .iter()
-    //         .map(|x| {
-    //             let res = move_build::to_letter_coord(&mesh::small_mesh::inverse(x.moveto), world);
-    //             format!("{}{}", res.0, res.1)
-    //         })
-    //         .collect();
-    //     console_dbg!("should pass", principal_variation);
+    let mut winner=None;
+    for team in [Team::White,Team::Black]{
+        if 2 * points[team] as usize > world.land_as_vec.len() {
+            winner=Some(team);
+            break;
+        }
+    }
 
-    //     for a in foo.line {
-    //         let _ = a.apply(tt, &mut game, &SmallMesh::new(), world);
-    //         tt = tt.not();
-
-    //         let score_after = game.score(world);
-
-    //         console_dbg!(score_before, score_after);
-
-    //         if score_after != score_before {
-    //             return false;
-    //         }
-    //     }
-    // }
-
-    // //If we do pass, what are the opponents best moves. And does it change the score?
-
-    // let mut moves_to_use=a.line.clone();
-    // let mut team_counter=team;
-    // let mut game = game_orig.clone();
-
-    // let opponent_just_passed = if let Some((k, e)) = move_history.inner.last() {
-    //     console_dbg!("last move",move_build::to_letter_coord(&small_mesh::inverse(k.moveto),world));
-    //     k.undo(team.not(), e, &mut game);
-    //     team_counter=team_counter.not();
-    //     moves_to_use.insert(0,k.clone());
-
-    //     console_dbg!(moves_to_use,team_counter);
-    //     k.moveto == moves::PASS_MOVE_INDEX
-    // } else {
-    //     false
-    // };
-
-    // //TODO remove this clone
-
-    // let score_before = game.score(world);
-
-    // let fog = SmallMesh::new();
-
-    // for (i,aa) in moves_to_use.into_iter().enumerate(){
-    //     let _effect = aa.apply(team_counter, &mut game, &fog, world);
-    //     let s = game.score(world);
-
-    //     if i==0{
-    //         assert_eq!(&game,game_orig);
-    //     }
-    //     //dont pass if we forsee any fluctuation in the score
-    //     if s != score_before {
-    //         return false;
-    //     }
-    //     // if let Some((_, fa)) = effect.destroyed_unit {
-    //     //     if fa != team {
-    //     //         console_dbg!("Not passing because there are captures in principal variation");
-    //     //         return false;
-    //     //     }
-    //     // }
-    //     team_counter = team_counter.not();
-    // }
-    // let score_after = game.score(world);
-
-    // console_dbg!(score_before, score_after);
-
-    // if opponent_just_passed {
-    //     match team {
-    //         ActiveTeam::White => {
-    //             if score_before.white > score_before.black {
-    //                 return true;
-    //             }
-    //         }
-    //         ActiveTeam::Black => {
-    //             if score_before.black > score_before.white {
-    //                 return true;
-    //             }
-    //         }
-    //         ActiveTeam::Neutral => {}
-    //     }
-    // }
-
-    // //let a = &a.line[0];
-    // //let effect = a.apply(team, game, &fog, world);
-
-    // let res = if score_after == score_before {
-    //     console_dbg!("I WANT TO PASS");
-    //     true
-    // } else {
-    //     false
-    // };
-    // //a.undo(team, &effect, game);
-    // res
-    // //false
-
+    if let Some(winner)=winner{
+        log!("Found a winner. {:?}. choosing to pass.",winner);
+        return true;
+    }
+    
     false
 }
 
