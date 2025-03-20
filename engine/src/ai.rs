@@ -11,8 +11,7 @@ use tinyvec::ArrayVec;
 pub const MAX_NODE_VISIT: usize = 1_000_000;
 
 pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
-
-    let reinforce=|team,game:&mut GameState|{
+    let reinforce = |team, game: &mut GameState| {
         let mut spoke = SpokeInfo::new(game);
         moves::update_spoke_info(&mut spoke, world, game);
         let fog = &mesh::small_mesh::SmallMesh::new();
@@ -29,7 +28,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
         }
     };
 
-    let expand=|team,game:&mut GameState|{
+    let expand = |team, game: &mut GameState| {
         let fog = &mesh::small_mesh::SmallMesh::new();
         let mut progress = true;
 
@@ -115,7 +114,6 @@ impl Default for Evaluator {
     }
 }
 impl Evaluator {
-
     //white maximizing
     //black minimizing
     pub fn absolute_evaluate(
@@ -248,7 +246,7 @@ pub fn iterative_deepening2(
             qui_nodes_visited: &mut qui_nodes_visited_total,
             fogs,
             zobrist,
-            history_heur: &mut history_heur
+            history_heur: &mut history_heur,
         };
 
         let (res, mut mov) = aaaa.negamax(
@@ -312,7 +310,7 @@ struct AlphaBeta<'a> {
     qui_nodes_visited: &'a mut usize,
     fogs: &'a [mesh::small_mesh::SmallMesh; 2],
     zobrist: &'a Zobrist,
-    history_heur: &'a mut [usize]
+    history_heur: &'a mut [usize],
 }
 
 struct KillerMoves {
@@ -343,7 +341,6 @@ impl KillerMoves {
 }
 
 impl<'a> AlphaBeta<'a> {
-    
     fn quiesance(
         &mut self,
         game: &mut GameState,
@@ -494,8 +491,7 @@ impl<'a> AlphaBeta<'a> {
 
         let loud_moves = game.generate_loud_moves(self.world, team, &spoke_info);
 
-        let interest_moves=game.generate_interesting_moves(self.world,team,&spoke_info);
-
+        let interest_moves = game.generate_interesting_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
 

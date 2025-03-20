@@ -418,7 +418,6 @@ pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> &[i64; 2] {
     &foo.num_attack
 }
 
-
 impl GameState {
     pub fn playable(
         &self,
@@ -453,7 +452,6 @@ impl GameState {
             Some(MoveType::Fresh)
         }
     }
-
 
     fn moves_that_block_better(
         &self,
@@ -552,7 +550,6 @@ impl GameState {
         team: Team,
         spoke_info: &SpokeInfo,
     ) -> SmallMesh {
-
         let mut ret = SmallMesh::new();
 
         for &index in world.land_as_vec.iter() {
@@ -563,7 +560,6 @@ impl GameState {
 
                 //if this is our piece
                 if rest == team {
-                    
                     //if the enemy can capture it
                     if num_attack[!team] <= height {
                         continue;
@@ -578,11 +574,11 @@ impl GameState {
                     //this such moves would also be a forcing/loud/defensive move
                     for dir in HDir::all() {
                         for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
-                            let index2=index2 as usize;
-                            if let Some(fo)=self.factions.get_cell_inner(index2){
+                            let index2 = index2 as usize;
+                            if let Some(fo) = self.factions.get_cell_inner(index2) {
                                 break;
                             }
-                            
+
                             if self.playable(index2, team, world, spoke_info).is_some() {
                                 ret.inner.set(index2, true);
                             }
@@ -597,8 +593,6 @@ impl GameState {
         }
 
         return ret;
-
-
     }
 
     pub fn generate_loud_moves(
@@ -621,7 +615,6 @@ impl GameState {
                     if num_attack[team] > height {
                         ret.inner.set(index, true);
                     }
-
                 } else {
                     //If it is an enemy piece, then
                     if num_attack[team] > height && num_attack[team] >= num_attack[!team] {

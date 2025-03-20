@@ -78,17 +78,16 @@ ccc-e-ss----s-----d
 
 fn main() {
     //eval("dut-s-stt-dcedbbtd-");
-    
-    let start = std::time::Instant::now();
 
-    for _ in 0..10{
-        test_wins();
-    }
+    // let start = std::time::Instant::now();
 
+    // for _ in 0..10{
+    test_wins();
+    // }
 
-    let elapsed = start.elapsed(); // Get the elapsed time
+    // let elapsed = start.elapsed(); // Get the elapsed time
 
-    println!("Elapsed time: {:?}", elapsed);
+    // println!("Elapsed time: {:?}", elapsed);
 
     // test_pass("--t-td-t-t-dd--d---");
     //test_pass("c--ct-------c-t--cc");
@@ -146,8 +145,6 @@ fn bench() {
         assert_eq!(s,"[E3,D3,E4,B2,D2,C2,B1,D3,B2,D4,C2,C3,D3,D5,E3,C4,D2,B3,C1,C4,E4,C5,C2,D5,B1,C4,B2,B4,A1,A3,pp,pp,]");
     }
 }
-
-
 
 pub fn test_run(
     game: &str,
