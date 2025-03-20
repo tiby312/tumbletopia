@@ -301,10 +301,9 @@ pub fn iterative_deepening2(
     }
 
     log!(
-        "total regular nodes visited={} total quiet visited={} total eval={}",
+        "total regular nodes visited={} total quiet visited={}",
         nodes_visited_total,
-        qui_nodes_visited_total,
-        eval_count_total
+        qui_nodes_visited_total
     );
 
     results
