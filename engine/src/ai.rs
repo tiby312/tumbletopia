@@ -81,23 +81,21 @@ pub fn should_pass(
         return true;
     }
 
+    let points = calculate_secure_points(game_orig, world);
 
-    let points=calculate_secure_points(game_orig, world);
-
-
-    let mut winner=None;
-    for team in [Team::White,Team::Black]{
+    let mut winner = None;
+    for team in [Team::White, Team::Black] {
         if 2 * points[team] as usize > world.land_as_vec.len() {
-            winner=Some(team);
+            winner = Some(team);
             break;
         }
     }
 
-    if let Some(winner)=winner{
-        log!("Found a winner. {:?}. choosing to pass.",winner);
+    if let Some(winner) = winner {
+        log!("Found a winner. {:?}. choosing to pass.", winner);
         return true;
     }
-    
+
     false
 }
 
