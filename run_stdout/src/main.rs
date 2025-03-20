@@ -78,12 +78,12 @@ ccc-e-ss----s-----d
 
 fn main() {
     //eval("dut-s-stt-dcedbbtd-");
-    test_wins();
+    //test_wins();
     // test_pass("--t-td-t-t-dd--d---");
     //test_pass("c--ct-------c-t--cc");
     //test_pass("-----ds--tdsc--er-t");
 
-    //play_large();
+    play_large();
 }
 
 fn test_pass(game_s: &str) {
@@ -136,6 +136,8 @@ fn bench() {
     }
 }
 
+
+
 pub fn test_run(
     game: &str,
 ) -> (
@@ -163,7 +165,7 @@ pub fn test_run(
             &game_history,
             &zobrist,
         );
-        //panic!();
+        panic!();
 
         //println!("team {:?} made move {:?}",team,&world.format(&m));
         let effect = m.apply(team, &mut game.tactical, &game.fog[team], &world, None);

@@ -115,13 +115,6 @@ impl Default for Evaluator {
     }
 }
 impl Evaluator {
-    // pub fn process_game_over(&mut self, a: unit::GameOver) -> Eval {
-    //     match a {
-    //         unit::GameOver::WhiteWon => MATE,
-    //         unit::GameOver::BlackWon => -MATE,
-    //         unit::GameOver::Tie => 0,
-    //     }
-    // }
 
     //white maximizing
     //black minimizing
@@ -271,10 +264,10 @@ pub fn iterative_deepening2(
         assert_eq!(key_orig, key);
         assert_eq!(&game_orig, game);
 
-        if *aaaa.nodes_visited >= MAX_NODE_VISIT {
-            log!("discarding depth {}", depth);
-            break;
-        }
+        // if *aaaa.nodes_visited >= MAX_NODE_VISIT {
+        //     log!("discarding depth {}", depth);
+        //     break;
+        // }
 
         //alpha beta returns the main line with the first move at the end
         //reverse it so that the order is in the order of how they are played out.
@@ -369,9 +362,9 @@ impl<'a> AlphaBeta<'a> {
             return stand_pat;
         }
 
-        if *self.nodes_visited >= MAX_NODE_VISIT {
-            return abab::SMALL_VAL;
-        }
+        // if *self.nodes_visited >= MAX_NODE_VISIT {
+        //     return abab::SMALL_VAL;
+        // }
 
         *self.nodes_visited += 1;
 
@@ -437,9 +430,9 @@ impl<'a> AlphaBeta<'a> {
         depth: usize,
         update_tt: bool,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        if *self.nodes_visited >= MAX_NODE_VISIT {
-            return (abab::SMALL_VAL, tinyvec::array_vec!());
-        }
+        // if *self.nodes_visited >= MAX_NODE_VISIT {
+        //     return (abab::SMALL_VAL, tinyvec::array_vec!());
+        // }
 
         if depth == 0 {
             return (
