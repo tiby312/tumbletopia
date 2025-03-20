@@ -414,26 +414,11 @@ pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, gam
 }
 
 pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> &[i64; 2] {
-    //let mut num_attack: [i64; 2] = [0, 0];
     let foo = &spoke_info.data[index];
     &foo.num_attack
-    // for t in foo.iter() {
-    //     match t {
-    //         Thing::None => {}
-    //         Thing::White => num_attack[0] += 1,
-    //         Thing::Black => num_attack[1] += 1,
-    //         Thing::Neutral => {}
-    //     }
-    // }
-    // num_attack
 }
 
-// #[derive(Debug)]
-// enum LosRayItem {
-//     //Skip,
-//     End { height: u8, team: Team },
-//     Move,
-// }
+
 impl GameState {
     pub fn playable(
         &self,
@@ -469,43 +454,6 @@ impl GameState {
         }
     }
 
-    // fn moves_that_block(
-    //     &self,
-    //     index: usize,
-    //     team: Team,
-    //     world: &board::MyWorld,
-    //     ret: &mut SmallMesh,
-    //     spoke_info: &SpokeInfo,
-    // ) {
-    //     for dir in HDir::all() {
-    //         //TODO there is a way to skip over spokes that we know are not opponent controlled.
-    //         let mut cands = vec![];
-    //         for index2 in unit::ray(Axial::from_index(index), dir, world).1 {
-    //             if self
-    //                 .playable(index2 as usize, team, world, spoke_info)
-    //                 .is_some()
-    //             {
-    //                 cands.push(index2);
-    //             }
-    //             if let Some((_, team2)) = self.factions.get_cell_inner(index2 as usize) {
-    //                 assert_eq!(spoke_info.retrieve(index, dir), Some(team2));
-    //                 //If we already have this LOS, then any move along this ray wont increase the LOS,
-    //                 //so toss all of them.
-    //                 if team2 == !team {
-    //                     //Add all the moves that we know would actually increase the LOS to this piece
-    //                     for c in cands {
-    //                         ret.inner.set(c as usize, true);
-    //                     }
-    //                     break;
-    //                 } else {
-    //                     break;
-    //                 }
-    //             } else {
-    //                 //assert_eq!(spoke_info.retrieve(index,dir),None);
-    //             }
-    //         }
-    //     }
-    // }
 
     fn moves_that_block_better(
         &self,

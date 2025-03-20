@@ -10,51 +10,51 @@ pub type Eval = i64;
 use tinyvec::ArrayVec;
 pub const MAX_NODE_VISIT: usize = 1_000_000;
 
-pub fn reinforce(team: Team, game: &mut GameState, world: &MyWorld) {
-    let mut spoke = SpokeInfo::new(game);
-    moves::update_spoke_info(&mut spoke, world, game);
-    let fog = &mesh::small_mesh::SmallMesh::new();
-
-    for &index in world.land_as_vec.iter() {
-        let n = get_num_attack(&spoke, index);
-
-        if let Some((h, m)) = game.factions.get_cell_inner(index) {
-            if m == team && n[team] > h as i64 {
-                ActualMove(index).apply(team, game, fog, world, Some(&spoke));
-                let _s = spoke.process_move_better(ActualMove(index), team, world, game);
-            }
-        }
-    }
-}
-
-pub fn expand(team: Team, game: &mut GameState, world: &MyWorld) {
-    let fog = &mesh::small_mesh::SmallMesh::new();
-    let mut progress = true;
-
-    let mut spoke = SpokeInfo::new(game);
-    moves::update_spoke_info(&mut spoke, world, game);
-
-    while progress {
-        progress = false;
-        for &index in world.land_as_vec.iter() {
-            if game.playable(index, team, world, &spoke).is_some() {
-                let _e = ActualMove(index).apply(team, game, fog, world, Some(&spoke));
-                let _s = spoke.process_move_better(ActualMove(index), team, world, game);
-                progress = true;
-            }
-        }
-    }
-}
-
-//TODO use this!!!!!
 pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
+
+    let reinforce=|team,game:&mut GameState|{
+        let mut spoke = SpokeInfo::new(game);
+        moves::update_spoke_info(&mut spoke, world, game);
+        let fog = &mesh::small_mesh::SmallMesh::new();
+
+        for &index in world.land_as_vec.iter() {
+            let n = get_num_attack(&spoke, index);
+
+            if let Some((h, m)) = game.factions.get_cell_inner(index) {
+                if m == team && n[team] > h as i64 {
+                    ActualMove(index).apply(team, game, fog, world, Some(&spoke));
+                    let _s = spoke.process_move_better(ActualMove(index), team, world, game);
+                }
+            }
+        }
+    };
+
+    let expand=|team,game:&mut GameState|{
+        let fog = &mesh::small_mesh::SmallMesh::new();
+        let mut progress = true;
+
+        let mut spoke = SpokeInfo::new(game);
+        moves::update_spoke_info(&mut spoke, world, game);
+
+        while progress {
+            progress = false;
+            for &index in world.land_as_vec.iter() {
+                if game.playable(index, team, world, &spoke).is_some() {
+                    let _e = ActualMove(index).apply(team, game, fog, world, Some(&spoke));
+                    let _s = spoke.process_move_better(ActualMove(index), team, world, game);
+                    progress = true;
+                }
+            }
+        }
+    };
+
     let mut score = [0i64; 2];
 
     for team in [Team::White, Team::Black] {
         let mut game = game.clone();
-        expand(!team, &mut game, world);
-        reinforce(!team, &mut game, world);
-        expand(team, &mut game, world);
+        expand(!team, &mut game);
+        reinforce(!team, &mut game);
+        expand(team, &mut game);
         for &index in world.land_as_vec.iter() {
             if let Some((_, f)) = game.factions.get_cell_inner(index) {
                 if f == team {
@@ -91,8 +91,9 @@ pub fn should_pass(
         }
     }
 
-    if let Some(winner) = winner {
-        log!("Found a winner. {:?}. choosing to pass.", winner);
+    if let Some(_win) = winner {
+        log!("Found a winner. {:?}. choosing to pass.", _win);
+
         return true;
     }
 
@@ -229,7 +230,6 @@ pub fn iterative_deepening2(
 
     let mut nodes_visited_total = 0;
     let mut qui_nodes_visited_total = 0;
-    let mut eval_count_total = 0;
     let mut key = Key::from_scratch(&zobrist, game, world, team);
     let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
 
@@ -255,8 +255,7 @@ pub fn iterative_deepening2(
             qui_nodes_visited: &mut qui_nodes_visited_total,
             fogs,
             zobrist,
-            history_heur: &mut history_heur,
-            eval_count: &mut eval_count_total,
+            history_heur: &mut history_heur
         };
 
         let (res, mut mov) = aaaa.negamax(
@@ -321,8 +320,7 @@ struct AlphaBeta<'a> {
     qui_nodes_visited: &'a mut usize,
     fogs: &'a [mesh::small_mesh::SmallMesh; 2],
     zobrist: &'a Zobrist,
-    history_heur: &'a mut [usize],
-    eval_count: &'a mut usize,
+    history_heur: &'a mut [usize]
 }
 
 struct KillerMoves {
@@ -353,99 +351,7 @@ impl KillerMoves {
 }
 
 impl<'a> AlphaBeta<'a> {
-    // fn quiesance(
-    //     &mut self,
-    //     game: &mut GameState,
-    //     key: &mut Key,
-    //     spoke_info: &mut SpokeInfo,
-    //     mut ab: ABAB,
-    //     team: Team,
-    //     depth: usize,
-    // ) -> Eval {
-    //     if depth == 0 {
-    //         return team.value()
-    //             * self
-    //                 .evaluator
-    //                 .absolute_evaluate(game, self.world, &spoke_info, false);
-    //     }
-    //     *self.qui_nodes_visited += 1;
-
-    //     {
-    //         let r = 2;
-
-    //         let mut ab2 = ab.clone();
-    //         ab2.alpha = -ab.beta;
-    //         ab2.beta = -(ab.beta - 1);
-    //         let eval = self.quiesance(game, key, spoke_info, ab2, -team, depth.saturating_sub(r));
-    //         let eval = -eval;
-
-    //         if eval >= ab.beta {
-    //             return eval;
-    //         }
-    //     }
-
-    //     let captures = game.generate_loud_moves(self.world, team, &spoke_info);
-
-    //     let start_move_index = self.moves.len();
-    //     self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
-
-    //     self.moves
-    //         .extend(captures.inner.iter_ones().map(|x| ActualMove(x)));
-
-    //     let end_move_index = self.moves.len();
-
-    //     let mut ab_iter = ab.ab_iter();
-
-    //     for _ in start_move_index..end_move_index {
-    //         let cand = self.moves.pop().unwrap();
-
-    //         let effect = cand.apply(team, game, &self.fogs[team], self.world, Some(&spoke_info));
-
-    //         key.move_update(&self.zobrist, cand, team, &effect);
-
-    //         let temp = spoke_info.process_move_better(cand, team, self.world, game);
-
-    //         let eval = -self.quiesance(
-    //             game,
-    //             key,
-    //             spoke_info,
-    //             -ab_iter.clone_ab_values(),
-    //             -team,
-    //             depth - 1,
-    //         );
-
-    //         spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
-
-    //         cand.undo(team, &effect, game);
-
-    //         key.move_undo(&self.zobrist, cand, team, &effect);
-
-    //         if !ab_iter.keep_going((), eval) {
-    //             self.moves.drain(start_move_index..);
-    //             break;
-    //         }
-    //     }
-
-    //     assert_eq!(self.moves.len(), start_move_index);
-
-    //     let (eval, m) = ab_iter.finish();
-
-    //     let eval = if m.is_none() {
-    //         //assert!(beta_cutoff);
-
-    //         //If we have no more moves, then we need to evaluate what happens,
-    //         //if black plays a bunch of moves. at this point.
-    //         team.value()
-    //             * self
-    //                 .evaluator
-    //                 .absolute_evaluate(game, self.world, &spoke_info, false)
-    //     } else {
-    //         eval
-    //     };
-
-    //     eval
-    // }
-
+    
     fn quiesance(
         &mut self,
         game: &mut GameState,
