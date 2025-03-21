@@ -18,6 +18,7 @@ pub enum DomToWorker {
         x: f32,
         y: f32,
     },
+    GameChange(String),
     TouchMove {
         touches: gui::scroll::Touches,
     },
@@ -173,6 +174,10 @@ fn engine_handlers<'a>(
 
     let option = gloo::events::EventListenerOptions::enable_prevent_default();
     (
+        EventListen::from_closure(&shogo::utils::get_by_id_elem("fen"), "change", |e| {
+            let foo:HtmlInputElement=shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
+            worker.post_message(DomToWorker::GameChange(foo.value()));
+        }),
         EventListen::from_closure(canvas, "mousemove", |e| {
             let [x, y] = convert_coord(canvas, e);
             worker.post_message(DomToWorker::CanvasMouseMove { x, y });

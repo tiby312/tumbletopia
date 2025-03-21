@@ -859,6 +859,9 @@ async fn render_command(
                     let k=k.unwrap();
                     let e=&k;
                     match e {
+                        DomToWorker::GameChange(game_str)=>{
+                            
+                        }
                         DomToWorker::Resize {
                             canvasx: _canvasx,
                             canvasy: _canvasy,
