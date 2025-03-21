@@ -176,8 +176,9 @@
         flex-wrap:wrap;
         justify-content:flex-end;
         position:absolute;
-        top:40px;
+        top:0px;
         left:0px;
+        text-align: center;
         right:0px;
       }
       #replay_b{
@@ -194,8 +195,7 @@
         color: white;
         padding: 15px 32px;
         outline:none;
-        margin-left:0px;
-        margin-right:0px;
+        margin:5px;
         text-align: center;
         text-decoration: none;
         font-size: 16px;
@@ -224,7 +224,7 @@
 <body style="background-color:black;">
 
   <div id="game_b">
-    <input type="text" class="editor-button" id="fen" style="padding-left:0px;padding-right:0px;width: 100%;"  value="username testing testing one two three">
+    <input type="text" class="editor-button" id="fen" spellcheck="false" style="padding-left:5px;padding-right:5px;min-width: 200px;flex-grow: 4;"  value="username testing testing one two three">
     <a style="display:block;" class="editor-button" href="./" >Main</a>
     <button id="pass" class="editor-button">Pass</button>  
     <button id="undo" class="editor-button">Undo</button>

@@ -451,27 +451,29 @@ fn redraw_text(text: &Vec<Text>, data: &ScoreData) {
     // let r2 = std::f64::consts::TAU * (white_percentage + black_percentage);
 
     let w = canvas.width() as f64;
-    let h = 40.0;
+    
+    let h1 = canvas.height() as f64 - 40.0;
+    let h2 = canvas.height() as f64;
 
     context.set_fill_style_str("white");
     context.begin_path();
-    context.rect(0.0, 0.0, white_percentage * w, h);
+    context.rect(0.0, h1, white_percentage * w, h2);
     context.fill();
     context.set_fill_style_str("blue");
     context.begin_path();
     context.rect(
         (white_percentage + neutral_percentage) * w,
-        0.0,
+        h1,
         black_percentage * w,
-        h,
+        h2,
     );
     context.fill();
 
     context.set_stroke_style_str("gray");
     context.set_line_width(10.);
     context.begin_path();
-    context.move_to(0.5 * w, 0.0);
-    context.line_to(0.5 * w, h);
+    context.move_to(0.5 * w, h1);
+    context.line_to(0.5 * w, h2);
     context.stroke();
 
     // context.begin_path();
