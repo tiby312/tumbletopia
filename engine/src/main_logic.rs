@@ -94,6 +94,7 @@ pub enum Response {
     Mouse(MouseEvent<Axial>),
     AnimationFinish,
     AiFinish(ActualMove),
+    //ChangeGameState(String),
     Ack,
 }
 
