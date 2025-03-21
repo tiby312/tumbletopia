@@ -612,7 +612,7 @@ impl GameState {
                 //if this is our piece
                 if rest == team {
                     //if we can reinforce, add that as a loud move
-                    if num_attack[team] > height {
+                    if num_attack[team] > height && num_attack[!team] >= height{
                         ret.inner.set(index, true);
                     }
                 } else {
