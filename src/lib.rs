@@ -840,8 +840,6 @@ async fn render_command(
         poking = 0.max(poking - 1);
 
         let mut on_select = false;
-        //let mut end_turn = false;
-        //let mut on_undo = false;
         let mut button_pushed = None;
 
         let mut resize_text = false;
@@ -859,8 +857,14 @@ async fn render_command(
                     let k=k.unwrap();
                     let e=&k;
                     match e {
-                        DomToWorker::GameChange(game_str)=>{
-                            
+                        DomToWorker::GameChange(_)=>{
+                            let k = update_text(world, grid_matrix, viewport, &my_matrix);
+            
+                            engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+                                k,
+                                score_data.clone(),
+                                game_str.clone(),
+                            ))
                         }
                         DomToWorker::Resize {
                             canvasx: _canvasx,

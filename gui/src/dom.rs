@@ -174,7 +174,7 @@ fn engine_handlers<'a>(
 
     let option = gloo::events::EventListenerOptions::enable_prevent_default();
     (
-        EventListen::from_closure(&shogo::utils::get_by_id_elem("fen"), "change", |e| {
+        EventListen::from_closure(&shogo::utils::get_by_id_elem("fen"), "change", |_| {
             let foo:HtmlInputElement=shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
             worker.post_message(DomToWorker::GameChange(foo.value()));
         }),
