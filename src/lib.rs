@@ -4,6 +4,7 @@ use engine::main_logic::MouseEvent;
 
 use cgmath::Vector2;
 use engine::mesh;
+use engine::moves::get_num_attack;
 use engine::MoveHistory;
 use engine::Zobrist;
 use gloo::console::console_dbg;
@@ -569,7 +570,7 @@ pub async fn game_play_thread(
             let the_move = {
                 let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
 
-                if false {
+                if true {
                     ai_tx.post_message(AiCommand {
                         game: ai_state,
                         fogs: game.fog.clone(),
@@ -820,6 +821,10 @@ async fn render_command(
             poking = 3;
         }
     };
+
+
+    let mut spoke=moves::SpokeInfo::new(&game);
+    moves::update_spoke_info(&mut spoke, world, game);
 
     loop {
         if poking == 1 {
@@ -1145,6 +1150,9 @@ async fn render_command(
         //     draw_sys.batch(all_fog).build(snow);
         // }
 
+
+        
+
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
                 match selection {
@@ -1393,41 +1401,42 @@ async fn render_command(
             .no_lighting()
             .build(&models.label_arrow, &projjj);
 
-        // draw_unit_type(
-        //     UnitType::Mouse,
-        //     ActiveTeam::White,
-        //     &game.factions.white.mouse,
-        //     &models.grass,
-        // );
 
-        // draw_unit_type(
-        //     UnitType::Mouse,
-        //     ActiveTeam::Black,
-        //     &game.factions.black.mouse,
-        //     &models.snow,
-        // );
 
-        // let d = DepthDisabler::new(ctx);
+        // let mut white_cells=vec!();
+        // let mut black_cells=vec!();
+        
+        // for &fo in world.land_as_vec.iter(){
+        //     if let Some(fo)=game.factions.get_cell_inner(fo){
 
-        // draw_health_text(
-        //     game.factions
-        //         .cats
-        //         .iter()
-        //         .map(|x| (x.position, x.typ.type_index() as i8))
-        //         .chain(
-        //             game.factions
-        //                 .dogs
-        //                 .iter()
-        //                 .map(|x| (x.position, x.typ.type_index() as i8)),
-        //         ),
-        //     grid_matrix,
-        //     &numm.health_numbers,
-        //     &view_proj,
-        //     &proj,
-        //     &mut draw_sys,
-        //     &numm.text_texture,
-        // );
-        // drop(d);
+
+        //     }else{
+        //         let foo=get_num_attack(&spoke, fo);
+
+        //         let radius=1.0;
+        //         let foo2=grid_snap(Axial::from_index(&fo), 0.0 as f32 * cell_height * piece_scale)
+        //         .chain(matrix::scale(radius, radius, 1.0))
+        //         .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
+        //         .generate();
+
+        //         if foo[Team::White]>foo[Team::Black]{
+        //             white_cells.push(foo2);
+        //         }else if foo[Team::Black]>foo[Team::White]{
+        //             black_cells.push(foo2);
+        //         }
+
+        //     }
+        // }
+
+
+        // draw_sys
+        //     .batch(white_cells)
+        //     .build(&models.white_sigl, &projjj);
+        // draw_sys
+        //     .batch(black_cells)
+        //     .build(&models.black_sigl, &projjj);
+
+
 
         ctx.flush();
     }
