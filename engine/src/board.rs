@@ -9,9 +9,9 @@ pub struct MyWorld {
     pub land_as_vec: Vec<usize>,
 }
 
-pub const NUM_CELLS: usize = 128;
+//pub const NUM_CELLS: usize = 128;
 
-pub const TABLE_SIZE: usize = 256;
+pub const TABLE_SIZE: usize = 512;
 
 #[test]
 fn foo() {

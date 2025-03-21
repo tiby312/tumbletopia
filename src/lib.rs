@@ -1190,20 +1190,20 @@ async fn render_command(
                             .grey(*grey)
                             .build(select_model, &projjj);
 
-                        {
-                            let cells = loud.iter_mesh(Axial::zero()).map(|e| {
-                                let zzzz = 0.0;
+                        // {
+                        //     let cells = loud.iter_mesh(Axial::zero()).map(|e| {
+                        //         let zzzz = 0.0;
 
-                                grid_snap(e, zzzz)
-                                    .chain(matrix::scale(1.0, 1.0, 1.0))
-                                    .generate()
-                            });
-                            draw_sys
-                                .batch(cells)
-                                .no_lighting()
-                                .grey(*grey)
-                                .build(&models.donut, &projjj);
-                        }
+                        //         grid_snap(e, zzzz)
+                        //             .chain(matrix::scale(1.0, 1.0, 1.0))
+                        //             .generate()
+                        //     });
+                        //     draw_sys
+                        //         .batch(cells)
+                        //         .no_lighting()
+                        //         .grey(*grey)
+                        //         .build(&models.donut, &projjj);
+                        // }
 
                         // if let Some(k) = hh {
                         //     if k.the_move
