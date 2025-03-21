@@ -43,13 +43,14 @@ pub async fn main_entry() {
         })
     });
 
-    // let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
-    //     .get_element_by_id("textarea_m")
-    //     .unwrap()
-    //     .dyn_into()
-    //     .unwrap();
-    //TODO set default map
-    //t.set_value(&unit::default_map(&world).save(&world).unwrap());
+    let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
+        .get_element_by_id("textarea_m")
+        .unwrap()
+        .dyn_into()
+        .unwrap();
+    
+    let map="----------------b-----------------------r----k---------------------------------------------";
+    t.set_value(&map);
 
     let editor_elem = shogo::utils::get_by_id_elem("editor");
     editor_elem.set_attribute("style", "display:none;").unwrap();
