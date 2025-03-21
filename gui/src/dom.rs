@@ -292,6 +292,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         score_data=Some(p);
 
                         let foo:HtmlInputElement = shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
+                        let game=format!("[{}]",game);
                         foo.set_value(&game);
 
                         repaint_text_send.send(()).await.unwrap();
