@@ -6,12 +6,147 @@ pub mod mesh;
 pub mod move_build;
 pub mod moves;
 pub mod unit;
+use board::MyWorld;
 pub use hex::Axial;
+use move_build::MoveEffect;
 pub use moves::ActualMove;
 use serde::Deserialize;
 use serde::Serialize;
-pub use unit::ActiveTeam;
 pub use unit::GameState;
+pub use unit::Team;
+
+fn get_index(height: u8, team: Team) -> usize {
+    assert!(height > 0 && height <= 6, "uhoh:{}", height);
+    let k = (height - 1) as usize + 6 * ((team.value() + 1) as usize);
+    assert!(k < 6 * 3);
+    k
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Zobrist {
+    inner: Vec<[u64; 6 * 3]>,
+    white_to_move: u64,
+    pass: u64,
+}
+
+#[derive(Hash, Copy, Clone, PartialEq, Eq, Debug)]
+pub struct Key {
+    key: u64,
+}
+
+impl Key {
+    pub fn from_scratch(base: &Zobrist, game: &GameState, world: &MyWorld, team: Team) -> Key {
+        let mut k = Key { key: 0 };
+
+        for index in world.get_game_cells().inner.iter_ones() {
+            if let Some((h, t)) = game.factions.get_cell_inner(index) {
+                k.key ^= base.inner[index][get_index(h, t)];
+            }
+        }
+
+        if let Team::White = team {
+            k.key ^= base.white_to_move
+        }
+
+        k
+    }
+    pub fn move_update(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
+        if let Team::White = team {
+            self.key ^= base.white_to_move
+        }
+        if m.0 == hex::PASS_MOVE_INDEX {
+            self.key ^= base.pass;
+        } else {
+            if let Some(a) = effect.destroyed_unit {
+                //panic!();
+                //xor out what piece was there
+                self.key ^= base.inner[m.0][get_index(a.0, a.1)];
+            }
+
+            //xor in the new piece
+            self.key ^= base.inner[m.0][get_index(effect.height, team)];
+        }
+    }
+
+    pub fn move_undo(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
+        if m.0 == hex::PASS_MOVE_INDEX {
+            self.key ^= base.pass;
+        } else {
+            //xor out the new piece
+            self.key ^= base.inner[m.0][get_index(effect.height, team)];
+
+            if let Some(a) = effect.destroyed_unit {
+                //xor in what piece was there
+                self.key ^= base.inner[m.0][get_index(a.0, a.1)];
+            }
+        }
+
+        if let Team::White = team {
+            self.key ^= base.white_to_move
+        }
+    }
+}
+
+//const FOO:Zobrist=get_zobrist();
+
+#[test]
+fn test_zobrist() {
+    let world = &board::MyWorld::load_from_string("bb-t-bbsrd-s----s--");
+    let mut game = world.starting_state.clone();
+
+    let base = Zobrist::new();
+
+    let mut k = Key::from_scratch(&base, &game.tactical, world, Team::White);
+
+    let a = Axial::from_letter_coord('B', 2, world.radius as i8);
+    let m = ActualMove(a.to_index());
+
+    let team = Team::White;
+    let effect = m.apply(team, &mut game.tactical, &game.fog[0], world, None);
+
+    //dbg!(game.tactical.into_string(world));
+    let orig = k.clone();
+    k.move_update(&base, m.clone(), team, &effect);
+    k.move_undo(&base, m, team, &effect);
+
+    assert_eq!(orig, k);
+    //panic!();
+}
+
+impl Zobrist {
+    pub fn new() -> Zobrist {
+        //https://www.browserling.com/tools/random-bin
+        use rand_chacha::rand_core::RngCore;
+        use rand_chacha::rand_core::SeedableRng;
+        let mut rng = rand_chacha::ChaCha12Rng::seed_from_u64(0x42);
+
+        let inner = (0..board::TABLE_SIZE)
+            .map(|_| std::array::from_fn(|_| rng.next_u64()))
+            .collect();
+
+        Zobrist {
+            inner,
+            pass: rng.next_u64(),
+            white_to_move: rng.next_u64(),
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+macro_rules! log {
+    ($($tt:tt)*) => {
+        gloo_console::log!(format!($($tt)*))
+    };
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+macro_rules! log {
+    ($($tt:tt)*) => {
+        //println!($($tt)*)
+    };
+}
+
+pub(crate) use log;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum GameType {
@@ -25,11 +160,6 @@ pub enum GameType {
 pub mod share {
     #[derive(Debug)]
     pub struct LoadError;
-
-    //use std::ptr::metadata;
-
-    use board::MyWorld;
-    use mesh::small_mesh::SmallMesh;
 
     use super::*;
     pub fn load(s: &str) -> Result<JustMoveLog, LoadError> {

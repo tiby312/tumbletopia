@@ -13,7 +13,7 @@ wasm-bindgen = "0.2"
 wasm-bindgen-futures="0.4"
 web-sys = {version="0.3",features=["HtmlTextAreaElement"]}
 futures = {version="0.3"}
-shogo = "*"
+shogo={git="https://github.com/tiby312/shogo.git"}
 js-sys = "0.3.20"
 serde = { version = "1.0", features = ["derive"] }
 axgeom="*"
@@ -28,10 +28,11 @@ getrandom = { version = "0.2", features = ["js"] }
 querystring = "1.1.0"
 serde_json = "1.0.127"
 tinyvec = "1.8.0"
+gloop={git="https://github.com/tiby312/gloop.git"}
 
 [workspace]
 members = [ "gui","engine",
-    "model", "hex",
+    "model", "hex", "run_stdout",
 ]
 
 [dependencies.gloo]
@@ -71,7 +72,7 @@ opt-level = 2
 
 
 [patch.crates-io]
-shogo={path="../shogo"}
+shogo={git="https://github.com/tiby312/shogo.git"}
 
 
 # [package.metadata.wasm-pack.profile.release]
@@ -79,3 +80,8 @@ shogo={path="../shogo"}
 
 # [package.metadata.wasm-pack.profile.release]
 # wasm-opt = ['-O1']
+
+
+
+[profile.release]
+debug = true

@@ -1,3 +1,4 @@
+use cgmath::Transform;
 use cgmath::{InnerSpace, Vector2};
 use serde::Deserialize;
 use serde::Serialize;
@@ -301,7 +302,7 @@ impl TouchController {
         }
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> CameraMoving {
         // used
         // https://www.gamedev.net/forums/topic/370644-angle-between-two-vectors/3442782/
         // not used
@@ -318,7 +319,7 @@ impl TouchController {
         //let m=0.02;
         self.persistent_rot += angle * 0.05; //angle.clamp(-m,m);
 
-        self.inner.step();
+        self.inner.step()
     }
 
     pub fn zoom(&self) -> f32 {
@@ -462,14 +463,22 @@ impl ScrollController {
             }
         }
     }
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> CameraMoving {
         match self.scrolling {
-            Scrollin::Scrolling { .. } => {}
+            Scrollin::Scrolling { .. } => CameraMoving::Moving,
             _ => {
                 let delta = self.camera - self.last_camera;
                 self.last_camera = self.camera;
 
-                self.camera += delta * 0.9;
+                let camera_before = self.camera;
+                if delta.magnitude2() > TOUCH_RAD * TOUCH_RAD * 0.1 {
+                    self.camera += delta * 0.9;
+                }
+                if camera_before == self.camera {
+                    CameraMoving::Stopped
+                } else {
+                    CameraMoving::Moving
+                }
             }
         }
     }
@@ -479,6 +488,11 @@ impl ScrollController {
     }
 }
 
+#[derive(Copy, Clone)]
+pub enum CameraMoving {
+    Moving,
+    Stopped,
+}
 //TODO don't do this every step, just when user clicks!!!
 pub fn mouse_to_world(
     mouse: [f32; 2],
@@ -489,4 +503,19 @@ pub fn mouse_to_world(
     let clip_x = mouse[0] / dim[0] * 2. - 1.;
     let clip_y = mouse[1] / dim[1] * -2. + 1.;
     super::projection::clip_to_world([clip_x, clip_y], view_projection)
+}
+
+pub fn world_to_mouse(
+    world: [f32; 3],
+    dim: [f32; 2],
+    view_projection: &cgmath::Matrix4<f32>,
+) -> [f32; 2] {
+    let p = view_projection.transform_point(cgmath::Point3 {
+        x: world[0],
+        y: world[1],
+        z: world[2],
+    });
+    let mouse_x = dim[0] * (p.x + 1.0) / 2.0;
+    let mouse_y = dim[1] * (p.y - 1.0) / -2.0;
+    [mouse_x, mouse_y]
 }

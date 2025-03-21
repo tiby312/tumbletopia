@@ -52,9 +52,31 @@ pub enum HDir {
     Top = 4,
     TopRight = 5,
 }
+
+const ALL: [HDir; 6] = [
+    HDir::BottomRight,
+    HDir::Bottom,
+    HDir::BottomLeft,
+    HDir::TopLeft,
+    HDir::Top,
+    HDir::TopRight,
+];
+
 impl HDir {
     pub fn all() -> impl Iterator<Item = HDir> {
-        (0..6).map(HDir::from)
+        ALL.iter().copied()
+
+        //(0..6).map(HDir::from)
+    }
+    pub fn rotate_180(&self) -> HDir {
+        match self {
+            HDir::BottomRight => HDir::TopLeft,
+            HDir::Bottom => HDir::Top,
+            HDir::BottomLeft => HDir::TopRight,
+            HDir::TopLeft => HDir::BottomRight,
+            HDir::Top => HDir::Bottom,
+            HDir::TopRight => HDir::BottomLeft,
+        }
     }
     pub fn rotate60_right(&self) -> HDir {
         // 0->4
@@ -353,7 +375,123 @@ pub struct Axial {
     pub r: CoordNum,
 }
 
+const LETTER_COORDINATES: [char; 26] = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+    'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+];
+
+const fn inverse(index: usize) -> Axial {
+    let x = index / 16;
+    let y = index % 16;
+    Axial::from_arr([(x as isize - 8) as i8, (y as isize - 8) as i8])
+}
+
+const fn conv2(a: Axial) -> usize {
+    let Axial { q, r } = a;
+    //     let ind=x/7+y%7;
+    //     // -3 -2 -1 0 1 2 3
+    //     // -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6
+    // ind as usize
+    ((q as isize + 8) * 16 + (r as isize + 8)) as usize
+
+    // TABLE
+    //     .iter()
+    //     .enumerate()
+    //     .find(|(_, x)| **x == a.0)
+    //     .expect("Could not find the coord in table")
+    //     .0
+}
+
+pub trait HexDraw {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error>;
+}
+
+impl HexDraw for Axial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
+        match self.to_letter_coord(radius) {
+            TextMove::Move(a, b) => {
+                write!(f, "{}{}", a, b)
+            }
+            TextMove::Pass => {
+                write!(f, "pp")
+            }
+        }
+    }
+}
+
+impl<H: HexDraw> HexDraw for Vec<H> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", "[")?;
+        for a in self.iter() {
+            a.fmt(f, radius)?;
+            write!(f, "{}", ",")?;
+        }
+        write!(f, "{}", "]")
+    }
+}
+
+pub fn disp<H: HexDraw>(a: &H, radius: i8) -> Displayer<H> {
+    Displayer { ax: a, radius }
+}
+
+pub struct Displayer<'a, H> {
+    ax: &'a H,
+    radius: i8,
+}
+// impl<H: HexDraw> std::fmt::Display for Displayer<H> {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         self.ax.fmt(f, self.radius)
+//     }
+// }
+impl<H: HexDraw> std::fmt::Debug for Displayer<'_, H> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.ax.fmt(f, self.radius)
+    }
+}
+
+pub const PASS_MOVE: Axial = Axial { q: -5, r: -5 };
+pub const PASS_MOVE_INDEX: usize = const { PASS_MOVE.to_index() };
+
+#[derive(Debug, Clone)]
+pub enum TextMove {
+    Pass,
+    Move(char, i8),
+}
+
 impl Axial {
+    pub fn disp(&self, radius: i8) -> Displayer<Axial> {
+        Displayer { ax: self, radius }
+    }
+    pub const fn from_index(index: &usize) -> Axial {
+        inverse(*index)
+    }
+    pub const fn to_index(&self) -> usize {
+        conv2(*self)
+    }
+
+    pub fn from_letter_coord(foo: char, num: i8, radius: i8) -> Axial {
+        let r = num - radius;
+
+        let (index, _) = LETTER_COORDINATES
+            .iter()
+            .enumerate()
+            .find(|(_, x)| **x == foo)
+            .unwrap();
+
+        let q = index as i8 - (r + radius) + 1;
+
+        Axial { q, r }
+    }
+    pub fn to_letter_coord(&self, radius: i8) -> TextMove {
+        if *self == PASS_MOVE {
+            return TextMove::Pass;
+        }
+        let k = self.to_cube();
+
+        let number = k.r + radius;
+        let letter = LETTER_COORDINATES[(k.q + number - 1) as usize];
+        TextMove::Move(letter, number)
+    }
     pub fn mul(&self, dis: i8) -> Axial {
         Axial {
             q: self.q * dis,

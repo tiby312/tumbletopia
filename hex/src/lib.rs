@@ -24,7 +24,7 @@ impl Default for HexConverter {
 impl HexConverter {
     pub fn hex_axial_to_square_matrix(&self) -> cgmath::Matrix2<f32> {
         let sc = EPSILON * self.spacing() / FOO;
-        let scale = cgmath::Matrix2::new(sc, 0.0, 0.0, sc);
+        let scale = cgmath::Matrix2::new(-sc, 0.0, 0.0, sc);
         scale * hex::HEX_PROJ_FLAT
     }
 
@@ -37,8 +37,6 @@ impl HexConverter {
         hex::Cube::round([q, r, s]).to_axial()
     }
     pub fn center_world_to_hex(&self, pos: cgmath::Vector2<f32>) -> Axial {
-        //pos.x -= EPSILON * self.spacing() / FOO;
-        //pos.y -= EPSILON * self.spacing() / FOO;
         self.world_to_hex(pos)
     }
 
@@ -48,7 +46,7 @@ impl HexConverter {
     }
 
     pub fn new() -> Self {
-        let spacing = 30.0; //grid_dim[0] / (grid_width as f32);
+        let spacing = 30.0;
         Self { spacing }
     }
     pub fn spacing(&self) -> f32 {

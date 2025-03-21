@@ -57,14 +57,96 @@ use super::*;
 
 #[must_use]
 #[derive(Serialize, Deserialize, Hash, Ord, PartialOrd, Debug, Copy, Clone, Eq, PartialEq)]
-pub enum ActiveTeam {
+pub enum Team {
     White = 0,
     Black = 1,
     Neutral = 2,
 }
-impl ActiveTeam {
+
+impl std::ops::Not for Team {
+    type Output = Team;
+
+    fn not(self) -> Self::Output {
+        Team::not(&self)
+    }
+}
+
+impl std::ops::Neg for Team {
+    type Output = Team;
+
+    fn neg(self) -> Self::Output {
+        self.not()
+    }
+}
+
+impl std::ops::SubAssign<unit::Team> for i64 {
+    fn sub_assign(&mut self, rhs: unit::Team) {
+        *self -= rhs.value();
+    }
+}
+impl std::ops::AddAssign<unit::Team> for i64 {
+    fn add_assign(&mut self, rhs: unit::Team) {
+        *self += rhs.value();
+    }
+}
+impl std::ops::Add<unit::Team> for i64 {
+    type Output = i64;
+
+    fn add(self, rhs: unit::Team) -> Self::Output {
+        self + rhs.value()
+    }
+}
+
+impl std::ops::Sub<unit::Team> for i64 {
+    type Output = i64;
+
+    fn sub(self, rhs: unit::Team) -> Self::Output {
+        self - rhs.value()
+    }
+}
+
+impl<T> std::ops::IndexMut<Team> for [T] {
+    fn index_mut(&mut self, index: Team) -> &mut Self::Output {
+        match index {
+            Team::White => &mut self[0],
+            Team::Black => &mut self[1],
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+}
+impl<T> std::ops::Index<Team> for [T] {
+    type Output = T;
+    fn index(&self, idx: Team) -> &Self::Output {
+        match idx {
+            Team::White => &self[0],
+            Team::Black => &self[1],
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+}
+
+impl Team {
+    pub fn value(&self) -> i64 {
+        match self {
+            Team::White => 1,
+            Team::Black => -1,
+            Team::Neutral => 0,
+        }
+    }
+
+    pub fn index(&self) -> usize {
+        match self {
+            Team::White => 0,
+            Team::Black => 1,
+            Team::Neutral => unreachable!(),
+        }
+    }
     pub fn is_white(&self) -> bool {
-        if let ActiveTeam::White = self {
+        if let Team::White = self {
             true
         } else {
             false
@@ -75,9 +157,9 @@ impl ActiveTeam {
     }
     pub fn not(&self) -> Self {
         match self {
-            ActiveTeam::White => ActiveTeam::Black,
-            ActiveTeam::Black => ActiveTeam::White,
-            ActiveTeam::Neutral => ActiveTeam::Neutral,
+            Team::White => Team::Black,
+            Team::Black => Team::White,
+            Team::Neutral => Team::Neutral,
         }
     }
 }
@@ -122,11 +204,19 @@ impl ActiveTeam {
 //     pub powerups: Vec<Axial>,
 // }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
+
+pub struct GameStateTotal {
+    //0 is white fog. 1 is black fog
+    pub fog: [SmallMesh; 2],
+    pub tactical: GameState,
+}
+
+impl GameStateTotal {}
 //Additionally removes need to special case animation.
-#[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
     pub factions: Tribe,
-    //pub env: Environment,
 }
 
 #[must_use]
@@ -138,6 +228,27 @@ pub enum GameOver {
 }
 
 impl GameState {
+    pub fn new() -> GameState {
+        GameState {
+            factions: Tribe::new(),
+        }
+    }
+    pub fn bake_fog(&self, fog: &SmallMesh) -> GameState {
+        let mut gg = self.clone();
+        // let fog = match team {
+        //     ActiveTeam::White => &self.fog[0],
+        //     ActiveTeam::Black => &self.fog[1],
+        //     ActiveTeam::Neutral => unreachable!(),
+        // };
+
+        //TODO use bit and/oring
+        for a in fog.iter_mesh(Axial::zero()) {
+            gg.factions.remove(a);
+            gg.factions.add_cell(a, 6, Team::Neutral);
+        }
+
+        gg
+    }
     pub fn hash_me(&self) -> u64 {
         use std::hash::Hash;
         use std::hash::Hasher;
@@ -148,181 +259,217 @@ impl GameState {
     pub fn game_is_over(
         &self,
         world: &board::MyWorld,
-        _team: ActiveTeam,
+        _team: Team,
         history: &MoveHistory,
     ) -> Option<GameOver> {
+        let score_data = self.score(world);
+
         let (a, b) = match &history.inner[..] {
             [.., a, b] => (a, b),
             _ => return None,
         };
 
-        if a.0.moveto != moves::PASS_MOVE_INDEX || b.0.moveto != moves::PASS_MOVE_INDEX {
-            return None;
+        if a.0 .0 == hex::PASS_MOVE_INDEX && b.0 .0 == hex::PASS_MOVE_INDEX {
+            //return None;
+            if score_data.white > score_data.black {
+                return Some(GameOver::WhiteWon);
+            } else if score_data.white < score_data.black {
+                return Some(GameOver::BlackWon);
+            } else {
+                return Some(GameOver::Tie);
+            }
         }
 
+        None
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct ScoreData {
+    pub white: usize,
+    pub black: usize,
+    pub neutral: usize,
+}
+impl GameState {
+    pub fn score(&self, world: &MyWorld) -> ScoreData {
+        //let total_num = world.get_game_cells().inner.count_ones();
+        let mut neutral = 0;
         let game = self;
-        let mut score = 0;
-        let mut stack_count = 0;
-        let mut territory_count = 0;
-        let mut strength = 0;
-        let mut contested = 0;
-        let mut unseen = 0;
+        let mut white_score = 0;
+        let mut black_score = 0;
         for index in world.get_game_cells().inner.iter_ones() {
             let mut num_white = 0;
             let mut num_black = 0;
             for (_, rest) in game.factions.iter_end_points(world, index) {
-                if let Some((_, team)) = rest {
+                if let Some(EndPoint { team, .. }) = rest {
                     match team {
-                        ActiveTeam::White => num_white += 1,
-                        ActiveTeam::Black => num_black += 1,
-                        ActiveTeam::Neutral => {}
+                        Team::White => num_white += 1,
+                        Team::Black => num_black += 1,
+                        Team::Neutral => {}
                     }
                 }
             }
 
-            if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                let height = height as i64;
-
-                let curr_strength = match tt {
-                    ActiveTeam::White => height.max(num_white - 1),
-                    ActiveTeam::Black => -height.max(num_black - 1),
-                    ActiveTeam::Neutral => 0,
-                };
-
-                strength += curr_strength;
-
-                stack_count += 1;
-
+            if let Some((_height, tt)) = game.factions.get_cell_inner(index) {
+                //let height = height as i8;
                 match tt {
-                    ActiveTeam::White => {
-                        if num_black > height {
-                            score -= 1
-                        } else {
-                            score += 1
-                        }
+                    Team::White => {
+                        white_score += 1;
+                        // if num_black >= height {
+                        //     black_score += 1
+                        // }
                     }
-                    ActiveTeam::Black => {
-                        if num_white > height {
-                            score += 1
-                        } else {
-                            score -= 1
-                        }
+                    Team::Black => {
+                        black_score += 1;
+                        // if num_white >= height {
+                        //     white_score += 1;
+                        // }
                     }
-                    ActiveTeam::Neutral => {}
+                    Team::Neutral => {
+                        neutral += 1;
+                    }
                 }
             } else {
                 let ownership = num_white - num_black;
 
                 if ownership > 0 {
-                    score += ownership;
-                    territory_count += 1;
+                    white_score += 1;
                 } else if ownership < 0 {
-                    score += ownership;
-                    territory_count += 1;
+                    black_score += 1;
                 } else {
-                    //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
-                    if num_white > 0 {
-                        contested += 1
-                    } else {
-                        unseen += 1;
-                    }
+                    neutral += 1;
                 }
             };
         }
-
-        Some(if score > 0 {
-            GameOver::WhiteWon
-        } else if score < 0 {
-            GameOver::BlackWon
-        } else {
-            GameOver::Tie
-        })
+        ScoreData {
+            white: white_score,
+            black: black_score,
+            neutral,
+        }
     }
+
+    // pub fn threat_score(&self, world: &MyWorld) -> (usize, usize) {
+    //     let total_num = world.get_game_cells().inner.count_ones();
+
+    //     let game = self;
+    //     let mut white_score = 0;
+    //     let mut black_score = 0;
+    //     for index in world.get_game_cells().inner.iter_ones() {
+    //         let mut num_white = 0;
+    //         let mut num_black = 0;
+    //         for (_, rest) in game.factions.iter_end_points(world, index) {
+    //             if let Some((_, team)) = rest {
+    //                 match team {
+    //                     ActiveTeam::White => num_white += 1,
+    //                     ActiveTeam::Black => num_black += 1,
+    //                     ActiveTeam::Neutral => {}
+    //                 }
+    //             }
+    //         }
+
+    //         if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+    //             let height = height as i8;
+    //             match tt {
+    //                 ActiveTeam::White => {
+    //                     white_score += 1;
+    //                     if num_black >= height {
+    //                         black_score += 1000
+    //                     }
+    //                 }
+    //                 ActiveTeam::Black => {
+    //                     black_score += 1;
+    //                     if num_white >= height {
+    //                         white_score += 1000;
+    //                     }
+    //                 }
+    //                 ActiveTeam::Neutral => {}
+    //             }
+    //         } else {
+    //             let ownership = num_white - num_black;
+
+    //             if ownership > 0 {
+    //                 white_score += 1;
+    //             } else if ownership < 0 {
+    //                 black_score += 1;
+    //             }
+    //         };
+    //     }
+    //     (white_score, black_score)
+    // }
 }
 
-// #[derive(Eq, PartialEq, Hash, Debug, Clone, Ord, PartialOrd)]
-// pub struct UnitData {
-//     pub position: Axial,
-//     pub typ: Type,
-// }
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 
-// #[derive(Default, Clone)]
-// pub struct SpokeNode {
-//     spokes: [u8; 6],
-// }
-// impl SpokeNode {
-//     pub fn has_piece_at_end(&self, dir: usize) -> bool {
-//         self.spokes[dir] & (1 << 7) != 0
-//     }
+pub enum StackHeight {
+    Stack1 = 0,
+    Stack2 = 1,
+    Stack3 = 2,
+    Stack4 = 3,
+    Stack5 = 4,
+    Stack6 = 5,
+}
 
-//     pub fn distance(&self, dir: usize) -> u8 {
-//         self.spokes[dir] & !(1 << 7)
-//     }
-// }
+#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 
-// pub struct Spokes {
-//     inner: Vec<SpokeNode>,
-// }
-// impl Spokes {
-//     pub fn update_to_added_unit(&mut self, factions: &Tribe, ax: Axial, world: &board::MyWorld) {
-//         let s = self.get_spokes(ax).clone();
-
-//         for i in 0..6 {
-//             let dis = s.distance(i);
-
-//             for k in 0..dis {}
-//             let has_piece = s.has_piece_at_end(i);
-//             let j = (i + 3) % 6;
-//             // let end_point_ax=ax.add(hex::OFFSETS[i].mul(dis));
-
-//             // self.get_spokes_mut(end_point_ax).spokes[j]=dis;
-//         }
-//     }
-
-//     pub fn generate(factions: &Tribe, world: &board::MyWorld) -> Spokes {
-//         let mut s = Spokes {
-//             inner: vec![SpokeNode::default(); 256],
-//         };
-
-//         for unit in world.get_game_cells().iter_mesh() {
-//             let res = factions.iter_end_points(world, unit);
-
-//             let res = res.map(|(ax, foo)| {
-//                 let mut val = ax.to_cube().dist(&unit.to_cube()) as u8;
-
-//                 if foo.is_some() {
-//                     val |= 1 << 7;
-//                 }
-//                 val
-//             });
-
-//             s.get_spokes_mut(unit).spokes = res;
-//         }
-
-//         s
-//     }
-//     pub fn get_spokes(&self, a: Axial) -> &SpokeNode {
-//         let ind = mesh::small_mesh::conv(a);
-//         &self.inner[ind]
-//     }
-//     pub fn get_spokes_mut(&mut self, a: Axial) -> &mut SpokeNode {
-//         let ind = mesh::small_mesh::conv(a);
-//         &mut self.inner[ind]
-//     }
-// }
+pub enum GameCell {
+    Piece(StackHeight, Team),
+    #[default]
+    Empty,
+}
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub cells: [SmallMesh; 3],
-    pub team: SmallMesh,
-    pub ice: SmallMesh,
-    //This just signifies if there is a number in cells.
-    //This way you can just check one mesh to see if a piece is there or not
-    //instead of checking 3
-    pub piece: SmallMesh,
+    pub cells: Vec<GameCell>, // pub cells: [SmallMesh; 3],
+                              // pub team: SmallMesh,
+                              // pub ice: SmallMesh,
+                              // //This just signifies if there is a number in cells.
+                              // //This way you can just check one mesh to see if a piece is there or not
+                              // //instead of checking 3
+                              // pub piece: SmallMesh,
+}
+
+pub fn ray(
+    start: Axial,
+    dd: hex::HDir,
+    world: &board::MyWorld,
+) -> (i8, impl Iterator<Item = isize> + use<'_>) {
+    let stride = board::STRIDES[dd as usize] as isize;
+    let dis = board::dis_to_hex_of_hexagon(start, dd, world.radius as i8);
+    let mut index2 = start.to_index() as isize;
+
+    debug_assert!(
+        world.get_game_cells().inner[index2 as usize],
+        "uhoh {:?}",
+        world.format(&start)
+    );
+    (
+        dis,
+        (1..dis).map(move |_d| {
+            index2 += stride;
+            //assert!(index2 > 0);
+
+            debug_assert!(
+                world.get_game_cells().inner[index2 as usize],
+                // "fail {}:{}:{:?}:{:?}",
+                // d,
+                // dis,
+                // dd,
+                // start.to_letter_coord(world.radius as i8)
+            );
+            index2
+        }),
+    )
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct EndPoint {
+    pub index: usize,
+    pub height: i8,
+    pub team: Team,
 }
 
 impl Tribe {
+    //TODO rename
     pub fn doop(&self, index: usize, world: &MyWorld) -> SmallMesh {
         let mut s = SmallMesh::new();
 
@@ -330,19 +477,16 @@ impl Tribe {
             let dd = hex::HDir::from(i as u8);
 
             let stride = board::STRIDES[i] as isize;
-            let dis = board::dis_to_hex_of_hexagon(
-                mesh::small_mesh::inverse(index),
-                dd,
-                world.radius as i8,
-            );
+            let dis =
+                board::dis_to_hex_of_hexagon(Axial::from_index(&index), dd, world.radius as i8);
             let mut index2 = index as isize;
 
-            for d in 0..dis {
+            for _ in 0..dis {
                 index2 += stride;
 
                 s.inner.set(index2 as usize, true);
 
-                if let Some(pp) = self.get_cell_inner(index2 as usize) {
+                if let Some(_) = self.get_cell_inner(index2 as usize) {
                     break;
                 }
             }
@@ -350,127 +494,148 @@ impl Tribe {
 
         s
     }
-    pub fn iter_end_points(
-        &self,
-        world: &board::MyWorld,
+    pub fn iter_end_points<'a>(
+        &'a self,
+        world: &'a board::MyWorld,
         index: usize,
-    ) -> [(i8, Option<(u8, ActiveTeam)>); 6] {
-        core::array::from_fn(|i| {
-            let dd = hex::HDir::from(i as u8);
-
-            let stride = board::STRIDES[i] as isize;
-            let dis = board::dis_to_hex_of_hexagon(
-                mesh::small_mesh::inverse(index),
-                dd,
-                world.radius as i8,
-            );
-            let mut index2 = index as isize;
-
-            for d in 0..dis {
-                index2 += stride;
-
+    ) -> impl Iterator<Item = (i8, Option<EndPoint>)> + use<'a> {
+        assert!(
+            world.get_game_cells().inner[index as usize],
+            "uhoh {:?}",
+            world.format(&ActualMove(index))
+        );
+        hex::HDir::all().map(move |dd| {
+            let (dis, it) = ray(Axial::from_index(&index), dd, world);
+            for (d, index2) in it.enumerate() {
                 if let Some(pp) = self.get_cell_inner(index2 as usize) {
-                    return (d + 1, Some(pp));
+                    return (
+                        d as i8 + 1,
+                        Some(EndPoint {
+                            index: index2 as usize,
+                            height: pp.0 as i8,
+                            team: pp.1,
+                        }),
+                    );
                 }
             }
 
             (dis, None)
         })
+
+        // core::array::from_fn(|i| {
+
+        // })
     }
 
     pub fn new() -> Tribe {
-        Tribe {
-            cells: [0; 3].map(|_| SmallMesh::new()),
-            team: SmallMesh::new(),
-            ice: SmallMesh::new(),
-            piece: SmallMesh::new(),
-        }
+        let cells: Vec<_> = (0..board::TABLE_SIZE).map(|_| GameCell::Empty).collect();
+        assert_eq!(cells.len(), board::TABLE_SIZE);
+        Tribe { cells }
     }
 
     pub fn remove(&mut self, a: Axial) {
-        let a = mesh::small_mesh::conv(a);
+        let a = a.to_index();
         self.remove_inner(a);
     }
     pub fn remove_inner(&mut self, a: usize) {
-        self.cells[0].inner.set(a, false);
-        self.cells[1].inner.set(a, false);
-        self.cells[2].inner.set(a, false);
-        self.piece.inner.set(a, false);
-        self.team.inner.set(a, false);
+        self.cells[a] = GameCell::Empty;
+        // self.cells[0].inner.set(a, false);
+        // self.cells[1].inner.set(a, false);
+        // self.cells[2].inner.set(a, false);
+        // self.piece.inner.set(a, false);
+        // self.team.inner.set(a, false);
     }
-    pub fn has_a_piece(&self, index: usize) -> bool {
-        //TODO worth having a seperate piece bitfield????
-        //Check smaller bits first. more likely to be set.
-        //self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
-        self.piece.inner[index]
+    // pub fn has_a_piece(&self, index: usize) -> bool {
+    //     //TODO worth having a seperate piece bitfield????
+    //     //Check smaller bits first. more likely to be set.
+    //     //self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
+    //     self.piece.inner[index]
+    // }
+
+    pub fn get_cell_inner(&self, index: usize) -> Option<(u8, Team)> {
+        assert!(index != hex::PASS_MOVE_INDEX);
+        match &self.cells[index] {
+            GameCell::Empty => None,
+            GameCell::Piece(height, team) => Some((height.clone() as u8 + 1, *team)),
+        }
+
+        // if !self.piece.inner[index as usize] {
+        //     return None;
+        // }
+
+        // let bit0 = self.cells[0].inner[index] as usize;
+        // let bit1 = self.cells[1].inner[index] as usize;
+        // let bit2 = self.cells[2].inner[index] as usize;
+
+        // let val = bit0 | bit1 << 1 | bit2 << 2;
+
+        // if val == 7 {
+        //     return Some((2, Team::Neutral));
+        // }
+        // if val == 0 {
+        //     return Some((6, Team::Neutral));
+        // }
+
+        // let team = if self.team.inner[index] {
+        //     Team::White
+        // } else {
+        //     Team::Black
+        // };
+        // Some((val as u8, team))
+    }
+    pub fn get_cell(&self, a: Axial) -> Option<(u8, Team)> {
+        self.get_cell_inner(a.to_index())
     }
 
-    pub fn get_cell_inner(&self, index: usize) -> Option<(u8, ActiveTeam)> {
-        if !self.piece.inner[index as usize] {
-            return None;
-        }
+    // fn set_coord(&mut self, index: usize, stack: u8) {
+    //     self.cells[index]=GameCell::P
+    //     // assert!(stack <= 7);
+    //     // let bit2 = ((stack >> 2) & 1) != 0;
+    //     // let bit1 = ((stack >> 1) & 1) != 0;
+    //     // let bit0 = ((stack >> 0) & 1) != 0;
 
-        let bit0 = self.cells[0].inner[index] as usize;
-        let bit1 = self.cells[1].inner[index] as usize;
-        let bit2 = self.cells[2].inner[index] as usize;
+    //     // self.cells[0].inner.set(index, bit0);
+    //     // self.cells[1].inner.set(index, bit1);
+    //     // self.cells[2].inner.set(index, bit2);
 
-        let val = bit0 | bit1 << 1 | bit2 << 2;
+    //     // //if stack != 0 {
+    //     // self.piece.inner.set(index, true);
+    //     // //}
+    // }
 
-        if val == 7 {
-            return Some((1, ActiveTeam::Neutral));
-        }
-        if val == 0 {
-            return Some((6, ActiveTeam::Neutral));
-        }
-
-        let team = if self.team.inner[index] {
-            ActiveTeam::White
-        } else {
-            ActiveTeam::Black
+    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: Team) {
+        let s = match stack {
+            1 => StackHeight::Stack1,
+            2 => StackHeight::Stack2,
+            3 => StackHeight::Stack3,
+            4 => StackHeight::Stack4,
+            5 => StackHeight::Stack5,
+            6 => StackHeight::Stack6,
+            _ => unreachable!(),
         };
-        Some((val as u8, team))
+
+        self.cells[a] = GameCell::Piece(s, team);
+        // match team {
+        //     Team::White => self.team.inner.set(a, true),
+        //     Team::Black => self.team.inner.set(a, false),
+        //     Team::Neutral => {
+        //         let val = if stack == 2 {
+        //             7
+        //         } else if stack == 6 {
+        //             0
+        //         } else {
+        //             panic!("impossible")
+        //         };
+
+        //         self.set_coord(a, val);
+        //         self.team.inner.set(a, false);
+        //         return;
+        //     }
+        // }
+        // self.set_coord(a, stack);
     }
-    pub fn get_cell(&self, a: Axial) -> Option<(u8, ActiveTeam)> {
-        self.get_cell_inner(mesh::small_mesh::conv(a))
-    }
-
-    fn set_coord(&mut self, index: usize, stack: u8) {
-        assert!(stack <= 7);
-        let bit2 = ((stack >> 2) & 1) != 0;
-        let bit1 = ((stack >> 1) & 1) != 0;
-        let bit0 = ((stack >> 0) & 1) != 0;
-
-        self.cells[0].inner.set(index, bit0);
-        self.cells[1].inner.set(index, bit1);
-        self.cells[2].inner.set(index, bit2);
-
-        //if stack != 0 {
-        self.piece.inner.set(index, true);
-        //}
-    }
-
-    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: ActiveTeam) {
-        match team {
-            ActiveTeam::White => self.team.inner.set(a, true),
-            ActiveTeam::Black => self.team.inner.set(a, false),
-            ActiveTeam::Neutral => {
-                let val = if stack == 1 {
-                    7
-                } else if stack == 6 {
-                    0
-                } else {
-                    panic!("impossible")
-                };
-
-                self.set_coord(a, val);
-                self.team.inner.set(a, false);
-                return;
-            }
-        }
-        self.set_coord(a, stack);
-    }
-    pub fn add_cell(&mut self, a: Axial, stack: u8, team: ActiveTeam) {
-        let a = mesh::small_mesh::conv(a);
+    pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team) {
+        let a = a.to_index();
         self.add_cell_inner(a, stack, team);
     }
 }
@@ -484,45 +649,43 @@ pub enum UnitType {
 //need 8 layers of map
 //each map needs
 
-pub fn parse_replay_string(s: &str, world: &MyWorld) -> Option<(Map, MoveHistory)> {
-    let mut s = s.split(":");
+// pub fn parse_replay_string(s: &str, world: &MyWorld) -> Option<(Map, MoveHistory)> {
+//     let mut s = s.split(":");
 
-    let map = s.next()?;
+//     let map = s.next()?;
 
-    let Ok(map) = Map::load(&map, world) else {
-        return None;
-    };
+//     let Ok(map) = Map::load(&map, world) else {
+//         return None;
+//     };
 
-    let moves = s.next()?;
+//     let moves = s.next()?;
 
-    let (mut g, start_team) = GameState::new(world, &map);
-    let mut mh = MoveHistory::new();
-    for (f, team) in moves.split_terminator(',').zip(start_team.iter()) {
-        let m = ActualMove::from_str(f)?;
-        let effect = m.apply(team, &mut g, world);
-        mh.inner.push((m, effect));
-    }
+//     let (mut g, start_team) = GameStateTotal::new(world, &map);
+//     let mut mh = MoveHistory::new();
+//     for (f, team) in moves.split_terminator(',').zip(start_team.iter()) {
+//         let m = ActualMove::from_str(f)?;
 
-    Some((map, mh))
-}
+//         let effect = m.apply(team, &mut g.tactical, world);
+//         g.update_fog(world, team);
+//         mh.inner.push((m, effect));
+//     }
 
-pub fn replay_string(
-    map: &Map,
-    moves: &MoveHistory,
-    world: &MyWorld,
-) -> Result<String, std::fmt::Error> {
-    use std::fmt::Write;
-    let mut s = String::new();
+//     Some((map, mh))
+// }
 
-    let map_str = map.save(world).unwrap();
+pub fn replay_string(_moves: &MoveHistory, _world: &MyWorld) -> Result<String, std::fmt::Error> {
+    let s = String::new();
 
-    write!(&mut s, "{}:", map_str)?;
+    //let map_str = map.save(world).unwrap();
+    //TODO update this!!!
+    //todo!();
+    // write!(&mut s, "{}:", map_str)?;
 
-    for m in moves.inner.iter() {
-        let mut kk = String::new();
-        m.0.as_text(&mut kk).unwrap();
-        write!(&mut s, "{},", kk)?;
-    }
+    // for m in moves.inner.iter() {
+    //     let mut kk = String::new();
+    //     m.0.as_text(&mut kk).unwrap();
+    //     write!(&mut s, "{},", kk)?;
+    // }
 
     Ok(s)
 }
@@ -608,42 +771,42 @@ impl unit::Map {
 }
 
 impl Map {
-    pub fn from_game_state(game: &GameState, world: &board::MyWorld) -> Option<Map> {
-        let water = game.factions.ice.clone();
+    // pub fn from_game_state(game: &GameState, world: &board::MyWorld) -> Option<Map> {
+    //     let water = game.factions.ice.clone();
 
-        let mut white = SmallMesh::new();
-        let mut black = SmallMesh::new();
-        let mut mountains = SmallMesh::new();
-        let mut forests = SmallMesh::new();
+    //     let mut white = SmallMesh::new();
+    //     let mut black = SmallMesh::new();
+    //     let mut mountains = SmallMesh::new();
+    //     let mut forests = SmallMesh::new();
 
-        for a in world.get_game_cells().inner.iter_ones() {
-            if let Some((height, team)) = game.factions.get_cell_inner(a) {
-                match team {
-                    ActiveTeam::White => {
-                        white.inner.set(a, true);
-                    }
-                    ActiveTeam::Black => {
-                        black.inner.set(a, true);
-                    }
-                    ActiveTeam::Neutral => {
-                        if height == 6 {
-                            mountains.inner.set(a, true);
-                        } else if height == 1 {
-                            forests.inner.set(a, true);
-                        }
-                    }
-                }
-            }
-        }
+    //     for a in world.get_game_cells().inner.iter_ones() {
+    //         if let Some((height, team)) = game.factions.get_cell_inner(a) {
+    //             match team {
+    //                 Team::White => {
+    //                     white.inner.set(a, true);
+    //                 }
+    //                 Team::Black => {
+    //                     black.inner.set(a, true);
+    //                 }
+    //                 Team::Neutral => {
+    //                     if height == 6 {
+    //                         mountains.inner.set(a, true);
+    //                     } else if height == 1 {
+    //                         forests.inner.set(a, true);
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        Some(Map {
-            ice: water,
-            water: mountains,
-            forests,
-            white,
-            black,
-        })
-    }
+    //     Some(Map {
+    //         ice: water,
+    //         water: mountains,
+    //         forests,
+    //         white,
+    //         black,
+    //     })
+    // }
 }
 
 pub fn default_map(world: &board::MyWorld) -> Map {
@@ -651,7 +814,9 @@ pub fn default_map(world: &board::MyWorld) -> Map {
 
     //Map::load("----------if------iiffw----------i------w----w----i-2w--ii--w-i-------f----ii------f------ii--iiw-ffw-w-i---ii--w---w1------i---w-----wwi-----1w--iii-w-ww---fi-2-----ff-",world).unwrap()
 
-    Map::load("wwwwwwwww-if--wwwwiiffw-wwwww----iw-www-w----i--2ww-2w--iiw-w-ww------f----wwwwff--f-----wwwwfiiw-ffw-w-www-ii--w---w1ww----i---w-ww1-wwi----www--iii-wwww---fiwwwwwwwwww",world).unwrap()
+    //Map::load("wwwwwwwww-if--wwwwiiffw-wwwww----iw-www-w----i--2ww-2w--iiw-w-ww------f----wwwwff--f-----wwwwfiiw-ffw-w-www-ii--w---w1ww----i---w-ww1-wwi----www--iii-wwww---fiwwwwwwwwww",world).unwrap()
+    //Map::load("wwwwwwwww-i---iiwwii--i-iiwwi----ii-iww-i----i--2ww-2i--iii-i-ww-----------iwwi-----f----iiww-iii---i-i-iww-ii--i---i1ww----i---i-ww1-iii----wwi--iii--wwi----i-wwwwwwwww",world).unwrap()
+    Map::load("----------i1--ii--ii--i-ii--i--2-ii-i", world).unwrap()
     // let mut mountains = SmallMesh::new();
     // let mut water = SmallMesh::new();
     // let mut forests = SmallMesh::new();
@@ -691,35 +856,121 @@ pub fn default_map(world: &board::MyWorld) -> Map {
     // }
 }
 
-impl GameState {
+impl GameStateTotal {
     //TODO make part of GameState
-    pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameState, ActiveTeam) {
+    pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameStateTotal, Team) {
         //let map = &world.map;
 
         let mut cells = Tribe::new();
 
         for f in map.white.iter_mesh(Axial::zero()) {
-            cells.add_cell(f, 1, ActiveTeam::White);
+            cells.add_cell(f, 1, Team::White);
         }
 
         for f in map.black.iter_mesh(Axial::zero()) {
-            cells.add_cell(f, 1, ActiveTeam::Black);
+            cells.add_cell(f, 1, Team::Black);
         }
 
         for f in map.forests.iter_mesh(Axial::zero()) {
-            cells.add_cell(f, 1, ActiveTeam::Neutral);
+            cells.add_cell(f, 1, Team::Neutral);
         }
 
         for m in map.water.iter_mesh(Axial::zero()) {
-            cells.add_cell(m, 6, ActiveTeam::Neutral);
+            cells.add_cell(m, 6, Team::Neutral);
         }
 
-        for w in map.ice.iter_mesh(Axial::zero()) {
-            cells.ice.add(w);
-        }
+        // for w in map.ice.iter_mesh(Axial::zero()) {
+        //     cells.ice.add(w);
+        // }
 
         let game = GameState { factions: cells };
 
-        (game, ActiveTeam::White)
+        let mut game_total = GameStateTotal {
+            tactical: game,
+            fog: std::array::from_fn(|_| SmallMesh::new()),
+        };
+
+        //Fill everything with fog.
+        //game_total.fog[0].inner |= world.get_game_cells().inner;
+        //game_total.fog[1].inner |= world.get_game_cells().inner;
+
+        game_total.update_fog(&world, Team::White);
+        game_total.update_fog(&world, Team::Black);
+
+        (game_total, Team::White)
     }
 }
+
+// mod test {
+
+//     fn doop() {
+//         let foo = "
+// -----s--s-eb-ev-b--
+// -c-c-s-tct---cs--c-
+// tc-s-d-re-srces-s--
+// --brc----dc--r-sr-r
+// -r---s--rtd-bbb-c--
+// cs--cs----s---csc--
+// bs----s--d--c--s--c
+// ducd-uc-d-ub-dubd-u
+// test-est--erte-rte-
+// b-rbbr---k---ds-tds
+// c---rc-b-uc-r-s--sc
+// s--cbs---ds---d--bs
+// c--sc---s-e--ses-s-
+// rr-dr----d----rr-dr
+// ssetseteeessssettse
+// d--sd-d-sdd--s---s-
+// bcs-d-ss-e--sudtc--
+// bb---cs--d----s---r
+// -sr-se--se--se----r
+// sccrbs--ses--ses-sc
+// c-b--s-r-ts-ccd----
+// rc-rr----d----rc-rr
+// -r-e--rte--r-e--te-
+// rdsr-ds--dd-r-ds-ds
+// -bbrr----c-bs-rb-r-
+// s-s-ddssd-ds-dd-s-s
+// c-rse-rr-e-ss-e-s-c
+// t---tt-d---d--dttd-
+// d--d--t--d-t---dtt-
+// -t--d--t---t-d-dd-t
+// --t-td-t-t-dd--d---
+// -rrs-r---cb---bb---
+// s--c--s--t---cdbc--
+// r--c----cs-r--d--b-
+// s-cr-d---er-rtdt-c-
+// -se-se--ser-se-t---
+// --es-e--see--s-e-ss
+// c--ct-------c-t--cc
+// ccc-e-ss----s-----d
+// --ttd-tt-d---dtdd--
+// ---d-c-s--d-rtst-dc
+// c--ctc-c-d---ssss--
+// tddt-t--dt---t-d-d-
+// t-dt---t-t-d--dtdd-
+// -tbc--b-s--c----b-t
+// bbbr-rc--dt----r---
+// --d---ss---s----bcb
+// bb-t-bbsrd-s----s--
+// dcc-surr-f-s--sd-sd
+// s---s-bdd-tct---b-b
+// -s--ds---cs-s-ds---
+// --ddttt------d-e---
+// ----sc-s-----ccssc-
+// duc----tt---e-b-td-
+// -----ds--tdsc--er-t
+// sdt--ect-----e-sc-s
+// -tccd--t-t-ct--rdd-
+// --s---s-cttc-d-cr-c
+// cs--c----r--b----dr
+// -r--r-rbbcr---dr-bs
+// -r--r-r-bct---c--b-
+// -r--r-r-d-t-c-d--b-
+// "
+//         .trim()
+//         .split('\n');
+
+//         //TODO make sure first player wins in all these cases using the AI.
+//     }
+// }

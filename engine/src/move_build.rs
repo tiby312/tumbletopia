@@ -1,4 +1,4 @@
-use moves::PASS_MOVE_INDEX;
+use crate::moves::SpokeInfo;
 
 use super::*;
 
@@ -228,7 +228,8 @@ impl crate::moves::ActualMove {
 pub struct MoveEffect {
     pushpull: PushInfo,
     powerup: PowerupAction,
-    pub destroyed_unit: Option<(u8, ActiveTeam)>,
+    pub height: u8,
+    pub destroyed_unit: Option<(u8, Team)>,
 }
 impl MoveEffect {
     // pub fn combine(self, extra_effect: ExtraEffect) -> CombinedEffect {
@@ -239,125 +240,101 @@ impl MoveEffect {
     // }
 }
 
+impl GameAxial for Axial {
+    fn get(&self) -> &Axial {
+        self
+    }
+}
+pub trait GameAxial {
+    fn get(&self) -> &Axial;
+}
+
 // #[derive(Clone, Debug)]
 // pub struct MovePhase {
 //     //pub original: Axial,
 //     pub moveto: Axial,
 // }
 
-#[test]
-fn test_move() {
-    let k = mesh::small_mesh::inverse(ActualMove::from_str("A1").unwrap().moveto);
-    assert_eq!(k, Axial { q: 0, r: -7 });
-
-    let k = mesh::small_mesh::inverse(ActualMove::from_str("H15").unwrap().moveto);
-    assert_eq!(k, Axial { q: 7, r: 0 });
-}
 impl ActualMove {
-    pub fn from_str(foo: &str) -> Option<ActualMove> {
-        if "pp" == foo {
-            return Some(ActualMove {
-                moveto: PASS_MOVE_INDEX,
-            });
-        }
-
-        let mut char_iter = foo.chars();
-
-        let Some(letter) = char_iter.next() else {
-            return None;
-        };
-
-        let r = match letter {
-            'A' => -7,
-            'B' => -6,
-            'C' => -5,
-            'D' => -4,
-            'E' => -3,
-            'F' => -2,
-            'G' => -1,
-            'H' => 0,
-            'I' => 1,
-            'J' => 2,
-            'K' => 3,
-            'L' => 4,
-            'M' => 5,
-            'N' => 6,
-            'O' => 7,
-            _ => return None,
-        };
-
-        let Some(first_digit) = char_iter.next() else {
-            return None;
-        };
-
-        let s = if let Some(second_digit) = char_iter.next() {
-            let mut s = String::new();
-            s.push(first_digit);
-            s.push(second_digit);
-            let Ok(foo) = u8::from_str_radix(&s, 10) else {
-                return None;
-            };
-            foo
-        } else {
-            let Ok(foo) = u8::from_str_radix(&first_digit.to_string(), 10) else {
-                return None;
-            };
-            foo
-        };
-
-        let s = -(s as i8 - 1 - 7);
-
-        //q+r+s=0
-        let q = -r - s;
-
-        Some(ActualMove {
-            moveto: mesh::small_mesh::conv(Axial { q, r }),
-        })
-    }
-    pub fn as_text(&self, mut w: impl std::fmt::Write) -> Result<(), std::fmt::Error> {
-        if self.moveto == PASS_MOVE_INDEX {
-            return write!(w, "pp");
-        }
-
-        let k = mesh::small_mesh::inverse(self.moveto).to_cube();
-
-        let s = k.s;
-        let r = k.r;
-
-        let first = match r {
-            -7 => 'A',
-            -6 => 'B',
-            -5 => 'C',
-            -4 => 'D',
-            -3 => 'E',
-            -2 => 'F',
-            -1 => 'G',
-            0 => 'H',
-            1 => 'I',
-            2 => 'J',
-            3 => 'K',
-            4 => 'L',
-            5 => 'M',
-            6 => 'N',
-            7 => 'O',
-            _ => '?',
-        };
-
-        write!(w, "{}{}", first, (-s + 7) + 1)
-    }
-
-    // pub fn into_attack(self, target: Axial) -> ExtraPhase {
-    //     ExtraPhase {
-    //         original: self.original,
-    //         moveto: self.moveto,
-    //         target,
+    // pub fn from_str(foo: &str) -> Option<ActualMove> {
+    //     if "pp" == foo {
+    //         return Some(ActualMove {
+    //             moveto: PASS_MOVE_INDEX,
+    //         });
     //     }
+
+    //     let mut char_iter = foo.chars();
+
+    //     let Some(letter) = char_iter.next() else {
+    //         return None;
+    //     };
+
+    //     let r = match letter {
+    //         'A' => -7,
+    //         'B' => -6,
+    //         'C' => -5,
+    //         'D' => -4,
+    //         'E' => -3,
+    //         'F' => -2,
+    //         'G' => -1,
+    //         'H' => 0,
+    //         'I' => 1,
+    //         'J' => 2,
+    //         'K' => 3,
+    //         'L' => 4,
+    //         'M' => 5,
+    //         'N' => 6,
+    //         'O' => 7,
+    //         _ => return None,
+    //     };
+
+    //     let Some(first_digit) = char_iter.next() else {
+    //         return None;
+    //     };
+
+    //     let s = if let Some(second_digit) = char_iter.next() {
+    //         let mut s = String::new();
+    //         s.push(first_digit);
+    //         s.push(second_digit);
+    //         let Ok(foo) = u8::from_str_radix(&s, 10) else {
+    //             return None;
+    //         };
+    //         foo
+    //     } else {
+    //         let Ok(foo) = u8::from_str_radix(&first_digit.to_string(), 10) else {
+    //             return None;
+    //         };
+    //         foo
+    //     };
+
+    //     let s = -(s as i8 - 1 - 7);
+
+    //     //q+r+s=0
+    //     let q = -r - s;
+
+    //     Some(ActualMove {
+    //         moveto: Axial { q, r }.to_index(),
+    //     })
     // }
 
-    pub fn undo(&self, _team_index: ActiveTeam, effect: &MoveEffect, state: &mut GameState) {
-        let moveto = self.moveto;
+    // pub fn as_text(
+    //     &self,
+    //     world: &board::MyWorld,
+    //     mut w: impl std::fmt::Write,
+    // ) -> Result<(), std::fmt::Error> {
+    //     if self.moveto == PASS_MOVE_INDEX {
+    //         return write!(w, "pp");
+    //     }
 
-        if moveto == moves::PASS_MOVE_INDEX {
+    //     let (letter, number) = mesh::small_mesh::inverse(self.moveto).to_letter_coord(world.radius as i8);
+
+    //     write!(w, "{}{}", letter, number)
+    // }
+
+    pub fn undo(&self, _team_index: Team, effect: &MoveEffect, state: &mut GameState) {
+        let moveto = self.0;
+
+        if moveto == hex::PASS_MOVE_INDEX {
             return;
         }
 
@@ -434,32 +411,44 @@ impl ActualMove {
 
     pub fn apply(
         &self,
-        team: ActiveTeam,
+        team: Team,
         game: &mut GameState,
+        fog: &mesh::small_mesh::SmallMesh,
         world: &board::MyWorld,
+        spoke_info: Option<&SpokeInfo>,
     ) -> MoveEffect {
         //this is a pass
-        if self.moveto == moves::PASS_MOVE_INDEX {
+        if self.0 == hex::PASS_MOVE_INDEX {
             return MoveEffect {
                 pushpull: PushInfo::None,
                 powerup: PowerupAction::None,
                 destroyed_unit: None,
+                height: 0,
             };
         }
 
         //let env = &mut game.env;
-        let target_cell = self.moveto;
+        let target_cell = self.0;
         let e = PushInfo::None;
 
-        let mut stack_size = 0;
+        let stack_size = if let Some(sp) = spoke_info {
+            sp.data[self.0].num_attack[team]
+        } else {
+            let mut stack_size = 0;
 
-        for (_, rest) in game.factions.iter_end_points(world, target_cell) {
-            if let Some((_, tt)) = rest {
-                if tt == team {
-                    stack_size += 1;
+            for (_, rest) in game
+                .bake_fog(fog)
+                .factions
+                .iter_end_points(world, target_cell)
+            {
+                if let Some(unit::EndPoint { team: tt, .. }) = rest {
+                    if tt == team {
+                        stack_size += 1;
+                    }
                 }
             }
-        }
+            stack_size
+        };
 
         // for (i, h) in hex::OFFSETS.into_iter().enumerate() {
         //     for k in target_cell
@@ -487,13 +476,16 @@ impl ActualMove {
         } else {
             None
         };
+
         game.factions.remove_inner(target_cell);
-        game.factions.add_cell_inner(target_cell, stack_size, team);
+        game.factions
+            .add_cell_inner(target_cell, stack_size as u8, team);
 
         MoveEffect {
             pushpull: e,
             powerup: PowerupAction::None,
             destroyed_unit,
+            height: stack_size as u8,
         }
     }
 }

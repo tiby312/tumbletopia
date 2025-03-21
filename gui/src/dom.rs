@@ -1,6 +1,7 @@
-use futures::StreamExt;
+use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::{JsCast, JsValue, UnwrapThrowExt};
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
+use web_sys::HtmlInputElement;
 
 use super::*;
 
@@ -17,6 +18,7 @@ pub enum DomToWorker {
         x: f32,
         y: f32,
     },
+    //GameChange(String),
     TouchMove {
         touches: gui::scroll::Touches,
     },
@@ -40,11 +42,6 @@ pub enum DomToWorker {
         y: f32,
     },
 }
-impl DomToWorker {
-    fn some(self) -> Option<Self> {
-        Some(self)
-    }
-}
 
 //convert DOM coordinate to canvas relative coordinate
 fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
@@ -58,8 +55,6 @@ fn convert_coord_touch(
     canvas: &web_sys::EventTarget,
     event: &web_sys::Event,
 ) -> gui::scroll::Touches {
-    event.prevent_default();
-    event.stop_propagation();
     convert_coord_touch_inner(canvas, event.dyn_ref().unwrap_throw())
 }
 
@@ -124,7 +119,7 @@ pub fn text_texture(text: &str, width: usize, height: usize) -> web_sys::HtmlCan
     ctx.set_font(text);
     ctx.set_text_align("center");
     ctx.set_text_baseline("middle");
-    ctx.set_fill_style(&JsValue::from_str("black"));
+    ctx.set_fill_style_str("black");
     ctx.clear_rect(0., 0., width as f64, height as f64);
     ctx.fill_text(text, width as f64 / 2., height as f64 / 2.)
         .unwrap();
@@ -140,9 +135,17 @@ pub enum GameOverGui {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+
+pub struct Text {
+    pub text: String,
+    pub pos: [f32; 2],
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum WorkerToDom {
     ShowUndo,
     HideUndo,
+    TextUpdate(Vec<Text>, ScoreData, String),
     GameFinish {
         replay_string: String,
         result: GameOverGui,
@@ -153,47 +156,72 @@ pub enum WorkerToDom {
     Ack,
 }
 
-fn engine_handlers(
-    worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>,
-    canvas: &web_sys::HtmlCanvasElement,
-) -> impl std::any::Any {
-    let reg_button = |worker: &mut shogo::EngineMain<DomToWorker, WorkerToDom>, s: &'static str| {
+trait Any {}
+impl<T: ?Sized> Any for T {}
+
+fn engine_handlers<'a>(
+    worker: &'a shogo::main::MainSender<DomToWorker>,
+    canvas: &'a web_sys::HtmlCanvasElement,
+) -> impl Any + 'a {
+    use gloop::EventListen;
+
+    let reg_button = |worker: &'a shogo::main::MainSender<DomToWorker>, s: &'static str| {
         let undo = shogo::utils::get_by_id_elem(s);
-        worker.register_event(&undo, "click", move |_| {
-            DomToWorker::Button(s.to_string()).some()
+        gloop::EventListen::from_closure(&undo, "click", move |_| {
+            worker.post_message(DomToWorker::Button(s.to_string()));
         })
     };
 
-    [
-        worker.register_event(canvas, "mousemove", |e| {
-            let [x, y] = convert_coord(e.elem, e.event);
-            DomToWorker::CanvasMouseMove { x, y }.some()
+    let option = gloo::events::EventListenerOptions::enable_prevent_default();
+    (
+        EventListen::from_closure(&shogo::utils::get_by_id_elem("fen"), "change", |_| {
+            let foo:HtmlInputElement=shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
+
+            //Reboot the webpage with new fen.
+
+            
+            //worker.post_message(DomToWorker::GameChange(foo.value()));
         }),
-        worker.register_event(canvas, "mousedown", |e| {
-            let [x, y] = convert_coord(e.elem, e.event);
-            DomToWorker::CanvasMouseDown { x, y }.some()
+        EventListen::from_closure(canvas, "mousemove", |e| {
+            let [x, y] = convert_coord(canvas, e);
+            worker.post_message(DomToWorker::CanvasMouseMove { x, y });
         }),
-        worker.register_event(canvas, "wheel", |e| {
-            e.event.prevent_default();
-            e.event.stop_propagation();
-            None
+        EventListen::from_closure(canvas, "mousedown", |e| {
+            let [x, y] = convert_coord(canvas, e);
+            worker.post_message(DomToWorker::CanvasMouseDown { x, y });
         }),
-        worker.register_event(canvas, "mouseup", |_| DomToWorker::CanvasMouseUp.some()),
-        worker.register_event(canvas, "mouseleave", |_| {
-            DomToWorker::CanvasMouseLeave.some()
+        EventListen::from_closure_with_options(canvas, "wheel", option, |e| {
+            e.prevent_default();
+            e.stop_propagation();
         }),
-        worker.register_event(canvas, "touchstart", |e| {
-            let touches = convert_coord_touch(e.elem, e.event);
-            DomToWorker::TouchDown { touches }.some()
+        EventListen::from_closure(canvas, "mouseup", |_| {
+            worker.post_message(DomToWorker::CanvasMouseUp);
         }),
-        worker.register_event(canvas, "touchmove", |e| {
-            let touches = convert_coord_touch(e.elem, e.event);
-            DomToWorker::TouchMove { touches }.some()
+        EventListen::from_closure(canvas, "mouseleave", |_| {
+            worker.post_message(DomToWorker::CanvasMouseLeave);
         }),
-        worker.register_event(canvas, "touchend", |e| {
-            let touches = convert_coord_touch(e.elem, e.event);
-            DomToWorker::TouchEnd { touches }.some()
+        EventListen::from_closure_with_options(canvas, "touchstart", option, |e| {
+            e.prevent_default();
+            e.stop_propagation();
+
+            let touches = convert_coord_touch(canvas, e);
+            worker.post_message(DomToWorker::TouchDown { touches })
         }),
+        EventListen::from_closure_with_options(canvas, "touchmove", option, |e| {
+            e.prevent_default();
+            e.stop_propagation();
+
+            let touches = convert_coord_touch(canvas, e);
+            worker.post_message(DomToWorker::TouchMove { touches })
+        }),
+        EventListen::from_closure_with_options(canvas, "touchend", option, |e| {
+            e.prevent_default();
+            e.stop_propagation();
+
+            let touches = convert_coord_touch(canvas, e);
+            worker.post_message(DomToWorker::TouchEnd { touches })
+        }),
+        //TODO register buttons based on game type
         reg_button(worker, "undo"),
         reg_button(worker, "pass"),
         reg_button(worker, "b_next"),
@@ -205,141 +233,169 @@ fn engine_handlers(
         reg_button(worker, "b_start1"),
         reg_button(worker, "b_start2"),
         reg_button(worker, "b_export"),
-        {
-            let w = gloo::utils::window();
-
-            worker.register_event(&w, "resize", |_| resize().some())
-        },
-    ]
+    )
 }
 
 pub async fn start_game(game_type: GameType, host: &str) {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");
 
-    canvas.set_width(gloo::utils::body().client_width() as u32);
-    canvas.set_height(gloo::utils::body().client_height() as u32);
-
     let offscreen = canvas.transfer_control_to_offscreen().unwrap_throw();
 
-    let (mut worker, mut response) =
-        shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
+    //let (worker, mut response) = shogo::EngineMain::new("./gridlock_worker.js", offscreen).await;
 
-    let _handlers = engine_handlers(&mut worker, &canvas);
+    let (sender, mut recv) = shogo::main::create_main("./gridlock_worker.js", offscreen).await;
 
-    worker.post_message(DomToWorker::Start(game_type));
-    let hay: WorkerToDom = response.next().await.unwrap_throw();
+    let (mut repaint_text_send, mut repaint_text_recv) = futures::channel::mpsc::channel(20);
+    let mut repaint_text_send2 = repaint_text_send.clone();
+
+    use futures::SinkExt;
+    let _h = {
+        let w = gloo::utils::window();
+        gloop::EventListen::from_closure(&w, "resize", |_| {
+            sender.post_message(resize2());
+            repaint_text_send2.send(()).now_or_never().unwrap().unwrap()
+        })
+    };
+
+    let _handlers = engine_handlers(&sender, &canvas);
+
+    sender.post_message(DomToWorker::Start(game_type));
+    let hay: WorkerToDom = recv.recv().next().await.unwrap_throw();
     matches!(hay, WorkerToDom::Ack);
 
     log!("dom:worker received the game");
 
-    //TODO make this happen on start??
-    worker.post_message(resize());
+    sender.post_message(resize2());
 
-    //TODO put somewhere else
-    //let host = "http://localhost:8000";
+    //repaint_text_send.send(()).await.unwrap();
+
+    let mut text = vec![];
+    // text.push(Text {
+    //     text: "Hello".to_string(),
+    //     pos: [40.0, 40.0],
+    // });
+
+    let mut score_data = None;
 
     loop {
-        let hay: WorkerToDom = response.next().await.unwrap_throw();
+        futures::select! {
+            _ = repaint_text_recv.next() =>{
 
-        match hay {
-            WorkerToDom::Ack => {
-                unreachable!();
-            }
-            WorkerToDom::ExportMap(map) => {
-                let foo = shogo::utils::get_by_id_elem("popup");
+                redraw_text(&text,score_data.as_ref().unwrap());
+            },
+            hay = recv.recv().next() => {
+                let hay = hay.unwrap_throw();
 
-                foo.set_attribute("style", "display:grid").unwrap_throw();
+                match hay {
+                    WorkerToDom::TextUpdate(t,p,game)=>{
+                        text=t;
+                        score_data=Some(p);
 
-                let foo = shogo::utils::get_by_id_elem("textarea");
-                foo.set_text_content(Some(&map));
-            }
-            WorkerToDom::ReplayFinish => {
-                let body = gloo::utils::document().body().unwrap();
+                        let foo:HtmlInputElement = shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
+                        let game=format!("[{}]",game);
+                        foo.set_value(&game);
 
-                use std::fmt::Write;
+                        repaint_text_send.send(()).await.unwrap();
+                    }
+                    WorkerToDom::Ack => {
+                        unreachable!();
+                    }
+                    WorkerToDom::ExportMap(map) => {
+                        let foo = shogo::utils::get_by_id_elem("popup");
 
-                let mut k = String::new();
-                write!(
-                    &mut k,
-                    r###"
-                <div id="gameover_popup" hidden="true">
-                
-                <text class="foo">replay finished!</text>
-                <a class="foo" href="{host}/index.html ">main menu</a>
-    
-              </div>
-              "###
-                )
-                .unwrap();
+                        foo.set_attribute("style", "display:grid").unwrap_throw();
 
-                body.insert_adjacent_html("beforeend", &k).unwrap();
-            }
-            WorkerToDom::CantParseReplay => {
-                let body = gloo::utils::document().body().unwrap();
+                        let foo = shogo::utils::get_by_id_elem("textarea");
+                        foo.set_text_content(Some(&map));
+                    }
+                    WorkerToDom::ReplayFinish => {
+                        let body = gloo::utils::document().body().unwrap();
 
-                use std::fmt::Write;
+                        use std::fmt::Write;
 
-                let mut k = String::new();
-                write!(
-                    &mut k,
-                    r###"
-                <div id="gameover_popup" hidden="true">
-                
-                <text class="foo">Failed to parse replay code</text>
-                <a class="foo" href="{host}/index.html ">main menu</a>
-    
-              </div>
-              "###
-                )
-                .unwrap();
+                        let mut k = String::new();
+                        write!(
+                            &mut k,
+                            r###"
+                        <div id="gameover_popup" hidden="true">
+                        
+                        <text class="foo">replay finished!</text>
+                        <a class="foo" href="{host}/index.html ">main menu</a>
+            
+                      </div>
+                      "###
+                        )
+                        .unwrap();
 
-                body.insert_adjacent_html("beforeend", &k).unwrap();
-            }
-            WorkerToDom::GameFinish {
-                replay_string,
-                result,
-            } => {
-                let team_str = match result {
-                    GameOverGui::WhiteWon => "White Won!",
-                    GameOverGui::BlackWon => "Black Won!",
-                    GameOverGui::Tie => "Its a tie!",
-                };
+                        body.insert_adjacent_html("beforeend", &k).unwrap();
+                    }
+                    WorkerToDom::CantParseReplay => {
+                        let body = gloo::utils::document().body().unwrap();
 
-                let foo = shogo::utils::get_by_id_elem("gameover_popup");
-                foo.set_attribute("style", "display:grid").unwrap_throw();
-                let foo = shogo::utils::get_by_id_elem("gameover_title");
-                foo.set_text_content(Some(&format!("Game over: {}", team_str)));
-                let foo = shogo::utils::get_by_id_elem("gameover_code");
-                foo.set_text_content(Some(&replay_string));
-            }
-            WorkerToDom::ShowUndo => {
-                let undo = shogo::utils::get_by_id_elem("undo");
+                        use std::fmt::Write;
 
-                undo.set_hidden(false);
+                        let mut k = String::new();
+                        write!(
+                            &mut k,
+                            r###"
+                        <div id="gameover_popup" hidden="true">
+                        
+                        <text class="foo">Failed to parse replay code</text>
+                        <a class="foo" href="{host}/index.html ">main menu</a>
+            
+                      </div>
+                      "###
+                        )
+                        .unwrap();
 
-                //let k = r###"<button id="undo" class="foo">Undo</button>"###;
-                //let body = gloo::utils::document().body().expect("get body fail");
+                        body.insert_adjacent_html("beforeend", &k).unwrap();
+                    }
+                    WorkerToDom::GameFinish {
+                        replay_string,
+                        result,
+                    } => {
+                        let team_str = match result {
+                            GameOverGui::WhiteWon => "White Won!",
+                            GameOverGui::BlackWon => "Black Won!",
+                            GameOverGui::Tie => "Its a tie!",
+                        };
 
-                //body.insert_adjacent_html("beforeend",&k).expect("inserting undo fail");
-                //undo.set_attribute("hidden","false").unwrap();
+                        let foo = shogo::utils::get_by_id_elem("gameover_popup");
+                        foo.set_attribute("style", "display:grid").unwrap_throw();
+                        let foo = shogo::utils::get_by_id_elem("gameover_title");
+                        foo.set_text_content(Some(&format!("Game over: {}", team_str)));
+                        let foo = shogo::utils::get_by_id_elem("gameover_code");
+                        foo.set_text_content(Some(&replay_string));
+                    }
+                    WorkerToDom::ShowUndo => {
+                        let undo = shogo::utils::get_by_id_elem("undo");
 
-                worker.post_message(DomToWorker::Ack);
-                //popup.set_text_content(Some(&text));
-            }
-            WorkerToDom::HideUndo => {
-                let undo = shogo::utils::get_by_id_elem("undo");
-                //let body = gloo::utils::document().body().expect("get body fail");
-                //body.remove_child(&undo).expect("Couldnt remove undo");
-                //popup.set_text_content(Some(""));
-                undo.set_hidden(true);
-                //undo.set_attribute("hidden","true").unwrap();
+                        undo.set_hidden(false);
 
-                worker.post_message(DomToWorker::Ack);
+                        //let k = r###"<button id="undo" class="foo">Undo</button>"###;
+                        //let body = gloo::utils::document().body().expect("get body fail");
+
+                        //body.insert_adjacent_html("beforeend",&k).expect("inserting undo fail");
+                        //undo.set_attribute("hidden","false").unwrap();
+
+                        sender.post_message(DomToWorker::Ack);
+                        //popup.set_text_content(Some(&text));
+                    }
+                    WorkerToDom::HideUndo => {
+                        let undo = shogo::utils::get_by_id_elem("undo");
+                        //let body = gloo::utils::document().body().expect("get body fail");
+                        //body.remove_child(&undo).expect("Couldnt remove undo");
+                        //popup.set_text_content(Some(""));
+                        undo.set_hidden(true);
+                        //undo.set_attribute("hidden","true").unwrap();
+
+                        sender.post_message(DomToWorker::Ack);
+                    }
+                }
+
             }
         }
-        //log!(format!("main thread received={:?}", hay));
     }
-    //log!("main thread is closing");
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -351,9 +407,93 @@ pub enum GameType {
     Replay(String),
 }
 
-pub async fn main_entry() {}
+#[derive(Clone, Debug, Serialize, Deserialize)]
 
-fn resize() -> DomToWorker {
+pub struct ScoreData {
+    pub white: usize,
+    pub black: usize,
+    pub neutral: usize,
+}
+
+fn redraw_text(text: &Vec<Text>, data: &ScoreData) {
+    console_dbg!("Redrawing text");
+    let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
+    let context = canvas
+        .get_context("2d")
+        .unwrap()
+        .unwrap()
+        .dyn_into::<web_sys::CanvasRenderingContext2d>()
+        .unwrap();
+    context.clear_rect(0., 0., canvas.width() as f64, canvas.height() as f64);
+
+    context.set_text_align("center");
+    context.set_font("30px roboto");
+    context.set_fill_style_str("grey");
+    context.set_text_baseline("middle");
+
+    for a in text {
+        context
+            .fill_text(&a.text, a.pos[0] as f64, a.pos[1] as f64)
+            .unwrap();
+    }
+
+    let total = data.white + data.black + data.neutral;
+    let white_percentage = data.white as f64 / total as f64;
+    let black_percentage = data.black as f64 / total as f64;
+    let neutral_percentage = 1.0 - (white_percentage + black_percentage);
+
+    console_dbg!(white_percentage, black_percentage);
+    // let radius = 80.0;
+    // let x = 505.0;
+    // let y = 100.0;
+
+    // let r1 = std::f64::consts::TAU * white_percentage;
+    // let r2 = std::f64::consts::TAU * (white_percentage + black_percentage);
+
+    let w = canvas.width() as f64;
+    
+    let h1 = canvas.height() as f64 - 40.0;
+    let h2 = canvas.height() as f64;
+
+    context.set_fill_style_str("white");
+    context.begin_path();
+    context.rect(0.0, h1, white_percentage * w, h2);
+    context.fill();
+    context.set_fill_style_str("blue");
+    context.begin_path();
+    context.rect(
+        (white_percentage + neutral_percentage) * w,
+        h1,
+        black_percentage * w,
+        h2,
+    );
+    context.fill();
+
+    context.set_stroke_style_str("gray");
+    context.set_line_width(10.);
+    context.begin_path();
+    context.move_to(0.5 * w, h1);
+    context.line_to(0.5 * w, h2);
+    context.stroke();
+
+    // context.begin_path();
+    // context
+    //     .arc(x, y, radius, 0., r1)
+    //     .unwrap();
+    // context.line_to(x,y);
+    // context.fill();
+
+    // context.set_fill_style_str("blue");
+    // context.begin_path();
+    // context
+    //     .arc(x, y, radius, r1, r2)
+    //     .unwrap();
+
+    //     context.line_to(x,y);
+    // context.fill();
+}
+
+fn resize2() -> DomToWorker {
     let canvas = shogo::utils::get_by_id_canvas("mycanvas");
     //canvas.set_width(gloo::utils::body().client_width() as u32);
     //canvas.set_height(gloo::utils::body().client_height() as u32);
@@ -379,9 +519,17 @@ fn resize() -> DomToWorker {
     let gl_width = (width as f64 * realpixels).floor();
     let gl_height = (height as f64 * realpixels).floor();
 
+    let canvasx = gloo::utils::body().client_width() as u32;
+    let canvasy = gloo::utils::body().client_height() as u32;
+    {
+        let canvas = shogo::utils::get_by_id_canvas("mycanvas2");
+        canvas.set_width((canvasx as f64 * realpixels) as u32);
+        canvas.set_height((canvasy as f64 * realpixels) as u32);
+    }
+
     DomToWorker::Resize {
-        canvasx: gloo::utils::body().client_width() as u32,
-        canvasy: gloo::utils::body().client_height() as u32,
+        canvasx,
+        canvasy,
         x: gl_width as f32,
         y: gl_height as f32,
     }

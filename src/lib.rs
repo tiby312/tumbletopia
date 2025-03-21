@@ -5,7 +5,7 @@ use engine::main_logic::MouseEvent;
 use cgmath::Vector2;
 use engine::mesh;
 use engine::MoveHistory;
-use futures::channel::mpsc::UnboundedReceiver;
+use engine::Zobrist;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -31,7 +31,6 @@ use unit::*;
 
 #[wasm_bindgen]
 pub async fn main_entry() {
-    let world = board::MyWorld::new();
     let (sender, mut receiver) = futures::channel::mpsc::unbounded();
 
     let _listeners = ["single_b", "pass_b", "ai_b", "map_b", "replaybutton"].map(|s| {
@@ -47,7 +46,9 @@ pub async fn main_entry() {
         .unwrap()
         .dyn_into()
         .unwrap();
-    t.set_value(&unit::default_map(&world).save(&world).unwrap());
+
+    let map="----------------b-----------------------r----k---------------------------------------------";
+    t.set_value(&map);
 
     let editor_elem = shogo::utils::get_by_id_elem("editor");
     editor_elem.set_attribute("style", "display:none;").unwrap();
@@ -65,61 +66,61 @@ pub async fn main_entry() {
             .dyn_into()
             .unwrap();
 
-        let maps: String = t.value().into();
-
         match r {
             "single_b" => {
-                if Map::load(&maps, &world).is_err() {
-                    console_dbg!("Could not parse map");
-                    continue;
-                }
-                game_elem.set_attribute("style", "display:block;").unwrap();
+                //TODO add back
+                // if Map::load(&maps, &world).is_err() {
+                //     console_dbg!("Could not parse map");
+                //     continue;
+                // }
+                game_elem.set_attribute("style", "display:flex;").unwrap();
                 break dom::GameType::SinglePlayer(t.value().into());
             }
             "pass_b" => {
-                if Map::load(&maps, &world).is_err() {
-                    console_dbg!("Could not parse map");
-                    continue;
-                }
-                game_elem.set_attribute("style", "display:block;").unwrap();
+                // if Map::load(&maps, &world).is_err() {
+                //     console_dbg!("Could not parse map");
+                //     continue;
+                // }
+                game_elem.set_attribute("style", "display:flex;").unwrap();
                 break dom::GameType::PassPlay(t.value().into());
             }
             "ai_b" => {
-                if Map::load(&maps, &world).is_err() {
-                    console_dbg!("Could not parse map");
-                    continue;
-                }
+                // if Map::load(&maps, &world).is_err() {
+                //     console_dbg!("Could not parse map");
+                //     continue;
+                // }
                 break dom::GameType::AIBattle(t.value().into());
             }
             "map_b" => {
-                if Map::load(&maps, &world).is_err() {
-                    console_dbg!("Could not parse map");
-                    continue;
-                }
+                // if Map::load(&maps, &world).is_err() {
+                //     console_dbg!("Could not parse map");
+                //     continue;
+                // }
                 editor_elem
-                    .set_attribute("style", "display:block;")
+                    .set_attribute("style", "display:flex;")
                     .unwrap();
                 break dom::GameType::MapEditor(t.value().into());
             }
             "replaybutton" => {
-                let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
-                    .get_element_by_id("textarea_r")
-                    .unwrap()
-                    .dyn_into()
-                    .unwrap();
+                // let t: web_sys::HtmlTextAreaElement = gloo::utils::document()
+                //     .get_element_by_id("textarea_r")
+                //     .unwrap()
+                //     .dyn_into()
+                //     .unwrap();
 
-                let s: String = t.value().into();
+                todo!();
+                // let s: String = t.value().into();
 
-                let Some(_) = unit::parse_replay_string(&s, &world) else {
-                    console_dbg!("Could not part replay");
-                    continue;
-                };
+                // // let Some(_) = unit::parse_replay_string(&s, &world) else {
+                // //     console_dbg!("Could not part replay");
+                // //     continue;
+                // // };
 
-                //TODO this is the proper place to unhide elements. do this elsewhere
-                let elem = shogo::utils::get_by_id_elem("replay_b");
-                elem.set_attribute("style", "display:block;").unwrap();
+                // //TODO this is the proper place to unhide elements. do this elsewhere
+                // let elem = shogo::utils::get_by_id_elem("replay_b");
+                // elem.set_attribute("style", "display:block;").unwrap();
 
-                break dom::GameType::Replay(t.value().into());
+                // break dom::GameType::Replay(t.value().into());
             }
             _ => {
                 todo!()
@@ -127,8 +128,8 @@ pub async fn main_entry() {
         }
     };
 
-    let main_ret = shogo::utils::get_by_id_elem("return-menu");
-    main_ret.set_attribute("style", "display:block;").unwrap();
+    //let main_ret = shogo::utils::get_by_id_elem("return-menu");
+    //main_ret.set_attribute("style", "display:block;").unwrap();
 
     let elem = shogo::utils::get_by_id_elem("mainmenu");
     elem.set_attribute("style", "display:none;").unwrap();
@@ -200,30 +201,86 @@ pub async fn main_entry() {
 
 #[wasm_bindgen]
 pub async fn worker_entry2() {
-    let (mut worker, mut response) = gui::worker::Worker::<AiCommand, AiResponse>::new();
+    //let (mut worker, mut response) = gui::worker::Worker::<AiCommand, AiResponse>::new();
+    use shogo::worker::*;
+    let (_, tx, mut rx): (
+        js_sys::ArrayBuffer,
+        WorkerSender<AiResponse>,
+        WorkerRecv<AiCommand, js_sys::ArrayBuffer>,
+    ) = shogo::worker::create_worker().await;
 
     loop {
         //console_dbg!("worker:waiting22222");
-        let mut res = response.next().await.unwrap();
-        //console_dbg!("worker:processing:", res.game.hash_me(), res.team);
-        let the_move =
-            engine::ai::iterative_deepening(&mut res.game, &res.world, res.team, &res.history);
+        let mut res = rx.recv().next().await.unwrap();
+        console_dbg!("worker:processing:", res.game.hash_me(), res.team);
+
+        let res = engine::ai::calculate_move(
+            &mut res.game,
+            &res.fogs,
+            &res.world,
+            res.team,
+            &res.history,
+            &res.zobrist,
+        );
         //console_dbg!("worker:finished processing");
-        worker.post_message(AiResponse { the_move });
+        tx.post_message(AiResponse { inner: res });
     }
 }
+
+// struct Doop3 {
+//     pub ai_worker: WorkerInterface<AiCommand, AiResponse>,
+//     pub ai_response: UnboundedReceiver<AiResponse>,
+//     pub interrupt_sender: futures::channel::mpsc::Sender<ace::Response>,
+// }
+// impl Doop3 {
+//     async fn interrupt_render_thread(&mut self) {
+//         use futures::FutureExt;
+//         self.interrupt_sender
+//             .send(ace::Response::AnimationFinish)
+//             .map(|_| ())
+//             .await
+//     }
+//     async fn wait_response(&mut self) -> ActualMove {
+//         use futures::FutureExt;
+//         self.ai_response
+//             .next()
+//             .map(|x| {
+//                 let k = x.unwrap();
+//                 k.inner
+//             })
+//             .await
+//     }
+//     fn send_command(
+//         &mut self,
+//         game: &GameState,
+//         fogs: &[mesh::small_mesh::SmallMesh; 2],
+//         world: &board::MyWorld,
+//         team: ActiveTeam,
+//         history: &MoveHistory,
+//     ) {
+//         self.ai_worker.post_message(AiCommand {
+//             game: game.clone(),
+//             fogs: fogs.clone(),
+//             world: world.clone(),
+//             team,
+//             history: history.clone(),
+//         });
+//     }
+// }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiCommand {
     game: GameState,
+    fogs: [mesh::small_mesh::SmallMesh; 2],
     world: board::MyWorld,
-    team: ActiveTeam,
+    team: Team,
     history: MoveHistory,
+    zobrist: Zobrist,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiResponse {
-    the_move: ActualMove,
+    inner: ActualMove,
 }
 
 #[wasm_bindgen]
@@ -232,66 +289,36 @@ pub async fn worker_entry() {
 
     console_dbg!("num tiles={}", hex::Cube::new(0, 0).range(4).count());
 
-    let (mut wr, mut ss) = shogo::EngineWorker::new().await;
+    //let (mut wr, mut ss) = shogo::EngineWorker::new().await;
+    let (canvas, mut sender, mut recv) = shogo::worker::create_worker().await;
 
-    let k = ss.next().await.unwrap();
+    let k = recv.recv().next().await.unwrap();
     let DomToWorker::Start(game_type) = k else {
         unreachable!("worker:Didn't receive start")
     };
-    wr.post_message(dom::WorkerToDom::Ack);
+    sender.post_message(dom::WorkerToDom::Ack);
 
     console_dbg!("Found game thingy", game_type);
 
-    let mut frame_timer = shogo::FrameTimer::new(60, ss);
+    //let mut frame_timer = shogo::FrameTimer::new(60, ss);
+    let mut timer = shogo::Timer::new(60);
 
     let scroll_manager = gui::scroll::TouchController::new([0., 0.].into());
     use cgmath::SquareMatrix;
 
-    let (ai_worker, ai_response) =
-        worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;
-    console_dbg!("created ai worker");
+    // let (ai_worker, ai_response) =
+    //     worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;
 
-    let (interrupt_sender, mut interrupt_recv) = futures::channel::mpsc::channel(5);
+    let (interrupt_tx, mut interrupt_rx) = futures::channel::mpsc::channel(5);
 
-    struct Doop {
-        ai_worker: WorkerInterface<AiCommand, AiResponse>,
-        ai_response: UnboundedReceiver<AiResponse>,
-        interrupt_sender: futures::channel::mpsc::Sender<ace::Response>,
-    }
-    impl engine::main_logic::AiInterface for Doop {
-        fn interrupt_render_thread(&mut self) -> impl std::future::Future<Output = ()> {
-            use futures::FutureExt;
-            self.interrupt_sender
-                .send(ace::Response::AnimationFinish)
-                .map(|_| ())
-        }
-        fn wait_response(&mut self) -> impl std::future::Future<Output = ActualMove> + Send {
-            use futures::FutureExt;
-            self.ai_response.next().map(|x| x.unwrap().the_move)
-        }
-        fn send_command(
-            &mut self,
-            game: &GameState,
-            world: &board::MyWorld,
-            team: ActiveTeam,
-            history: &MoveHistory,
-        ) {
-            self.ai_worker.post_message(AiCommand {
-                game: game.clone(),
-                world: world.clone(),
-                team,
-                history: history.clone(),
-            });
-        }
-    }
-    let mut ai_int = Doop {
-        ai_worker,
-        ai_response,
-        interrupt_sender,
-    };
+    // let mut ai_int = Doop3 {
+    //     ai_worker,
+    //     ai_response,
+    //     interrupt_sender,
+    // };
 
     let last_matrix = cgmath::Matrix4::identity();
-    let ctx = &utils::get_context_webgl2_offscreen(&wr.canvas());
+    let ctx = &utils::get_context_webgl2_offscreen(&canvas);
 
     let grid_matrix = hex::HexConverter::new();
 
@@ -303,7 +330,7 @@ pub async fn worker_entry() {
         grid_matrix,
         models,
         ctx: ctx.clone(),
-        canvas: wr.canvas(),
+        canvas,
         scroll_manager,
         last_matrix,
         shader,
@@ -320,14 +347,61 @@ pub async fn worker_entry() {
     //     (board::WorldSeed::new(), None)
     // };
 
-    let world = board::MyWorld::new();
+    //let world = board::MyWorld::new();
 
-    let map = unit::default_map(&world);
-    console_dbg!("ma", map.save(&world).unwrap());
+    //let map = unit::default_map(&world);
+    //console_dbg!("ma", map.save(&world).unwrap());
 
     let (command_sender, mut command_recv) =
         futures::channel::mpsc::channel::<GameWrap<engine::main_logic::Command>>(5);
+
     let (mut response_sender, response_recv) = futures::channel::mpsc::channel(5);
+
+    let game_type = match game_type {
+        dom::GameType::SinglePlayer(s) => engine::GameType::SinglePlayer(s),
+        dom::GameType::PassPlay(s) => engine::GameType::PassPlay(s),
+        dom::GameType::AIBattle(s) => engine::GameType::AIBattle(s),
+        dom::GameType::Replay(o) => engine::GameType::Replay(o),
+        dom::GameType::MapEditor(s) => engine::GameType::MapEditor(s),
+    };
+
+    let world = match game_type.clone() {
+        engine::GameType::MapEditor(_s) => {
+            //TODO handle this error better
+            //let map = Map::load(&s, &world).unwrap();
+
+            // let g = engine::main_logic::map_editor(doop, &world, map).await;
+            // Finish::MapEditor(g)
+            todo!();
+        }
+        engine::GameType::PassPlay(s)
+        | engine::GameType::SinglePlayer(s)
+        | engine::GameType::AIBattle(s) => {
+            let world = board::MyWorld::load_from_string(&s);
+
+            //let map = Map::load(&s, &world).unwrap();
+
+            //TODO handle this error better
+            // let res = engine::main_logic::game_play_thread(
+            //     doop,
+            //     &world,
+            //     game_type,
+            //     &mut ai_int,
+            // )
+            // .await;
+            // Finish::GameFinish((res.0, res.1, world))
+            world
+        }
+        engine::GameType::Replay(s) => {
+            console_dbg!("got map=", s);
+            todo!();
+            // let (map, history) = unit::parse_replay_string(&s, &world).unwrap();
+
+            // let res = engine::main_logic::replay(&map, &history, &world, doop).await;
+
+            // Finish::GameFinish((res, history, map))
+        }
+    };
 
     let render_thead = async {
         while let Some(ace::GameWrap {
@@ -342,86 +416,77 @@ pub async fn worker_entry() {
                 team,
                 &mut render,
                 &world,
-                &mut frame_timer,
-                &mut wr,
+                &mut timer,
+                &mut recv,
+                &mut sender,
+                &mut interrupt_rx,
             );
 
-            if let engine::main_logic::Command::Wait = &data {
-                let f2 = interrupt_recv.next().map(|x| x.unwrap());
-                use futures::FutureExt;
-                futures::select! {
-                    _= f1.fuse()=>{
-                        unreachable!()
-                        // response_sender
-                        // .send(ace::GameWrap { game, data, team })
-                        // .await
-                        // .unwrap();
-                    },
-                    _=f2.fuse()=>{
-                        //console_dbg!("render thread was interrupted!");
-                    }
-                };
-            } else {
-                let data = f1.await;
-                response_sender
-                    .send(ace::GameWrap { game, data, team })
-                    .await
-                    .unwrap();
-            }
+            // //TODO move this interrupt_recv into the render function.
+            // if let engine::main_logic::Command::Wait = &data {
+            //     let f2 = interrupt_recv.next().map(|x| x.unwrap());
+            //     use futures::FutureExt;
+            //     futures::select! {
+            //         _= f1.fuse()=>{
+            //             unreachable!()
+            //             // response_sender
+            //             // .send(ace::GameWrap { game, data, team })
+            //             // .await
+            //             // .unwrap();
+            //         },
+            //         _=f2.fuse()=>{
+            //             //console_dbg!("render thread was interrupted!");
+            //         }
+            //     };
+            // } else {
+            let data = f1.await;
+            response_sender
+                .send(ace::GameWrap { game, data, team })
+                .await
+                .unwrap();
+            //}
         }
     };
 
-    let doop = ace::WorkerManager {
+    let doop = ace::CommandSender {
         sender: command_sender,
         receiver: response_recv,
     };
 
-    let game_type = match game_type {
-        dom::GameType::SinglePlayer(s) => engine::GameType::SinglePlayer(s),
-        dom::GameType::PassPlay(s) => engine::GameType::PassPlay(s),
-        dom::GameType::AIBattle(s) => engine::GameType::AIBattle(s),
-        dom::GameType::Replay(o) => engine::GameType::Replay(o),
-        dom::GameType::MapEditor(s) => engine::GameType::MapEditor(s),
-    };
-
     enum Finish {
         MapEditor(Map),
-        GameFinish((GameOver, engine::MoveHistory, Map)),
+        GameFinish((GameOver, engine::MoveHistory)),
     }
 
     let gameplay_thread = async {
         match game_type.clone() {
-            engine::GameType::MapEditor(s) => {
+            engine::GameType::MapEditor(_s) => {
                 //TODO handle this error better
-                let map = Map::load(&s, &world).unwrap();
+                // let map = Map::load(&s, &world).unwrap();
 
-                let g = engine::main_logic::map_editor(doop, &world, map).await;
-                Finish::MapEditor(g)
+                // let g = engine::main_logic::map_editor(doop, &world, map).await;
+                // Finish::MapEditor(g)
+                todo!();
             }
-            engine::GameType::PassPlay(s)
-            | engine::GameType::SinglePlayer(s)
-            | engine::GameType::AIBattle(s) => {
-                let map = Map::load(&s, &world).unwrap();
+            engine::GameType::PassPlay(_s)
+            | engine::GameType::SinglePlayer(_s)
+            | engine::GameType::AIBattle(_s) => {
+                //let world=board::MyWorld::load_from_string(&s);
+
+                //let map = Map::load(&s, &world).unwrap();
 
                 //TODO handle this error better
-                let res = engine::main_logic::game_play_thread(
-                    doop,
-                    &map,
-                    &world,
-                    game_type,
-                    &mut ai_int,
-                )
-                .await;
-                Finish::GameFinish((res.0, res.1, map))
+                let res = game_play_thread(doop, &world, game_type, interrupt_tx).await;
+                Finish::GameFinish((res.0, res.1))
             }
             engine::GameType::Replay(s) => {
                 console_dbg!("got map=", s);
+                todo!();
+                // let (map, history) = unit::parse_replay_string(&s, &world).unwrap();
 
-                let (map, history) = unit::parse_replay_string(&s, &world).unwrap();
+                // let res = engine::main_logic::replay(&map, &history, &world, doop).await;
 
-                let res = engine::main_logic::replay(&map, &history, &world, doop).await;
-
-                Finish::GameFinish((res, history, map))
+                // Finish::GameFinish((res, history, map))
             }
         }
     };
@@ -431,17 +496,17 @@ pub async fn worker_entry() {
 
     match gg {
         Finish::MapEditor(map) => {
-            wr.post_message(dom::WorkerToDom::ExportMap(map.save(&world).unwrap()));
+            sender.post_message(dom::WorkerToDom::ExportMap(map.save(&world).unwrap()));
             //console_dbg!("exported map", e.save(&world).unwrap());
         }
-        Finish::GameFinish((result, g, map)) => {
+        Finish::GameFinish((result, g)) => {
             let result = match result {
                 GameOver::WhiteWon => dom::GameOverGui::WhiteWon,
                 GameOver::BlackWon => dom::GameOverGui::BlackWon,
                 GameOver::Tie => dom::GameOverGui::Tie,
             };
-            let replay_string = engine::unit::replay_string(&map, &g, &world).unwrap();
-            wr.post_message(dom::WorkerToDom::GameFinish {
+            let replay_string = engine::unit::replay_string(&g, &world).unwrap();
+            sender.post_message(dom::WorkerToDom::GameFinish {
                 replay_string,
                 result,
             });
@@ -451,14 +516,157 @@ pub async fn worker_entry() {
     log!("Worker thread closin");
 }
 
+pub async fn game_play_thread(
+    mut doop: ace::CommandSender,
+    world: &board::MyWorld,
+    game_type: engine::GameType,
+    mut interrupt_tx: futures::channel::mpsc::Sender<()>,
+) -> (unit::GameOver, MoveHistory) {
+    console_dbg!("gameplay thread start");
+
+    let (ai_tx, mut ai_rx) = shogo::main::create_main::<AiCommand, AiResponse, _>(
+        "./gridlock_worker2.js",
+        js_sys::ArrayBuffer::new(0),
+    )
+    .await;
+
+    console_dbg!("created ai worker");
+
+    //let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
+    let mut game = world.starting_state.clone();
+
+    let mut game_history = MoveHistory::new();
+
+    let mut team_gen = world.starting_team.iter();
+
+    let zobrist = Zobrist::new();
+    //Loop over each team!
+    loop {
+        let team = team_gen.next().unwrap();
+
+        gloo::console::console!(format!(
+            "Current game [{}]",
+            game.tactical.into_string(world)
+        ));
+
+        doop.repaint_ui(team, &mut game).await;
+
+        if let Some(g) = game.tactical.game_is_over(&world, team, &game_history) {
+            break (g, game_history);
+        }
+
+        //Add AIIIIII.
+        let foo = match game_type {
+            engine::GameType::SinglePlayer(_) => team == Team::Black,
+            engine::GameType::PassPlay(_) => false,
+            engine::GameType::AIBattle(_) => true,
+            engine::GameType::MapEditor(_) => unreachable!(),
+            engine::GameType::Replay(_) => unreachable!(),
+        };
+
+        console_dbg!("main thread iter");
+        if foo {
+            let the_move = {
+                let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
+
+                if true {
+                    ai_tx.post_message(AiCommand {
+                        game: ai_state,
+                        fogs: game.fog.clone(),
+                        world: world.clone(),
+                        team,
+                        history: game_history.clone(),
+                        zobrist: zobrist.clone(),
+                    });
+
+                    use futures::FutureExt;
+                    let the_move = futures::select!(
+                        _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                        x = ai_rx.recv().next().fuse() => x
+                    );
+
+                    interrupt_tx.send(()).await.unwrap();
+
+                    let k = doop.receiver.next().await;
+                    matches!(k.unwrap().data, ace::Response::AnimationFinish);
+
+                    //ai_int.interrupt_render_thread().await;
+
+                    the_move.unwrap().inner
+                } else {
+                    engine::ai::calculate_move(
+                        &mut ai_state,
+                        &game.fog,
+                        &world,
+                        team,
+                        &game_history,
+                        &zobrist,
+                    )
+                }
+            };
+
+            //let the_move = the_move.line[0].clone();
+
+            console_dbg!("gmae thread has interrupted render thread");
+
+            let effect_m = ace::animate_move(&the_move, team, &mut game, &world, &mut doop)
+                .await
+                .apply(
+                    team,
+                    &mut game.tactical,
+                    &game.fog[team.index()],
+                    &world,
+                    None,
+                );
+
+            game.update_fog(world, team);
+            game_history.push((the_move, effect_m));
+
+            let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
+            moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+            let curr_eval = engine::ai::Evaluator::default().absolute_evaluate(
+                &game.tactical,
+                world,
+                &spoke_info,
+                false,
+            );
+            console_dbg!(curr_eval);
+
+            continue;
+        }
+
+        let r = engine::main_logic::handle_player(
+            &mut game,
+            &world,
+            &mut doop,
+            team,
+            &mut game_history,
+        )
+        .await;
+
+        game.update_fog(world, team);
+        game_history.push(r);
+
+        let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
+        moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+        let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
+            &game.tactical,
+            world,
+            &spoke_info,
+            false,
+        );
+        console_dbg!(curr_eval_player);
+    }
+}
+
 use gui::model_parse::*;
 use gui::*;
 use web_sys::OffscreenCanvas;
 use web_sys::WebGl2RenderingContext;
-use worker::WorkerInterface;
+
 pub struct EngineStuff {
     grid_matrix: hex::HexConverter,
-    models: Models<Foo<TextureGpu, ModelGpu>>,
+    models: Models<gui::model_parse::Foo<TextureGpu, ModelGpu>>,
     //numm: Numm,
     ctx: WebGl2RenderingContext,
     canvas: OffscreenCanvas,
@@ -469,24 +677,22 @@ pub struct EngineStuff {
 
 async fn render_command(
     command: ace::Command,
-    game: &GameState,
-    team: ActiveTeam,
+    game_total: &GameStateTotal,
+    team: Team,
     e: &mut EngineStuff,
     world: &board::MyWorld,
-    frame_timer: &mut shogo::FrameTimer<
-        DomToWorker,
-        futures::channel::mpsc::UnboundedReceiver<DomToWorker>,
-    >,
-    engine_worker: &mut shogo::EngineWorker<dom::DomToWorker, dom::WorkerToDom>,
+    timer: &mut shogo::Timer,
+    dom_messages: &mut shogo::worker::WorkerRecv<DomToWorker, web_sys::OffscreenCanvas>,
+    engine_worker: &mut shogo::worker::WorkerSender<dom::WorkerToDom>,
+    interrupt_rx: &mut futures::channel::mpsc::Receiver<()>,
 ) -> ace::Response {
-    //let mut x = 0.0;
+    let game = &game_total.tactical;
     let scroll_manager = &mut e.scroll_manager;
     let last_matrix = &mut e.last_matrix;
     let ctx = &e.ctx;
     let canvas = &e.canvas;
     let grid_matrix = &e.grid_matrix;
     let models = &e.models;
-    //let numm = &e.numm;
 
     let draw_sys = &mut e.shader; //ctx.shader_system();
 
@@ -502,7 +708,7 @@ async fn render_command(
     // let white_rabbit = &models.white_rabbit;
 
     //let fog_asset = &models.fog;
-    let water = &models.token_neutral;
+    // let water = &models.token_neutral;
     // let grass = &models.grass;
     // let mountain_asset = &models.mountain;
     // let snow = &models.snow;
@@ -515,19 +721,48 @@ async fn render_command(
     let mut unit_animation = None;
     let mut terrain_animation = None;
     let mut poking = 0;
+    let mut camera_moving_last = scroll::CameraMoving::Stopped;
 
-    let mut waiting_engine_ack = false;
+    let score_data = game.score(world);
+    let score_data = dom::ScoreData {
+        white: score_data.white,
+        black: score_data.black,
+        neutral: score_data.neutral,
+    };
+
+    let proj = gui::projection::projection(viewport).generate();
+    let view_proj = gui::projection::view_matrix(
+        scroll_manager.camera(),
+        scroll_manager.zoom(),
+        scroll_manager.rot(),
+    );
+
+    let my_matrix = proj.chain(view_proj).generate();
+    //TODO remove
+    let command_copy = command.clone();
+    let game_str = game.into_string(world);
+
+    //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
+        ace::Command::RepaintUI => {
+            let k = update_text(world, grid_matrix, viewport, &my_matrix);
+            engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+                k,
+                score_data.clone(),
+                game_str,
+            ));
+            return ace::Response::Ack;
+        }
         ace::Command::HideUndo => {
             engine_worker.post_message(dom::WorkerToDom::HideUndo);
-            waiting_engine_ack = true;
-            //return ace::Response::Ack;
+            //waiting_engine_ack = true;
+            return ace::Response::Ack;
         }
         ace::Command::ShowUndo => {
             engine_worker.post_message(dom::WorkerToDom::ShowUndo);
-            waiting_engine_ack = true;
-            //return ace::Response::Ack;
+            //waiting_engine_ack = true;
+            return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
             engine::main_logic::AnimationCommand::Movement { unit, end } => {
@@ -592,6 +827,9 @@ async fn render_command(
         }
     };
 
+    let mut spoke = moves::SpokeInfo::new(&game);
+    moves::update_spoke_info(&mut spoke, world, game);
+
     loop {
         if poking == 1 {
             console_dbg!("we poked!");
@@ -600,79 +838,106 @@ async fn render_command(
         poking = 0.max(poking - 1);
 
         let mut on_select = false;
-        //let mut end_turn = false;
-        //let mut on_undo = false;
         let mut button_pushed = None;
 
-        let res = frame_timer.next().await;
+        let mut resize_text = false;
+        use futures::FutureExt;
+        loop {
+            futures::select! {
+                _ = interrupt_rx.next()=>{
+                    matches!(command_copy,ace::Command::Wait);
+                    return ace::Response::AnimationFinish;
+                },
+                () = timer.next().fuse() =>{
+                    break;
+                },
+                k = dom_messages.recv().next() =>{
+                    let k=k.unwrap();
+                    let e=&k;
+                    match e {
+                        // DomToWorker::GameChange(s)=>{
+                        //     //TODO validate string here???
 
-        for e in res {
-            match e {
-                DomToWorker::Resize {
-                    canvasx: _canvasx,
-                    canvasy: _canvasy,
-                    x,
-                    y,
-                } => {
-                    let xx = *x as u32;
-                    let yy = *y as u32;
-                    canvas.set_width(xx);
-                    canvas.set_height(yy);
-                    ctx.viewport(0, 0, xx as i32, yy as i32);
+                        //     return ace::Response::ChangeGameState(s.clone());
+                        //     // let k = update_text(world, grid_matrix, viewport, &my_matrix);
+            
+                        //     // engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+                        //     //     k,
+                        //     //     score_data.clone(),
+                        //     //     game_str.clone(),
+                        //     // ))
+                        // }
+                        DomToWorker::Resize {
+                            canvasx: _canvasx,
+                            canvasy: _canvasy,
+                            x,
+                            y,
+                        } => {
+                            let xx = *x as u32;
+                            let yy = *y as u32;
+                            canvas.set_width(xx);
+                            canvas.set_height(yy);
+                            ctx.viewport(0, 0, xx as i32, yy as i32);
 
-                    viewport = [xx as f32, yy as f32];
-                    log!(format!("updating viewport to be:{:?}", viewport));
-                }
-                DomToWorker::TouchMove { touches } => {
-                    scroll_manager.on_touch_move(touches, last_matrix, viewport);
-                }
-                DomToWorker::TouchDown { touches } => {
-                    scroll_manager.on_new_touch(touches);
-                }
-                DomToWorker::TouchEnd { touches } => {
-                    if let gui::scroll::MouseUp::Select = scroll_manager.on_touch_up(touches) {
-                        on_select = true;
+                            viewport = [xx as f32, yy as f32];
+                            log!(format!("updating viewport to be:{:?}", viewport));
+                            resize_text = true;
+                        }
+                        DomToWorker::TouchMove { touches } => {
+                            scroll_manager.on_touch_move(touches, last_matrix, viewport);
+                        }
+                        DomToWorker::TouchDown { touches } => {
+                            scroll_manager.on_new_touch(touches);
+                        }
+                        DomToWorker::TouchEnd { touches } => {
+                            if let gui::scroll::MouseUp::Select = scroll_manager.on_touch_up(touches) {
+                                on_select = true;
+                            }
+                        }
+                        DomToWorker::CanvasMouseLeave => {
+                            log!("mouse leaving!");
+                            let _ = scroll_manager.on_mouse_up();
+                        }
+                        DomToWorker::CanvasMouseUp => {
+                            if let gui::scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
+                                on_select = true;
+                            }
+                        }
+                        DomToWorker::Button(s) => {
+
+                            button_pushed = Some(s.clone());
+
+                            // match s.as_str(){
+                            //     "undo"=>{
+                            //         butt=true
+                            //     },
+                            //     "b_water"=>{
+                            //         console_dbg!("clicked wattttrrrr");
+                            //     },
+                            //     _=>{
+                            //         panic!("not supported yet");
+                            //     }
+                            // }
+                        }
+                        DomToWorker::Ack => {
+                            //assert!(waiting_engine_ack);
+
+                            // if waiting_engine_ack {
+                            //     return ace::Response::Ack;
+                            // }
+                        }
+                        DomToWorker::CanvasMouseMove { x, y } => {
+                            scroll_manager.on_mouse_move([*x, *y], last_matrix, viewport);
+                        }
+
+                        DomToWorker::CanvasMouseDown { x, y } => {
+                            scroll_manager.on_mouse_down([*x, *y]);
+                        }
+                        DomToWorker::ButtonClick => {}
+                        DomToWorker::ShutdownClick => todo!(),
+                        DomToWorker::Start(_) => todo!(),
                     }
                 }
-                DomToWorker::CanvasMouseLeave => {
-                    log!("mouse leaving!");
-                    let _ = scroll_manager.on_mouse_up();
-                }
-                DomToWorker::CanvasMouseUp => {
-                    if let gui::scroll::MouseUp::Select = scroll_manager.on_mouse_up() {
-                        on_select = true;
-                    }
-                }
-                DomToWorker::Button(s) => {
-                    button_pushed = Some(s);
-
-                    // match s.as_str(){
-                    //     "undo"=>{
-                    //         butt=true
-                    //     },
-                    //     "b_water"=>{
-                    //         console_dbg!("clicked wattttrrrr");
-                    //     },
-                    //     _=>{
-                    //         panic!("not supported yet");
-                    //     }
-                    // }
-                }
-                DomToWorker::Ack => {
-                    if waiting_engine_ack {
-                        return ace::Response::Ack;
-                    }
-                }
-                DomToWorker::CanvasMouseMove { x, y } => {
-                    scroll_manager.on_mouse_move([*x, *y], last_matrix, viewport);
-                }
-
-                DomToWorker::CanvasMouseDown { x, y } => {
-                    scroll_manager.on_mouse_down([*x, *y]);
-                }
-                DomToWorker::ButtonClick => {}
-                DomToWorker::ShutdownClick => todo!(),
-                DomToWorker::Start(_) => todo!(),
             }
         }
 
@@ -690,8 +955,20 @@ async fn render_command(
         let lll = my_matrix.generate(); //matrix::scale(0.0, 0.0, 0.0).generate();
         let projjj = lll.as_ref();
 
+        let piece_scale: f32 = 0.8;
+
         let mouse_world =
             gui::scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
+
+        if resize_text {
+            console_dbg!("RESIZING TEXT!!!!");
+            let k = update_text(world, grid_matrix, viewport, &my_matrix);
+            engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+                k,
+                score_data.clone(),
+                game_str.clone(),
+            ));
+        }
 
         if get_mouse_input.is_some() {
             if let Some(button) = button_pushed {
@@ -706,19 +983,16 @@ async fn render_command(
                 log!(format!("pos:{:?}", mouse.to_cube()));
 
                 if world.get_game_cells().is_set(mouse) {
-                    let mut s = String::new();
-                    ActualMove {
-                        moveto: mesh::small_mesh::conv(mouse),
-                    }
-                    .as_text(&mut s)
-                    .unwrap();
-
-                    let ff = ActualMove::from_str(&s).unwrap();
+                    // let mut s = String::new();
+                    // ActualMove {
+                    //     moveto: mouse.to_index(),
+                    // }
+                    // .as_text(&world, &mut s)
+                    // .unwrap();
 
                     log!(format!(
-                        "game pos:{}  original hopefuly:{:?}",
-                        s,
-                        mesh::small_mesh::inverse(ff.moveto)
+                        "game pos:{:?}",
+                        mouse.to_letter_coord(world.radius as i8)
                     ));
 
                     let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
@@ -747,7 +1021,27 @@ async fn render_command(
             }
         }
 
-        scroll_manager.step();
+        let camera_moving = scroll_manager.step();
+
+        match (camera_moving, camera_moving_last) {
+            (scroll::CameraMoving::Stopped, scroll::CameraMoving::Moving) => {
+                let k = update_text(world, grid_matrix, viewport, &my_matrix);
+                engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+                    k,
+                    score_data.clone(),
+                    game_str.clone(),
+                ));
+            }
+            (scroll::CameraMoving::Moving, scroll::CameraMoving::Stopped) => {
+                engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+                    vec![],
+                    score_data.clone(),
+                    game_str.clone(),
+                ));
+            }
+            _ => {}
+        }
+        camera_moving_last = camera_moving;
 
         draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
 
@@ -760,22 +1054,26 @@ async fn render_command(
         let cell_height = models.token_neutral.height;
 
         let mut water = mesh::small_mesh::SmallMesh::new();
-        for a in world.get_game_cells().inner.iter_ones() {
-            if let Some((height, team)) = game.factions.get_cell_inner(a) {
-                if height == 6 && team == ActiveTeam::Neutral {
-                    water.inner.set(a, true);
-                }
-            }
-        }
-        water.inner |= game.factions.ice.inner;
+        // for a in world.get_game_cells().inner.iter_ones() {
+        //     if let Some((height, team)) = game.factions.get_cell_inner(a) {
+        //         if height == 6 && team == Team::Neutral {
+        //             water.inner.set(a, true);
+        //         }
+        //     }
+        // }
+
+        //water.inner |= game.factions.ice.inner;
 
         let land = world.land.inner & !water.inner; //& !game.factions.ice.inner;
         draw_sys
             .batch(
                 land.iter_ones()
-                    .map(|e| grid_snap(mesh::small_mesh::inverse(e), -models.token_neutral.height)),
+                    .map(|e| grid_snap(Axial::from_index(&e), -models.token_neutral.height)),
             )
             .build(&models.land, &projjj);
+
+        //TODO dont use this, also make sure to draw water tiles on the border that can be seen from the side?
+        water.inner |= world.get_game_cells().inner;
 
         // {
         //     //Draw grass
@@ -880,8 +1178,7 @@ async fn render_command(
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
                 match selection {
-                    engine::main_logic::CellSelection::MoveSelection(_, mesh, _) => {
-                        //console_dbg!("doo=",mesh);
+                    engine::main_logic::CellSelection::MoveSelection(_, mesh, loud, _) => {
                         let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
                             let zzzz = 0.0;
 
@@ -894,6 +1191,21 @@ async fn render_command(
                             .no_lighting()
                             .grey(*grey)
                             .build(select_model, &projjj);
+
+                        {
+                            let cells = loud.iter_mesh(Axial::zero()).map(|e| {
+                                let zzzz = 0.0;
+
+                                grid_snap(e, zzzz)
+                                    .chain(matrix::scale(1.0, 1.0, 1.0))
+                                    .generate()
+                            });
+                            draw_sys
+                                .batch(cells)
+                                .no_lighting()
+                                .grey(*grey)
+                                .build(&models.donut, &projjj);
+                        }
 
                         // if let Some(k) = hh {
                         //     if k.the_move
@@ -919,25 +1231,35 @@ async fn render_command(
             }
         }
 
+        //let shown_team = team;
+        let shown_team = Team::White;
+
+        let shown_fog = match shown_team {
+            Team::White => &game_total.fog[0],
+            Team::Black => &game_total.fog[1],
+            Team::Neutral => todo!(),
+        };
+
         {
             let zzzz = 0.1;
 
             // Draw shadows
             let _d = DepthDisabler::new(ctx);
 
+            let small_shadow = 0.6;
+            let large_shadow = 0.8;
             let shadows = world
                 .get_game_cells()
                 .iter_mesh(Axial::zero())
                 .filter_map(|a| {
                     if let Some((val, tt)) = game.factions.get_cell(a) {
-                        let xx = if val == 6 && tt == ActiveTeam::Neutral {
+                        let xx = if val == 6 && tt == Team::Neutral {
                             //1.3
                             return None;
                         } else {
                             match val {
-                                1 | 2 => 0.6,
-                                3 | 4 => 0.8,
-                                5 | 6 => 1.2,
+                                1 | 2 | 3 => small_shadow * piece_scale,
+                                4 | 5 | 6 => large_shadow * piece_scale,
                                 _ => unreachable!(),
                             }
                         };
@@ -952,12 +1274,19 @@ async fn render_command(
                     }
                 });
 
-            let ani_drop_shadow = unit_animation.as_ref().map(|a| {
-                let pos = a.0;
-                matrix::translation(pos.x, pos.y, zzzz)
-                    .chain(matrix::scale(0.6, 0.6, 1.0))
-                    .generate()
-            });
+            let ani_drop_shadow = unit_animation
+                .as_ref()
+                .map(|a| {
+                    let pos = a.0;
+                    matrix::translation(pos.x, pos.y, zzzz)
+                        .chain(matrix::scale(
+                            small_shadow * piece_scale,
+                            small_shadow * piece_scale,
+                            1.0,
+                        ))
+                        .generate()
+                })
+                .filter(|_| team == shown_team);
 
             let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
 
@@ -970,50 +1299,71 @@ async fn render_command(
         let mut neutral_team_cells = vec![];
         //let mut mountains = vec![];
 
-        if let Some((pos, ..)) = &unit_animation {
-            let ss = 0.4;
-            //Draw it a bit lower then static ones so there is no flickering
-            let first = matrix::translation(pos.x, pos.y, 1.0)
-                .chain(matrix::scale(ss, ss, 1.0))
-                .generate();
+        {
+            let radius = [0.4, 0.6, 0.8];
 
-            match team {
-                ActiveTeam::White => {
-                    white_team_cells.push(first);
-                }
-                ActiveTeam::Black => {
-                    black_team_cells.push(first);
-                }
-                ActiveTeam::Neutral => {
-                    neutral_team_cells.push(first);
+            if let Some((pos, ..)) = &unit_animation {
+                let ss = radius[0];
+                //Draw it a bit lower then static ones so there is no flickering
+                let first = matrix::translation(pos.x, pos.y, 1.0)
+                    .chain(matrix::scale(ss, ss, 1.0))
+                    .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
+                    .generate();
+
+                match team {
+                    Team::White => {
+                        white_team_cells.push(first);
+                    }
+                    Team::Black => {
+                        black_team_cells.push(first);
+                    }
+                    Team::Neutral => {
+                        neutral_team_cells.push(first);
+                    }
                 }
             }
-        }
 
-        for a in world.get_game_cells().iter_mesh(Axial::zero()) {
-            if let Some((height, team2)) = game.factions.get_cell(a) {
-                let inner_stack = height.min(2);
-                let mid_stack = height.max(2).min(4) - 2;
-                let outer_stack = height.max(4) - 4;
+            for (index, height, team2) in
+                game.factions
+                    .cells
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, x)| match x {
+                        GameCell::Piece(stack_height, team) => {
+                            Some((index, *stack_height as u8 + 1, *team))
+                        }
+                        GameCell::Empty => None,
+                    })
+            {
+                let a = Axial::from_index(&index);
+                //if let Some((height, team2)) = game.factions.get_cell(a) {
+                // let inner_stack = height.min(2);
+                // let mid_stack = height.max(2).min(4) - 2;
+                // let outer_stack = height.max(4) - 4;
+                let inner_stack = height.min(3);
+                let mid_stack = height.max(3).min(6) - 3;
 
-                if height == 6 && team2 == ActiveTeam::Neutral {
-                    //mountains.push(grid_snap(a, /*models.land.height / 2.0*/ 0.0).generate());
-                    continue;
-                }
+                // if height == 6 && team2 == Team::Neutral {
+                //     //mountains.push(grid_snap(a, /*models.land.height / 2.0*/ 0.0).generate());
+                //     continue;
+                // }
+
+                // if shown_fog.is_set(a) {
+                //     continue;
+                // }
 
                 let arr = match team2 {
-                    ActiveTeam::White => &mut white_team_cells,
-                    ActiveTeam::Black => &mut black_team_cells,
-                    ActiveTeam::Neutral => &mut neutral_team_cells,
+                    Team::White => &mut white_team_cells,
+                    Team::Black => &mut black_team_cells,
+                    Team::Neutral => &mut neutral_team_cells,
                 };
 
-                let radius = [0.4, 0.6, 0.8];
-
-                for (stack, radius) in [inner_stack, mid_stack, outer_stack].iter().zip(radius) {
+                for (stack, radius) in [inner_stack, mid_stack].iter().zip(radius) {
                     for k in 0..*stack {
                         arr.push(
-                            grid_snap(a, k as f32 * cell_height)
+                            grid_snap(a, k as f32 * cell_height * piece_scale)
                                 .chain(matrix::scale(radius, radius, 1.0))
+                                .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
                                 .generate(),
                         );
                     }
@@ -1038,48 +1388,183 @@ async fn render_command(
         }
         draw_sys.batch(water_pos).build(&models.water, &projjj);
 
-        let mut ice_pos = vec![];
-        for pos in game.factions.ice.iter_mesh(Axial::zero()) {
-            ice_pos.push(grid_snap(pos, -models.land.height));
+        // let mut ice_pos = vec![];
+        // for pos in game.factions.ice.iter_mesh(Axial::zero()) {
+        //     ice_pos.push(grid_snap(pos, -models.land.height));
+        // }
+        // draw_sys.batch(ice_pos).build(&models.snow, &projjj);
+
+        let mut fog_pos = vec![];
+        // let fogg = match team {
+        //     ActiveTeam::White => &game_total.fog[0],
+        //     ActiveTeam::Black => &game_total.fog[1],
+        //     ActiveTeam::Neutral => todo!(),
+        // };
+
+        for pos in shown_fog.iter_mesh(Axial::zero()) {
+            fog_pos.push(grid_snap(pos, 0.0));
         }
-        draw_sys.batch(ice_pos).build(&models.snow, &projjj);
+        draw_sys.batch(fog_pos).build(&models.fog, &projjj);
 
-        // draw_unit_type(
-        //     UnitType::Mouse,
-        //     ActiveTeam::White,
-        //     &game.factions.white.mouse,
-        //     &models.grass,
-        // );
+        let mut label_arrows = vec![];
+        for (pos, hdir) in label_arrow_points(world) {
+            let pos = grid_matrix.hex_axial_to_world(&pos);
+            let t = matrix::translation(pos.x, pos.y, -5.0);
+            let r = matrix::z_rotation(
+                (((hdir as usize) + 2) % 6) as f32 * (std::f32::consts::TAU / 6.0),
+            );
 
-        // draw_unit_type(
-        //     UnitType::Mouse,
-        //     ActiveTeam::Black,
-        //     &game.factions.black.mouse,
-        //     &models.snow,
-        // );
+            let m = t.chain(r).generate();
 
-        // let d = DepthDisabler::new(ctx);
+            label_arrows.push(m);
+        }
+        draw_sys
+            .batch(label_arrows)
+            .no_lighting()
+            .build(&models.label_arrow, &projjj);
 
-        // draw_health_text(
-        //     game.factions
-        //         .cats
-        //         .iter()
-        //         .map(|x| (x.position, x.typ.type_index() as i8))
-        //         .chain(
-        //             game.factions
-        //                 .dogs
-        //                 .iter()
-        //                 .map(|x| (x.position, x.typ.type_index() as i8)),
-        //         ),
-        //     grid_matrix,
-        //     &numm.health_numbers,
-        //     &view_proj,
-        //     &proj,
-        //     &mut draw_sys,
-        //     &numm.text_texture,
-        // );
-        // drop(d);
+        // let mut white_cells=vec!();
+        // let mut black_cells=vec!();
+
+        // for &fo in world.land_as_vec.iter(){
+        //     if let Some(fo)=game.factions.get_cell_inner(fo){
+
+        //     }else{
+        //         let foo=get_num_attack(&spoke, fo);
+
+        //         let radius=1.0;
+        //         let foo2=grid_snap(Axial::from_index(&fo), 0.0 as f32 * cell_height * piece_scale)
+        //         .chain(matrix::scale(radius, radius, 1.0))
+        //         .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
+        //         .generate();
+
+        //         if foo[Team::White]>foo[Team::Black]{
+        //             white_cells.push(foo2);
+        //         }else if foo[Team::Black]>foo[Team::White]{
+        //             black_cells.push(foo2);
+        //         }
+
+        //     }
+        // }
+
+        // draw_sys
+        //     .batch(white_cells)
+        //     .build(&models.white_sigl, &projjj);
+        // draw_sys
+        //     .batch(black_cells)
+        //     .build(&models.black_sigl, &projjj);
 
         ctx.flush();
     }
+}
+
+pub fn label_arrow_points(world: &board::MyWorld) -> impl Iterator<Item = (hex::Cube, hex::HDir)> {
+    let rr = world.radius as i8 - 1;
+    let a1 = Axial { q: 0, r: -rr };
+    let a2 = Axial { q: rr, r: -rr };
+    let a3 = Axial { q: rr, r: 0 };
+
+    let first = anchor_points2(a1, a2, a3).map(|x| {
+        let x = x.add(Axial { q: 1, r: -1 });
+
+        (x.to_cube(), hex::HDir::BottomRight)
+    });
+
+    let a1 = Axial { q: 0, r: -rr };
+    let a2 = Axial { q: -rr, r: 0 };
+    let a3 = Axial { q: -rr, r: rr };
+
+    let second = anchor_points2(a1, a2, a3).map(|x| {
+        let x = x.add(Axial { q: -1, r: 0 });
+
+        (x.to_cube(), hex::HDir::BottomLeft)
+    });
+
+    //first.chain(second)
+    //std::iter::empty()
+    first.chain(second)
+}
+
+fn update_text(
+    world: &board::MyWorld,
+    grid_matrix: &hex::HexConverter,
+    viewport: [f32; 2],
+    my_matrix: &cgmath::Matrix4<f32>,
+) -> Vec<dom::Text> {
+    let make_text = |point: hex::Cube, text: String| {
+        let pos = grid_matrix.hex_axial_to_world(&point);
+        let pos = scroll::world_to_mouse([pos.x, pos.y, -5.0], viewport, &my_matrix);
+        dom::Text { text, pos }
+    };
+
+    let radius = world.radius as i8;
+
+    let mut k = Vec::new();
+    let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    let rr = radius - 1;
+
+    let aaa = alphabet.chars().nth(0).unwrap();
+    let bbb = alphabet.chars().nth(rr as usize).unwrap();
+    let ccc = alphabet.chars().nth((rr * 2) as usize).unwrap();
+    console_dbg!(aaa, bbb, ccc);
+    let a11 = Axial::from_letter_coord(aaa, 1, world.radius as i8);
+    let a22 = Axial::from_letter_coord(bbb, 1, world.radius as i8);
+    let a33 = Axial::from_letter_coord(ccc, 1 + rr, world.radius as i8);
+
+    let a1 = Axial { q: 0, r: -rr };
+    let a2 = Axial { q: rr, r: -rr };
+    let a3 = Axial { q: rr, r: 0 };
+
+    assert_eq!(a1, a11);
+    assert_eq!(a2, a22);
+    assert_eq!(a3, a33);
+
+    for (a, letter) in anchor_points2(a1, a2, a3).zip(alphabet.chars()) {
+        let a = a.add(Axial { q: 1, r: -1 });
+        k.push(make_text(a.into(), letter.to_uppercase().to_string()))
+    }
+
+    let a11 = Axial::from_letter_coord(aaa, 1, world.radius as i8);
+    let a22 = Axial::from_letter_coord(aaa, 1 + rr, world.radius as i8);
+    let a33 = Axial::from_letter_coord(bbb, 1 + rr + rr, world.radius as i8);
+
+    let rr = radius - 1;
+    let a1 = Axial { q: 0, r: -rr };
+    let a2 = Axial { q: -rr, r: 0 };
+    let a3 = Axial { q: -rr, r: rr };
+
+    assert_eq!(a1, a11);
+    assert_eq!(a2, a22);
+    assert_eq!(a3, a33);
+
+    for (a, num) in anchor_points2(a1, a2, a3).zip(1..) {
+        let a = a.add(Axial { q: -1, r: 0 });
+        k.push(make_text(a.into(), num.to_string()))
+    }
+
+    k
+}
+
+fn anchor_points2(start: Axial, bend_point: Axial, end: Axial) -> impl Iterator<Item = hex::Axial> {
+    let offset = bend_point.sub(&start).to_cube();
+
+    let unit = Axial {
+        q: offset.q.clamp(-1, 1),
+        r: offset.r.clamp(-1, 1),
+    };
+
+    let dis = (offset.q.abs() + offset.r.abs() + offset.s.abs()) / 2;
+    //console_dbg!(dis);
+    let first = (0..dis).map(move |x| start.add(unit.mul(x)));
+
+    let offset = end.sub(&bend_point);
+    let unit = Axial {
+        q: offset.q.clamp(-1, 1),
+        r: offset.r.clamp(-1, 1),
+    };
+
+    let second = (0..dis + 1).map(move |x| bend_point.add(unit.mul(x)));
+
+    first.chain(second)
 }

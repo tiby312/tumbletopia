@@ -1,10 +1,104 @@
+use crate::{
+    board::MyWorld,
+    moves::{get_num_attack, SpokeInfo},
+};
+
 use super::*;
 
-use gloo_console::console_dbg;
-
 pub type Eval = i64;
-const MATE: i64 = 1_000_000;
+
 use tinyvec::ArrayVec;
+pub const MAX_NODE_VISIT: usize = 1_000_000;
+
+pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
+    let reinforce = |team, game: &mut GameState| {
+        let mut spoke = SpokeInfo::new(game);
+        moves::update_spoke_info(&mut spoke, world, game);
+        let fog = &mesh::small_mesh::SmallMesh::new();
+
+        for &index in world.land_as_vec.iter() {
+            let n = get_num_attack(&spoke, index);
+
+            if let Some((h, m)) = game.factions.get_cell_inner(index) {
+                if m == team && n[team] > h as i64 {
+                    ActualMove(index).apply(team, game, fog, world, Some(&spoke));
+                    let _s = spoke.process_move_better(ActualMove(index), team, world, game);
+                }
+            }
+        }
+    };
+
+    let expand = |team, game: &mut GameState| {
+        let fog = &mesh::small_mesh::SmallMesh::new();
+        let mut progress = true;
+
+        let mut spoke = SpokeInfo::new(game);
+        moves::update_spoke_info(&mut spoke, world, game);
+
+        while progress {
+            progress = false;
+            for &index in world.land_as_vec.iter() {
+                if game.playable(index, team, world, &spoke).is_some() {
+                    let _e = ActualMove(index).apply(team, game, fog, world, Some(&spoke));
+                    let _s = spoke.process_move_better(ActualMove(index), team, world, game);
+                    progress = true;
+                }
+            }
+        }
+    };
+
+    let mut score = [0i64; 2];
+
+    for team in [Team::White, Team::Black] {
+        let mut game = game.clone();
+        expand(!team, &mut game);
+        reinforce(!team, &mut game);
+        expand(team, &mut game);
+        for &index in world.land_as_vec.iter() {
+            if let Some((_, f)) = game.factions.get_cell_inner(index) {
+                if f == team {
+                    score[f] += 1;
+                }
+            }
+        }
+    }
+
+    score
+}
+
+pub fn should_pass(
+    a: &ai::Res,
+    _team: Team,
+    game_orig: &mut GameState,
+    world: &MyWorld,
+    //TODO pass in all history instead
+    _move_history: &MoveHistory,
+) -> bool {
+    //try with -sr-se--se--se----r
+
+    if a.line.is_empty() {
+        return true;
+    }
+
+    // let points = calculate_secure_points(game_orig, world);
+
+    // let mut winner = None;
+    // for team in [Team::White, Team::Black] {
+    //     if 2 * points[team] as usize > world.land_as_vec.len() {
+    //         winner = Some(team);
+    //         break;
+    //     }
+    // }
+
+    // if let Some(_win) = winner {
+    //     log!("Found a winner. {:?}. choosing to pass.", _win);
+
+    //     return true;
+    // }
+
+    false
+}
+
 pub struct Evaluator {
     // workspace: BitField,
     // workspace2: BitField,
@@ -20,277 +114,203 @@ impl Default for Evaluator {
     }
 }
 impl Evaluator {
-    pub fn process_game_over(&mut self, a: unit::GameOver) -> Eval {
-        match a {
-            unit::GameOver::WhiteWon => MATE,
-            unit::GameOver::BlackWon => -MATE,
-            unit::GameOver::Tie => 0,
-        }
-    }
-
     //white maximizing
     //black minimizing
     pub fn absolute_evaluate(
         &mut self,
         game: &GameState,
         world: &board::MyWorld,
+        spoke_info: &moves::SpokeInfo,
         _debug: bool,
     ) -> Eval {
-        let mut score = 0;
-        let mut stack_count = 0;
-        let mut territory_count = 0;
-        let mut strength = 0;
-        let mut contested = 0;
-        let mut unseen = 0;
-        for index in world.get_game_cells().inner.iter_ones() {
-            let mut num_white = 0;
-            let mut num_black = 0;
-            for (_, rest) in game.factions.iter_end_points(world, index) {
-                if let Some((_, team)) = rest {
-                    match team {
-                        ActiveTeam::White => num_white += 1,
-                        ActiveTeam::Black => num_black += 1,
-                        ActiveTeam::Neutral => {}
-                    }
-                }
-            }
+        let mut total_foo = 0;
+        let strength_parity = 0;
+        for &index in world.land_as_vec.iter() {
+            let num_attack = get_num_attack(spoke_info, index);
 
-            if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+            const TERR: i64 = 10;
+            const ACT: i64 = 9;
+
+            let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
                 let height = height as i64;
-
-                let curr_strength = match tt {
-                    ActiveTeam::White => height.max(num_white - 1),
-                    ActiveTeam::Black => -height.max(num_black - 1),
-                    ActiveTeam::Neutral => 0,
-                };
-
-                strength += curr_strength;
-
-                stack_count += 1;
-
-                match tt {
-                    ActiveTeam::White => {
-                        if num_black > height {
-                            score -= 1
-                        } else {
-                            score += 1
-                        }
+                if tt != Team::Neutral {
+                    if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
+                        ACT * -tt.value()
+                    } else {
+                        TERR * tt.value()
                     }
-                    ActiveTeam::Black => {
-                        if num_white > height {
-                            score += 1
-                        } else {
-                            score -= 1
-                        }
-                    }
-                    ActiveTeam::Neutral => {}
+                } else {
+                    0
                 }
             } else {
-                let ownership = num_white - num_black;
-
-                if ownership > 0 {
-                    score += ownership;
-                    territory_count += 1;
-                } else if ownership < 0 {
-                    score += ownership;
-                    territory_count += 1;
+                if num_attack[Team::White] > num_attack[Team::Black] {
+                    TERR
+                } else if num_attack[Team::Black] > num_attack[Team::White] {
+                    -TERR
                 } else {
-                    //The diff is zero, so if num_white is positive, so too must be black indicating they are contesting.
-                    if num_white > 0 {
-                        contested += 1
-                    } else {
-                        unseen += 1;
-                    }
+                    0
                 }
             };
+            total_foo += temp_score;
         }
-
-        (stack_count + territory_count) * score + (unseen + contested) * strength
+        total_foo * 100000 + strength_parity
     }
 }
 
-// fn around(point: Axial) -> impl Iterator<Item = Axial> {
-//     point.to_cube().ring(1).map(|b| b.to_axial())
-// }
-
-// pub fn expand_mesh(mesh: &mut BitField, workspace: &mut BitField) {
-//     workspace.clear();
-//     workspace.union_with(mesh);
-
-//     for a in workspace.iter_mesh() {
-//         for b in around(a) {
-//             if mesh.valid_coord(b) {
-//                 mesh.set_coord(b, true);
-//             }
-//         }
-//     }
-// }
-
-struct TranspositionTable {
-    a: std::collections::BTreeMap<u64, moves::ActualMove>,
+pub enum Flag {
+    Exact,
+    UpperBound,
+    LowerBound,
 }
-impl TranspositionTable {
-    pub fn update_inner(&mut self, k: u64, m: moves::ActualMove) {
-        if let Some(foo) = self.a.get_mut(&k) {
-            *foo = m;
-        } else {
-            self.a.insert(k, m);
-        }
-    }
-    pub fn update(&mut self, a: &GameState, m: moves::ActualMove) {
-        self.update_inner(a.hash_me(), m)
-    }
-    pub fn get(&self, a: &GameState) -> Option<&moves::ActualMove> {
-        self.a.get(&a.hash_me())
-    }
+pub struct TTEntry {
+    pv: ArrayVec<[moves::ActualMove; STACK_SIZE]>,
+    flag: Flag,
+    depth: usize,
+    value: i64,
 }
 
-// //TODO use bump allocator!!!!!
-// struct PrincipalVariation {
-//     a: std::collections::BTreeMap<Vec<moves::ActualMove>, (moves::ActualMove, Eval)>,
-// }
-// impl PrincipalVariation {
-//     pub fn get_best_prev_move(
-//         &self,
-//         path: &[moves::ActualMove],
-//     ) -> Option<&(moves::ActualMove, Eval)> {
-//         self.a.get(path)
-//     }
-//     pub fn get_best_prev_move_mut(
-//         &mut self,
-//         path: &[moves::ActualMove],
-//     ) -> Option<&mut (moves::ActualMove, Eval)> {
-//         self.a.get_mut(path)
-//     }
+const STACK_SIZE: usize = 15;
 
-//     pub fn update(&mut self, path: &[moves::ActualMove], aaa: &moves::ActualMove, eval: Eval) {
-//         //if let Some(aaa) = &ret {
-//         if let Some(foo) = self.get_best_prev_move_mut(path) {
-//             *foo = (aaa.clone(), eval);
-//         } else {
-//             self.insert(path, aaa.clone(), eval);
-//         }
-//         //}
-//     }
-//     pub fn insert(&mut self, path: &[moves::ActualMove], m: moves::ActualMove, eval: Eval) {
-//         self.a.insert(path.to_vec(), (m, eval));
-//     }
-// }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Res {
+    pub line: Vec<ActualMove>,
+    pub eval: i64,
+}
 
-const STACK_SIZE: usize = 5 + 4;
-
-pub fn iterative_deepening(
-    game: &GameState,
+//TODO make the search depth be dependant on how many vacant cells there are!!!!
+pub fn calculate_move(
+    game: &mut GameState,
+    fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
-    team: ActiveTeam,
+    team: Team,
     move_history: &MoveHistory,
-) -> moves::ActualMove {
-    let mut results = Vec::new();
-
-    let mut table = TranspositionTable {
-        a: std::collections::BTreeMap::new(),
+    zobrist: &Zobrist,
+) -> ActualMove {
+    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 9, zobrist) {
+        if should_pass(&mo, team, game, world, move_history) {
+            log!("Choosing to pass!");
+            ActualMove(hex::PASS_MOVE_INDEX)
+        } else {
+            mo.line[0].clone()
+        }
+    } else {
+        ActualMove(hex::PASS_MOVE_INDEX)
     };
+
+    log!("Ai {:?} has selected move = {:?}", team, world.format(&m));
+    m
+}
+
+pub fn iterative_deepening2(
+    game: &GameState,
+    fogs: &[mesh::small_mesh::SmallMesh; 2],
+    world: &board::MyWorld,
+    team: Team,
+    len: usize,
+    zobrist: &Zobrist,
+) -> Option<Res> {
+    let mut results = None;
+
+    let mut table = std::collections::HashMap::new();
     let mut evaluator = Evaluator::default();
 
     let mut moves = vec![];
-    let mut history = MoveHistory::new();
 
-    //So that we can detect consecutive passes
-    if let Some(f) = move_history.inner.last() {
-        history.push(f.clone());
-    }
+    let mut spoke_info = SpokeInfo::new(game);
+    moves::update_spoke_info(&mut spoke_info, world, game);
 
-    //TODO stop searching if we found a game ending move.
-    for depth in [1, 2, 3] {
-        gloo_console::info!(format!("searching depth={}", depth));
+    let mut nodes_visited_total = 0;
+    let mut qui_nodes_visited_total = 0;
+    let mut key = Key::from_scratch(&zobrist, game, world, team);
+    let mut killer = KillerMoves::new(STACK_SIZE + 4 + 4);
 
-        //3 = num iter
-        let mut killer = KillerMoves::new(3 + 4 + 4);
+    let mut game_orig = game.clone();
+    let spoke_orig = spoke_info.clone();
+    let key_orig = key.clone();
+
+    let mut history_heur: Vec<_> = (0..board::TABLE_SIZE).map(|_| 0).collect();
+
+    for depth in 0..len {
+        let depth = depth + 1;
+        log!("searching depth={}", depth);
+
         assert!(moves.is_empty());
 
-        let mut history = history.clone();
-
         let mut aaaa = ai::AlphaBeta {
-            prev_cache: &mut table,
+            ttable: &mut table,
             killer_moves: &mut killer,
             evaluator: &mut evaluator,
             world,
             moves: &mut moves,
-            history: &mut history,
+            nodes_visited: &mut nodes_visited_total,
+            qui_nodes_visited: &mut qui_nodes_visited_total,
+            fogs,
+            zobrist,
+            history_heur: &mut history_heur,
         };
 
-        let mut kk = game.clone();
-        let (res, mov) = aaaa.alpha_beta(&mut kk, ABAB::new(), team, depth);
-        assert_eq!(&kk, game);
+        let (res, mut mov) = aaaa.negamax(
+            &mut game_orig,
+            &mut key,
+            &mut spoke_info,
+            ABAB::new(),
+            team,
+            depth,
+            true,
+        );
+        assert_eq!(spoke_info, spoke_orig);
+        assert_eq!(key_orig, key);
+        assert_eq!(&game_orig, game);
 
-        {
-            //Update the transposition table in the right order
-            let mut gg = kk.clone();
-            let mut tt = team;
-            let mut vals = vec![];
-            for m in mov.iter().rev() {
-                vals.push((gg.hash_me(), m.clone()));
-                m.apply(tt, &mut gg, world);
-                tt = tt.not();
-            }
-            for (v, k) in vals.into_iter().rev() {
-                table.update_inner(v, k);
-            }
-
-            gloo_console::info!(format!("transpotion table size={}", table.a.len()));
+        if *aaaa.nodes_visited >= MAX_NODE_VISIT {
+            log!("discarding depth {}", depth);
+            break;
         }
 
-        let mov = mov.last().unwrap().clone();
+        //alpha beta returns the main line with the first move at the end
+        //reverse it so that the order is in the order of how they are played out.
+        mov.reverse();
 
-        let res = EvalRet { mov, eval: res };
-
-        console_dbg!(
-            "AI eval:",
-            res,
-            "Actual eval:",
-            evaluator.absolute_evaluate(game, world, false)
+        log!(
+            "regular nodes visited {} quiescence search nodes visited {} eval {} PV for depth {} :{:?}",
+            *aaaa.nodes_visited,
+            *aaaa.qui_nodes_visited,
+            res * team.value(),
+            depth,
+            world.format(&mov.clone().to_vec())
         );
 
-        let eval = res.eval;
-
-        results.push(res);
-
-        if eval.abs() == MATE {
-            console_dbg!("found a mate");
+        if !mov.is_empty() {
+            results = Some(Res {
+                line: mov.to_vec(),
+                eval: res,
+            });
+        } else {
+            //if we can't find a solution now, not going to find it at higher depth i guess?
+            break;
         }
     }
 
-    console_dbg!("transpotiion table len=", table.a.len());
+    log!(
+        "total regular nodes visited={} total quiet visited={}",
+        nodes_visited_total,
+        qui_nodes_visited_total
+    );
 
-    //console_dbg!(count);
-    //console_dbg!(&results);
-
-    let _target_eval = results.last().unwrap().eval;
-    // let mov = if let Some(a) = results
-    //     .iter()
-    //     .rev()
-    //     .find(|a| a.eval == target_eval && a.mov != ActualMove::SkipTurn)
-    // {
-    //     a.clone()
-    // } else {
-    //     results.pop().unwrap()
-    // };
-    let mov = results.pop().unwrap();
-
-    let m = mov;
-
-    console_dbg!("AI evaluation::", m.mov, m.eval);
-
-    m.mov
+    results
 }
 
 struct AlphaBeta<'a> {
-    prev_cache: &'a mut TranspositionTable,
+    ttable: &'a mut std::collections::HashMap<Key, TTEntry>,
     killer_moves: &'a mut KillerMoves,
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
-    moves: &'a mut Vec<u8>,
-    history: &'a mut MoveHistory,
+    moves: &'a mut Vec<ActualMove>,
+    nodes_visited: &'a mut usize,
+    qui_nodes_visited: &'a mut usize,
+    fogs: &'a [mesh::small_mesh::SmallMesh; 2],
+    zobrist: &'a Zobrist,
+    history_heur: &'a mut [usize],
 }
 
 struct KillerMoves {
@@ -320,143 +340,186 @@ impl KillerMoves {
     }
 }
 
-pub fn evaluate_a_continuation(
-    game: &GameState,
-    world: &board::MyWorld,
-    team_to_play: ActiveTeam,
-    m: impl IntoIterator<Item = ActualMove>,
-) -> Eval {
-    let mut game = game.clone();
-    let mut team = team_to_play;
-    for cand in m {
-        {
-            let j = cand;
-            j.apply(team, &mut game, world)
-        };
-        team = team.not();
-    }
-
-    Evaluator::default().absolute_evaluate(&game, world, false)
-}
-
-#[derive(Debug, Clone)]
-struct EvalRet<T> {
-    pub mov: T,
-    pub eval: Eval,
-}
-
 impl<'a> AlphaBeta<'a> {
     fn quiesance(
         &mut self,
         game: &mut GameState,
+        key: &mut Key,
+        spoke_info: &mut SpokeInfo,
         mut ab: ABAB,
-        team: ActiveTeam,
+        team: Team,
         depth: usize,
-    ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        if let Some(g) = game.game_is_over(self.world, team, self.history) {
-            return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
+    ) -> Eval {
+        if *self.nodes_visited >= MAX_NODE_VISIT {
+            return abab::SMALL_VAL;
         }
+
+        let stand_pat = team.value()
+            * self
+                .evaluator
+                .absolute_evaluate(game, self.world, &spoke_info, false);
 
         if depth == 0 {
-            return (
-                self.evaluator.absolute_evaluate(game, self.world, false),
-                tinyvec::array_vec![],
-            );
+            return stand_pat;
         }
 
-        let (_, captures, _) = game.generate_possible_moves_movement(self.world, None, team, false);
+        *self.nodes_visited += 1;
+
+        *self.qui_nodes_visited += 1;
+
+        let mut best_value = stand_pat;
+
+        if stand_pat >= ab.beta {
+            return stand_pat;
+        }
+        if ab.alpha < stand_pat {
+            ab.alpha = stand_pat
+        }
+
+        let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
+        self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
 
-        self.moves.extend(captures.inner.iter_ones().map(|x| {
-            let x: u8 = x.try_into().unwrap();
-            x
-        }));
+        self.moves
+            .extend(captures.inner.iter_ones().map(|x| ActualMove(x)));
 
         let end_move_index = self.moves.len();
 
-        let moves = &mut self.moves[start_move_index..end_move_index];
-
-        if moves.is_empty() {
-            return (
-                self.evaluator.absolute_evaluate(game, self.world, false),
-                tinyvec::array_vec![],
-            );
-        }
-
-        let mut ab_iter = ab.ab_iter(team.is_white());
         for _ in start_move_index..end_move_index {
-            let cand = ActualMove {
-                moveto: self.moves.pop().unwrap() as usize,
-            };
-            let effect = cand.apply(team, game, self.world);
+            let cand = self.moves.pop().unwrap();
 
-            let (eval, m) = self.quiesance(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
+            let effect = cand.apply(team, game, &self.fogs[team], self.world, Some(&spoke_info));
+
+            key.move_update(&self.zobrist, cand, team, &effect);
+
+            let temp = spoke_info.process_move_better(cand, team, self.world, game);
+
+            let eval = -self.quiesance(game, key, spoke_info, -ab.clone(), -team, depth - 1);
+
+            spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
 
             cand.undo(team, &effect, game);
 
-            if !ab_iter.consider((cand, m), eval) {
+            key.move_undo(&self.zobrist, cand, team, &effect);
+
+            if eval >= ab.beta {
                 self.moves.drain(start_move_index..);
-                break;
+                return eval;
+            }
+            if eval > best_value {
+                best_value = eval
+            }
+            if eval > ab.alpha {
+                ab.alpha = eval;
             }
         }
-
-        assert_eq!(self.moves.len(), start_move_index);
-        //self.moves.drain(start_move_index..end_move_index);
-
-        let (eval, j) = ab_iter.finish();
-        if let Some((cand, mut m)) = j {
-            m.push(cand);
-            (eval, m)
-        } else {
-            (eval, tinyvec::array_vec![])
-        }
+        return best_value;
     }
-    fn alpha_beta(
+
+    fn negamax(
         &mut self,
         game: &mut GameState,
+        key: &mut Key,
+        spoke_info: &mut SpokeInfo,
         mut ab: ABAB,
-        team: ActiveTeam,
+        team: Team,
         depth: usize,
+        update_tt: bool,
     ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
-        if let Some(g) = game.game_is_over(self.world, team, self.history) {
-            return (self.evaluator.process_game_over(g), tinyvec::array_vec!());
+        if *self.nodes_visited >= MAX_NODE_VISIT {
+            return (abab::SMALL_VAL, tinyvec::array_vec!());
         }
 
         if depth == 0 {
-            return self.quiesance(game, ab, team, 4);
+            return (
+                self.quiesance(game, key, spoke_info, ab, team, 2),
+                tinyvec::array_vec!(),
+            );
         }
 
-        let (all_moves, captures, reinfocements) =
-            game.generate_possible_moves_movement(self.world, None, team, false);
+        //null move pruning
+        //https://www.chessprogramming.org/Null_Move_Pruning#Pseudocode
+        {
+            let r = 2;
+
+            let mut ab2 = ab.clone();
+            ab2.alpha = -ab.beta;
+            ab2.beta = -(ab.beta - 1);
+            let (eval, m) = self.negamax(
+                game,
+                key,
+                spoke_info,
+                ab2,
+                -team,
+                depth.saturating_sub(r),
+                false,
+            );
+            let eval = -eval;
+
+            if eval >= ab.beta {
+                return (eval, m);
+            }
+        }
+
+        let entry = self.ttable.get(&key);
+
+        let alpha_orig = ab.alpha;
+
+        //https://en.wikipedia.org/wiki/Negamax
+        if let Some(entry) = entry {
+            if entry.depth >= depth {
+                match entry.flag {
+                    Flag::Exact => {
+                        entry.value;
+                    }
+                    Flag::UpperBound => {
+                        ab.alpha = ab.alpha.max(entry.value);
+                    }
+                    Flag::LowerBound => {
+                        ab.beta = ab.beta.min(entry.value);
+                    }
+                }
+            }
+
+            if ab.alpha >= ab.beta {
+                return (entry.value, entry.pv.clone());
+            }
+        }
+
+        *self.nodes_visited += 1;
+
+        let loud_moves = game.generate_loud_moves(self.world, team, &spoke_info);
+
+        let interest_moves = game.generate_interesting_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
 
-        self.moves.extend(all_moves.inner.iter_ones().map(|x| {
-            let x: u8 = x.try_into().unwrap();
-            x
-        }));
+        self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
+        self.moves
+            .extend(game.generate_possible_moves_movement(self.world, team, &spoke_info));
 
         let end_move_index = self.moves.len();
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
-        //This is impossible since you can always pass
-        assert!(!moves.is_empty());
+        let move_value = |index: &ActualMove| {
+            let index = index.0;
 
-        let move_value = |index: usize| {
-            if captures.inner[index] {
-                return 4;
-            }
-
-            if reinfocements.inner[index] {
-                return 0;
-            }
-
-            if let Some(a) = self.prev_cache.get(&game) {
-                if a.moveto == index {
-                    return 1000;
+            if let Some(a) = entry {
+                if let Some(p) = a.pv.last() {
+                    if p.0 == index {
+                        return 10_001;
+                    }
                 }
+            }
+
+            if loud_moves.inner[index] {
+                return 10_000;
+            }
+
+            if interest_moves.inner[index] {
+                return 8_000;
             }
 
             for (i, a) in self
@@ -465,43 +528,75 @@ impl<'a> AlphaBeta<'a> {
                 .iter()
                 .enumerate()
             {
-                if a.moveto == index {
-                    return 800 - i as isize;
+                if a.0 == index {
+                    return 9_000 - i as isize;
                 }
             }
 
-            // let spokes=game.factions.iter_end_points(self.world, index);
-            // let sum=spokes.into_iter().fold(0,|acc,f|acc+f.0);
+            if index == hex::PASS_MOVE_INDEX {
+                return 1;
+            }
 
-            1 //+sum as isize
+            3
         };
 
-        moves.sort_by_cached_key(|&f| move_value(f as usize));
+        //TODO https://www.chessprogramming.org/History_Heuristic
+        moves.sort_unstable_by_key(|f| move_value(f));
 
-        // let dbg: Vec<_> = moves.iter().skip(10).map(|x| move_value(x)).rev().collect();
-        // gloo::console::info!(format!("depth {} {:?}",depth,dbg));
-
-        let mut ab_iter = ab.ab_iter(team.is_white());
+        // log!(
+        //     "Move about to look:{:?}",
+        //     self.world.format(
+        //         &moves
+        //             .iter()
+        //             .map(|x| ActualMove {
+        //                 moveto: *x as usize
+        //             })
+        //             .collect::<Vec<_>>()
+        //     )
+        // );
+        let mut beta_cutoff = false;
+        //tc-s-d-re-srces-s--
+        let mut ab_iter = ab.ab_iter();
         for _ in start_move_index..end_move_index {
-            //moves.into_iter()
-            let cand = ActualMove {
-                moveto: self.moves.pop().unwrap() as usize,
-            };
-            let effect: move_build::MoveEffect = cand.apply(team, game, self.world);
-            self.history.push((cand, effect));
+            let cand = self.moves.pop().unwrap();
 
-            let (eval, m) = self.alpha_beta(game, ab_iter.clone_ab_values(), team.not(), depth - 1);
+            let effect = cand.apply(team, game, &self.fogs[team], self.world, Some(&spoke_info));
 
-            let (cand, effect) = self.history.inner.pop().unwrap();
+            key.move_update(&self.zobrist, cand, team, &effect);
+
+            let temp = spoke_info.process_move_better(cand, team, self.world, game);
+
+            let (eval, mut m) = self.negamax(
+                game,
+                key,
+                spoke_info,
+                -ab_iter.clone_ab_values(),
+                -team,
+                depth - 1,
+                true,
+            );
+            let eval = -eval;
+
+            spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
+            // log!(
+            //     "consid depth:{} {:?}:{:?}",
+            //     depth,
+            //     self.world.format(&cand),
+            //     self.world.format(&m.clone().to_vec())
+            // );
 
             cand.undo(team, &effect, game);
 
-            if !ab_iter.consider((cand.clone(), m), eval) {
-                if effect.destroyed_unit.is_none() {
-                    self.killer_moves.consider(depth, cand.clone());
-                }
+            key.move_undo(&self.zobrist, cand, team, &effect);
+            m.push(cand);
+            if !ab_iter.keep_going(m, eval) {
+                beta_cutoff = true;
+                //2007 without
+                if !loud_moves.inner[cand.0] {
+                    self.killer_moves.consider(depth, cand);
 
-                self.prev_cache.update(game, cand);
+                    self.history_heur[cand.0] += depth * depth;
+                }
 
                 self.moves.drain(start_move_index..);
                 break;
@@ -512,30 +607,73 @@ impl<'a> AlphaBeta<'a> {
 
         let (eval, m) = ab_iter.finish();
 
-        if let Some((cand, mut m)) = m {
-            m.push(cand);
-            (eval, m)
+        let eval = if m.is_none() {
+            assert!(beta_cutoff);
+
+            //If we have no more moves, then we need to evaluate what happens,
+            //if black plays a bunch of moves. at this point.
+            // team.value()
+            //     * self
+            //         .evaluator
+            //         .absolute_evaluate(game, self.world, &spoke_info, false)
+            //team.value()*eval
+            eval
         } else {
-            (eval, tinyvec::array_vec![])
+            eval
+        };
+
+        let m = m.unwrap_or_else(|| tinyvec::array_vec![]);
+
+        if update_tt {
+            //tc-s-d-re-srces-s--
+            let flag = if eval <= alpha_orig {
+                Flag::UpperBound
+            } else if eval >= ab.beta {
+                Flag::LowerBound
+            } else {
+                Flag::Exact
+            };
+
+            let entry = TTEntry {
+                value: eval,
+                depth,
+                flag,
+                pv: m.clone(),
+            };
+
+            self.ttable.insert(*key, entry);
         }
+
+        (eval, m)
     }
 }
 
 use abab::ABAB;
 mod abab {
+    use std::ops::Neg;
+
     use super::*;
     #[derive(Clone)]
     pub struct ABAB {
-        alpha: Eval,
-        beta: Eval,
+        pub alpha: Eval,
+        pub beta: Eval,
+    }
+
+    impl Neg for ABAB {
+        type Output = ABAB;
+
+        fn neg(self) -> Self::Output {
+            ABAB {
+                alpha: -self.beta,
+                beta: -self.alpha,
+            }
+        }
     }
 
     pub struct ABIter<'a, T> {
         value: i64,
         a: &'a mut ABAB,
         mm: Option<T>,
-        keep_going: bool,
-        maximizing: bool,
     }
 
     impl<'a, T: Clone> ABIter<'a, T> {
@@ -545,58 +683,43 @@ mod abab {
         pub fn clone_ab_values(&self) -> ABAB {
             self.a.clone()
         }
-        pub fn consider(&mut self, t: T, eval: Eval) -> bool {
-            //TODO monomorphize internally for maximizing and minimizing.
-
+        pub fn keep_going(&mut self, t: T, eval: Eval) -> bool {
             //TODO should be less than or equal instead maybe?
-            let mmm = if self.maximizing {
-                eval > self.value
-            } else {
-                eval < self.value
-            };
-            if mmm {
+
+            if eval > self.value {
                 self.mm = Some(t);
                 self.value = eval;
             }
 
-            let cond = if self.maximizing {
-                eval > self.a.beta
+            self.a.alpha = self.a.alpha.max(self.value);
+
+            if self.a.alpha >= self.a.beta {
+                false
             } else {
-                eval < self.a.alpha
-            };
-
-            if cond {
-                assert!(mmm);
-                self.keep_going = false;
+                true
             }
-
-            if self.maximizing {
-                self.a.alpha = self.a.alpha.max(self.value);
-            } else {
-                self.a.beta = self.a.beta.min(self.value);
-            }
-
-            self.keep_going
         }
     }
 
     impl ABAB {
         pub fn new() -> Self {
             ABAB {
-                alpha: Eval::MIN,
-                beta: Eval::MAX,
+                alpha: SMALL_VAL,
+                beta: BIG_VAL,
             }
         }
 
-        pub fn ab_iter<T: Clone>(&mut self, maximizing: bool) -> ABIter<T> {
-            let value = if maximizing { i64::MIN } else { i64::MAX };
+        //ALWAYS MAXIMIZE
+        pub fn ab_iter<T: Clone>(&mut self) -> ABIter<T> {
+            let value = SMALL_VAL;
             ABIter {
                 value,
                 a: self,
                 mm: None,
-                keep_going: true,
-                maximizing,
             }
         }
     }
+
+    pub const SMALL_VAL: i64 = Eval::MIN + 10;
+    pub const BIG_VAL: i64 = Eval::MAX - 10;
 }
