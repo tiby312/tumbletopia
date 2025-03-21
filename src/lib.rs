@@ -4,7 +4,6 @@ use engine::main_logic::MouseEvent;
 
 use cgmath::Vector2;
 use engine::mesh;
-use engine::moves::get_num_attack;
 use engine::MoveHistory;
 use engine::Zobrist;
 use gloo::console::console_dbg;
@@ -32,7 +31,6 @@ use unit::*;
 
 #[wasm_bindgen]
 pub async fn main_entry() {
-    //let world = board::MyWorld::new();
     let (sender, mut receiver) = futures::channel::mpsc::unbounded();
 
     let _listeners = ["single_b", "pass_b", "ai_b", "map_b", "replaybutton"].map(|s| {
@@ -75,7 +73,7 @@ pub async fn main_entry() {
                 //     console_dbg!("Could not parse map");
                 //     continue;
                 // }
-                game_elem.set_attribute("style", "display:block;").unwrap();
+                game_elem.set_attribute("style", "display:flex;").unwrap();
                 break dom::GameType::SinglePlayer(t.value().into());
             }
             "pass_b" => {
@@ -83,7 +81,7 @@ pub async fn main_entry() {
                 //     console_dbg!("Could not parse map");
                 //     continue;
                 // }
-                game_elem.set_attribute("style", "display:block;").unwrap();
+                game_elem.set_attribute("style", "display:flex;").unwrap();
                 break dom::GameType::PassPlay(t.value().into());
             }
             "ai_b" => {
@@ -99,7 +97,7 @@ pub async fn main_entry() {
                 //     continue;
                 // }
                 editor_elem
-                    .set_attribute("style", "display:block;")
+                    .set_attribute("style", "display:flex;")
                     .unwrap();
                 break dom::GameType::MapEditor(t.value().into());
             }

@@ -172,11 +172,13 @@
         z-index:10
       }
       #game_b{
-        display: inline-block;
+        display: flex;
+        flex-wrap:wrap;
+        justify-content:flex-end;
         position:absolute;
         top:40px;
-        left:10px;
-        width:100%;
+        left:0px;
+        right:0px;
       }
       #replay_b{
         display: inline-block;
@@ -192,7 +194,8 @@
         color: white;
         padding: 15px 32px;
         outline:none;
-        margin:10px;
+        margin-left:0px;
+        margin-right:0px;
         text-align: center;
         text-decoration: none;
         font-size: 16px;
@@ -222,7 +225,7 @@
 
   <div id="game_b">
     <input type="text" class="editor-button" id="fen" style="width: 100%;"  value="username testing testing one two three">
-    <div id = "return-menu"><a style="display:block;" class="editor-button" href="./" >Main</a></div>
+    <a style="display:block;" class="editor-button" href="./" >Main</a>
     <button id="pass" class="editor-button">Pass</button>  
     <button id="undo" class="editor-button">Undo</button>
   </div>
