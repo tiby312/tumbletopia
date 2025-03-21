@@ -91,7 +91,7 @@ impl Key {
 
 #[test]
 fn test_zobrist() {
-    let world = &board::MyWorld::load_from_string("bb-t-bbsrd-s----s--");
+    let world = &board::MyWorld::load_from_string("bb-t-bbsrd-s----s--").unwrap();
     let mut game = world.starting_state.clone();
 
     let base = Zobrist::new();

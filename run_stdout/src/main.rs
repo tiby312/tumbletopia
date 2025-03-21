@@ -106,7 +106,7 @@ fn test_pass(game_s: &str) {
 }
 
 fn eval(game_s: &str) {
-    let world = engine::board::MyWorld::load_from_string(game_s);
+    let world = engine::board::MyWorld::load_from_string(game_s).unwrap();
 
     let mut game = world.starting_state.clone();
 
@@ -153,7 +153,7 @@ pub fn test_run(
     Vec<engine::ActualMove>,
     engine::board::MyWorld,
 ) {
-    let world = engine::board::MyWorld::load_from_string(game);
+    let world = engine::board::MyWorld::load_from_string(game).unwrap();
 
     let mut game_history = engine::MoveHistory::new();
     let mut game = world.starting_state.clone();

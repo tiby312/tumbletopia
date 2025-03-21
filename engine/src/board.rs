@@ -212,6 +212,8 @@ impl GameState {
         ret
     }
 }
+
+
 impl MyWorld {
     pub fn format<'a, H: hex::HexDraw>(&self, foo: &'a H) -> hex::Displayer<'a, H> {
         hex::disp(foo, self.radius as i8)
@@ -231,11 +233,16 @@ impl MyWorld {
     //     }
     // }
 
-    pub fn load_from_string(s: &str) -> MyWorld {
+    pub fn load_from_string(s: &str) -> Option<MyWorld> {
         // Area = (3√3 / 2) x (Side Length)^2
         //
         let size = ((3. + (12. * s.len() as f64 - 3.)).sqrt() / 6.).ceil() as i8;
         log!("SIZE OF HEX={}", size);
+
+        if size>8{
+            return None;
+        }
+
         //let world=MyWorld::with_size(size,ActiveTeam::White);
         let land = mesh::small_mesh::SmallMesh::from_iter(
             hex::Cube::new(0, 0).range(size - 1).map(|x| x.to_axial()),
@@ -276,13 +283,13 @@ impl MyWorld {
             fog: std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new()),
         };
 
-        MyWorld {
+        Some(MyWorld {
             land,
             radius: size as u8,
             starting_team: Team::White,
             starting_state: g,
             land_as_vec,
-        }
+        })
     }
 
     #[deprecated]

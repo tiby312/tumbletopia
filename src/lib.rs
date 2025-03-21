@@ -375,7 +375,7 @@ pub async fn worker_entry() {
         engine::GameType::PassPlay(s)
         | engine::GameType::SinglePlayer(s)
         | engine::GameType::AIBattle(s) => {
-            let world = board::MyWorld::load_from_string(&s);
+            let world = board::MyWorld::load_from_string(&s).unwrap();
 
             //let map = Map::load(&s, &world).unwrap();
 
