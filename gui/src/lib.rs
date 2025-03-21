@@ -50,8 +50,8 @@ pub struct Models<T> {
     pub fog: T,
     pub label_arrow: T,
     pub donut: T,
-    pub white_sigl:T,
-    pub black_sigl:T
+    pub white_sigl: T,
+    pub black_sigl: T,
 }
 
 impl Models<Foo<TextureGpu, ModelGpu>> {
@@ -102,7 +102,6 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             donut: quick_load(include_bytes!("../../assets/donut.glb"), RESIZE, None),
             white_sigl: quick_load(include_bytes!("../../assets/white_sigl.glb"), RESIZE, None),
             black_sigl: quick_load(include_bytes!("../../assets/black_sigl.glb"), RESIZE, None),
-            
         }
     }
 }

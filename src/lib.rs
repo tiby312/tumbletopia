@@ -129,8 +129,8 @@ pub async fn main_entry() {
         }
     };
 
-    let main_ret = shogo::utils::get_by_id_elem("return-menu");
-    main_ret.set_attribute("style", "display:block;").unwrap();
+    //let main_ret = shogo::utils::get_by_id_elem("return-menu");
+    //main_ret.set_attribute("style", "display:block;").unwrap();
 
     let elem = shogo::utils::get_by_id_elem("mainmenu");
     elem.set_attribute("style", "display:none;").unwrap();
@@ -822,8 +822,7 @@ async fn render_command(
         }
     };
 
-
-    let mut spoke=moves::SpokeInfo::new(&game);
+    let mut spoke = moves::SpokeInfo::new(&game);
     moves::update_spoke_info(&mut spoke, world, game);
 
     loop {
@@ -1150,9 +1149,6 @@ async fn render_command(
         //     draw_sys.batch(all_fog).build(snow);
         // }
 
-
-        
-
         if let Some(a) = &get_mouse_input {
             if let Some((selection, grey)) = a {
                 match selection {
@@ -1401,14 +1397,11 @@ async fn render_command(
             .no_lighting()
             .build(&models.label_arrow, &projjj);
 
-
-
         // let mut white_cells=vec!();
         // let mut black_cells=vec!();
-        
+
         // for &fo in world.land_as_vec.iter(){
         //     if let Some(fo)=game.factions.get_cell_inner(fo){
-
 
         //     }else{
         //         let foo=get_num_attack(&spoke, fo);
@@ -1428,15 +1421,12 @@ async fn render_command(
         //     }
         // }
 
-
         // draw_sys
         //     .batch(white_cells)
         //     .build(&models.white_sigl, &projjj);
         // draw_sys
         //     .batch(black_cells)
         //     .build(&models.black_sigl, &projjj);
-
-
 
         ctx.flush();
     }

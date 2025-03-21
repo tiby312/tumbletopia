@@ -142,11 +142,12 @@
         bottom:10px;
         right:10px;
       }
+      
       #return-menu{
         display: inline-block;
-        position:absolute;
+        /*position:absolute;
         top:40px;
-        left:10px;
+        left:10px;*/
       }
       #mainmenu{
         background-color: black;
@@ -173,8 +174,9 @@
       #game_b{
         display: inline-block;
         position:absolute;
-        bottom:10px;
-        right:10px;
+        top:40px;
+        left:10px;
+        width:100%;
       }
       #replay_b{
         display: inline-block;
@@ -186,8 +188,11 @@
         z-index:10;
         background-color: #213022; /* Green */
         position:relative;
+        border:none;
         color: white;
         padding: 15px 32px;
+        outline:none;
+        margin:10px;
         text-align: center;
         text-decoration: none;
         font-size: 16px;
@@ -217,8 +222,9 @@
 
   <div id="game_b">
     <input type="text" class="editor-button" id="fen" value="username testing testing one two three">
-    <button id="undo" class="editor-button">Undo</button>
+    <div id = "return-menu"><a style="display:block;" class="editor-button" href="./" >Main</a></div>
     <button id="pass" class="editor-button">Pass</button>  
+    <button id="undo" class="editor-button">Undo</button>
   </div>
 
   <div id="replay_b" style="display:none;">
@@ -276,7 +282,7 @@
   </div>  
 
 
-  <div id = "return-menu" style="display:none;"><a style="display:block;" class="editor-button" href="./" >Main</a></div>
+  <!--<div id = "return-menu" style="display:none;"></div>-->
     
 
   <canvas id="mycanvas" class="unselectable"></canvas>
