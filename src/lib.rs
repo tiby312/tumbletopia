@@ -48,7 +48,7 @@ pub async fn main_entry() {
         .unwrap()
         .dyn_into()
         .unwrap();
-    
+
     let map="----------------b-----------------------r----k---------------------------------------------";
     t.set_value(&map);
 
@@ -742,12 +742,18 @@ async fn render_command(
     let my_matrix = proj.chain(view_proj).generate();
     //TODO remove
     let command_copy = command.clone();
+    let game_str = game.into_string(world);
+
     //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
         ace::Command::RepaintUI => {
             let k = update_text(world, grid_matrix, viewport, &my_matrix);
-            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone()));
+            engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+                k,
+                score_data.clone(),
+                game_str,
+            ));
             return ace::Response::Ack;
         }
         ace::Command::HideUndo => {
@@ -949,7 +955,11 @@ async fn render_command(
         if resize_text {
             console_dbg!("RESIZING TEXT!!!!");
             let k = update_text(world, grid_matrix, viewport, &my_matrix);
-            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone()));
+            engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+                k,
+                score_data.clone(),
+                game_str.clone(),
+            ));
         }
 
         if get_mouse_input.is_some() {
@@ -1008,11 +1018,18 @@ async fn render_command(
         match (camera_moving, camera_moving_last) {
             (scroll::CameraMoving::Stopped, scroll::CameraMoving::Moving) => {
                 let k = update_text(world, grid_matrix, viewport, &my_matrix);
-                engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone()));
+                engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+                    k,
+                    score_data.clone(),
+                    game_str.clone(),
+                ));
             }
             (scroll::CameraMoving::Moving, scroll::CameraMoving::Stopped) => {
-                engine_worker
-                    .post_message(dom::WorkerToDom::TextUpdate(vec![], score_data.clone()));
+                engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+                    vec![],
+                    score_data.clone(),
+                    game_str.clone(),
+                ));
             }
             _ => {}
         }

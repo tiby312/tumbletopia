@@ -1,6 +1,7 @@
 use futures::{FutureExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
+use web_sys::HtmlInputElement;
 
 use super::*;
 
@@ -143,7 +144,7 @@ pub struct Text {
 pub enum WorkerToDom {
     ShowUndo,
     HideUndo,
-    TextUpdate(Vec<Text>, ScoreData),
+    TextUpdate(Vec<Text>, ScoreData, String),
     GameFinish {
         replay_string: String,
         result: GameOverGui,
@@ -277,9 +278,13 @@ pub async fn start_game(game_type: GameType, host: &str) {
                 let hay = hay.unwrap_throw();
 
                 match hay {
-                    WorkerToDom::TextUpdate(t,p)=>{
+                    WorkerToDom::TextUpdate(t,p,game)=>{
                         text=t;
                         score_data=Some(p);
+
+                        let foo:HtmlInputElement = shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
+                        foo.set_value(&game);
+
                         repaint_text_send.send(()).await.unwrap();
                     }
                     WorkerToDom::Ack => {
