@@ -248,7 +248,11 @@ impl MyWorld {
             hex::Cube::new(0, 0).range(size - 1).map(|x| x.to_axial()),
         );
 
-        let land_as_vec = land.inner.iter_ones().collect();
+        let land_as_vec:Vec<_> = land.inner.iter_ones().collect();
+
+        if land_as_vec.len()!=s.len(){
+            return None;
+        }
 
         let mut g = GameState::new();
         for (a, i) in s.chars().zip(land.inner.iter_ones()) {
@@ -270,7 +274,7 @@ impl MyWorld {
                     continue;
                 }
                 _ => {
-                    unreachable!()
+                    return None;
                 }
             };
 

@@ -1,3 +1,4 @@
+use engine::board::MyWorld;
 use engine::main_logic as ace;
 use engine::main_logic::GameWrap;
 use engine::main_logic::MouseEvent;
@@ -68,6 +69,15 @@ pub async fn main_entry() {
 
         match r {
             "single_b" => {
+                
+                let foo=if let Some(foo)=MyWorld::load_from_string(&t.value()){
+                    
+                }else{
+                    t.set_value("Invalid game string or too big of a board (size 8 is the max)");
+                    log!("Failed to prase string");
+                    continue;
+                };
+
                 //TODO add back
                 // if Map::load(&maps, &world).is_err() {
                 //     console_dbg!("Could not parse map");
