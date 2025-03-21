@@ -96,9 +96,7 @@ pub async fn main_entry() {
                 //     console_dbg!("Could not parse map");
                 //     continue;
                 // }
-                editor_elem
-                    .set_attribute("style", "display:flex;")
-                    .unwrap();
+                editor_elem.set_attribute("style", "display:flex;").unwrap();
                 break dom::GameType::MapEditor(t.value().into());
             }
             "replaybutton" => {
@@ -860,7 +858,7 @@ async fn render_command(
 
                         //     return ace::Response::ChangeGameState(s.clone());
                         //     // let k = update_text(world, grid_matrix, viewport, &my_matrix);
-            
+
                         //     // engine_worker.post_message(dom::WorkerToDom::TextUpdate(
                         //     //     k,
                         //     //     score_data.clone(),

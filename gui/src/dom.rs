@@ -175,11 +175,12 @@ fn engine_handlers<'a>(
     let option = gloo::events::EventListenerOptions::enable_prevent_default();
     (
         EventListen::from_closure(&shogo::utils::get_by_id_elem("fen"), "change", |_| {
-            let foo:HtmlInputElement=shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
+            let foo: HtmlInputElement = shogo::utils::get_by_id_elem("fen")
+                .dyn_into()
+                .unwrap_throw();
 
             //Reboot the webpage with new fen.
 
-            
             //worker.post_message(DomToWorker::GameChange(foo.value()));
         }),
         EventListen::from_closure(canvas, "mousemove", |e| {
@@ -292,7 +293,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         score_data=Some(p);
 
                         let foo:HtmlInputElement = shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
-                        let game=format!("[{}]",game);
+                        //let game=format!("[{}]",game);
                         foo.set_value(&game);
 
                         repaint_text_send.send(()).await.unwrap();
@@ -451,7 +452,7 @@ fn redraw_text(text: &Vec<Text>, data: &ScoreData) {
     // let r2 = std::f64::consts::TAU * (white_percentage + black_percentage);
 
     let w = canvas.width() as f64;
-    
+
     let h1 = canvas.height() as f64 - 40.0;
     let h2 = canvas.height() as f64;
 
