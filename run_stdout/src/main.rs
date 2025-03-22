@@ -1,4 +1,4 @@
-use engine::{ai::Evaluator, board::MyWorld, moves::SpokeInfo, Zobrist};
+use engine::{ai::Evaluator, board::MyWorld, mesh::small_mesh::SmallMesh, moves::SpokeInfo, Zobrist};
 
 //-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
 
@@ -110,9 +110,9 @@ fn eval(game_s: &str) {
 
     let mut game = world.starting_state.clone();
 
-    let mut spoke_info = SpokeInfo::new(&game.tactical);
-    engine::moves::update_spoke_info(&mut spoke_info, &world, &game.tactical);
-    let eval = Evaluator::default().absolute_evaluate(&game.tactical, &world, &spoke_info, false);
+    let mut spoke_info = SpokeInfo::new(&game);
+    engine::moves::update_spoke_info(&mut spoke_info, &world, &game);
+    let eval = Evaluator::default().absolute_evaluate(&game, &world, &spoke_info, false);
     println!("eval for {} is {} from white perpsective", game_s, eval);
 }
 
@@ -161,13 +161,13 @@ pub fn test_run(
     let mut team_iter = engine::Team::White.iter();
     let foo = loop {
         let team = team_iter.next().unwrap();
-        if let Some(foo) = game.tactical.game_is_over(&world, team, &game_history) {
+        if let Some(foo) = game.game_is_over(&world, team, &game_history) {
             break foo;
         }
-        let mut ai_state = game.tactical.bake_fog(&game.fog[team]);
+        //let mut ai_state = game.bake_fog(&game.fog[team]);
         let m = engine::ai::calculate_move(
-            &mut ai_state,
-            &game.fog,
+            &mut game,
+            &std::array::from_fn(|_|SmallMesh::new()),
             &world,
             team,
             &game_history,
@@ -176,7 +176,7 @@ pub fn test_run(
         //panic!();
 
         //println!("team {:?} made move {:?}",team,&world.format(&m));
-        let effect = m.apply(team, &mut game.tactical, &game.fog[team], &world, None);
+        let effect = m.apply(team, &mut game, &SmallMesh::new(), &world, None);
         game_history.push((m, effect));
     };
     //

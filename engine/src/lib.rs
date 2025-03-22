@@ -8,6 +8,7 @@ pub mod moves;
 pub mod unit;
 use board::MyWorld;
 pub use hex::Axial;
+use mesh::small_mesh::SmallMesh;
 use move_build::MoveEffect;
 pub use moves::ActualMove;
 use serde::Deserialize;
@@ -96,13 +97,13 @@ fn test_zobrist() {
 
     let base = Zobrist::new();
 
-    let mut k = Key::from_scratch(&base, &game.tactical, world, Team::White);
+    let mut k = Key::from_scratch(&base, &game, world, Team::White);
 
     let a = Axial::from_letter_coord('B', 2, world.radius as i8);
     let m = ActualMove(a.to_index());
 
     let team = Team::White;
-    let effect = m.apply(team, &mut game.tactical, &game.fog[0], world, None);
+    let effect = m.apply(team, &mut game, &SmallMesh::new(), world, None);
 
     //dbg!(game.tactical.into_string(world));
     let orig = k.clone();

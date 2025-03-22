@@ -542,6 +542,10 @@ pub async fn game_play_thread(
 
     //let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
     let mut game = world.starting_state.clone();
+    let mut game=GameStateTotal{
+        tactical:game,
+        fog:std::array::from_fn(|_|mesh::small_mesh::SmallMesh::new())
+    };
 
     let mut game_history = MoveHistory::new();
 

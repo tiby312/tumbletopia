@@ -204,7 +204,7 @@ impl Team {
 //     pub powerups: Vec<Axial>,
 // }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize,Clone, Debug, Hash, Eq, PartialEq)]
 
 pub struct GameStateTotal {
     //0 is white fog. 1 is black fog

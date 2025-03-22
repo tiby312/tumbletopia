@@ -5,7 +5,7 @@ pub struct MyWorld {
     pub land: mesh::small_mesh::SmallMesh,
     pub radius: u8,
     pub starting_team: Team,
-    pub starting_state: unit::GameStateTotal, //pub map: unit::Map,
+    pub starting_state: unit::GameState, //pub map: unit::Map,
     pub land_as_vec: Vec<usize>,
 }
 
@@ -282,10 +282,10 @@ impl MyWorld {
             g.factions.add_cell_inner(i, stack, team);
         }
 
-        let g = unit::GameStateTotal {
-            tactical: g,
-            fog: std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new()),
-        };
+        // let g = unit::GameStateTotal {
+        //     tactical: g,
+        //     fog: std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new()),
+        // };
 
         Some(MyWorld {
             land,
