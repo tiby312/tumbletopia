@@ -38,10 +38,12 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
         while progress {
             progress = false;
             for &index in world.land_as_vec.iter() {
-                if game.playable(index, team, world, &spoke).is_some() {
-                    let _e = ActualMove(index).apply(team, game, fog, world, Some(&spoke));
-                    let _s = spoke.process_move_better(ActualMove(index), team, world, game);
-                    progress = true;
+                if let Some(f)=game.playable(index, team, world, &spoke) {
+                    if !f.is_suicidal(){
+                        let _e = ActualMove(index).apply(team, game, fog, world, Some(&spoke));
+                        let _s = spoke.process_move_better(ActualMove(index), team, world, game);
+                        progress = true;
+                    }
                 }
             }
         }
@@ -497,7 +499,7 @@ impl<'a> AlphaBeta<'a> {
 
         self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
         self.moves
-            .extend(game.generate_possible_moves_movement(self.world, team, &spoke_info));
+            .extend(game.generate_possible_moves_movement(self.world, team, &spoke_info,false));
 
         let end_move_index = self.moves.len();
 

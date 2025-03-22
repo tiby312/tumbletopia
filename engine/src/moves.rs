@@ -144,6 +144,17 @@ pub enum MoveType {
     Capture,
     Reinforce,
     Fresh,
+    Suicidal
+}
+
+impl MoveType{
+    pub fn is_suicidal(&self)->bool{
+        if let MoveType::Suicidal=self{
+            true
+        }else{
+            false
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
@@ -426,6 +437,10 @@ impl GameState {
         _world: &board::MyWorld,
         spoke_info: &SpokeInfo,
     ) -> Option<MoveType> {
+        if team==Team::Neutral{
+            return None;
+        }
+
         let num_attack = get_num_attack(spoke_info, index);
 
         if num_attack[team] == 0 {
@@ -433,8 +448,9 @@ impl GameState {
         }
 
         if num_attack[team] < num_attack[!team] {
-            return None;
+            return Some(MoveType::Suicidal);
         }
+    
 
         if let Some((height, rest)) = self.factions.get_cell_inner(index) {
             debug_assert!(height > 0);
@@ -579,8 +595,10 @@ impl GameState {
                                 break;
                             }
 
-                            if self.playable(index2, team, world, spoke_info).is_some() {
-                                ret.inner.set(index2, true);
+                            if let Some(foo)= self.playable(index2, team, world, spoke_info) {
+                                if !foo.is_suicidal(){
+                                    ret.inner.set(index2, true);
+                                }
                             }
                         }
                     }
@@ -602,6 +620,10 @@ impl GameState {
         spoke_info: &SpokeInfo,
     ) -> SmallMesh {
         let mut ret = SmallMesh::new();
+
+        if team==Team::Neutral{
+            return ret;
+        }
 
         for &index in world.land_as_vec.iter() {
             let num_attack = get_num_attack(&spoke_info, index);
@@ -641,20 +663,21 @@ impl GameState {
         world: &'b board::MyWorld,
         team: Team,
         spoke_info: &'b SpokeInfo,
+        allow_suicidal:bool
     ) -> impl Iterator<Item = ActualMove> + use<'b> {
-        if team == Team::Neutral {
-            unreachable!();
-        }
+        // if team == Team::Neutral {
+           
+        // }
 
         world.land_as_vec.iter().filter_map(move |&index| {
-            if let Some(_) = self.playable(index, team, world, spoke_info) {
-                //mesh.inner.set(index, true);
-                // match v {
-                //     MoveType::Capture => captures.inner.set(index, true),
-                //     MoveType::Reinforce => reinforcements.inner.set(index, true),
-                //     MoveType::Fresh => {}
-                // }
-                Some(ActualMove(index))
+            if let Some(f) = self.playable(index, team, world, spoke_info
+            ) {
+                if !f.is_suicidal() || allow_suicidal{
+                    Some(ActualMove(index))
+                }else{
+                    None
+                }
+                
             } else {
                 None
             }

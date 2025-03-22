@@ -402,7 +402,7 @@ pub async fn reselect_loop(
     let mut cca = SmallMesh::from_iter_move(
         game.tactical
             .bake_fog(&game.fog[team])
-            .generate_possible_moves_movement(world, selected_unit.team, &spoke_info),
+            .generate_possible_moves_movement(world, selected_unit.team, &spoke_info,true),
     );
 
     cca.inner.set(hex::PASS_MOVE_INDEX, true);
