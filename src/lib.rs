@@ -587,6 +587,10 @@ pub async fn game_play_thread(
 
         if let Some(g) = game.tactical.game_is_over(&world, team, &game.foo) {
             gloo::console::console!(format!("game over! {:?}", g));
+            let ll=game.foo.into_string(world);
+            doop.repaint_ui(Team::Neutral, &mut game, format!("game over:{:?}! full history:\"{}\"", g,ll))
+        .await;
+
             //break;
         }
 
