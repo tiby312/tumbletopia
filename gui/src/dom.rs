@@ -145,7 +145,7 @@ pub struct Text {
 pub enum WorkerToDom {
     ShowUndo,
     HideUndo,
-    TextUpdate(Vec<Text>, ScoreData, String),
+    TextUpdate(Vec<Text>, ScoreData, String,String),
     GameFinish {
         replay_string: String,
         result: GameOverGui,
@@ -288,13 +288,18 @@ pub async fn start_game(game_type: GameType, host: &str) {
                 let hay = hay.unwrap_throw();
 
                 match hay {
-                    WorkerToDom::TextUpdate(t,p,game)=>{
+                    WorkerToDom::TextUpdate(t,p,game,history)=>{
                         text=t;
                         score_data=Some(p);
 
                         let foo:HtmlInputElement = shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
                         //let game=format!("[{}]",game);
                         foo.set_value(&game);
+
+                        let foo:HtmlInputElement = shogo::utils::get_by_id_elem("history").dyn_into().unwrap_throw();
+                        //let game=format!("[{}]",game);
+                        foo.set_value(&history);
+
 
                         repaint_text_send.send(()).await.unwrap();
                     }

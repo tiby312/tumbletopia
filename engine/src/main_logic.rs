@@ -109,96 +109,97 @@ pub async fn map_editor(
     world: &board::MyWorld,
     map: unit::Map,
 ) -> unit::Map {
-    let (mut game_total, _starting_team) = unit::GameStateTotal::new(&world, &map);
+    todo!()
+    // let (mut game_total, _starting_team) = unit::GameStateTotal::new(&world, &map);
 
-    enum TT {
-        Ice,
-        Land,
-        Water,
-        Forest,
-        Start1,
-        Start2,
-    }
+    // enum TT {
+    //     Ice,
+    //     Land,
+    //     Water,
+    //     Forest,
+    //     Start1,
+    //     Start2,
+    // }
 
-    let mut tt = TT::Water;
+    // let mut tt = TT::Water;
 
-    loop {
-        let pos = doop.get_mouse(Team::White, &mut game_total).await;
-        let pos = match pos {
-            MouseEvent::Normal(pos) => pos,
-            MouseEvent::Button(s) => {
-                log!("map editor received: {}", s);
-                tt = match s.as_str() {
-                    "b_ice" => TT::Ice,
-                    "b_land" => TT::Land,
-                    "b_water" => TT::Water,
-                    "b_forest" => TT::Forest,
-                    "b_start1" => TT::Start1,
-                    "b_start2" => TT::Start2,
-                    "b_export" => {
-                        todo!();
-                        // if let Some(m) = unit::Map::from_game_state(&game_total.tactical, world) {
-                        //     return m;
-                        // }
-                        continue;
-                    }
-                    _ => panic!("Not supported!"),
-                };
+    // loop {
+    //     let pos = doop.get_mouse(Team::White, &mut game_total).await;
+    //     let pos = match pos {
+    //         MouseEvent::Normal(pos) => pos,
+    //         MouseEvent::Button(s) => {
+    //             log!("map editor received: {}", s);
+    //             tt = match s.as_str() {
+    //                 "b_ice" => TT::Ice,
+    //                 "b_land" => TT::Land,
+    //                 "b_water" => TT::Water,
+    //                 "b_forest" => TT::Forest,
+    //                 "b_start1" => TT::Start1,
+    //                 "b_start2" => TT::Start2,
+    //                 "b_export" => {
+    //                     todo!();
+    //                     // if let Some(m) = unit::Map::from_game_state(&game_total.tactical, world) {
+    //                     //     return m;
+    //                     // }
+    //                     continue;
+    //                 }
+    //                 _ => panic!("Not supported!"),
+    //             };
 
-                continue;
-            }
-        };
+    //             continue;
+    //         }
+    //     };
 
-        let game = &mut game_total.tactical;
+    //     let game = &mut game_total.tactical;
 
-        todo!()
-        // match tt {
-        //     TT::Ice => {
-        //         game.factions.remove(pos);
-        //         game.factions.ice.set_coord(pos, true)
-        //     }
-        //     TT::Land => {
-        //         game.factions.ice.set_coord(pos, false);
-        //         game.factions.remove(pos);
-        //     }
-        //     TT::Water => {
-        //         game.factions.remove(pos);
-        //         game.factions.ice.set_coord(pos, false);
-        //         game.factions.add_cell(pos, 6, Team::Neutral);
-        //     }
-        //     TT::Forest => {
-        //         game.factions.ice.set_coord(pos, false);
-        //         game.factions.remove(pos);
-        //         game.factions.add_cell(pos, 1, Team::Neutral);
-        //     }
-        //     TT::Start1 => {
-        //         game.factions.remove(pos);
-        //         game.factions.ice.set_coord(pos, false);
+    //     todo!()
+    //     // match tt {
+    //     //     TT::Ice => {
+    //     //         game.factions.remove(pos);
+    //     //         game.factions.ice.set_coord(pos, true)
+    //     //     }
+    //     //     TT::Land => {
+    //     //         game.factions.ice.set_coord(pos, false);
+    //     //         game.factions.remove(pos);
+    //     //     }
+    //     //     TT::Water => {
+    //     //         game.factions.remove(pos);
+    //     //         game.factions.ice.set_coord(pos, false);
+    //     //         game.factions.add_cell(pos, 6, Team::Neutral);
+    //     //     }
+    //     //     TT::Forest => {
+    //     //         game.factions.ice.set_coord(pos, false);
+    //     //         game.factions.remove(pos);
+    //     //         game.factions.add_cell(pos, 1, Team::Neutral);
+    //     //     }
+    //     //     TT::Start1 => {
+    //     //         game.factions.remove(pos);
+    //     //         game.factions.ice.set_coord(pos, false);
 
-        //         // for a in world.get_game_cells().inner.iter_ones() {
-        //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
-        //         //         if t == ActiveTeam::White {
-        //         //             game.factions.remove_inner(a);
-        //         //         }
-        //         //     }
-        //         // }
-        //         game.factions.add_cell(pos, 1, Team::White);
-        //     }
-        //     TT::Start2 => {
-        //         game.factions.remove(pos);
-        //         game.factions.ice.set_coord(pos, false);
+    //     //         // for a in world.get_game_cells().inner.iter_ones() {
+    //     //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
+    //     //         //         if t == ActiveTeam::White {
+    //     //         //             game.factions.remove_inner(a);
+    //     //         //         }
+    //     //         //     }
+    //     //         // }
+    //     //         game.factions.add_cell(pos, 1, Team::White);
+    //     //     }
+    //     //     TT::Start2 => {
+    //     //         game.factions.remove(pos);
+    //     //         game.factions.ice.set_coord(pos, false);
 
-        //         // for a in world.get_game_cells().inner.iter_ones() {
-        //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
-        //         //         if t == ActiveTeam::Black {
-        //         //             game.factions.remove_inner(a);
-        //         //         }
-        //         //     }
-        //         // }
-        //         game.factions.add_cell(pos, 1, Team::Black);
-        //     }
-        // }
-    }
+    //     //         // for a in world.get_game_cells().inner.iter_ones() {
+    //     //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
+    //     //         //         if t == ActiveTeam::Black {
+    //     //         //             game.factions.remove_inner(a);
+    //     //         //         }
+    //     //         //     }
+    //     //         // }
+    //     //         game.factions.add_cell(pos, 1, Team::Black);
+    //     //     }
+    //     // }
+    // }
 }
 
 //purpose of this trait is to keep as much game logic in this crate without addign more dependencies to this crate
@@ -565,60 +566,61 @@ pub async fn replay(
     world: &board::MyWorld,
     mut doop: CommandSender,
 ) -> unit::GameOver {
+    todo!();
     //let map = unit::default_map(world);
-    let (mut game, starting_team) = unit::GameStateTotal::new(world, map);
-    //let mut game_history = MoveHistory::new();
+    // let (mut game, starting_team) = unit::GameStateTotal::new(world, map);
+    // //let mut game_history = MoveHistory::new();
 
-    //let team_gen = starting_team.iter();
+    // //let team_gen = starting_team.iter();
 
-    doop.send_command(starting_team, &mut game, Command::HideUndo)
-        .await;
+    // doop.send_command(starting_team, &mut game, Command::HideUndo)
+    //     .await;
 
-    let mut counter = 0;
+    // let mut counter = 0;
 
-    let mut team_counter = starting_team;
-    loop {
-        let pos = doop.get_mouse(Team::White, &mut game).await;
-        match pos {
-            MouseEvent::Normal(_) => continue,
-            MouseEvent::Button(s) => {
-                match s.as_str() {
-                    "b_prev" => {
-                        if counter > 0 {
-                            counter -= 1;
-                            team_counter = team_counter.not();
+    // let mut team_counter = starting_team;
+    // loop {
+    //     let pos = doop.get_mouse(Team::White, &mut game).await;
+    //     match pos {
+    //         MouseEvent::Normal(_) => continue,
+    //         MouseEvent::Button(s) => {
+    //             match s.as_str() {
+    //                 "b_prev" => {
+    //                     if counter > 0 {
+    //                         counter -= 1;
+    //                         team_counter = team_counter.not();
 
-                            let (the_move, effect) = &history.inner[counter];
+    //                         let (the_move, effect) = &history.inner[counter];
 
-                            the_move.undo(team_counter, &effect, &mut game.tactical);
-                        }
-                    }
-                    "b_next" => {
-                        if counter < history.inner.len() {
-                            let (the_move, _) = &history.inner[counter];
+    //                         the_move.undo(team_counter, &effect, &mut game.tactical);
+    //                     }
+    //                 }
+    //                 "b_next" => {
+    //                     if counter < history.inner.len() {
+    //                         let (the_move, _) = &history.inner[counter];
 
-                            let _ =
-                                animate_move(&the_move, team_counter, &mut game, world, &mut doop)
-                                    .await
-                                    .apply(
-                                        team_counter,
-                                        &mut game.tactical,
-                                        &game.fog[team_counter.index()],
-                                        world,
-                                        None,
-                                    );
+    //                         let _ =
+    //                             animate_move(&the_move, team_counter, &mut game, world, &mut doop)
+    //                                 .await
+    //                                 .apply(
+    //                                     team_counter,
+    //                                     &mut game.tactical,
+    //                                     &game.fog[team_counter.index()],
+    //                                     world,
+    //                                     None,
+    //                                 );
 
-                            counter += 1;
-                            team_counter = team_counter.not();
-                        }
-                    }
-                    _ => panic!("Not supported!"),
-                };
+    //                         counter += 1;
+    //                         team_counter = team_counter.not();
+    //                     }
+    //                 }
+    //                 _ => panic!("Not supported!"),
+    //             };
 
-                continue;
-            }
-        };
-    }
+    //             continue;
+    //         }
+    //     };
+    // }
 
     // for (the_move, effect) in history.inner.iter() {
     //     let team = team_gen.next().unwrap();
@@ -705,7 +707,6 @@ pub async fn handle_player(
     world: &board::MyWorld,
     doop: &mut CommandSender,
     team: Team,
-    move_log: &mut MoveHistory,
 ) -> (moves::ActualMove, move_build::MoveEffect) {
     let undo = |move_log: &mut MoveHistory, game: &mut GameState| {
         //log!("undoing turn!!!");
@@ -723,7 +724,7 @@ pub async fn handle_player(
     let mut extra_attack = None;
     //Keep allowing the user to select units
     'outer: loop {
-        if move_log.inner.len() >= 2 {
+        if game.foo.inner.len() >= 2 {
             doop.send_command(team, game, Command::ShowUndo).await;
         } else {
             doop.send_command(team, game, Command::HideUndo).await;
@@ -739,7 +740,7 @@ pub async fn handle_player(
                     if s == "undo" {
                         assert!(extra_attack.is_none());
 
-                        undo(move_log, &mut game.tactical);
+                        undo(&mut game.foo, &mut game.tactical);
 
                         continue 'outer;
                     } else if s == "pass" {
@@ -787,7 +788,7 @@ pub async fn handle_player(
                 LoopRes::Undo => {
                     assert!(extra_attack.is_none());
 
-                    undo(move_log, &mut game.tactical);
+                    undo(&mut game.foo, &mut game.tactical);
                     continue 'outer;
                 }
                 LoopRes::Pass => {

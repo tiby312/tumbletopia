@@ -541,13 +541,14 @@ pub async fn game_play_thread(
     console_dbg!("created ai worker");
 
     //let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
-    let mut game = world.starting_state.clone();
+    let game = world.starting_state.clone();
     let mut game=GameStateTotal{
         tactical:game,
-        fog:std::array::from_fn(|_|mesh::small_mesh::SmallMesh::new())
+        fog:std::array::from_fn(|_|mesh::small_mesh::SmallMesh::new()),
+        foo:MoveHistory::new()
     };
 
-    let mut game_history = MoveHistory::new();
+    //let mut game_history = MoveHistory::new();
 
     let mut team_gen = world.starting_team.iter();
 
@@ -563,8 +564,8 @@ pub async fn game_play_thread(
 
         doop.repaint_ui(team, &mut game).await;
 
-        if let Some(g) = game.tactical.game_is_over(&world, team, &game_history) {
-            break (g, game_history);
+        if let Some(g) = game.tactical.game_is_over(&world, team, &game.foo) {
+            break (g, game.foo);
         }
 
         //Add AIIIIII.
@@ -587,7 +588,7 @@ pub async fn game_play_thread(
                         fogs: game.fog.clone(),
                         world: world.clone(),
                         team,
-                        history: game_history.clone(),
+                        history: game.foo.clone(),
                         zobrist: zobrist.clone(),
                     });
 
@@ -611,7 +612,7 @@ pub async fn game_play_thread(
                         &game.fog,
                         &world,
                         team,
-                        &game_history,
+                        &game.foo,
                         &zobrist,
                     )
                 }
@@ -632,7 +633,7 @@ pub async fn game_play_thread(
                 );
 
             game.update_fog(world, team);
-            game_history.push((the_move, effect_m));
+            game.foo.push((the_move, effect_m));
 
             let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
             moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
@@ -652,12 +653,11 @@ pub async fn game_play_thread(
             &world,
             &mut doop,
             team,
-            &mut game_history,
         )
         .await;
 
         game.update_fog(world, team);
-        game_history.push(r);
+        game.foo.push(r);
 
         let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
         moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
@@ -754,6 +754,9 @@ async fn render_command(
     let command_copy = command.clone();
     let game_str = game.into_string(world);
 
+    let history_str=game_total.foo.into_string(world);
+
+
     //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
@@ -763,6 +766,7 @@ async fn render_command(
                 k,
                 score_data.clone(),
                 game_str,
+                history_str
             ));
             return ace::Response::Ack;
         }
@@ -979,6 +983,7 @@ async fn render_command(
                 k,
                 score_data.clone(),
                 game_str.clone(),
+                history_str.clone()
             ));
         }
 
@@ -1042,6 +1047,7 @@ async fn render_command(
                     k,
                     score_data.clone(),
                     game_str.clone(),
+                    history_str.clone()
                 ));
             }
             (scroll::CameraMoving::Moving, scroll::CameraMoving::Stopped) => {
@@ -1049,6 +1055,7 @@ async fn render_command(
                     vec![],
                     score_data.clone(),
                     game_str.clone(),
+                    history_str.clone()
                 ));
             }
             _ => {}

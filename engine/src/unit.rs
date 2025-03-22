@@ -204,12 +204,13 @@ impl Team {
 //     pub powerups: Vec<Axial>,
 // }
 
-#[derive(Serialize, Deserialize,Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize,Clone, Debug)]
 
 pub struct GameStateTotal {
     //0 is white fog. 1 is black fog
     pub fog: [SmallMesh; 2],
     pub tactical: GameState,
+    pub foo:MoveHistory
 }
 
 impl GameStateTotal {}
@@ -858,47 +859,47 @@ pub fn default_map(world: &board::MyWorld) -> Map {
 
 impl GameStateTotal {
     //TODO make part of GameState
-    pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameStateTotal, Team) {
-        //let map = &world.map;
+    // pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameStateTotal, Team) {
+    //     //let map = &world.map;
 
-        let mut cells = Tribe::new();
+    //     let mut cells = Tribe::new();
 
-        for f in map.white.iter_mesh(Axial::zero()) {
-            cells.add_cell(f, 1, Team::White);
-        }
+    //     for f in map.white.iter_mesh(Axial::zero()) {
+    //         cells.add_cell(f, 1, Team::White);
+    //     }
 
-        for f in map.black.iter_mesh(Axial::zero()) {
-            cells.add_cell(f, 1, Team::Black);
-        }
+    //     for f in map.black.iter_mesh(Axial::zero()) {
+    //         cells.add_cell(f, 1, Team::Black);
+    //     }
 
-        for f in map.forests.iter_mesh(Axial::zero()) {
-            cells.add_cell(f, 1, Team::Neutral);
-        }
+    //     for f in map.forests.iter_mesh(Axial::zero()) {
+    //         cells.add_cell(f, 1, Team::Neutral);
+    //     }
 
-        for m in map.water.iter_mesh(Axial::zero()) {
-            cells.add_cell(m, 6, Team::Neutral);
-        }
+    //     for m in map.water.iter_mesh(Axial::zero()) {
+    //         cells.add_cell(m, 6, Team::Neutral);
+    //     }
 
-        // for w in map.ice.iter_mesh(Axial::zero()) {
-        //     cells.ice.add(w);
-        // }
+    //     // for w in map.ice.iter_mesh(Axial::zero()) {
+    //     //     cells.ice.add(w);
+    //     // }
 
-        let game = GameState { factions: cells };
+    //     let game = GameState { factions: cells };
 
-        let mut game_total = GameStateTotal {
-            tactical: game,
-            fog: std::array::from_fn(|_| SmallMesh::new()),
-        };
+    //     let mut game_total = GameStateTotal {
+    //         tactical: game,
+    //         fog: std::array::from_fn(|_| SmallMesh::new()),
+    //     };
 
-        //Fill everything with fog.
-        //game_total.fog[0].inner |= world.get_game_cells().inner;
-        //game_total.fog[1].inner |= world.get_game_cells().inner;
+    //     //Fill everything with fog.
+    //     //game_total.fog[0].inner |= world.get_game_cells().inner;
+    //     //game_total.fog[1].inner |= world.get_game_cells().inner;
 
-        game_total.update_fog(&world, Team::White);
-        game_total.update_fog(&world, Team::Black);
+    //     game_total.update_fog(&world, Team::White);
+    //     game_total.update_fog(&world, Team::Black);
 
-        (game_total, Team::White)
-    }
+    //     (game_total, Team::White)
+    // }
 }
 
 // mod test {
