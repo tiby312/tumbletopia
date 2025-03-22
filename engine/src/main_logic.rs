@@ -85,7 +85,7 @@ pub enum Command {
     Popup(String),
     Poke,
     Wait,
-    RepaintUI,
+    RepaintUI(String),
 }
 
 #[derive(Debug)]
@@ -299,8 +299,8 @@ impl CommandSender {
     //         unreachable!();
     //     };
     // }
-    pub async fn repaint_ui(&mut self, team: Team, game: &mut unit::GameStateTotal) {
-        let data = self.send_command(team, game, Command::RepaintUI).await;
+    pub async fn repaint_ui(&mut self, team: Team, game: &mut unit::GameStateTotal, foo: String) {
+        let data = self.send_command(team, game, Command::RepaintUI(foo)).await;
 
         let Response::Ack = data else {
             unreachable!();

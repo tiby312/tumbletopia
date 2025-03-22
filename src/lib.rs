@@ -545,7 +545,6 @@ pub async fn game_play_thread(
 
     console_dbg!("created ai worker");
 
-    //let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
     let game = world.starting_state.clone();
     let mut game = GameStateTotal {
         tactical: game,
@@ -553,7 +552,9 @@ pub async fn game_play_thread(
         foo: MoveHistory::new(),
     };
 
-    //let mut game_history = MoveHistory::new();
+    let s = game.tactical.into_string(world);
+    doop.repaint_ui(Team::Neutral, &mut game, format!("start:{:?}", s))
+        .await;
 
     let mut team_gen = world.starting_team.iter();
 
@@ -567,7 +568,22 @@ pub async fn game_play_thread(
             game.tactical.into_string(world)
         ));
 
-        doop.repaint_ui(team, &mut game).await;
+        if let Some((aa, bb)) = game.foo.inner.last() {
+            use std::fmt::Write;
+            let mut s = String::new();
+            write!(
+                &mut s,
+                "{}:{:?}:{:?}",
+                game.foo.inner.len(),
+                team.not(),
+                world.format(aa)
+            )
+            .unwrap();
+            if bb.destroyed_unit.is_some() {
+                write!(&mut s, "x").unwrap();
+            }
+            doop.repaint_ui(team, &mut game, s).await;
+        }
 
         if let Some(g) = game.tactical.game_is_over(&world, team, &game.foo) {
             gloo::console::console!(format!("game over! {:?}", g));
@@ -757,9 +773,10 @@ async fn render_command(
     let my_matrix = proj.chain(view_proj).generate();
     //TODO remove
     let command_copy = command.clone();
-    let game_str = game.into_string(world);
 
-    let history_str = game_total.foo.into_string(world);
+    // let game_str = game.into_string(world);
+    // let history_str = game_total.foo.into_string(world);
+
     let mut spoke = moves::SpokeInfo::new(&game);
     moves::update_spoke_info(&mut spoke, world, game);
 
@@ -773,14 +790,9 @@ async fn render_command(
     //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
-        ace::Command::RepaintUI => {
+        ace::Command::RepaintUI(foo) => {
             let k = update_text(world, grid_matrix, viewport, &my_matrix);
-            engine_worker.post_message(dom::WorkerToDom::TextUpdate(
-                k,
-                score_data.clone(),
-                game_str,
-                history_str,
-            ));
+            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone(), foo));
             return ace::Response::Ack;
         }
         ace::Command::HideUndo => {
@@ -1017,8 +1029,7 @@ async fn render_command(
             engine_worker.post_message(dom::WorkerToDom::TextUpdate(
                 k,
                 score_data.clone(),
-                game_str.clone(),
-                history_str.clone(),
+                "".to_string(),
             ));
         }
 
@@ -1081,16 +1092,14 @@ async fn render_command(
                 engine_worker.post_message(dom::WorkerToDom::TextUpdate(
                     k,
                     score_data.clone(),
-                    game_str.clone(),
-                    history_str.clone(),
+                    "".to_string(),
                 ));
             }
             (scroll::CameraMoving::Moving, scroll::CameraMoving::Stopped) => {
                 engine_worker.post_message(dom::WorkerToDom::TextUpdate(
                     vec![],
                     score_data.clone(),
-                    game_str.clone(),
-                    history_str.clone(),
+                    "".to_string(),
                 ));
             }
             _ => {}

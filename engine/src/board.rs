@@ -183,6 +183,7 @@ fn test_dis_to_hex_border() {
 }
 
 impl GameState {
+    //TODO replace with HexFmt
     pub fn into_string(&self, world: &MyWorld) -> String {
         let mut ret = String::new();
         for index in world.get_game_cells().inner.iter_ones() {

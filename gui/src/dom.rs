@@ -145,7 +145,7 @@ pub struct Text {
 pub enum WorkerToDom {
     ShowUndo,
     HideUndo,
-    TextUpdate(Vec<Text>, ScoreData, String, String),
+    TextUpdate(Vec<Text>, ScoreData, String),
     GameFinish {
         replay_string: String,
         result: GameOverGui,
@@ -288,7 +288,7 @@ pub async fn start_game(game_type: GameType, host: &str) {
                 let hay = hay.unwrap_throw();
 
                 match hay {
-                    WorkerToDom::TextUpdate(t,p,game,history)=>{
+                    WorkerToDom::TextUpdate(t,p,console_entry)=>{
                         text=t;
                         score_data=Some(p);
 
@@ -296,12 +296,13 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         //let game=format!("[{}]",game);
                         //foo.set_value(&game);
 
-                        let foo:web_sys::HtmlElement = shogo::utils::get_by_id_elem("history");
-                        //let game=format!("[{}]",game);
-                        foo.set_inner_html(&format!("{}<br>White:G2",foo.inner_html()));
+                        if !console_entry.is_empty(){
+                            let foo:web_sys::HtmlElement = shogo::utils::get_by_id_elem("history");
+                            //let game=format!("[{}]",game);
+                            foo.set_inner_html(&format!("{}<br>{}",foo.inner_html(),console_entry));
 
-                        foo.set_scroll_top(foo.scroll_height());
-
+                            foo.set_scroll_top(foo.scroll_height());
+                        }
                         //objDiv.scrollTop = objDiv.scrollHeight;
 
                         //foo.set_value(&history);
