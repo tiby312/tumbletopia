@@ -570,7 +570,7 @@ pub async fn game_play_thread(
         doop.repaint_ui(team, &mut game).await;
 
         if let Some(g) = game.tactical.game_is_over(&world, team, &game.foo) {
-            gloo::console::console!(format!("game over! {:?}",g));
+            gloo::console::console!(format!("game over! {:?}", g));
             //break;
         }
 
@@ -674,8 +674,6 @@ pub async fn game_play_thread(
     //     let data = doop.get_mouse(Team::Neutral, &mut game).await;
 
     // }
-
-    
 }
 
 use gui::model_parse::*;

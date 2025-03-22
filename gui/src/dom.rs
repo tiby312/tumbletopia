@@ -174,15 +174,15 @@ fn engine_handlers<'a>(
 
     let option = gloo::events::EventListenerOptions::enable_prevent_default();
     (
-        EventListen::from_closure(&shogo::utils::get_by_id_elem("fen"), "change", |_| {
-            let foo: HtmlInputElement = shogo::utils::get_by_id_elem("fen")
-                .dyn_into()
-                .unwrap_throw();
+        // EventListen::from_closure(&shogo::utils::get_by_id_elem("fen"), "change", |_| {
+        //     let foo: HtmlInputElement = shogo::utils::get_by_id_elem("fen")
+        //         .dyn_into()
+        //         .unwrap_throw();
 
-            //Reboot the webpage with new fen.
+        //     //Reboot the webpage with new fen.
 
-            //worker.post_message(DomToWorker::GameChange(foo.value()));
-        }),
+        //     //worker.post_message(DomToWorker::GameChange(foo.value()));
+        // }),
         EventListen::from_closure(canvas, "mousemove", |e| {
             let [x, y] = convert_coord(canvas, e);
             worker.post_message(DomToWorker::CanvasMouseMove { x, y });
@@ -292,14 +292,20 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         text=t;
                         score_data=Some(p);
 
-                        let foo:HtmlInputElement = shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
+                        //let foo:HtmlInputElement = shogo::utils::get_by_id_elem("fen").dyn_into().unwrap_throw();
                         //let game=format!("[{}]",game);
-                        foo.set_value(&game);
+                        //foo.set_value(&game);
 
-                        let foo:HtmlInputElement = shogo::utils::get_by_id_elem("history").dyn_into().unwrap_throw();
+                        let foo:web_sys::HtmlElement = shogo::utils::get_by_id_elem("history");
                         //let game=format!("[{}]",game);
-                        foo.set_value(&history);
-                        foo.set_scroll_left(foo.scroll_width());
+                        foo.set_inner_html(&format!("{}<br>White:G2",foo.inner_html()));
+
+                        foo.set_scroll_top(foo.scroll_height());
+
+                        //objDiv.scrollTop = objDiv.scrollHeight;
+
+                        //foo.set_value(&history);
+                        //foo.set_scroll_left(foo.scroll_width());
 
                         //ta.scrollLeft = ta.scrollWidth;
 
