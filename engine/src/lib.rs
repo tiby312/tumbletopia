@@ -198,23 +198,21 @@ impl Default for MoveHistory {
 }
 
 impl MoveHistory {
-    pub fn into_string(&self,world:&MyWorld)->String{
+    pub fn into_string(&self, world: &MyWorld) -> String {
         use std::fmt::Write;
 
-        let mut s=String::new();
-        for (index,e) in self.inner.iter(){
+        let mut s = String::new();
+        for (index, e) in self.inner.iter() {
+            write!(s, "{:?}", world.format(index),).unwrap();
 
-            write!(s,"{:?}",world.format(index),).unwrap();
-
-            if e.destroyed_unit.is_some(){
-                write!(s,"x").unwrap();
+            if e.destroyed_unit.is_some() {
+                write!(s, "x").unwrap();
             }
-            write!(s," ").unwrap();
+            write!(s, " ").unwrap();
         }
 
         s
     }
-
 
     pub fn new() -> Self {
         MoveHistory { inner: vec![] }

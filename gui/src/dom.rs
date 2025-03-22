@@ -145,7 +145,7 @@ pub struct Text {
 pub enum WorkerToDom {
     ShowUndo,
     HideUndo,
-    TextUpdate(Vec<Text>, ScoreData, String,String),
+    TextUpdate(Vec<Text>, ScoreData, String, String),
     GameFinish {
         replay_string: String,
         result: GameOverGui,
@@ -299,6 +299,10 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         let foo:HtmlInputElement = shogo::utils::get_by_id_elem("history").dyn_into().unwrap_throw();
                         //let game=format!("[{}]",game);
                         foo.set_value(&history);
+                        foo.set_scroll_left(foo.scroll_width());
+
+                        //ta.scrollLeft = ta.scrollWidth;
+
 
 
                         repaint_text_send.send(()).await.unwrap();

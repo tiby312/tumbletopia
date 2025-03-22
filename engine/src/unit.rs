@@ -204,13 +204,13 @@ impl Team {
 //     pub powerups: Vec<Axial>,
 // }
 
-#[derive(Serialize, Deserialize,Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 
 pub struct GameStateTotal {
     //0 is white fog. 1 is black fog
     pub fog: [SmallMesh; 2],
     pub tactical: GameState,
-    pub foo:MoveHistory
+    pub foo: MoveHistory,
 }
 
 impl GameStateTotal {}

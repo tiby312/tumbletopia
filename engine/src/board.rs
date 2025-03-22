@@ -213,7 +213,6 @@ impl GameState {
     }
 }
 
-
 impl MyWorld {
     pub fn format<'a, H: hex::HexDraw>(&self, foo: &'a H) -> hex::Displayer<'a, H> {
         hex::disp(foo, self.radius as i8)
@@ -239,7 +238,7 @@ impl MyWorld {
         let size = ((3. + (12. * s.len() as f64 - 3.)).sqrt() / 6.).ceil() as i8;
         log!("SIZE OF HEX={}", size);
 
-        if size>8{
+        if size > 8 {
             return None;
         }
 
@@ -248,9 +247,9 @@ impl MyWorld {
             hex::Cube::new(0, 0).range(size - 1).map(|x| x.to_axial()),
         );
 
-        let land_as_vec:Vec<_> = land.inner.iter_ones().collect();
+        let land_as_vec: Vec<_> = land.inner.iter_ones().collect();
 
-        if land_as_vec.len()!=s.len(){
+        if land_as_vec.len() != s.len() {
             return None;
         }
 

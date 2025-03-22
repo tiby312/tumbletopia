@@ -69,10 +69,8 @@ pub async fn main_entry() {
 
         match r {
             "single_b" => {
-                
-                let foo=if let Some(foo)=MyWorld::load_from_string(&t.value()){
-                    
-                }else{
+                let foo = if let Some(foo) = MyWorld::load_from_string(&t.value()) {
+                } else {
                     t.set_value("Invalid game string or too big of a board (size 8 is the max)");
                     log!("Failed to prase string");
                     continue;
@@ -542,10 +540,10 @@ pub async fn game_play_thread(
 
     //let (mut game, start_team) = unit::GameStateTotal::new(&world, &map);
     let game = world.starting_state.clone();
-    let mut game=GameStateTotal{
-        tactical:game,
-        fog:std::array::from_fn(|_|mesh::small_mesh::SmallMesh::new()),
-        foo:MoveHistory::new()
+    let mut game = GameStateTotal {
+        tactical: game,
+        fog: std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new()),
+        foo: MoveHistory::new(),
     };
 
     //let mut game_history = MoveHistory::new();
@@ -648,13 +646,7 @@ pub async fn game_play_thread(
             continue;
         }
 
-        let r = engine::main_logic::handle_player(
-            &mut game,
-            &world,
-            &mut doop,
-            team,
-        )
-        .await;
+        let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
 
         game.update_fog(world, team);
         game.foo.push(r);
@@ -754,8 +746,7 @@ async fn render_command(
     let command_copy = command.clone();
     let game_str = game.into_string(world);
 
-    let history_str=game_total.foo.into_string(world);
-
+    let history_str = game_total.foo.into_string(world);
 
     //let mut waiting_engine_ack = false;
     //console_dbg!(command);
@@ -766,7 +757,7 @@ async fn render_command(
                 k,
                 score_data.clone(),
                 game_str,
-                history_str
+                history_str,
             ));
             return ace::Response::Ack;
         }
@@ -983,7 +974,7 @@ async fn render_command(
                 k,
                 score_data.clone(),
                 game_str.clone(),
-                history_str.clone()
+                history_str.clone(),
             ));
         }
 
@@ -1047,7 +1038,7 @@ async fn render_command(
                     k,
                     score_data.clone(),
                     game_str.clone(),
-                    history_str.clone()
+                    history_str.clone(),
                 ));
             }
             (scroll::CameraMoving::Moving, scroll::CameraMoving::Stopped) => {
@@ -1055,7 +1046,7 @@ async fn render_command(
                     vec![],
                     score_data.clone(),
                     game_str.clone(),
-                    history_str.clone()
+                    history_str.clone(),
                 ));
             }
             _ => {}

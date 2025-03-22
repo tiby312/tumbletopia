@@ -1,4 +1,6 @@
-use engine::{ai::Evaluator, board::MyWorld, mesh::small_mesh::SmallMesh, moves::SpokeInfo, Zobrist};
+use engine::{
+    ai::Evaluator, board::MyWorld, mesh::small_mesh::SmallMesh, moves::SpokeInfo, Zobrist,
+};
 
 //-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
 
@@ -167,7 +169,7 @@ pub fn test_run(
         //let mut ai_state = game.bake_fog(&game.fog[team]);
         let m = engine::ai::calculate_move(
             &mut game,
-            &std::array::from_fn(|_|SmallMesh::new()),
+            &std::array::from_fn(|_| SmallMesh::new()),
             &world,
             team,
             &game_history,
