@@ -77,34 +77,40 @@ pub async fn main_entry() {
                     continue;
                 };
 
-                //TODO add back
-                // if Map::load(&maps, &world).is_err() {
-                //     console_dbg!("Could not parse map");
-                //     continue;
-                // }
                 game_elem.set_attribute("style", "display:flex;").unwrap();
                 break dom::GameType::SinglePlayer(t.value().into());
             }
             "pass_b" => {
-                // if Map::load(&maps, &world).is_err() {
-                //     console_dbg!("Could not parse map");
-                //     continue;
-                // }
+                let foo = if let Some(foo) = MyWorld::load_from_string(&t.value()) {
+                } else {
+                    t.set_value("Invalid game string or too big of a board (size 8 is the max)");
+                    log!("Failed to prase string");
+                    continue;
+                };
+
                 game_elem.set_attribute("style", "display:flex;").unwrap();
                 break dom::GameType::PassPlay(t.value().into());
             }
             "ai_b" => {
-                // if Map::load(&maps, &world).is_err() {
-                //     console_dbg!("Could not parse map");
-                //     continue;
-                // }
+                let foo = if let Some(foo) = MyWorld::load_from_string(&t.value()) {
+                } else {
+                    t.set_value("Invalid game string or too big of a board (size 8 is the max)");
+                    log!("Failed to prase string");
+                    continue;
+                };
+
+                game_elem.set_attribute("style", "display:flex;").unwrap();
+
                 break dom::GameType::AIBattle(t.value().into());
             }
             "map_b" => {
-                // if Map::load(&maps, &world).is_err() {
-                //     console_dbg!("Could not parse map");
-                //     continue;
-                // }
+                let foo = if let Some(foo) = MyWorld::load_from_string(&t.value()) {
+                } else {
+                    t.set_value("Invalid game string or too big of a board (size 8 is the max)");
+                    log!("Failed to prase string");
+                    continue;
+                };
+
                 editor_elem.set_attribute("style", "display:flex;").unwrap();
                 break dom::GameType::MapEditor(t.value().into());
             }
