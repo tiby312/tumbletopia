@@ -60,6 +60,8 @@ pub mod small_mesh {
                 inner: bitarr![0;crate::board::TABLE_SIZE],
             }
         }
+
+        //TODO replace with collect trait
         pub fn from_iter_move(it: impl IntoIterator<Item = crate::ActualMove>) -> SmallMesh {
             let mut m = SmallMesh::new();
             for a in it {
@@ -67,6 +69,8 @@ pub mod small_mesh {
             }
             m
         }
+
+        //TODO replace with collect trait
         pub fn from_iter(it: impl IntoIterator<Item = Axial>) -> SmallMesh {
             let mut m = SmallMesh::new();
             for a in it {

@@ -40,6 +40,7 @@ use model_parse::{Foo, ModelGpu, TextureGpu};
 //TODO move this to a seperate crate
 pub struct Models<T> {
     pub select_model: T,
+    pub select_model_red: T,
     pub drop_shadow: T,
     pub token_black: T,
     pub token_white: T,
@@ -83,6 +84,12 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
 
         Models {
             select_model: quick_load(include_bytes!("../../assets/hex-select.glb"), 1, None),
+            select_model_red: quick_load(
+                include_bytes!("../../assets/hex-select-red.glb"),
+                1,
+                None,
+            ),
+
             drop_shadow: quick_load(include_bytes!("../../assets/drop_shadow.glb"), 1, Some(0.5)),
             // fog: quick_load(include_bytes!("../assets/fog.glb"), RESIZE, None),
             // attack: quick_load(include_bytes!("../assets/attack.glb"), 1, None),

@@ -144,14 +144,14 @@ pub enum MoveType {
     Capture,
     Reinforce,
     Fresh,
-    Suicidal
+    Suicidal,
 }
 
-impl MoveType{
-    pub fn is_suicidal(&self)->bool{
-        if let MoveType::Suicidal=self{
+impl MoveType {
+    pub fn is_suicidal(&self) -> bool {
+        if let MoveType::Suicidal = self {
             true
-        }else{
+        } else {
             false
         }
     }
@@ -437,7 +437,7 @@ impl GameState {
         _world: &board::MyWorld,
         spoke_info: &SpokeInfo,
     ) -> Option<MoveType> {
-        if team==Team::Neutral{
+        if team == Team::Neutral {
             return None;
         }
 
@@ -447,25 +447,29 @@ impl GameState {
             return None;
         }
 
-        if num_attack[team] < num_attack[!team] {
-            return Some(MoveType::Suicidal);
-        }
-    
-
         if let Some((height, rest)) = self.factions.get_cell_inner(index) {
             debug_assert!(height > 0);
             let height = height as i64;
+
             if num_attack[team] > height {
-                if rest == team {
-                    Some(MoveType::Reinforce)
+                if num_attack[team] < num_attack[!team] {
+                    Some(MoveType::Suicidal)
                 } else {
-                    Some(MoveType::Capture)
+                    if rest == team {
+                        Some(MoveType::Reinforce)
+                    } else {
+                        Some(MoveType::Capture)
+                    }
                 }
             } else {
                 None
             }
         } else {
-            Some(MoveType::Fresh)
+            if num_attack[team] < num_attack[!team] {
+                Some(MoveType::Suicidal)
+            } else {
+                Some(MoveType::Fresh)
+            }
         }
     }
 
@@ -595,8 +599,8 @@ impl GameState {
                                 break;
                             }
 
-                            if let Some(foo)= self.playable(index2, team, world, spoke_info) {
-                                if !foo.is_suicidal(){
+                            if let Some(foo) = self.playable(index2, team, world, spoke_info) {
+                                if !foo.is_suicidal() {
                                     ret.inner.set(index2, true);
                                 }
                             }
@@ -621,7 +625,7 @@ impl GameState {
     ) -> SmallMesh {
         let mut ret = SmallMesh::new();
 
-        if team==Team::Neutral{
+        if team == Team::Neutral {
             return ret;
         }
 
@@ -659,28 +663,39 @@ impl GameState {
         return ret;
     }
 
-
     //TODO make this a iterator adaptor instead
     pub fn generate_possible_moves_movement<'b>(
         &'b self,
         world: &'b board::MyWorld,
         team: Team,
         spoke_info: &'b SpokeInfo,
-        allow_suicidal:bool
+        allow_suicidal: bool,
     ) -> impl Iterator<Item = ActualMove> + use<'b> {
-        // if team == Team::Neutral {
-           
-        // }
-
         world.land_as_vec.iter().filter_map(move |&index| {
-            if let Some(f) = self.playable(index, team, world, spoke_info
-            ) {
-                if !f.is_suicidal() || allow_suicidal{
+            if let Some(f) = self.playable(index, team, world, spoke_info) {
+                if !f.is_suicidal() || allow_suicidal {
                     Some(ActualMove(index))
-                }else{
+                } else {
                     None
                 }
-                
+            } else {
+                None
+            }
+        })
+    }
+    pub fn generate_suicidal<'b>(
+        &'b self,
+        world: &'b board::MyWorld,
+        team: Team,
+        spoke_info: &'b SpokeInfo,
+    ) -> impl Iterator<Item = ActualMove> + use<'b> {
+        world.land_as_vec.iter().filter_map(move |&index| {
+            if let Some(f) = self.playable(index, team, world, spoke_info) {
+                if f.is_suicidal() {
+                    Some(ActualMove(index))
+                } else {
+                    None
+                }
             } else {
                 None
             }

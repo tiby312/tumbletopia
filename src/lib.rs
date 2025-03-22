@@ -5,6 +5,7 @@ use engine::main_logic::MouseEvent;
 
 use cgmath::Vector2;
 use engine::mesh;
+use engine::mesh::small_mesh::SmallMesh;
 use engine::MoveHistory;
 use engine::Zobrist;
 use gloo::console::console_dbg;
@@ -747,6 +748,15 @@ async fn render_command(
     let game_str = game.into_string(world);
 
     let history_str = game_total.foo.into_string(world);
+    let mut spoke = moves::SpokeInfo::new(&game);
+    moves::update_spoke_info(&mut spoke, world, game);
+
+    struct Foo {
+        start: Axial,
+        normal_moves: SmallMesh,
+        suicidal_moves: SmallMesh,
+        grey: bool,
+    }
 
     //let mut waiting_engine_ack = false;
     //console_dbg!(command);
@@ -814,7 +824,32 @@ async fn render_command(
             }
         },
         ace::Command::GetMouseInputSelection { selection, grey } => {
-            get_mouse_input = Some(Some((selection, grey)));
+            match selection {
+                ace::CellSelection::MoveSelection(axial, small_mesh, have_moved) => {
+                    let mut suicidal_moves = mesh::small_mesh::SmallMesh::from_iter_move(
+                        game.generate_suicidal(world, team, &spoke),
+                    );
+                    suicidal_moves.inner &= small_mesh.inner;
+                    //suicidal_moves.set_coord(axial,false);
+
+                    //suicidal_moves
+                    let mut normal_moves = small_mesh;
+                    normal_moves.inner &= !suicidal_moves.inner;
+
+                    let foo = Foo {
+                        normal_moves,
+                        suicidal_moves,
+                        grey,
+                        start: axial,
+                    };
+
+                    get_mouse_input = Some(Some(foo));
+                }
+                ace::CellSelection::BuildSelection(axial) => todo!(),
+            };
+            //let normal_moves
+
+            //get_mouse_input = Some(Some((selection, grey)));
         }
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
         ace::Command::WaitAI => {}
@@ -833,9 +868,6 @@ async fn render_command(
             poking = 3;
         }
     };
-
-    let mut spoke = moves::SpokeInfo::new(&game);
-    moves::update_spoke_info(&mut spoke, world, game);
 
     loop {
         if poking == 1 {
@@ -980,8 +1012,8 @@ async fn render_command(
 
         if get_mouse_input.is_some() {
             if let Some(button) = button_pushed {
-                return if let Some((selection, _grey)) = get_mouse_input.unwrap() {
-                    ace::Response::MouseWithSelection(selection, MouseEvent::Button(button.clone()))
+                return if let Some(foo) = get_mouse_input.unwrap() {
+                    ace::Response::Mouse(MouseEvent::Button(button.clone()))
                 } else {
                     ace::Response::Mouse(MouseEvent::Button(button.clone()))
                 };
@@ -1003,8 +1035,8 @@ async fn render_command(
                         mouse.to_letter_coord(world.radius as i8)
                     ));
 
-                    let data = if let Some((selection, _grey)) = get_mouse_input.unwrap() {
-                        ace::Response::MouseWithSelection(selection, MouseEvent::Normal(mouse))
+                    let data = if let Some(foo) = get_mouse_input.unwrap() {
+                        ace::Response::Mouse(MouseEvent::Normal(mouse))
                     } else {
                         ace::Response::Mouse(MouseEvent::Normal(mouse))
                     };
@@ -1186,58 +1218,72 @@ async fn render_command(
         // }
 
         if let Some(a) = &get_mouse_input {
-            if let Some((selection, grey)) = a {
-                match selection {
-                    engine::main_logic::CellSelection::MoveSelection(_, mesh, loud, _) => {
-                        let cells = mesh.iter_mesh(Axial::zero()).map(|e| {
-                            let zzzz = 0.0;
+            if let Some(Foo {
+                start,
+                normal_moves,
+                suicidal_moves,
+                grey,
+            }) = a
+            {
+                let cells = normal_moves.iter_mesh(Axial::zero()).map(|e| {
+                    let zzzz = 0.0;
 
-                            grid_snap(e, zzzz)
-                                .chain(matrix::scale(1.0, 1.0, 1.0))
-                                .generate()
-                        });
-                        draw_sys
-                            .batch(cells)
-                            .no_lighting()
-                            .grey(*grey)
-                            .build(select_model, &projjj);
+                    grid_snap(e, zzzz)
+                        .chain(matrix::scale(1.0, 1.0, 1.0))
+                        .generate()
+                });
+                draw_sys
+                    .batch(cells)
+                    .no_lighting()
+                    .grey(*grey)
+                    .build(select_model, &projjj);
 
-                        // {
-                        //     let cells = loud.iter_mesh(Axial::zero()).map(|e| {
-                        //         let zzzz = 0.0;
+                let cells = suicidal_moves.iter_mesh(Axial::zero()).map(|e| {
+                    let zzzz = 0.0;
 
-                        //         grid_snap(e, zzzz)
-                        //             .chain(matrix::scale(1.0, 1.0, 1.0))
-                        //             .generate()
-                        //     });
-                        //     draw_sys
-                        //         .batch(cells)
-                        //         .no_lighting()
-                        //         .grey(*grey)
-                        //         .build(&models.donut, &projjj);
-                        // }
+                    grid_snap(e, zzzz)
+                        .chain(matrix::scale(1.0, 1.0, 1.0))
+                        .generate()
+                });
+                draw_sys
+                    .batch(cells)
+                    .no_lighting()
+                    .grey(*grey)
+                    .build(&models.select_model_red, &projjj);
 
-                        // if let Some(k) = hh {
-                        //     if k.the_move
-                        //         .original
-                        //         .to_cube()
-                        //         .dist(&k.the_move.moveto.to_cube())
-                        //         == 2
-                        //     {
-                        //         let a = k.the_move.original;
-                        //         let pos = grid_matrix.hex_axial_to_world(&a);
-                        //         let t = matrix::translation(pos.x, pos.y, 0.0);
-                        //         let m = my_matrix.chain(t).generate();
-                        //         draw_sys
-                        //             .batch([m])
-                        //             .no_lighting()
-                        //             .grey(*grey)
-                        //             .build(attack_model);
-                        //     }
-                        // }
-                    }
-                    engine::main_logic::CellSelection::BuildSelection(_) => {}
-                }
+                // {
+                //     let cells = loud.iter_mesh(Axial::zero()).map(|e| {
+                //         let zzzz = 0.0;
+
+                //         grid_snap(e, zzzz)
+                //             .chain(matrix::scale(1.0, 1.0, 1.0))
+                //             .generate()
+                //     });
+                //     draw_sys
+                //         .batch(cells)
+                //         .no_lighting()
+                //         .grey(*grey)
+                //         .build(&models.donut, &projjj);
+                // }
+
+                // if let Some(k) = hh {
+                //     if k.the_move
+                //         .original
+                //         .to_cube()
+                //         .dist(&k.the_move.moveto.to_cube())
+                //         == 2
+                //     {
+                //         let a = k.the_move.original;
+                //         let pos = grid_matrix.hex_axial_to_world(&a);
+                //         let t = matrix::translation(pos.x, pos.y, 0.0);
+                //         let m = my_matrix.chain(t).generate();
+                //         draw_sys
+                //             .batch([m])
+                //             .no_lighting()
+                //             .grey(*grey)
+                //             .build(attack_model);
+                //     }
+                // }
             }
         }
 

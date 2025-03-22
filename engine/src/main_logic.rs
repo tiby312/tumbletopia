@@ -7,7 +7,7 @@ pub enum CellSelection {
     MoveSelection(
         Axial,
         mesh::small_mesh::SmallMesh,
-        mesh::small_mesh::SmallMesh,
+        //mesh::small_mesh::SmallMesh,
         Option<HaveMoved>,
     ),
     BuildSelection(Axial),
@@ -90,7 +90,7 @@ pub enum Command {
 
 #[derive(Debug)]
 pub enum Response {
-    MouseWithSelection(CellSelection, MouseEvent<Axial>),
+    //MouseWithSelection(CellSelection, MouseEvent<Axial>),
     Mouse(MouseEvent<Axial>),
     AnimationFinish,
     AiFinish(ActualMove),
@@ -240,26 +240,29 @@ impl CommandSender {
 
     async fn get_mouse_with_mesh(
         &mut self,
-        cell: &mut CellSelection,
+        cell: &CellSelection,
         team: Team,
         game: &mut unit::GameStateTotal,
         grey: bool,
     ) -> MouseEvent<Axial> {
-        let selection = std::mem::take(cell);
+        //let selection = std::mem::take(cell);
 
         let b = self
             .send_command(
                 team,
                 game,
-                Command::GetMouseInputSelection { selection, grey },
+                Command::GetMouseInputSelection {
+                    selection: cell.clone(),
+                    grey,
+                },
             )
             .await;
 
-        let Response::MouseWithSelection(mut cell2, o) = b else {
+        let Response::Mouse(o) = b else {
             unreachable!();
         };
 
-        std::mem::swap(&mut cell2, cell);
+        //std::mem::swap(&mut cell2, cell);
 
         o
     }
@@ -402,7 +405,7 @@ pub async fn reselect_loop(
     let mut cca = SmallMesh::from_iter_move(
         game.tactical
             .bake_fog(&game.fog[team])
-            .generate_possible_moves_movement(world, selected_unit.team, &spoke_info,true),
+            .generate_possible_moves_movement(world, selected_unit.team, &spoke_info, true),
     );
 
     cca.inner.set(hex::PASS_MOVE_INDEX, true);
@@ -422,13 +425,13 @@ pub async fn reselect_loop(
     let mut cell = CellSelection::MoveSelection(
         unwrapped_selected_unit,
         cca,
-        loud_moves,
+        //loud_moves,
         //SmallMesh::new(),
         have_moved.clone(),
     );
 
     let pototo = doop
-        .get_mouse_with_mesh(&mut cell, selected_unit.team, game, grey)
+        .get_mouse_with_mesh(&cell, selected_unit.team, game, grey)
         .await;
 
     let mouse_world = match pototo {
@@ -450,7 +453,7 @@ pub async fn reselect_loop(
     let target_cell = mouse_world;
 
     //This is the cell the user selected from the pool of available moves for the unit
-    let CellSelection::MoveSelection(_, ss, _, _) = cell else {
+    let CellSelection::MoveSelection(_, ss, _) = cell else {
         unreachable!()
     };
 
