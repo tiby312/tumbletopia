@@ -267,7 +267,7 @@ impl CommandSender {
         o
     }
 
-    async fn get_mouse(
+    pub async fn get_mouse(
         &mut self,
         team: Team,
         game: &mut unit::GameStateTotal,
