@@ -658,6 +658,9 @@ impl GameState {
 
         return ret;
     }
+
+
+    //TODO make this a iterator adaptor instead
     pub fn generate_possible_moves_movement<'b>(
         &'b self,
         world: &'b board::MyWorld,
