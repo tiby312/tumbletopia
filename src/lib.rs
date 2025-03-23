@@ -594,8 +594,6 @@ pub async fn game_play_thread(
                 format!("Game Over: {:?}! Full history:\"{}\"", g, ll),
             )
             .await;
-
-            //break;
         }
 
         //Add AIIIIII.
