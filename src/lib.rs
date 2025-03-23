@@ -379,13 +379,14 @@ pub async fn worker_entry() {
     };
 
     let world = match game_type.clone() {
-        engine::GameType::MapEditor(_s) => {
+        engine::GameType::MapEditor(s) => {
             //TODO handle this error better
             //let map = Map::load(&s, &world).unwrap();
 
             // let g = engine::main_logic::map_editor(doop, &world, map).await;
             // Finish::MapEditor(g)
-            todo!();
+            let world = board::MyWorld::load_from_string(&s).unwrap();
+            world
         }
         engine::GameType::PassPlay(s)
         | engine::GameType::SinglePlayer(s)
@@ -477,9 +478,9 @@ pub async fn worker_entry() {
                 //TODO handle this error better
                 // let map = Map::load(&s, &world).unwrap();
 
-                // let g = engine::main_logic::map_editor(doop, &world, map).await;
-                // Finish::MapEditor(g)
-                todo!();
+                let g = engine::main_logic::map_editor(doop, &world).await;
+                Finish::MapEditor(g)
+                //todo!();
             }
             engine::GameType::PassPlay(_s)
             | engine::GameType::SinglePlayer(_s)

@@ -106,100 +106,102 @@ pub enum MouseEvent<T> {
 
 pub async fn map_editor(
     mut doop: CommandSender,
-    world: &board::MyWorld,
-    map: unit::Map,
+    world: &board::MyWorld
 ) -> unit::Map {
-    todo!()
-    // let (mut game_total, _starting_team) = unit::GameStateTotal::new(&world, &map);
+    let game = world.starting_state.clone();
+    let mut game_total = unit::GameStateTotal {
+        tactical: game,
+        fog: std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new()),
+        foo: MoveHistory::new(),
+    };
 
-    // enum TT {
-    //     Ice,
-    //     Land,
-    //     Water,
-    //     Forest,
-    //     Start1,
-    //     Start2,
-    // }
+    enum TT {
+        Ice,
+        Land,
+        Water,
+        Forest,
+        Start1,
+        Start2,
+    }
 
-    // let mut tt = TT::Water;
+    let mut tt = TT::Water;
 
-    // loop {
-    //     let pos = doop.get_mouse(Team::White, &mut game_total).await;
-    //     let pos = match pos {
-    //         MouseEvent::Normal(pos) => pos,
-    //         MouseEvent::Button(s) => {
-    //             log!("map editor received: {}", s);
-    //             tt = match s.as_str() {
-    //                 "b_ice" => TT::Ice,
-    //                 "b_land" => TT::Land,
-    //                 "b_water" => TT::Water,
-    //                 "b_forest" => TT::Forest,
-    //                 "b_start1" => TT::Start1,
-    //                 "b_start2" => TT::Start2,
-    //                 "b_export" => {
-    //                     todo!();
-    //                     // if let Some(m) = unit::Map::from_game_state(&game_total.tactical, world) {
-    //                     //     return m;
-    //                     // }
-    //                     continue;
-    //                 }
-    //                 _ => panic!("Not supported!"),
-    //             };
+    loop {
+        let pos = doop.get_mouse(Team::White, &mut game_total).await;
+        let pos = match pos {
+            MouseEvent::Normal(pos) => pos,
+            MouseEvent::Button(s) => {
+                log!("map editor received: {}", s);
+                tt = match s.as_str() {
+                    "b_ice" => TT::Ice,
+                    "b_land" => TT::Land,
+                    "b_water" => TT::Water,
+                    "b_forest" => TT::Forest,
+                    "b_start1" => TT::Start1,
+                    "b_start2" => TT::Start2,
+                    "b_export" => {
+                        todo!();
+                        // if let Some(m) = unit::Map::from_game_state(&game_total.tactical, world) {
+                        //     return m;
+                        // }
+                        continue;
+                    }
+                    _ => panic!("Not supported!"),
+                };
 
-    //             continue;
-    //         }
-    //     };
+                continue;
+            }
+        };
 
-    //     let game = &mut game_total.tactical;
+        let game = &mut game_total.tactical;
 
-    //     todo!()
-    //     // match tt {
-    //     //     TT::Ice => {
-    //     //         game.factions.remove(pos);
-    //     //         game.factions.ice.set_coord(pos, true)
-    //     //     }
-    //     //     TT::Land => {
-    //     //         game.factions.ice.set_coord(pos, false);
-    //     //         game.factions.remove(pos);
-    //     //     }
-    //     //     TT::Water => {
-    //     //         game.factions.remove(pos);
-    //     //         game.factions.ice.set_coord(pos, false);
-    //     //         game.factions.add_cell(pos, 6, Team::Neutral);
-    //     //     }
-    //     //     TT::Forest => {
-    //     //         game.factions.ice.set_coord(pos, false);
-    //     //         game.factions.remove(pos);
-    //     //         game.factions.add_cell(pos, 1, Team::Neutral);
-    //     //     }
-    //     //     TT::Start1 => {
-    //     //         game.factions.remove(pos);
-    //     //         game.factions.ice.set_coord(pos, false);
+        // match tt {
+        //     TT::Ice => {
+        //         game.factions.remove(pos);
+        //         game.factions.ice.set_coord(pos, true)
+        //     }
+        //     TT::Land => {
+        //         game.factions.ice.set_coord(pos, false);
+        //         game.factions.remove(pos);
+        //     }
+        //     TT::Water => {
+        //         game.factions.remove(pos);
+        //         game.factions.ice.set_coord(pos, false);
+        //         game.factions.add_cell(pos, 6, Team::Neutral);
+        //     }
+        //     TT::Forest => {
+        //         game.factions.ice.set_coord(pos, false);
+        //         game.factions.remove(pos);
+        //         game.factions.add_cell(pos, 1, Team::Neutral);
+        //     }
+        //     TT::Start1 => {
+        //         game.factions.remove(pos);
+        //         game.factions.ice.set_coord(pos, false);
 
-    //     //         // for a in world.get_game_cells().inner.iter_ones() {
-    //     //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
-    //     //         //         if t == ActiveTeam::White {
-    //     //         //             game.factions.remove_inner(a);
-    //     //         //         }
-    //     //         //     }
-    //     //         // }
-    //     //         game.factions.add_cell(pos, 1, Team::White);
-    //     //     }
-    //     //     TT::Start2 => {
-    //     //         game.factions.remove(pos);
-    //     //         game.factions.ice.set_coord(pos, false);
+        //         // for a in world.get_game_cells().inner.iter_ones() {
+        //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
+        //         //         if t == ActiveTeam::White {
+        //         //             game.factions.remove_inner(a);
+        //         //         }
+        //         //     }
+        //         // }
+        //         game.factions.add_cell(pos, 1, Team::White);
+        //     }
+        //     TT::Start2 => {
+        //         game.factions.remove(pos);
+        //         game.factions.ice.set_coord(pos, false);
 
-    //     //         // for a in world.get_game_cells().inner.iter_ones() {
-    //     //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
-    //     //         //         if t == ActiveTeam::Black {
-    //     //         //             game.factions.remove_inner(a);
-    //     //         //         }
-    //     //         //     }
-    //     //         // }
-    //     //         game.factions.add_cell(pos, 1, Team::Black);
-    //     //     }
-    //     // }
-    // }
+        //         // for a in world.get_game_cells().inner.iter_ones() {
+        //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
+        //         //         if t == ActiveTeam::Black {
+        //         //             game.factions.remove_inner(a);
+        //         //         }
+        //         //     }
+        //         // }
+        //         game.factions.add_cell(pos, 1, Team::Black);
+        //     }
+        // }
+    }
 }
 
 //purpose of this trait is to keep as much game logic in this crate without addign more dependencies to this crate
