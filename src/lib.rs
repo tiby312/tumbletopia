@@ -49,7 +49,7 @@ pub async fn main_entry() {
         .dyn_into()
         .unwrap();
 
-    let map="----------------b-----------------------r----k---------------------------------------------";
+    let map="---------------------------------b------r----k---------------------------------------------";
     t.set_value(&map);
 
     let editor_elem = shogo::utils::get_by_id_elem("editor");
