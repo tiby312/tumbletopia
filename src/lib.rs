@@ -35,7 +35,7 @@ use unit::*;
 pub async fn main_entry() {
     let (sender, mut receiver) = futures::channel::mpsc::unbounded();
 
-    let _listeners = ["single_b", "pass_b", "ai_b", "map_b", "replaybutton"].map(|s| {
+    let _listeners = ["single_b", "pass_b", "ai_b", "map_b"].map(|s| {
         let se = sender.clone();
         let undo = shogo::utils::get_by_id_elem(s);
         gloo::events::EventListener::new(&undo, "click", move |_event| {
