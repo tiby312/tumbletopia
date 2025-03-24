@@ -691,8 +691,7 @@ mod abab {
             self.a.clone()
         }
         pub fn keep_going(&mut self, t: T, eval: Eval) -> bool {
-            //TODO should be less than or equal instead maybe?
-
+            
             if self.mm.is_none(){
                 self.value=eval;
                 self.mm=Some(t)
