@@ -701,74 +701,74 @@ pub struct Map {
 }
 
 impl unit::Map {
-    pub fn load(s: &str, world: &MyWorld) -> Result<unit::Map, ()> {
-        // use base64::prelude::*;
-        // let k = BASE64_STANDARD_NO_PAD.decode(s).map_err(|_| LoadError)?;
-        // let k = miniz_oxide::inflate::decompress_to_vec(&k).map_err(|_| LoadError)?;
-        // Ok(postcard::from_bytes(&k).map_err(|_| LoadError)?)
+    // pub fn load(s: &str, world: &MyWorld) -> Result<unit::Map, ()> {
+    //     // use base64::prelude::*;
+    //     // let k = BASE64_STANDARD_NO_PAD.decode(s).map_err(|_| LoadError)?;
+    //     // let k = miniz_oxide::inflate::decompress_to_vec(&k).map_err(|_| LoadError)?;
+    //     // Ok(postcard::from_bytes(&k).map_err(|_| LoadError)?)
 
-        let mut ice = SmallMesh::new();
-        let mut forests = SmallMesh::new();
-        let mut mountains = SmallMesh::new();
-        let mut white = SmallMesh::new();
-        let mut black = SmallMesh::new();
+    //     let mut ice = SmallMesh::new();
+    //     let mut forests = SmallMesh::new();
+    //     let mut mountains = SmallMesh::new();
+    //     let mut white = SmallMesh::new();
+    //     let mut black = SmallMesh::new();
 
-        let mut s = s.chars();
+    //     let mut s = s.chars();
 
-        for a in world.get_game_cells().inner.iter_ones() {
-            let Some(c) = s.next() else {
-                return Err(());
-            };
+    //     for a in world.get_game_cells().inner.iter_ones() {
+    //         let Some(c) = s.next() else {
+    //             return Err(());
+    //         };
 
-            match c {
-                'i' => ice.inner.set(a, true),
-                'f' => forests.inner.set(a, true),
-                'w' => mountains.inner.set(a, true),
-                '1' => white.inner.set(a, true),
-                '2' => black.inner.set(a, true),
-                '-' => continue,
-                _ => return Err(()),
-            }
-        }
+    //         match c {
+    //             'i' => ice.inner.set(a, true),
+    //             'f' => forests.inner.set(a, true),
+    //             'w' => mountains.inner.set(a, true),
+    //             '1' => white.inner.set(a, true),
+    //             '2' => black.inner.set(a, true),
+    //             '-' => continue,
+    //             _ => return Err(()),
+    //         }
+    //     }
 
-        Ok(unit::Map {
-            ice,
-            water: mountains,
-            forests,
-            white,
-            black,
-        })
-    }
-    pub fn save(&self, world: &MyWorld) -> Result<String, std::fmt::Error> {
-        use std::fmt::Write;
-        let mut s = String::new();
+    //     Ok(unit::Map {
+    //         ice,
+    //         water: mountains,
+    //         forests,
+    //         white,
+    //         black,
+    //     })
+    // }
+    // pub fn save(&self, world: &MyWorld) -> Result<String, std::fmt::Error> {
+    //     use std::fmt::Write;
+    //     let mut s = String::new();
 
-        //write!(&mut s,"m{}=[",world.radius)?;
-        for a in world.get_game_cells().inner.iter_ones() {
-            if self.ice.inner[a] {
-                write!(&mut s, "i")?;
-            } else if self.forests.inner[a] {
-                write!(&mut s, "f")?;
-            } else if self.water.inner[a] {
-                write!(&mut s, "w")?;
-            } else if self.white.inner[a] {
-                write!(&mut s, "1")?;
-            } else if self.black.inner[a] {
-                write!(&mut s, "2")?;
-            } else {
-                write!(&mut s, "-")?;
-            }
-        }
-        //write!(&mut s,"]")?;
-        Ok(s)
+    //     //write!(&mut s,"m{}=[",world.radius)?;
+    //     for a in world.get_game_cells().inner.iter_ones() {
+    //         if self.ice.inner[a] {
+    //             write!(&mut s, "i")?;
+    //         } else if self.forests.inner[a] {
+    //             write!(&mut s, "f")?;
+    //         } else if self.water.inner[a] {
+    //             write!(&mut s, "w")?;
+    //         } else if self.white.inner[a] {
+    //             write!(&mut s, "1")?;
+    //         } else if self.black.inner[a] {
+    //             write!(&mut s, "2")?;
+    //         } else {
+    //             write!(&mut s, "-")?;
+    //         }
+    //     }
+    //     //write!(&mut s,"]")?;
+    //     Ok(s)
 
-        // use base64::prelude::*;
+    //     // use base64::prelude::*;
 
-        // let k = postcard::to_allocvec(self).unwrap();
+    //     // let k = postcard::to_allocvec(self).unwrap();
 
-        // let k = miniz_oxide::deflate::compress_to_vec(&k, 10);
-        // BASE64_STANDARD_NO_PAD.encode(k)
-    }
+    //     // let k = miniz_oxide::deflate::compress_to_vec(&k, 10);
+    //     // BASE64_STANDARD_NO_PAD.encode(k)
+    // }
 }
 
 impl Map {
@@ -810,52 +810,52 @@ impl Map {
     // }
 }
 
-pub fn default_map(world: &board::MyWorld) -> Map {
-    //Map::load("----------w-------ww--m----------w------m----m------2m--ww--m-w------------ww-------f-----ww--wwm---m-m-w---ww--m---m1------w---m-----mmw------m--www-m-mm----w----------",world).unwrap()
+// pub fn default_map(world: &board::MyWorld) -> Map {
+//     //Map::load("----------w-------ww--m----------w------m----m------2m--ww--m-w------------ww-------f-----ww--wwm---m-m-w---ww--m---m1------w---m-----mmw------m--www-m-mm----w----------",world).unwrap()
 
-    //Map::load("----------if------iiffw----------i------w----w----i-2w--ii--w-i-------f----ii------f------ii--iiw-ffw-w-i---ii--w---w1------i---w-----wwi-----1w--iii-w-ww---fi-2-----ff-",world).unwrap()
+//     //Map::load("----------if------iiffw----------i------w----w----i-2w--ii--w-i-------f----ii------f------ii--iiw-ffw-w-i---ii--w---w1------i---w-----wwi-----1w--iii-w-ww---fi-2-----ff-",world).unwrap()
 
-    //Map::load("wwwwwwwww-if--wwwwiiffw-wwwww----iw-www-w----i--2ww-2w--iiw-w-ww------f----wwwwff--f-----wwwwfiiw-ffw-w-www-ii--w---w1ww----i---w-ww1-wwi----www--iii-wwww---fiwwwwwwwwww",world).unwrap()
-    //Map::load("wwwwwwwww-i---iiwwii--i-iiwwi----ii-iww-i----i--2ww-2i--iii-i-ww-----------iwwi-----f----iiww-iii---i-i-iww-ii--i---i1ww----i---i-ww1-iii----wwi--iii--wwi----i-wwwwwwwww",world).unwrap()
-    Map::load("----------i1--ii--ii--i-ii--i--2-ii-i", world).unwrap()
-    // let mut mountains = SmallMesh::new();
-    // let mut water = SmallMesh::new();
-    // let mut forests = SmallMesh::new();
+//     //Map::load("wwwwwwwww-if--wwwwiiffw-wwwww----iw-www-w----i--2ww-2w--iiw-w-ww------f----wwwwff--f-----wwwwfiiw-ffw-w-www-ii--w---w1ww----i---w-ww1-wwi----www--iii-wwww---fiwwwwwwwwww",world).unwrap()
+//     //Map::load("wwwwwwwww-i---iiwwii--i-iiwwi----ii-iww-i----i--2ww-2i--iii-i-ww-----------iwwi-----f----iiww-iii---i-i-iww-ii--i---i1ww----i---i-ww1-iii----wwi--iii--wwi----i-wwwwwwwww",world).unwrap()
+//     //Map::load("----------i1--ii--ii--i-ii--i--2-ii-i", world).unwrap()
+//     // let mut mountains = SmallMesh::new();
+//     // let mut water = SmallMesh::new();
+//     // let mut forests = SmallMesh::new();
 
-    // let mountains2 = [
-    //     [1, -3],
-    //     [1, 1],
-    //     [-5, 3],
-    //     [2, -1],
-    //     [-3, 3],
-    //     [-4, -2],
-    //     [-3, -2],
-    //     [-2, -2],
-    // ];
+//     // let mountains2 = [
+//     //     [1, -3],
+//     //     [1, 1],
+//     //     [-5, 3],
+//     //     [2, -1],
+//     //     [-3, 3],
+//     //     [-4, -2],
+//     //     [-3, -2],
+//     //     [-2, -2],
+//     // ];
 
-    // for a in mountains2 {
-    //     mountains.add(Axial::from_arr(a));
-    // }
+//     // for a in mountains2 {
+//     //     mountains.add(Axial::from_arr(a));
+//     // }
 
-    // let water2 = [[-2, 2], [-2, 1], [-4, 3], [3, -2], [4, -2], [5, -3]];
+//     // let water2 = [[-2, 2], [-2, 1], [-4, 3], [3, -2], [4, -2], [5, -3]];
 
-    // for a in water2 {
-    //     water.add(Axial::from_arr(a));
-    // }
+//     // for a in water2 {
+//     //     water.add(Axial::from_arr(a));
+//     // }
 
-    // forests.add(Axial::from_arr([0, 0]));
+//     // forests.add(Axial::from_arr([0, 0]));
 
-    // let start1 = Axial { q: -1, r: 2 };
-    // let start2 = Axial { q: 0, r: -5 };
+//     // let start1 = Axial { q: -1, r: 2 };
+//     // let start2 = Axial { q: 0, r: -5 };
 
-    // Map {
-    //     water,
-    //     mountains,
-    //     forests,
-    //     start1,
-    //     start2,
-    // }
-}
+//     // Map {
+//     //     water,
+//     //     mountains,
+//     //     forests,
+//     //     start1,
+//     //     start2,
+//     // }
+// }
 
 impl GameStateTotal {
     //TODO make part of GameState

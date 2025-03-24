@@ -127,7 +127,6 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
         let pos = match pos {
             MouseEvent::Normal(pos) => pos,
             MouseEvent::Button(s) => {
-                log!("map editor received: {}", s);
                 match s.as_str() {
                     "stack1" => {
                         curr_stack = 1;
@@ -159,13 +158,10 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
                     "player3" => {
                         tt = TT::Player3;
                     }
-                    "b_export" => {
-                        todo!();
-                        // if let Some(m) = unit::Map::from_game_state(&game_total.tactical, world) {
-                        //     return m;
-                        // }
+                    _ => {
+                        gloo_console::console_dbg!("Received unsupported button input:", s);
+                        continue;
                     }
-                    _ => panic!("Not supported!"),
                 };
 
                 continue;
@@ -191,52 +187,10 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
                 game.factions.remove(pos);
             }
         }
-        // match tt {
-        //     TT::Ice => {
-        //         game.factions.remove(pos);
-        //         game.factions.ice.set_coord(pos, true)
-        //     }
-        //     TT::Land => {
-        //         game.factions.ice.set_coord(pos, false);
-        //         game.factions.remove(pos);
-        //     }
-        //     TT::Water => {
-        //         game.factions.remove(pos);
-        //         game.factions.ice.set_coord(pos, false);
-        //         game.factions.add_cell(pos, 6, Team::Neutral);
-        //     }
-        //     TT::Forest => {
-        //         game.factions.ice.set_coord(pos, false);
-        //         game.factions.remove(pos);
-        //         game.factions.add_cell(pos, 1, Team::Neutral);
-        //     }
-        //     TT::Start1 => {
-        //         game.factions.remove(pos);
-        //         game.factions.ice.set_coord(pos, false);
 
-        //         // for a in world.get_game_cells().inner.iter_ones() {
-        //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
-        //         //         if t == ActiveTeam::White {
-        //         //             game.factions.remove_inner(a);
-        //         //         }
-        //         //     }
-        //         // }
-        //         game.factions.add_cell(pos, 1, Team::White);
-        //     }
-        //     TT::Start2 => {
-        //         game.factions.remove(pos);
-        //         game.factions.ice.set_coord(pos, false);
-
-        //         // for a in world.get_game_cells().inner.iter_ones() {
-        //         //     if let Some((_, t)) = game.factions.get_cell_inner(a) {
-        //         //         if t == ActiveTeam::Black {
-        //         //             game.factions.remove_inner(a);
-        //         //         }
-        //         //     }
-        //         // }
-        //         game.factions.add_cell(pos, 1, Team::Black);
-        //     }
-        // }
+        let s = game.into_string(world);
+        let s = format!("{}{}", "game string:", s);
+        doop.repaint_ui(Team::Neutral, &mut game_total, s).await;
     }
 }
 

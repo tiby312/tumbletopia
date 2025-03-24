@@ -189,7 +189,12 @@ impl GameState {
         for index in world.get_game_cells().inner.iter_ones() {
             let foo = if let Some(foo) = self.factions.get_cell_inner(index) {
                 match foo {
+                    (1, Team::Neutral) => 'j',
                     (2, Team::Neutral) => 'k',
+                    (3, Team::Neutral) => 'l',
+                    (4, Team::Neutral) => 'm',
+                    (5, Team::Neutral) => 'n',
+                    (6, Team::Neutral) => 'o',
                     (1, Team::White) => 'r',
                     (2, Team::White) => 's',
                     (3, Team::White) => 't',
@@ -257,7 +262,12 @@ impl MyWorld {
         let mut g = GameState::new();
         for (a, i) in s.chars().zip(land.inner.iter_ones()) {
             let (stack, team) = match a {
+                'j' => (1, Team::Neutral),
                 'k' => (2, Team::Neutral),
+                'l' => (3, Team::Neutral),
+                'm' => (4, Team::Neutral),
+                'n' => (5, Team::Neutral),
+                'o' => (6, Team::Neutral),
                 'r' => (1, Team::White),
                 's' => (2, Team::White),
                 't' => (3, Team::White),

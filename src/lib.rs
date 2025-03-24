@@ -110,6 +110,7 @@ pub async fn main_entry() {
                     log!("Failed to prase string");
                     continue;
                 };
+                game_elem.set_attribute("style", "display:flex;").unwrap();
 
                 //editor_elem.set_attribute("style", "display:flex;").unwrap();
                 break dom::GameType::MapEditor(t.value().into());
@@ -510,7 +511,7 @@ pub async fn worker_entry() {
 
     match gg {
         Finish::MapEditor(map) => {
-            sender.post_message(dom::WorkerToDom::ExportMap(map.save(&world).unwrap()));
+            //sender.post_message(dom::WorkerToDom::ExportMap(map.save(&world).unwrap()));
             //console_dbg!("exported map", e.save(&world).unwrap());
         }
         Finish::GameFinish((result, g)) => {
