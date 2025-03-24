@@ -7,6 +7,7 @@ use super::*;
 
 pub type Eval = i64;
 
+use hex::PASS_MOVE_INDEX;
 use tinyvec::ArrayVec;
 pub const MAX_NODE_VISIT: usize = 1_000_000;
 
@@ -74,12 +75,20 @@ pub fn should_pass(
     game_orig: &mut GameState,
     world: &MyWorld,
     //TODO pass in all history instead
-    _move_history: &MoveHistory,
+    move_history: &MoveHistory,
 ) -> bool {
     //try with -sr-se--se--se----r
 
     if a.line.is_empty() {
         return true;
+    }
+
+    //If the user wants the game to end, just end the game.
+    if let Some(&(f, _)) = move_history.inner.last() {
+        if f.0 == hex::PASS_MOVE_INDEX {
+            log!("AI:Passing since player wants the game to end");
+            return true;
+        }
     }
 
     // let points = calculate_secure_points(game_orig, world);
@@ -691,12 +700,10 @@ mod abab {
             self.a.clone()
         }
         pub fn keep_going(&mut self, t: T, eval: Eval) -> bool {
-            
-            if self.mm.is_none(){
-                self.value=eval;
-                self.mm=Some(t)
-            }else{
-
+            if self.mm.is_none() {
+                self.value = eval;
+                self.mm = Some(t)
+            } else {
                 if eval > self.value {
                     self.mm = Some(t);
                     self.value = eval;

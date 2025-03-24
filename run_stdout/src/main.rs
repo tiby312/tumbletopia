@@ -1,6 +1,4 @@
-use engine::{
-    ai::Evaluator,  mesh::small_mesh::SmallMesh, moves::SpokeInfo, Zobrist,
-};
+use engine::{ai::Evaluator, mesh::small_mesh::SmallMesh, moves::SpokeInfo, Zobrist};
 
 //-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
 

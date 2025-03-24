@@ -561,8 +561,9 @@ pub async fn game_play_thread(
     let mut team_gen = world.starting_team.iter();
 
     let zobrist = Zobrist::new();
+
     //Loop over each team!
-    loop {
+    let g = loop {
         let team = team_gen.next().unwrap();
 
         gloo::console::console!(format!(
@@ -596,6 +597,11 @@ pub async fn game_play_thread(
                 format!("Game Over: {:?}! Full history:\"{}\"", g, ll),
             )
             .await;
+
+            match game_type {
+                engine::GameType::AIBattle(_) => break g,
+                _ => {}
+            }
         }
 
         //Add AIIIIII.
@@ -674,30 +680,28 @@ pub async fn game_play_thread(
                 false,
             );
             console_dbg!(curr_eval);
+        } else {
+            let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
 
-            continue;
+            game.update_fog(world, team);
+            game.foo.push(r);
+
+            let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
+            moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+            let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
+                &game.tactical,
+                world,
+                &spoke_info,
+                false,
+            );
+            console_dbg!(curr_eval_player);
         }
+    };
 
-        let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
-
-        game.update_fog(world, team);
-        game.foo.push(r);
-
-        let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
-        moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
-        let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
-            &game.tactical,
-            world,
-            &spoke_info,
-            false,
-        );
-        console_dbg!(curr_eval_player);
+    //When ai vs ai finishes, allow player to look around.
+    loop {
+        let data = doop.get_mouse(Team::Neutral, &mut game).await;
     }
-
-    // loop{
-    //     let data = doop.get_mouse(Team::Neutral, &mut game).await;
-
-    // }
 }
 
 use gui::model_parse::*;
