@@ -211,6 +211,40 @@
         text-decoration: none;
         font-size: 16px;
       }
+      .editor2{
+        z-index:10;
+      }
+      .floatBlock{
+        z-index:10;
+        margin:10px;
+        padding:10px;
+        background-color: #213022;
+      }
+      #editor2{
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        break-before: always;
+        font-size: 20px;
+      }
+      #stack-picker {
+        position: relative;
+        z-index:10;
+        border: none;
+        margin: 10px;
+        padding:10px;
+      
+      }
+      #unit-picker {
+        position: relative;
+        z-index:10;
+        border: none;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        break-before: always;
+        margin: 0 0 3em 0;
+      }
       
       .main-menu-button{
         background-color: #213022; /* Green */
@@ -267,6 +301,8 @@
     <textarea class="foo" id="gameover_code" readonly="true" rows="16" cols="30" wrap="hard">text</textarea>
     <button onClick="window.location.reload();">Main Menu</button>
   </div>
+
+  <!--
   <div id="editor">
   <button id="b_land" class="editor-button"> Land</button>
   <button id="b_ice" class="editor-button"> Ice</button>
@@ -276,7 +312,32 @@
   <button id="b_start2" class="editor-button"> Player2</button>
   <button id="b_export" class="editor-button"> export</button>
   </div>
+  -->
 
+
+  <div id="editor2">
+    <div id="stack-picker">
+      <label for="stack">Stack</label>
+      <input id="stack_gui_val" type="range" value="1" min="1" max="6" oninput="this.nextElementSibling.value = this.value">
+      <output>1</output>
+    </div>
+    
+    <div id="unit-picker">
+      <div class="floatBlock">
+        <label for="player1"> <input id="player1" name="units" type="radio" value="player1" />white</label>
+      </div>
+      <div class="floatBlock">
+        <label for="player2"> <input id="player2" name="units" type="radio" value="player2" />black</label>
+      </div>
+      <div class="floatBlock">
+        <label for="player3"> <input id="player3" name="units" type="radio" value="player3" />neutral</label>
+      </div>
+      <div class="floatBlock">
+        <label for="empty"> <input id="empty" name="units" type="radio" value="empty" />empty</label>
+      </div>
+    </div>
+
+  </div>
 
   <div id="mainmenu">
     

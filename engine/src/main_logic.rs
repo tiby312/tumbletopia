@@ -104,10 +104,7 @@ pub enum MouseEvent<T> {
     Button(String),
 }
 
-pub async fn map_editor(
-    mut doop: CommandSender,
-    world: &board::MyWorld
-) -> unit::Map {
+pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit::Map {
     let game = world.starting_state.clone();
     let mut game_total = unit::GameStateTotal {
         tactical: game,

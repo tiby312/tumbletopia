@@ -52,8 +52,8 @@ pub async fn main_entry() {
     let map="---------------------------------b------r----k---------------------------------------------";
     t.set_value(&map);
 
-    let editor_elem = shogo::utils::get_by_id_elem("editor");
-    editor_elem.set_attribute("style", "display:none;").unwrap();
+    // let editor_elem = shogo::utils::get_by_id_elem("editor");
+    // editor_elem.set_attribute("style", "display:none;").unwrap();
 
     let game_elem = shogo::utils::get_by_id_elem("game_b");
     game_elem.set_attribute("style", "display:none;").unwrap();
@@ -111,7 +111,7 @@ pub async fn main_entry() {
                     continue;
                 };
 
-                editor_elem.set_attribute("style", "display:flex;").unwrap();
+                //editor_elem.set_attribute("style", "display:flex;").unwrap();
                 break dom::GameType::MapEditor(t.value().into());
             }
             "replaybutton" => {

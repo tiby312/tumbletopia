@@ -183,6 +183,32 @@ fn engine_handlers<'a>(
 
         //     //worker.post_message(DomToWorker::GameChange(foo.value()));
         // }),
+        EventListen::from_closure(
+            &shogo::utils::get_by_id_elem("stack_gui_val"),
+            "change",
+            |_| {
+                let val: HtmlInputElement = shogo::utils::get_by_id_elem("stack_gui_val")
+                    .dyn_into()
+                    .unwrap();
+                console_dbg!("stack val is now:", val.value());
+            },
+        ),
+        EventListen::from_closure(&shogo::utils::get_by_id_elem("player1"), "change", |_| {
+            let val: HtmlInputElement = shogo::utils::get_by_id_elem("player1").dyn_into().unwrap();
+            console_dbg!("player1:", val.checked());
+        }),
+        EventListen::from_closure(&shogo::utils::get_by_id_elem("player2"), "change", |_| {
+            let val: HtmlInputElement = shogo::utils::get_by_id_elem("player2").dyn_into().unwrap();
+            console_dbg!("player2:", val.checked());
+        }),
+        EventListen::from_closure(&shogo::utils::get_by_id_elem("player3"), "change", |_| {
+            let val: HtmlInputElement = shogo::utils::get_by_id_elem("player3").dyn_into().unwrap();
+            console_dbg!("player3:", val.checked());
+        }),
+        EventListen::from_closure(&shogo::utils::get_by_id_elem("empty"), "change", |_| {
+            let val: HtmlInputElement = shogo::utils::get_by_id_elem("empty").dyn_into().unwrap();
+            console_dbg!("empty:", val.checked());
+        }),
         EventListen::from_closure(canvas, "mousemove", |e| {
             let [x, y] = convert_coord(canvas, e);
             worker.post_message(DomToWorker::CanvasMouseMove { x, y });
@@ -227,13 +253,13 @@ fn engine_handlers<'a>(
         reg_button(worker, "pass"),
         reg_button(worker, "b_next"),
         reg_button(worker, "b_prev"),
-        reg_button(worker, "b_ice"),
-        reg_button(worker, "b_land"),
-        reg_button(worker, "b_water"),
-        reg_button(worker, "b_forest"),
-        reg_button(worker, "b_start1"),
-        reg_button(worker, "b_start2"),
-        reg_button(worker, "b_export"),
+        // reg_button(worker, "b_ice"),
+        // reg_button(worker, "b_land"),
+        // reg_button(worker, "b_water"),
+        // reg_button(worker, "b_forest"),
+        // reg_button(worker, "b_start1"),
+        // reg_button(worker, "b_start2"),
+        // reg_button(worker, "b_export"),
     )
 }
 
