@@ -113,35 +113,57 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
     };
 
     enum TT {
-        Ice,
-        Land,
-        Water,
-        Forest,
-        Start1,
-        Start2,
+        Player1,
+        Player2,
+        Player3,
+        Empty,
     }
 
-    let mut tt = TT::Water;
+    let mut tt = TT::Player1;
 
+    let mut curr_stack = 1;
     loop {
         let pos = doop.get_mouse(Team::White, &mut game_total).await;
         let pos = match pos {
             MouseEvent::Normal(pos) => pos,
             MouseEvent::Button(s) => {
                 log!("map editor received: {}", s);
-                tt = match s.as_str() {
-                    "b_ice" => TT::Ice,
-                    "b_land" => TT::Land,
-                    "b_water" => TT::Water,
-                    "b_forest" => TT::Forest,
-                    "b_start1" => TT::Start1,
-                    "b_start2" => TT::Start2,
+                match s.as_str() {
+                    "stack1" => {
+                        curr_stack = 1;
+                    }
+                    "stack2" => {
+                        curr_stack = 2;
+                    }
+                    "stack3" => {
+                        curr_stack = 3;
+                    }
+                    "stack4" => {
+                        curr_stack = 4;
+                    }
+                    "stack5" => {
+                        curr_stack = 5;
+                    }
+                    "stack6" => {
+                        curr_stack = 6;
+                    }
+                    "empty" => {
+                        tt = TT::Empty;
+                    }
+                    "player1" => {
+                        tt = TT::Player1;
+                    }
+                    "player2" => {
+                        tt = TT::Player2;
+                    }
+                    "player3" => {
+                        tt = TT::Player3;
+                    }
                     "b_export" => {
                         todo!();
                         // if let Some(m) = unit::Map::from_game_state(&game_total.tactical, world) {
                         //     return m;
                         // }
-                        continue;
                     }
                     _ => panic!("Not supported!"),
                 };
@@ -152,6 +174,23 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
 
         let game = &mut game_total.tactical;
 
+        match tt {
+            TT::Player1 => {
+                game.factions.remove(pos);
+                game.factions.add_cell(pos, curr_stack, Team::White);
+            }
+            TT::Player2 => {
+                game.factions.remove(pos);
+                game.factions.add_cell(pos, curr_stack, Team::Black);
+            }
+            TT::Player3 => {
+                game.factions.remove(pos);
+                game.factions.add_cell(pos, curr_stack, Team::Neutral);
+            }
+            TT::Empty => {
+                game.factions.remove(pos);
+            }
+        }
         // match tt {
         //     TT::Ice => {
         //         game.factions.remove(pos);

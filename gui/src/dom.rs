@@ -182,7 +182,7 @@ fn engine_handlers<'a>(
                     .dyn_into()
                     .unwrap();
                 console_dbg!("stack val is now:", val.value());
-                worker.post_message(DomToWorker::Button(format!("{}{}","stack",val.value())));
+                worker.post_message(DomToWorker::Button(format!("{}{}", "stack", val.value())));
             },
         ),
         EventListen::from_closure(&shogo::utils::get_by_id_elem("player1"), "change", |_| {
