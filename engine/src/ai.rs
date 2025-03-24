@@ -549,6 +549,7 @@ impl<'a> AlphaBeta<'a> {
         //TODO https://www.chessprogramming.org/History_Heuristic
         moves.sort_unstable_by_key(|f| move_value(f));
 
+        debug_assert!(!moves.is_empty());
         // log!(
         //     "Move about to look:{:?}",
         //     self.world.format(
@@ -692,9 +693,15 @@ mod abab {
         pub fn keep_going(&mut self, t: T, eval: Eval) -> bool {
             //TODO should be less than or equal instead maybe?
 
-            if eval > self.value {
-                self.mm = Some(t);
-                self.value = eval;
+            if self.mm.is_none(){
+                self.value=eval;
+                self.mm=Some(t)
+            }else{
+
+                if eval > self.value {
+                    self.mm = Some(t);
+                    self.value = eval;
+                }
             }
 
             self.a.alpha = self.a.alpha.max(self.value);

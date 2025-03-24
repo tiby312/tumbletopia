@@ -1,5 +1,5 @@
 use engine::{
-    ai::Evaluator, board::MyWorld, mesh::small_mesh::SmallMesh, moves::SpokeInfo, Zobrist,
+    ai::Evaluator,  mesh::small_mesh::SmallMesh, moves::SpokeInfo, Zobrist,
 };
 
 //-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
@@ -87,6 +87,7 @@ fn main() {
     test_wins();
     // }
 
+    //test_pass("---------------------------------brrr---r---rk---------r---------r-------------------------");
     // let elapsed = start.elapsed(); // Get the elapsed time
 
     // println!("Elapsed time: {:?}", elapsed);
