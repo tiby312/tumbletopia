@@ -174,15 +174,6 @@ fn engine_handlers<'a>(
 
     let option = gloo::events::EventListenerOptions::enable_prevent_default();
     (
-        // EventListen::from_closure(&shogo::utils::get_by_id_elem("fen"), "change", |_| {
-        //     let foo: HtmlInputElement = shogo::utils::get_by_id_elem("fen")
-        //         .dyn_into()
-        //         .unwrap_throw();
-
-        //     //Reboot the webpage with new fen.
-
-        //     //worker.post_message(DomToWorker::GameChange(foo.value()));
-        // }),
         EventListen::from_closure(
             &shogo::utils::get_by_id_elem("stack_gui_val"),
             "change",
@@ -191,23 +182,28 @@ fn engine_handlers<'a>(
                     .dyn_into()
                     .unwrap();
                 console_dbg!("stack val is now:", val.value());
+                worker.post_message(DomToWorker::Button(format!("{}{}","stack",val.value())));
             },
         ),
         EventListen::from_closure(&shogo::utils::get_by_id_elem("player1"), "change", |_| {
             let val: HtmlInputElement = shogo::utils::get_by_id_elem("player1").dyn_into().unwrap();
             console_dbg!("player1:", val.checked());
+            worker.post_message(DomToWorker::Button("player1".into()));
         }),
         EventListen::from_closure(&shogo::utils::get_by_id_elem("player2"), "change", |_| {
             let val: HtmlInputElement = shogo::utils::get_by_id_elem("player2").dyn_into().unwrap();
             console_dbg!("player2:", val.checked());
+            worker.post_message(DomToWorker::Button("player2".into()));
         }),
         EventListen::from_closure(&shogo::utils::get_by_id_elem("player3"), "change", |_| {
             let val: HtmlInputElement = shogo::utils::get_by_id_elem("player3").dyn_into().unwrap();
             console_dbg!("player3:", val.checked());
+            worker.post_message(DomToWorker::Button("player3".into()));
         }),
         EventListen::from_closure(&shogo::utils::get_by_id_elem("empty"), "change", |_| {
             let val: HtmlInputElement = shogo::utils::get_by_id_elem("empty").dyn_into().unwrap();
             console_dbg!("empty:", val.checked());
+            worker.post_message(DomToWorker::Button("empty".into()));
         }),
         EventListen::from_closure(canvas, "mousemove", |e| {
             let [x, y] = convert_coord(canvas, e);
