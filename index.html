@@ -218,14 +218,18 @@
         background-color: #213022;
       }
       #editor2{
+        border: none;
         display: flex;
+        flex-wrap:wrap-reverse;
         flex-direction:row;
-        flex-wrap: wrap;
-        justify-content: flex-end;
+        justify-content:flex-end;
+        break-before: always;
+        margin: 0 0 3em 0;
+
         font-size: 20px;
         z-index:10;
         position:absolute;
-        bottom:10px;
+        bottom:00px;
         right:10px;
       }
       #stack-picker {
@@ -235,17 +239,6 @@
         margin: 10px;
         padding:10px;
       
-      }
-      #unit-picker {
-        position: relative;
-        z-index:10;
-        border: none;
-        display: flex;
-        flex-wrap:wrap-reverse;
-        flex-direction:row;
-        justify-content:flex-end;
-        break-before: always;
-        margin: 0 0 3em 0;
       }
       
       .main-menu-button{
@@ -317,10 +310,7 @@
   -->
 
 
-  <div id="editor2">
-    
-    
-    <div id="unit-picker">
+    <div id="editor2">
       <div id="stack-picker" style="background-color: #213022;">
         <label for="stack">Stack</label>
         <input id="stack_gui_val" type="range" value="1" min="1" max="6" oninput="this.nextElementSibling.value = this.value">
@@ -340,7 +330,6 @@
       </div>
     </div>
 
-  </div>
 
   <div id="mainmenu">
     
