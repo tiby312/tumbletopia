@@ -703,17 +703,17 @@ pub async fn handle_player(
     doop: &mut CommandSender,
     team: Team,
 ) -> (moves::ActualMove, move_build::MoveEffect) {
-    let undo = |move_log: &mut MoveHistory, game: &mut GameState| {
+    let undo = async |move_log: &mut MoveHistory, game: &mut GameState| {
         //log!("undoing turn!!!");
         assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
 
         let (a, e) = move_log.inner.pop().unwrap();
-        //a.as_extra().undo(&e.extra_effect, game);
         a.undo(team.not(), &e, game);
 
         let (a, e) = move_log.inner.pop().unwrap();
-        //a.as_extra().undo(&e.extra_effect, game);
         a.undo(team, &e, game);
+
+        doop.repaint_ui(team, game, "undoing moves {} and {}".into()).await;
     };
 
     let mut extra_attack = None;
@@ -736,7 +736,7 @@ pub async fn handle_player(
                         assert!(extra_attack.is_none());
 
                         undo(&mut game.foo, &mut game.tactical);
-
+                        
                         continue 'outer;
                     } else if s == "pass" {
                         let mp = ActualMove(hex::PASS_MOVE_INDEX);
