@@ -159,7 +159,7 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
                         tt = TT::Player3;
                     }
                     _ => {
-                        gloo_console::console_dbg!("Received unsupported button input:", s);
+                        //gloo_console::console_dbg!("Received unsupported button input:", s);
                         continue;
                     }
                 };
@@ -703,17 +703,18 @@ pub async fn handle_player(
     doop: &mut CommandSender,
     team: Team,
 ) -> (moves::ActualMove, move_build::MoveEffect) {
-    let undo = async |move_log: &mut MoveHistory, game: &mut GameState| {
+    let undo = async |doop:&mut CommandSender,game: &mut unit::GameStateTotal| {
         //log!("undoing turn!!!");
-        assert!(move_log.inner.len() >= 2, "Not enough moves to undo");
+        assert!(game.foo.inner.len() >= 2, "Not enough moves to undo");
 
-        let (a, e) = move_log.inner.pop().unwrap();
-        a.undo(team.not(), &e, game);
+        let (a, e) = game.foo.inner.pop().unwrap();
+        a.undo(team.not(), &e, &mut game.tactical);
 
-        let (a, e) = move_log.inner.pop().unwrap();
-        a.undo(team, &e, game);
+        let (a2, e2) = game.foo.inner.pop().unwrap();
+        a2.undo(team, &e2, &mut game.tactical);
 
-        doop.repaint_ui(team, game, "undoing moves {} and {}".into()).await;
+        let s=format!("undoing moves {:?} and {:?}",world.format(&a),world.format(&a2));
+        doop.repaint_ui(team, game, s).await;
     };
 
     let mut extra_attack = None;
@@ -735,7 +736,7 @@ pub async fn handle_player(
                     if s == "undo" {
                         assert!(extra_attack.is_none());
 
-                        undo(&mut game.foo, &mut game.tactical);
+                        undo(doop,game).await;
                         
                         continue 'outer;
                     } else if s == "pass" {
@@ -783,7 +784,7 @@ pub async fn handle_player(
                 LoopRes::Undo => {
                     assert!(extra_attack.is_none());
 
-                    undo(&mut game.foo, &mut game.tactical);
+                    undo(doop,game).await;
                     continue 'outer;
                 }
                 LoopRes::Pass => {
