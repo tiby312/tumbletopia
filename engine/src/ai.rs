@@ -135,36 +135,44 @@ impl Evaluator {
         _debug: bool,
     ) -> Eval {
         let mut total_foo = 0;
-        let strength_parity = 0;
+        let mut territory=0;
+        let mut overall_strength=0;
+        let mut contested=0;
         for &index in world.land_as_vec.iter() {
             let num_attack = get_num_attack(spoke_info, index);
 
-            const TERR: i64 = 10;
-            const ACT: i64 = 9;
-
+            
             let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
+                
                 let height = height as i64;
                 if tt != Team::Neutral {
+                    let s=num_attack[tt].saturating_sub(1).max(height)-num_attack[-tt];
+                    overall_strength+=s*tt.value();
+                    territory+=1;
                     if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                        ACT * -tt.value()
+                        -tt.value()
                     } else {
-                        TERR * tt.value()
+                        tt.value()
                     }
                 } else {
                     0
                 }
             } else {
+                
                 if num_attack[Team::White] > num_attack[Team::Black] {
-                    TERR
+                    territory+=1;
+                    1
                 } else if num_attack[Team::Black] > num_attack[Team::White] {
-                    -TERR
+                    territory+=1;
+                    -1
                 } else {
+                    contested+=1;
                     0
                 }
             };
             total_foo += temp_score;
         }
-        total_foo * 100000 + strength_parity
+        total_foo * territory + 2*overall_strength*contested
     }
 }
 
