@@ -134,7 +134,7 @@ impl Evaluator {
         spoke_info: &moves::SpokeInfo,
         _debug: bool,
     ) -> Eval {
-        let mut total_foo = 0;
+        let mut overall_score = 0;
         let mut territory=0;
         let mut overall_strength=0;
         let mut contested=0;
@@ -170,9 +170,9 @@ impl Evaluator {
                     0
                 }
             };
-            total_foo += temp_score;
+            overall_score += temp_score;
         }
-        total_foo * territory + 2*overall_strength*contested
+        overall_score * territory + 2*overall_strength*contested
     }
 }
 
