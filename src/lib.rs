@@ -551,7 +551,7 @@ pub async fn game_play_thread(
     let mut game = GameStateTotal {
         tactical: game,
         fog: std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new()),
-        foo: MoveHistory::new(),
+        history: MoveHistory::new(),
     };
 
     let s = game.tactical.into_string(world);
@@ -571,13 +571,13 @@ pub async fn game_play_thread(
             game.tactical.into_string(world)
         ));
 
-        if let Some((aa, bb)) = game.foo.inner.last() {
+        if let Some((aa, bb)) = game.history.inner.last() {
             use std::fmt::Write;
             let mut s = String::new();
             write!(
                 &mut s,
                 "{}:{:?}:{:?}",
-                game.foo.inner.len(),
+                game.history.inner.len(),
                 team.not(),
                 world.format(aa)
             )
@@ -588,9 +588,9 @@ pub async fn game_play_thread(
             doop.repaint_ui(team, &mut game, s).await;
         }
 
-        if let Some(g) = game.tactical.game_is_over(&world, team, &game.foo) {
+        if let Some(g) = game.tactical.game_is_over(&world, team, &game.history) {
             gloo::console::console!(format!("game over! {:?}", g));
-            let ll = game.foo.into_string(world);
+            let ll = game.history.into_string(world);
             doop.repaint_ui(
                 Team::Neutral,
                 &mut game,
@@ -624,7 +624,7 @@ pub async fn game_play_thread(
                         fogs: game.fog.clone(),
                         world: world.clone(),
                         team,
-                        history: game.foo.clone(),
+                        history: game.history.clone(),
                         zobrist: zobrist.clone(),
                     });
 
@@ -648,7 +648,7 @@ pub async fn game_play_thread(
                         &game.fog,
                         &world,
                         team,
-                        &game.foo,
+                        &game.history,
                         &zobrist,
                     )
                 }
@@ -669,7 +669,7 @@ pub async fn game_play_thread(
                 );
 
             game.update_fog(world, team);
-            game.foo.push((the_move, effect_m));
+            game.history.push((the_move, effect_m));
 
             let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
             moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
@@ -684,7 +684,7 @@ pub async fn game_play_thread(
             let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
 
             game.update_fog(world, team);
-            game.foo.push(r);
+            game.history.push(r);
 
             let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
             moves::update_spoke_info(&mut spoke_info, world, &game.tactical);

@@ -210,7 +210,7 @@ pub struct GameStateTotal {
     //0 is white fog. 1 is black fog
     pub fog: [SmallMesh; 2],
     pub tactical: GameState,
-    pub foo: MoveHistory,
+    pub history: MoveHistory,
 }
 
 impl GameStateTotal {}

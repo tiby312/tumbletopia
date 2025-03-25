@@ -109,7 +109,7 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
     let mut game_total = unit::GameStateTotal {
         tactical: game,
         fog: std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new()),
-        foo: MoveHistory::new(),
+        history: MoveHistory::new(),
     };
 
     enum TT {
@@ -705,12 +705,12 @@ pub async fn handle_player(
 ) -> (moves::ActualMove, move_build::MoveEffect) {
     let undo = async |doop:&mut CommandSender,game: &mut unit::GameStateTotal| {
         //log!("undoing turn!!!");
-        assert!(game.foo.inner.len() >= 2, "Not enough moves to undo");
+        assert!(game.history.inner.len() >= 2, "Not enough moves to undo");
 
-        let (a, e) = game.foo.inner.pop().unwrap();
+        let (a, e) = game.history.inner.pop().unwrap();
         a.undo(team.not(), &e, &mut game.tactical);
 
-        let (a2, e2) = game.foo.inner.pop().unwrap();
+        let (a2, e2) = game.history.inner.pop().unwrap();
         a2.undo(team, &e2, &mut game.tactical);
 
         let s=format!("undoing moves {:?} and {:?}",world.format(&a),world.format(&a2));
@@ -720,7 +720,7 @@ pub async fn handle_player(
     let mut extra_attack = None;
     //Keep allowing the user to select units
     'outer: loop {
-        if game.foo.inner.len() >= 2 {
+        if game.history.inner.len() >= 2 {
             doop.send_command(team, game, Command::ShowUndo).await;
         } else {
             doop.send_command(team, game, Command::HideUndo).await;
