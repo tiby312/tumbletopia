@@ -97,7 +97,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             // black_mouse: quick_load(include_bytes!("../assets/black_mouse.glb"), RESIZE, None),
             // white_rabbit: quick_load(include_bytes!("../assets/white_rabbit.glb"), RESIZE, None),
             // black_rabbit: quick_load(include_bytes!("../assets/black_rabbit.glb"), RESIZE, None),
-            token_black: quick_load(include_bytes!("../../assets/white_unit.glb"), RESIZE, None),
+            token_black: quick_load(include_bytes!("../../assets/white_unit2.glb"), RESIZE, None),
             token_white: quick_load(include_bytes!("../../assets/red_unit.glb"), RESIZE, None),
             token_neutral: quick_load(
                 include_bytes!("../../assets/neutral_unit.glb"),
