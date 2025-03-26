@@ -494,7 +494,7 @@ fn redraw_text(text: &Vec<Text>, data: &ScoreData) {
     let h1 = canvas.height() as f64 - 40.0;
     let h2 = canvas.height() as f64;
 
-    context.set_fill_style_str("red");
+    context.set_fill_style_str("#974545");
     context.begin_path();
     context.rect(0.0, h1, white_percentage * w, h2);
     context.fill();

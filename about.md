@@ -3,6 +3,9 @@ https://guide.tumbleweed.games/
 
 This web implementation is written in rust
 
+Why do you use white and black instead of red and white? 
+I couldn't get the red units to look good with the green grass.
+
 Special thanks:
 AI evaluation function from:
 https://github.com/antonTobi/tumbleweed-legacy
