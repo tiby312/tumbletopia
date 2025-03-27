@@ -35,7 +35,37 @@ use unit::*;
 pub async fn main_entry() {
     let (sender, mut receiver) = futures::channel::mpsc::unbounded();
 
-    let _listeners = ["single_b", "pass_b", "ai_b", "map_b"].map(|s| {
+    // let _foo = [gloop::EventListen::from_closure(&shogo::utils::get_by_id_elem("player_select_white"), "change", |_| {
+    //     let se = sender.clone();
+
+    //     //let val: web_sys::HtmlInputElement = shogo::utils::get_by_id_elem("player_select_white").dyn_into().unwrap();
+    //     //console_dbg!("player1:", val.checked());
+    //     //worker.post_message(DomToWorker::Button("player1".into()));
+    //     se.unbounded_send("player_select_white").unwrap_throw();
+    // }),
+    // gloop::EventListen::from_closure(&shogo::utils::get_by_id_elem("ai_select_white"), "change", |_| {
+    //     let se = sender.clone();
+
+    //     //let val: web_sys::HtmlInputElement = shogo::utils::get_by_id_elem("player_select_white").dyn_into().unwrap();
+    //     //console_dbg!("player1:", val.checked());
+    //     //worker.post_message(DomToWorker::Button("player1".into()));
+    //     se.unbounded_send("ai_select_white").unwrap_throw();
+    // })];
+    let _listeners1 = [
+        "player_select_white",
+        "ai_select_white",
+        "player_select_black",
+        "ai_select_black",
+    ]
+    .map(|s| {
+        let se = sender.clone();
+        let undo = shogo::utils::get_by_id_elem(s);
+        gloo::events::EventListener::new(&undo, "click", move |_event| {
+            se.unbounded_send(s).unwrap_throw();
+        })
+    });
+
+    let _listeners = ["single_b", "map_b"].map(|s| {
         let se = sender.clone();
         let undo = shogo::utils::get_by_id_elem(s);
         gloo::events::EventListener::new(&undo, "click", move |_event| {
@@ -58,6 +88,8 @@ pub async fn main_entry() {
     let game_elem = shogo::utils::get_by_id_elem("game_b");
     game_elem.set_attribute("style", "display:none;").unwrap();
 
+    let mut white = dom::Slot::Player;
+    let mut black = dom::Slot::Ai;
     let command = loop {
         let Some(r) = receiver.next().await else {
             unreachable!()
@@ -69,6 +101,42 @@ pub async fn main_entry() {
             .unwrap();
 
         match r {
+            "player_select_white" => {
+                let val: web_sys::HtmlInputElement =
+                    shogo::utils::get_by_id_elem("player_select_white")
+                        .dyn_into()
+                        .unwrap();
+                if val.checked() {
+                    white = dom::Slot::Player;
+                }
+            }
+            "player_select_black" => {
+                let val: web_sys::HtmlInputElement =
+                    shogo::utils::get_by_id_elem("player_select_black")
+                        .dyn_into()
+                        .unwrap();
+                if val.checked() {
+                    black = dom::Slot::Player;
+                }
+            }
+            "ai_select_white" => {
+                let val: web_sys::HtmlInputElement =
+                    shogo::utils::get_by_id_elem("ai_select_white")
+                        .dyn_into()
+                        .unwrap();
+                if val.checked() {
+                    white = dom::Slot::Ai;
+                }
+            }
+            "ai_select_black" => {
+                let val: web_sys::HtmlInputElement =
+                    shogo::utils::get_by_id_elem("ai_select_black")
+                        .dyn_into()
+                        .unwrap();
+                if val.checked() {
+                    black = dom::Slot::Ai;
+                }
+            }
             "single_b" => {
                 let foo = if let Some(foo) = MyWorld::load_from_string(&t.value()) {
                 } else {
@@ -78,31 +146,33 @@ pub async fn main_entry() {
                 };
 
                 game_elem.set_attribute("style", "display:flex;").unwrap();
-                break dom::GameType::SinglePlayer(t.value().into());
-            }
-            "pass_b" => {
-                let foo = if let Some(foo) = MyWorld::load_from_string(&t.value()) {
-                } else {
-                    t.set_value("Invalid game string or too big of a board (size 8 is the max)");
-                    log!("Failed to prase string");
-                    continue;
-                };
+                break dom::GameType::Game(white, black, t.value().into());
 
-                game_elem.set_attribute("style", "display:flex;").unwrap();
-                break dom::GameType::PassPlay(t.value().into());
+                //break dom::GameType::SinglePlayer(t.value().into());
             }
-            "ai_b" => {
-                let foo = if let Some(foo) = MyWorld::load_from_string(&t.value()) {
-                } else {
-                    t.set_value("Invalid game string or too big of a board (size 8 is the max)");
-                    log!("Failed to prase string");
-                    continue;
-                };
+            // "pass_b" => {
+            //     let foo = if let Some(foo) = MyWorld::load_from_string(&t.value()) {
+            //     } else {
+            //         t.set_value("Invalid game string or too big of a board (size 8 is the max)");
+            //         log!("Failed to prase string");
+            //         continue;
+            //     };
 
-                game_elem.set_attribute("style", "display:flex;").unwrap();
+            //     game_elem.set_attribute("style", "display:flex;").unwrap();
+            //     break dom::GameType::PassPlay(t.value().into());
+            // }
+            // "ai_b" => {
+            //     let foo = if let Some(foo) = MyWorld::load_from_string(&t.value()) {
+            //     } else {
+            //         t.set_value("Invalid game string or too big of a board (size 8 is the max)");
+            //         log!("Failed to prase string");
+            //         continue;
+            //     };
 
-                break dom::GameType::AIBattle(t.value().into());
-            }
+            //     game_elem.set_attribute("style", "display:flex;").unwrap();
+
+            //     break dom::GameType::AIBattle(t.value().into());
+            // }
             "map_b" => {
                 let foo = if let Some(foo) = MyWorld::load_from_string(&t.value()) {
                 } else {
@@ -377,6 +447,18 @@ pub async fn worker_entry() {
         dom::GameType::AIBattle(s) => engine::GameType::AIBattle(s),
         dom::GameType::Replay(o) => engine::GameType::Replay(o),
         dom::GameType::MapEditor(s) => engine::GameType::MapEditor(s),
+        dom::GameType::Game(a, b, s) => {
+            let a = match a {
+                dom::Slot::Player => engine::Slot::Player,
+                dom::Slot::Ai => engine::Slot::Ai,
+            };
+            let b = match b {
+                dom::Slot::Player => engine::Slot::Player,
+                dom::Slot::Ai => engine::Slot::Ai,
+            };
+
+            engine::GameType::Game(a, b, s)
+        }
     };
 
     let world = match game_type.clone() {
@@ -391,7 +473,8 @@ pub async fn worker_entry() {
         }
         engine::GameType::PassPlay(s)
         | engine::GameType::SinglePlayer(s)
-        | engine::GameType::AIBattle(s) => {
+        | engine::GameType::AIBattle(s)
+        | engine::GameType::Game(_, _, s) => {
             let world = board::MyWorld::load_from_string(&s).unwrap();
 
             //let map = Map::load(&s, &world).unwrap();
@@ -483,6 +566,10 @@ pub async fn worker_entry() {
                 Finish::MapEditor(g)
                 //todo!();
             }
+            engine::GameType::Game(white, black, s) => {
+                let res = game_play_thread(doop, &world, [white, black], interrupt_tx).await;
+                Finish::GameFinish((res.0, res.1))
+            }
             engine::GameType::PassPlay(_s)
             | engine::GameType::SinglePlayer(_s)
             | engine::GameType::AIBattle(_s) => {
@@ -491,8 +578,9 @@ pub async fn worker_entry() {
                 //let map = Map::load(&s, &world).unwrap();
 
                 //TODO handle this error better
-                let res = game_play_thread(doop, &world, game_type, interrupt_tx).await;
-                Finish::GameFinish((res.0, res.1))
+                //let res = game_play_thread(doop, &world, game_type, interrupt_tx).await;
+                //Finish::GameFinish((res.0, res.1))
+                todo!();
             }
             engine::GameType::Replay(s) => {
                 console_dbg!("got map=", s);
@@ -534,7 +622,7 @@ pub async fn worker_entry() {
 pub async fn game_play_thread(
     mut doop: ace::CommandSender,
     world: &board::MyWorld,
-    game_type: engine::GameType,
+    player_type: [engine::Slot; 2],
     mut interrupt_tx: futures::channel::mpsc::Sender<()>,
 ) -> (unit::GameOver, MoveHistory) {
     console_dbg!("gameplay thread start");
@@ -571,6 +659,7 @@ pub async fn game_play_thread(
             game.tactical.into_string(world)
         ));
 
+        //Write out the last move
         if let Some((aa, bb)) = game.history.inner.last() {
             use std::fmt::Write;
             let mut s = String::new();
@@ -598,103 +687,106 @@ pub async fn game_play_thread(
             )
             .await;
 
-            match game_type {
-                engine::GameType::AIBattle(_) => break g,
+            match player_type {
+                [engine::Slot::Ai, engine::Slot::Ai] => break g,
                 _ => {}
             }
         }
 
         //Add AIIIIII.
-        let foo = match game_type {
-            engine::GameType::SinglePlayer(_) => team == Team::Black,
-            engine::GameType::PassPlay(_) => false,
-            engine::GameType::AIBattle(_) => true,
-            engine::GameType::MapEditor(_) => unreachable!(),
-            engine::GameType::Replay(_) => unreachable!(),
-        };
+        // let foo = match game_type {
+        //     engine::GameType::SinglePlayer(_) => team == Team::Black,
+        //     engine::GameType::PassPlay(_) => false,
+        //     engine::GameType::AIBattle(_) => true,
+        //     engine::GameType::MapEditor(_) => unreachable!(),
+        //     engine::GameType::Replay(_) => unreachable!(),
+        // };
 
         console_dbg!("main thread iter");
-        if foo {
-            let the_move = {
-                let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
+        match player_type[team.index()] {
+            engine::Slot::Ai => {
+                let the_move = {
+                    let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
 
-                if true {
-                    ai_tx.post_message(AiCommand {
-                        game: ai_state,
-                        fogs: game.fog.clone(),
-                        world: world.clone(),
+                    if true {
+                        ai_tx.post_message(AiCommand {
+                            game: ai_state,
+                            fogs: game.fog.clone(),
+                            world: world.clone(),
+                            team,
+                            history: game.history.clone(),
+                            zobrist: zobrist.clone(),
+                        });
+
+                        use futures::FutureExt;
+                        let the_move = futures::select!(
+                            _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                            x = ai_rx.recv().next().fuse() => x
+                        );
+
+                        interrupt_tx.send(()).await.unwrap();
+
+                        let k = doop.receiver.next().await;
+                        matches!(k.unwrap().data, ace::Response::AnimationFinish);
+
+                        //ai_int.interrupt_render_thread().await;
+
+                        the_move.unwrap().inner
+                    } else {
+                        engine::ai::calculate_move(
+                            &mut ai_state,
+                            &game.fog,
+                            &world,
+                            team,
+                            &game.history,
+                            &zobrist,
+                        )
+                    }
+                };
+
+                //let the_move = the_move.line[0].clone();
+
+                console_dbg!("gmae thread has interrupted render thread");
+
+                let effect_m = ace::animate_move(&the_move, team, &mut game, &world, &mut doop)
+                    .await
+                    .apply(
                         team,
-                        history: game.history.clone(),
-                        zobrist: zobrist.clone(),
-                    });
-
-                    use futures::FutureExt;
-                    let the_move = futures::select!(
-                        _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
-                        x = ai_rx.recv().next().fuse() => x
+                        &mut game.tactical,
+                        &game.fog[team.index()],
+                        &world,
+                        None,
                     );
 
-                    interrupt_tx.send(()).await.unwrap();
+                game.update_fog(world, team);
+                game.history.push((the_move, effect_m));
 
-                    let k = doop.receiver.next().await;
-                    matches!(k.unwrap().data, ace::Response::AnimationFinish);
-
-                    //ai_int.interrupt_render_thread().await;
-
-                    the_move.unwrap().inner
-                } else {
-                    engine::ai::calculate_move(
-                        &mut ai_state,
-                        &game.fog,
-                        &world,
-                        team,
-                        &game.history,
-                        &zobrist,
-                    )
-                }
-            };
-
-            //let the_move = the_move.line[0].clone();
-
-            console_dbg!("gmae thread has interrupted render thread");
-
-            let effect_m = ace::animate_move(&the_move, team, &mut game, &world, &mut doop)
-                .await
-                .apply(
-                    team,
-                    &mut game.tactical,
-                    &game.fog[team.index()],
-                    &world,
-                    None,
+                let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
+                moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+                let curr_eval = engine::ai::Evaluator::default().absolute_evaluate(
+                    &game.tactical,
+                    world,
+                    &spoke_info,
+                    false,
                 );
+                console_dbg!(curr_eval);
+            }
+            engine::Slot::Player => {
+                let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
 
-            game.update_fog(world, team);
-            game.history.push((the_move, effect_m));
+                game.update_fog(world, team);
+                game.history.push(r);
 
-            let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
-            moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
-            let curr_eval = engine::ai::Evaluator::default().absolute_evaluate(
-                &game.tactical,
-                world,
-                &spoke_info,
-                false,
-            );
-            console_dbg!(curr_eval);
-        } else {
-            let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
-
-            game.update_fog(world, team);
-            game.history.push(r);
-
-            let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
-            moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
-            let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
-                &game.tactical,
-                world,
-                &spoke_info,
-                false,
-            );
-            console_dbg!(curr_eval_player);
+                let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
+                moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+                let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
+                    &game.tactical,
+                    world,
+                    &spoke_info,
+                    false,
+                );
+                console_dbg!(curr_eval_player);
+            }
         }
     };
 

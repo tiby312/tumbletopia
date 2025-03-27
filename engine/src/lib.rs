@@ -150,12 +150,19 @@ macro_rules! log {
 pub(crate) use log;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub enum Slot {
+    Player,
+    Ai,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum GameType {
     SinglePlayer(String),
     PassPlay(String),
     AIBattle(String),
     MapEditor(String),
     Replay(String),
+    Game(Slot, Slot, String),
 }
 
 pub mod share {

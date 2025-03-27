@@ -99,11 +99,7 @@ impl Models<Foo<TextureGpu, ModelGpu>> {
             // black_rabbit: quick_load(include_bytes!("../assets/black_rabbit.glb"), RESIZE, None),
             token_black: quick_load(include_bytes!("../../assets/hex-black.glb"), RESIZE, None),
             token_white: quick_load(include_bytes!("../../assets/hex-white.glb"), RESIZE, None),
-            token_neutral: quick_load(
-                include_bytes!("../../assets/hex-neutral.glb"),
-                RESIZE,
-                None,
-            ),
+            token_neutral: quick_load(include_bytes!("../../assets/hex-neutral.glb"), RESIZE, None),
             // direction: quick_load(include_bytes!("../assets/direction.glb"), 1, None),
             snow: quick_load(include_bytes!("../../assets/ice.glb"), RESIZE, None),
             water: quick_load(include_bytes!("../../assets/water.glb"), RESIZE, None),

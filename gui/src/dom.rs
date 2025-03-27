@@ -444,6 +444,13 @@ pub enum GameType {
     AIBattle(String),
     MapEditor(String),
     Replay(String),
+    Game(Slot, Slot, String),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum Slot {
+    Player,
+    Ai,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
