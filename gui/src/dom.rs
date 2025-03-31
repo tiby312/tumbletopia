@@ -444,7 +444,14 @@ pub enum GameType {
     AIBattle(String),
     MapEditor(String),
     Replay(String),
-    Game(Slot, Slot, String),
+    Game(Slot, Slot, Team, String),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+
+pub enum Team {
+    White,
+    Black,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

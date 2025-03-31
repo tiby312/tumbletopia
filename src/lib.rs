@@ -56,6 +56,7 @@ pub async fn main_entry() {
         "ai_select_white",
         "player_select_black",
         "ai_select_black",
+        "white_play_first",
     ]
     .map(|s| {
         let se = sender.clone();
@@ -90,6 +91,7 @@ pub async fn main_entry() {
 
     let mut white = dom::Slot::Player;
     let mut black = dom::Slot::Ai;
+    let mut starting_team = dom::Team::White;
     let command = loop {
         let Some(r) = receiver.next().await else {
             unreachable!()
@@ -101,6 +103,17 @@ pub async fn main_entry() {
             .unwrap();
 
         match r {
+            "white_play_first" => {
+                let val: web_sys::HtmlInputElement =
+                    shogo::utils::get_by_id_elem("white_play_first")
+                        .dyn_into()
+                        .unwrap();
+                if val.checked() {
+                    starting_team = dom::Team::White;
+                } else {
+                    starting_team = dom::Team::Black;
+                }
+            }
             "player_select_white" => {
                 let val: web_sys::HtmlInputElement =
                     shogo::utils::get_by_id_elem("player_select_white")
@@ -146,7 +159,7 @@ pub async fn main_entry() {
                 };
 
                 game_elem.set_attribute("style", "display:flex;").unwrap();
-                break dom::GameType::Game(white, black, t.value().into());
+                break dom::GameType::Game(white, black, starting_team, t.value().into());
 
                 //break dom::GameType::SinglePlayer(t.value().into());
             }
@@ -447,7 +460,7 @@ pub async fn worker_entry() {
         dom::GameType::AIBattle(s) => engine::GameType::AIBattle(s),
         dom::GameType::Replay(o) => engine::GameType::Replay(o),
         dom::GameType::MapEditor(s) => engine::GameType::MapEditor(s),
-        dom::GameType::Game(a, b, s) => {
+        dom::GameType::Game(a, b, team, s) => {
             let a = match a {
                 dom::Slot::Player => engine::Slot::Player,
                 dom::Slot::Ai => engine::Slot::Ai,
@@ -457,7 +470,12 @@ pub async fn worker_entry() {
                 dom::Slot::Ai => engine::Slot::Ai,
             };
 
-            engine::GameType::Game(a, b, s)
+            let t = match team {
+                dom::Team::White => engine::Team::White,
+                dom::Team::Black => engine::Team::Black,
+            };
+
+            engine::GameType::Game(a, b, t, s)
         }
     };
 
@@ -474,7 +492,7 @@ pub async fn worker_entry() {
         engine::GameType::PassPlay(s)
         | engine::GameType::SinglePlayer(s)
         | engine::GameType::AIBattle(s)
-        | engine::GameType::Game(_, _, s) => {
+        | engine::GameType::Game(_, _, _, s) => {
             let world = board::MyWorld::load_from_string(&s).unwrap();
 
             //let map = Map::load(&s, &world).unwrap();
@@ -566,8 +584,8 @@ pub async fn worker_entry() {
                 Finish::MapEditor(g)
                 //todo!();
             }
-            engine::GameType::Game(white, black, s) => {
-                let res = game_play_thread(doop, &world, [white, black], interrupt_tx).await;
+            engine::GameType::Game(white, black, t, s) => {
+                let res = game_play_thread(doop, &world, t, [white, black], interrupt_tx).await;
                 Finish::GameFinish((res.0, res.1))
             }
             engine::GameType::PassPlay(_s)
@@ -622,6 +640,7 @@ pub async fn worker_entry() {
 pub async fn game_play_thread(
     mut doop: ace::CommandSender,
     world: &board::MyWorld,
+    team: Team,
     player_type: [engine::Slot; 2],
     mut interrupt_tx: futures::channel::mpsc::Sender<()>,
 ) -> (unit::GameOver, MoveHistory) {
@@ -646,7 +665,7 @@ pub async fn game_play_thread(
     doop.repaint_ui(Team::Neutral, &mut game, format!("start:{:?}", s))
         .await;
 
-    let mut team_gen = world.starting_team.iter();
+    let mut team_gen = team.iter();
 
     let zobrist = Zobrist::new();
 

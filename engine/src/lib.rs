@@ -162,7 +162,7 @@ pub enum GameType {
     AIBattle(String),
     MapEditor(String),
     Replay(String),
-    Game(Slot, Slot, String),
+    Game(Slot, Slot, Team, String),
 }
 
 pub mod share {
