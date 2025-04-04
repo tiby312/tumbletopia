@@ -12,6 +12,6 @@ https://github.com/antonTobi/tumbleweed-legacy
 
 
 Contact me at:
-https://github.com/tiby312/
+https://tiby312.github.io/kreed/
 
 
