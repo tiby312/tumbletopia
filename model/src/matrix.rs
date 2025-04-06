@@ -1,3 +1,5 @@
+//https://docs.rs/nalgebra-glm/latest/nalgebra_glm/index.html
+
 use cgmath::{SquareMatrix, Transform};
 
 pub fn gen_inverse(a: &impl Inverse) -> cgmath::Matrix4<f32> {
