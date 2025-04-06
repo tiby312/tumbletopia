@@ -1239,7 +1239,7 @@ async fn render_command(
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
             let t = matrix::translation(pos.x, pos.y, cc);
-            t.generate()
+            matrix::gen(&t)
         };
 
         let cell_height = models.token_neutral.height;
@@ -1377,9 +1377,8 @@ async fn render_command(
                 let cells = normal_moves.iter_mesh(Axial::zero()).map(|e| {
                     let zzzz = 0.0;
 
-                    grid_snap(e, zzzz)
-                        .chain(matrix::scale(1.0, 1.0, 1.0))
-                        .generate()
+                    matrix::gen(&grid_snap(e, zzzz)
+                        .chain(matrix::scale(1.0, 1.0, 1.0)))
                 });
                 draw_sys
                     .batch(cells)
@@ -1390,9 +1389,8 @@ async fn render_command(
                 let cells = suicidal_moves.iter_mesh(Axial::zero()).map(|e| {
                     let zzzz = 0.0;
 
-                    grid_snap(e, zzzz)
-                        .chain(matrix::scale(1.0, 1.0, 1.0))
-                        .generate()
+                    matrix::gen(&grid_snap(e, zzzz)
+                        .chain(matrix::scale(1.0, 1.0, 1.0)))
                 });
                 draw_sys
                     .batch(cells)
@@ -1470,9 +1468,8 @@ async fn render_command(
                         };
 
                         Some(
-                            grid_snap(a, zzzz)
-                                .chain(matrix::scale(xx, xx, 1.0))
-                                .generate(),
+                            matrix::gen(&grid_snap(a, zzzz)
+                                .chain(matrix::scale(xx, xx, 1.0))),
                         )
                     } else {
                         None
@@ -1483,13 +1480,12 @@ async fn render_command(
                 .as_ref()
                 .map(|a| {
                     let pos = a.0;
-                    matrix::translation(pos.x, pos.y, zzzz)
+                    matrix::gen(&matrix::translation(pos.x, pos.y, zzzz)
                         .chain(matrix::scale(
                             small_shadow * piece_scale,
                             small_shadow * piece_scale,
                             1.0,
-                        ))
-                        .generate()
+                        )))
                 })
                 .filter(|_| team == shown_team);
 
@@ -1510,10 +1506,10 @@ async fn render_command(
             if let Some((pos, ..)) = &unit_animation {
                 let ss = radius[0];
                 //Draw it a bit lower then static ones so there is no flickering
-                let first = matrix::translation(pos.x, pos.y, 1.0)
+                let first = matrix::gen(&matrix::translation(pos.x, pos.y, 1.0)
                     .chain(matrix::scale(ss, ss, 1.0))
                     .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
-                    .generate();
+            );
 
                 match team {
                     Team::White => {
@@ -1566,10 +1562,10 @@ async fn render_command(
                 for (stack, radius) in [inner_stack, mid_stack].iter().zip(radius) {
                     for k in 0..*stack {
                         arr.push(
-                            grid_snap(a, k as f32 * cell_height * piece_scale)
+                            matrix::gen(&grid_snap(a, k as f32 * cell_height * piece_scale)
                                 .chain(matrix::scale(radius, radius, 1.0))
                                 .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
-                                .generate(),
+                        )
                         );
                     }
                 }
