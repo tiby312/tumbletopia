@@ -414,7 +414,7 @@ pub async fn worker_entry() {
     //     interrupt_sender,
     // };
 
-    let last_matrix = cgmath::Matrix4::identity();
+    let last_matrix = glam::f32::Mat4::IDENTITY;
     let ctx = &utils::get_context_webgl2_offscreen(&canvas);
 
     let grid_matrix = hex::HexConverter::new();
@@ -827,7 +827,7 @@ pub struct EngineStuff {
     ctx: WebGl2RenderingContext,
     canvas: OffscreenCanvas,
     scroll_manager: gui::scroll::TouchController,
-    last_matrix: cgmath::Matrix4<f32>,
+    last_matrix: glam::f32::Mat4,
     shader: ShaderSystem,
 }
 
@@ -1159,7 +1159,6 @@ async fn render_command(
                 return ace::Response::Ack;
             }
         }
-        
 
         if get_mouse_input.is_some() {
             if let Some(button) = button_pushed {
@@ -1377,8 +1376,7 @@ async fn render_command(
                 let cells = normal_moves.iter_mesh(Axial::zero()).map(|e| {
                     let zzzz = 0.0;
 
-                    matrix::gen(&grid_snap(e, zzzz)
-                        .chain(matrix::scale(1.0, 1.0, 1.0)))
+                    matrix::gen(&grid_snap(e, zzzz).chain(matrix::scale(1.0, 1.0, 1.0)))
                 });
                 draw_sys
                     .batch(cells)
@@ -1389,8 +1387,7 @@ async fn render_command(
                 let cells = suicidal_moves.iter_mesh(Axial::zero()).map(|e| {
                     let zzzz = 0.0;
 
-                    matrix::gen(&grid_snap(e, zzzz)
-                        .chain(matrix::scale(1.0, 1.0, 1.0)))
+                    matrix::gen(&grid_snap(e, zzzz).chain(matrix::scale(1.0, 1.0, 1.0)))
                 });
                 draw_sys
                     .batch(cells)
@@ -1467,10 +1464,9 @@ async fn render_command(
                             }
                         };
 
-                        Some(
-                            matrix::gen(&grid_snap(a, zzzz)
-                                .chain(matrix::scale(xx, xx, 1.0))),
-                        )
+                        Some(matrix::gen(
+                            &grid_snap(a, zzzz).chain(matrix::scale(xx, xx, 1.0)),
+                        ))
                     } else {
                         None
                     }
@@ -1480,12 +1476,11 @@ async fn render_command(
                 .as_ref()
                 .map(|a| {
                     let pos = a.0;
-                    matrix::gen(&matrix::translate(pos.x, pos.y, zzzz)
-                        .chain(matrix::scale(
-                            small_shadow * piece_scale,
-                            small_shadow * piece_scale,
-                            1.0,
-                        )))
+                    matrix::gen(&matrix::translate(pos.x, pos.y, zzzz).chain(matrix::scale(
+                        small_shadow * piece_scale,
+                        small_shadow * piece_scale,
+                        1.0,
+                    )))
                 })
                 .filter(|_| team == shown_team);
 
@@ -1506,10 +1501,11 @@ async fn render_command(
             if let Some((pos, ..)) = &unit_animation {
                 let ss = radius[0];
                 //Draw it a bit lower then static ones so there is no flickering
-                let first = matrix::gen(&matrix::translate(pos.x, pos.y, 1.0)
-                    .chain(matrix::scale(ss, ss, 1.0))
-                    .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
-            );
+                let first = matrix::gen(
+                    &matrix::translate(pos.x, pos.y, 1.0)
+                        .chain(matrix::scale(ss, ss, 1.0))
+                        .chain(matrix::scale(piece_scale, piece_scale, piece_scale)),
+                );
 
                 match team {
                     Team::White => {
@@ -1561,12 +1557,11 @@ async fn render_command(
 
                 for (stack, radius) in [inner_stack, mid_stack].iter().zip(radius) {
                     for k in 0..*stack {
-                        arr.push(
-                            matrix::gen(&grid_snap(a, k as f32 * cell_height * piece_scale)
+                        arr.push(matrix::gen(
+                            &grid_snap(a, k as f32 * cell_height * piece_scale)
                                 .chain(matrix::scale(radius, radius, 1.0))
-                                .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
-                        )
-                        );
+                                .chain(matrix::scale(piece_scale, piece_scale, piece_scale)),
+                        ));
                     }
                 }
             }
@@ -1690,7 +1685,7 @@ fn update_text(
     world: &board::MyWorld,
     grid_matrix: &hex::HexConverter,
     viewport: [f32; 2],
-    my_matrix: &cgmath::Matrix4<f32>,
+    my_matrix: &glam::f32::Mat4,
 ) -> Vec<dom::Text> {
     let make_text = |point: hex::Cube, text: String| {
         let pos = grid_matrix.hex_axial_to_world(&point);

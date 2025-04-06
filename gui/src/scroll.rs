@@ -129,7 +129,7 @@ impl TouchController {
     pub fn on_mouse_move(
         &mut self,
         pos: [f32; 2],
-        view_projection: &cgmath::Matrix4<f32>,
+        view_projection: &glam::f32::Mat4,
         dim: [f32; 2],
     ) {
         match self.foo {
@@ -194,7 +194,7 @@ impl TouchController {
     pub fn on_touch_move(
         &mut self,
         touches: &Touches,
-        view_projection: &cgmath::Matrix4<f32>,
+        view_projection: &glam::f32::Mat4,
         dim: [f32; 2],
     ) {
         match self.foo {
@@ -398,7 +398,7 @@ impl ScrollController {
         &mut self,
         buffer_radius: f32,
         mouse: [f32; 2],
-        view_projection: &cgmath::Matrix4<f32>,
+        view_projection: &glam::f32::Mat4,
         dim: [f32; 2],
     ) {
         self.cursor_canvas = mouse.into();
@@ -496,7 +496,7 @@ pub enum CameraMoving {
 //TODO don't do this every step, just when user clicks!!!
 pub fn mouse_to_world(
     mouse: [f32; 2],
-    view_projection: &cgmath::Matrix4<f32>,
+    view_projection: &glam::f32::Mat4,
     dim: [f32; 2],
 ) -> [f32; 2] {
     //generate some mouse points
@@ -508,9 +508,9 @@ pub fn mouse_to_world(
 pub fn world_to_mouse(
     world: [f32; 3],
     dim: [f32; 2],
-    view_projection: &cgmath::Matrix4<f32>,
+    view_projection: &glam::f32::Mat4,
 ) -> [f32; 2] {
-    let p = view_projection.transform_point(cgmath::Point3 {
+    let p = view_projection.project_point3(glam::Vec3 {
         x: world[0],
         y: world[1],
         z: world[2],

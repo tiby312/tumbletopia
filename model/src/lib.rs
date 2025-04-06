@@ -86,13 +86,13 @@ impl Doop {
             .generate();
 
         for p in m.positions.iter_mut() {
-            *p = s.transform_point((*p).into()).into();
+            *p = s.transform_point3((*p).into()).into();
         }
 
         let kk = rotate_x(PI / 2.0).generate();
 
         for p in m.normals.iter_mut() {
-            *p = kk.transform_point((*p).into()).into();
+            *p = kk.transform_point3((*p).into()).into();
         }
 
         // let s = matrix::translation(-v / 2.0, -v / 2.0, 0.0).generate();

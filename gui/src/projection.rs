@@ -2,7 +2,7 @@ use cgmath::Transform;
 use hex::HexConverter;
 
 pub fn get_world_rect(
-    view_projection: &cgmath::Matrix4<f32>,
+    view_projection: &glam::f32::Mat4,
     grid: &HexConverter,
 ) -> [[hex::CoordNum; 2]; 2] {
     let k = 1.0;
@@ -23,7 +23,7 @@ pub fn get_world_rect(
     [[a.q, b.q + 1], [a.r, b.r + 1]]
 }
 
-pub fn clip_to_world(clip: [f32; 2], view_projection: &cgmath::Matrix4<f32>) -> [f32; 2] {
+pub fn clip_to_world(clip: [f32; 2], view_projection: &glam::f32::Mat4) -> [f32; 2] {
     use model::matrix::*;
     let [clip_x, clip_y] = clip;
     let startc = [clip_x, clip_y, -0.9];
@@ -31,8 +31,19 @@ pub fn clip_to_world(clip: [f32; 2], view_projection: &cgmath::Matrix4<f32>) -> 
 
     let matrix = model::matrix::gen_inverse(view_projection);
 
-    let a = matrix.transform_point(startc.into());
-    let b = matrix.transform_point(endc.into());
+    let a = matrix.project_point3(startc.into());
+    let b = matrix.project_point3(endc.into());
+
+    let a = cgmath::Point3 {
+        x: a.x,
+        y: a.y,
+        z: a.z,
+    };
+    let b = cgmath::Point3 {
+        x: b.x,
+        y: b.y,
+        z: b.z,
+    };
 
     let v = b - a;
     let ray = collision::Ray::new(a, v);
@@ -44,13 +55,14 @@ pub fn clip_to_world(clip: [f32; 2], view_projection: &cgmath::Matrix4<f32>) -> 
     use collision::Continuous;
 
     if let Some(point) = plane.intersection(&ray) {
+        gloo::console::console_dbg!(point);
         [point.x, point.y]
     } else {
         [300.0, -80.0]
     }
 }
 
-pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> cgmath::Matrix4<f32> {
+pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> glam::f32::Mat4 {
     //TODO pass in the point to zoom in and rotate from!!!!!!
 
     //world coordinates when viewed with this camera is:
@@ -61,15 +73,15 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> cgmath::Matrix4<f32
     use model::matrix::*;
 
     use cgmath::*;
-
     let start_zoom = 1400.0;
 
-    let cam = Point3::new(0.0, 0.0, 0.0);
+    let cam = glam::Vec3::new(0.0, 0.0, 0.0);
     //let dir = Point3::new(-1.5, -0.0, -2.0);
-    let dir = Point3::new(-1.0, -1.0, -2.0);
+    let dir = glam::Vec3::new(-1.0, -1.0, -2.0);
 
-    let up = Vector3::new(0.0, 0.0, 1.0);
-    let g = model::matrix::gen_inverse(&cgmath::Matrix4::look_at_rh(cam, dir, up)); //.generate_inverse();
+    let up = glam::Vec3::new(0.0, 0.0, 1.0);
+
+    let g = model::matrix::gen_inverse(&glam::f32::Mat4::look_at_rh(cam, dir, up)); //.generate_inverse();
 
     let rot = rotate_z(rot);
     let zoom = translate(0.0, 0.0, start_zoom + zoom);

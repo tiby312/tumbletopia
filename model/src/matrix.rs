@@ -2,14 +2,14 @@
 
 use cgmath::{SquareMatrix, Transform};
 
-pub fn gen_inverse(a: &impl Inverse) -> cgmath::Matrix4<f32> {
-    let mut m = cgmath::Matrix4::identity();
+pub fn gen_inverse(a: &impl Inverse) -> glam::f32::Mat4 {
+    let mut m = glam::f32::Mat4::IDENTITY;
     a.apply_inverse(&mut m);
     m
 }
 
-pub fn gen(a: &impl MyMatrix) -> cgmath::Matrix4<f32> {
-    let mut m = cgmath::Matrix4::identity();
+pub fn gen(a: &impl MyMatrix) -> glam::f32::Mat4 {
+    let mut m = glam::f32::Mat4::IDENTITY;
     a.apply(&mut m);
     m
 }
@@ -17,26 +17,26 @@ pub fn gen(a: &impl MyMatrix) -> cgmath::Matrix4<f32> {
 pub trait Inverse: MyMatrix {
     type Neg: MyMatrix;
     fn generate_inverse(&self) -> Self::Neg;
-    fn apply_inverse(&self, a: &mut cgmath::Matrix4<f32>) {
+    fn apply_inverse(&self, a: &mut glam::f32::Mat4) {
         *a = *a * self.generate_inverse().generate();
     }
 }
 
-impl MyMatrix for cgmath::Matrix4<f32> {
-    fn generate(&self) -> cgmath::Matrix4<f32> {
+impl MyMatrix for glam::f32::Mat4 {
+    fn generate(&self) -> glam::f32::Mat4 {
         self.clone()
     }
 }
 
-impl Inverse for cgmath::Matrix4<f32> {
+impl Inverse for glam::f32::Mat4 {
     type Neg = Self;
     fn generate_inverse(&self) -> Self::Neg {
-        self.inverse_transform().unwrap()
+        self.inverse()
     }
 }
 pub trait MyMatrix {
-    fn generate(&self) -> cgmath::Matrix4<f32>;
-    fn apply(&self, foo: &mut cgmath::Matrix4<f32>) {
+    fn generate(&self) -> glam::f32::Mat4;
+    fn apply(&self, foo: &mut glam::f32::Mat4) {
         *foo = *foo * self.generate();
     }
     fn chain<K: MyMatrix>(self, other: K) -> Chain<Self, K>
@@ -60,17 +60,17 @@ impl<A: MyMatrix + Inverse, B: MyMatrix + Inverse> Inverse for Chain<A, B> {
             b: self.a.generate_inverse(),
         }
     }
-    fn apply_inverse(&self, a: &mut cgmath::Matrix4<f32>) {
+    fn apply_inverse(&self, a: &mut glam::f32::Mat4) {
         self.b.apply_inverse(a);
         self.a.apply_inverse(a);
     }
 }
 impl<A: MyMatrix, B: MyMatrix> MyMatrix for Chain<A, B> {
-    fn apply(&self, foo: &mut cgmath::Matrix4<f32>) {
+    fn apply(&self, foo: &mut glam::f32::Mat4) {
         self.a.apply(foo);
         self.b.apply(foo);
     }
-    fn generate(&self) -> cgmath::Matrix4<f32> {
+    fn generate(&self) -> glam::f32::Mat4 {
         let a = self.a.generate();
         let b = self.b.generate();
         a * b
@@ -86,20 +86,21 @@ pub struct Perspective {
 }
 
 impl MyMatrix for Perspective {
-    fn generate(&self) -> cgmath::Matrix4<f32> {
-        cgmath::perspective(
-            cgmath::Rad(self.field_of_view_rad),
-            self.aspect,
-            self.near,
-            self.far,
-        )
+    fn generate(&self) -> glam::f32::Mat4 {
+        glam::f32::Mat4::perspective_rh(self.field_of_view_rad, self.aspect, self.near, self.far)
+        // cgmath::perspective(
+        //     cgmath::Rad(self.field_of_view_rad),
+        //     self.aspect,
+        //     self.near,
+        //     self.far,
+        // )
     }
 }
 
 impl Inverse for Perspective {
-    type Neg = cgmath::Matrix4<f32>;
+    type Neg = glam::f32::Mat4;
     fn generate_inverse(&self) -> Self::Neg {
-        self.generate().inverse_transform().unwrap()
+        self.generate().inverse()
     }
 }
 pub fn perspective(field_of_view_rad: f32, aspect: f32, near: f32, far: f32) -> Perspective {
@@ -129,10 +130,10 @@ impl Inverse for Scale {
     }
 }
 impl MyMatrix for Scale {
-    fn generate(&self) -> cgmath::Matrix4<f32> {
-        cgmath::Matrix4::new(
+    fn generate(&self) -> glam::f32::Mat4 {
+        glam::f32::Mat4::from_cols_array(&[
             self.tx, 0., 0., 0., 0., self.ty, 0., 0., 0., 0., self.tz, 0., 0., 0., 0., 1.0,
-        )
+        ])
     }
 }
 
@@ -149,11 +150,13 @@ impl Inverse for XRot {
     }
 }
 impl MyMatrix for XRot {
-    fn generate(&self) -> cgmath::Matrix4<f32> {
+    fn generate(&self) -> glam::f32::Mat4 {
         let c = self.angle_rad.cos();
         let s = self.angle_rad.sin();
 
-        cgmath::Matrix4::new(1., 0., 0., 0., 0., c, s, 0., 0., -s, c, 0., 0., 0., 0., 1.)
+        glam::f32::Mat4::from_cols_array(&[
+            1., 0., 0., 0., 0., c, s, 0., 0., -s, c, 0., 0., 0., 0., 1.,
+        ])
     }
 }
 
@@ -170,11 +173,13 @@ impl Inverse for YRot {
     }
 }
 impl MyMatrix for YRot {
-    fn generate(&self) -> cgmath::Matrix4<f32> {
+    fn generate(&self) -> glam::f32::Mat4 {
         let c = self.angle_rad.cos();
         let s = self.angle_rad.sin();
 
-        cgmath::Matrix4::new(c, 0., -s, 0., 0., 1., 0., 0., s, 0., c, 0., 0., 0., 0., 1.)
+        glam::f32::Mat4::from_cols_array(&[
+            c, 0., -s, 0., 0., 1., 0., 0., s, 0., c, 0., 0., 0., 0., 1.,
+        ])
     }
 }
 
@@ -191,11 +196,13 @@ impl Inverse for ZRot {
     }
 }
 impl MyMatrix for ZRot {
-    fn generate(&self) -> cgmath::Matrix4<f32> {
+    fn generate(&self) -> glam::f32::Mat4 {
         let c = self.angle_rad.cos();
         let s = self.angle_rad.sin();
 
-        cgmath::Matrix4::new(c, s, 0., 0., -s, c, 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.)
+        glam::f32::Mat4::from_cols_array(&[
+            c, s, 0., 0., -s, c, 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.,
+        ])
     }
 }
 
@@ -238,17 +245,19 @@ impl Inverse for Translation {
     }
 }
 impl MyMatrix for Translation {
-    fn generate(&self) -> cgmath::Matrix4<f32> {
+    fn generate(&self) -> glam::f32::Mat4 {
         let tx = self.tx;
         let ty = self.ty;
         let tz = self.tz;
-        cgmath::Matrix4::new(
+        // let c=cgmath::Matrix4::new(
+        //     1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., tx, ty, tz, 1.,
+        // );
+
+        glam::f32::Mat4::from_cols_array(&[
             1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., tx, ty, tz, 1.,
-        )
+        ])
     }
 }
-
-
 
 // ///
 // /// Chain together a list of elements
