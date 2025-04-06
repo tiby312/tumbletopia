@@ -887,7 +887,6 @@ async fn render_command(
         neutral: score_data.neutral,
     };
 
-    
     //TODO remove
     let command_copy = command.clone();
 
@@ -904,13 +903,16 @@ async fn render_command(
         grey: bool,
     }
 
+    let mut repaint_ui = None;
+
     //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
         ace::Command::RepaintUI(foo) => {
-            let k = update_text(world, grid_matrix, viewport, &cgmath::Matrix4::identity());
-            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone(), foo));
-            return ace::Response::Ack;
+            repaint_ui = Some(foo);
+            // let k = update_text(world, grid_matrix, viewport, &cgmath::Matrix4::identity());
+            // engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone(), foo));
+            // return ace::Response::Ack;
         }
         ace::Command::HideUndo => {
             engine_worker.post_message(dom::WorkerToDom::HideUndo);
@@ -1010,7 +1012,6 @@ async fn render_command(
         }
     };
 
-    
     loop {
         if poking == 1 {
             console_dbg!("we poked!");
@@ -1024,6 +1025,9 @@ async fn render_command(
         let mut resize_text = false;
         use futures::FutureExt;
         loop {
+            if repaint_ui.is_some() {
+                break;
+            }
             futures::select! {
                 _ = interrupt_rx.next()=>{
                     matches!(command_copy,ace::Command::Wait);
@@ -1141,6 +1145,11 @@ async fn render_command(
         let mouse_world =
             gui::scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
+        if let Some(foo) = repaint_ui {
+            let k = update_text(world, grid_matrix, viewport, &my_matrix);
+            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone(), foo));
+            return ace::Response::Ack;
+        }
         if resize_text {
             console_dbg!("RESIZING TEXT!!!!");
             let k = update_text(world, grid_matrix, viewport, &my_matrix);

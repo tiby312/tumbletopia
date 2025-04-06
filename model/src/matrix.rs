@@ -1,14 +1,13 @@
 use cgmath::{SquareMatrix, Transform};
 
-
-pub fn gen_inverse(a:&impl Inverse)->cgmath::Matrix4<f32>{
-    let mut m=cgmath::Matrix4::identity();
+pub fn gen_inverse(a: &impl Inverse) -> cgmath::Matrix4<f32> {
+    let mut m = cgmath::Matrix4::identity();
     a.apply_inverse(&mut m);
     m
 }
 
-pub fn gen(a:&impl MyMatrix)->cgmath::Matrix4<f32>{
-    let mut m=cgmath::Matrix4::identity();
+pub fn gen(a: &impl MyMatrix) -> cgmath::Matrix4<f32> {
+    let mut m = cgmath::Matrix4::identity();
     a.apply(&mut m);
     m
 }
@@ -16,10 +15,8 @@ pub fn gen(a:&impl MyMatrix)->cgmath::Matrix4<f32>{
 pub trait Inverse: MyMatrix {
     type Neg: MyMatrix + Inverse;
     fn generate_inverse(&self) -> Self::Neg;
-    fn apply_inverse(&self,a:&mut cgmath::Matrix4<f32>){
-        
-        *a=*a*self.generate_inverse().generate();
-
+    fn apply_inverse(&self, a: &mut cgmath::Matrix4<f32>) {
+        *a = *a * self.generate_inverse().generate();
     }
 }
 
@@ -37,9 +34,8 @@ impl Inverse for cgmath::Matrix4<f32> {
 }
 pub trait MyMatrix {
     fn generate(&self) -> cgmath::Matrix4<f32>;
-    fn apply(&self,foo:&mut cgmath::Matrix4<f32>){
-        
-        *foo=*foo*self.generate();
+    fn apply(&self, foo: &mut cgmath::Matrix4<f32>) {
+        *foo = *foo * self.generate();
     }
     fn chain<K: MyMatrix>(self, other: K) -> Chain<Self, K>
     where
@@ -62,13 +58,13 @@ impl<A: MyMatrix + Inverse, B: MyMatrix + Inverse> Inverse for Chain<A, B> {
             b: self.a.generate_inverse(),
         }
     }
-    fn apply_inverse(&self,a:&mut cgmath::Matrix4<f32>) {
+    fn apply_inverse(&self, a: &mut cgmath::Matrix4<f32>) {
         self.b.apply_inverse(a);
         self.a.apply_inverse(a);
     }
 }
 impl<A: MyMatrix, B: MyMatrix> MyMatrix for Chain<A, B> {
-    fn apply(&self,foo:&mut cgmath::Matrix4<f32>){
+    fn apply(&self, foo: &mut cgmath::Matrix4<f32>) {
         self.a.apply(foo);
         self.b.apply(foo);
     }
@@ -88,7 +84,6 @@ pub struct Perspective {
 }
 
 impl MyMatrix for Perspective {
-    
     fn generate(&self) -> cgmath::Matrix4<f32> {
         //let rr=100.0;
         //cgmath::ortho(-rr,rr, -rr, rr, self.near, self.far)
@@ -99,7 +94,6 @@ impl MyMatrix for Perspective {
             self.far,
         )
     }
-    
 }
 
 impl Inverse for Perspective {
