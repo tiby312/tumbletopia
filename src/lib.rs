@@ -1159,20 +1159,7 @@ async fn render_command(
                 return ace::Response::Ack;
             }
         }
-        // if let Some(foo) = repaint_ui {
-        //     let k = update_text(world, grid_matrix, viewport, &my_matrix);
-        //     engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone(), foo));
-        //     return ace::Response::Ack;
-        // }
-        // if resize_text {
-        //     console_dbg!("RESIZING TEXT!!!!");
-        //     let k = update_text(world, grid_matrix, viewport, &my_matrix);
-        //     engine_worker.post_message(dom::WorkerToDom::TextUpdate(
-        //         k,
-        //         score_data.clone(),
-        //         "".to_string(),
-        //     ));
-        // }
+        
 
         if get_mouse_input.is_some() {
             if let Some(button) = button_pushed {
