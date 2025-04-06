@@ -1,3 +1,4 @@
+use cgmath::SquareMatrix;
 use engine::board::MyWorld;
 use engine::main_logic as ace;
 use engine::main_logic::GameWrap;
@@ -886,14 +887,7 @@ async fn render_command(
         neutral: score_data.neutral,
     };
 
-    let proj = gui::projection::projection(viewport).generate();
-    let view_proj = gui::projection::view_matrix(
-        scroll_manager.camera(),
-        scroll_manager.zoom(),
-        scroll_manager.rot(),
-    );
-
-    let my_matrix = proj.chain(view_proj).generate();
+    
     //TODO remove
     let command_copy = command.clone();
 
@@ -914,7 +908,7 @@ async fn render_command(
     //console_dbg!(command);
     match command {
         ace::Command::RepaintUI(foo) => {
-            let k = update_text(world, grid_matrix, viewport, &my_matrix);
+            let k = update_text(world, grid_matrix, viewport, &cgmath::Matrix4::identity());
             engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone(), foo));
             return ace::Response::Ack;
         }
@@ -1016,6 +1010,7 @@ async fn render_command(
         }
     };
 
+    
     loop {
         if poking == 1 {
             console_dbg!("we poked!");
@@ -1127,19 +1122,19 @@ async fn render_command(
             }
         }
 
-        let proj = gui::projection::projection(viewport).generate();
+        let proj = matrix::gen(&gui::projection::projection(viewport));
         let view_proj = gui::projection::view_matrix(
             scroll_manager.camera(),
             scroll_manager.zoom(),
             scroll_manager.rot(),
         );
 
-        let my_matrix = proj.chain(view_proj).generate();
+        let my_matrix = matrix::gen(&proj.chain(view_proj));
 
         *last_matrix = my_matrix;
 
-        let lll = my_matrix.generate(); //matrix::scale(0.0, 0.0, 0.0).generate();
-        let projjj = lll.as_ref();
+        //let lll = my_matrix.generate(); //matrix::scale(0.0, 0.0, 0.0).generate();
+        let projjj = my_matrix.as_ref();
 
         let piece_scale: f32 = 0.8;
 
@@ -1614,7 +1609,7 @@ async fn render_command(
                 (((hdir as usize) + 2) % 6) as f32 * (std::f32::consts::TAU / 6.0),
             );
 
-            let m = t.chain(r).generate();
+            let m = matrix::gen(&t.chain(r));
 
             label_arrows.push(m);
         }

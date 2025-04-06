@@ -29,7 +29,7 @@ pub fn clip_to_world(clip: [f32; 2], view_projection: &cgmath::Matrix4<f32>) -> 
     let startc = [clip_x, clip_y, -0.9];
     let endc = [clip_x, clip_y, 0.999];
 
-    let matrix = view_projection.inverse().generate();
+    let matrix = model::matrix::gen_inverse(view_projection);
 
     let a = matrix.transform_point(startc.into());
     let b = matrix.transform_point(endc.into());
@@ -69,7 +69,7 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> cgmath::Matrix4<f32
     let dir = Point3::new(-1.0, -1.0, -2.0);
 
     let up = Vector3::new(0.0, 0.0, 1.0);
-    let g = cgmath::Matrix4::look_at_rh(cam, dir, up).inverse();
+    let g = model::matrix::gen_inverse(&cgmath::Matrix4::look_at_rh(cam, dir, up));//.generate_inverse();
 
     let rot = z_rotation(rot);
     let zoom = translation(0.0, 0.0, start_zoom + zoom);
@@ -78,7 +78,8 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> cgmath::Matrix4<f32
         .chain(g)
         .chain(zoom);
 
-    camera.inverse().generate()
+    model::matrix::gen_inverse(&camera)
+
 }
 
 pub fn projection(dim: [f32; 2]) -> model::matrix::Perspective {
