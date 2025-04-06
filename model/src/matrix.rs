@@ -7,21 +7,21 @@ pub fn gen_inverse(a: &impl Inverse) -> Mat4 {
     m
 }
 
-pub fn gen(a: &impl MyMatrix) -> Mat4 {
+pub fn gen(a: &impl Mat) -> Mat4 {
     let mut m = Mat4::IDENTITY;
     a.apply(&mut m);
     m
 }
 
-pub trait Inverse: MyMatrix {
-    type Neg: MyMatrix;
+pub trait Inverse: Mat {
+    type Neg: Mat;
     fn generate_inverse(&self) -> Self::Neg;
     fn apply_inverse(&self, a: &mut Mat4) {
         *a *= self.generate_inverse().generate();
     }
 }
 
-impl MyMatrix for Mat4 {
+impl Mat for Mat4 {
     fn generate(&self) -> Mat4 {
         self.clone()
     }
@@ -33,12 +33,12 @@ impl Inverse for Mat4 {
         self.inverse()
     }
 }
-pub trait MyMatrix {
+pub trait Mat {
     fn generate(&self) -> Mat4;
     fn apply(&self, foo: &mut Mat4) {
         *foo *= self.generate();
     }
-    fn chain<K: MyMatrix>(self, other: K) -> Chain<Self, K>
+    fn chain<K: Mat>(self, other: K) -> Chain<Self, K>
     where
         Self: Sized,
     {
@@ -64,7 +64,7 @@ impl<A: Inverse, B: Inverse> Inverse for Chain<A, B> {
         self.a.apply_inverse(a);
     }
 }
-impl<A: MyMatrix, B: MyMatrix> MyMatrix for Chain<A, B> {
+impl<A: Mat, B: Mat> Mat for Chain<A, B> {
     fn apply(&self, foo: &mut Mat4) {
         self.a.apply(foo);
         self.b.apply(foo);
@@ -84,7 +84,7 @@ pub struct Perspective {
     far: f32,
 }
 
-impl MyMatrix for Perspective {
+impl Mat for Perspective {
     fn generate(&self) -> Mat4 {
         Mat4::perspective_rh(self.field_of_view_rad, self.aspect, self.near, self.far)
     }
@@ -122,7 +122,7 @@ impl Inverse for Scale {
         }
     }
 }
-impl MyMatrix for Scale {
+impl Mat for Scale {
     fn generate(&self) -> Mat4 {
         Mat4::from_cols_array(&[
             self.tx, 0., 0., 0., 0., self.ty, 0., 0., 0., 0., self.tz, 0., 0., 0., 0., 1.0,
@@ -142,7 +142,7 @@ impl Inverse for XRot {
         }
     }
 }
-impl MyMatrix for XRot {
+impl Mat for XRot {
     fn generate(&self) -> Mat4 {
         let c = self.angle_rad.cos();
         let s = self.angle_rad.sin();
@@ -163,7 +163,7 @@ impl Inverse for YRot {
         }
     }
 }
-impl MyMatrix for YRot {
+impl Mat for YRot {
     fn generate(&self) -> Mat4 {
         let c = self.angle_rad.cos();
         let s = self.angle_rad.sin();
@@ -184,7 +184,7 @@ impl Inverse for ZRot {
         }
     }
 }
-impl MyMatrix for ZRot {
+impl Mat for ZRot {
     fn generate(&self) -> Mat4 {
         let c = self.angle_rad.cos();
         let s = self.angle_rad.sin();
@@ -231,7 +231,7 @@ impl Inverse for Translation {
         }
     }
 }
-impl MyMatrix for Translation {
+impl Mat for Translation {
     fn generate(&self) -> Mat4 {
         let tx = self.tx;
         let ty = self.ty;

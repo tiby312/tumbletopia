@@ -2,7 +2,7 @@ use gloo::console::console_dbg;
 use gloo::console::log;
 
 use hex::*;
-use model::matrix::MyMatrix;
+use model::matrix::Mat;
 use shader_sys::ShaderSystem;
 
 pub mod animation;
@@ -120,7 +120,7 @@ pub struct BatchBuilder<'a, I> {
     lighting: bool,
     grey: bool,
 }
-impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
+impl<I: Iterator<Item = K>, K: Mat> BatchBuilder<'_, I> {
     pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>, my_matrix: &[f32; 16]) {
         let mmatrix: Vec<[f32; 16]> = (&mut self.ff)
             .map(|x| {
@@ -175,7 +175,7 @@ impl<I: Iterator<Item = K>, K: MyMatrix> BatchBuilder<'_, I> {
     }
 }
 impl Doop for ShaderSystem {
-    fn batch<K: MyMatrix, I>(&mut self, ff: I) -> BatchBuilder<'_, I::IntoIter>
+    fn batch<K: Mat, I>(&mut self, ff: I) -> BatchBuilder<'_, I::IntoIter>
     where
         I: IntoIterator<Item = K>,
     {
@@ -189,7 +189,7 @@ impl Doop for ShaderSystem {
 }
 
 pub trait Doop {
-    fn batch<K: MyMatrix, I>(&mut self, ff: I) -> BatchBuilder<'_, I::IntoIter>
+    fn batch<K: Mat, I>(&mut self, ff: I) -> BatchBuilder<'_, I::IntoIter>
     where
         I: IntoIterator<Item = K>;
 }
