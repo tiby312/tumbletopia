@@ -1,5 +1,4 @@
 pub mod matrix;
-use cgmath::Transform;
 use gltf::image::Source;
 use image::imageops::FilterType;
 
@@ -66,7 +65,7 @@ pub fn single_tex() -> Img {
 
 #[derive(Debug)]
 pub struct ModelData {
-    pub matrix: cgmath::Matrix4<f32>,
+    pub matrix: glam::f32::Mat4,
     pub positions: Vec<[f32; 3]>,
     pub indices: Option<Vec<u16>>,
     pub normals: Vec<[f32; 3]>,
@@ -221,7 +220,7 @@ impl Doop {
 
         let node = self.document.nodes().next().unwrap();
 
-        let matrix: cgmath::Matrix4<f32> = node.transform().matrix().into();
+        let matrix = glam::f32::Mat4::from_cols_array_2d(&node.transform().matrix());
 
         // log!(format!("mat:    {:?}",node.transform().matrix()));
 
@@ -263,12 +262,12 @@ impl Doop {
 
         let positions = positions
             .into_iter()
-            .map(|p| matrix.transform_point(p.into()).into())
+            .map(|p| matrix.transform_point3(p.into()).into())
             .collect();
 
         let normals = normals
             .into_iter()
-            .map(|p| matrix.transform_point(p.into()).into())
+            .map(|p| matrix.transform_point3(p.into()).into())
             .collect();
 
         (

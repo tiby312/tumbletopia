@@ -1,7 +1,5 @@
 //https://docs.rs/nalgebra-glm/latest/nalgebra_glm/index.html
 
-use cgmath::{SquareMatrix, Transform};
-
 pub fn gen_inverse(a: &impl Inverse) -> glam::f32::Mat4 {
     let mut m = glam::f32::Mat4::IDENTITY;
     a.apply_inverse(&mut m);
@@ -18,7 +16,7 @@ pub trait Inverse: MyMatrix {
     type Neg: MyMatrix;
     fn generate_inverse(&self) -> Self::Neg;
     fn apply_inverse(&self, a: &mut glam::f32::Mat4) {
-        *a = *a * self.generate_inverse().generate();
+        *a *= self.generate_inverse().generate();
     }
 }
 
@@ -37,7 +35,7 @@ impl Inverse for glam::f32::Mat4 {
 pub trait MyMatrix {
     fn generate(&self) -> glam::f32::Mat4;
     fn apply(&self, foo: &mut glam::f32::Mat4) {
-        *foo = *foo * self.generate();
+        *foo *= self.generate();
     }
     fn chain<K: MyMatrix>(self, other: K) -> Chain<Self, K>
     where

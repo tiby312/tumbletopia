@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 gltf={version="*", features=["import"]}
 image="*"
-cgmath="0.18.0"
 glam = "0.30.1"
 
 [dependencies.gloo]
