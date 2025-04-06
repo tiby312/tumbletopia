@@ -1,4 +1,3 @@
-use cgmath::SquareMatrix;
 use engine::board::MyWorld;
 use engine::main_logic as ace;
 use engine::main_logic::GameWrap;
@@ -1137,7 +1136,6 @@ async fn render_command(
 
         *last_matrix = my_matrix;
 
-        //let lll = my_matrix.generate(); //matrix::scale(0.0, 0.0, 0.0).generate();
         let projjj = my_matrix.as_ref();
 
         let piece_scale: f32 = 0.8;
@@ -1145,20 +1143,36 @@ async fn render_command(
         let mouse_world =
             gui::scroll::mouse_to_world(scroll_manager.cursor_canvas(), &my_matrix, viewport);
 
-        if let Some(foo) = repaint_ui {
-            let k = update_text(world, grid_matrix, viewport, &my_matrix);
-            engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone(), foo));
-            return ace::Response::Ack;
+        {
+            if resize_text || repaint_ui.is_some() {
+                let s = if let Some(foo) = &repaint_ui {
+                    foo.clone()
+                } else {
+                    "".into()
+                };
+
+                let k = update_text(world, grid_matrix, viewport, &my_matrix);
+                engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone(), s));
+            }
+
+            if repaint_ui.is_some() {
+                return ace::Response::Ack;
+            }
         }
-        if resize_text {
-            console_dbg!("RESIZING TEXT!!!!");
-            let k = update_text(world, grid_matrix, viewport, &my_matrix);
-            engine_worker.post_message(dom::WorkerToDom::TextUpdate(
-                k,
-                score_data.clone(),
-                "".to_string(),
-            ));
-        }
+        // if let Some(foo) = repaint_ui {
+        //     let k = update_text(world, grid_matrix, viewport, &my_matrix);
+        //     engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone(), foo));
+        //     return ace::Response::Ack;
+        // }
+        // if resize_text {
+        //     console_dbg!("RESIZING TEXT!!!!");
+        //     let k = update_text(world, grid_matrix, viewport, &my_matrix);
+        //     engine_worker.post_message(dom::WorkerToDom::TextUpdate(
+        //         k,
+        //         score_data.clone(),
+        //         "".to_string(),
+        //     ));
+        // }
 
         if get_mouse_input.is_some() {
             if let Some(button) = button_pushed {
