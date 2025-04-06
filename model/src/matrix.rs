@@ -1,6 +1,10 @@
 //https://docs.rs/nalgebra-glm/latest/nalgebra_glm/index.html
 use glam::f32::Mat4;
 
+pub mod prelude{
+    pub use super::Mat;
+}
+
 pub fn gen_inverse(a: &impl Inverse) -> Mat4 {
     let mut m = Mat4::IDENTITY;
     a.apply_inverse(&mut m);
