@@ -1238,7 +1238,7 @@ async fn render_command(
 
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
-            let t = matrix::translation(pos.x, pos.y, cc);
+            let t = matrix::translate(pos.x, pos.y, cc);
             matrix::gen(&t)
         };
 
@@ -1480,7 +1480,7 @@ async fn render_command(
                 .as_ref()
                 .map(|a| {
                     let pos = a.0;
-                    matrix::gen(&matrix::translation(pos.x, pos.y, zzzz)
+                    matrix::gen(&matrix::translate(pos.x, pos.y, zzzz)
                         .chain(matrix::scale(
                             small_shadow * piece_scale,
                             small_shadow * piece_scale,
@@ -1506,7 +1506,7 @@ async fn render_command(
             if let Some((pos, ..)) = &unit_animation {
                 let ss = radius[0];
                 //Draw it a bit lower then static ones so there is no flickering
-                let first = matrix::gen(&matrix::translation(pos.x, pos.y, 1.0)
+                let first = matrix::gen(&matrix::translate(pos.x, pos.y, 1.0)
                     .chain(matrix::scale(ss, ss, 1.0))
                     .chain(matrix::scale(piece_scale, piece_scale, piece_scale))
             );
@@ -1610,8 +1610,8 @@ async fn render_command(
         let mut label_arrows = vec![];
         for (pos, hdir) in label_arrow_points(world) {
             let pos = grid_matrix.hex_axial_to_world(&pos);
-            let t = matrix::translation(pos.x, pos.y, -5.0);
-            let r = matrix::z_rotation(
+            let t = matrix::translate(pos.x, pos.y, -5.0);
+            let r = matrix::rotate_z(
                 (((hdir as usize) + 2) % 6) as f32 * (std::f32::consts::TAU / 6.0),
             );
 

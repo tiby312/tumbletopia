@@ -71,9 +71,9 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> cgmath::Matrix4<f32
     let up = Vector3::new(0.0, 0.0, 1.0);
     let g = model::matrix::gen_inverse(&cgmath::Matrix4::look_at_rh(cam, dir, up)); //.generate_inverse();
 
-    let rot = z_rotation(rot);
-    let zoom = translation(0.0, 0.0, start_zoom + zoom);
-    let camera = translation(camera[0], camera[1], 0.0)
+    let rot = rotate_z(rot);
+    let zoom = translate(0.0, 0.0, start_zoom + zoom);
+    let camera = translate(camera[0], camera[1], 0.0)
         .chain(rot)
         .chain(g)
         .chain(zoom);

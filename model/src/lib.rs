@@ -80,8 +80,8 @@ impl Doop {
         let (mut m, tex) = self.gen(foo, custom_alpha);
 
         let v = ss;
-        let s = matrix::translation(0.0, 0.0, 0.0)
-            .chain(x_rotation(PI / 2.0))
+        let s = matrix::translate(0.0, 0.0, 0.0)
+            .chain(rotate_x(PI / 2.0))
             .chain(matrix::scale(v, v, v))
             .generate();
 
@@ -89,7 +89,7 @@ impl Doop {
             *p = s.transform_point((*p).into()).into();
         }
 
-        let kk = x_rotation(PI / 2.0).generate();
+        let kk = rotate_x(PI / 2.0).generate();
 
         for p in m.normals.iter_mut() {
             *p = kk.transform_point((*p).into()).into();

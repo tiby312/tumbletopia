@@ -15,7 +15,7 @@ pub fn gen(a: &impl MyMatrix) -> cgmath::Matrix4<f32> {
 }
 
 pub trait Inverse: MyMatrix {
-    type Neg: MyMatrix + Inverse;
+    type Neg: MyMatrix;
     fn generate_inverse(&self) -> Self::Neg;
     fn apply_inverse(&self, a: &mut cgmath::Matrix4<f32>) {
         *a = *a * self.generate_inverse().generate();
@@ -87,8 +87,6 @@ pub struct Perspective {
 
 impl MyMatrix for Perspective {
     fn generate(&self) -> cgmath::Matrix4<f32> {
-        //let rr=100.0;
-        //cgmath::ortho(-rr,rr, -rr, rr, self.near, self.far)
         cgmath::perspective(
             cgmath::Rad(self.field_of_view_rad),
             self.aspect,
@@ -201,13 +199,13 @@ impl MyMatrix for ZRot {
     }
 }
 
-pub fn x_rotation(angle_rad: f32) -> XRot {
+pub fn rotate_x(angle_rad: f32) -> XRot {
     XRot { angle_rad }
 }
-pub fn y_rotation(angle_rad: f32) -> YRot {
+pub fn rotate_y(angle_rad: f32) -> YRot {
     YRot { angle_rad }
 }
-pub fn z_rotation(angle_rad: f32) -> ZRot {
+pub fn rotate_z(angle_rad: f32) -> ZRot {
     ZRot { angle_rad }
 }
 
@@ -218,7 +216,7 @@ pub fn scale(x: f32, y: f32, z: f32) -> Scale {
         tz: z,
     }
 }
-pub fn translation(tx: f32, ty: f32, tz: f32) -> Translation {
+pub fn translate(tx: f32, ty: f32, tz: f32) -> Translation {
     Translation { tx, ty, tz }
 }
 
@@ -249,3 +247,26 @@ impl MyMatrix for Translation {
         )
     }
 }
+
+
+
+// ///
+// /// Chain together a list of elements
+// ///
+// #[macro_export]
+// macro_rules! combine {
+//     ($a:expr)=>{
+//         $a
+//     };
+//     ( $a:expr,$( $x:expr ),* ) => {
+//         {
+//             use $crate::MyMatrix;
+//             let mut a=$a;
+//             $(
+//                 let a=a.chain($x);
+//             )*
+
+//             a
+//         }
+//     };
+// }
