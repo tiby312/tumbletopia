@@ -414,7 +414,7 @@ pub async fn worker_entry() {
     //     interrupt_sender,
     // };
 
-    let last_matrix = glam::f32::Mat4::IDENTITY;
+    //let last_matrix = glam::f32::Mat4::IDENTITY;
     let ctx = &utils::get_context_webgl2_offscreen(&canvas);
 
     let grid_matrix = hex::HexConverter::new();
@@ -429,7 +429,7 @@ pub async fn worker_entry() {
         ctx: ctx.clone(),
         canvas,
         scroll_manager,
-        last_matrix,
+        //last_matrix,
         shader,
     };
 
@@ -827,7 +827,7 @@ pub struct EngineStuff {
     ctx: WebGl2RenderingContext,
     canvas: OffscreenCanvas,
     scroll_manager: gui::scroll::TouchController,
-    last_matrix: glam::f32::Mat4,
+    //last_matrix: glam::f32::Mat4,
     shader: ShaderSystem,
 }
 
@@ -844,7 +844,7 @@ async fn render_command(
 ) -> ace::Response {
     let game = &game_total.tactical;
     let scroll_manager = &mut e.scroll_manager;
-    let last_matrix = &mut e.last_matrix;
+    //let last_matrix = &mut e.last_matrix;
     let ctx = &e.ctx;
     let canvas = &e.canvas;
     let grid_matrix = &e.grid_matrix;
@@ -1023,6 +1023,20 @@ async fn render_command(
 
         let mut resize_text = false;
         use futures::FutureExt;
+
+        let mut resize_canvas=None;
+
+
+        let proj = matrix::gen(&gui::projection::projection(viewport));
+        let view_proj = gui::projection::view_matrix(
+            scroll_manager.camera(),
+            scroll_manager.zoom(),
+            scroll_manager.rot(),
+        );
+
+        let my_matrix = matrix::gen(&proj.chain(view_proj));
+
+
         loop {
             if repaint_ui.is_some() {
                 break;
@@ -1039,36 +1053,19 @@ async fn render_command(
                     let k=k.unwrap();
                     let e=&k;
                     match e {
-                        // DomToWorker::GameChange(s)=>{
-                        //     //TODO validate string here???
-
-                        //     return ace::Response::ChangeGameState(s.clone());
-                        //     // let k = update_text(world, grid_matrix, viewport, &my_matrix);
-
-                        //     // engine_worker.post_message(dom::WorkerToDom::TextUpdate(
-                        //     //     k,
-                        //     //     score_data.clone(),
-                        //     //     game_str.clone(),
-                        //     // ))
-                        // }
+    
                         DomToWorker::Resize {
                             canvasx: _canvasx,
                             canvasy: _canvasy,
                             x,
                             y,
                         } => {
-                            let xx = *x as u32;
-                            let yy = *y as u32;
-                            canvas.set_width(xx);
-                            canvas.set_height(yy);
-                            ctx.viewport(0, 0, xx as i32, yy as i32);
-
-                            viewport = [xx as f32, yy as f32];
-                            log!(format!("updating viewport to be:{:?}", viewport));
+                            resize_canvas=Some((*x,*y));
+                            
                             resize_text = true;
                         }
                         DomToWorker::TouchMove { touches } => {
-                            scroll_manager.on_touch_move(touches, last_matrix, viewport);
+                            scroll_manager.on_touch_move(touches, &my_matrix, viewport);
                         }
                         DomToWorker::TouchDown { touches } => {
                             scroll_manager.on_new_touch(touches);
@@ -1111,7 +1108,7 @@ async fn render_command(
                             // }
                         }
                         DomToWorker::CanvasMouseMove { x, y } => {
-                            scroll_manager.on_mouse_move([*x, *y], last_matrix, viewport);
+                            scroll_manager.on_mouse_move([*x, *y], &my_matrix, viewport);
                         }
 
                         DomToWorker::CanvasMouseDown { x, y } => {
@@ -1125,17 +1122,17 @@ async fn render_command(
             }
         }
 
-        let proj = matrix::gen(&gui::projection::projection(viewport));
-        let view_proj = gui::projection::view_matrix(
-            scroll_manager.camera(),
-            scroll_manager.zoom(),
-            scroll_manager.rot(),
-        );
 
-        let my_matrix = matrix::gen(&proj.chain(view_proj));
+        if let Some((x,y))=resize_canvas{
+            let xx = x as u32;
+            let yy = y as u32;
+            canvas.set_width(xx);
+            canvas.set_height(yy);
+            ctx.viewport(0, 0, xx as i32, yy as i32);
 
-        *last_matrix = my_matrix;
-
+            viewport = [xx as f32, yy as f32];
+            log!(format!("updating viewport to be:{:?}", viewport));
+        }
         let projjj = my_matrix.as_ref();
 
         let piece_scale: f32 = 0.8;
