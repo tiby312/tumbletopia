@@ -51,7 +51,7 @@ pub struct Chain<A, B> {
     a: A,
     b: B,
 }
-impl<A: MyMatrix + Inverse, B: MyMatrix + Inverse> Inverse for Chain<A, B> {
+impl<A: Inverse, B: Inverse> Inverse for Chain<A, B> {
     type Neg = Chain<B::Neg, A::Neg>;
     fn generate_inverse(&self) -> Self::Neg {
         Chain {
@@ -87,12 +87,6 @@ pub struct Perspective {
 impl MyMatrix for Perspective {
     fn generate(&self) -> Mat4 {
         Mat4::perspective_rh(self.field_of_view_rad, self.aspect, self.near, self.far)
-        // cgmath::perspective(
-        //     cgmath::Rad(self.field_of_view_rad),
-        //     self.aspect,
-        //     self.near,
-        //     self.far,
-        // )
     }
 }
 
@@ -242,10 +236,6 @@ impl MyMatrix for Translation {
         let tx = self.tx;
         let ty = self.ty;
         let tz = self.tz;
-        // let c=cgmath::Matrix4::new(
-        //     1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., tx, ty, tz, 1.,
-        // );
-
         Mat4::from_cols_array(&[
             1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., tx, ty, tz, 1.,
         ])
