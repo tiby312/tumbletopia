@@ -14,7 +14,7 @@ use futures::{SinkExt, StreamExt};
 use gloo::console::log;
 use gui::shader_sys::ShaderSystem;
 use hex::Axial;
-use model::matrix::{self, Mat};
+use model::matrix::{self};
 use moves::ActualMove;
 use serde::{Deserialize, Serialize};
 
@@ -1024,18 +1024,18 @@ async fn render_command(
         let mut resize_text = false;
         use futures::FutureExt;
 
-        let mut resize_canvas=None;
+        let mut resize_canvas = None;
 
-
-        let proj = matrix::gen(&gui::projection::projection(viewport));
+        let proj = gui::projection::projection(viewport);
         let view_proj = gui::projection::view_matrix(
             scroll_manager.camera(),
             scroll_manager.zoom(),
             scroll_manager.rot(),
         );
 
-        let my_matrix = matrix::gen(&proj.chain(view_proj));
+        use glem::prelude::*;
 
+        let my_matrix = glem::build(&proj.chain(view_proj));
 
         loop {
             if repaint_ui.is_some() {
@@ -1053,7 +1053,7 @@ async fn render_command(
                     let k=k.unwrap();
                     let e=&k;
                     match e {
-    
+
                         DomToWorker::Resize {
                             canvasx: _canvasx,
                             canvasy: _canvasy,
@@ -1061,7 +1061,7 @@ async fn render_command(
                             y,
                         } => {
                             resize_canvas=Some((*x,*y));
-                            
+
                             resize_text = true;
                         }
                         DomToWorker::TouchMove { touches } => {
@@ -1122,8 +1122,7 @@ async fn render_command(
             }
         }
 
-
-        if let Some((x,y))=resize_canvas{
+        if let Some((x, y)) = resize_canvas {
             let xx = x as u32;
             let yy = y as u32;
             canvas.set_width(xx);
@@ -1234,8 +1233,8 @@ async fn render_command(
 
         let grid_snap = |c: Axial, cc| {
             let pos = grid_matrix.hex_axial_to_world(&c);
-            let t = matrix::translate(pos.x, pos.y, cc);
-            matrix::gen(&t)
+            let t = glem::translate(pos.x, pos.y, cc);
+            glem::build(&t)
         };
 
         let cell_height = models.token_neutral.height;
@@ -1373,7 +1372,7 @@ async fn render_command(
                 let cells = normal_moves.iter_mesh(Axial::zero()).map(|e| {
                     let zzzz = 0.0;
 
-                    matrix::gen(&grid_snap(e, zzzz).chain(matrix::scale(1.0, 1.0, 1.0)))
+                    glem::build(&grid_snap(e, zzzz).chain(glem::scale(1.0, 1.0, 1.0)))
                 });
                 draw_sys
                     .batch(cells)
@@ -1384,7 +1383,7 @@ async fn render_command(
                 let cells = suicidal_moves.iter_mesh(Axial::zero()).map(|e| {
                     let zzzz = 0.0;
 
-                    matrix::gen(&grid_snap(e, zzzz).chain(matrix::scale(1.0, 1.0, 1.0)))
+                    glem::build(&grid_snap(e, zzzz).chain(glem::scale(1.0, 1.0, 1.0)))
                 });
                 draw_sys
                     .batch(cells)
@@ -1461,8 +1460,8 @@ async fn render_command(
                             }
                         };
 
-                        Some(matrix::gen(
-                            &grid_snap(a, zzzz).chain(matrix::scale(xx, xx, 1.0)),
+                        Some(glem::build(
+                            &grid_snap(a, zzzz).chain(glem::scale(xx, xx, 1.0)),
                         ))
                     } else {
                         None
@@ -1473,7 +1472,7 @@ async fn render_command(
                 .as_ref()
                 .map(|a| {
                     let pos = a.0;
-                    matrix::gen(&matrix::translate(pos.x, pos.y, zzzz).chain(matrix::scale(
+                    glem::build(&glem::translate(pos.x, pos.y, zzzz).chain(glem::scale(
                         small_shadow * piece_scale,
                         small_shadow * piece_scale,
                         1.0,
@@ -1498,10 +1497,10 @@ async fn render_command(
             if let Some((pos, ..)) = &unit_animation {
                 let ss = radius[0];
                 //Draw it a bit lower then static ones so there is no flickering
-                let first = matrix::gen(
-                    &matrix::translate(pos.x, pos.y, 1.0)
-                        .chain(matrix::scale(ss, ss, 1.0))
-                        .chain(matrix::scale(piece_scale, piece_scale, piece_scale)),
+                let first = glem::build(
+                    &glem::translate(pos.x, pos.y, 1.0)
+                        .chain(glem::scale(ss, ss, 1.0))
+                        .chain(glem::scale(piece_scale, piece_scale, piece_scale)),
                 );
 
                 match team {
@@ -1554,10 +1553,10 @@ async fn render_command(
 
                 for (stack, radius) in [inner_stack, mid_stack].iter().zip(radius) {
                     for k in 0..*stack {
-                        arr.push(matrix::gen(
+                        arr.push(glem::build(
                             &grid_snap(a, k as f32 * cell_height * piece_scale)
-                                .chain(matrix::scale(radius, radius, 1.0))
-                                .chain(matrix::scale(piece_scale, piece_scale, piece_scale)),
+                                .chain(glem::scale(radius, radius, 1.0))
+                                .chain(glem::scale(piece_scale, piece_scale, piece_scale)),
                         ));
                     }
                 }
@@ -1602,12 +1601,11 @@ async fn render_command(
         let mut label_arrows = vec![];
         for (pos, hdir) in label_arrow_points(world) {
             let pos = grid_matrix.hex_axial_to_world(&pos);
-            let t = matrix::translate(pos.x, pos.y, -5.0);
-            let r = matrix::rotate_z(
-                (((hdir as usize) + 2) % 6) as f32 * (std::f32::consts::TAU / 6.0),
-            );
+            let t = glem::translate(pos.x, pos.y, -5.0);
+            let r =
+                glem::rotate_z((((hdir as usize) + 2) % 6) as f32 * (std::f32::consts::TAU / 6.0));
 
-            let m = matrix::gen(&t.chain(r));
+            let m = glem::build(&t.chain(r));
 
             label_arrows.push(m);
         }

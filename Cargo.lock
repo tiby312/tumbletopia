@@ -575,6 +575,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf3aa70d918d2b234126ff4f850f628f172542bf0603ded26b8ee36e5e22d5f9"
 
 [[package]]
+name = "glem"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27ad95c1ce0ce232c741db418edb4a0df7a8dc6136103c9f1581dc8bac601780"
+dependencies = [
+ "glam",
+]
+
+[[package]]
 name = "gloo"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -987,6 +996,7 @@ dependencies = [
  "futures",
  "getrandom 0.2.15",
  "glam",
+ "glem",
  "gloo 0.8.1",
  "gloop",
  "gui",
@@ -1013,6 +1023,7 @@ dependencies = [
  "collision",
  "futures",
  "glam",
+ "glem",
  "gloo 0.11.0",
  "gloop",
  "hex",
@@ -1296,6 +1307,7 @@ name = "model"
 version = "0.1.0"
 dependencies = [
  "glam",
+ "glem",
  "gloo 0.8.1",
  "gltf",
  "image",

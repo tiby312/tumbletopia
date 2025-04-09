@@ -74,21 +74,21 @@ pub struct ModelData {
 
 impl Doop {
     pub fn gen_ext(&self, ss: f32, foo: usize, custom_alpha: Option<f64>) -> (ModelData, Img) {
-        use matrix::*;
         use std::f32::consts::PI;
         let (mut m, tex) = self.gen(foo, custom_alpha);
 
         let v = ss;
-        let s = matrix::translate(0.0, 0.0, 0.0)
-            .chain(rotate_x(PI / 2.0))
-            .chain(matrix::scale(v, v, v))
-            .generate();
+        let s = glem::build(&glem::combine!(
+            glem::translate(0.0, 0.0, 0.0),
+            glem::rotate_x(PI / 2.0),
+            glem::scale(v, v, v)
+        ));
 
         for p in m.positions.iter_mut() {
             *p = s.transform_point3((*p).into()).into();
         }
 
-        let kk = rotate_x(PI / 2.0).generate();
+        let kk = glem::build(&glem::rotate_x(PI / 2.0));
 
         for p in m.normals.iter_mut() {
             *p = kk.transform_point3((*p).into()).into();

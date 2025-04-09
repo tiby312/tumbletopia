@@ -24,12 +24,11 @@ pub fn get_world_rect(
 }
 
 pub fn clip_to_world(clip: [f32; 2], view_projection: &glam::f32::Mat4) -> [f32; 2] {
-    use model::matrix::*;
     let [clip_x, clip_y] = clip;
     let startc = [clip_x, clip_y, -0.9];
     let endc = [clip_x, clip_y, 0.999];
 
-    let matrix = model::matrix::gen_inverse(view_projection);
+    let matrix = view_projection.inverse();
 
     let a = matrix.project_point3(startc.into());
     let b = matrix.project_point3(endc.into());
@@ -70,7 +69,7 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> glam::f32::Mat4 {
     //y right down
     //z+ into the sky (-z into the worlds ground)
 
-    use model::matrix::*;
+    use glem::prelude::*;
 
     use cgmath::*;
     let start_zoom = 1400.0;
@@ -81,16 +80,16 @@ pub fn view_matrix(camera: [f32; 2], zoom: f32, rot: f32) -> glam::f32::Mat4 {
 
     let up = glam::Vec3::new(0.0, 0.0, 1.0);
 
-    let g = model::matrix::gen_inverse(&glam::f32::Mat4::look_at_rh(cam, dir, up)); //.generate_inverse();
+    let g = glam::f32::Mat4::look_at_rh(cam, dir, up).inverse();
 
-    let rot = rotate_z(rot);
-    let zoom = translate(0.0, 0.0, start_zoom + zoom);
-    let camera = translate(camera[0], camera[1], 0.0)
+    let rot = glem::rotate_z(rot);
+    let zoom = glem::translate(0.0, 0.0, start_zoom + zoom);
+    let camera = glem::translate(camera[0], camera[1], 0.0)
         .chain(rot)
         .chain(g)
         .chain(zoom);
 
-    model::matrix::gen_inverse(&camera)
+    glem::build_inverse(&camera)
 }
 
 pub fn projection(dim: [f32; 2]) -> model::matrix::Perspective {
