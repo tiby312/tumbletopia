@@ -576,9 +576,9 @@ checksum = "bf3aa70d918d2b234126ff4f850f628f172542bf0603ded26b8ee36e5e22d5f9"
 
 [[package]]
 name = "glem"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27ad95c1ce0ce232c741db418edb4a0df7a8dc6136103c9f1581dc8bac601780"
+checksum = "f64a45bc91f0b9b05d5b31f9205584dd849a3d0c161da2f2bf826da82bdd3156"
 dependencies = [
  "glam",
 ]

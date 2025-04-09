@@ -21,7 +21,7 @@ shogo={git="https://github.com/tiby312/shogo.git"}
 querystring = "1.1.0"
 gloop={git="https://github.com/tiby312/gloop.git"}
 glam = "0.30.1"
-glem = "0.1.0"
+glem = "0.1.1"
 
 [dependencies.gloo]
 version = "0.11"

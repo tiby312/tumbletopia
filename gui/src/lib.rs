@@ -123,7 +123,7 @@ impl<I: Iterator<Item = K>, K: glem::Mat> BatchBuilder<'_, I> {
     pub fn build(&mut self, texture: &Foo<TextureGpu, ModelGpu>, my_matrix: &[f32; 16]) {
         let mmatrix: Vec<[f32; 16]> = (&mut self.ff)
             .map(|x| {
-                let x = x.generate();
+                let x = glem::build(x);
                 let x: &[f32; 16] = x.as_ref();
                 *x
             })
