@@ -80,35 +80,35 @@
 //     }
 // }
 
-#[derive(Copy, Clone, Debug)]
-pub struct Perspective {
-    field_of_view_rad: f32,
-    aspect: f32,
-    near: f32,
-    far: f32,
-}
+// #[derive(Copy, Clone, Debug)]
+// pub struct Perspective {
+//     field_of_view_rad: f32,
+//     aspect: f32,
+//     near: f32,
+//     far: f32,
+// }
 
-impl glem::Mat for Perspective {
-    fn generate(&self) -> glam::Mat4 {
-        glam::Mat4::perspective_rh(self.field_of_view_rad, self.aspect, self.near, self.far)
-    }
-}
+// impl glem::Mat for Perspective {
+//     fn generate(&self) -> glam::Mat4 {
+//         glam::Mat4::perspective_rh(self.field_of_view_rad, self.aspect, self.near, self.far)
+//     }
+// }
 
-impl glem::Inverse for Perspective {
-    type Neg = glam::Mat4;
-    fn generate_inverse(&self) -> Self::Neg {
-        use glem::Mat;
-        self.generate().inverse()
-    }
-}
-pub fn perspective(field_of_view_rad: f32, aspect: f32, near: f32, far: f32) -> Perspective {
-    Perspective {
-        field_of_view_rad,
-        aspect,
-        near,
-        far,
-    }
-}
+// impl glem::Inverse for Perspective {
+//     type Neg = glam::Mat4;
+//     fn generate_inverse(&self) -> Self::Neg {
+//         use glem::Mat;
+//         self.generate().inverse()
+//     }
+// }
+// pub fn perspective(field_of_view_rad: f32, aspect: f32, near: f32, far: f32) -> Perspective {
+//     Perspective {
+//         field_of_view_rad,
+//         aspect,
+//         near,
+//         far,
+//     }
+// }
 
 // #[derive(Copy, Clone, Debug)]
 // pub struct Scale {

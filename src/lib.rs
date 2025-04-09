@@ -14,7 +14,6 @@ use futures::{SinkExt, StreamExt};
 use gloo::console::log;
 use gui::shader_sys::ShaderSystem;
 use hex::Axial;
-use model::matrix::{self};
 use moves::ActualMove;
 use serde::{Deserialize, Serialize};
 
