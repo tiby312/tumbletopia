@@ -1010,6 +1010,27 @@ async fn render_command(
         }
     };
 
+    let grid_snap = |c: Axial, cc| {
+        let pos = grid_matrix.hex_axial_to_world(&c);
+        let t = glem::translate(pos.x, pos.y, cc);
+        glem::build(&t)
+    };
+
+    let mut water = mesh::small_mesh::SmallMesh::new();
+
+    let land = world.land.inner & !water.inner; //& !game.factions.ice.inner;
+    
+
+    //TODO dont use this, also make sure to draw water tiles on the border that can be seen from the side?
+    water.inner |= world.get_game_cells().inner;
+
+    let team_perspective=Team::White;
+
+    
+
+    let darkness=game.darkness(world,team_perspective);
+
+
     loop {
         if poking == 1 {
             console_dbg!("we poked!");
@@ -1230,35 +1251,24 @@ async fn render_command(
 
         draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
 
-        let grid_snap = |c: Axial, cc| {
-            let pos = grid_matrix.hex_axial_to_world(&c);
-            let t = glem::translate(pos.x, pos.y, cc);
-            glem::build(&t)
-        };
+        draw_sys
+        .batch(
+            land.iter_ones()
+                .map(|e| grid_snap(Axial::from_index(&e), -models.token_neutral.height)),
+        )
+        .build(&models.land, &projjj);
+
+
+        draw_sys
+        .batch(
+            darkness.inner.iter_ones()
+                .map(|e| grid_snap(Axial::from_index(&e), 0.1).chain(glem::scale(2.3,2.3,2.3))),
+        )
+        .build(&models.black_sigl, &projjj);
+
 
         let cell_height = models.token_neutral.height;
 
-        let mut water = mesh::small_mesh::SmallMesh::new();
-        // for a in world.get_game_cells().inner.iter_ones() {
-        //     if let Some((height, team)) = game.factions.get_cell_inner(a) {
-        //         if height == 6 && team == Team::Neutral {
-        //             water.inner.set(a, true);
-        //         }
-        //     }
-        // }
-
-        //water.inner |= game.factions.ice.inner;
-
-        let land = world.land.inner & !water.inner; //& !game.factions.ice.inner;
-        draw_sys
-            .batch(
-                land.iter_ones()
-                    .map(|e| grid_snap(Axial::from_index(&e), -models.token_neutral.height)),
-            )
-            .build(&models.land, &projjj);
-
-        //TODO dont use this, also make sure to draw water tiles on the border that can be seen from the side?
-        water.inner |= world.get_game_cells().inner;
 
         // {
         //     //Draw grass
@@ -1447,7 +1457,14 @@ async fn render_command(
                 .get_game_cells()
                 .iter_mesh(Axial::zero())
                 .filter_map(|a| {
+                    
                     if let Some((val, tt)) = game.factions.get_cell(a) {
+                        if tt!=team_perspective{
+                            if darkness.is_set(a){
+                                return None;
+                            }
+                        }
+
                         let xx = if val == 6 && tt == Team::Neutral {
                             //1.3
                             return None;
@@ -1477,7 +1494,7 @@ async fn render_command(
                         1.0,
                     )))
                 })
-                .filter(|_| team == shown_team);
+                .filter(|_| team == team_perspective);
 
             let all_shadows = shadows.chain(ani_drop_shadow.into_iter());
 
@@ -1493,27 +1510,32 @@ async fn render_command(
         {
             let radius = [0.4, 0.6, 0.8];
 
-            if let Some((pos, ..)) = &unit_animation {
-                let ss = radius[0];
-                //Draw it a bit lower then static ones so there is no flickering
-                let first = glem::build(
-                    &glem::translate(pos.x, pos.y, 1.0)
-                        .chain(glem::scale(ss, ss, 1.0))
-                        .chain(glem::scale(piece_scale, piece_scale, piece_scale)),
-                );
+            if team==team_perspective{
 
-                match team {
-                    Team::White => {
-                        white_team_cells.push(first);
-                    }
-                    Team::Black => {
-                        black_team_cells.push(first);
-                    }
-                    Team::Neutral => {
-                        neutral_team_cells.push(first);
+                if let Some((pos, ..)) = &unit_animation {
+                    let ss = radius[0];
+                    //Draw it a bit lower then static ones so there is no flickering
+                    let first = glem::build(
+                        &glem::translate(pos.x, pos.y, 1.0)
+                            .chain(glem::scale(ss, ss, 1.0))
+                            .chain(glem::scale(piece_scale, piece_scale, piece_scale)),
+                    );
+
+                    match team {
+                        Team::White => {
+                            white_team_cells.push(first);
+                        }
+                        Team::Black => {
+                            black_team_cells.push(first);
+                        }
+                        Team::Neutral => {
+                            unreachable!();
+                            //neutral_team_cells.push(first);
+                        }
                     }
                 }
             }
+
 
             for (index, height, team2) in
                 game.factions
@@ -1527,6 +1549,11 @@ async fn render_command(
                         GameCell::Empty => None,
                     })
             {
+                if team2!=team_perspective{
+                    if darkness.inner[index]{
+                        continue;
+                    }
+                }
                 let a = Axial::from_index(&index);
                 //if let Some((height, team2)) = game.factions.get_cell(a) {
                 // let inner_stack = height.min(2);

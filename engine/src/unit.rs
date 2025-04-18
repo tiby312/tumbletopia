@@ -229,6 +229,21 @@ pub enum GameOver {
 }
 
 impl GameState {
+    pub fn darkness(&self,world:&MyWorld,team_perspective: Team)->SmallMesh{
+        let mut darkness=world.land.clone();
+        for a in world.land.inner.iter_ones(){
+            if let Some((_,tt))= self.factions.get_cell_inner(a){
+                if tt==team_perspective{
+                    for j in Axial::from_index(&a).to_cube().range(1){
+                        darkness.set_coord(j.ax, false);
+                    }
+
+                }
+            }
+        }
+        darkness
+    }
+
     pub fn new() -> GameState {
         GameState {
             factions: Tribe::new(),
