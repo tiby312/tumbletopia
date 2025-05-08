@@ -1,3 +1,6 @@
+use gloo_console::console_dbg;
+use hex::{Cube, PASS_MOVE, PASS_MOVE_INDEX};
+
 use crate::moves::SpokeInfo;
 
 use super::*;
@@ -409,6 +412,108 @@ impl ActualMove {
         // }
     }
 
+    pub fn apply_darkness2(
+        &self,
+        team: Team,
+        game: &mut GameState,
+        fog: &mesh::small_mesh::SmallMesh,
+        world: &board::MyWorld,
+        spoke_info: Option<&SpokeInfo>,
+    )-> MoveEffect  {
+        assert!(self.0!=PASS_MOVE_INDEX);
+
+        let darkness = game.darkness(world, team);
+        let playable = game.convert_to_playable(world, team);
+        console_dbg!("Hello");
+        if darkness.inner[self.0] {
+            //find teamates that can attempt to help
+            //for each of these teamates, determine how far they can go.
+            let mut num_attacking = 0;
+            for a in hex::OFFSETS {
+
+                console_dbg!("what2");
+                let ax = Axial::from_index(&self.0).to_cube();
+
+                let mut potential_reinforcer = None;
+                for k in ax.ray_from_vector(Cube::from_arr(a)) {
+                    if !world.land.is_set(k.ax) {
+                        break;
+                    }
+
+                    if let Some((fo, fa)) = playable.factions.get_cell(k.ax) {
+                        if fa == team {
+                            potential_reinforcer = Some(k);
+                            //we have found a team mate that might be able to reach us.
+                        }
+
+                        break;
+                    }
+                }
+
+                console_dbg!("what");
+                if let Some(found) = potential_reinforcer {
+                    //slowly iterate towards the center, stopping at any obstacle.
+                    for k in found.ray_from_vector(
+                        Cube::from_arr(a)
+                            .rotate_60_left()
+                            .rotate_60_left()
+                            .rotate_60_left(),
+                    ) {
+                        
+
+                        if let Some((fo, fa)) = game.factions.get_cell(k.ax) {
+                            if fa!=team{
+                                let spot = k.add(Cube::from_arr(a));
+
+                                assert!(spot.ax!=PASS_MOVE);
+                                game.factions.remove(spot.ax);
+                                game.factions.add_cell(spot.ax, 1 as u8, team);
+                                break;
+                            }
+
+                            
+                        }
+                        if k.ax == ax.ax {
+                            //team mate can make it
+                            num_attacking += 1;
+                            break;
+                        }
+                    }
+                }
+                console_dbg!("what");
+                if let Some((a, v)) = game.factions.get_cell_inner(self.0) {
+                    if num_attacking > a {
+                        game.factions.remove_inner(self.0);
+                        game.factions
+                            .add_cell_inner(self.0, num_attacking as u8, team);
+                    }
+                } else {
+                    if num_attacking>0{
+                        game.factions.remove_inner(self.0);
+                            game.factions
+                                .add_cell_inner(self.0, num_attacking as u8, team);
+                    }
+                };
+
+                console_dbg!("what");
+            }
+            MoveEffect {
+                pushpull: PushInfo::None,
+                powerup: PowerupAction::None,
+                destroyed_unit:None,
+                height: 0 as u8,
+            }
+        } else {
+            self.apply(team, game, fog, world, spoke_info)
+        }
+
+        
+        // if move is into darkness {
+        //     from the point selected, trace outward in dark mask.
+        //     if we encounter a friend unit, then tracebackward without dark mask
+        //     if we get back to original point, great. otherwise we have hit an obstacle.
+        // }
+    }
     pub fn apply(
         &self,
         team: Team,

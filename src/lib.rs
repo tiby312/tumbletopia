@@ -1019,17 +1019,13 @@ async fn render_command(
     let mut water = mesh::small_mesh::SmallMesh::new();
 
     let land = world.land.inner & !water.inner; //& !game.factions.ice.inner;
-    
 
     //TODO dont use this, also make sure to draw water tiles on the border that can be seen from the side?
     water.inner |= world.get_game_cells().inner;
 
-    let team_perspective=Team::White;
+    let team_perspective = team; //Team::White;
 
-    
-
-    let darkness=game.darkness(world,team_perspective);
-
+    let darkness = game.darkness(world, team_perspective);
 
     loop {
         if poking == 1 {
@@ -1252,23 +1248,21 @@ async fn render_command(
         draw_sys.draw_clear([0.1, 0.1, 0.1, 0.0]);
 
         draw_sys
-        .batch(
-            land.iter_ones()
-                .map(|e| grid_snap(Axial::from_index(&e), -models.token_neutral.height)),
-        )
-        .build(&models.land, &projjj);
-
+            .batch(
+                land.iter_ones()
+                    .map(|e| grid_snap(Axial::from_index(&e), -models.token_neutral.height)),
+            )
+            .build(&models.land, &projjj);
 
         draw_sys
-        .batch(
-            darkness.inner.iter_ones()
-                .map(|e| grid_snap(Axial::from_index(&e), 0.1).chain(glem::scale(2.3,2.3,2.3))),
-        )
-        .build(&models.black_sigl, &projjj);
-
+            .batch(
+                darkness.inner.iter_ones().map(|e| {
+                    grid_snap(Axial::from_index(&e), 0.1).chain(glem::scale(2.3, 2.3, 2.3))
+                }),
+            )
+            .build(&models.black_sigl, &projjj);
 
         let cell_height = models.token_neutral.height;
-
 
         // {
         //     //Draw grass
@@ -1457,10 +1451,9 @@ async fn render_command(
                 .get_game_cells()
                 .iter_mesh(Axial::zero())
                 .filter_map(|a| {
-                    
                     if let Some((val, tt)) = game.factions.get_cell(a) {
-                        if tt!=team_perspective{
-                            if darkness.is_set(a){
+                        if tt != team_perspective {
+                            if darkness.is_set(a) {
                                 return None;
                             }
                         }
@@ -1510,8 +1503,7 @@ async fn render_command(
         {
             let radius = [0.4, 0.6, 0.8];
 
-            if team==team_perspective{
-
+            if team == team_perspective {
                 if let Some((pos, ..)) = &unit_animation {
                     let ss = radius[0];
                     //Draw it a bit lower then static ones so there is no flickering
@@ -1536,7 +1528,6 @@ async fn render_command(
                 }
             }
 
-
             for (index, height, team2) in
                 game.factions
                     .cells
@@ -1549,8 +1540,8 @@ async fn render_command(
                         GameCell::Empty => None,
                     })
             {
-                if team2!=team_perspective{
-                    if darkness.inner[index]{
+                if team2 != team_perspective {
+                    if darkness.inner[index] {
                         continue;
                     }
                 }

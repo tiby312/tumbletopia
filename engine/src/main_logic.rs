@@ -391,20 +391,21 @@ pub async fn reselect_loop(
         true
     };
 
-    let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
-    moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+    let game2 = game.tactical.convert_to_playable(world, selected_unit.team);
+    let mut spoke_info = moves::SpokeInfo::new(&game2);
+    moves::update_spoke_info(&mut spoke_info, world, &game2);
 
-    let mut cca = SmallMesh::from_iter_move(
-        game.tactical
-            .bake_fog(&game.fog[team])
-            .generate_possible_moves_movement(world, selected_unit.team, &spoke_info, true),
-    );
+    let mut cca = SmallMesh::from_iter_move(game2.generate_possible_moves_movement(
+        world,
+        selected_unit.team,
+        &spoke_info,
+        true,
+    ));
 
     cca.inner.set(hex::PASS_MOVE_INDEX, true);
 
     let c2 = game
         .tactical
-        //.bake_fog(&game.fog[team.index()])
         .factions
         .doop(unwrapped_selected_unit.to_index(), world);
 
