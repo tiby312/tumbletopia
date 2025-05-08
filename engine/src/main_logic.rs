@@ -459,27 +459,33 @@ pub async fn reselect_loop(
 
     //If we select a friendly unit quick swap
 
-    if let Some((_, team2)) = game.tactical.factions.get_cell(target_cell) {
-        if team2 == selected_unit.team {
-            if !contains {
-                //it should be impossible for a unit to move onto a friendly
-                //assert!(!contains);
-                selected_unit.coord = target_cell;
-                return LoopRes::Select(selected_unit);
+    match game.tactical.factions.get_cell(target_cell) {
+        unit::GameCell::Piece(stack_height, team2) => {
+            if *team2 == selected_unit.team {
+                if !contains {
+                    //it should be impossible for a unit to move onto a friendly
+                    //assert!(!contains);
+                    selected_unit.coord = target_cell;
+                    return LoopRes::Select(selected_unit);
+                }
             }
         }
+        unit::GameCell::Empty => {}
     }
 
     //If we select an enemy unit quick swap
-    if let Some((_, team2)) = game.tactical.factions.get_cell(target_cell) {
-        if team2 == selected_unit.team {
-            if selected_unit.team != team || !contains {
-                //If we select an enemy unit thats outside of our units range.
-                selected_unit.coord = target_cell;
-                selected_unit.team = selected_unit.team.not();
-                return LoopRes::Select(selected_unit);
+    match game.tactical.factions.get_cell(target_cell) {
+        unit::GameCell::Piece(stack_height, team2) => {
+            if *team2 == selected_unit.team {
+                if selected_unit.team != team || !contains {
+                    //If we select an enemy unit thats outside of our units range.
+                    selected_unit.coord = target_cell;
+                    selected_unit.team = selected_unit.team.not();
+                    return LoopRes::Select(selected_unit);
+                }
             }
         }
+        unit::GameCell::Empty => {}
     }
 
     //If we selected an empty space, deselect.
@@ -689,9 +695,13 @@ pub async fn animate_move<'a>(
         .await;
 
         stack += 1;
-        if let Some(_) = state.tactical.factions.get_cell_inner(aa.0) {
-            ss.tactical.factions.remove_inner(aa.0);
+        match state.tactical.factions.get_cell_inner(aa.0) {
+            unit::GameCell::Piece(_, _) => {
+                ss.tactical.factions.remove_inner(aa.0);
+            }
+            unit::GameCell::Empty => {}
         }
+
         ss.tactical.factions.add_cell_inner(aa.0, stack, team);
     }
 
@@ -761,11 +771,14 @@ pub async fn handle_player(
                 }
             };
 
-            if let Some((_, team2)) = game.tactical.factions.get_cell(cell) {
-                break SelectType {
-                    coord: cell,
-                    team: team2,
-                };
+            match game.tactical.factions.get_cell(cell) {
+                unit::GameCell::Piece(_, team2) => {
+                    break SelectType {
+                        coord: cell,
+                        team: *team2,
+                    };
+                }
+                unit::GameCell::Empty => {}
             }
         };
 

@@ -1451,29 +1451,31 @@ async fn render_command(
                 .get_game_cells()
                 .iter_mesh(Axial::zero())
                 .filter_map(|a| {
-                    if let Some((val, tt)) = game.factions.get_cell(a) {
-                        if tt != team_perspective {
-                            if darkness.is_set(a) {
+                    match game.factions.get_cell(a) {
+                        &GameCell::Piece(stack_height, tt) => {
+                            let val = stack_height.to_num();
+                            if tt != team_perspective {
+                                if darkness.is_set(a) {
+                                    return None;
+                                }
+                            }
+
+                            let xx = if val == 6 && tt == Team::Neutral {
+                                //1.3
                                 return None;
-                            }
+                            } else {
+                                match val {
+                                    1 | 2 | 3 => small_shadow * piece_scale,
+                                    4 | 5 | 6 => large_shadow * piece_scale,
+                                    _ => unreachable!(),
+                                }
+                            };
+
+                            Some(glem::build(
+                                &grid_snap(a, zzzz).chain(glem::scale(xx, xx, 1.0)),
+                            ))
                         }
-
-                        let xx = if val == 6 && tt == Team::Neutral {
-                            //1.3
-                            return None;
-                        } else {
-                            match val {
-                                1 | 2 | 3 => small_shadow * piece_scale,
-                                4 | 5 | 6 => large_shadow * piece_scale,
-                                _ => unreachable!(),
-                            }
-                        };
-
-                        Some(glem::build(
-                            &grid_snap(a, zzzz).chain(glem::scale(xx, xx, 1.0)),
-                        ))
-                    } else {
-                        None
+                        GameCell::Empty => None,
                     }
                 });
 

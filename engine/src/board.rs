@@ -187,8 +187,8 @@ impl GameState {
     pub fn into_string(&self, world: &MyWorld) -> String {
         let mut ret = String::new();
         for index in world.get_game_cells().inner.iter_ones() {
-            let foo = if let Some(foo) = self.factions.get_cell_inner(index) {
-                match foo {
+            let foo = match self.factions.get_cell_inner(index) {
+                unit::GameCell::Piece(stack_height, team) => match (stack_height.to_num(), team) {
                     (1, Team::Neutral) => 'j',
                     (2, Team::Neutral) => 'k',
                     (3, Team::Neutral) => 'l',
@@ -208,9 +208,8 @@ impl GameState {
                     (5, Team::Black) => 'f',
                     (6, Team::Black) => 'g',
                     _ => continue,
-                }
-            } else {
-                '-'
+                },
+                unit::GameCell::Empty => '_',
             };
 
             ret.push(foo);

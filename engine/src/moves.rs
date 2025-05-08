@@ -64,16 +64,22 @@ impl crate::unit::GameStateTotal {
         for a in world.get_game_cells().inner.iter_ones() {
             let fa = Axial::from_index(&a);
 
-            if let Some((val, tt)) = self.tactical.factions.get_cell_inner(a) {
-                if tt == team {
-                    for b in fa.to_cube().range(val.try_into().unwrap()) {
-                        if !world.get_game_cells().is_set(*b) {
-                            continue;
-                        }
+            match self.tactical.factions.get_cell_inner(a) {
+                &unit::GameCell::Piece(stack_height, tt) => {
+                    if tt == team {
+                        for b in fa
+                            .to_cube()
+                            .range(stack_height.to_num().try_into().unwrap())
+                        {
+                            if !world.get_game_cells().is_set(*b) {
+                                continue;
+                            }
 
-                        fog.set_coord(*b, false);
+                            fog.set_coord(*b, false);
+                        }
                     }
                 }
+                unit::GameCell::Empty => {}
             }
         }
     }
@@ -272,17 +278,21 @@ impl SpokeInfo {
             for (d, index2) in it.enumerate() {
                 debug_assert!(index != index2 as usize);
                 self.set(index2 as usize, dd.rotate_180(), team);
-                if let Some((hh, tt)) = game.factions.get_cell_inner(index2 as usize) {
-                    self.set(index, dd, tt);
 
-                    return (
-                        d as i8 + 1,
-                        Some(unit::EndPoint {
-                            index: index2 as usize,
-                            height: hh as i8,
-                            team: tt,
-                        }),
-                    );
+                match game.factions.get_cell_inner(index2 as usize) {
+                    &unit::GameCell::Piece(stack_height, tt) => {
+                        self.set(index, dd, tt);
+
+                        return (
+                            d as i8 + 1,
+                            Some(unit::EndPoint {
+                                index: index2 as usize,
+                                height: stack_height.to_num() as i8,
+                                team: tt,
+                            }),
+                        );
+                    }
+                    unit::GameCell::Empty => {}
                 }
             }
             self.set(index, dd, Team::Neutral);
@@ -447,28 +457,32 @@ impl GameState {
             return None;
         }
 
-        if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-            debug_assert!(height > 0);
-            let height = height as i64;
+        match self.factions.get_cell_inner(index) {
+            &unit::GameCell::Piece(stack_height, rest) => {
+                let height = stack_height.to_num();
+                debug_assert!(height > 0);
+                let height = height as i64;
 
-            if num_attack[team] > height {
+                if num_attack[team] > height {
+                    if num_attack[team] < num_attack[!team] {
+                        Some(MoveType::Suicidal)
+                    } else {
+                        if rest == team {
+                            Some(MoveType::Reinforce)
+                        } else {
+                            Some(MoveType::Capture)
+                        }
+                    }
+                } else {
+                    None
+                }
+            }
+            unit::GameCell::Empty => {
                 if num_attack[team] < num_attack[!team] {
                     Some(MoveType::Suicidal)
                 } else {
-                    if rest == team {
-                        Some(MoveType::Reinforce)
-                    } else {
-                        Some(MoveType::Capture)
-                    }
+                    Some(MoveType::Fresh)
                 }
-            } else {
-                None
-            }
-        } else {
-            if num_attack[team] < num_attack[!team] {
-                Some(MoveType::Suicidal)
-            } else {
-                Some(MoveType::Fresh)
             }
         }
     }
@@ -493,15 +507,20 @@ impl GameState {
                 let index2 = index2 as usize;
                 let num_attack = get_num_attack(spoke_info, index2);
 
-                if let Some((height, team2)) = self.factions.get_cell_inner(index2) {
-                    debug_assert_eq!(team2, !team);
-                    if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team] {
-                        ret.inner.set(index2 as usize, true);
+                match self.factions.get_cell_inner(index2) {
+                    &unit::GameCell::Piece(stack_height, team2) => {
+                        let height = stack_height.to_num();
+                        debug_assert_eq!(team2, !team);
+                        if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
+                        {
+                            ret.inner.set(index2 as usize, true);
+                        }
+                        break;
                     }
-                    break;
-                } else {
-                    if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
-                        ret.inner.set(index2 as usize, true);
+                    unit::GameCell::Empty => {
+                        if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+                            ret.inner.set(index2 as usize, true);
+                        }
                     }
                 }
             }
@@ -548,16 +567,21 @@ impl GameState {
                 let index2 = index2 as usize;
                 let num_attack = get_num_attack(spoke_info, index2);
 
-                if let Some((height, team2)) = self.factions.get_cell_inner(index2) {
-                    debug_assert!(team2 != team);
+                match self.factions.get_cell_inner(index2) {
+                    &unit::GameCell::Piece(stack_height, team2) => {
+                        debug_assert!(team2 != team);
 
-                    if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team] {
-                        ret.inner.set(index2 as usize, true);
+                        if num_attack[team] > stack_height.to_num() as i64
+                            && num_attack[team] >= num_attack[!team]
+                        {
+                            ret.inner.set(index2 as usize, true);
+                        }
+                        break;
                     }
-                    break;
-                } else {
-                    if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
-                        ret.inner.set(index2 as usize, true);
+                    unit::GameCell::Empty => {
+                        if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+                            ret.inner.set(index2 as usize, true);
+                        }
                     }
                 }
             }
@@ -575,41 +599,45 @@ impl GameState {
         for &index in world.land_as_vec.iter() {
             let num_attack = get_num_attack(&spoke_info, index);
 
-            if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-                let height = height as i64;
+            match self.factions.get_cell_inner(index) {
+                &unit::GameCell::Piece(stack_height, rest) => {
+                    let height = stack_height.to_num() as i64;
 
-                //if this is our piece
-                if rest == team {
-                    //if the enemy can capture it
-                    if num_attack[!team] <= height {
-                        continue;
-                    }
+                    //if this is our piece
+                    if rest == team {
+                        //if the enemy can capture it
+                        if num_attack[!team] <= height {
+                            continue;
+                        }
 
-                    if num_attack[!team] < num_attack[team] {
-                        continue;
-                    }
+                        if num_attack[!team] < num_attack[team] {
+                            continue;
+                        }
 
-                    //Also add moves where lets say this piece is going to die.
-                    //we might want to use it to reinforce another piece before it dies.
-                    //this such moves would also be a forcing/loud/defensive move
-                    for dir in HDir::all() {
-                        for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
-                            let index2 = index2 as usize;
-                            if let Some(fo) = self.factions.get_cell_inner(index2) {
-                                break;
-                            }
+                        //Also add moves where lets say this piece is going to die.
+                        //we might want to use it to reinforce another piece before it dies.
+                        //this such moves would also be a forcing/loud/defensive move
+                        for dir in HDir::all() {
+                            for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
+                                let index2 = index2 as usize;
+                                match self.factions.get_cell_inner(index2) {
+                                    unit::GameCell::Piece(_, _) => break,
+                                    unit::GameCell::Empty => {}
+                                }
 
-                            if let Some(foo) = self.playable(index2, team, world, spoke_info) {
-                                if !foo.is_suicidal() {
-                                    ret.inner.set(index2, true);
+                                if let Some(foo) = self.playable(index2, team, world, spoke_info) {
+                                    if !foo.is_suicidal() {
+                                        ret.inner.set(index2, true);
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            } else {
-                if num_attack[team] == num_attack[!team] && num_attack[team] >= 1 {
-                    ret.inner.set(index, true);
+                unit::GameCell::Empty => {
+                    if num_attack[team] == num_attack[!team] && num_attack[team] >= 1 {
+                        ret.inner.set(index, true);
+                    }
                 }
             }
         }
@@ -632,31 +660,34 @@ impl GameState {
         for &index in world.land_as_vec.iter() {
             let num_attack = get_num_attack(&spoke_info, index);
 
-            if let Some((height, rest)) = self.factions.get_cell_inner(index) {
-                let height = height as i64;
+            match self.factions.get_cell_inner(index) {
+                &unit::GameCell::Piece(stack_height, rest) => {
+                    let height = stack_height.to_num() as i64;
 
-                //if this is our piece
-                if rest == team {
-                    //if we can reinforce, add that as a loud move
-                    if num_attack[team] > height && num_attack[!team] >= height {
-                        ret.inner.set(index, true);
-                    }
-                } else {
-                    //If it is an enemy piece, then
-                    if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
-                        ret.inner.set(index, true);
-                    }
+                    //if this is our piece
+                    if rest == team {
+                        //if we can reinforce, add that as a loud move
+                        if num_attack[team] > height && num_attack[!team] >= height {
+                            ret.inner.set(index, true);
+                        }
+                    } else {
+                        //If it is an enemy piece, then
+                        if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
+                            ret.inner.set(index, true);
+                        }
 
-                    if num_attack[team] == height {
-                        self.moves_that_increase_los_better(
-                            index,
-                            team,
-                            world,
-                            &mut ret,
-                            &spoke_info,
-                        );
+                        if num_attack[team] == height {
+                            self.moves_that_increase_los_better(
+                                index,
+                                team,
+                                world,
+                                &mut ret,
+                                &spoke_info,
+                            );
+                        }
                     }
                 }
+                unit::GameCell::Empty => {}
             }
         }
 

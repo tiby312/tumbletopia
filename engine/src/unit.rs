@@ -244,23 +244,26 @@ impl GameState {
     pub fn darkness(&self, world: &MyWorld, team_perspective: Team) -> SmallMesh {
         let mut darkness = world.land.clone();
         for a in world.land.inner.iter_ones() {
-            if let Some((_, tt)) = self.factions.get_cell_inner(a) {
-                if tt == team_perspective {
-                    for j in Axial::from_index(&a).to_cube().range(1) {
-                        darkness.set_coord(j.ax, false);
+            match self.factions.get_cell_inner(a) {
+                GameCell::Piece(_, tt) => {
+                    if *tt == team_perspective {
+                        for j in Axial::from_index(&a).to_cube().range(1) {
+                            darkness.set_coord(j.ax, false);
+                        }
+                        //darkness.set_coord(Axial::from_index(&a), false);
+
+                        // for off in hex::OFFSETS{
+                        //     for j in Axial::from_index(&a).to_cube().ray_from_vector(Cube::from_arr(off)){
+                        //         if !world.get_game_cells().is_set(j.ax){
+                        //             break;
+                        //         }
+                        //         darkness.set_coord(j.ax, false);
+                        //     }
+
+                        // }
                     }
-                    //darkness.set_coord(Axial::from_index(&a), false);
-
-                    // for off in hex::OFFSETS{
-                    //     for j in Axial::from_index(&a).to_cube().ray_from_vector(Cube::from_arr(off)){
-                    //         if !world.get_game_cells().is_set(j.ax){
-                    //             break;
-                    //         }
-                    //         darkness.set_coord(j.ax, false);
-                    //     }
-
-                    // }
                 }
+                GameCell::Empty => {}
             }
         }
         darkness
@@ -348,36 +351,39 @@ impl GameState {
                 }
             }
 
-            if let Some((_height, tt)) = game.factions.get_cell_inner(index) {
-                //let height = height as i8;
-                match tt {
-                    Team::White => {
+            match game.factions.get_cell_inner(index) {
+                GameCell::Piece(_, tt) => {
+                    //let height = height as i8;
+                    match tt {
+                        Team::White => {
+                            white_score += 1;
+                            // if num_black >= height {
+                            //     black_score += 1
+                            // }
+                        }
+                        Team::Black => {
+                            black_score += 1;
+                            // if num_white >= height {
+                            //     white_score += 1;
+                            // }
+                        }
+                        Team::Neutral => {
+                            neutral += 1;
+                        }
+                    }
+                }
+                GameCell::Empty => {
+                    let ownership = num_white - num_black;
+
+                    if ownership > 0 {
                         white_score += 1;
-                        // if num_black >= height {
-                        //     black_score += 1
-                        // }
-                    }
-                    Team::Black => {
+                    } else if ownership < 0 {
                         black_score += 1;
-                        // if num_white >= height {
-                        //     white_score += 1;
-                        // }
-                    }
-                    Team::Neutral => {
+                    } else {
                         neutral += 1;
                     }
                 }
-            } else {
-                let ownership = num_white - num_black;
-
-                if ownership > 0 {
-                    white_score += 1;
-                } else if ownership < 0 {
-                    black_score += 1;
-                } else {
-                    neutral += 1;
-                }
-            };
+            }
         }
         ScoreData {
             white: white_score,
@@ -446,11 +452,17 @@ pub enum StackHeight {
     Stack5 = 4,
     Stack6 = 5,
 }
+impl StackHeight {
+    pub fn to_num(&self) -> i8 {
+        *self as i8 + 1
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 
 pub enum GameCell {
     Piece(StackHeight, Team),
+    //Lighthouse(Team),
     #[default]
     Empty,
 }
@@ -524,8 +536,9 @@ impl Tribe {
 
                 s.inner.set(index2 as usize, true);
 
-                if let Some(_) = self.get_cell_inner(index2 as usize) {
-                    break;
+                match self.get_cell_inner(index2 as usize) {
+                    GameCell::Piece(_, _) => break,
+                    GameCell::Empty => {}
                 }
             }
         }
@@ -545,15 +558,18 @@ impl Tribe {
         hex::HDir::all().map(move |dd| {
             let (dis, it) = ray(Axial::from_index(&index), dd, world);
             for (d, index2) in it.enumerate() {
-                if let Some(pp) = self.get_cell_inner(index2 as usize) {
-                    return (
-                        d as i8 + 1,
-                        Some(EndPoint {
-                            index: index2 as usize,
-                            height: pp.0 as i8,
-                            team: pp.1,
-                        }),
-                    );
+                match self.get_cell_inner(index2 as usize) {
+                    GameCell::Piece(stack_height, tt) => {
+                        return (
+                            d as i8 + 1,
+                            Some(EndPoint {
+                                index: index2 as usize,
+                                height: stack_height.to_num(),
+                                team: *tt,
+                            }),
+                        );
+                    }
+                    GameCell::Empty => {}
                 }
             }
 
@@ -590,13 +606,13 @@ impl Tribe {
     //     self.piece.inner[index]
     // }
 
-    pub fn get_cell_inner(&self, index: usize) -> Option<(u8, Team)> {
+    pub fn get_cell_inner(&self, index: usize) -> &GameCell {
         assert!(index != hex::PASS_MOVE_INDEX);
-        match &self.cells[index] {
-            GameCell::Empty => None,
-            GameCell::Piece(height, team) => Some((height.clone() as u8 + 1, *team)),
-        }
-
+        // match &self.cells[index] {
+        //     GameCell::Empty => None,
+        //     GameCell::Piece(height, team) => Some((height.clone() as u8 + 1, *team)),
+        // }
+        &self.cells[index]
         // if !self.piece.inner[index as usize] {
         //     return None;
         // }
@@ -621,7 +637,7 @@ impl Tribe {
         // };
         // Some((val as u8, team))
     }
-    pub fn get_cell(&self, a: Axial) -> Option<(u8, Team)> {
+    pub fn get_cell(&self, a: Axial) -> &GameCell {
         self.get_cell_inner(a.to_index())
     }
 

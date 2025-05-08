@@ -419,8 +419,8 @@ impl ActualMove {
         fog: &mesh::small_mesh::SmallMesh,
         world: &board::MyWorld,
         spoke_info: Option<&SpokeInfo>,
-    )-> MoveEffect  {
-        assert!(self.0!=PASS_MOVE_INDEX);
+    ) -> MoveEffect {
+        assert!(self.0 != PASS_MOVE_INDEX);
 
         let darkness = game.darkness(world, team);
         let playable = game.convert_to_playable(world, team);
@@ -430,7 +430,6 @@ impl ActualMove {
             //for each of these teamates, determine how far they can go.
             let mut num_attacking = 0;
             for a in hex::OFFSETS {
-
                 console_dbg!("what2");
                 let ax = Axial::from_index(&self.0).to_cube();
 
@@ -440,13 +439,16 @@ impl ActualMove {
                         break;
                     }
 
-                    if let Some((fo, fa)) = playable.factions.get_cell(k.ax) {
-                        if fa == team {
-                            potential_reinforcer = Some(k);
-                            //we have found a team mate that might be able to reach us.
-                        }
+                    match playable.factions.get_cell(k.ax) {
+                        &unit::GameCell::Piece(stack_height, fa) => {
+                            if fa == team {
+                                potential_reinforcer = Some(k);
+                                //we have found a team mate that might be able to reach us.
+                            }
 
-                        break;
+                            break;
+                        }
+                        unit::GameCell::Empty => {}
                     }
                 }
 
@@ -459,20 +461,20 @@ impl ActualMove {
                             .rotate_60_left()
                             .rotate_60_left(),
                     ) {
-                        
+                        match game.factions.get_cell(k.ax) {
+                            &unit::GameCell::Piece(stack_height, fa) => {
+                                if fa != team {
+                                    let spot = k.add(Cube::from_arr(a));
 
-                        if let Some((fo, fa)) = game.factions.get_cell(k.ax) {
-                            if fa!=team{
-                                let spot = k.add(Cube::from_arr(a));
-
-                                assert!(spot.ax!=PASS_MOVE);
-                                game.factions.remove(spot.ax);
-                                game.factions.add_cell(spot.ax, 1 as u8, team);
-                                break;
+                                    assert!(spot.ax != PASS_MOVE);
+                                    game.factions.remove(spot.ax);
+                                    game.factions.add_cell(spot.ax, 1 as u8, team);
+                                    break;
+                                }
                             }
-
-                            
+                            unit::GameCell::Empty => {}
                         }
+
                         if k.ax == ax.ax {
                             //team mate can make it
                             num_attacking += 1;
@@ -481,33 +483,35 @@ impl ActualMove {
                     }
                 }
                 console_dbg!("what");
-                if let Some((a, v)) = game.factions.get_cell_inner(self.0) {
-                    if num_attacking > a {
-                        game.factions.remove_inner(self.0);
-                        game.factions
-                            .add_cell_inner(self.0, num_attacking as u8, team);
-                    }
-                } else {
-                    if num_attacking>0{
-                        game.factions.remove_inner(self.0);
+                match game.factions.get_cell_inner(self.0) {
+                    unit::GameCell::Piece(stack_height, v) => {
+                        if num_attacking > stack_height.to_num() {
+                            game.factions.remove_inner(self.0);
                             game.factions
                                 .add_cell_inner(self.0, num_attacking as u8, team);
+                        }
                     }
-                };
+                    unit::GameCell::Empty => {
+                        if num_attacking > 0 {
+                            game.factions.remove_inner(self.0);
+                            game.factions
+                                .add_cell_inner(self.0, num_attacking as u8, team);
+                        }
+                    }
+                }
 
                 console_dbg!("what");
             }
             MoveEffect {
                 pushpull: PushInfo::None,
                 powerup: PowerupAction::None,
-                destroyed_unit:None,
+                destroyed_unit: None,
                 height: 0 as u8,
             }
         } else {
             self.apply(team, game, fog, world, spoke_info)
         }
 
-        
         // if move is into darkness {
         //     from the point selected, trace outward in dark mask.
         //     if we encounter a friend unit, then tracebackward without dark mask
@@ -576,10 +580,9 @@ impl ActualMove {
 
         //console_dbg!("Adding stacksize=", stack_size);
 
-        let destroyed_unit = if let Some((a, v)) = game.factions.get_cell_inner(target_cell) {
-            Some((a, v))
-        } else {
-            None
+        let destroyed_unit = match game.factions.get_cell_inner(target_cell) {
+            &unit::GameCell::Piece(stack_height, v) => Some((stack_height.to_num() as u8, v)),
+            unit::GameCell::Empty => None,
         };
 
         game.factions.remove_inner(target_cell);

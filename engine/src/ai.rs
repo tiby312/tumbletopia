@@ -20,11 +20,15 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
         for &index in world.land_as_vec.iter() {
             let n = get_num_attack(&spoke, index);
 
-            if let Some((h, m)) = game.factions.get_cell_inner(index) {
-                if m == team && n[team] > h as i64 {
-                    ActualMove(index).apply(team, game, fog, world, Some(&spoke));
-                    let _s = spoke.process_move_better(ActualMove(index), team, world, game);
+            match game.factions.get_cell_inner(index) {
+                unit::GameCell::Piece(stack_height, m) => {
+                    let h = stack_height.to_num();
+                    if *m == team && n[team] > h as i64 {
+                        ActualMove(index).apply(team, game, fog, world, Some(&spoke));
+                        let _s = spoke.process_move_better(ActualMove(index), team, world, game);
+                    }
                 }
+                unit::GameCell::Empty => {}
             }
         }
     };
@@ -58,10 +62,13 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
         reinforce(!team, &mut game);
         expand(team, &mut game);
         for &index in world.land_as_vec.iter() {
-            if let Some((_, f)) = game.factions.get_cell_inner(index) {
-                if f == team {
-                    score[f] += 1;
+            match game.factions.get_cell_inner(index) {
+                unit::GameCell::Piece(stack_height, f) => {
+                    if *f == team {
+                        score[*f] += 1;
+                    }
                 }
+                unit::GameCell::Empty => {}
             }
         }
     }
@@ -141,32 +148,36 @@ impl Evaluator {
         for &index in world.land_as_vec.iter() {
             let num_attack = get_num_attack(spoke_info, index);
 
-            let temp_score = if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-                let height = height as i64;
-                if tt != Team::Neutral {
-                    let s = num_attack[tt].saturating_sub(1).max(height) - num_attack[-tt];
-                    overall_strength += s * tt.value();
-                    territory += 1;
-                    if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
-                        -tt.value()
+            let temp_score = match game.factions.get_cell_inner(index) {
+                &unit::GameCell::Piece(stack_height, tt) => {
+                    let height = stack_height.to_num() as i64;
+                    if tt != Team::Neutral {
+                        let s = num_attack[tt].saturating_sub(1).max(height) - num_attack[-tt];
+                        overall_strength += s * tt.value();
+                        territory += 1;
+                        if num_attack[-tt] > height && num_attack[-tt] >= num_attack[tt] {
+                            -tt.value()
+                        } else {
+                            tt.value()
+                        }
                     } else {
-                        tt.value()
+                        0
                     }
-                } else {
-                    0
                 }
-            } else {
-                if num_attack[Team::White] > num_attack[Team::Black] {
-                    territory += 1;
-                    1
-                } else if num_attack[Team::Black] > num_attack[Team::White] {
-                    territory += 1;
-                    -1
-                } else {
-                    contested += 1;
-                    0
+                unit::GameCell::Empty => {
+                    if num_attack[Team::White] > num_attack[Team::Black] {
+                        territory += 1;
+                        1
+                    } else if num_attack[Team::Black] > num_attack[Team::White] {
+                        territory += 1;
+                        -1
+                    } else {
+                        contested += 1;
+                        0
+                    }
                 }
             };
+
             overall_score += temp_score;
         }
         overall_score * territory + 2 * overall_strength * contested
