@@ -445,16 +445,17 @@ impl GameState {
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
 
 pub enum StackHeight {
-    Stack1 = 0,
-    Stack2 = 1,
-    Stack3 = 2,
-    Stack4 = 3,
-    Stack5 = 4,
-    Stack6 = 5,
+    Stack0 = 0,
+    Stack1 = 1,
+    Stack2 = 2,
+    Stack3 = 3,
+    Stack4 = 4,
+    Stack5 = 5,
+    Stack6 = 6,
 }
 impl StackHeight {
     pub fn to_num(&self) -> i8 {
-        *self as i8 + 1
+        *self as i8
     }
 }
 
@@ -462,7 +463,6 @@ impl StackHeight {
 
 pub enum GameCell {
     Piece(StackHeight, Team),
-    //Lighthouse(Team),
     #[default]
     Empty,
 }
