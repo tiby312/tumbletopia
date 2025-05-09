@@ -1452,7 +1452,7 @@ async fn render_command(
                 .iter_mesh(Axial::zero())
                 .filter_map(|a| {
                     match game.factions.get_cell(a) {
-                        &GameCell::Piece(stack_height, tt) => {
+                        &GameCell::Piece(unit::Pieces::Normal(stack_height, tt)) => {
                             let val = stack_height.to_num();
                             if tt != team_perspective {
                                 if darkness.is_set(a) {
@@ -1536,7 +1536,7 @@ async fn render_command(
                     .iter()
                     .enumerate()
                     .filter_map(|(index, x)| match x {
-                        GameCell::Piece(stack_height, team) => {
+                        GameCell::Piece(unit::Pieces::Normal(stack_height, team)) => {
                             Some((index, *stack_height as u8 + 1, *team))
                         }
                         GameCell::Empty => None,

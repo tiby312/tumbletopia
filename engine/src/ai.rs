@@ -21,7 +21,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
             let n = get_num_attack(&spoke, index);
 
             match game.factions.get_cell_inner(index) {
-                unit::GameCell::Piece(stack_height, m) => {
+                unit::GameCell::Piece(unit::Pieces::Normal(stack_height, m)) => {
                     let h = stack_height.to_num();
                     if *m == team && n[team] > h as i64 {
                         ActualMove(index).apply(team, game, fog, world, Some(&spoke));
@@ -63,7 +63,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
         expand(team, &mut game);
         for &index in world.land_as_vec.iter() {
             match game.factions.get_cell_inner(index) {
-                unit::GameCell::Piece(stack_height, f) => {
+                unit::GameCell::Piece(unit::Pieces::Normal(stack_height, f)) => {
                     if *f == team {
                         score[*f] += 1;
                     }
@@ -149,7 +149,7 @@ impl Evaluator {
             let num_attack = get_num_attack(spoke_info, index);
 
             let temp_score = match game.factions.get_cell_inner(index) {
-                &unit::GameCell::Piece(stack_height, tt) => {
+                &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, tt)) => {
                     let height = stack_height.to_num() as i64;
                     if tt != Team::Neutral {
                         let s = num_attack[tt].saturating_sub(1).max(height) - num_attack[-tt];

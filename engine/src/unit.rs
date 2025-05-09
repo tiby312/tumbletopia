@@ -245,7 +245,7 @@ impl GameState {
         let mut darkness = world.land.clone();
         for a in world.land.inner.iter_ones() {
             match self.factions.get_cell_inner(a) {
-                GameCell::Piece(_, tt) => {
+                GameCell::Piece(Pieces::Normal(_, tt)) => {
                     if *tt == team_perspective {
                         for j in Axial::from_index(&a).to_cube().range(1) {
                             darkness.set_coord(j.ax, false);
@@ -352,7 +352,7 @@ impl GameState {
             }
 
             match game.factions.get_cell_inner(index) {
-                GameCell::Piece(_, tt) => {
+                GameCell::Piece(Pieces::Normal(_, tt)) => {
                     //let height = height as i8;
                     match tt {
                         Team::White => {
@@ -459,17 +459,24 @@ impl StackHeight {
     }
 }
 
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
+
+pub enum Pieces{
+    Normal(StackHeight,Team)
+}
+
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 
-pub enum GameCell {
-    Piece(StackHeight, Team),
+pub enum GameCell<T> {
+    Piece(T),
     #[default]
     Empty,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub cells: Vec<GameCell>, // pub cells: [SmallMesh; 3],
+    pub cells: Vec<GameCell<Pieces>>, // pub cells: [SmallMesh; 3],
                               // pub team: SmallMesh,
                               // pub ice: SmallMesh,
                               // //This just signifies if there is a number in cells.
@@ -537,7 +544,7 @@ impl Tribe {
                 s.inner.set(index2 as usize, true);
 
                 match self.get_cell_inner(index2 as usize) {
-                    GameCell::Piece(_, _) => break,
+                    GameCell::Piece(Pieces::Normal(_, _)) => break,
                     GameCell::Empty => {}
                 }
             }
@@ -559,7 +566,7 @@ impl Tribe {
             let (dis, it) = ray(Axial::from_index(&index), dd, world);
             for (d, index2) in it.enumerate() {
                 match self.get_cell_inner(index2 as usize) {
-                    GameCell::Piece(stack_height, tt) => {
+                    GameCell::Piece(Pieces::Normal(stack_height, tt)) => {
                         return (
                             d as i8 + 1,
                             Some(EndPoint {
@@ -606,7 +613,7 @@ impl Tribe {
     //     self.piece.inner[index]
     // }
 
-    pub fn get_cell_inner(&self, index: usize) -> &GameCell {
+    pub fn get_cell_inner(&self, index: usize) -> &GameCell<Pieces> {
         assert!(index != hex::PASS_MOVE_INDEX);
         // match &self.cells[index] {
         //     GameCell::Empty => None,
@@ -637,7 +644,7 @@ impl Tribe {
         // };
         // Some((val as u8, team))
     }
-    pub fn get_cell(&self, a: Axial) -> &GameCell {
+    pub fn get_cell(&self, a: Axial) -> &GameCell<Pieces> {
         self.get_cell_inner(a.to_index())
     }
 
@@ -668,7 +675,7 @@ impl Tribe {
             _ => unreachable!(),
         };
 
-        self.cells[a] = GameCell::Piece(s, team);
+        self.cells[a] = GameCell::Piece(Pieces::Normal(s, team));
         // match team {
         //     Team::White => self.team.inner.set(a, true),
         //     Team::Black => self.team.inner.set(a, false),
