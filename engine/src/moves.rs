@@ -65,7 +65,7 @@ impl crate::unit::GameStateTotal {
             let fa = Axial::from_index(&a);
 
             match self.tactical.factions.get_cell_inner(a) {
-                &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, tt)) => {
+                &unit::GameCell::Piece(unit::Piece{height:stack_height,team:tt,..}) => {
                     if tt == team {
                         for b in fa
                             .to_cube()
@@ -280,7 +280,7 @@ impl SpokeInfo {
                 self.set(index2 as usize, dd.rotate_180(), team);
 
                 match game.factions.get_cell_inner(index2 as usize) {
-                    &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, tt)) => {
+                    &unit::GameCell::Piece(unit::Piece{height:stack_height,team:tt,..}) => {
                         self.set(index, dd, tt);
 
                         return (
@@ -458,7 +458,7 @@ impl GameState {
         }
 
         match self.factions.get_cell_inner(index) {
-            &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, rest)) => {
+            &unit::GameCell::Piece(unit::Piece{height:stack_height, team:rest,..}) => {
                 let height = stack_height.to_num();
                 debug_assert!(height > 0);
                 let height = height as i64;
@@ -508,7 +508,7 @@ impl GameState {
                 let num_attack = get_num_attack(spoke_info, index2);
 
                 match self.factions.get_cell_inner(index2) {
-                    &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, team2)) => {
+                    &unit::GameCell::Piece(unit::Piece{height:stack_height, team:team2,..}) => {
                         let height = stack_height.to_num();
                         debug_assert_eq!(team2, !team);
                         if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
@@ -568,7 +568,7 @@ impl GameState {
                 let num_attack = get_num_attack(spoke_info, index2);
 
                 match self.factions.get_cell_inner(index2) {
-                    &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, team2)) => {
+                    &unit::GameCell::Piece(unit::Piece{height:stack_height, team:team2,..}) => {
                         debug_assert!(team2 != team);
 
                         if num_attack[team] > stack_height.to_num() as i64
@@ -600,7 +600,7 @@ impl GameState {
             let num_attack = get_num_attack(&spoke_info, index);
 
             match self.factions.get_cell_inner(index) {
-                &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, rest)) => {
+                &unit::GameCell::Piece(unit::Piece{height:stack_height, team:rest,..}) => {
                     let height = stack_height.to_num() as i64;
 
                     //if this is our piece
@@ -621,7 +621,7 @@ impl GameState {
                             for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
                                 let index2 = index2 as usize;
                                 match self.factions.get_cell_inner(index2) {
-                                    unit::GameCell::Piece(unit::Pieces::Normal(_, _)) => break,
+                                    unit::GameCell::Piece(unit::Piece{..}) => break,
                                     unit::GameCell::Empty => {}
                                 }
 
@@ -661,7 +661,7 @@ impl GameState {
             let num_attack = get_num_attack(&spoke_info, index);
 
             match self.factions.get_cell_inner(index) {
-                &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, rest)) => {
+                &unit::GameCell::Piece(unit::Piece{height:stack_height, team:rest,..}) => {
                     let height = stack_height.to_num() as i64;
 
                     //if this is our piece

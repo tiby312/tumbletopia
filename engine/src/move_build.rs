@@ -440,7 +440,7 @@ impl ActualMove {
                     }
 
                     match playable.factions.get_cell(k.ax) {
-                        &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, fa)) => {
+                        &unit::GameCell::Piece(unit::Piece{height:stack_height, team:fa,..}) => {
                             if fa == team {
                                 potential_reinforcer = Some(k);
                                 //we have found a team mate that might be able to reach us.
@@ -462,7 +462,7 @@ impl ActualMove {
                             .rotate_60_left(),
                     ) {
                         match game.factions.get_cell(k.ax) {
-                            &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, fa)) => {
+                            &unit::GameCell::Piece(unit::Piece{height:stack_height, team:fa,..}) => {
                                 if fa != team {
                                     let spot = k.add(Cube::from_arr(a));
 
@@ -484,7 +484,7 @@ impl ActualMove {
                 }
                 console_dbg!("what");
                 match game.factions.get_cell_inner(self.0) {
-                    unit::GameCell::Piece(unit::Pieces::Normal(stack_height, v)) => {
+                    unit::GameCell::Piece(unit::Piece{height:stack_height, team:v,..}) => {
                         if num_attacking > stack_height.to_num() {
                             game.factions.remove_inner(self.0);
                             game.factions
@@ -581,7 +581,7 @@ impl ActualMove {
         //console_dbg!("Adding stacksize=", stack_size);
 
         let destroyed_unit = match game.factions.get_cell_inner(target_cell) {
-            &unit::GameCell::Piece(unit::Pieces::Normal(stack_height, v)) => Some((stack_height.to_num() as u8, v)),
+            &unit::GameCell::Piece(unit::Piece{height:stack_height, team:v,..}) => Some((stack_height.to_num() as u8, v)),
             unit::GameCell::Empty => None,
         };
 
