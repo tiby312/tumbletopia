@@ -460,7 +460,11 @@ pub async fn reselect_loop(
     //If we select a friendly unit quick swap
 
     match game.tactical.factions.get_cell(target_cell) {
-        unit::GameCell::Piece(unit::Piece{height:stack_height, team:team2,..}) => {
+        unit::GameCell::Piece(unit::Piece {
+            height: stack_height,
+            team: team2,
+            ..
+        }) => {
             if *team2 == selected_unit.team {
                 if !contains {
                     //it should be impossible for a unit to move onto a friendly
@@ -475,7 +479,11 @@ pub async fn reselect_loop(
 
     //If we select an enemy unit quick swap
     match game.tactical.factions.get_cell(target_cell) {
-        unit::GameCell::Piece(unit::Piece{height:stack_height, team:team2,..}) => {
+        unit::GameCell::Piece(unit::Piece {
+            height: stack_height,
+            team: team2,
+            ..
+        }) => {
             if *team2 == selected_unit.team {
                 if selected_unit.team != team || !contains {
                     //If we select an enemy unit thats outside of our units range.
@@ -673,9 +681,10 @@ pub async fn animate_move<'a>(
 
     let mut stack = 0;
     for (i, (dis, rest)) in end_points.into_iter().enumerate() {
-        let Some(unit::EndPoint { team: team2, .. }) = rest else {
+        let Some(e) = rest else {
             continue;
         };
+        let team2 = e.piece.team;
 
         if team2 != team {
             continue;
@@ -696,7 +705,7 @@ pub async fn animate_move<'a>(
 
         stack += 1;
         match state.tactical.factions.get_cell_inner(aa.0) {
-            unit::GameCell::Piece(unit::Piece{..}) => {
+            unit::GameCell::Piece(unit::Piece { .. }) => {
                 ss.tactical.factions.remove_inner(aa.0);
             }
             unit::GameCell::Empty => {}
@@ -772,7 +781,7 @@ pub async fn handle_player(
             };
 
             match game.tactical.factions.get_cell(cell) {
-                unit::GameCell::Piece(unit::Piece{team:team2,..}) => {
+                unit::GameCell::Piece(unit::Piece { team: team2, .. }) => {
                     break SelectType {
                         coord: cell,
                         team: *team2,

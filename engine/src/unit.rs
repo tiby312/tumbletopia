@@ -245,7 +245,7 @@ impl GameState {
         let mut darkness = world.land.clone();
         for a in world.land.inner.iter_ones() {
             match self.factions.get_cell_inner(a) {
-                &GameCell::Piece(Piece{team:tt,..}) => {
+                &GameCell::Piece(Piece { team: tt, .. }) => {
                     if tt == team_perspective {
                         for j in Axial::from_index(&a).to_cube().range(1) {
                             darkness.set_coord(j.ax, false);
@@ -342,8 +342,8 @@ impl GameState {
             let mut num_white = 0;
             let mut num_black = 0;
             for (_, rest) in game.factions.iter_end_points(world, index) {
-                if let Some(EndPoint { team, .. }) = rest {
-                    match team {
+                if let Some(e) = rest {
+                    match e.piece.team {
                         Team::White => num_white += 1,
                         Team::Black => num_black += 1,
                         Team::Neutral => {}
@@ -352,7 +352,7 @@ impl GameState {
             }
 
             match game.factions.get_cell_inner(index) {
-                GameCell::Piece(Piece{team:tt,..}) => {
+                GameCell::Piece(Piece { team: tt, .. }) => {
                     //let height = height as i8;
                     match tt {
                         Team::White => {
@@ -459,22 +459,20 @@ impl StackHeight {
     }
 }
 
+#[derive(Copy, Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
-
-pub struct Piece{
-    pub height:StackHeight,
-    pub team:Team,
-    pub typ:PieceType
+pub struct Piece {
+    pub height: StackHeight,
+    pub team: Team,
+    pub typ: PieceType,
 }
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
+#[derive(Copy, Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 
-pub enum PieceType{
+pub enum PieceType {
     Normal,
-    Lighthouse
+    Lighthouse,
 }
-
 
 // #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 
@@ -493,12 +491,12 @@ pub enum GameCell<T> {
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
     pub cells: Vec<GameCell<Piece>>, // pub cells: [SmallMesh; 3],
-                              // pub team: SmallMesh,
-                              // pub ice: SmallMesh,
-                              // //This just signifies if there is a number in cells.
-                              // //This way you can just check one mesh to see if a piece is there or not
-                              // //instead of checking 3
-                              // pub piece: SmallMesh,
+                                     // pub team: SmallMesh,
+                                     // pub ice: SmallMesh,
+                                     // //This just signifies if there is a number in cells.
+                                     // //This way you can just check one mesh to see if a piece is there or not
+                                     // //instead of checking 3
+                                     // pub piece: SmallMesh,
 }
 
 pub fn ray(
@@ -537,8 +535,7 @@ pub fn ray(
 #[derive(Debug, PartialEq, Eq)]
 pub struct EndPoint {
     pub index: usize,
-    pub height: i8,
-    pub team: Team,
+    pub piece: Piece,
 }
 
 impl Tribe {
@@ -582,13 +579,12 @@ impl Tribe {
             let (dis, it) = ray(Axial::from_index(&index), dd, world);
             for (d, index2) in it.enumerate() {
                 match self.get_cell_inner(index2 as usize) {
-                    &GameCell::Piece(Piece{height:stack_height, team:tt,..}) => {
+                    &GameCell::Piece(piece) => {
                         return (
                             d as i8 + 1,
                             Some(EndPoint {
                                 index: index2 as usize,
-                                height: stack_height.to_num(),
-                                team: tt,
+                                piece,
                             }),
                         );
                     }
@@ -692,7 +688,11 @@ impl Tribe {
         };
 
         //TODO pass piece type
-        self.cells[a] = GameCell::Piece(Piece{team,height:s,typ:PieceType::Normal});
+        self.cells[a] = GameCell::Piece(Piece {
+            team,
+            height: s,
+            typ: PieceType::Normal,
+        });
         // match team {
         //     Team::White => self.team.inner.set(a, true),
         //     Team::Black => self.team.inner.set(a, false),

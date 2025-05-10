@@ -41,7 +41,11 @@ impl Key {
 
         for index in world.get_game_cells().inner.iter_ones() {
             match game.factions.get_cell_inner(index) {
-                unit::GameCell::Piece(unit::Piece{height:stack_height, team:t,..}) => {
+                unit::GameCell::Piece(unit::Piece {
+                    height: stack_height,
+                    team: t,
+                    ..
+                }) => {
                     k.key ^= base.inner[index][get_index(stack_height.to_num() as u8, *t)];
                 }
                 unit::GameCell::Empty => {}
