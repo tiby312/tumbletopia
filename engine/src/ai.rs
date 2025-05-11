@@ -7,7 +7,6 @@ use super::*;
 
 pub type Eval = i64;
 
-use hex::PASS_MOVE_INDEX;
 use tinyvec::ArrayVec;
 pub const MAX_NODE_VISIT: usize = 1_000_000;
 
@@ -68,7 +67,6 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
         for &index in world.land_as_vec.iter() {
             match game.factions.get_cell_inner(index) {
                 unit::GameCell::Piece(unit::Piece {
-                    height: stack_height,
                     team: f,
                     ..
                 }) => {
@@ -87,8 +85,8 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
 pub fn should_pass(
     a: &ai::Res,
     _team: Team,
-    game_orig: &mut GameState,
-    world: &MyWorld,
+    _game_orig: &mut GameState,
+    _world: &MyWorld,
     //TODO pass in all history instead
     move_history: &MoveHistory,
 ) -> bool {

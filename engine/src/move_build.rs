@@ -441,7 +441,7 @@ impl ActualMove {
 
                     match playable.factions.get_cell(k.ax) {
                         &unit::GameCell::Piece(unit::Piece {
-                            height: stack_height,
+                            
                             team: fa,
                             ..
                         }) => {
@@ -467,7 +467,6 @@ impl ActualMove {
                     ) {
                         match game.factions.get_cell(k.ax) {
                             &unit::GameCell::Piece(unit::Piece {
-                                height: stack_height,
                                 team: fa,
                                 ..
                             }) => {

@@ -1,5 +1,4 @@
 use board::MyWorld;
-use hex::Cube;
 use mesh::small_mesh::SmallMesh;
 
 use super::*;
