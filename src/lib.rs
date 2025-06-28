@@ -1544,7 +1544,7 @@ async fn render_command(
                             height: stack_height,
                             team,
                             ..
-                        }) => Some((index, *stack_height as u8 + 1, *team)),
+                        }) => Some((index, *stack_height as u8, *team)),
                         GameCell::Empty => None,
                     })
             {
