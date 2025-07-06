@@ -498,6 +498,8 @@ pub async fn reselect_loop(
 
     //If we selected an empty space, deselect.
     if !contains {
+
+
         return LoopRes::Deselect;
     }
 

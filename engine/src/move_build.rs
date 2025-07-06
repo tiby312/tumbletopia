@@ -5,21 +5,6 @@ use crate::moves::SpokeInfo;
 
 use super::*;
 
-impl crate::moves::ActualMove {
-    // pub fn as_extra(&self) -> move_build::ExtraPhase {
-    //     move_build::ExtraPhase {
-    //         original: self.original,
-    //         moveto: self.moveto,
-    //         target: self.attackto,
-    //     }
-    // }
-    // pub fn as_move(&self) -> move_build::MovePhase {
-    //     move_build::MovePhase {
-    //         //original: self.original,
-    //         moveto: self.moveto,
-    //     }
-    // }
-}
 
 // pub struct ExtraPhase {
 //     pub original: Axial,

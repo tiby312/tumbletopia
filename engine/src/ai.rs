@@ -7,8 +7,238 @@ use super::*;
 
 pub type Eval = i64;
 
+use hex::HDir;
 use tinyvec::ArrayVec;
 pub const MAX_NODE_VISIT: usize = 1_000_000;
+
+impl GameState{
+
+    fn moves_that_block_better(
+        &self,
+        index: usize,
+        team: Team,
+        world: &board::MyWorld,
+        ret: &mut SmallMesh,
+        spoke_info: &SpokeInfo,
+    ) {
+        for dir in HDir::all() {
+            let team2 = spoke_info.get(index, dir);
+            if team2 == !team {
+            } else {
+                continue;
+            }
+
+            //tddtuts-utusbtddcdc
+            for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
+                let index2 = index2 as usize;
+                let num_attack = get_num_attack(spoke_info, index2);
+
+                match self.factions.get_cell_inner(index2) {
+                    &unit::GameCell::Piece(unit::Piece {
+                        height: stack_height,
+                        team: team2,
+                        ..
+                    }) => {
+                        let height = stack_height.to_num();
+                        debug_assert_eq!(team2, !team);
+                        if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
+                        {
+                            ret.inner.set(index2 as usize, true);
+                        }
+                        break;
+                    }
+                    unit::GameCell::Empty => {
+                        if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+                            ret.inner.set(index2 as usize, true);
+                        }
+                    }
+                }
+            }
+
+            // for (index2, fo) in self.los_ray(index, dir, world) {
+            //     let num_attack = get_num_attack(spoke_info, index2);
+
+            //     match fo {
+            //         LosRayItem::Move => {
+            //             if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+            //                 ret.inner.set(index2 as usize, true);
+            //             }
+            //         }
+            //         LosRayItem::End {
+            //             height,
+            //             team: team2,
+            //         } => {
+            //             debug_assert_eq!(team2, !team);
+            //             if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
+            //             {
+            //                 ret.inner.set(index2 as usize, true);
+            //             }
+            //         }
+            //     }
+            // }
+        }
+    }
+
+    fn moves_that_increase_los_better(
+        &self,
+        index: usize,
+        team: Team,
+        world: &board::MyWorld,
+        ret: &mut SmallMesh,
+        spoke_info: &SpokeInfo,
+    ) {
+        for dir in HDir::all() {
+            let team2 = spoke_info.get(index, dir);
+            if team2 == team {
+                continue;
+            }
+
+            for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
+                let index2 = index2 as usize;
+                let num_attack = get_num_attack(spoke_info, index2);
+
+                match self.factions.get_cell_inner(index2) {
+                    &unit::GameCell::Piece(unit::Piece {
+                        height: stack_height,
+                        team: team2,
+                        ..
+                    }) => {
+                        debug_assert!(team2 != team);
+
+                        if num_attack[team] > stack_height.to_num() as i64
+                            && num_attack[team] >= num_attack[!team]
+                        {
+                            ret.inner.set(index2 as usize, true);
+                        }
+                        break;
+                    }
+                    unit::GameCell::Empty => {
+                        if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+                            ret.inner.set(index2 as usize, true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn generate_interesting_moves(
+        &self,
+        world: &board::MyWorld,
+        team: Team,
+        spoke_info: &SpokeInfo,
+    ) -> SmallMesh {
+        let mut ret = SmallMesh::new();
+
+        for &index in world.land_as_vec.iter() {
+            let num_attack = get_num_attack(&spoke_info, index);
+
+            match self.factions.get_cell_inner(index) {
+                &unit::GameCell::Piece(unit::Piece {
+                    height: stack_height,
+                    team: rest,
+                    ..
+                }) => {
+                    let height = stack_height.to_num() as i64;
+
+                    //if this is our piece
+                    if rest == team {
+                        //if the enemy can capture it
+                        if num_attack[!team] <= height {
+                            continue;
+                        }
+
+                        if num_attack[!team] < num_attack[team] {
+                            continue;
+                        }
+
+                        //Also add moves where lets say this piece is going to die.
+                        //we might want to use it to reinforce another piece before it dies.
+                        //this such moves would also be a forcing/loud/defensive move
+                        for dir in HDir::all() {
+                            for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
+                                let index2 = index2 as usize;
+                                match self.factions.get_cell_inner(index2) {
+                                    unit::GameCell::Piece(unit::Piece { .. }) => break,
+                                    unit::GameCell::Empty => {}
+                                }
+
+                                if let Some(foo) = self.playable(index2, team, world, spoke_info) {
+                                    if !foo.is_suicidal() {
+                                        ret.inner.set(index2, true);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                unit::GameCell::Empty => {
+                    if num_attack[team] == num_attack[!team] && num_attack[team] >= 1 {
+                        ret.inner.set(index, true);
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    pub fn generate_loud_moves(
+        &self,
+        world: &board::MyWorld,
+        team: Team,
+        spoke_info: &SpokeInfo,
+    ) -> SmallMesh {
+        let mut ret = SmallMesh::new();
+
+        if team == Team::Neutral {
+            return ret;
+        }
+
+        for &index in world.land_as_vec.iter() {
+            let num_attack = get_num_attack(&spoke_info, index);
+
+            match self.factions.get_cell_inner(index) {
+                &unit::GameCell::Piece(unit::Piece {
+                    height: stack_height,
+                    team: rest,
+                    ..
+                }) => {
+                    let height = stack_height.to_num() as i64;
+
+                    //if this is our piece
+                    if rest == team {
+                        //if we can reinforce, add that as a loud move
+                        if num_attack[team] > height && num_attack[!team] >= height {
+                            ret.inner.set(index, true);
+                        }
+                    } else {
+                        //If it is an enemy piece, then
+                        if num_attack[team] > height && num_attack[team] >= num_attack[!team] {
+                            ret.inner.set(index, true);
+                        }
+
+                        if num_attack[team] == height {
+                            self.moves_that_increase_los_better(
+                                index,
+                                team,
+                                world,
+                                &mut ret,
+                                &spoke_info,
+                            );
+                        }
+                    }
+                }
+                unit::GameCell::Empty => {}
+            }
+        }
+
+        return ret;
+    }
+
+
+}
+
 
 pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
     let reinforce = |team, game: &mut GameState| {
