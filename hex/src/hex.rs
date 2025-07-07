@@ -7,6 +7,10 @@
 //     [-1, 1, 0],
 // ];
 
+        pub const PASS_MOVE: Axial = Axial { q: -5, r: -5 };
+        pub const PASS_MOVE_INDEX: usize = const { PASS_MOVE.to_index() };
+
+
 pub type CoordNum = i8;
 
 pub const OFFSETS: [[CoordNum; 3]; 6] = [
@@ -449,8 +453,6 @@ impl<H: HexDraw> std::fmt::Debug for Displayer<'_, H> {
     }
 }
 
-pub const PASS_MOVE: Axial = Axial { q: -5, r: -5 };
-pub const PASS_MOVE_INDEX: usize = const { PASS_MOVE.to_index() };
 
 #[derive(Debug, Clone)]
 pub enum TextMove {

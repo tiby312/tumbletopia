@@ -309,7 +309,7 @@ impl GameState {
             _ => return None,
         };
 
-        if a.0.coord.0 == hex::PASS_MOVE_INDEX && b.0.coord.0 == hex::PASS_MOVE_INDEX {
+        if a.0.is_pass() && b.0.is_pass() {
             //return None;
             if score_data.white > score_data.black {
                 return Some(GameOver::WhiteWon);

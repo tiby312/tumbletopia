@@ -22,11 +22,21 @@ pub trait GameAxial {
     fn get(&self) -> &Axial;
 }
 
+
+
 //Represents playing a normal piece at the specified coordinate
+//The tactical AI considers millions of these moves only.
+//The tactical AI does not consider light house moves
 #[derive(PartialEq, Eq, Default, Serialize, Deserialize, Clone, Copy, Debug)]
 
 pub struct NormalMove {
     pub coord: Coordinate,
+}
+impl NormalMove{
+    pub fn is_pass(&self)->bool{
+
+        self.coord.0==hex::PASS_MOVE_INDEX
+    }
 }
 
 impl hex::HexDraw for NormalMove {

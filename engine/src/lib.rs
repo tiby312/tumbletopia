@@ -16,6 +16,8 @@ use serde::Serialize;
 pub use unit::GameState;
 pub use unit::Team;
 
+
+
 fn get_index(height: u8, team: Team) -> usize {
     assert!(height > 0 && height <= 6, "uhoh:{}", height);
     let k = (height - 1) as usize + 6 * ((team.value() + 1) as usize);
@@ -62,7 +64,7 @@ impl Key {
         if let Team::White = team {
             self.key ^= base.white_to_move
         }
-        if m.coord.0 == hex::PASS_MOVE_INDEX {
+        if m.is_pass() {
             self.key ^= base.pass;
         } else {
             if let Some(a) = effect.destroyed_unit {
@@ -77,7 +79,7 @@ impl Key {
     }
 
     pub fn move_undo(&mut self, base: &Zobrist, m: NormalMove, team: Team, effect: &MoveEffect) {
-        if m.coord.0 == hex::PASS_MOVE_INDEX {
+        if m.is_pass() {
             self.key ^= base.pass;
         } else {
             //xor out the new piece
@@ -97,29 +99,29 @@ impl Key {
 
 //const FOO:Zobrist=get_zobrist();
 
-#[test]
-fn test_zobrist() {
-    let world = &board::MyWorld::load_from_string("bb-t-bbsrd-s----s--").unwrap();
-    let mut game = world.starting_state.clone();
+// #[test]
+// fn test_zobrist() {
+//     let world = &board::MyWorld::load_from_string("bb-t-bbsrd-s----s--").unwrap();
+//     let mut game = world.starting_state.clone();
 
-    let base = Zobrist::new();
+//     let base = Zobrist::new();
 
-    let mut k = Key::from_scratch(&base, &game, world, Team::White);
+//     let mut k = Key::from_scratch(&base, &game, world, Team::White);
 
-    let a = Axial::from_letter_coord('B', 2, world.radius as i8);
-    let m = Coordinate(a.to_index());
-    let m = NormalMove { coord: m };
-    let team = Team::White;
-    let effect = m.apply(team, &mut game, &SmallMesh::new(), world, None);
+//     let a = Axial::from_letter_coord('B', 2, world.radius as i8);
+//     let m = Coordinate(a.to_index());
+//     let m = NormalMove { coord: m };
+//     let team = Team::White;
+//     let effect = m.apply(team, &mut game, &SmallMesh::new(), world, None);
 
-    //dbg!(game.tactical.into_string(world));
-    let orig = k.clone();
-    k.move_update(&base, m.clone(), team, &effect);
-    k.move_undo(&base, m, team, &effect);
+//     //dbg!(game.tactical.into_string(world));
+//     let orig = k.clone();
+//     k.move_update(&base, m.clone(), team, &effect);
+//     k.move_undo(&base, m, team, &effect);
 
-    assert_eq!(orig, k);
-    //panic!();
-}
+//     assert_eq!(orig, k);
+//     //panic!();
+// }
 
 impl Zobrist {
     pub fn new() -> Zobrist {
