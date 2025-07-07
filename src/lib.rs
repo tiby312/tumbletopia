@@ -777,8 +777,7 @@ pub async fn game_play_thread(
                 game.update_fog(world, team);
                 game.history.push((the_move, effect_m));
 
-                let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
-                moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+                let spoke_info = moves::SpokeInfo::new(&game.tactical,world);
                 let curr_eval = engine::ai::Evaluator::default().absolute_evaluate(
                     &game.tactical,
                     world,
@@ -793,8 +792,7 @@ pub async fn game_play_thread(
                 game.update_fog(world, team);
                 game.history.push(r);
 
-                let mut spoke_info = moves::SpokeInfo::new(&game.tactical);
-                moves::update_spoke_info(&mut spoke_info, world, &game.tactical);
+                let spoke_info = moves::SpokeInfo::new(&game.tactical,world);
                 let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
                     &game.tactical,
                     world,
@@ -889,8 +887,7 @@ async fn render_command(
     // let game_str = game.into_string(world);
     // let history_str = game_total.foo.into_string(world);
 
-    let mut spoke = moves::SpokeInfo::new(&game);
-    moves::update_spoke_info(&mut spoke, world, game);
+    let spoke = moves::SpokeInfo::new(&game,world);
 
     struct Foo {
         start: Axial,

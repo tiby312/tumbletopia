@@ -226,13 +226,32 @@ pub struct SpokeTempInfo {
 }
 
 impl SpokeInfo {
-    pub fn new(_game: &GameState) -> Self {
-        SpokeInfo {
+    pub fn new(game: &GameState,world:&MyWorld) -> Self {
+        //tddt-t--dt---t-d-d-
+        let mut spoke_info=SpokeInfo {
             data: [SpokeCell {
                 raw: [Team::Neutral; 6],
                 num_attack: [0; 2],
             }; 256],
+        };
+
+
+        //Update spoke info
+        for index in world.get_game_cells().inner.iter_ones() {
+            for (i, (_, rest)) in game.factions.iter_end_points(world, index).enumerate() {
+                let v = if let Some(e) = rest {
+                    e.piece.team
+                } else {
+                    Team::Neutral
+                };
+                spoke_info.set(index, HDir::from(i as u8), v);
+                debug_assert_eq!(v, spoke_info.get(index, HDir::from(i as u8)));
+            }
         }
+
+        spoke_info
+        
+        
     }
 
     pub fn process_move_better(
@@ -419,22 +438,9 @@ impl SpokeInfo {
     }
 }
 
-pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, game: &GameState) {
-    //tddt-t--dt---t-d-d-
-
-    //Update spoke info
-    for index in world.get_game_cells().inner.iter_ones() {
-        for (i, (_, rest)) in game.factions.iter_end_points(world, index).enumerate() {
-            let v = if let Some(e) = rest {
-                e.piece.team
-            } else {
-                Team::Neutral
-            };
-            spoke_info.set(index, HDir::from(i as u8), v);
-            debug_assert_eq!(v, spoke_info.get(index, HDir::from(i as u8)));
-        }
-    }
-}
+// pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, game: &GameState) {
+    
+// }
 
 pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> &[i64; 2] {
     let foo = &spoke_info.data[index];

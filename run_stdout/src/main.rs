@@ -109,8 +109,7 @@ fn eval(game_s: &str) {
 
     let mut game = world.starting_state.clone();
 
-    let mut spoke_info = SpokeInfo::new(&game);
-    engine::moves::update_spoke_info(&mut spoke_info, &world, &game);
+    let spoke_info = SpokeInfo::new(&game,&world);
     let eval = Evaluator::default().absolute_evaluate(&game, &world, &spoke_info, false);
     println!("eval for {} is {} from white perpsective", game_s, eval);
 }

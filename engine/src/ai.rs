@@ -238,8 +238,7 @@ impl GameState {
 
 pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
     let reinforce = |team, game: &mut GameState| {
-        let mut spoke = SpokeInfo::new(game);
-        moves::update_spoke_info(&mut spoke, world, game);
+        let mut spoke = SpokeInfo::new(game,world);
         let fog = &mesh::small_mesh::SmallMesh::new();
 
         for &index in world.land_as_vec.iter() {
@@ -276,8 +275,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
         let fog = &mesh::small_mesh::SmallMesh::new();
         let mut progress = true;
 
-        let mut spoke = SpokeInfo::new(game);
-        moves::update_spoke_info(&mut spoke, world, game);
+        let mut spoke = SpokeInfo::new(game,world);
 
         while progress {
             progress = false;
@@ -496,8 +494,7 @@ pub fn iterative_deepening2(
 
     let mut moves = vec![];
 
-    let mut spoke_info = SpokeInfo::new(game);
-    moves::update_spoke_info(&mut spoke_info, world, game);
+    let mut spoke_info = SpokeInfo::new(game,world);
 
     let mut nodes_visited_total = 0;
     let mut qui_nodes_visited_total = 0;
