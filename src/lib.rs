@@ -14,7 +14,6 @@ use futures::{SinkExt, StreamExt};
 use gloo::console::log;
 use gui::shader_sys::ShaderSystem;
 use hex::Axial;
-use moves::Coordinate;
 use serde::{Deserialize, Serialize};
 
 use shogo::utils;
@@ -400,7 +399,7 @@ pub async fn worker_entry() {
     let mut timer = shogo::Timer::new(60);
 
     let scroll_manager = gui::scroll::TouchController::new([0., 0.].into());
-    use cgmath::SquareMatrix;
+    
 
     // let (ai_worker, ai_response) =
     //     worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;
