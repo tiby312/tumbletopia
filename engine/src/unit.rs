@@ -146,11 +146,7 @@ impl Team {
         }
     }
     pub fn is_white(&self) -> bool {
-        if let Team::White = self {
-            true
-        } else {
-            false
-        }
+        if let Team::White = self { true } else { false }
     }
     pub fn iter(&self) -> impl Iterator<Item = Self> {
         [*self, self.not()].into_iter().cycle()
@@ -538,7 +534,6 @@ pub struct EndPoint {
 }
 
 impl Tribe {
-    
     pub fn filter_los(&self, index: usize, world: &MyWorld) -> SmallMesh {
         let mut s = SmallMesh::new();
 

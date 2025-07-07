@@ -4,10 +4,10 @@ use engine::main_logic::GameWrap;
 use engine::main_logic::MouseEvent;
 
 use cgmath::Vector2;
-use engine::mesh;
-use engine::mesh::small_mesh::SmallMesh;
 use engine::MoveHistory;
 use engine::Zobrist;
+use engine::mesh;
+use engine::mesh::small_mesh::SmallMesh;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -78,7 +78,7 @@ pub async fn main_entry() {
         .dyn_into()
         .unwrap();
 
-    let map="---------------------------------b------r----k---------------------------------------------";
+    let map = "---------------------------------b------r----k---------------------------------------------";
     t.set_value(&map);
 
     let editor_elem = shogo::utils::get_by_id_elem("editor2");
@@ -399,7 +399,6 @@ pub async fn worker_entry() {
     let mut timer = shogo::Timer::new(60);
 
     let scroll_manager = gui::scroll::TouchController::new([0., 0.].into());
-    
 
     // let (ai_worker, ai_response) =
     //     worker::WorkerInterface::<AiCommand, AiResponse>::new("./gridlock_worker2.js").await;

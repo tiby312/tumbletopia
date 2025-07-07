@@ -7,9 +7,8 @@
 //     [-1, 1, 0],
 // ];
 
-        pub const PASS_MOVE: Axial = Axial { q: -5, r: -5 };
-        pub const PASS_MOVE_INDEX: usize = const { PASS_MOVE.to_index() };
-
+pub const PASS_MOVE: Axial = Axial { q: -5, r: -5 };
+pub const PASS_MOVE_INDEX: usize = const { PASS_MOVE.to_index() };
 
 pub type CoordNum = i8;
 
@@ -330,8 +329,8 @@ impl Cube {
         self
     }
 
-    pub fn range(&self, n: CoordNum) -> impl Iterator<Item = Cube> + Clone {
-        let o = *self;
+    pub fn range(self, n: CoordNum) -> impl Iterator<Item = Cube> + Clone {
+        let o = self;
         (-n..n + 1)
             .flat_map(move |q| ((-n).max(-q - n)..n.min(-q + n) + 1).map(move |r| (q, r)))
             .map(move |(q, r)| {
@@ -452,7 +451,6 @@ impl<H: HexDraw> std::fmt::Debug for Displayer<'_, H> {
         self.ax.fmt(f, self.radius)
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub enum TextMove {

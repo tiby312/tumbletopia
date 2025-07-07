@@ -1,6 +1,6 @@
 use crate::{
     board::MyWorld,
-    moves::{get_num_attack, SpokeInfo},
+    moves::{SpokeInfo, get_num_attack},
 };
 
 use super::*;
@@ -790,7 +790,6 @@ impl<'a> AlphaBeta<'a> {
         let moves = &mut self.moves[start_move_index..end_move_index];
 
         let move_value = |nm: &NormalMove| {
-
             let index = nm.coord.0;
 
             if let Some(a) = entry {

@@ -1,4 +1,4 @@
-use engine::{ai::Evaluator, mesh::small_mesh::SmallMesh, moves::SpokeInfo, Zobrist};
+use engine::{Zobrist, ai::Evaluator, mesh::small_mesh::SmallMesh, moves::SpokeInfo};
 
 //-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
 
@@ -132,7 +132,10 @@ fn test_hard_one() {
     matches!(gg, engine::unit::GameOver::WhiteWon);
 
     let s = format!("{:?}", world.format(&hist));
-    assert_eq!(s,"[E3,D3,E4,B2,D2,C2,B1,D3,B2,D4,C2,C3,D3,D5,E3,C4,D2,B3,C1,C4,E4,C5,C2,D5,B1,C4,B2,B4,A1,A3,pp,pp,]");
+    assert_eq!(
+        s,
+        "[E3,D3,E4,B2,D2,C2,B1,D3,B2,D4,C2,C3,D3,D5,E3,C4,D2,B3,C1,C4,E4,C5,C2,D5,B1,C4,B2,B4,A1,A3,pp,pp,]"
+    );
 }
 
 fn bench() {
@@ -141,7 +144,10 @@ fn bench() {
         matches!(gg, engine::unit::GameOver::WhiteWon);
 
         let s = format!("{:?}", world.format(&hist));
-        assert_eq!(s,"[E3,D3,E4,B2,D2,C2,B1,D3,B2,D4,C2,C3,D3,D5,E3,C4,D2,B3,C1,C4,E4,C5,C2,D5,B1,C4,B2,B4,A1,A3,pp,pp,]");
+        assert_eq!(
+            s,
+            "[E3,D3,E4,B2,D2,C2,B1,D3,B2,D4,C2,C3,D3,D5,E3,C4,D2,B3,C1,C4,E4,C5,C2,D5,B1,C4,B2,B4,A1,A3,pp,pp,]"
+        );
     }
 }
 

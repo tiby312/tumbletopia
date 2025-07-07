@@ -113,11 +113,7 @@ pub mod small_mesh {
             self.inner.as_mut_bitslice().set(ind, true);
         }
         pub fn set_coord(&mut self, a: Axial, val: bool) {
-            if val {
-                self.add(a)
-            } else {
-                self.remove(a)
-            }
+            if val { self.add(a) } else { self.remove(a) }
         }
         pub fn remove(&mut self, a: Axial) {
             assert!(Self::validate_rel(a));

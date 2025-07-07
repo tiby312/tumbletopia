@@ -16,8 +16,6 @@ use serde::Serialize;
 pub use unit::GameState;
 pub use unit::Team;
 
-
-
 fn get_index(height: u8, team: Team) -> usize {
     assert!(height > 0 && height <= 6, "uhoh:{}", height);
     let k = (height - 1) as usize + 6 * ((team.value() + 1) as usize);

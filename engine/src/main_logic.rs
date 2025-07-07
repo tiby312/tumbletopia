@@ -20,8 +20,8 @@ impl Default for CellSelection {
 
 use board::MyWorld;
 use futures::{
-    channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
+    channel::mpsc::{Receiver, Sender},
 };
 use hex::PASS_MOVE_INDEX;
 
@@ -395,7 +395,7 @@ pub async fn reselect_loop(
     let mut spoke_info = moves::SpokeInfo::new(&game2);
     moves::update_spoke_info(&mut spoke_info, world, &game2);
 
-    let cca={
+    let cca = {
         let mut cca = SmallMesh::from_iter_move(
             game2
                 .generate_possible_moves_movement(world, selected_unit.team, &spoke_info, true)
@@ -412,11 +412,7 @@ pub async fn reselect_loop(
         cca
     };
 
-    let cell = CellSelection::MoveSelection(
-        unwrapped_selected_unit,
-        cca,
-        have_moved.clone(),
-    );
+    let cell = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
 
     let pototo = doop
         .get_mouse_with_mesh(&cell, selected_unit.team, game, grey)
@@ -761,7 +757,7 @@ pub async fn handle_player(
 
                         continue 'outer;
                     } else if s == "pass" {
-                        let mp=NormalMove::new_pass();
+                        let mp = NormalMove::new_pass();
                         let me = mp.apply(
                             team,
                             &mut game.tactical,
@@ -811,7 +807,7 @@ pub async fn handle_player(
                     continue 'outer;
                 }
                 LoopRes::Pass => {
-                    let mp=NormalMove::new_pass();
+                    let mp = NormalMove::new_pass();
                     let me = mp.apply(
                         team,
                         &mut game.tactical,

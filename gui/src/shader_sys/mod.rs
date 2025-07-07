@@ -150,7 +150,7 @@ impl TextureBuffer {
     }
 }
 
-use wasm_bindgen::{prelude::*, Clamped};
+use wasm_bindgen::{Clamped, prelude::*};
 
 ///
 /// A simple shader program that allows the user to draw simple primitives.

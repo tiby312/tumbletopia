@@ -51,7 +51,7 @@ pub struct ModelData {
 impl Doop {
     pub fn gen_ext(&self, ss: f32, foo: usize, custom_alpha: Option<f64>) -> (ModelData, Img) {
         use std::f32::consts::PI;
-        let (mut m, tex) = self.gen(foo, custom_alpha);
+        let (mut m, tex) = self.generate(foo, custom_alpha);
 
         let v = ss;
         let s = glem::build(&glem::combine!(
@@ -78,7 +78,7 @@ impl Doop {
         (m, tex)
     }
     //TODO return a read only reference instead!
-    pub fn gen(&self, foo: usize, custom_alpha: Option<f64>) -> (ModelData, Img) {
+    pub fn generate(&self, foo: usize, custom_alpha: Option<f64>) -> (ModelData, Img) {
         // TODO use this: https://www.nayuki.io/page/png-file-chunk-inspector
         let mut positions = Vec::new();
         let mut indices = Vec::new();
