@@ -774,7 +774,7 @@ pub async fn game_play_thread(
                         None,
                     );
 
-                game.update_fog(world, team);
+                //game.update_fog(world, team);
                 game.history.push((the_move, effect_m));
 
                 let spoke_info = moves::SpokeInfo::new(&game.tactical, world);
@@ -789,7 +789,7 @@ pub async fn game_play_thread(
             engine::Slot::Player => {
                 let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
 
-                game.update_fog(world, team);
+                //game.update_fog(world, team);
                 game.history.push(r);
 
                 let spoke_info = moves::SpokeInfo::new(&game.tactical, world);

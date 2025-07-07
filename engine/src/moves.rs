@@ -2,112 +2,9 @@ use hex::HDir;
 
 use super::*;
 
-use crate::{mesh::small_mesh::SmallMesh, unit::PieceType};
-
-// pub struct EndPoints<T> {
-//     inner: [T; 6],
-//     num_first: usize,
-//     second_start_index: usize,
-// }
-// impl<T> EndPoints<T> {
-//     pub fn new() -> EndPoints<T>
-//     where
-//         T: Default,
-//     {
-//         EndPoints {
-//             inner: [0; 6].map(|_| std::default::Default::default()),
-//             num_first: 0,
-//             second_start_index: 6,
-//         }
-//     }
-//     pub fn add_first(&mut self, a: T) {
-//         self.inner[self.num_first] = a;
-//         self.num_first += 1;
-//     }
-//     pub fn add_second(&mut self, a: T) {
-//         self.second_start_index -= 1;
-//         self.inner[self.second_start_index] = a;
-//     }
-//     pub fn first_len(&self) -> usize {
-//         self.num_first
-//     }
-//     pub fn second_len(&self) -> usize {
-//         6 - self.second_start_index
-//     }
-//     pub fn iter_first(&self) -> impl Iterator<Item = &T> {
-//         self.inner[..self.num_first].iter()
-//     }
-//     pub fn iter_second(&self) -> impl Iterator<Item = &T> {
-//         self.inner[self.second_start_index..].iter()
-//     }
-// }
-
-impl crate::unit::GameStateTotal {
-    pub fn update_fog(&mut self, world: &board::MyWorld, team: Team) {
-        let fog = match team {
-            Team::White => &mut self.fog[0],
-            Team::Black => &mut self.fog[1],
-            Team::Neutral => unreachable!(),
-        };
-
-        // let pieces = match team {
-        //     ActiveTeam::White => {
-        //         self.tactical.factions.piece.inner & self.tactical.factions.team.inner
-        //     }
-        //     ActiveTeam::Black => {
-        //         return;
-        //         self.tactical.factions.piece.inner & !self.tactical.factions.team.inner
-        //     }
-        //     ActiveTeam::Neutral => unreachable!(),
-        // };
-
-        for a in world.get_game_cells().inner.iter_ones() {
-            let fa = Axial::from_index(&a);
-
-            match self.tactical.factions.get_cell_inner(a) {
-                &unit::GameCell::Piece(unit::Piece {
-                    height: stack_height,
-                    team: tt,
-                    ..
-                }) => {
-                    if tt == team {
-                        for b in fa
-                            .to_cube()
-                            .range(stack_height.to_num().try_into().unwrap())
-                        {
-                            if !world.get_game_cells().is_set(*b) {
-                                continue;
-                            }
-
-                            fog.set_coord(*b, false);
-                        }
-                    }
-                }
-                unit::GameCell::Empty => {}
-            }
-        }
-    }
-    
-}
 
 
-#[derive(Debug, Copy, Clone)]
-pub enum MoveType {
-    Capture,
-    Reinforce,
-    Fresh,
-    Suicidal,
-}
 
-impl MoveType {
-    pub fn is_suicidal(&self) -> bool {
-        if let MoveType::Suicidal = self {
-            true
-        } else {
-            false
-        }
-    }
-}
 
 pub use spoke::SpokeInfo;
 mod spoke {
@@ -382,6 +279,27 @@ mod spoke {
         pub fn get_num_attack(&self, index: usize) -> &[i64; 2] {
             let foo = &self.data[index];
             &foo.num_attack
+        }
+    }
+}
+
+
+
+
+#[derive(Debug, Copy, Clone)]
+pub enum MoveType {
+    Capture,
+    Reinforce,
+    Fresh,
+    Suicidal,
+}
+
+impl MoveType {
+    pub fn is_suicidal(&self) -> bool {
+        if let MoveType::Suicidal = self {
+            true
+        } else {
+            false
         }
     }
 }
