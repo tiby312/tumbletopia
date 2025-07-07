@@ -235,7 +235,7 @@ impl GameState {
         let mut gg = self.clone();
         for a in d.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
-            gg.factions.add_cell(a, 6, Team::Neutral);
+            gg.factions.add_cell(a, 6, Team::Neutral,false);
         }
         gg
     }
@@ -284,7 +284,7 @@ impl GameState {
         //TODO use bit and/oring
         for a in fog.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
-            gg.factions.add_cell(a, 6, Team::Neutral);
+            gg.factions.add_cell(a, 6, Team::Neutral,false);
         }
 
         gg
@@ -463,7 +463,7 @@ impl StackHeight {
 pub struct Piece {
     pub height: StackHeight,
     pub team: Team,
-    pub typ: PieceType,
+    pub can_attack:bool,
 }
 
 #[derive(Hash,Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
@@ -675,7 +675,7 @@ impl Tribe {
     //     // //}
     // }
 
-    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: Team) {
+    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: Team,can_attack:bool) {
         let s = match stack {
             1 => StackHeight::Stack1,
             2 => StackHeight::Stack2,
@@ -690,7 +690,7 @@ impl Tribe {
         self.cells[a] = GameCell::Piece(Piece {
             team,
             height: s,
-            typ: PieceType::Normal,
+            can_attack,
         });
         // match team {
         //     Team::White => self.team.inner.set(a, true),
@@ -711,9 +711,9 @@ impl Tribe {
         // }
         // self.set_coord(a, stack);
     }
-    pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team) {
+    pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team,can_attack:bool) {
         let a = a.to_index();
-        self.add_cell_inner(a, stack, team);
+        self.add_cell_inner(a, stack, team,can_attack);
     }
 }
 

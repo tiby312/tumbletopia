@@ -173,15 +173,15 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
         match tt {
             TT::Player1 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::White);
+                game.factions.add_cell(pos, curr_stack, Team::White,true);
             }
             TT::Player2 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::Black);
+                game.factions.add_cell(pos, curr_stack, Team::Black,true);
             }
             TT::Player3 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::Neutral);
+                game.factions.add_cell(pos, curr_stack, Team::Neutral,true);
             }
             TT::Empty => {
                 game.factions.remove(pos);
@@ -712,8 +712,8 @@ pub async fn animate_move<'a>(
             }
             unit::GameCell::Empty => {}
         }
-
-        ss.tactical.factions.add_cell_inner(aa.0, stack, team);
+        //TODO can_attack correct value?
+        ss.tactical.factions.add_cell_inner(aa.0, stack, team,true);
     }
 
     aa

@@ -283,6 +283,8 @@ impl MyWorld {
                 'e' => (4, Team::Black),
                 'f' => (5, Team::Black),
                 'g' => (6, Team::Black),
+                'x' => (0, Team::White),
+                'y' => (0, Team::Black),
                 '-' => {
                     continue;
                 }
@@ -291,8 +293,12 @@ impl MyWorld {
                 }
             };
 
+            //x and y are lighthouses.
+            //lighthouses behave as zero stacks that can't attack.
+            let can_attack=if stack==0{false}else{true};
+
             log!("Adding {} {} {:?}", i, stack, team);
-            g.factions.add_cell_inner(i, stack, team);
+            g.factions.add_cell_inner(i, stack, team,can_attack);
         }
 
         // let g = unit::GameStateTotal {
