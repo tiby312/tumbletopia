@@ -58,34 +58,34 @@ impl Key {
 
         k
     }
-    pub fn move_update(&mut self, base: &Zobrist, m: Coordinate, team: Team, effect: &MoveEffect) {
+    pub fn move_update(&mut self, base: &Zobrist, m: NormalMove, team: Team, effect: &MoveEffect) {
         if let Team::White = team {
             self.key ^= base.white_to_move
         }
-        if m.0 == hex::PASS_MOVE_INDEX {
+        if m.coord.0 == hex::PASS_MOVE_INDEX {
             self.key ^= base.pass;
         } else {
             if let Some(a) = effect.destroyed_unit {
                 //panic!();
                 //xor out what piece was there
-                self.key ^= base.inner[m.0][get_index(a.0, a.1)];
+                self.key ^= base.inner[m.coord.0][get_index(a.0, a.1)];
             }
 
             //xor in the new piece
-            self.key ^= base.inner[m.0][get_index(effect.height, team)];
+            self.key ^= base.inner[m.coord.0][get_index(effect.height, team)];
         }
     }
 
-    pub fn move_undo(&mut self, base: &Zobrist, m: Coordinate, team: Team, effect: &MoveEffect) {
-        if m.0 == hex::PASS_MOVE_INDEX {
+    pub fn move_undo(&mut self, base: &Zobrist, m: NormalMove, team: Team, effect: &MoveEffect) {
+        if m.coord.0 == hex::PASS_MOVE_INDEX {
             self.key ^= base.pass;
         } else {
             //xor out the new piece
-            self.key ^= base.inner[m.0][get_index(effect.height, team)];
+            self.key ^= base.inner[m.coord.0][get_index(effect.height, team)];
 
             if let Some(a) = effect.destroyed_unit {
                 //xor in what piece was there
-                self.key ^= base.inner[m.0][get_index(a.0, a.1)];
+                self.key ^= base.inner[m.coord.0][get_index(a.0, a.1)];
             }
         }
 
@@ -108,7 +108,7 @@ fn test_zobrist() {
 
     let a = Axial::from_letter_coord('B', 2, world.radius as i8);
     let m = Coordinate(a.to_index());
-
+    let m = NormalMove { coord: m };
     let team = Team::White;
     let effect = m.apply(team, &mut game, &SmallMesh::new(), world, None);
 
@@ -156,6 +156,8 @@ macro_rules! log {
 
 pub(crate) use log;
 
+use crate::move_build::NormalMove;
+
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Slot {
     Player,
@@ -196,13 +198,13 @@ pub mod share {
 //This is for saving/loading.
 #[derive(Deserialize, Serialize)]
 pub struct JustMoveLog {
-    pub inner: Vec<moves::Coordinate>,
+    pub inner: Vec<move_build::NormalMove>,
 }
 
 //Need to keep effect so you can undo all the way to the start.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MoveHistory {
-    pub inner: Vec<(moves::Coordinate, move_build::MoveEffect)>,
+    pub inner: Vec<(move_build::NormalMove, move_build::MoveEffect)>,
 }
 
 impl Default for MoveHistory {
@@ -217,7 +219,7 @@ impl MoveHistory {
 
         let mut s = String::new();
         for (index, e) in self.inner.iter() {
-            write!(s, "{:?}", world.format(index),).unwrap();
+            write!(s, "{:?}", world.format(&index.coord),).unwrap();
 
             if e.destroyed_unit.is_some() {
                 write!(s, "x").unwrap();
@@ -237,7 +239,7 @@ impl MoveHistory {
         }
     }
 
-    pub fn push(&mut self, o: (moves::Coordinate, move_build::MoveEffect)) {
+    pub fn push(&mut self, o: (move_build::NormalMove, move_build::MoveEffect)) {
         self.inner.push(o);
     }
 }

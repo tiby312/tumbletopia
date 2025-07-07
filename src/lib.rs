@@ -376,7 +376,7 @@ struct AiCommand {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiResponse {
-    inner: Coordinate,
+    inner: engine::move_build::NormalMove,
 }
 
 #[wasm_bindgen]
@@ -686,7 +686,7 @@ pub async fn game_play_thread(
                 "{}:{:?}:{:?}",
                 game.history.inner.len(),
                 team.not(),
-                world.format(aa)
+                world.format(&aa.coord)
             )
             .unwrap();
             if bb.destroyed_unit.is_some() {

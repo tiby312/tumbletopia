@@ -11,8 +11,7 @@ use hex::HDir;
 use tinyvec::ArrayVec;
 pub const MAX_NODE_VISIT: usize = 1_000_000;
 
-impl GameState{
-
+impl GameState {
     fn moves_that_block_better(
         &self,
         index: usize,
@@ -235,10 +234,7 @@ impl GameState{
 
         return ret;
     }
-
-
 }
-
 
 pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
     let reinforce = |team, game: &mut GameState| {
@@ -257,8 +253,18 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
                 }) => {
                     let h = stack_height.to_num();
                     if *m == team && n[team] > h as i64 {
-                        Coordinate(index).apply(team, game, fog, world, Some(&spoke));
-                        let _s = spoke.process_move_better(Coordinate(index), team, world, game);
+                        NormalMove {
+                            coord: Coordinate(index),
+                        }
+                        .apply(team, game, fog, world, Some(&spoke));
+                        let _s = spoke.process_move_better(
+                            NormalMove {
+                                coord: Coordinate(index),
+                            },
+                            team,
+                            world,
+                            game,
+                        );
                     }
                 }
                 unit::GameCell::Empty => {}
@@ -278,8 +284,18 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
             for &index in world.land_as_vec.iter() {
                 if let Some(f) = game.playable(index, team, world, &spoke) {
                     if !f.is_suicidal() {
-                        let _e = Coordinate(index).apply(team, game, fog, world, Some(&spoke));
-                        let _s = spoke.process_move_better(Coordinate(index), team, world, game);
+                        let _e = NormalMove {
+                            coord: Coordinate(index),
+                        }
+                        .apply(team, game, fog, world, Some(&spoke));
+                        let _s = spoke.process_move_better(
+                            NormalMove {
+                                coord: Coordinate(index),
+                            },
+                            team,
+                            world,
+                            game,
+                        );
                         progress = true;
                     }
                 }
@@ -296,10 +312,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
         expand(team, &mut game);
         for &index in world.land_as_vec.iter() {
             match game.factions.get_cell_inner(index) {
-                unit::GameCell::Piece(unit::Piece {
-                    team: f,
-                    ..
-                }) => {
+                unit::GameCell::Piece(unit::Piece { team: f, .. }) => {
                     if *f == team {
                         score[*f] += 1;
                     }
@@ -328,7 +341,7 @@ pub fn should_pass(
 
     //If the user wants the game to end, just end the game.
     if let Some(&(f, _)) = move_history.inner.last() {
-        if f.0 == hex::PASS_MOVE_INDEX {
+        if f.coord.0 == hex::PASS_MOVE_INDEX {
             log!("AI:Passing since player wants the game to end");
             return true;
         }
@@ -430,7 +443,7 @@ pub enum Flag {
     LowerBound,
 }
 pub struct TTEntry {
-    pv: ArrayVec<[moves::Coordinate; STACK_SIZE]>,
+    pv: ArrayVec<[NormalMove; STACK_SIZE]>,
     flag: Flag,
     depth: usize,
     value: i64,
@@ -440,7 +453,7 @@ const STACK_SIZE: usize = 15;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Res {
-    pub line: Vec<Coordinate>,
+    pub line: Vec<NormalMove>,
     pub eval: i64,
 }
 
@@ -452,16 +465,20 @@ pub fn calculate_move(
     team: Team,
     move_history: &MoveHistory,
     zobrist: &Zobrist,
-) -> Coordinate {
+) -> NormalMove {
     let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 9, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
-            Coordinate(hex::PASS_MOVE_INDEX)
+            NormalMove {
+                coord: Coordinate(hex::PASS_MOVE_INDEX),
+            }
         } else {
             mo.line[0].clone()
         }
     } else {
-        Coordinate(hex::PASS_MOVE_INDEX)
+        NormalMove {
+            coord: Coordinate(hex::PASS_MOVE_INDEX),
+        }
     };
 
     log!("Ai {:?} has selected move = {:?}", team, world.format(&m));
@@ -572,7 +589,7 @@ struct AlphaBeta<'a> {
     killer_moves: &'a mut KillerMoves,
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
-    moves: &'a mut Vec<Coordinate>,
+    moves: &'a mut Vec<NormalMove>,
     nodes_visited: &'a mut usize,
     qui_nodes_visited: &'a mut usize,
     fogs: &'a [mesh::small_mesh::SmallMesh; 2],
@@ -581,7 +598,7 @@ struct AlphaBeta<'a> {
 }
 
 struct KillerMoves {
-    a: Vec<tinyvec::ArrayVec<[moves::Coordinate; 2]>>,
+    a: Vec<tinyvec::ArrayVec<[NormalMove; 2]>>,
 }
 
 impl KillerMoves {
@@ -589,10 +606,10 @@ impl KillerMoves {
         let v = (0..a).map(|_| tinyvec::ArrayVec::new()).collect();
         Self { a: v }
     }
-    pub fn get(&self, depth: usize) -> &[moves::Coordinate] {
+    pub fn get(&self, depth: usize) -> &[NormalMove] {
         &self.a[depth]
     }
-    pub fn consider(&mut self, depth: usize, m: moves::Coordinate) {
+    pub fn consider(&mut self, depth: usize, m: NormalMove) {
         let a = &mut self.a[depth];
 
         if a.contains(&m) {
@@ -646,10 +663,14 @@ impl<'a> AlphaBeta<'a> {
         let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
-        self.moves.push(Coordinate(hex::PASS_MOVE_INDEX));
+        self.moves.push(NormalMove {
+            coord: Coordinate(hex::PASS_MOVE_INDEX),
+        });
 
         self.moves
-            .extend(captures.inner.iter_ones().map(|x| Coordinate(x)));
+            .extend(captures.inner.iter_ones().map(|x| NormalMove {
+                coord: Coordinate(x),
+            }));
 
         let end_move_index = self.moves.len();
 
@@ -693,7 +714,7 @@ impl<'a> AlphaBeta<'a> {
         team: Team,
         depth: usize,
         update_tt: bool,
-    ) -> (Eval, ArrayVec<[Coordinate; STACK_SIZE]>) {
+    ) -> (Eval, ArrayVec<[NormalMove; STACK_SIZE]>) {
         if *self.nodes_visited >= MAX_NODE_VISIT {
             return (abab::SMALL_VAL, tinyvec::array_vec!());
         }
@@ -762,7 +783,9 @@ impl<'a> AlphaBeta<'a> {
 
         let start_move_index = self.moves.len();
 
-        self.moves.push(Coordinate(hex::PASS_MOVE_INDEX));
+        self.moves.push(NormalMove {
+            coord: Coordinate(hex::PASS_MOVE_INDEX),
+        });
         self.moves.extend(game.generate_possible_moves_movement(
             self.world,
             team,
@@ -774,12 +797,12 @@ impl<'a> AlphaBeta<'a> {
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
-        let move_value = |index: &Coordinate| {
-            let index = index.0;
+        let move_value = |index: &NormalMove| {
+            let index = index.coord.0;
 
             if let Some(a) = entry {
                 if let Some(p) = a.pv.last() {
-                    if p.0 == index {
+                    if p.coord.0 == index {
                         return 10_001;
                     }
                 }
@@ -799,7 +822,7 @@ impl<'a> AlphaBeta<'a> {
                 .iter()
                 .enumerate()
             {
-                if a.0 == index {
+                if a.coord.0 == index {
                     return 9_000 - i as isize;
                 }
             }
@@ -864,10 +887,10 @@ impl<'a> AlphaBeta<'a> {
             if !ab_iter.keep_going(m, eval) {
                 beta_cutoff = true;
                 //2007 without
-                if !loud_moves.inner[cand.0] {
+                if !loud_moves.inner[cand.coord.0] {
                     self.killer_moves.consider(depth, cand);
 
-                    self.history_heur[cand.0] += depth * depth;
+                    self.history_heur[cand.coord.0] += depth * depth;
                 }
 
                 self.moves.drain(start_move_index..);

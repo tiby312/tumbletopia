@@ -1,4 +1,4 @@
-use crate::mesh::small_mesh::SmallMesh;
+use crate::{mesh::small_mesh::SmallMesh, move_build::NormalMove};
 
 use super::*;
 
@@ -173,15 +173,15 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
         match tt {
             TT::Player1 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::White,true);
+                game.factions.add_cell(pos, curr_stack, Team::White, true);
             }
             TT::Player2 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::Black,true);
+                game.factions.add_cell(pos, curr_stack, Team::Black, true);
             }
             TT::Player3 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::Neutral,true);
+                game.factions.add_cell(pos, curr_stack, Team::Neutral, true);
             }
             TT::Empty => {
                 game.factions.remove(pos);
@@ -352,7 +352,7 @@ pub struct SelectType {
 
 #[derive(Debug)]
 pub enum LoopRes<T> {
-    EndTurn((moves::Coordinate, move_build::MoveEffect)),
+    EndTurn((move_build::NormalMove, move_build::MoveEffect)),
     Deselect,
     Undo,
     Pass,
@@ -395,12 +395,11 @@ pub async fn reselect_loop(
     let mut spoke_info = moves::SpokeInfo::new(&game2);
     moves::update_spoke_info(&mut spoke_info, world, &game2);
 
-    let mut cca = SmallMesh::from_iter_move(game2.generate_possible_moves_movement(
-        world,
-        selected_unit.team,
-        &spoke_info,
-        true,
-    ));
+    let mut cca = SmallMesh::from_iter_move(
+        game2
+            .generate_possible_moves_movement(world, selected_unit.team, &spoke_info, true)
+            .map(|x| x.coord),
+    );
 
     cca.inner.set(hex::PASS_MOVE_INDEX, true);
 
@@ -498,8 +497,6 @@ pub async fn reselect_loop(
 
     //If we selected an empty space, deselect.
     if !contains {
-
-
         return LoopRes::Deselect;
     }
 
@@ -548,8 +545,8 @@ pub async fn reselect_loop(
     //let c = target_cell;
 
     let mp = Coordinate(target_cell.to_index());
-
-    let effect = animate_move(&mp, selected_unit.team, game, world, doop)
+    let norm = NormalMove { coord: mp };
+    let effect = animate_move(&norm, selected_unit.team, game, world, doop)
         .await
         .apply(
             selected_unit.team,
@@ -560,7 +557,7 @@ pub async fn reselect_loop(
         );
 
     {
-        LoopRes::EndTurn((moves::Coordinate(mp.0), effect))
+        LoopRes::EndTurn((norm, effect))
         // *have_moved = Some(selection::HaveMoved {
         //     the_move: mp,
         //     effect,
@@ -660,24 +657,24 @@ pub async fn replay(
 }
 
 pub async fn animate_move<'a>(
-    aa: &'a Coordinate,
+    aa: &'a NormalMove,
     team: Team,
     state: &unit::GameStateTotal,
     world: &board::MyWorld,
     data: &mut CommandSender,
-) -> &'a Coordinate {
-    if aa.0 == PASS_MOVE_INDEX {
+) -> &'a NormalMove {
+    if aa.coord.0 == PASS_MOVE_INDEX {
         return aa;
     }
     assert!(
-        world.get_game_cells().inner[aa.0 as usize],
+        world.get_game_cells().inner[aa.coord.0 as usize],
         "uhoh {:?}",
-        world.format(aa)
+        world.format(&aa.coord)
     );
 
     let ff = state.tactical.bake_fog(&state.fog[team.index()]);
 
-    let end_points = ff.factions.iter_end_points(world, aa.0);
+    let end_points = ff.factions.iter_end_points(world, aa.coord.0);
 
     let mut ss = state.clone();
 
@@ -692,13 +689,13 @@ pub async fn animate_move<'a>(
             continue;
         }
 
-        let unit =
-            Axial::from_index(&aa).add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
+        let unit = Axial::from_index(&aa.coord)
+            .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
 
         data.wait_animation(
             AnimationCommand::Movement {
                 unit,
-                end: Axial::from_index(&aa),
+                end: Axial::from_index(&aa.coord),
             },
             team,
             &mut ss,
@@ -706,14 +703,16 @@ pub async fn animate_move<'a>(
         .await;
 
         stack += 1;
-        match state.tactical.factions.get_cell_inner(aa.0) {
+        match state.tactical.factions.get_cell_inner(aa.coord.0) {
             unit::GameCell::Piece(unit::Piece { .. }) => {
-                ss.tactical.factions.remove_inner(aa.0);
+                ss.tactical.factions.remove_inner(aa.coord.0);
             }
             unit::GameCell::Empty => {}
         }
         //TODO can_attack correct value?
-        ss.tactical.factions.add_cell_inner(aa.0, stack, team,true);
+        ss.tactical
+            .factions
+            .add_cell_inner(aa.coord.0, stack, team, true);
     }
 
     aa
@@ -724,7 +723,7 @@ pub async fn handle_player(
     world: &board::MyWorld,
     doop: &mut CommandSender,
     team: Team,
-) -> (moves::Coordinate, move_build::MoveEffect) {
+) -> (move_build::NormalMove, move_build::MoveEffect) {
     let undo = async |doop: &mut CommandSender, game: &mut unit::GameStateTotal| {
         //log!("undoing turn!!!");
         assert!(game.history.inner.len() >= 2, "Not enough moves to undo");
@@ -737,8 +736,8 @@ pub async fn handle_player(
 
         let s = format!(
             "undoing moves {:?} and {:?}",
-            world.format(&a),
-            world.format(&a2)
+            world.format(&a.coord),
+            world.format(&a2.coord)
         );
         doop.repaint_ui(team, game, s).await;
     };
@@ -767,6 +766,7 @@ pub async fn handle_player(
                         continue 'outer;
                     } else if s == "pass" {
                         let mp = Coordinate(hex::PASS_MOVE_INDEX);
+                        let mp = NormalMove { coord: mp };
 
                         let me = mp.apply(
                             team,
@@ -818,7 +818,7 @@ pub async fn handle_player(
                 }
                 LoopRes::Pass => {
                     let mp = Coordinate(hex::PASS_MOVE_INDEX);
-
+                    let mp = NormalMove { coord: mp };
                     let me = mp.apply(
                         team,
                         &mut game.tactical,

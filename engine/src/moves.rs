@@ -237,21 +237,21 @@ impl SpokeInfo {
 
     pub fn process_move_better(
         &mut self,
-        a: Coordinate,
+        a: NormalMove,
         team: Team,
         world: &board::MyWorld,
         game: &GameState,
     ) -> SpokeTempInfo {
-        if a.0 == hex::PASS_MOVE_INDEX {
+        if a.coord.0 == hex::PASS_MOVE_INDEX {
             return SpokeTempInfo {
                 data: std::array::from_fn(|_| (0, None)),
             };
         }
-        let index = a.0;
+        let index = a.coord.0;
         debug_assert!(
             world.get_game_cells().inner[index as usize],
             "uhoh {:?}",
-            world.format(&a)
+            world.format(&a.coord)
         );
         let mut it = hex::HDir::all().map(move |dd| {
             let (dis, it) = unit::ray(Axial::from_index(&index), dd, world);
@@ -309,17 +309,17 @@ impl SpokeInfo {
 
     pub fn undo_move(
         &mut self,
-        a: Coordinate,
+        a: NormalMove,
         effect: &move_build::MoveEffect,
         _team: Team,
         _world: &board::MyWorld,
         _game: &GameState,
         spoke_temp: SpokeTempInfo,
     ) {
-        if a.0 == hex::PASS_MOVE_INDEX {
+        if a.coord.0 == hex::PASS_MOVE_INDEX {
             return;
         }
-        let index = a.0;
+        let index = a.coord.0;
 
         let arr = &spoke_temp.data;
 
@@ -499,11 +499,13 @@ impl GameState {
         team: Team,
         spoke_info: &'b SpokeInfo,
         allow_suicidal: bool,
-    ) -> impl Iterator<Item = Coordinate> + use<'b> {
+    ) -> impl Iterator<Item = NormalMove> + use<'b> {
         world.land_as_vec.iter().filter_map(move |&index| {
             if let Some(f) = self.playable(index, team, world, spoke_info) {
                 if !f.is_suicidal() || allow_suicidal {
-                    Some(Coordinate(index))
+                    Some(NormalMove {
+                        coord: Coordinate(index),
+                    })
                 } else {
                     None
                 }
@@ -538,10 +540,7 @@ impl hex::HexDraw for Coordinate {
     }
 }
 
-
-
-
-//Signifies a normal move of a [1,6] stack. 
+//Signifies a normal move of a [1,6] stack.
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
 pub struct Coordinate(pub usize);
 
@@ -557,17 +556,15 @@ impl Default for Coordinate {
     }
 }
 
-
 //TODO use
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
-pub struct GeneralMove{
-    coord:Coordinate,
-    typ:PieceType
+pub struct GeneralMove {
+    coord: Coordinate,
+    typ: PieceType,
 }
-
 
 impl hex::HexDraw for GeneralMove {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
-        self.coord.fmt(f,radius)
+        self.coord.fmt(f, radius)
     }
 }

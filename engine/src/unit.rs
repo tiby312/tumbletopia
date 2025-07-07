@@ -235,7 +235,7 @@ impl GameState {
         let mut gg = self.clone();
         for a in d.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
-            gg.factions.add_cell(a, 6, Team::Neutral,false);
+            gg.factions.add_cell(a, 6, Team::Neutral, false);
         }
         gg
     }
@@ -284,7 +284,7 @@ impl GameState {
         //TODO use bit and/oring
         for a in fog.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
-            gg.factions.add_cell(a, 6, Team::Neutral,false);
+            gg.factions.add_cell(a, 6, Team::Neutral, false);
         }
 
         gg
@@ -309,7 +309,7 @@ impl GameState {
             _ => return None,
         };
 
-        if a.0 .0 == hex::PASS_MOVE_INDEX && b.0 .0 == hex::PASS_MOVE_INDEX {
+        if a.0.coord.0 == hex::PASS_MOVE_INDEX && b.0.coord.0 == hex::PASS_MOVE_INDEX {
             //return None;
             if score_data.white > score_data.black {
                 return Some(GameOver::WhiteWon);
@@ -463,10 +463,10 @@ impl StackHeight {
 pub struct Piece {
     pub height: StackHeight,
     pub team: Team,
-    pub can_attack:bool,
+    pub can_attack: bool,
 }
 
-#[derive(Hash,Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
+#[derive(Hash, Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
 
 pub enum PieceType {
     Normal,
@@ -675,7 +675,7 @@ impl Tribe {
     //     // //}
     // }
 
-    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: Team,can_attack:bool) {
+    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: Team, can_attack: bool) {
         let s = match stack {
             1 => StackHeight::Stack1,
             2 => StackHeight::Stack2,
@@ -711,9 +711,9 @@ impl Tribe {
         // }
         // self.set_coord(a, stack);
     }
-    pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team,can_attack:bool) {
+    pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team, can_attack: bool) {
         let a = a.to_index();
-        self.add_cell_inner(a, stack, team,can_attack);
+        self.add_cell_inner(a, stack, team, can_attack);
     }
 }
 

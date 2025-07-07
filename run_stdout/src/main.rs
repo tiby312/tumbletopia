@@ -81,9 +81,7 @@ fn main() {
 
     // let start = std::time::Instant::now();
 
-    // for _ in 0..10{
     test_wins();
-    // }
 
     //test_pass("---------------------------------brrr---r---rk---------r---------r-------------------------");
     // let elapsed = start.elapsed(); // Get the elapsed time
@@ -120,7 +118,7 @@ fn eval(game_s: &str) {
 fn test_wins() {
     for g in doop() {
         test_pass(g);
-        //println!("passed for {}",g);
+        println!("passed for {}", g);
     }
 }
 
@@ -151,7 +149,7 @@ pub fn test_run(
     game: &str,
 ) -> (
     engine::unit::GameOver,
-    Vec<engine::Coordinate>,
+    Vec<engine::move_build::NormalMove>,
     engine::board::MyWorld,
 ) {
     let world = engine::board::MyWorld::load_from_string(game).unwrap();
