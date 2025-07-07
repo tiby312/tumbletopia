@@ -778,7 +778,8 @@ impl<'a> AlphaBeta<'a> {
         let start_move_index = self.moves.len();
 
         self.moves.push(NormalMove::new_pass());
-        self.moves.extend(game.generate_possible_moves_movement(
+        self.moves.extend(NormalMove::generate_possible_moves_movement(
+            &game,
             self.world,
             team,
             &spoke_info,

@@ -493,27 +493,6 @@ impl GameState {
         }
     }
 
-    pub fn generate_possible_moves_movement<'b>(
-        &'b self,
-        world: &'b board::MyWorld,
-        team: Team,
-        spoke_info: &'b SpokeInfo,
-        allow_suicidal: bool,
-    ) -> impl Iterator<Item = NormalMove> + use<'b> {
-        world.land_as_vec.iter().filter_map(move |&index| {
-            if let Some(f) = self.playable(index, team, world, spoke_info) {
-                if !f.is_suicidal() || allow_suicidal {
-                    Some(NormalMove {
-                        coord: Coordinate(index),
-                    })
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
-    }
     pub fn generate_suicidal<'b>(
         &'b self,
         world: &'b board::MyWorld,

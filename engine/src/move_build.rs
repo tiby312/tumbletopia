@@ -24,6 +24,8 @@ pub trait GameAxial {
 
 
 
+
+
 //Represents playing a normal piece at the specified coordinate
 //The tactical AI considers millions of these moves only.
 //The tactical AI does not consider light house moves
@@ -50,6 +52,28 @@ impl hex::HexDraw for NormalMove {
 }
 
 impl NormalMove {
+
+    pub fn generate_possible_moves_movement<'b>(
+        state:&'b GameState,
+        world: &'b board::MyWorld,
+        team: Team,
+        spoke_info: &'b SpokeInfo,
+        allow_suicidal: bool,
+    ) -> impl Iterator<Item = NormalMove> + use<'b> {
+        world.land_as_vec.iter().filter_map(move |&index| {
+            if let Some(f) = state.playable(index, team, world, spoke_info) {
+                if !f.is_suicidal() || allow_suicidal {
+                    Some(NormalMove {
+                        coord: Coordinate(index),
+                    })
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+    }
     pub fn undo(&self, _team_index: Team, effect: &MoveEffect, state: &mut GameState) {
         let moveto = self.coord.0;
 

@@ -397,8 +397,8 @@ pub async fn reselect_loop(
 
     let cca = {
         let mut cca = SmallMesh::from_iter_move(
-            game2
-                .generate_possible_moves_movement(world, selected_unit.team, &spoke_info, true)
+            
+                NormalMove::generate_possible_moves_movement(&game2,world, selected_unit.team, &spoke_info, true)
                 .chain([NormalMove::new_pass()])
                 .map(|x| x.coord),
         );
