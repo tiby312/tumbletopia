@@ -7,8 +7,6 @@ use super::*;
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct MoveEffect {
-    pushpull: PushInfo,
-    powerup: PowerupAction,
     pub height: u8,
     pub destroyed_unit: Option<(u8, Team)>,
 }
@@ -18,9 +16,13 @@ impl GameAxial for Axial {
         self
     }
 }
+
+
 pub trait GameAxial {
     fn get(&self) -> &Axial;
 }
+
+
 
 //Represents playing a normal piece at the specified coordinate
 //The tactical AI considers millions of these moves only.
@@ -73,8 +75,6 @@ impl NormalMove {
         //this is a pass
         if self.coord.0 == hex::PASS_MOVE_INDEX {
             return MoveEffect {
-                pushpull: PushInfo::None,
-                powerup: PowerupAction::None,
                 destroyed_unit: None,
                 height: 0,
             };
@@ -82,8 +82,7 @@ impl NormalMove {
 
         //let env = &mut game.env;
         let target_cell = self.coord.0;
-        let e = PushInfo::None;
-
+        
         let stack_size = if let Some(sp) = spoke_info {
             sp.data[self.coord.0].num_attack[team]
         } else {
@@ -138,25 +137,8 @@ impl NormalMove {
             .add_cell_inner(target_cell, stack_size as u8, team, true);
 
         MoveEffect {
-            pushpull: e,
-            powerup: PowerupAction::None,
             destroyed_unit,
             height: stack_size as u8,
         }
     }
-}
-
-#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-pub enum PowerupAction {
-    GotPowerup,
-    DiscardedPowerup,
-    None,
-}
-
-#[derive(Serialize, Deserialize, PartialOrd, Ord, Clone, Copy, Eq, PartialEq, Debug)]
-pub enum PushInfo {
-    UpgradedLand,
-    PushedLand,
-    PushedUnit,
-    None,
 }
