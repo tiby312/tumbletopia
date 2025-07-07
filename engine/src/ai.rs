@@ -1,7 +1,4 @@
-use crate::{
-    board::MyWorld,
-    moves::{SpokeInfo, get_num_attack},
-};
+use crate::{board::MyWorld, moves::SpokeInfo};
 
 use super::*;
 
@@ -30,7 +27,7 @@ impl GameState {
             //tddtuts-utusbtddcdc
             for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
                 let index2 = index2 as usize;
-                let num_attack = get_num_attack(spoke_info, index2);
+                let num_attack = spoke_info.get_num_attack(index2);
 
                 match self.factions.get_cell_inner(index2) {
                     &unit::GameCell::Piece(unit::Piece {
@@ -94,7 +91,7 @@ impl GameState {
 
             for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
                 let index2 = index2 as usize;
-                let num_attack = get_num_attack(spoke_info, index2);
+                let num_attack = spoke_info.get_num_attack(index2);
 
                 match self.factions.get_cell_inner(index2) {
                     &unit::GameCell::Piece(unit::Piece {
@@ -130,7 +127,7 @@ impl GameState {
         let mut ret = SmallMesh::new();
 
         for &index in world.land_as_vec.iter() {
-            let num_attack = get_num_attack(&spoke_info, index);
+            let num_attack = spoke_info.get_num_attack(index);
 
             match self.factions.get_cell_inner(index) {
                 &unit::GameCell::Piece(unit::Piece {
@@ -195,7 +192,7 @@ impl GameState {
         }
 
         for &index in world.land_as_vec.iter() {
-            let num_attack = get_num_attack(&spoke_info, index);
+            let num_attack = spoke_info.get_num_attack(index);
 
             match self.factions.get_cell_inner(index) {
                 &unit::GameCell::Piece(unit::Piece {
@@ -238,11 +235,11 @@ impl GameState {
 
 pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
     let reinforce = |team, game: &mut GameState| {
-        let mut spoke = SpokeInfo::new(game,world);
+        let mut spoke = SpokeInfo::new(game, world);
         let fog = &mesh::small_mesh::SmallMesh::new();
 
         for &index in world.land_as_vec.iter() {
-            let n = get_num_attack(&spoke, index);
+            let n = spoke.get_num_attack(index);
 
             match game.factions.get_cell_inner(index) {
                 unit::GameCell::Piece(unit::Piece {
@@ -275,7 +272,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
         let fog = &mesh::small_mesh::SmallMesh::new();
         let mut progress = true;
 
-        let mut spoke = SpokeInfo::new(game,world);
+        let mut spoke = SpokeInfo::new(game, world);
 
         while progress {
             progress = false;
@@ -393,7 +390,7 @@ impl Evaluator {
         let mut overall_strength = 0;
         let mut contested = 0;
         for &index in world.land_as_vec.iter() {
-            let num_attack = get_num_attack(spoke_info, index);
+            let num_attack = spoke_info.get_num_attack(index);
 
             let temp_score = match game.factions.get_cell_inner(index) {
                 &unit::GameCell::Piece(unit::Piece {
@@ -494,7 +491,7 @@ pub fn iterative_deepening2(
 
     let mut moves = vec![];
 
-    let mut spoke_info = SpokeInfo::new(game,world);
+    let mut spoke_info = SpokeInfo::new(game, world);
 
     let mut nodes_visited_total = 0;
     let mut qui_nodes_visited_total = 0;
@@ -775,13 +772,14 @@ impl<'a> AlphaBeta<'a> {
         let start_move_index = self.moves.len();
 
         self.moves.push(NormalMove::new_pass());
-        self.moves.extend(NormalMove::generate_possible_moves_movement(
-            &game,
-            self.world,
-            team,
-            &spoke_info,
-            false,
-        ));
+        self.moves
+            .extend(NormalMove::generate_possible_moves_movement(
+                &game,
+                self.world,
+                team,
+                &spoke_info,
+                false,
+            ));
 
         let end_move_index = self.moves.len();
 

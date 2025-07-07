@@ -245,7 +245,7 @@ impl GameState {
         //                 for j in Axial::from_index(&a).to_cube().range(1) {
         //                     darkness.set_coord(j.ax, false);
         //                 }
-                        
+
         //             }
         //         }
         //         GameCell::Empty => {}

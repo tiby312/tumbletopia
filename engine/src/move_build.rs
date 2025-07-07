@@ -17,14 +17,9 @@ impl GameAxial for Axial {
     }
 }
 
-
 pub trait GameAxial {
     fn get(&self) -> &Axial;
 }
-
-
-
-
 
 //Represents playing a normal piece at the specified coordinate
 //The tactical AI considers millions of these moves only.
@@ -52,9 +47,8 @@ impl hex::HexDraw for NormalMove {
 }
 
 impl NormalMove {
-
     pub fn generate_possible_moves_movement<'b>(
-        state:&'b GameState,
+        state: &'b GameState,
         world: &'b board::MyWorld,
         team: Team,
         spoke_info: &'b SpokeInfo,
@@ -106,7 +100,7 @@ impl NormalMove {
 
         //let env = &mut game.env;
         let target_cell = self.coord.0;
-        
+
         let stack_size = if let Some(sp) = spoke_info {
             sp.data[self.coord.0].num_attack[team]
         } else {

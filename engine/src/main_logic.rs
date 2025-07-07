@@ -392,14 +392,19 @@ pub async fn reselect_loop(
     };
 
     let game2 = game.tactical.convert_to_playable(world, selected_unit.team);
-    let spoke_info = moves::SpokeInfo::new(&game2,world);
+    let spoke_info = moves::SpokeInfo::new(&game2, world);
 
     let cca = {
         let mut cca = SmallMesh::from_iter_move(
-            
-                NormalMove::generate_possible_moves_movement(&game2,world, selected_unit.team, &spoke_info, true)
-                .chain([NormalMove::new_pass()])
-                .map(|x| x.coord),
+            NormalMove::generate_possible_moves_movement(
+                &game2,
+                world,
+                selected_unit.team,
+                &spoke_info,
+                true,
+            )
+            .chain([NormalMove::new_pass()])
+            .map(|x| x.coord),
         );
 
         let c2 = game

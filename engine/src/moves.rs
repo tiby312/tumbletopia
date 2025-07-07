@@ -167,284 +167,281 @@ impl MoveType {
     }
 }
 
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
-pub struct SpokeInfo {
-    //pub data: [bitvec::BitArr!(for 256*6); 2],
-    pub data: [SpokeCell; 256],
-}
+pub use spoke::SpokeInfo;
+mod spoke {
+    use super::*;
+    #[derive(PartialEq, Eq, Copy, Clone, Debug)]
+    pub struct SpokeInfo {
+        //pub data: [bitvec::BitArr!(for 256*6); 2],
+        pub data: [SpokeCell; 256],
+    }
 
-// 3 bits for num white
-// 3 bits for num black
-// 2 bits left over
+    // 3 bits for num white
+    // 3 bits for num black
+    // 2 bits left over
 
-//0
-//1
-//2
-//3
-//4
-//5
-//6
+    //0
+    //1
+    //2
+    //3
+    //4
+    //5
+    //6
 
-//   5   5   5   5   5   5
-// |---|---|---|---|---|---|
-//
-//
-//
-//
-// impl std::cmp::PartialEq for SpokeInfo {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.data == other.data
-//     }
-// }
+    //   5   5   5   5   5   5
+    // |---|---|---|---|---|---|
+    //
+    //
+    //
+    //
+    // impl std::cmp::PartialEq for SpokeInfo {
+    //     fn eq(&self, other: &Self) -> bool {
+    //         self.data == other.data
+    //     }
+    // }
 
-// #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-// pub enum Thing {
-//     None,
-//     White,
-//     Black,
-//     Neutral,
-// }
+    // #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+    // pub enum Thing {
+    //     None,
+    //     White,
+    //     Black,
+    //     Neutral,
+    // }
 
-// impl Thing {
-//     pub fn value(&self) -> i64 {
-//         match self {
-//             Thing::None => 0,
-//             Thing::White => 1,
-//             Thing::Black => -1,
-//             Thing::Neutral => 0,
-//         }
-//     }
-// }
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
-pub struct SpokeCell {
-    raw: [Team; 6],
-    pub num_attack: [i64; 2],
-}
+    // impl Thing {
+    //     pub fn value(&self) -> i64 {
+    //         match self {
+    //             Thing::None => 0,
+    //             Thing::White => 1,
+    //             Thing::Black => -1,
+    //             Thing::Neutral => 0,
+    //         }
+    //     }
+    // }
+    #[derive(PartialEq, Eq, Copy, Clone, Debug)]
+    pub struct SpokeCell {
+        raw: [Team; 6],
+        pub num_attack: [i64; 2],
+    }
 
-pub struct SpokeTempInfo {
-    data: [(i8, Option<unit::EndPoint>); 6],
-}
+    pub struct SpokeTempInfo {
+        data: [(i8, Option<unit::EndPoint>); 6],
+    }
 
-impl SpokeInfo {
-    pub fn new(game: &GameState,world:&MyWorld) -> Self {
-        //tddt-t--dt---t-d-d-
-        let mut spoke_info=SpokeInfo {
-            data: [SpokeCell {
-                raw: [Team::Neutral; 6],
-                num_attack: [0; 2],
-            }; 256],
-        };
+    impl SpokeInfo {
+        pub fn new(game: &GameState, world: &MyWorld) -> Self {
+            //tddt-t--dt---t-d-d-
+            let mut spoke_info = SpokeInfo {
+                data: [SpokeCell {
+                    raw: [Team::Neutral; 6],
+                    num_attack: [0; 2],
+                }; 256],
+            };
 
+            //Update spoke info
+            for index in world.get_game_cells().inner.iter_ones() {
+                for (i, (_, rest)) in game.factions.iter_end_points(world, index).enumerate() {
+                    let v = if let Some(e) = rest {
+                        e.piece.team
+                    } else {
+                        Team::Neutral
+                    };
+                    spoke_info.set(index, HDir::from(i as u8), v);
+                    debug_assert_eq!(v, spoke_info.get(index, HDir::from(i as u8)));
+                }
+            }
 
-        //Update spoke info
-        for index in world.get_game_cells().inner.iter_ones() {
-            for (i, (_, rest)) in game.factions.iter_end_points(world, index).enumerate() {
-                let v = if let Some(e) = rest {
-                    e.piece.team
-                } else {
-                    Team::Neutral
+            spoke_info
+        }
+
+        pub fn process_move_better(
+            &mut self,
+            a: NormalMove,
+            team: Team,
+            world: &board::MyWorld,
+            game: &GameState,
+        ) -> SpokeTempInfo {
+            if a.coord.0 == hex::PASS_MOVE_INDEX {
+                return SpokeTempInfo {
+                    data: std::array::from_fn(|_| (0, None)),
                 };
-                spoke_info.set(index, HDir::from(i as u8), v);
-                debug_assert_eq!(v, spoke_info.get(index, HDir::from(i as u8)));
+            }
+            let index = a.coord.0;
+            debug_assert!(
+                world.get_game_cells().inner[index as usize],
+                "uhoh {:?}",
+                world.format(&a.coord)
+            );
+            let mut it = hex::HDir::all().map(move |dd| {
+                let (dis, it) = unit::ray(Axial::from_index(&index), dd, world);
+                //let mut it=it.peekable();
+
+                // if let Some(&index2)=it.peek(){
+                //     if game.factions.get_cell_inner(index2 as usize).is_none() {
+                //         if let Some(foo)=self.get(index2 as usize,dd.rotate_180()){
+                //             match foo{
+                //                 Team::White | Team::Black=> {
+                //                     if foo==team{
+                //                         // don't need to do anything for empty cells
+                //                     }else{
+                //                         //add one to this team
+                //                         //subtract one from that team
+                //                     }
+                //                 },
+                //                 Team::Neutral => {
+                //                     //just add one for this team to all empty cells
+                //                 },
+                //             }
+                //         }else{
+                //             //just add one for this team to all the empty cells
+                //         }
+                //     }
+                // }
+
+                for (d, index2) in it.enumerate() {
+                    debug_assert!(index != index2 as usize);
+                    self.set(index2 as usize, dd.rotate_180(), team);
+
+                    match game.factions.get_cell_inner(index2 as usize) {
+                        &unit::GameCell::Piece(piece) => {
+                            self.set(index, dd, piece.team);
+
+                            return (
+                                d as i8 + 1,
+                                Some(unit::EndPoint {
+                                    index: index2 as usize,
+                                    piece,
+                                }),
+                            );
+                        }
+                        unit::GameCell::Empty => {}
+                    }
+                }
+                self.set(index, dd, Team::Neutral);
+                (dis, None)
+            });
+
+            SpokeTempInfo {
+                data: std::array::from_fn(|_| it.next().unwrap()),
             }
         }
 
-        spoke_info
-        
-        
-    }
+        pub fn undo_move(
+            &mut self,
+            a: NormalMove,
+            effect: &move_build::MoveEffect,
+            _team: Team,
+            _world: &board::MyWorld,
+            _game: &GameState,
+            spoke_temp: SpokeTempInfo,
+        ) {
+            if a.coord.0 == hex::PASS_MOVE_INDEX {
+                return;
+            }
+            let index = a.coord.0;
 
-    pub fn process_move_better(
-        &mut self,
-        a: NormalMove,
-        team: Team,
-        world: &board::MyWorld,
-        game: &GameState,
-    ) -> SpokeTempInfo {
-        if a.coord.0 == hex::PASS_MOVE_INDEX {
-            return SpokeTempInfo {
-                data: std::array::from_fn(|_| (0, None)),
-            };
+            let arr = &spoke_temp.data;
+
+            for (hexdir, (dis, rest)) in HDir::all().zip(arr.iter()) {
+                let st = if let &Some(unit::EndPoint { .. }) = rest {
+                    1
+                } else {
+                    0
+                };
+
+                let stride = board::STRIDES[hexdir as usize] as isize;
+
+                let mut index2: isize = index as isize;
+
+                let oppt = if let Some((_, t2)) = effect.destroyed_unit {
+                    t2
+                } else {
+                    if let (_, Some(end)) = &arr[hexdir.rotate_180() as usize] {
+                        end.piece.team
+                    } else {
+                        Team::Neutral
+                    }
+                };
+
+                for _ in 0..*dis - 1 + st {
+                    index2 += stride;
+                    self.set(index2 as usize, hexdir.rotate_180(), oppt);
+                }
+            }
         }
-        let index = a.coord.0;
-        debug_assert!(
-            world.get_game_cells().inner[index as usize],
-            "uhoh {:?}",
-            world.format(&a.coord)
-        );
-        let mut it = hex::HDir::all().map(move |dd| {
-            let (dis, it) = unit::ray(Axial::from_index(&index), dd, world);
-            //let mut it=it.peekable();
 
-            // if let Some(&index2)=it.peek(){
-            //     if game.factions.get_cell_inner(index2 as usize).is_none() {
-            //         if let Some(foo)=self.get(index2 as usize,dd.rotate_180()){
-            //             match foo{
-            //                 Team::White | Team::Black=> {
-            //                     if foo==team{
-            //                         // don't need to do anything for empty cells
-            //                     }else{
-            //                         //add one to this team
-            //                         //subtract one from that team
-            //                     }
-            //                 },
-            //                 Team::Neutral => {
-            //                     //just add one for this team to all empty cells
-            //                 },
-            //             }
-            //         }else{
-            //             //just add one for this team to all the empty cells
-            //         }
+        fn set(&mut self, index: usize, dir: HDir, new_team: Team) {
+            let cc = &mut self.data[index];
+
+            let curr_team = cc.raw[dir as usize];
+
+            if new_team == curr_team {
+                return;
+            }
+
+            if new_team != Team::Neutral {
+                cc.num_attack[new_team] += 1;
+            }
+
+            if curr_team != Team::Neutral {
+                cc.num_attack[curr_team] -= 1;
+            }
+            cc.raw[dir as usize] = new_team;
+
+            // let tt = match val {
+            //     None => Thing::None,
+            //     Some(Team::White) => Thing::White,
+            //     Some(Team::Black) => Thing::Black,
+            //     Some(Team::Neutral) => Thing::Neutral,
+            // };
+
+            // let new_value = tt.value();
+            // let old_value = self.data[index].raw[dir as usize].value();
+
+            // match (old_value, new_value) {
+            //     (-1, -1) => {}
+            //     (-1, 0) => {
+            //         self.data[index].num_attack[1] -= 1;
             //     }
+            //     (0, -1) => {
+            //         self.data[index].num_attack[1] += 1;
+            //     }
+            //     (-1, 1) => {
+            //         self.data[index].num_attack[0] += 1;
+            //         self.data[index].num_attack[1] -= 1;
+            //     }
+            //     (1, 1) => {}
+            //     (1, 0) => {
+            //         self.data[index].num_attack[0] -= 1;
+            //     }
+            //     (0, 1) => {
+            //         self.data[index].num_attack[0] += 1;
+            //     }
+            //     (1, -1) => {
+            //         self.data[index].num_attack[0] -= 1;
+            //         self.data[index].num_attack[1] += 1;
+            //     }
+            //     (0, 0) => {}
+            //     _ => unreachable!("{:?} {:?}", old_value, new_value),
             // }
 
-            for (d, index2) in it.enumerate() {
-                debug_assert!(index != index2 as usize);
-                self.set(index2 as usize, dd.rotate_180(), team);
+            // self.data[index].raw[dir as usize] = tt;
+        }
+        pub fn get(&self, index: usize, dir: HDir) -> Team {
+            self.data[index].raw[dir as usize]
+            // match self.data[index].raw[dir as usize] {
+            //     Thing::None => None,
+            //     Thing::White => Some(Team::White),
+            //     Thing::Black => Some(Team::Black),
+            //     Thing::Neutral => Some(Team::Neutral),
+            // }
+        }
 
-                match game.factions.get_cell_inner(index2 as usize) {
-                    &unit::GameCell::Piece(piece) => {
-                        self.set(index, dd, piece.team);
-
-                        return (
-                            d as i8 + 1,
-                            Some(unit::EndPoint {
-                                index: index2 as usize,
-                                piece,
-                            }),
-                        );
-                    }
-                    unit::GameCell::Empty => {}
-                }
-            }
-            self.set(index, dd, Team::Neutral);
-            (dis, None)
-        });
-
-        SpokeTempInfo {
-            data: std::array::from_fn(|_| it.next().unwrap()),
+        pub fn get_num_attack(&self, index: usize) -> &[i64; 2] {
+            let foo = &self.data[index];
+            &foo.num_attack
         }
     }
-
-    pub fn undo_move(
-        &mut self,
-        a: NormalMove,
-        effect: &move_build::MoveEffect,
-        _team: Team,
-        _world: &board::MyWorld,
-        _game: &GameState,
-        spoke_temp: SpokeTempInfo,
-    ) {
-        if a.coord.0 == hex::PASS_MOVE_INDEX {
-            return;
-        }
-        let index = a.coord.0;
-
-        let arr = &spoke_temp.data;
-
-        for (hexdir, (dis, rest)) in HDir::all().zip(arr.iter()) {
-            let st = if let &Some(unit::EndPoint { .. }) = rest {
-                1
-            } else {
-                0
-            };
-
-            let stride = board::STRIDES[hexdir as usize] as isize;
-
-            let mut index2: isize = index as isize;
-
-            let oppt = if let Some((_, t2)) = effect.destroyed_unit {
-                t2
-            } else {
-                if let (_, Some(end)) = &arr[hexdir.rotate_180() as usize] {
-                    end.piece.team
-                } else {
-                    Team::Neutral
-                }
-            };
-
-            for _ in 0..*dis - 1 + st {
-                index2 += stride;
-                self.set(index2 as usize, hexdir.rotate_180(), oppt);
-            }
-        }
-    }
-
-    fn set(&mut self, index: usize, dir: HDir, new_team: Team) {
-        let cc = &mut self.data[index];
-
-        let curr_team = cc.raw[dir as usize];
-
-        if new_team == curr_team {
-            return;
-        }
-
-        if new_team != Team::Neutral {
-            cc.num_attack[new_team] += 1;
-        }
-
-        if curr_team != Team::Neutral {
-            cc.num_attack[curr_team] -= 1;
-        }
-        cc.raw[dir as usize] = new_team;
-
-        // let tt = match val {
-        //     None => Thing::None,
-        //     Some(Team::White) => Thing::White,
-        //     Some(Team::Black) => Thing::Black,
-        //     Some(Team::Neutral) => Thing::Neutral,
-        // };
-
-        // let new_value = tt.value();
-        // let old_value = self.data[index].raw[dir as usize].value();
-
-        // match (old_value, new_value) {
-        //     (-1, -1) => {}
-        //     (-1, 0) => {
-        //         self.data[index].num_attack[1] -= 1;
-        //     }
-        //     (0, -1) => {
-        //         self.data[index].num_attack[1] += 1;
-        //     }
-        //     (-1, 1) => {
-        //         self.data[index].num_attack[0] += 1;
-        //         self.data[index].num_attack[1] -= 1;
-        //     }
-        //     (1, 1) => {}
-        //     (1, 0) => {
-        //         self.data[index].num_attack[0] -= 1;
-        //     }
-        //     (0, 1) => {
-        //         self.data[index].num_attack[0] += 1;
-        //     }
-        //     (1, -1) => {
-        //         self.data[index].num_attack[0] -= 1;
-        //         self.data[index].num_attack[1] += 1;
-        //     }
-        //     (0, 0) => {}
-        //     _ => unreachable!("{:?} {:?}", old_value, new_value),
-        // }
-
-        // self.data[index].raw[dir as usize] = tt;
-    }
-    pub fn get(&self, index: usize, dir: HDir) -> Team {
-        self.data[index].raw[dir as usize]
-        // match self.data[index].raw[dir as usize] {
-        //     Thing::None => None,
-        //     Thing::White => Some(Team::White),
-        //     Thing::Black => Some(Team::Black),
-        //     Thing::Neutral => Some(Team::Neutral),
-        // }
-    }
-}
-
-// pub fn update_spoke_info(spoke_info: &mut SpokeInfo, world: &board::MyWorld, game: &GameState) {
-    
-// }
-
-pub fn get_num_attack(spoke_info: &SpokeInfo, index: usize) -> &[i64; 2] {
-    let foo = &spoke_info.data[index];
-    &foo.num_attack
 }
 
 impl GameState {
@@ -459,7 +456,7 @@ impl GameState {
             return None;
         }
 
-        let num_attack = get_num_attack(spoke_info, index);
+        let num_attack = spoke_info.get_num_attack(index);
 
         if num_attack[team] == 0 {
             return None;
