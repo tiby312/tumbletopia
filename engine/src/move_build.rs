@@ -9,15 +9,6 @@ pub struct MoveEffect {
     pub destroyed_unit: Option<(u8, Team)>,
 }
 
-impl GameAxial for Axial {
-    fn get(&self) -> &Axial {
-        self
-    }
-}
-
-pub trait GameAxial {
-    fn get(&self) -> &Axial;
-}
 
 //Represents playing a normal piece at the specified coordinate
 //The tactical AI considers millions of these moves only.
@@ -27,6 +18,13 @@ pub trait GameAxial {
 pub struct NormalMove {
     pub coord: Coordinate,
 }
+
+impl hex::HexDraw for NormalMove {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
+        Axial::from_index(&self.coord).fmt(f, radius)
+    }
+}
+
 impl NormalMove {
     pub fn new_pass() -> NormalMove {
         NormalMove {
@@ -36,15 +34,6 @@ impl NormalMove {
     pub fn is_pass(&self) -> bool {
         self.coord.0 == hex::PASS_MOVE_INDEX
     }
-}
-
-impl hex::HexDraw for NormalMove {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
-        Axial::from_index(&self.coord).fmt(f, radius)
-    }
-}
-
-impl NormalMove {
     pub fn possible_moves<'b>(
         state: &'b GameState,
         world: &'b board::MyWorld,
@@ -117,27 +106,6 @@ impl NormalMove {
             }
             stack_size
         };
-
-        // for (i, h) in hex::OFFSETS.into_iter().enumerate() {
-        //     for k in target_cell
-        //         .to_cube()
-        //         .ray_from_vector(hex::Cube::from_arr(h))
-        //     {
-        //         let k = k.to_axial();
-        //         if !world.get_game_cells().is_set(k) {
-        //             break;
-        //         }
-
-        //         if let Some((vv, team2)) = game.factions.cells.get_cell(k) {
-        //             if team2 == team {
-        //                 stack_size += 1;
-        //             }
-        //             break;
-        //         }
-        //     }
-        // }
-
-        //console_dbg!("Adding stacksize=", stack_size);
 
         let destroyed_unit = match game.factions.get_cell_inner(target_cell) {
             &unit::GameCell::Piece(unit::Piece {
