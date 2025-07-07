@@ -538,8 +538,8 @@ pub struct EndPoint {
 }
 
 impl Tribe {
-    //TODO rename
-    pub fn doop(&self, index: usize, world: &MyWorld) -> SmallMesh {
+    
+    pub fn filter_los(&self, index: usize, world: &MyWorld) -> SmallMesh {
         let mut s = SmallMesh::new();
 
         for i in 0..6 {

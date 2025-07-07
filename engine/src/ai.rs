@@ -341,7 +341,7 @@ pub fn should_pass(
 
     //If the user wants the game to end, just end the game.
     if let Some(&(f, _)) = move_history.inner.last() {
-        if f.coord.0 == hex::PASS_MOVE_INDEX {
+        if f.is_pass() {
             log!("AI:Passing since player wants the game to end");
             return true;
         }
@@ -469,16 +469,12 @@ pub fn calculate_move(
     let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 9, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
-            NormalMove {
-                coord: Coordinate(hex::PASS_MOVE_INDEX),
-            }
+            NormalMove::new_pass()
         } else {
             mo.line[0].clone()
         }
     } else {
-        NormalMove {
-            coord: Coordinate(hex::PASS_MOVE_INDEX),
-        }
+        NormalMove::new_pass()
     };
 
     log!("Ai {:?} has selected move = {:?}", team, world.format(&m));
@@ -663,9 +659,7 @@ impl<'a> AlphaBeta<'a> {
         let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
-        self.moves.push(NormalMove {
-            coord: Coordinate(hex::PASS_MOVE_INDEX),
-        });
+        self.moves.push(NormalMove::new_pass());
 
         self.moves
             .extend(captures.inner.iter_ones().map(|x| NormalMove {
@@ -783,9 +777,7 @@ impl<'a> AlphaBeta<'a> {
 
         let start_move_index = self.moves.len();
 
-        self.moves.push(NormalMove {
-            coord: Coordinate(hex::PASS_MOVE_INDEX),
-        });
+        self.moves.push(NormalMove::new_pass());
         self.moves.extend(game.generate_possible_moves_movement(
             self.world,
             team,
@@ -797,8 +789,9 @@ impl<'a> AlphaBeta<'a> {
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
-        let move_value = |index: &NormalMove| {
-            let index = index.coord.0;
+        let move_value = |nm: &NormalMove| {
+
+            let index = nm.coord.0;
 
             if let Some(a) = entry {
                 if let Some(p) = a.pv.last() {
@@ -827,7 +820,7 @@ impl<'a> AlphaBeta<'a> {
                 }
             }
 
-            if index == hex::PASS_MOVE_INDEX {
+            if nm.is_pass() {
                 return 1;
             }
 

@@ -33,6 +33,9 @@ pub struct NormalMove {
     pub coord: Coordinate,
 }
 impl NormalMove{
+    pub fn new_pass()->NormalMove{
+        NormalMove{coord:Coordinate(hex::PASS_MOVE_INDEX)}
+    }
     pub fn is_pass(&self)->bool{
 
         self.coord.0==hex::PASS_MOVE_INDEX

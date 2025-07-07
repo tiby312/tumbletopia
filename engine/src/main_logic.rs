@@ -395,30 +395,26 @@ pub async fn reselect_loop(
     let mut spoke_info = moves::SpokeInfo::new(&game2);
     moves::update_spoke_info(&mut spoke_info, world, &game2);
 
-    let mut cca = SmallMesh::from_iter_move(
-        game2
-            .generate_possible_moves_movement(world, selected_unit.team, &spoke_info, true)
-            .map(|x| x.coord),
-    );
+    let cca={
+        let mut cca = SmallMesh::from_iter_move(
+            game2
+                .generate_possible_moves_movement(world, selected_unit.team, &spoke_info, true)
+                .chain([NormalMove::new_pass()])
+                .map(|x| x.coord),
+        );
 
-    cca.inner.set(hex::PASS_MOVE_INDEX, true);
+        let c2 = game
+            .tactical
+            .factions
+            .filter_los(unwrapped_selected_unit.to_index(), world);
 
-    let c2 = game
-        .tactical
-        .factions
-        .doop(unwrapped_selected_unit.to_index(), world);
+        cca.inner &= c2.inner;
+        cca
+    };
 
-    cca.inner &= c2.inner;
-
-    let loud_moves = game
-        .tactical
-        .generate_loud_moves(world, selected_unit.team, &spoke_info);
-
-    let mut cell = CellSelection::MoveSelection(
+    let cell = CellSelection::MoveSelection(
         unwrapped_selected_unit,
         cca,
-        //loud_moves,
-        //SmallMesh::new(),
         have_moved.clone(),
     );
 
@@ -663,7 +659,7 @@ pub async fn animate_move<'a>(
     world: &board::MyWorld,
     data: &mut CommandSender,
 ) -> &'a NormalMove {
-    if aa.coord.0 == PASS_MOVE_INDEX {
+    if aa.is_pass() {
         return aa;
     }
     assert!(
@@ -765,9 +761,7 @@ pub async fn handle_player(
 
                         continue 'outer;
                     } else if s == "pass" {
-                        let mp = Coordinate(hex::PASS_MOVE_INDEX);
-                        let mp = NormalMove { coord: mp };
-
+                        let mp=NormalMove::new_pass();
                         let me = mp.apply(
                             team,
                             &mut game.tactical,
@@ -817,8 +811,7 @@ pub async fn handle_player(
                     continue 'outer;
                 }
                 LoopRes::Pass => {
-                    let mp = Coordinate(hex::PASS_MOVE_INDEX);
-                    let mp = NormalMove { coord: mp };
+                    let mp=NormalMove::new_pass();
                     let me = mp.apply(
                         team,
                         &mut game.tactical,
