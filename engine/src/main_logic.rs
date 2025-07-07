@@ -396,7 +396,7 @@ pub async fn reselect_loop(
 
     let cca = {
         let mut cca = SmallMesh::from_iter_move(
-            NormalMove::generate_possible_moves_movement(
+            NormalMove::possible_moves(
                 &game2,
                 world,
                 selected_unit.team,

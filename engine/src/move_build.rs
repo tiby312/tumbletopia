@@ -1,5 +1,3 @@
-use gloo_console::console_dbg;
-use hex::{Cube, PASS_MOVE, PASS_MOVE_INDEX};
 
 use crate::moves::SpokeInfo;
 
@@ -47,7 +45,7 @@ impl hex::HexDraw for NormalMove {
 }
 
 impl NormalMove {
-    pub fn generate_possible_moves_movement<'b>(
+    pub fn possible_moves<'b>(
         state: &'b GameState,
         world: &'b board::MyWorld,
         team: Team,

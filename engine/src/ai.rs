@@ -773,7 +773,7 @@ impl<'a> AlphaBeta<'a> {
 
         self.moves.push(NormalMove::new_pass());
         self.moves
-            .extend(NormalMove::generate_possible_moves_movement(
+            .extend(NormalMove::possible_moves(
                 &game,
                 self.world,
                 team,

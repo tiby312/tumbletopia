@@ -11,7 +11,6 @@ mod spoke {
     use super::*;
     #[derive(PartialEq, Eq, Copy, Clone, Debug)]
     pub struct SpokeInfo {
-        //pub data: [bitvec::BitArr!(for 256*6); 2],
         pub data: [SpokeCell; 256],
     }
 
@@ -32,31 +31,7 @@ mod spoke {
     //
     //
     //
-    //
-    // impl std::cmp::PartialEq for SpokeInfo {
-    //     fn eq(&self, other: &Self) -> bool {
-    //         self.data == other.data
-    //     }
-    // }
-
-    // #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    // pub enum Thing {
-    //     None,
-    //     White,
-    //     Black,
-    //     Neutral,
-    // }
-
-    // impl Thing {
-    //     pub fn value(&self) -> i64 {
-    //         match self {
-    //             Thing::None => 0,
-    //             Thing::White => 1,
-    //             Thing::Black => -1,
-    //             Thing::Neutral => 0,
-    //         }
-    //     }
-    // }
+    
     #[derive(PartialEq, Eq, Copy, Clone, Debug)]
     pub struct SpokeCell {
         raw: [Team; 6],
@@ -113,29 +88,7 @@ mod spoke {
             );
             let mut it = hex::HDir::all().map(move |dd| {
                 let (dis, it) = unit::ray(Axial::from_index(&index), dd, world);
-                //let mut it=it.peekable();
-
-                // if let Some(&index2)=it.peek(){
-                //     if game.factions.get_cell_inner(index2 as usize).is_none() {
-                //         if let Some(foo)=self.get(index2 as usize,dd.rotate_180()){
-                //             match foo{
-                //                 Team::White | Team::Black=> {
-                //                     if foo==team{
-                //                         // don't need to do anything for empty cells
-                //                     }else{
-                //                         //add one to this team
-                //                         //subtract one from that team
-                //                     }
-                //                 },
-                //                 Team::Neutral => {
-                //                     //just add one for this team to all empty cells
-                //                 },
-                //             }
-                //         }else{
-                //             //just add one for this team to all the empty cells
-                //         }
-                //     }
-                // }
+                
 
                 for (d, index2) in it.enumerate() {
                     debug_assert!(index != index2 as usize);
@@ -226,54 +179,10 @@ mod spoke {
                 cc.num_attack[curr_team] -= 1;
             }
             cc.raw[dir as usize] = new_team;
-
-            // let tt = match val {
-            //     None => Thing::None,
-            //     Some(Team::White) => Thing::White,
-            //     Some(Team::Black) => Thing::Black,
-            //     Some(Team::Neutral) => Thing::Neutral,
-            // };
-
-            // let new_value = tt.value();
-            // let old_value = self.data[index].raw[dir as usize].value();
-
-            // match (old_value, new_value) {
-            //     (-1, -1) => {}
-            //     (-1, 0) => {
-            //         self.data[index].num_attack[1] -= 1;
-            //     }
-            //     (0, -1) => {
-            //         self.data[index].num_attack[1] += 1;
-            //     }
-            //     (-1, 1) => {
-            //         self.data[index].num_attack[0] += 1;
-            //         self.data[index].num_attack[1] -= 1;
-            //     }
-            //     (1, 1) => {}
-            //     (1, 0) => {
-            //         self.data[index].num_attack[0] -= 1;
-            //     }
-            //     (0, 1) => {
-            //         self.data[index].num_attack[0] += 1;
-            //     }
-            //     (1, -1) => {
-            //         self.data[index].num_attack[0] -= 1;
-            //         self.data[index].num_attack[1] += 1;
-            //     }
-            //     (0, 0) => {}
-            //     _ => unreachable!("{:?} {:?}", old_value, new_value),
-            // }
-
-            // self.data[index].raw[dir as usize] = tt;
         }
+
         pub fn get(&self, index: usize, dir: HDir) -> Team {
             self.data[index].raw[dir as usize]
-            // match self.data[index].raw[dir as usize] {
-            //     Thing::None => None,
-            //     Thing::White => Some(Team::White),
-            //     Thing::Black => Some(Team::Black),
-            //     Thing::Neutral => Some(Team::Neutral),
-            // }
         }
 
         pub fn get_num_attack(&self, index: usize) -> &[i64; 2] {
