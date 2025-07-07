@@ -4,43 +4,43 @@ use super::*;
 
 use crate::{mesh::small_mesh::SmallMesh, unit::PieceType};
 
-pub struct EndPoints<T> {
-    inner: [T; 6],
-    num_first: usize,
-    second_start_index: usize,
-}
-impl<T> EndPoints<T> {
-    pub fn new() -> EndPoints<T>
-    where
-        T: Default,
-    {
-        EndPoints {
-            inner: [0; 6].map(|_| std::default::Default::default()),
-            num_first: 0,
-            second_start_index: 6,
-        }
-    }
-    pub fn add_first(&mut self, a: T) {
-        self.inner[self.num_first] = a;
-        self.num_first += 1;
-    }
-    pub fn add_second(&mut self, a: T) {
-        self.second_start_index -= 1;
-        self.inner[self.second_start_index] = a;
-    }
-    pub fn first_len(&self) -> usize {
-        self.num_first
-    }
-    pub fn second_len(&self) -> usize {
-        6 - self.second_start_index
-    }
-    pub fn iter_first(&self) -> impl Iterator<Item = &T> {
-        self.inner[..self.num_first].iter()
-    }
-    pub fn iter_second(&self) -> impl Iterator<Item = &T> {
-        self.inner[self.second_start_index..].iter()
-    }
-}
+// pub struct EndPoints<T> {
+//     inner: [T; 6],
+//     num_first: usize,
+//     second_start_index: usize,
+// }
+// impl<T> EndPoints<T> {
+//     pub fn new() -> EndPoints<T>
+//     where
+//         T: Default,
+//     {
+//         EndPoints {
+//             inner: [0; 6].map(|_| std::default::Default::default()),
+//             num_first: 0,
+//             second_start_index: 6,
+//         }
+//     }
+//     pub fn add_first(&mut self, a: T) {
+//         self.inner[self.num_first] = a;
+//         self.num_first += 1;
+//     }
+//     pub fn add_second(&mut self, a: T) {
+//         self.second_start_index -= 1;
+//         self.inner[self.second_start_index] = a;
+//     }
+//     pub fn first_len(&self) -> usize {
+//         self.num_first
+//     }
+//     pub fn second_len(&self) -> usize {
+//         6 - self.second_start_index
+//     }
+//     pub fn iter_first(&self) -> impl Iterator<Item = &T> {
+//         self.inner[..self.num_first].iter()
+//     }
+//     pub fn iter_second(&self) -> impl Iterator<Item = &T> {
+//         self.inner[self.second_start_index..].iter()
+//     }
+// }
 
 impl crate::unit::GameStateTotal {
     pub fn update_fog(&mut self, world: &board::MyWorld, team: Team) {
@@ -87,67 +87,9 @@ impl crate::unit::GameStateTotal {
             }
         }
     }
-
-    pub fn update_fog_spokes(
-        &mut self,
-        _world: &board::MyWorld,
-        _team: Team,
-        _spoke_info: &moves::SpokeInfo,
-    ) {
-        return;
-
-        //TODO also need to convert ice blacks to grass blocks to emulate visition mode???
-        //TODO also replace enemy units with mountains to allow suicidal moves
-        // let res = self
-        //     .tactical
-        //     .bake_fog(&self.fog[team])
-        //     .generate_possible_moves_movement(world, team, spoke_info);
-
-        // let fog = match team {
-        //     Team::White => &mut self.fog[0],
-        //     Team::Black => &mut self.fog[1],
-        //     Team::Neutral => unreachable!(),
-        // };
-
-        // fog.inner &= !res.0.inner;
-
-        // let pieces = match team {
-        //     Team::White => self.tactical.factions.piece.inner & self.tactical.factions.team.inner,
-        //     Team::Black => self.tactical.factions.piece.inner & !self.tactical.factions.team.inner,
-        //     Team::Neutral => unreachable!(),
-        // };
-        // fog.inner &= !pieces;
-
-        // for a in pieces.iter_ones() {
-        //     let fa = Axial::from_index(a);
-
-        //     for a in hex::HDir::all() {
-        //         let mut pos = fa;
-        //         loop {
-        //             pos = pos.advance(a);
-
-        //             if !world.get_game_cells().is_set(pos) {
-        //                 break;
-        //             }
-
-        //             if !res.0.is_set(pos) {
-        //                 let np = pos; //pos.advance(a);
-        //                 if fog.is_set(np) {
-        //                     fog.set_coord(np, false);
-        //                 }
-
-        //                 break;
-        //             }
-        //         }
-        //     }
-        // }
-    }
+    
 }
 
-// pub enum LoudMove {
-//     Capture(usize),
-//     Reinforcement(usize),
-// }
 
 #[derive(Debug, Copy, Clone)]
 pub enum MoveType {
@@ -538,15 +480,15 @@ impl Default for Coordinate {
     }
 }
 
-//TODO use
-#[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
-pub struct GeneralMove {
-    coord: Coordinate,
-    typ: PieceType,
-}
 
-impl hex::HexDraw for GeneralMove {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
-        self.coord.fmt(f, radius)
-    }
-}
+// #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
+// pub struct GeneralMove {
+//     coord: Coordinate,
+//     typ: PieceType,
+// }
+
+// impl hex::HexDraw for GeneralMove {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
+//         self.coord.fmt(f, radius)
+//     }
+// }
