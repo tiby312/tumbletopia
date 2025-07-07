@@ -24,7 +24,7 @@ pub trait GameAxial {
     fn get(&self) -> &Axial;
 }
 
-impl ActualMove {
+impl Coordinate {
     
 
     pub fn undo(&self, _team_index: Team, effect: &MoveEffect, state: &mut GameState) {
@@ -159,6 +159,8 @@ impl ActualMove {
         //     if we get back to original point, great. otherwise we have hit an obstacle.
         // }
     }
+    
+    
     pub fn apply(
         &self,
         team: Team,

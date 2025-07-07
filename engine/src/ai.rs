@@ -257,8 +257,8 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
                 }) => {
                     let h = stack_height.to_num();
                     if *m == team && n[team] > h as i64 {
-                        ActualMove(index).apply(team, game, fog, world, Some(&spoke));
-                        let _s = spoke.process_move_better(ActualMove(index), team, world, game);
+                        Coordinate(index).apply(team, game, fog, world, Some(&spoke));
+                        let _s = spoke.process_move_better(Coordinate(index), team, world, game);
                     }
                 }
                 unit::GameCell::Empty => {}
@@ -278,8 +278,8 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
             for &index in world.land_as_vec.iter() {
                 if let Some(f) = game.playable(index, team, world, &spoke) {
                     if !f.is_suicidal() {
-                        let _e = ActualMove(index).apply(team, game, fog, world, Some(&spoke));
-                        let _s = spoke.process_move_better(ActualMove(index), team, world, game);
+                        let _e = Coordinate(index).apply(team, game, fog, world, Some(&spoke));
+                        let _s = spoke.process_move_better(Coordinate(index), team, world, game);
                         progress = true;
                     }
                 }
@@ -430,7 +430,7 @@ pub enum Flag {
     LowerBound,
 }
 pub struct TTEntry {
-    pv: ArrayVec<[moves::ActualMove; STACK_SIZE]>,
+    pv: ArrayVec<[moves::Coordinate; STACK_SIZE]>,
     flag: Flag,
     depth: usize,
     value: i64,
@@ -440,7 +440,7 @@ const STACK_SIZE: usize = 15;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Res {
-    pub line: Vec<ActualMove>,
+    pub line: Vec<Coordinate>,
     pub eval: i64,
 }
 
@@ -452,16 +452,16 @@ pub fn calculate_move(
     team: Team,
     move_history: &MoveHistory,
     zobrist: &Zobrist,
-) -> ActualMove {
+) -> Coordinate {
     let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 9, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
-            ActualMove(hex::PASS_MOVE_INDEX)
+            Coordinate(hex::PASS_MOVE_INDEX)
         } else {
             mo.line[0].clone()
         }
     } else {
-        ActualMove(hex::PASS_MOVE_INDEX)
+        Coordinate(hex::PASS_MOVE_INDEX)
     };
 
     log!("Ai {:?} has selected move = {:?}", team, world.format(&m));
@@ -572,7 +572,7 @@ struct AlphaBeta<'a> {
     killer_moves: &'a mut KillerMoves,
     evaluator: &'a mut Evaluator,
     world: &'a board::MyWorld,
-    moves: &'a mut Vec<ActualMove>,
+    moves: &'a mut Vec<Coordinate>,
     nodes_visited: &'a mut usize,
     qui_nodes_visited: &'a mut usize,
     fogs: &'a [mesh::small_mesh::SmallMesh; 2],
@@ -581,7 +581,7 @@ struct AlphaBeta<'a> {
 }
 
 struct KillerMoves {
-    a: Vec<tinyvec::ArrayVec<[moves::ActualMove; 2]>>,
+    a: Vec<tinyvec::ArrayVec<[moves::Coordinate; 2]>>,
 }
 
 impl KillerMoves {
@@ -589,10 +589,10 @@ impl KillerMoves {
         let v = (0..a).map(|_| tinyvec::ArrayVec::new()).collect();
         Self { a: v }
     }
-    pub fn get(&self, depth: usize) -> &[moves::ActualMove] {
+    pub fn get(&self, depth: usize) -> &[moves::Coordinate] {
         &self.a[depth]
     }
-    pub fn consider(&mut self, depth: usize, m: moves::ActualMove) {
+    pub fn consider(&mut self, depth: usize, m: moves::Coordinate) {
         let a = &mut self.a[depth];
 
         if a.contains(&m) {
@@ -646,10 +646,10 @@ impl<'a> AlphaBeta<'a> {
         let captures = game.generate_loud_moves(self.world, team, &spoke_info);
 
         let start_move_index = self.moves.len();
-        self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
+        self.moves.push(Coordinate(hex::PASS_MOVE_INDEX));
 
         self.moves
-            .extend(captures.inner.iter_ones().map(|x| ActualMove(x)));
+            .extend(captures.inner.iter_ones().map(|x| Coordinate(x)));
 
         let end_move_index = self.moves.len();
 
@@ -693,7 +693,7 @@ impl<'a> AlphaBeta<'a> {
         team: Team,
         depth: usize,
         update_tt: bool,
-    ) -> (Eval, ArrayVec<[ActualMove; STACK_SIZE]>) {
+    ) -> (Eval, ArrayVec<[Coordinate; STACK_SIZE]>) {
         if *self.nodes_visited >= MAX_NODE_VISIT {
             return (abab::SMALL_VAL, tinyvec::array_vec!());
         }
@@ -762,7 +762,7 @@ impl<'a> AlphaBeta<'a> {
 
         let start_move_index = self.moves.len();
 
-        self.moves.push(ActualMove(hex::PASS_MOVE_INDEX));
+        self.moves.push(Coordinate(hex::PASS_MOVE_INDEX));
         self.moves.extend(game.generate_possible_moves_movement(
             self.world,
             team,
@@ -774,7 +774,7 @@ impl<'a> AlphaBeta<'a> {
 
         let moves = &mut self.moves[start_move_index..end_move_index];
 
-        let move_value = |index: &ActualMove| {
+        let move_value = |index: &Coordinate| {
             let index = index.0;
 
             if let Some(a) = entry {

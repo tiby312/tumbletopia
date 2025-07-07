@@ -10,7 +10,7 @@ use board::MyWorld;
 pub use hex::Axial;
 use mesh::small_mesh::SmallMesh;
 use move_build::MoveEffect;
-pub use moves::ActualMove;
+pub use moves::Coordinate;
 use serde::Deserialize;
 use serde::Serialize;
 pub use unit::GameState;
@@ -58,7 +58,7 @@ impl Key {
 
         k
     }
-    pub fn move_update(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
+    pub fn move_update(&mut self, base: &Zobrist, m: Coordinate, team: Team, effect: &MoveEffect) {
         if let Team::White = team {
             self.key ^= base.white_to_move
         }
@@ -76,7 +76,7 @@ impl Key {
         }
     }
 
-    pub fn move_undo(&mut self, base: &Zobrist, m: ActualMove, team: Team, effect: &MoveEffect) {
+    pub fn move_undo(&mut self, base: &Zobrist, m: Coordinate, team: Team, effect: &MoveEffect) {
         if m.0 == hex::PASS_MOVE_INDEX {
             self.key ^= base.pass;
         } else {
@@ -107,7 +107,7 @@ fn test_zobrist() {
     let mut k = Key::from_scratch(&base, &game, world, Team::White);
 
     let a = Axial::from_letter_coord('B', 2, world.radius as i8);
-    let m = ActualMove(a.to_index());
+    let m = Coordinate(a.to_index());
 
     let team = Team::White;
     let effect = m.apply(team, &mut game, &SmallMesh::new(), world, None);
@@ -196,13 +196,13 @@ pub mod share {
 //This is for saving/loading.
 #[derive(Deserialize, Serialize)]
 pub struct JustMoveLog {
-    pub inner: Vec<moves::ActualMove>,
+    pub inner: Vec<moves::Coordinate>,
 }
 
 //Need to keep effect so you can undo all the way to the start.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MoveHistory {
-    pub inner: Vec<(moves::ActualMove, move_build::MoveEffect)>,
+    pub inner: Vec<(moves::Coordinate, move_build::MoveEffect)>,
 }
 
 impl Default for MoveHistory {
@@ -237,7 +237,7 @@ impl MoveHistory {
         }
     }
 
-    pub fn push(&mut self, o: (moves::ActualMove, move_build::MoveEffect)) {
+    pub fn push(&mut self, o: (moves::Coordinate, move_build::MoveEffect)) {
         self.inner.push(o);
     }
 }

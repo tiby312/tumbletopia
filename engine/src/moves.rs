@@ -2,7 +2,7 @@ use hex::HDir;
 
 use super::*;
 
-use crate::mesh::small_mesh::SmallMesh;
+use crate::{mesh::small_mesh::SmallMesh, unit::PieceType};
 
 pub struct EndPoints<T> {
     inner: [T; 6],
@@ -237,7 +237,7 @@ impl SpokeInfo {
 
     pub fn process_move_better(
         &mut self,
-        a: ActualMove,
+        a: Coordinate,
         team: Team,
         world: &board::MyWorld,
         game: &GameState,
@@ -309,7 +309,7 @@ impl SpokeInfo {
 
     pub fn undo_move(
         &mut self,
-        a: ActualMove,
+        a: Coordinate,
         effect: &move_build::MoveEffect,
         _team: Team,
         _world: &board::MyWorld,
@@ -499,11 +499,11 @@ impl GameState {
         team: Team,
         spoke_info: &'b SpokeInfo,
         allow_suicidal: bool,
-    ) -> impl Iterator<Item = ActualMove> + use<'b> {
+    ) -> impl Iterator<Item = Coordinate> + use<'b> {
         world.land_as_vec.iter().filter_map(move |&index| {
             if let Some(f) = self.playable(index, team, world, spoke_info) {
                 if !f.is_suicidal() || allow_suicidal {
-                    Some(ActualMove(index))
+                    Some(Coordinate(index))
                 } else {
                     None
                 }
@@ -517,11 +517,11 @@ impl GameState {
         world: &'b board::MyWorld,
         team: Team,
         spoke_info: &'b SpokeInfo,
-    ) -> impl Iterator<Item = ActualMove> + use<'b> {
+    ) -> impl Iterator<Item = Coordinate> + use<'b> {
         world.land_as_vec.iter().filter_map(move |&index| {
             if let Some(f) = self.playable(index, team, world, spoke_info) {
                 if f.is_suicidal() {
-                    Some(ActualMove(index))
+                    Some(Coordinate(index))
                 } else {
                     None
                 }
@@ -532,7 +532,7 @@ impl GameState {
     }
 }
 
-impl hex::HexDraw for ActualMove {
+impl hex::HexDraw for Coordinate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
         Axial::from_index(self).fmt(f, radius)
     }
@@ -543,33 +543,31 @@ impl hex::HexDraw for ActualMove {
 
 //Signifies a normal move of a [1,6] stack. 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
-pub struct ActualMove(pub usize);
+pub struct Coordinate(pub usize);
 
-impl std::ops::Deref for ActualMove {
+impl std::ops::Deref for Coordinate {
     type Target = usize;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
-impl Default for ActualMove {
+impl Default for Coordinate {
     fn default() -> Self {
         Self(Default::default())
     }
 }
 
 
-
+//TODO use
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
-pub enum GeneralMove{
-    Normal(ActualMove),
-    LightHouse(ActualMove)
+pub struct GeneralMove{
+    coord:Coordinate,
+    typ:PieceType
 }
+
 
 impl hex::HexDraw for GeneralMove {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
-        match self{
-            GeneralMove::Normal(actual_move) => actual_move.fmt(f,radius),
-            GeneralMove::LightHouse(actual_move) => actual_move.fmt(f,radius),
-        }
+        self.coord.fmt(f,radius)
     }
 }

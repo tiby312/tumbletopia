@@ -466,7 +466,7 @@ pub struct Piece {
     pub typ: PieceType,
 }
 
-#[derive(Copy, Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
+#[derive(Hash,Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
 
 pub enum PieceType {
     Normal,
@@ -572,7 +572,7 @@ impl Tribe {
         assert!(
             world.get_game_cells().inner[index as usize],
             "uhoh {:?}",
-            world.format(&ActualMove(index))
+            world.format(&Coordinate(index))
         );
         hex::HDir::all().map(move |dd| {
             let (dis, it) = ray(Axial::from_index(&index), dd, world);

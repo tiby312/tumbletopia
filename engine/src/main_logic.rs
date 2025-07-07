@@ -52,7 +52,7 @@ pub enum TerrainType {
 
 #[derive(Clone, Debug)]
 pub struct HaveMoved {
-    pub the_move: ActualMove,
+    pub the_move: Coordinate,
     pub effect: move_build::MoveEffect,
 }
 
@@ -93,7 +93,7 @@ pub enum Response {
     //MouseWithSelection(CellSelection, MouseEvent<Axial>),
     Mouse(MouseEvent<Axial>),
     AnimationFinish,
-    AiFinish(ActualMove),
+    AiFinish(Coordinate),
     //ChangeGameState(String),
     Ack,
 }
@@ -309,7 +309,7 @@ impl CommandSender {
         //console_db
     }
 
-    pub async fn wait_ai(&mut self, team: Team, game: &mut unit::GameStateTotal) -> ActualMove {
+    pub async fn wait_ai(&mut self, team: Team, game: &mut unit::GameStateTotal) -> Coordinate {
         let data = self.send_command(team, game, Command::WaitAI).await;
 
         let Response::AiFinish(the_move) = data else {
@@ -352,7 +352,7 @@ pub struct SelectType {
 
 #[derive(Debug)]
 pub enum LoopRes<T> {
-    EndTurn((moves::ActualMove, move_build::MoveEffect)),
+    EndTurn((moves::Coordinate, move_build::MoveEffect)),
     Deselect,
     Undo,
     Pass,
@@ -547,7 +547,7 @@ pub async fn reselect_loop(
 
     //let c = target_cell;
 
-    let mp = ActualMove(target_cell.to_index());
+    let mp = Coordinate(target_cell.to_index());
 
     let effect = animate_move(&mp, selected_unit.team, game, world, doop)
         .await
@@ -560,7 +560,7 @@ pub async fn reselect_loop(
         );
 
     {
-        LoopRes::EndTurn((moves::ActualMove(mp.0), effect))
+        LoopRes::EndTurn((moves::Coordinate(mp.0), effect))
         // *have_moved = Some(selection::HaveMoved {
         //     the_move: mp,
         //     effect,
@@ -660,12 +660,12 @@ pub async fn replay(
 }
 
 pub async fn animate_move<'a>(
-    aa: &'a ActualMove,
+    aa: &'a Coordinate,
     team: Team,
     state: &unit::GameStateTotal,
     world: &board::MyWorld,
     data: &mut CommandSender,
-) -> &'a ActualMove {
+) -> &'a Coordinate {
     if aa.0 == PASS_MOVE_INDEX {
         return aa;
     }
@@ -724,7 +724,7 @@ pub async fn handle_player(
     world: &board::MyWorld,
     doop: &mut CommandSender,
     team: Team,
-) -> (moves::ActualMove, move_build::MoveEffect) {
+) -> (moves::Coordinate, move_build::MoveEffect) {
     let undo = async |doop: &mut CommandSender, game: &mut unit::GameStateTotal| {
         //log!("undoing turn!!!");
         assert!(game.history.inner.len() >= 2, "Not enough moves to undo");
@@ -766,7 +766,7 @@ pub async fn handle_player(
 
                         continue 'outer;
                     } else if s == "pass" {
-                        let mp = ActualMove(hex::PASS_MOVE_INDEX);
+                        let mp = Coordinate(hex::PASS_MOVE_INDEX);
 
                         let me = mp.apply(
                             team,
@@ -817,7 +817,7 @@ pub async fn handle_player(
                     continue 'outer;
                 }
                 LoopRes::Pass => {
-                    let mp = ActualMove(hex::PASS_MOVE_INDEX);
+                    let mp = Coordinate(hex::PASS_MOVE_INDEX);
 
                     let me = mp.apply(
                         team,

@@ -151,7 +151,7 @@ pub fn test_run(
     game: &str,
 ) -> (
     engine::unit::GameOver,
-    Vec<engine::ActualMove>,
+    Vec<engine::Coordinate>,
     engine::board::MyWorld,
 ) {
     let world = engine::board::MyWorld::load_from_string(game).unwrap();

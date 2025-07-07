@@ -14,7 +14,7 @@ use futures::{SinkExt, StreamExt};
 use gloo::console::log;
 use gui::shader_sys::ShaderSystem;
 use hex::Axial;
-use moves::ActualMove;
+use moves::Coordinate;
 use serde::{Deserialize, Serialize};
 
 use shogo::utils;
@@ -376,7 +376,7 @@ struct AiCommand {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiResponse {
-    inner: ActualMove,
+    inner: Coordinate,
 }
 
 #[wasm_bindgen]

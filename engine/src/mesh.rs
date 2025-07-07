@@ -62,7 +62,7 @@ pub mod small_mesh {
         }
 
         //TODO replace with collect trait
-        pub fn from_iter_move(it: impl IntoIterator<Item = crate::ActualMove>) -> SmallMesh {
+        pub fn from_iter_move(it: impl IntoIterator<Item = crate::Coordinate>) -> SmallMesh {
             let mut m = SmallMesh::new();
             for a in it {
                 m.inner.set(a.0, true);
