@@ -772,14 +772,13 @@ impl<'a> AlphaBeta<'a> {
         let start_move_index = self.moves.len();
 
         self.moves.push(NormalMove::new_pass());
-        self.moves
-            .extend(NormalMove::possible_moves(
-                &game,
-                self.world,
-                team,
-                &spoke_info,
-                false,
-            ));
+        self.moves.extend(NormalMove::possible_moves(
+            &game,
+            self.world,
+            team,
+            &spoke_info,
+            false,
+        ));
 
         let end_move_index = self.moves.len();
 

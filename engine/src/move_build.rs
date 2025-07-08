@@ -1,5 +1,7 @@
-
-use crate::moves::SpokeInfo;
+use crate::{
+    main_logic::{AnimationCommand, CommandSender},
+    moves::SpokeInfo,
+};
 
 use super::*;
 
@@ -9,6 +11,17 @@ pub struct MoveEffect {
     pub destroyed_unit: Option<(u8, Team)>,
 }
 
+#[derive(PartialEq, Eq, Default, Serialize, Deserialize, Clone, Copy, Debug)]
+
+pub struct LighthouseMove {
+    pub coord: Coordinate,
+}
+
+impl hex::HexDraw for LighthouseMove {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
+        Axial::from_index(&self.coord).fmt(f, radius)
+    }
+}
 
 //Represents playing a normal piece at the specified coordinate
 //The tactical AI considers millions of these moves only.
@@ -124,5 +137,68 @@ impl NormalMove {
             destroyed_unit,
             height: stack_size as u8,
         }
+    }
+
+    pub async fn animate_move<'a>(
+        &'a self,
+        team: Team,
+        state: &unit::GameStateTotal,
+        world: &board::MyWorld,
+        data: &mut CommandSender,
+    ) -> &'a NormalMove {
+        let aa = self;
+        if self.is_pass() {
+            return self;
+        }
+        assert!(
+            world.get_game_cells().inner[aa.coord.0 as usize],
+            "uhoh {:?}",
+            world.format(&aa.coord)
+        );
+
+        let ff = state.tactical.bake_fog(&state.fog[team.index()]);
+
+        let end_points = ff.factions.iter_end_points(world, aa.coord.0);
+
+        let mut ss = state.clone();
+
+        let mut stack = 0;
+        for (i, (dis, rest)) in end_points.into_iter().enumerate() {
+            let Some(e) = rest else {
+                continue;
+            };
+            let team2 = e.piece.team;
+
+            if team2 != team {
+                continue;
+            }
+
+            let unit = Axial::from_index(&aa.coord)
+                .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
+
+            data.wait_animation(
+                AnimationCommand::Movement {
+                    unit,
+                    end: Axial::from_index(&aa.coord),
+                },
+                team,
+                &mut ss,
+            )
+            .await;
+
+            stack += 1;
+            match state.tactical.factions.get_cell_inner(aa.coord.0) {
+                unit::GameCell::Piece(unit::Piece { .. }) => {
+                    ss.tactical.factions.remove_inner(aa.coord.0);
+                }
+                unit::GameCell::Empty => {}
+            }
+            //TODO can_attack correct value?
+            ss.tactical
+                .factions
+                .add_cell_inner(aa.coord.0, stack, team, true);
+        }
+
+        aa
     }
 }

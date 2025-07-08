@@ -2,10 +2,6 @@ use hex::HDir;
 
 use super::*;
 
-
-
-
-
 pub use spoke::SpokeInfo;
 mod spoke {
     use super::*;
@@ -31,7 +27,7 @@ mod spoke {
     //
     //
     //
-    
+
     #[derive(PartialEq, Eq, Copy, Clone, Debug)]
     pub struct SpokeCell {
         raw: [Team; 6],
@@ -88,7 +84,6 @@ mod spoke {
             );
             let mut it = hex::HDir::all().map(move |dd| {
                 let (dis, it) = unit::ray(Axial::from_index(&index), dd, world);
-                
 
                 for (d, index2) in it.enumerate() {
                     debug_assert!(index != index2 as usize);
@@ -191,9 +186,6 @@ mod spoke {
         }
     }
 }
-
-
-
 
 #[derive(Debug, Copy, Clone)]
 pub enum MoveType {
@@ -306,7 +298,6 @@ impl Default for Coordinate {
         Self(Default::default())
     }
 }
-
 
 // #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
 // pub struct GeneralMove {

@@ -396,15 +396,9 @@ pub async fn reselect_loop(
 
     let cca = {
         let mut cca = SmallMesh::from_iter_move(
-            NormalMove::possible_moves(
-                &game2,
-                world,
-                selected_unit.team,
-                &spoke_info,
-                true,
-            )
-            .chain([NormalMove::new_pass()])
-            .map(|x| x.coord),
+            NormalMove::possible_moves(&game2, world, selected_unit.team, &spoke_info, true)
+                .chain([NormalMove::new_pass()])
+                .map(|x| x.coord),
         );
 
         let c2 = game
@@ -542,7 +536,8 @@ pub async fn reselect_loop(
 
     let mp = Coordinate(target_cell.to_index());
     let norm = NormalMove { coord: mp };
-    let effect = animate_move(&norm, selected_unit.team, game, world, doop)
+    let effect = norm
+        .animate_move(selected_unit.team, game, world, doop)
         .await
         .apply(
             selected_unit.team,
@@ -650,68 +645,6 @@ pub async fn replay(
     // } else {
     //     panic!("replay didnt end with game over state");
     // }
-}
-
-pub async fn animate_move<'a>(
-    aa: &'a NormalMove,
-    team: Team,
-    state: &unit::GameStateTotal,
-    world: &board::MyWorld,
-    data: &mut CommandSender,
-) -> &'a NormalMove {
-    if aa.is_pass() {
-        return aa;
-    }
-    assert!(
-        world.get_game_cells().inner[aa.coord.0 as usize],
-        "uhoh {:?}",
-        world.format(&aa.coord)
-    );
-
-    let ff = state.tactical.bake_fog(&state.fog[team.index()]);
-
-    let end_points = ff.factions.iter_end_points(world, aa.coord.0);
-
-    let mut ss = state.clone();
-
-    let mut stack = 0;
-    for (i, (dis, rest)) in end_points.into_iter().enumerate() {
-        let Some(e) = rest else {
-            continue;
-        };
-        let team2 = e.piece.team;
-
-        if team2 != team {
-            continue;
-        }
-
-        let unit = Axial::from_index(&aa.coord)
-            .add(hex::Cube::from_arr(hex::OFFSETS[i]).ax.mul(dis as i8));
-
-        data.wait_animation(
-            AnimationCommand::Movement {
-                unit,
-                end: Axial::from_index(&aa.coord),
-            },
-            team,
-            &mut ss,
-        )
-        .await;
-
-        stack += 1;
-        match state.tactical.factions.get_cell_inner(aa.coord.0) {
-            unit::GameCell::Piece(unit::Piece { .. }) => {
-                ss.tactical.factions.remove_inner(aa.coord.0);
-            }
-            unit::GameCell::Empty => {}
-        }
-        //TODO can_attack correct value?
-        ss.tactical
-            .factions
-            .add_cell_inner(aa.coord.0, stack, team, true);
-    }
-
-    aa
 }
 
 pub async fn handle_player(

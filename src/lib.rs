@@ -764,7 +764,8 @@ pub async fn game_play_thread(
 
                 console_dbg!("gmae thread has interrupted render thread");
 
-                let effect_m = ace::animate_move(&the_move, team, &mut game, &world, &mut doop)
+                let effect_m = the_move
+                    .animate_move(team, &mut game, &world, &mut doop)
                     .await
                     .apply(
                         team,
