@@ -549,15 +549,7 @@ pub async fn reselect_loop(
 
     {
         LoopRes::EndTurn((norm, effect))
-        // *have_moved = Some(selection::HaveMoved {
-        //     the_move: mp,
-        //     effect,
-        // });
-        // selected_unit.coord = c;
-        // selected_unit.team = team;
-        // LoopRes::Select(selected_unit)
     }
-    //}
 }
 
 pub async fn replay(

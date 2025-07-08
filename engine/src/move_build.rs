@@ -1,6 +1,6 @@
 use crate::{
     main_logic::{AnimationCommand, CommandSender},
-    moves::SpokeInfo,
+    moves::{MoveType, SpokeInfo},
 };
 
 use super::*;
@@ -17,9 +17,34 @@ pub struct LighthouseMove {
     pub coord: Coordinate,
 }
 
+
 impl hex::HexDraw for LighthouseMove {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
         Axial::from_index(&self.coord).fmt(f, radius)
+    }
+}
+
+impl LighthouseMove{
+    pub fn possible_moves<'b>(
+        state: &'b GameState,
+        world: &'b board::MyWorld,
+        team: Team,
+        spoke_info: &'b SpokeInfo,
+        allow_suicidal: bool,
+    ) -> impl Iterator<Item = NormalMove> + use<'b> {
+        world.land_as_vec.iter().filter_map(move |&index| {
+            if let Some(f) = NormalMove::playable(state,Coordinate(index), team, world, spoke_info) {
+                if !f.is_suicidal() || allow_suicidal {
+                    Some(NormalMove {
+                        coord: Coordinate(index),
+                    })
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
     }
 }
 
@@ -55,7 +80,7 @@ impl NormalMove {
         allow_suicidal: bool,
     ) -> impl Iterator<Item = NormalMove> + use<'b> {
         world.land_as_vec.iter().filter_map(move |&index| {
-            if let Some(f) = state.playable(index, team, world, spoke_info) {
+            if let Some(f) = NormalMove::playable(state,Coordinate(index), team, world, spoke_info) {
                 if !f.is_suicidal() || allow_suicidal {
                     Some(NormalMove {
                         coord: Coordinate(index),
@@ -200,5 +225,75 @@ impl NormalMove {
         }
 
         aa
+    }
+    pub fn playable(
+        state:&GameState,
+        index: Coordinate,
+        team: Team,
+        _world: &board::MyWorld,
+        spoke_info: &SpokeInfo,
+    ) -> Option<MoveType> {
+        let index=index.0;
+        if team == Team::Neutral {
+            return None;
+        }
+
+        let num_attack = spoke_info.get_num_attack(index);
+
+        if num_attack[team] == 0 {
+            return None;
+        }
+
+        match state.factions.get_cell_inner(index) {
+            &unit::GameCell::Piece(unit::Piece {
+                height: stack_height,
+                team: rest,
+                ..
+            }) => {
+                let height = stack_height.to_num();
+                debug_assert!(height > 0);
+                let height = height as i64;
+
+                if num_attack[team] > height {
+                    if num_attack[team] < num_attack[!team] {
+                        Some(MoveType::Suicidal)
+                    } else {
+                        if rest == team {
+                            Some(MoveType::Reinforce)
+                        } else {
+                            Some(MoveType::Capture)
+                        }
+                    }
+                } else {
+                    None
+                }
+            }
+            unit::GameCell::Empty => {
+                if num_attack[team] < num_attack[!team] {
+                    Some(MoveType::Suicidal)
+                } else {
+                    Some(MoveType::Fresh)
+                }
+            }
+        }
+    }
+
+    pub fn generate_suicidal<'b>(
+        state:&'b GameState,
+        world: &'b board::MyWorld,
+        team: Team,
+        spoke_info: &'b SpokeInfo,
+    ) -> impl Iterator<Item = Coordinate> + use<'b> {
+        world.land_as_vec.iter().filter_map(move |&index| {
+            if let Some(f) = NormalMove::playable(state,Coordinate(index), team, world, spoke_info) {
+                if f.is_suicidal() {
+                    Some(Coordinate(index))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
     }
 }
