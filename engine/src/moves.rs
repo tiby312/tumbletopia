@@ -142,8 +142,8 @@ mod spoke {
 
                 let mut index2: isize = index as isize;
 
-                let oppt = if let Some((_, t2)) = effect.destroyed_unit {
-                    t2
+                let oppt = if let Some(ff) = effect.destroyed_unit {
+                    ff.team
                 } else {
                     if let (_, Some(end)) = &arr[hexdir.rotate_180() as usize] {
                         end.piece.team

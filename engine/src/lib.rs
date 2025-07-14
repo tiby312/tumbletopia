@@ -77,7 +77,7 @@ impl Key {
             if let Some(a) = effect.destroyed_unit {
                 //panic!();
                 //xor out what piece was there
-                self.key ^= base.inner[m.coord.0][get_index(a.0, a.1)];
+                self.key ^= base.inner[m.coord.0][get_index(a.height, a.team)];
             }
 
             //xor in the new piece
@@ -100,7 +100,7 @@ impl Key {
 
             if let Some(a) = effect.destroyed_unit {
                 //xor in what piece was there
-                self.key ^= base.inner[m.coord.0][get_index(a.0, a.1)];
+                self.key ^= base.inner[m.coord.0][get_index(a.height, a.team)];
             }
         }
 

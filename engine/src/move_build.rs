@@ -6,9 +6,16 @@ use crate::{
 
 use super::*;
 
+#[derive(Copy, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+pub struct DestroyedUnit {
+    pub height: StackHeight,
+    pub team: Team,
+    pub was_lighthouse: Option<Team>,
+}
+
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct NormalMoveEffect {
-    pub destroyed_unit: Option<(StackHeight, Team)>,
+    pub destroyed_unit: Option<DestroyedUnit>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
@@ -71,6 +78,8 @@ impl LighthouseMove {
         world: &board::MyWorld,
         spoke_info: Option<&SpokeInfo>,
     ) -> LighthouseMoveEffect {
+        assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
+
         game.lighthouses
             .add_cell_inner(self.coord.0, StackHeight::Stack0, team);
 
@@ -81,6 +90,18 @@ impl LighthouseMove {
         .apply(Team::Neutral, game, fog, world, spoke_info);
 
         LighthouseMoveEffect { nm }
+    }
+
+    pub fn undo(&self, team: Team, effect: &LighthouseMoveEffect, state: &mut GameState) {
+        assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
+
+        NormalMove {
+            coord: self.coord,
+            stack: StackHeight::Stack0,
+        }
+        .undo(team, &effect.nm, state);
+
+        state.lighthouses.remove_inner(self.coord.0);
     }
 }
 
@@ -146,8 +167,14 @@ impl NormalMove {
             return;
         }
 
-        if let Some((fooo, typ)) = effect.destroyed_unit {
-            state.factions.add_cell_inner(moveto, fooo, typ);
+        if let Some(dd) = effect.destroyed_unit {
+            state.factions.add_cell_inner(moveto, dd.height, dd.team);
+
+            if let Some(dd) = dd.was_lighthouse {
+                state
+                    .lighthouses
+                    .add_cell_inner(moveto, StackHeight::Stack0, dd);
+            }
         } else {
             state.factions.remove_inner(moveto)
         };
@@ -172,11 +199,19 @@ impl NormalMove {
         let target_cell = self.coord.0;
 
         let destroyed_unit = match game.factions.get_cell_inner(target_cell) {
-            &unit::GameCell::Piece(unit::Piece {
-                height: stack_height,
-                team: v,
-                ..
-            }) => Some((stack_height, v)),
+            &unit::GameCell::Piece(unit::Piece { height, team, .. }) => {
+                let was_lighthouse = {
+                    match game.lighthouses.get_cell_inner(target_cell) {
+                        unit::GameCell::Piece(pp) => Some(pp.team),
+                        unit::GameCell::Empty => None,
+                    }
+                };
+                Some(DestroyedUnit {
+                    height,
+                    team,
+                    was_lighthouse,
+                })
+            }
             unit::GameCell::Empty => None,
         };
 

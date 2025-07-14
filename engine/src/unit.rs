@@ -214,6 +214,7 @@ impl GameStateTotal {}
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
     //This only has lighthouse locations.
+    //TODO use a different datastructure that is just a bitfield with team info
     pub lighthouses: Tribe,
     //Lighthouses are added to factions as neutral pieces.
     pub factions: Tribe,
