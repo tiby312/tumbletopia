@@ -159,7 +159,13 @@ impl GameState {
                                     unit::GameCell::Empty => {}
                                 }
 
-                                if let Some(foo) = NormalMove::playable(self,Coordinate(index2), team, world, spoke_info) {
+                                if let Some(foo) = NormalMove::playable(
+                                    self,
+                                    Coordinate(index2),
+                                    team,
+                                    world,
+                                    spoke_info,
+                                ) {
                                     if !foo.is_suicidal() {
                                         ret.inner.set(index2, true);
                                     }
@@ -277,7 +283,8 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
         while progress {
             progress = false;
             for &index in world.land_as_vec.iter() {
-                if let Some(f) = NormalMove::playable(game,Coordinate(index), team, world, &spoke) {
+                if let Some(f) = NormalMove::playable(game, Coordinate(index), team, world, &spoke)
+                {
                     if !f.is_suicidal() {
                         let _e = NormalMove {
                             coord: Coordinate(index),

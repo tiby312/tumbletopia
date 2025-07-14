@@ -173,15 +173,15 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
         match tt {
             TT::Player1 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::White, true);
+                game.factions.add_cell(pos, curr_stack, Team::White);
             }
             TT::Player2 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::Black, true);
+                game.factions.add_cell(pos, curr_stack, Team::Black);
             }
             TT::Player3 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::Neutral, true);
+                game.factions.add_cell(pos, curr_stack, Team::Neutral);
             }
             TT::Empty => {
                 game.factions.remove(pos);
@@ -547,9 +547,7 @@ pub async fn reselect_loop(
             None,
         );
 
-    {
-        LoopRes::EndTurn((norm, effect))
-    }
+    { LoopRes::EndTurn((norm, effect)) }
 }
 
 pub async fn replay(

@@ -12,9 +12,7 @@ pub struct NormalMoveEffect {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-pub struct LighthouseMoveEffect {
-    
-}
+pub struct LighthouseMoveEffect {}
 
 #[derive(PartialEq, Eq, Default, Serialize, Deserialize, Clone, Copy, Debug)]
 
@@ -22,15 +20,13 @@ pub struct LighthouseMove {
     pub coord: Coordinate,
 }
 
-
 impl hex::HexDraw for LighthouseMove {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
         Axial::from_index(&self.coord).fmt(f, radius)
     }
 }
 
-impl LighthouseMove{
-    
+impl LighthouseMove {
     pub fn possible_moves<'b>(
         state: &'b GameState,
         world: &'b board::MyWorld,
@@ -38,7 +34,6 @@ impl LighthouseMove{
         spoke_info: &'b SpokeInfo,
         allow_suicidal: bool,
     ) -> impl Iterator<Item = LighthouseMove> + use<'b> {
-
         //light house pieces should get added as neutral pieces to the game state
         //because they cannot attack.
         //The game state is used mainly to determine what moves the ai can play.
@@ -50,23 +45,19 @@ impl LighthouseMove{
         //The bottom line is that lighhouses act as neutral pieces as far how they block
         //other pieces LOS as well as how they do not attack.
 
-
-
-
         let world = state.darkness(world, team);
 
         //TODO optimize this
-        let j:Vec<LighthouseMove>=world.inner.iter_ones().filter_map(move |index| {
-
-            match state.factions.get_cell_inner(index){
+        let j: Vec<LighthouseMove> = world
+            .inner
+            .iter_ones()
+            .filter_map(move |index| match state.factions.get_cell_inner(index) {
                 unit::GameCell::Piece(_) => None,
-                unit::GameCell::Empty => Some(LighthouseMove{
-                    coord:Coordinate(index)
+                unit::GameCell::Empty => Some(LighthouseMove {
+                    coord: Coordinate(index),
                 }),
-            }
-
-
-        }).collect();
+            })
+            .collect();
         j.into_iter()
     }
 
@@ -78,15 +69,10 @@ impl LighthouseMove{
         world: &board::MyWorld,
         spoke_info: Option<&SpokeInfo>,
     ) -> LighthouseMoveEffect {
+        game.factions.add_cell_inner(self.coord.0, 0, team);
 
-        game.factions.add_cell_inner(self.coord.0, 0, team, false);
-
-
-        LighthouseMoveEffect {  }
+        LighthouseMoveEffect {}
     }
-
-
-
 }
 
 //Represents playing a normal piece at the specified coordinate
@@ -121,7 +107,8 @@ impl NormalMove {
         allow_suicidal: bool,
     ) -> impl Iterator<Item = NormalMove> + use<'b> {
         world.land_as_vec.iter().filter_map(move |&index| {
-            if let Some(f) = NormalMove::playable(state,Coordinate(index), team, world, spoke_info) {
+            if let Some(f) = NormalMove::playable(state, Coordinate(index), team, world, spoke_info)
+            {
                 if !f.is_suicidal() || allow_suicidal {
                     Some(NormalMove {
                         coord: Coordinate(index),
@@ -142,7 +129,7 @@ impl NormalMove {
         }
 
         if let Some((fooo, typ)) = effect.destroyed_unit {
-            state.factions.add_cell_inner(moveto, fooo, typ, true);
+            state.factions.add_cell_inner(moveto, fooo, typ);
         } else {
             state.factions.remove_inner(moveto)
         };
@@ -197,7 +184,7 @@ impl NormalMove {
 
         game.factions.remove_inner(target_cell);
         game.factions
-            .add_cell_inner(target_cell, stack_size as u8, team, true);
+            .add_cell_inner(target_cell, stack_size as u8, team);
 
         NormalMoveEffect {
             destroyed_unit,
@@ -260,21 +247,19 @@ impl NormalMove {
                 unit::GameCell::Empty => {}
             }
             //TODO can_attack correct value?
-            ss.tactical
-                .factions
-                .add_cell_inner(aa.coord.0, stack, team, true);
+            ss.tactical.factions.add_cell_inner(aa.coord.0, stack, team);
         }
 
         aa
     }
     pub fn playable(
-        state:&GameState,
+        state: &GameState,
         index: Coordinate,
         team: Team,
         _world: &board::MyWorld,
         spoke_info: &SpokeInfo,
     ) -> Option<MoveType> {
-        let index=index.0;
+        let index = index.0;
         if team == Team::Neutral {
             return None;
         }
@@ -320,13 +305,14 @@ impl NormalMove {
     }
 
     pub fn generate_suicidal<'b>(
-        state:&'b GameState,
+        state: &'b GameState,
         world: &'b board::MyWorld,
         team: Team,
         spoke_info: &'b SpokeInfo,
     ) -> impl Iterator<Item = Coordinate> + use<'b> {
         world.land_as_vec.iter().filter_map(move |&index| {
-            if let Some(f) = NormalMove::playable(state,Coordinate(index), team, world, spoke_info) {
+            if let Some(f) = NormalMove::playable(state, Coordinate(index), team, world, spoke_info)
+            {
                 if f.is_suicidal() {
                     Some(Coordinate(index))
                 } else {

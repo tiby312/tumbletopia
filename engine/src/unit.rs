@@ -213,6 +213,9 @@ impl GameStateTotal {}
 //Additionally removes need to special case animation.
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
+    //This only has lighthouse locations.
+    pub lighthouses: Tribe,
+    //Lighthouses are added to factions as neutral pieces.
     pub factions: Tribe,
 }
 
@@ -231,7 +234,7 @@ impl GameState {
         let mut gg = self.clone();
         for a in d.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
-            gg.factions.add_cell(a, 6, Team::Neutral, false);
+            gg.factions.add_cell(a, 6, Team::Neutral);
         }
         gg
     }
@@ -245,7 +248,6 @@ impl GameState {
                         for j in Axial::from_index(&a).to_cube().range(1) {
                             darkness.set_coord(j.ax, false);
                         }
-
                     }
                 }
                 GameCell::Empty => {}
@@ -259,6 +261,7 @@ impl GameState {
     pub fn new() -> GameState {
         GameState {
             factions: Tribe::new(),
+            lighthouses: Tribe::new(),
         }
     }
     pub fn bake_fog(&self, fog: &SmallMesh) -> GameState {
@@ -272,7 +275,7 @@ impl GameState {
         //TODO use bit and/oring
         for a in fog.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
-            gg.factions.add_cell(a, 6, Team::Neutral, false);
+            gg.factions.add_cell(a, 6, Team::Neutral);
         }
 
         gg
@@ -451,7 +454,6 @@ impl StackHeight {
 pub struct Piece {
     pub height: StackHeight,
     pub team: Team,
-    pub can_attack: bool,
 }
 
 #[derive(Hash, Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
@@ -662,7 +664,7 @@ impl Tribe {
     //     // //}
     // }
 
-    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: Team, can_attack: bool) {
+    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: Team) {
         let s = match stack {
             1 => StackHeight::Stack1,
             2 => StackHeight::Stack2,
@@ -674,11 +676,7 @@ impl Tribe {
         };
 
         //TODO pass piece type
-        self.cells[a] = GameCell::Piece(Piece {
-            team,
-            height: s,
-            can_attack,
-        });
+        self.cells[a] = GameCell::Piece(Piece { team, height: s });
         // match team {
         //     Team::White => self.team.inner.set(a, true),
         //     Team::Black => self.team.inner.set(a, false),
@@ -698,9 +696,9 @@ impl Tribe {
         // }
         // self.set_coord(a, stack);
     }
-    pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team, can_attack: bool) {
+    pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team) {
         let a = a.to_index();
-        self.add_cell_inner(a, stack, team, can_attack);
+        self.add_cell_inner(a, stack, team);
     }
 }
 

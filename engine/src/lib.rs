@@ -58,7 +58,13 @@ impl Key {
 
         k
     }
-    pub fn move_update(&mut self, base: &Zobrist, m: NormalMove, team: Team, effect: &NormalMoveEffect) {
+    pub fn move_update(
+        &mut self,
+        base: &Zobrist,
+        m: NormalMove,
+        team: Team,
+        effect: &NormalMoveEffect,
+    ) {
         if let Team::White = team {
             self.key ^= base.white_to_move
         }
@@ -76,7 +82,13 @@ impl Key {
         }
     }
 
-    pub fn move_undo(&mut self, base: &Zobrist, m: NormalMove, team: Team, effect: &NormalMoveEffect) {
+    pub fn move_undo(
+        &mut self,
+        base: &Zobrist,
+        m: NormalMove,
+        team: Team,
+        effect: &NormalMoveEffect,
+    ) {
         if m.is_pass() {
             self.key ^= base.pass;
         } else {

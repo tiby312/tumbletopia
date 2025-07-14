@@ -4,11 +4,11 @@ use engine::main_logic::GameWrap;
 use engine::main_logic::MouseEvent;
 
 use cgmath::Vector2;
-use engine::move_build::NormalMove;
 use engine::MoveHistory;
 use engine::Zobrist;
 use engine::mesh;
 use engine::mesh::small_mesh::SmallMesh;
+use engine::move_build::NormalMove;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -965,7 +965,7 @@ async fn render_command(
             match selection {
                 ace::CellSelection::MoveSelection(axial, small_mesh, have_moved) => {
                     let mut suicidal_moves = mesh::small_mesh::SmallMesh::from_iter_move(
-                        NormalMove::generate_suicidal(game,world, team, &spoke),
+                        NormalMove::generate_suicidal(game, world, team, &spoke),
                     );
                     suicidal_moves.inner &= small_mesh.inner;
                     //suicidal_moves.set_coord(axial,false);

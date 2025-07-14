@@ -205,7 +205,6 @@ impl MoveType {
     }
 }
 
-
 impl hex::HexDraw for Coordinate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
         Axial::from_index(self).fmt(f, radius)

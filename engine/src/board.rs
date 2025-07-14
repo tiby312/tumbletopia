@@ -295,10 +295,12 @@ impl MyWorld {
 
             //x and y are lighthouses.
             //lighthouses behave as zero stacks that can't attack.
-            let can_attack = if stack == 0 { false } else { true };
+            if stack == 0 {
+                g.lighthouses.add_cell_inner(i, stack, team);
+            }
 
             log!("Adding {} {} {:?}", i, stack, team);
-            g.factions.add_cell_inner(i, stack, team, can_attack);
+            g.factions.add_cell_inner(i, stack, team);
         }
 
         // let g = unit::GameStateTotal {
