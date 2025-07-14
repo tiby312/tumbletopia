@@ -264,27 +264,28 @@ impl MyWorld {
 
         let mut g = GameState::new();
         for (a, i) in s.chars().zip(land.inner.iter_ones()) {
+            use StackHeight::*;
             let (stack, team) = match a {
-                'j' => (1, Team::Neutral),
-                'k' => (2, Team::Neutral),
-                'l' => (3, Team::Neutral),
-                'm' => (4, Team::Neutral),
-                'n' => (5, Team::Neutral),
-                'o' => (6, Team::Neutral),
-                'r' => (1, Team::White),
-                's' => (2, Team::White),
-                't' => (3, Team::White),
-                'u' => (4, Team::White),
-                'v' => (5, Team::White),
-                'w' => (6, Team::White),
-                'b' => (1, Team::Black),
-                'c' => (2, Team::Black),
-                'd' => (3, Team::Black),
-                'e' => (4, Team::Black),
-                'f' => (5, Team::Black),
-                'g' => (6, Team::Black),
-                'x' => (0, Team::White),
-                'y' => (0, Team::Black),
+                'j' => (Stack1, Team::Neutral),
+                'k' => (Stack2, Team::Neutral),
+                'l' => (Stack3, Team::Neutral),
+                'm' => (Stack4, Team::Neutral),
+                'n' => (Stack5, Team::Neutral),
+                'o' => (Stack6, Team::Neutral),
+                'r' => (Stack1, Team::White),
+                's' => (Stack2, Team::White),
+                't' => (Stack3, Team::White),
+                'u' => (Stack4, Team::White),
+                'v' => (Stack5, Team::White),
+                'w' => (Stack6, Team::White),
+                'b' => (Stack1, Team::Black),
+                'c' => (Stack2, Team::Black),
+                'd' => (Stack3, Team::Black),
+                'e' => (Stack4, Team::Black),
+                'f' => (Stack5, Team::Black),
+                'g' => (Stack6, Team::Black),
+                'x' => (Stack0, Team::White),
+                'y' => (Stack0, Team::Black),
                 '-' => {
                     continue;
                 }
@@ -295,11 +296,11 @@ impl MyWorld {
 
             //x and y are lighthouses.
             //lighthouses behave as zero stacks that can't attack.
-            if stack == 0 {
+            if stack == Stack0 {
                 g.lighthouses.add_cell_inner(i, stack, team);
             }
 
-            log!("Adding {} {} {:?}", i, stack, team);
+            log!("Adding {} {:?} {:?}", i, stack, team);
             g.factions.add_cell_inner(i, stack, team);
         }
 

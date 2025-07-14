@@ -1,18 +1,20 @@
 use crate::{
     main_logic::{AnimationCommand, CommandSender},
     moves::{MoveType, SpokeInfo},
+    unit::StackHeight,
 };
 
 use super::*;
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct NormalMoveEffect {
-    pub height: u8,
-    pub destroyed_unit: Option<(u8, Team)>,
+    pub destroyed_unit: Option<(StackHeight, Team)>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-pub struct LighthouseMoveEffect {}
+pub struct LighthouseMoveEffect {
+    nm: NormalMoveEffect,
+}
 
 #[derive(PartialEq, Eq, Default, Serialize, Deserialize, Clone, Copy, Debug)]
 
@@ -69,9 +71,16 @@ impl LighthouseMove {
         world: &board::MyWorld,
         spoke_info: Option<&SpokeInfo>,
     ) -> LighthouseMoveEffect {
-        game.factions.add_cell_inner(self.coord.0, 0, team);
+        game.lighthouses
+            .add_cell_inner(self.coord.0, StackHeight::Stack0, team);
 
-        LighthouseMoveEffect {}
+        let nm = NormalMove {
+            coord: self.coord,
+            stack: StackHeight::Stack0,
+        }
+        .apply(Team::Neutral, game, fog, world, spoke_info);
+
+        LighthouseMoveEffect { nm }
     }
 }
 
@@ -81,6 +90,7 @@ impl LighthouseMove {
 #[derive(PartialEq, Eq, Default, Serialize, Deserialize, Clone, Copy, Debug)]
 
 pub struct NormalMove {
+    pub stack: StackHeight,
     pub coord: Coordinate,
 }
 
@@ -93,12 +103,14 @@ impl hex::HexDraw for NormalMove {
 impl NormalMove {
     pub fn new_pass() -> NormalMove {
         NormalMove {
+            stack: StackHeight::Stack0,
             coord: Coordinate(hex::PASS_MOVE_INDEX),
         }
     }
     pub fn is_pass(&self) -> bool {
         self.coord.0 == hex::PASS_MOVE_INDEX
     }
+
     pub fn possible_moves<'b>(
         state: &'b GameState,
         world: &'b board::MyWorld,
@@ -111,6 +123,12 @@ impl NormalMove {
             {
                 if !f.is_suicidal() || allow_suicidal {
                     Some(NormalMove {
+                        stack: Coordinate(index).determine_stack_height(
+                            state,
+                            world,
+                            team,
+                            Some(spoke_info),
+                        ),
                         coord: Coordinate(index),
                     })
                 } else {
@@ -147,49 +165,25 @@ impl NormalMove {
         if self.coord.0 == hex::PASS_MOVE_INDEX {
             return NormalMoveEffect {
                 destroyed_unit: None,
-                height: 0,
             };
         }
 
         //let env = &mut game.env;
         let target_cell = self.coord.0;
 
-        let stack_size = if let Some(sp) = spoke_info {
-            sp.data[self.coord.0].num_attack[team]
-        } else {
-            let mut stack_size = 0;
-
-            for (_, rest) in game
-                .bake_fog(fog)
-                .factions
-                .iter_end_points(world, target_cell)
-            {
-                if let Some(e) = rest {
-                    if e.piece.team == team {
-                        stack_size += 1;
-                    }
-                }
-            }
-            stack_size
-        };
-
         let destroyed_unit = match game.factions.get_cell_inner(target_cell) {
             &unit::GameCell::Piece(unit::Piece {
                 height: stack_height,
                 team: v,
                 ..
-            }) => Some((stack_height.to_num() as u8, v)),
+            }) => Some((stack_height, v)),
             unit::GameCell::Empty => None,
         };
 
         game.factions.remove_inner(target_cell);
-        game.factions
-            .add_cell_inner(target_cell, stack_size as u8, team);
+        game.factions.add_cell_inner(target_cell, self.stack, team);
 
-        NormalMoveEffect {
-            destroyed_unit,
-            height: stack_size as u8,
-        }
+        NormalMoveEffect { destroyed_unit }
     }
 
     pub async fn animate_move<'a>(
@@ -247,7 +241,9 @@ impl NormalMove {
                 unit::GameCell::Empty => {}
             }
             //TODO can_attack correct value?
-            ss.tactical.factions.add_cell_inner(aa.coord.0, stack, team);
+            ss.tactical
+                .factions
+                .add_cell_inner(aa.coord.0, StackHeight::from_num(stack), team);
         }
 
         aa

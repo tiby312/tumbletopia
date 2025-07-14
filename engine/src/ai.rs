@@ -257,11 +257,23 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
                     if *m == team && n[team] > h as i64 {
                         NormalMove {
                             coord: Coordinate(index),
+                            stack: Coordinate(index).determine_stack_height(
+                                game,
+                                world,
+                                team,
+                                Some(&spoke),
+                            ),
                         }
                         .apply(team, game, fog, world, Some(&spoke));
                         let _s = spoke.process_move_better(
                             NormalMove {
                                 coord: Coordinate(index),
+                                stack: Coordinate(index).determine_stack_height(
+                                    game,
+                                    world,
+                                    team,
+                                    Some(&spoke),
+                                ),
                             },
                             team,
                             world,
@@ -287,11 +299,23 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
                 {
                     if !f.is_suicidal() {
                         let _e = NormalMove {
+                            stack: Coordinate(index).determine_stack_height(
+                                game,
+                                world,
+                                team,
+                                Some(&spoke),
+                            ),
                             coord: Coordinate(index),
                         }
                         .apply(team, game, fog, world, Some(&spoke));
                         let _s = spoke.process_move_better(
                             NormalMove {
+                                stack: Coordinate(index).determine_stack_height(
+                                    game,
+                                    world,
+                                    team,
+                                    Some(&spoke),
+                                ),
                                 coord: Coordinate(index),
                             },
                             team,
@@ -665,6 +689,12 @@ impl<'a> AlphaBeta<'a> {
         self.moves
             .extend(captures.inner.iter_ones().map(|x| NormalMove {
                 coord: Coordinate(x),
+                stack: Coordinate(x).determine_stack_height(
+                    game,
+                    self.world,
+                    team,
+                    Some(&spoke_info),
+                ),
             }));
 
         let end_move_index = self.moves.len();

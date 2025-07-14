@@ -1,5 +1,7 @@
 use hex::HDir;
 
+use crate::unit::StackHeight;
+
 use super::*;
 
 pub use spoke::SpokeInfo;
@@ -214,6 +216,32 @@ impl hex::HexDraw for Coordinate {
 //Signifies a normal move of a [1,6] stack.
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
 pub struct Coordinate(pub usize);
+
+impl Coordinate {
+    pub fn determine_stack_height(
+        &self,
+        state: &GameState,
+        world: &board::MyWorld,
+        team: Team,
+        spoke_info: Option<&SpokeInfo>,
+    ) -> StackHeight {
+        let stack_size = if let Some(sp) = spoke_info {
+            sp.data[self.0].num_attack[team]
+        } else {
+            let mut stack_size = 0;
+
+            for (_, rest) in state.factions.iter_end_points(world, self.0) {
+                if let Some(e) = rest {
+                    if e.piece.team == team {
+                        stack_size += 1;
+                    }
+                }
+            }
+            stack_size
+        };
+        StackHeight::from_num(stack_size as i8)
+    }
+}
 
 impl std::ops::Deref for Coordinate {
     type Target = usize;

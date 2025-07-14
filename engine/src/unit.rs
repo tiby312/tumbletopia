@@ -234,7 +234,7 @@ impl GameState {
         let mut gg = self.clone();
         for a in d.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
-            gg.factions.add_cell(a, 6, Team::Neutral);
+            gg.factions.add_cell(a, StackHeight::Stack6, Team::Neutral);
         }
         gg
     }
@@ -275,7 +275,7 @@ impl GameState {
         //TODO use bit and/oring
         for a in fog.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
-            gg.factions.add_cell(a, 6, Team::Neutral);
+            gg.factions.add_cell(a, StackHeight::Stack6, Team::Neutral);
         }
 
         gg
@@ -432,10 +432,12 @@ impl GameState {
     // }
 }
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Copy, Clone)]
-
+#[derive(
+    Default, Debug, Serialize, Deserialize, Eq, Ord, PartialEq, PartialOrd, Hash, Copy, Clone,
+)]
 pub enum StackHeight {
     Stack0 = 0,
+    #[default]
     Stack1 = 1,
     Stack2 = 2,
     Stack3 = 3,
@@ -446,6 +448,19 @@ pub enum StackHeight {
 impl StackHeight {
     pub fn to_num(&self) -> i8 {
         *self as i8
+    }
+    pub fn from_num(num: i8) -> StackHeight {
+        use StackHeight::*;
+        match num {
+            0 => Stack0,
+            1 => Stack1,
+            2 => Stack2,
+            3 => Stack3,
+            4 => Stack4,
+            5 => Stack5,
+            6 => Stack6,
+            _ => unreachable!("Not a valid stack height:{}", num),
+        }
     }
 }
 
@@ -664,19 +679,22 @@ impl Tribe {
     //     // //}
     // }
 
-    pub fn add_cell_inner(&mut self, a: usize, stack: u8, team: Team) {
-        let s = match stack {
-            1 => StackHeight::Stack1,
-            2 => StackHeight::Stack2,
-            3 => StackHeight::Stack3,
-            4 => StackHeight::Stack4,
-            5 => StackHeight::Stack5,
-            6 => StackHeight::Stack6,
-            _ => unreachable!(),
-        };
+    pub fn add_cell_inner(&mut self, a: usize, stack: StackHeight, team: Team) {
+        // let s = match stack {
+        //     1 => StackHeight::Stack1,
+        //     2 => StackHeight::Stack2,
+        //     3 => StackHeight::Stack3,
+        //     4 => StackHeight::Stack4,
+        //     5 => StackHeight::Stack5,
+        //     6 => StackHeight::Stack6,
+        //     _ => unreachable!(),
+        // };
 
         //TODO pass piece type
-        self.cells[a] = GameCell::Piece(Piece { team, height: s });
+        self.cells[a] = GameCell::Piece(Piece {
+            team,
+            height: stack,
+        });
         // match team {
         //     Team::White => self.team.inner.set(a, true),
         //     Team::Black => self.team.inner.set(a, false),
@@ -696,7 +714,7 @@ impl Tribe {
         // }
         // self.set_coord(a, stack);
     }
-    pub fn add_cell(&mut self, a: Axial, stack: u8, team: Team) {
+    pub fn add_cell(&mut self, a: Axial, stack: StackHeight, team: Team) {
         let a = a.to_index();
         self.add_cell_inner(a, stack, team);
     }

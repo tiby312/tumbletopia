@@ -16,16 +16,19 @@ use serde::Serialize;
 pub use unit::GameState;
 pub use unit::Team;
 
-fn get_index(height: u8, team: Team) -> usize {
-    assert!(height > 0 && height <= 6, "uhoh:{}", height);
-    let k = (height - 1) as usize + 6 * ((team.value() + 1) as usize);
-    assert!(k < 6 * 3);
+const NUM_STACK_HEIGHTS: usize = 7;
+
+fn get_index(height: StackHeight, team: Team) -> usize {
+    let height = height.to_num();
+    assert!(height >= 0 && height <= 6, "uhoh:{}", height);
+    let k = (height) as usize + NUM_STACK_HEIGHTS * ((team.value() + 1) as usize);
+    assert!(k < NUM_STACK_HEIGHTS * 3);
     k
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Zobrist {
-    inner: Vec<[u64; 6 * 3]>,
+    inner: Vec<[u64; NUM_STACK_HEIGHTS * 3]>,
     white_to_move: u64,
     pass: u64,
 }
@@ -46,7 +49,7 @@ impl Key {
                     team: t,
                     ..
                 }) => {
-                    k.key ^= base.inner[index][get_index(stack_height.to_num() as u8, *t)];
+                    k.key ^= base.inner[index][get_index(*stack_height, *t)];
                 }
                 unit::GameCell::Empty => {}
             }
@@ -78,7 +81,7 @@ impl Key {
             }
 
             //xor in the new piece
-            self.key ^= base.inner[m.coord.0][get_index(effect.height, team)];
+            self.key ^= base.inner[m.coord.0][get_index(m.stack, team)];
         }
     }
 
@@ -93,7 +96,7 @@ impl Key {
             self.key ^= base.pass;
         } else {
             //xor out the new piece
-            self.key ^= base.inner[m.coord.0][get_index(effect.height, team)];
+            self.key ^= base.inner[m.coord.0][get_index(m.stack, team)];
 
             if let Some(a) = effect.destroyed_unit {
                 //xor in what piece was there
@@ -169,6 +172,7 @@ macro_rules! log {
 pub(crate) use log;
 
 use crate::move_build::NormalMove;
+use crate::unit::StackHeight;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Slot {

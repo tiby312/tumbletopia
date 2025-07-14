@@ -120,8 +120,9 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
     }
 
     let mut tt = TT::Player1;
+    use StackHeight::*;
 
-    let mut curr_stack = 1;
+    let mut curr_stack = Stack1;
     loop {
         let pos = doop.get_mouse(Team::White, &mut game_total).await;
         let pos = match pos {
@@ -129,22 +130,22 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
             MouseEvent::Button(s) => {
                 match s.as_str() {
                     "stack1" => {
-                        curr_stack = 1;
+                        curr_stack = Stack1;
                     }
                     "stack2" => {
-                        curr_stack = 2;
+                        curr_stack = Stack2;
                     }
                     "stack3" => {
-                        curr_stack = 3;
+                        curr_stack = Stack3;
                     }
                     "stack4" => {
-                        curr_stack = 4;
+                        curr_stack = Stack4;
                     }
                     "stack5" => {
-                        curr_stack = 5;
+                        curr_stack = Stack5;
                     }
                     "stack6" => {
-                        curr_stack = 6;
+                        curr_stack = Stack6;
                     }
                     "empty" => {
                         tt = TT::Empty;
@@ -535,7 +536,10 @@ pub async fn reselect_loop(
     //let c = target_cell;
 
     let mp = Coordinate(target_cell.to_index());
-    let norm = NormalMove { coord: mp };
+    let norm = NormalMove {
+        coord: mp,
+        stack: mp.determine_stack_height(&game.tactical, world, team, None),
+    };
     let effect = norm
         .animate_move(selected_unit.team, game, world, doop)
         .await
