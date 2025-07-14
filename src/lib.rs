@@ -1591,10 +1591,30 @@ async fn render_command(
         draw_sys
             .batch(black_team_cells)
             .build(&models.token_black, &projjj);
-
         draw_sys
             .batch(neutral_team_cells)
             .build(&models.token_neutral, &projjj);
+
+
+        let mut lighthouses=vec!();
+        for a in game.lighthouses.cells.iter().enumerate().filter_map(|(index,k)|{
+            match k{
+                GameCell::Piece(e) => {
+                    let e = Axial::from_index(&index);
+                    let k =glem::build(&grid_snap(e, 0.0).chain(glem::scale(1.0, 1.0, 1.0)));
+                    Some(k)
+                },
+                GameCell::Empty => None,
+            }
+        }){
+            lighthouses.push(a);
+        }
+
+        draw_sys
+            .batch(lighthouses)
+            .build(&models.lighthouse, &projjj);
+
+
 
         let mut water_pos = vec![];
         for a in water.iter_mesh(Axial::zero()) {
