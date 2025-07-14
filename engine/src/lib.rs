@@ -9,7 +9,7 @@ pub mod unit;
 use board::MyWorld;
 pub use hex::Axial;
 use mesh::small_mesh::SmallMesh;
-use move_build::MoveEffect;
+use move_build::NormalMoveEffect;
 pub use moves::Coordinate;
 use serde::Deserialize;
 use serde::Serialize;
@@ -58,7 +58,7 @@ impl Key {
 
         k
     }
-    pub fn move_update(&mut self, base: &Zobrist, m: NormalMove, team: Team, effect: &MoveEffect) {
+    pub fn move_update(&mut self, base: &Zobrist, m: NormalMove, team: Team, effect: &NormalMoveEffect) {
         if let Team::White = team {
             self.key ^= base.white_to_move
         }
@@ -76,7 +76,7 @@ impl Key {
         }
     }
 
-    pub fn move_undo(&mut self, base: &Zobrist, m: NormalMove, team: Team, effect: &MoveEffect) {
+    pub fn move_undo(&mut self, base: &Zobrist, m: NormalMove, team: Team, effect: &NormalMoveEffect) {
         if m.is_pass() {
             self.key ^= base.pass;
         } else {
@@ -204,7 +204,7 @@ pub struct JustMoveLog {
 //Need to keep effect so you can undo all the way to the start.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MoveHistory {
-    pub inner: Vec<(move_build::NormalMove, move_build::MoveEffect)>,
+    pub inner: Vec<(move_build::NormalMove, move_build::NormalMoveEffect)>,
 }
 
 impl Default for MoveHistory {
@@ -239,7 +239,7 @@ impl MoveHistory {
         }
     }
 
-    pub fn push(&mut self, o: (move_build::NormalMove, move_build::MoveEffect)) {
+    pub fn push(&mut self, o: (move_build::NormalMove, move_build::NormalMoveEffect)) {
         self.inner.push(o);
     }
 }

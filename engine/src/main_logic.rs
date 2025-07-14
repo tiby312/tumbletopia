@@ -53,7 +53,7 @@ pub enum TerrainType {
 #[derive(Clone, Debug)]
 pub struct HaveMoved {
     pub the_move: Coordinate,
-    pub effect: move_build::MoveEffect,
+    pub effect: move_build::NormalMoveEffect,
 }
 
 pub struct GameWrap<T> {
@@ -352,7 +352,7 @@ pub struct SelectType {
 
 #[derive(Debug)]
 pub enum LoopRes<T> {
-    EndTurn((move_build::NormalMove, move_build::MoveEffect)),
+    EndTurn((move_build::NormalMove, move_build::NormalMoveEffect)),
     Deselect,
     Undo,
     Pass,
@@ -644,7 +644,7 @@ pub async fn handle_player(
     world: &board::MyWorld,
     doop: &mut CommandSender,
     team: Team,
-) -> (move_build::NormalMove, move_build::MoveEffect) {
+) -> (move_build::NormalMove, move_build::NormalMoveEffect) {
     let undo = async |doop: &mut CommandSender, game: &mut unit::GameStateTotal| {
         //log!("undoing turn!!!");
         assert!(game.history.inner.len() >= 2, "Not enough moves to undo");

@@ -116,7 +116,7 @@ mod spoke {
         pub fn undo_move(
             &mut self,
             a: NormalMove,
-            effect: &move_build::MoveEffect,
+            effect: &move_build::NormalMoveEffect,
             _team: Team,
             _world: &board::MyWorld,
             _game: &GameState,

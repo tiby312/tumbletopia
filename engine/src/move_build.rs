@@ -6,9 +6,14 @@ use crate::{
 use super::*;
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
-pub struct MoveEffect {
+pub struct NormalMoveEffect {
     pub height: u8,
     pub destroyed_unit: Option<(u8, Team)>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+pub struct LighthouseMoveEffect {
+    
 }
 
 #[derive(PartialEq, Eq, Default, Serialize, Deserialize, Clone, Copy, Debug)]
@@ -25,27 +30,63 @@ impl hex::HexDraw for LighthouseMove {
 }
 
 impl LighthouseMove{
+    
     pub fn possible_moves<'b>(
         state: &'b GameState,
         world: &'b board::MyWorld,
         team: Team,
         spoke_info: &'b SpokeInfo,
         allow_suicidal: bool,
-    ) -> impl Iterator<Item = NormalMove> + use<'b> {
-        world.land_as_vec.iter().filter_map(move |&index| {
-            if let Some(f) = NormalMove::playable(state,Coordinate(index), team, world, spoke_info) {
-                if !f.is_suicidal() || allow_suicidal {
-                    Some(NormalMove {
-                        coord: Coordinate(index),
-                    })
-                } else {
-                    None
-                }
-            } else {
-                None
+    ) -> impl Iterator<Item = LighthouseMove> + use<'b> {
+
+        //light house pieces should get added as neutral pieces to the game state
+        //because they cannot attack.
+        //The game state is used mainly to determine what moves the ai can play.
+        //The ai does not normally care which team a lighhouse belongs to.
+        //The only time it would care is in its evaluation function.
+        //The eval function needs access to which pieces are lighthouses, but nothing else.
+        //This simplifies a lot of the logic as far as adding and removing pieces
+        //to the game state.
+        //The bottom line is that lighhouses act as neutral pieces as far how they block
+        //other pieces LOS as well as how they do not attack.
+
+
+
+
+        let world = state.darkness(world, team);
+
+        //TODO optimize this
+        let j:Vec<LighthouseMove>=world.inner.iter_ones().filter_map(move |index| {
+
+            match state.factions.get_cell_inner(index){
+                unit::GameCell::Piece(_) => None,
+                unit::GameCell::Empty => Some(LighthouseMove{
+                    coord:Coordinate(index)
+                }),
             }
-        })
+
+
+        }).collect();
+        j.into_iter()
     }
+
+    pub fn apply(
+        &self,
+        team: Team,
+        game: &mut GameState,
+        fog: &mesh::small_mesh::SmallMesh,
+        world: &board::MyWorld,
+        spoke_info: Option<&SpokeInfo>,
+    ) -> LighthouseMoveEffect {
+
+        game.factions.add_cell_inner(self.coord.0, 0, team, false);
+
+
+        LighthouseMoveEffect {  }
+    }
+
+
+
 }
 
 //Represents playing a normal piece at the specified coordinate
@@ -93,7 +134,7 @@ impl NormalMove {
             }
         })
     }
-    pub fn undo(&self, _team_index: Team, effect: &MoveEffect, state: &mut GameState) {
+    pub fn undo(&self, _team_index: Team, effect: &NormalMoveEffect, state: &mut GameState) {
         let moveto = self.coord.0;
 
         if moveto == hex::PASS_MOVE_INDEX {
@@ -114,10 +155,10 @@ impl NormalMove {
         fog: &mesh::small_mesh::SmallMesh,
         world: &board::MyWorld,
         spoke_info: Option<&SpokeInfo>,
-    ) -> MoveEffect {
+    ) -> NormalMoveEffect {
         //this is a pass
         if self.coord.0 == hex::PASS_MOVE_INDEX {
-            return MoveEffect {
+            return NormalMoveEffect {
                 destroyed_unit: None,
                 height: 0,
             };
@@ -158,7 +199,7 @@ impl NormalMove {
         game.factions
             .add_cell_inner(target_cell, stack_size as u8, team, true);
 
-        MoveEffect {
+        NormalMoveEffect {
             destroyed_unit,
             height: stack_size as u8,
         }
