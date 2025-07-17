@@ -171,6 +171,9 @@ macro_rules! log {
 
 pub(crate) use log;
 
+use crate::move_build::GenericMove;
+use crate::move_build::LighthouseMove;
+use crate::move_build::LighthouseMoveEffect;
 use crate::move_build::NormalMove;
 use crate::unit::StackHeight;
 
@@ -214,13 +217,14 @@ pub mod share {
 //This is for saving/loading.
 #[derive(Deserialize, Serialize)]
 pub struct JustMoveLog {
-    pub inner: Vec<move_build::NormalMove>,
+    pub inner: Vec<GenericMove<NormalMove, LighthouseMove>>,
 }
 
 //Need to keep effect so you can undo all the way to the start.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MoveHistory {
-    pub inner: Vec<(move_build::NormalMove, move_build::NormalMoveEffect)>,
+    pub inner:
+        Vec<GenericMove<(NormalMove, NormalMoveEffect), (LighthouseMove, LighthouseMoveEffect)>>,
 }
 
 impl Default for MoveHistory {
@@ -231,31 +235,39 @@ impl Default for MoveHistory {
 
 impl MoveHistory {
     pub fn into_string(&self, world: &MyWorld) -> String {
-        use std::fmt::Write;
+        // use std::fmt::Write;
 
-        let mut s = String::new();
-        for (index, e) in self.inner.iter() {
-            write!(s, "{:?}", world.format(&index.coord),).unwrap();
+        // let mut s = String::new();
+        // for (index, e) in self.inner.iter() {
+        //     write!(s, "{:?}", world.format(&index.coord),).unwrap();
 
-            if e.destroyed_unit.is_some() {
-                write!(s, "x").unwrap();
-            }
-            write!(s, " ").unwrap();
-        }
+        //     if e.destroyed_unit.is_some() {
+        //         write!(s, "x").unwrap();
+        //     }
+        //     write!(s, " ").unwrap();
+        // }
 
-        s
+        // s
+        todo!();
     }
 
     pub fn new() -> Self {
         MoveHistory { inner: vec![] }
     }
     pub fn into_just_move(self) -> JustMoveLog {
-        JustMoveLog {
-            inner: self.inner.into_iter().map(|a| a.0).collect(),
-        }
+        // JustMoveLog {
+        //     inner: self.inner.into_iter().map(|a| a.0).collect(),
+        // }
+        todo!()
     }
 
-    pub fn push(&mut self, o: (move_build::NormalMove, move_build::NormalMoveEffect)) {
-        self.inner.push(o);
+    pub fn push_normal(&mut self, o: (move_build::NormalMove, move_build::NormalMoveEffect)) {
+        self.inner.push(GenericMove::Normal(o));
+    }
+    pub fn push_lighthouse(
+        &mut self,
+        o: (move_build::LighthouseMove, move_build::LighthouseMoveEffect),
+    ) {
+        self.inner.push(GenericMove::Lighthouse(o));
     }
 }

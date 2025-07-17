@@ -13,6 +13,21 @@ pub struct DestroyedUnit {
     pub was_lighthouse: Option<Team>,
 }
 
+#[derive(PartialEq, Eq, Serialize, Deserialize, Clone, Copy, Debug)]
+pub enum GenericMove<T, L> {
+    Normal(T),
+    Lighthouse(L),
+}
+
+impl hex::HexDraw for GenericMove<NormalMove, LighthouseMove> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
+        match self {
+            GenericMove::Normal(o) => o.fmt(f, radius),
+            GenericMove::Lighthouse(o) => o.fmt(f, radius),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct NormalMoveEffect {
     pub destroyed_unit: Option<DestroyedUnit>,
@@ -54,13 +69,13 @@ impl LighthouseMove {
         //The bottom line is that lighhouses act as neutral pieces as far how they block
         //other pieces LOS as well as how they do not attack.
 
-        let world = state.darkness(world, team);
+        //let world = state.darkness(world, team);
 
         //TODO optimize this
         let j: Vec<LighthouseMove> = world
-            .inner
-            .iter_ones()
-            .filter_map(move |index| match state.factions.get_cell_inner(index) {
+            .land_as_vec
+            .iter()
+            .filter_map(move |&index| match state.factions.get_cell_inner(index) {
                 unit::GameCell::Piece(_) => None,
                 unit::GameCell::Empty => Some(LighthouseMove {
                     coord: Coordinate(index),
@@ -308,7 +323,7 @@ impl NormalMove {
                 ..
             }) => {
                 let height = stack_height.to_num();
-                debug_assert!(height > 0);
+                //debug_assert!(height > 0);
                 let height = height as i64;
 
                 if num_attack[team] > height {

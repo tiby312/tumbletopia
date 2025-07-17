@@ -247,6 +247,7 @@ fn engine_handlers<'a>(
         //TODO register buttons based on game type
         reg_button(worker, "undo"),
         reg_button(worker, "pass"),
+        reg_button(worker, "lighthouse"),
         reg_button(worker, "b_next"),
         reg_button(worker, "b_prev"),
         // reg_button(worker, "b_ice"),

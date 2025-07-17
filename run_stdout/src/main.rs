@@ -1,4 +1,10 @@
-use engine::{Zobrist, ai::Evaluator, mesh::small_mesh::SmallMesh, moves::SpokeInfo};
+use engine::{
+    Zobrist,
+    ai::Evaluator,
+    mesh::small_mesh::SmallMesh,
+    move_build::{GenericMove, LighthouseMove, NormalMove},
+    moves::SpokeInfo,
+};
 
 //-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
 
@@ -154,7 +160,7 @@ pub fn test_run(
     game: &str,
 ) -> (
     engine::unit::GameOver,
-    Vec<engine::move_build::NormalMove>,
+    Vec<engine::move_build::GenericMove<NormalMove, LighthouseMove>>,
     engine::board::MyWorld,
 ) {
     let world = engine::board::MyWorld::load_from_string(game).unwrap();
@@ -181,10 +187,17 @@ pub fn test_run(
 
         //println!("team {:?} made move {:?}",team,&world.format(&m));
         let effect = m.apply(team, &mut game, &SmallMesh::new(), &world, None);
-        game_history.push((m, effect));
+        game_history.inner.push(GenericMove::Normal((m, effect)));
     };
     //
-    let history: Vec<_> = game_history.inner.iter().map(|(x, _)| x.clone()).collect();
+    let history: Vec<_> = game_history
+        .inner
+        .iter()
+        .map(|x| match x {
+            GenericMove::Normal(x) => GenericMove::Normal(x.0),
+            GenericMove::Lighthouse(x) => GenericMove::Lighthouse(x.0),
+        })
+        .collect();
 
     // let s = format!("{:?}", world.format(&history));
     // assert_eq!(s,"[E3,D3,E4,B2,D2,C2,B1,D3,B2,D4,C2,C3,D3,D5,E3,C4,D2,B3,C1,C4,E4,C5,C2,D5,B1,C4,B2,B4,A1,A3,pp,pp,]");

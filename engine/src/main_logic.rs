@@ -1,4 +1,7 @@
-use crate::{mesh::small_mesh::SmallMesh, move_build::NormalMove};
+use crate::{
+    mesh::small_mesh::SmallMesh,
+    move_build::{GenericMove, LighthouseMove, NormalMove},
+};
 
 use super::*;
 
@@ -353,7 +356,7 @@ pub struct SelectType {
 
 #[derive(Debug)]
 pub enum LoopRes<T> {
-    EndTurn((move_build::NormalMove, move_build::NormalMoveEffect)),
+    EndTurn(move_build::GenericMove<NormalMove, LighthouseMove>),
     Deselect,
     Undo,
     Pass,
@@ -367,6 +370,7 @@ pub async fn reselect_loop(
     team: Team,
     have_moved: &mut Option<HaveMoved>,
     mut selected_unit: SelectType,
+    lighthouse_mode: bool,
 ) -> LoopRes<SelectType> {
     //console_dbg!(have_moved.is_some());
     //At this point we know a friendly unit is currently selected.
@@ -396,19 +400,41 @@ pub async fn reselect_loop(
     let spoke_info = moves::SpokeInfo::new(&game2, world);
 
     let cca = {
-        let mut cca = SmallMesh::from_iter_move(
-            NormalMove::possible_moves(&game2, world, selected_unit.team, &spoke_info, true)
-                .chain([NormalMove::new_pass()])
+        if lighthouse_mode {
+            gloo_console::console_dbg!("Logging mesh thing");
+            let cca = SmallMesh::from_iter_move(
+                LighthouseMove::possible_moves(
+                    &game2,
+                    world,
+                    selected_unit.team,
+                    &spoke_info,
+                    true,
+                )
                 .map(|x| x.coord),
-        );
+            );
 
-        let c2 = game
-            .tactical
-            .factions
-            .filter_los(unwrapped_selected_unit.to_index(), world);
+            // let c2 = game
+            //     .tactical
+            //     .factions
+            //     .filter_los(unwrapped_selected_unit.to_index(), world);
 
-        cca.inner &= c2.inner;
-        cca
+            // cca.inner &= c2.inner;
+            cca
+        } else {
+            let mut cca = SmallMesh::from_iter_move(
+                NormalMove::possible_moves(&game2, world, selected_unit.team, &spoke_info, true)
+                    .chain([NormalMove::new_pass()])
+                    .map(|x| x.coord),
+            );
+
+            let c2 = game
+                .tactical
+                .factions
+                .filter_los(unwrapped_selected_unit.to_index(), world);
+
+            cca.inner &= c2.inner;
+            cca
+        }
     };
 
     let cell = CellSelection::MoveSelection(unwrapped_selected_unit, cca, have_moved.clone());
@@ -427,6 +453,9 @@ pub async fn reselect_loop(
                 return LoopRes::Undo;
             } else if s == "pass" {
                 return LoopRes::Pass;
+            } else if s == "lighthouse" {
+                gloo_console::console_dbg!("Can't change unit type while already selected");
+                return LoopRes::Deselect;
             } else {
                 unreachable!();
             }
@@ -536,22 +565,17 @@ pub async fn reselect_loop(
     //let c = target_cell;
 
     let mp = Coordinate(target_cell.to_index());
-    let norm = NormalMove {
-        coord: mp,
-        stack: mp.determine_stack_height(&game.tactical, world, team, None),
-    };
-    let effect = norm
-        .animate_move(selected_unit.team, game, world, doop)
-        .await
-        .apply(
-            selected_unit.team,
-            &mut game.tactical,
-            &game.fog[team.index()],
-            world,
-            None,
-        );
 
-    { LoopRes::EndTurn((norm, effect)) }
+    if lighthouse_mode {
+        return LoopRes::EndTurn(GenericMove::Lighthouse(LighthouseMove { coord: mp }));
+    } else {
+        let norm = NormalMove {
+            coord: mp,
+            stack: mp.determine_stack_height(&game.tactical, world, team, None),
+        };
+
+        return LoopRes::EndTurn(GenericMove::Normal(norm));
+    }
 }
 
 pub async fn replay(
@@ -646,26 +670,40 @@ pub async fn handle_player(
     world: &board::MyWorld,
     doop: &mut CommandSender,
     team: Team,
-) -> (move_build::NormalMove, move_build::NormalMoveEffect) {
+) -> move_build::GenericMove<NormalMove, LighthouseMove> {
     let undo = async |doop: &mut CommandSender, game: &mut unit::GameStateTotal| {
         //log!("undoing turn!!!");
         assert!(game.history.inner.len() >= 2, "Not enough moves to undo");
 
-        let (a, e) = game.history.inner.pop().unwrap();
-        a.undo(team.not(), &e, &mut game.tactical);
+        let mut mov = vec![];
+        for _ in [(); 2] {
+            let f = game.history.inner.pop().unwrap();
+            match f {
+                GenericMove::Normal((a, e)) => {
+                    mov.push(a.coord);
+                    a.undo(team.not(), &e, &mut game.tactical);
+                }
+                GenericMove::Lighthouse((a, e)) => {
+                    mov.push(a.coord);
+                    a.undo(team.not(), &e, &mut game.tactical);
+                }
+            }
+        }
 
-        let (a2, e2) = game.history.inner.pop().unwrap();
-        a2.undo(team, &e2, &mut game.tactical);
+        // let (a2, e2) = game.history.inner.pop().unwrap();
+        // a2.undo(team, &e2, &mut game.tactical);
 
         let s = format!(
             "undoing moves {:?} and {:?}",
-            world.format(&a.coord),
-            world.format(&a2.coord)
+            world.format(&mov[0]),
+            world.format(&mov[1])
         );
         doop.repaint_ui(team, game, s).await;
     };
 
     let mut extra_attack = None;
+    let mut lighthouse_mode = false;
+
     //Keep allowing the user to select units
     'outer: loop {
         if game.history.inner.len() >= 2 {
@@ -689,14 +727,18 @@ pub async fn handle_player(
                         continue 'outer;
                     } else if s == "pass" {
                         let mp = NormalMove::new_pass();
-                        let me = mp.apply(
-                            team,
-                            &mut game.tactical,
-                            &game.fog[team.index()],
-                            world,
-                            None,
-                        );
-                        return (mp, me);
+                        // let me = mp.apply(
+                        //     team,
+                        //     &mut game.tactical,
+                        //     &game.fog[team.index()],
+                        //     world,
+                        //     None,
+                        // );
+                        return GenericMove::Normal(mp);
+                    } else if s == "lighthouse" {
+                        lighthouse_mode = true;
+                        gloo_console::console_dbg!("POTATO");
+                        continue 'outer;
                     } else {
                         unreachable!();
                     }
@@ -722,13 +764,22 @@ pub async fn handle_player(
                 doop.send_command(team, game, Command::HideUndo).await;
             }
 
-            let res =
-                reselect_loop(doop, game, world, team, &mut extra_attack, selected_unit).await;
+            let res = reselect_loop(
+                doop,
+                game,
+                world,
+                team,
+                &mut extra_attack,
+                selected_unit,
+                lighthouse_mode,
+            )
+            .await;
 
             let a = match res {
-                LoopRes::EndTurn(r) => {
-                    return r;
+                LoopRes::EndTurn(norm) => {
+                    return norm;
                 }
+
                 LoopRes::Deselect => break,
                 LoopRes::Select(a) => a,
                 LoopRes::Undo => {
@@ -739,14 +790,14 @@ pub async fn handle_player(
                 }
                 LoopRes::Pass => {
                     let mp = NormalMove::new_pass();
-                    let me = mp.apply(
-                        team,
-                        &mut game.tactical,
-                        &game.fog[team.index()],
-                        world,
-                        None,
-                    );
-                    return (mp, me);
+                    // let me = mp.apply(
+                    //     team,
+                    //     &mut game.tactical,
+                    //     &game.fog[team.index()],
+                    //     world,
+                    //     None,
+                    // );
+                    return GenericMove::Normal(mp);
                 }
             };
             selected_unit = a;

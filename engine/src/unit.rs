@@ -301,14 +301,16 @@ impl GameState {
             _ => return None,
         };
 
-        if a.0.is_pass() && b.0.is_pass() {
-            //return None;
-            if score_data.white > score_data.black {
-                return Some(GameOver::WhiteWon);
-            } else if score_data.white < score_data.black {
-                return Some(GameOver::BlackWon);
-            } else {
-                return Some(GameOver::Tie);
+        if let (GenericMove::Normal(a), GenericMove::Normal(b)) = (a, b) {
+            if a.0.is_pass() && b.0.is_pass() {
+                //return None;
+                if score_data.white > score_data.black {
+                    return Some(GameOver::WhiteWon);
+                } else if score_data.white < score_data.black {
+                    return Some(GameOver::BlackWon);
+                } else {
+                    return Some(GameOver::Tie);
+                }
             }
         }
 

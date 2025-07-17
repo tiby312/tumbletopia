@@ -8,6 +8,7 @@ use engine::MoveHistory;
 use engine::Zobrist;
 use engine::mesh;
 use engine::mesh::small_mesh::SmallMesh;
+use engine::move_build::GenericMove;
 use engine::move_build::NormalMove;
 use gloo::console::console_dbg;
 
@@ -677,20 +678,36 @@ pub async fn game_play_thread(
         ));
 
         //Write out the last move
-        if let Some((aa, bb)) = game.history.inner.last() {
+        if let Some(gg) = game.history.inner.last() {
             use std::fmt::Write;
             let mut s = String::new();
-            write!(
-                &mut s,
-                "{}:{:?}:{:?}",
-                game.history.inner.len(),
-                team.not(),
-                world.format(&aa.coord)
-            )
-            .unwrap();
-            if bb.destroyed_unit.is_some() {
-                write!(&mut s, "x").unwrap();
+
+            match gg {
+                GenericMove::Normal(mm) => {
+                    write!(
+                        &mut s,
+                        "{}:{:?}:n{:?}",
+                        game.history.inner.len(),
+                        team.not(),
+                        world.format(&mm.0.coord)
+                    )
+                    .unwrap();
+                    if mm.1.destroyed_unit.is_some() {
+                        write!(&mut s, "x").unwrap();
+                    }
+                }
+                GenericMove::Lighthouse(ll) => {
+                    write!(
+                        &mut s,
+                        "{}:{:?}:l{:?}",
+                        game.history.inner.len(),
+                        team.not(),
+                        world.format(&ll.0.coord)
+                    )
+                    .unwrap();
+                }
             }
+
             doop.repaint_ui(team, &mut game, s).await;
         }
 
@@ -777,7 +794,9 @@ pub async fn game_play_thread(
                     );
 
                 //game.update_fog(world, team);
-                game.history.push((the_move, effect_m));
+                game.history
+                    .inner
+                    .push(GenericMove::Normal((the_move, effect_m)));
 
                 let spoke_info = moves::SpokeInfo::new(&game.tactical, world);
                 let curr_eval = engine::ai::Evaluator::default().absolute_evaluate(
@@ -791,8 +810,36 @@ pub async fn game_play_thread(
             engine::Slot::Player => {
                 let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
 
+                let r = match r {
+                    engine::move_build::GenericMove::Normal(norm) => {
+                        let effect = norm
+                            .animate_move(team, &game, world, &mut doop)
+                            .await
+                            .apply(
+                                team,
+                                &mut game.tactical,
+                                &game.fog[team.index()],
+                                world,
+                                None,
+                            );
+
+                        GenericMove::Normal((norm, effect))
+                    }
+                    engine::move_build::GenericMove::Lighthouse(lm) => {
+                        let effect = lm.apply(
+                            team,
+                            &mut game.tactical,
+                            &game.fog[team.index()],
+                            world,
+                            None,
+                        );
+
+                        GenericMove::Lighthouse((lm, effect))
+                    }
+                };
+
                 //game.update_fog(world, team);
-                game.history.push(r);
+                game.history.inner.push(r);
 
                 let spoke_info = moves::SpokeInfo::new(&game.tactical, world);
                 let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
@@ -1466,7 +1513,7 @@ async fn render_command(
                                 return None;
                             } else {
                                 match val {
-                                    1 | 2 | 3 => small_shadow * piece_scale,
+                                    0 | 1 | 2 | 3 => small_shadow * piece_scale,
                                     4 | 5 | 6 => large_shadow * piece_scale,
                                     _ => unreachable!(),
                                 }
@@ -1595,26 +1642,27 @@ async fn render_command(
             .batch(neutral_team_cells)
             .build(&models.token_neutral, &projjj);
 
-
-        let mut lighthouses=vec!();
-        for a in game.lighthouses.cells.iter().enumerate().filter_map(|(index,k)|{
-            match k{
+        let mut lighthouses = vec![];
+        for a in game
+            .lighthouses
+            .cells
+            .iter()
+            .enumerate()
+            .filter_map(|(index, k)| match k {
                 GameCell::Piece(e) => {
                     let e = Axial::from_index(&index);
-                    let k =glem::build(&grid_snap(e, 0.0).chain(glem::scale(1.0, 1.0, 1.0)));
+                    let k = glem::build(&grid_snap(e, 0.0).chain(glem::scale(1.0, 1.0, 1.0)));
                     Some(k)
-                },
+                }
                 GameCell::Empty => None,
-            }
-        }){
+            })
+        {
             lighthouses.push(a);
         }
 
         draw_sys
             .batch(lighthouses)
             .build(&models.lighthouse, &projjj);
-
-
 
         let mut water_pos = vec![];
         for a in water.iter_mesh(Axial::zero()) {
