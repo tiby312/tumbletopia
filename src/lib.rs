@@ -10,6 +10,7 @@ use engine::mesh;
 use engine::mesh::small_mesh::SmallMesh;
 use engine::move_build::GenericMove;
 use engine::move_build::NormalMove;
+use glem::rotate_y;
 use gloo::console::console_dbg;
 
 use futures::{SinkExt, StreamExt};
@@ -1620,13 +1621,23 @@ async fn render_command(
                     Team::Neutral => &mut neutral_team_cells,
                 };
 
-                for (stack, radius) in [inner_stack, mid_stack].iter().zip(radius) {
-                    for k in 0..*stack {
-                        arr.push(glem::build(
-                            &grid_snap(a, k as f32 * cell_height * piece_scale)
-                                .chain(glem::scale(radius, radius, 1.0))
-                                .chain(glem::scale(piece_scale, piece_scale, piece_scale)),
-                        ));
+                if height == 0 {
+                    let radius = radius[0];
+                    arr.push(glem::build(
+                        &grid_snap(a, 5. as f32 * cell_height * piece_scale)
+                            .chain(rotate_y(1.0))
+                            .chain(glem::scale(radius, radius, 1.0))
+                            .chain(glem::scale(piece_scale, piece_scale, piece_scale)),
+                    ));
+                } else {
+                    for (stack, radius) in [inner_stack, mid_stack].iter().zip(radius) {
+                        for k in 0..*stack {
+                            arr.push(glem::build(
+                                &grid_snap(a, k as f32 * cell_height * piece_scale)
+                                    .chain(glem::scale(radius, radius, 1.0))
+                                    .chain(glem::scale(piece_scale, piece_scale, piece_scale)),
+                            ));
+                        }
                     }
                 }
             }
@@ -1650,6 +1661,11 @@ async fn render_command(
             .enumerate()
             .filter_map(|(index, k)| match k {
                 GameCell::Piece(e) => {
+                    if e.team != team_perspective {
+                        if darkness.inner[index] {
+                            return None;
+                        }
+                    }
                     let e = Axial::from_index(&index);
                     let k = glem::build(&grid_snap(e, 0.0).chain(glem::scale(1.0, 1.0, 1.0)));
                     Some(k)

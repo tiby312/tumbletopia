@@ -10,7 +10,7 @@ use super::*;
 pub struct DestroyedUnit {
     pub height: StackHeight,
     pub team: Team,
-    pub was_lighthouse: Option<Team>,
+    pub had_lighthouse: Option<Team>,
 }
 
 #[derive(PartialEq, Eq, Serialize, Deserialize, Clone, Copy, Debug)]
@@ -196,7 +196,7 @@ impl NormalMove {
         if let Some(dd) = effect.destroyed_unit {
             state.factions.add_cell_inner(moveto, dd.height, dd.team);
 
-            if let Some(dd) = dd.was_lighthouse {
+            if let Some(dd) = dd.had_lighthouse {
                 state
                     .lighthouses
                     .add_cell_inner(moveto, StackHeight::Stack0, dd);
@@ -235,7 +235,7 @@ impl NormalMove {
                 Some(DestroyedUnit {
                     height,
                     team,
-                    was_lighthouse,
+                    had_lighthouse: was_lighthouse,
                 })
             }
             unit::GameCell::Empty => None,
