@@ -361,6 +361,7 @@ impl NormalMove {
         }
     }
 
+    //TODO use an iterator adaptor instead
     pub fn generate_suicidal<'b>(
         state: &'b GameState,
         world: &'b board::MyWorld,

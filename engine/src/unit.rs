@@ -236,6 +236,8 @@ impl GameState {
         for a in d.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
             gg.factions.add_cell(a, StackHeight::Stack6, Team::Neutral);
+            gg.lighthouses
+                .add_cell(a, StackHeight::Stack0, Team::Neutral);
         }
         gg
     }
