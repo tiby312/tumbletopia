@@ -402,7 +402,7 @@ pub async fn reselect_loop(
     let cca = {
         if lighthouse_mode {
             gloo_console::console_dbg!("Logging mesh thing");
-            let cca = SmallMesh::from_iter_move(
+            let mut cca = SmallMesh::from_iter_move(
                 LighthouseMove::possible_moves(
                     &game2,
                     world,
@@ -413,12 +413,12 @@ pub async fn reselect_loop(
                 .map(|x| x.coord),
             );
 
-            // let c2 = game
-            //     .tactical
-            //     .factions
-            //     .filter_los(unwrapped_selected_unit.to_index(), world);
+            let c2 = game
+                .tactical
+                .factions
+                .filter_los(unwrapped_selected_unit.to_index(), world);
 
-            // cca.inner &= c2.inner;
+            cca.inner &= c2.inner;
             cca
         } else {
             let mut cca = SmallMesh::from_iter_move(
@@ -504,7 +504,7 @@ pub async fn reselect_loop(
             ..
         }) => {
             if *team2 == selected_unit.team {
-                if selected_unit.team != team || !contains {
+                if selected_unit.team == !team || !contains {
                     //If we select an enemy unit thats outside of our units range.
                     selected_unit.coord = target_cell;
                     selected_unit.team = selected_unit.team.not();
@@ -747,6 +747,10 @@ pub async fn handle_player(
 
             match game.tactical.factions.get_cell(cell) {
                 unit::GameCell::Piece(unit::Piece { team: team2, .. }) => {
+                    if *team2 == Team::Neutral {
+                        continue 'outer;
+                    }
+
                     break SelectType {
                         coord: cell,
                         team: *team2,

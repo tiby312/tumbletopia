@@ -35,7 +35,7 @@ pub struct NormalMoveEffect {
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct LighthouseMoveEffect {
-    nm: NormalMoveEffect,
+    nm: Option<NormalMoveEffect>,
 }
 
 #[derive(PartialEq, Eq, Default, Serialize, Deserialize, Clone, Copy, Debug)]
@@ -75,12 +75,14 @@ impl LighthouseMove {
         let j: Vec<LighthouseMove> = world
             .land_as_vec
             .iter()
-            .filter_map(move |&index| match state.factions.get_cell_inner(index) {
-                unit::GameCell::Piece(_) => None,
-                unit::GameCell::Empty => Some(LighthouseMove {
-                    coord: Coordinate(index),
-                }),
-            })
+            .filter_map(
+                move |&index| match state.lighthouses.get_cell_inner(index) {
+                    unit::GameCell::Piece(_) => None,
+                    unit::GameCell::Empty => Some(LighthouseMove {
+                        coord: Coordinate(index),
+                    }),
+                },
+            )
             .collect();
         j.into_iter()
     }
@@ -98,11 +100,18 @@ impl LighthouseMove {
         game.lighthouses
             .add_cell_inner(self.coord.0, StackHeight::Stack0, team);
 
-        let nm = NormalMove {
-            coord: self.coord,
-            stack: StackHeight::Stack0,
-        }
-        .apply(Team::Neutral, game, fog, world, spoke_info);
+        let nm = match game.factions.get_cell_inner(self.coord.0) {
+            unit::GameCell::Piece(_) => None,
+            unit::GameCell::Empty => {
+                let nm = NormalMove {
+                    coord: self.coord,
+                    stack: StackHeight::Stack0,
+                }
+                .apply(Team::Neutral, game, fog, world, spoke_info);
+
+                Some(nm)
+            }
+        };
 
         LighthouseMoveEffect { nm }
     }
@@ -110,11 +119,13 @@ impl LighthouseMove {
     pub fn undo(&self, team: Team, effect: &LighthouseMoveEffect, state: &mut GameState) {
         assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
 
-        NormalMove {
-            coord: self.coord,
-            stack: StackHeight::Stack0,
+        if let Some(fe) = &effect.nm {
+            NormalMove {
+                coord: self.coord,
+                stack: StackHeight::Stack0,
+            }
+            .undo(team, fe, state);
         }
-        .undo(team, &effect.nm, state);
 
         state.lighthouses.remove_inner(self.coord.0);
     }
