@@ -256,6 +256,18 @@ impl GameState {
                 GameCell::Empty => {}
             }
         }
+        for a in world.land.inner.iter_ones() {
+            match self.lighthouses.get_cell_inner(a) {
+                &GameCell::Piece(Piece { team: tt, .. }) => {
+                    if tt == team_perspective {
+                        for j in Axial::from_index(&a).to_cube().range(2) {
+                            darkness.set_coord(j.ax, false);
+                        }
+                    }
+                }
+                GameCell::Empty => {}
+            }
+        }
         darkness
 
         // SmallMesh::new()
