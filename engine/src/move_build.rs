@@ -189,7 +189,6 @@ impl LighthouseMove {
         world: &board::MyWorld,
         spoke_info: Option<&SpokeInfo>,
     ) -> LighthouseMoveEffect {
-        panic!("NO");
         assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
 
         game.lighthouses
@@ -212,7 +211,6 @@ impl LighthouseMove {
     }
 
     pub fn undo(&self, team: Team, effect: &LighthouseMoveEffect, state: &mut GameState) {
-        panic!("NO");
         assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
 
         if let Some(fe) = &effect.nm {
