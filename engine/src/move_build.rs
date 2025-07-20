@@ -10,7 +10,7 @@ use super::*;
 pub struct DestroyedUnit {
     pub height: StackHeight,
     pub team: Team,
-    pub had_lighthouse: Option<Team>,
+    pub lighthouse_was_removed: Option<Team>,
 }
 
 #[derive(PartialEq, Eq, Serialize, Deserialize, Clone, Copy, Debug)]
@@ -107,7 +107,7 @@ impl LighthouseMove {
                     coord: self.coord,
                     stack: StackHeight::Stack0,
                 }
-                .apply(Team::Neutral, game, fog, world, spoke_info);
+                .apply(team, game, fog, world, spoke_info);
 
                 Some(nm)
             }
@@ -196,7 +196,7 @@ impl NormalMove {
         if let Some(dd) = effect.destroyed_unit {
             state.factions.add_cell_inner(moveto, dd.height, dd.team);
 
-            if let Some(dd) = dd.had_lighthouse {
+            if let Some(dd) = dd.lighthouse_was_removed {
                 state
                     .lighthouses
                     .add_cell_inner(moveto, StackHeight::Stack0, dd);
@@ -225,17 +225,35 @@ impl NormalMove {
         let target_cell = self.coord.0;
 
         let destroyed_unit = match game.factions.get_cell_inner(target_cell) {
-            &unit::GameCell::Piece(unit::Piece { height, team, .. }) => {
-                let was_lighthouse = {
-                    match game.lighthouses.get_cell_inner(target_cell) {
-                        unit::GameCell::Piece(pp) => Some(pp.team),
-                        unit::GameCell::Empty => None,
+            &unit::GameCell::Piece(unit::Piece { height, .. }) => {
+                let light_house_to_remove = match game.lighthouses.get_cell_inner(target_cell) {
+                    unit::GameCell::Piece(pp) => {
+                        if team == pp.team {
+                            //In thise case, we don't remove the lighthouse
+                            //since we are just bolstering it.
+                            false
+                        } else {
+                            true
+                        }
                     }
+                    unit::GameCell::Empty => false,
                 };
+
+                let lighthouse_was_removed = if light_house_to_remove {
+                    let p = match game.lighthouses.get_cell_inner(target_cell) {
+                        unit::GameCell::Piece(p) => p.team,
+                        unit::GameCell::Empty => unreachable!(),
+                    };
+                    game.lighthouses.remove_inner(target_cell);
+                    Some(p)
+                } else {
+                    None
+                };
+
                 Some(DestroyedUnit {
                     height,
                     team,
-                    had_lighthouse: was_lighthouse,
+                    lighthouse_was_removed,
                 })
             }
             unit::GameCell::Empty => None,

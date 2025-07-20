@@ -1504,9 +1504,9 @@ async fn render_command(
                         }) => {
                             let val = stack_height.to_num();
                             if tt != team_perspective {
-                                if darkness.is_set(a) {
-                                    return None;
-                                }
+                                // if darkness.is_set(a) {
+                                //     return None;
+                                // }
                             }
 
                             let xx = if val == 6 && tt == Team::Neutral {
@@ -1594,9 +1594,9 @@ async fn render_command(
                     })
             {
                 if team2 != team_perspective {
-                    if darkness.inner[index] {
-                        continue;
-                    }
+                    // if darkness.inner[index] {
+                    //     continue;
+                    // }
                 }
                 let a = Axial::from_index(&index);
                 //if let Some((height, team2)) = game.factions.get_cell(a) {
@@ -1615,7 +1615,18 @@ async fn render_command(
                 //     continue;
                 // }
 
-                let arr = match team2 {
+                let teamuse = if height == 0 {
+                    match game.lighthouses.get_cell_inner(index) {
+                        GameCell::Piece(tt) => tt.team,
+                        GameCell::Empty => {
+                            unreachable!("error:the only zero stack pieces are lighthouses")
+                        }
+                    }
+                } else {
+                    team2
+                };
+
+                let arr = match teamuse {
                     Team::White => &mut white_team_cells,
                     Team::Black => &mut black_team_cells,
                     Team::Neutral => &mut neutral_team_cells,
@@ -1662,9 +1673,9 @@ async fn render_command(
             .filter_map(|(index, k)| match k {
                 GameCell::Piece(e) => {
                     if e.team != team_perspective {
-                        if darkness.inner[index] {
-                            return None;
-                        }
+                        // if darkness.inner[index] {
+                        //     return None;
+                        // }
                     }
                     let e = Axial::from_index(&index);
                     let k = glem::build(&grid_snap(e, 0.0).chain(glem::scale(1.0, 1.0, 1.0)));
