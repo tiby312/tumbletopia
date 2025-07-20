@@ -743,7 +743,7 @@ pub async fn game_play_thread(
                 let the_move = {
                     let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
 
-                    if true {
+                    if false {
                         ai_tx.post_message(AiCommand {
                             game: ai_state,
                             fogs: game.fog.clone(),

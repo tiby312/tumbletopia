@@ -99,7 +99,7 @@ impl GameState {
                         team: team2,
                         ..
                     }) => {
-                        debug_assert!(team2 != team);
+                        debug_assert!(team2 != team,"FOOO");
 
                         if num_attack[team] > stack_height.to_num() as i64
                             && num_attack[team] >= num_attack[!team]
@@ -565,9 +565,10 @@ pub fn iterative_deepening2(
             depth,
             true,
         );
-        assert_eq!(spoke_info, spoke_orig);
         assert_eq!(key_orig, key);
         assert_eq!(&game_orig, game);
+        assert_eq!(spoke_info, spoke_orig);
+        
 
         if *aaaa.nodes_visited >= MAX_NODE_VISIT {
             log!("discarding depth {}", depth);

@@ -189,6 +189,7 @@ impl LighthouseMove {
         world: &board::MyWorld,
         spoke_info: Option<&SpokeInfo>,
     ) -> LighthouseMoveEffect {
+        panic!("NO");
         assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
 
         game.lighthouses
@@ -211,6 +212,7 @@ impl LighthouseMove {
     }
 
     pub fn undo(&self, team: Team, effect: &LighthouseMoveEffect, state: &mut GameState) {
+        panic!("NO");
         assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
 
         if let Some(fe) = &effect.nm {
@@ -319,7 +321,7 @@ impl NormalMove {
         let target_cell = self.coord.0;
 
         let destroyed_unit = match game.factions.get_cell_inner(target_cell) {
-            &unit::GameCell::Piece(unit::Piece { height, .. }) => {
+            &unit::GameCell::Piece(unit::Piece { height,team:t2, .. }) => {
                 let light_house_to_remove = match game.lighthouses.get_cell_inner(target_cell) {
                     unit::GameCell::Piece(pp) => {
                         if team == pp.team {
@@ -346,7 +348,7 @@ impl NormalMove {
 
                 Some(DestroyedUnit {
                     height,
-                    team,
+                    team:t2,
                     lighthouse_was_removed,
                 })
             }
