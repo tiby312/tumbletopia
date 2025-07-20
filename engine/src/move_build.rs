@@ -51,6 +51,71 @@ impl hex::HexDraw for LighthouseMove {
 }
 
 impl LighthouseMove {
+    // pub fn playable(
+    //     state: &GameState,
+    //     index: Coordinate,
+    //     team: Team,
+    //     world: &board::MyWorld,
+    //     spoke_info: &SpokeInfo,
+    // ) -> Option<MoveType> {
+    //     let index = index.0;
+    //     if team == Team::Neutral {
+    //         return None;
+    //     }
+
+    //     let mut num_friendly_lighthouses=0;
+    //     //TODO optimize??? (Not sure if it worth it. ai shouldnt care about this)
+    //     for (i, (_, rest)) in state.factions.iter_end_points(world, index).enumerate() {
+    //         if let Some(e) = rest {
+    //             match state.lighthouses.get_cell_inner(i){
+    //                 unit::GameCell::Piece(e) => if e.team==team{
+    //                     num_friendly_lighthouses+=1;
+    //                 },
+    //                 unit::GameCell::Empty => todo!(),
+    //             }
+    //         }
+    //     }
+
+    //     let num_attack = spoke_info.get_num_attack(index);
+
+    //     if num_attack[team] == 0 {
+    //         return None;
+    //     }
+
+    //     match state.factions.get_cell_inner(index) {
+    //         &unit::GameCell::Piece(unit::Piece {
+    //             height: stack_height,
+    //             team: rest,
+    //             ..
+    //         }) => {
+    //             let height = stack_height.to_num();
+    //             //debug_assert!(height > 0);
+    //             let height = height as i64;
+
+    //             if num_attack[team] > height {
+    //                 if num_attack[team] < num_attack[!team] {
+    //                     Some(MoveType::Suicidal)
+    //                 } else {
+    //                     if rest == team {
+    //                         Some(MoveType::Reinforce)
+    //                     } else {
+    //                         Some(MoveType::Capture)
+    //                     }
+    //                 }
+    //             } else {
+    //                 None
+    //             }
+    //         }
+    //         unit::GameCell::Empty => {
+    //             if num_attack[team] < num_attack[!team] {
+    //                 Some(MoveType::Suicidal)
+    //             } else {
+    //                 Some(MoveType::Fresh)
+    //             }
+    //         }
+    //     }
+    // }
+
     pub fn possible_moves<'b>(
         state: &'b GameState,
         world: &'b board::MyWorld,
@@ -71,20 +136,49 @@ impl LighthouseMove {
 
         //let world = state.darkness(world, team);
 
-        //TODO optimize this
-        let j: Vec<LighthouseMove> = world
-            .land_as_vec
-            .iter()
-            .filter_map(
-                move |&index| match state.lighthouses.get_cell_inner(index) {
-                    unit::GameCell::Piece(_) => None,
-                    unit::GameCell::Empty => Some(LighthouseMove {
-                        coord: Coordinate(index),
-                    }),
-                },
-            )
+        //First replace all lighthouses as neutral pieces.
+        //Then find all playable normal moves.
+
+        let mut game = state.clone();
+
+        for &a in world.land_as_vec.iter() {
+            match game.lighthouses.get_cell_inner(a) {
+                unit::GameCell::Piece(f) => {
+                    if f.team == team {
+                        game.factions.remove_inner(a);
+                        game.factions
+                            .add_cell_inner(a, StackHeight::Stack6, Team::Neutral);
+                    }
+                }
+                unit::GameCell::Empty => {}
+            }
+        }
+
+        let state = &game;
+
+        //TODO inefficient
+        let sp = SpokeInfo::new(&state, world);
+        let v: Vec<_> = NormalMove::possible_moves(&state, world, team, &sp, allow_suicidal)
+            .map(|x| LighthouseMove { coord: x.coord })
             .collect();
-        j.into_iter()
+
+        v.into_iter()
+
+        // //TODO optimize this
+        // let j: Vec<LighthouseMove> = world
+        //     .land_as_vec
+        //     .iter()
+        //     .filter_map(move |&index| {
+
+        //             match state.lighthouses.get_cell_inner(index) {
+        //             unit::GameCell::Piece(_) => None,
+        //             unit::GameCell::Empty => Some(LighthouseMove {
+        //                 coord: Coordinate(index),
+        //             }),
+        //         }},
+        //     )
+        //     .collect();
+        // j.into_iter()
     }
 
     pub fn apply(
