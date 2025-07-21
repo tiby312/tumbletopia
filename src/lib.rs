@@ -10,6 +10,7 @@ use engine::mesh;
 use engine::mesh::small_mesh::SmallMesh;
 use engine::move_build::GenericMove;
 use engine::move_build::NormalMove;
+use engine::moves::SpokeInfo;
 use glem::rotate_y;
 use gloo::console::console_dbg;
 
@@ -1012,8 +1013,10 @@ async fn render_command(
         ace::Command::GetMouseInputSelection { selection, grey } => {
             match selection {
                 ace::CellSelection::MoveSelection(axial, small_mesh, have_moved) => {
+                    let game2 = game.convert_to_playable(world, team);
+                    let spoke2 = SpokeInfo::new(&game2, world);
                     let mut suicidal_moves = mesh::small_mesh::SmallMesh::from_iter_move(
-                        NormalMove::generate_suicidal(game, world, team, &spoke),
+                        NormalMove::generate_suicidal(&game2, world, team, &spoke2),
                     );
                     suicidal_moves.inner &= small_mesh.inner;
                     //suicidal_moves.set_coord(axial,false);
