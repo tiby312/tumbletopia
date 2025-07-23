@@ -3,6 +3,69 @@ use mesh::small_mesh::SmallMesh;
 
 use super::*;
 
+//Keeps track of the last seen objects in darkness
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LastSeenObjects {
+    pub state: GameState,
+}
+impl LastSeenObjects {
+    pub fn undo(
+        &mut self,
+        game_after: &GameState,
+        m: GenericMove<NormalMove, LighthouseMove>,
+        world: &MyWorld,
+        team: Team,
+    ) {
+        //????
+        //not sure how to implement
+
+        let darkness = game_after.darkness(world, team);
+
+        let coord = match m {
+            GenericMove::Normal(o) => o.coord,
+            GenericMove::Lighthouse(l) => l.coord,
+        };
+
+        if !darkness.inner[coord.0] {
+            self.state.factions.copy_cell(&game_after.factions, coord.0);
+            self.state
+                .lighthouses
+                .copy_cell(&game_after.lighthouses, coord.0);
+        }
+    }
+
+    pub fn apply(
+        &mut self,
+        game_after: &GameState,
+        m: GenericMove<NormalMove, LighthouseMove>,
+        world: &MyWorld,
+        team: Team,
+    ) {
+        //if we are adding a piece,
+        //check if we can see it. If we can't, don't update last seen.
+
+        let darkness = game_after.darkness(world, team);
+
+        //copy everything that is visible to state.
+        for &j in world.land_as_vec.iter() {
+            if !darkness.inner[j] {
+                self.state.factions.copy_cell(&game_after.factions, j);
+                self.state.lighthouses.copy_cell(&game_after.lighthouses, j);
+            }
+        }
+
+        let coord = match m {
+            GenericMove::Normal(o) => o.coord,
+            GenericMove::Lighthouse(l) => l.coord,
+        };
+
+        if !darkness.inner[coord.0] {
+            // self.state.factions.copy_cell(&game_after.factions, coord.0);
+            // self.state.lighthouses.copy_cell(&game_after.lighthouses, coord.0);
+        }
+    }
+}
+
 // #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
 // pub struct Factions {
 //     pub cells: Tribe,
@@ -204,7 +267,7 @@ impl Team {
 
 pub struct GameStateTotal {
     //0 is white fog. 1 is black fog
-    pub fog: [SmallMesh; 2],
+    pub last_seen: [LastSeenObjects; 2],
     pub tactical: GameState,
     pub history: MoveHistory,
 }
@@ -644,6 +707,11 @@ impl Tribe {
     //     //self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
     //     self.piece.inner[index]
     // }
+
+    pub fn copy_cell(&mut self, other: &Tribe, index: usize) {
+        assert!(index != hex::PASS_MOVE_INDEX);
+        self.cells[index] = other.cells[index].clone()
+    }
 
     pub fn get_cell_inner(&self, index: usize) -> &GameCell<Piece> {
         assert!(index != hex::PASS_MOVE_INDEX);

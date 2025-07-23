@@ -264,7 +264,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
                                 Some(&spoke),
                             ),
                         }
-                        .apply(team, game, fog, world, Some(&spoke));
+                        .apply(team, game, world, Some(&spoke));
                         let _s = spoke.process_move_better(
                             NormalMove {
                                 coord: Coordinate(index),
@@ -307,7 +307,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
                             ),
                             coord: Coordinate(index),
                         }
-                        .apply(team, game, fog, world, Some(&spoke));
+                        .apply(team, game, world, Some(&spoke));
                         let _s = spoke.process_move_better(
                             NormalMove {
                                 stack: Coordinate(index).determine_stack_height(
@@ -488,13 +488,13 @@ pub struct Res {
 //TODO make the search depth be dependant on how many vacant cells there are!!!!
 pub fn calculate_move(
     game: &mut GameState,
-    fogs: &[mesh::small_mesh::SmallMesh; 2],
+    //fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
     team: Team,
     move_history: &MoveHistory,
     zobrist: &Zobrist,
 ) -> NormalMove {
-    let m = if let Some(mo) = iterative_deepening2(game, fogs, world, team, 9, zobrist) {
+    let m = if let Some(mo) = iterative_deepening2(game, world, team, 9, zobrist) {
         if should_pass(&mo, team, game, world, move_history) {
             log!("Choosing to pass!");
             NormalMove::new_pass()
@@ -511,7 +511,7 @@ pub fn calculate_move(
 
 pub fn iterative_deepening2(
     game: &GameState,
-    fogs: &[mesh::small_mesh::SmallMesh; 2],
+    //fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
     team: Team,
     len: usize,
@@ -551,7 +551,7 @@ pub fn iterative_deepening2(
             moves: &mut moves,
             nodes_visited: &mut nodes_visited_total,
             qui_nodes_visited: &mut qui_nodes_visited_total,
-            fogs,
+            //fogs,
             zobrist,
             history_heur: &mut history_heur,
         };
@@ -615,7 +615,7 @@ struct AlphaBeta<'a> {
     moves: &'a mut Vec<NormalMove>,
     nodes_visited: &'a mut usize,
     qui_nodes_visited: &'a mut usize,
-    fogs: &'a [mesh::small_mesh::SmallMesh; 2],
+    //fogs: &'a [mesh::small_mesh::SmallMesh; 2],
     zobrist: &'a Zobrist,
     history_heur: &'a mut [usize],
 }
@@ -704,7 +704,7 @@ impl<'a> AlphaBeta<'a> {
         for _ in start_move_index..end_move_index {
             let cand = self.moves.pop().unwrap();
 
-            let effect = cand.apply(team, game, &self.fogs[team], self.world, Some(&spoke_info));
+            let effect = cand.apply(team, game, self.world, Some(&spoke_info));
 
             key.move_update(&self.zobrist, cand, team, &effect);
 
@@ -881,7 +881,7 @@ impl<'a> AlphaBeta<'a> {
         for _ in start_move_index..end_move_index {
             let cand = self.moves.pop().unwrap();
 
-            let effect = cand.apply(team, game, &self.fogs[team], self.world, Some(&spoke_info));
+            let effect = cand.apply(team, game, self.world, Some(&spoke_info));
 
             key.move_update(&self.zobrist, cand, team, &effect);
 

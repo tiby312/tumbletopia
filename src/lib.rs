@@ -9,7 +9,10 @@ use engine::Zobrist;
 use engine::mesh;
 use engine::mesh::small_mesh::SmallMesh;
 use engine::move_build::GenericMove;
+use engine::move_build::LighthouseMove;
+use engine::move_build::LighthouseMoveEffect;
 use engine::move_build::NormalMove;
+use engine::move_build::NormalMoveEffect;
 use engine::moves::SpokeInfo;
 use glem::rotate_y;
 use gloo::console::console_dbg;
@@ -315,7 +318,7 @@ pub async fn worker_entry2() {
 
         let res = engine::ai::calculate_move(
             &mut res.game,
-            &res.fogs,
+            //&res.fogs,
             &res.world,
             res.team,
             &res.history,
@@ -370,7 +373,7 @@ pub async fn worker_entry2() {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct AiCommand {
     game: GameState,
-    fogs: [mesh::small_mesh::SmallMesh; 2],
+    //fogs: [mesh::small_mesh::SmallMesh; 2],
     world: board::MyWorld,
     team: Team,
     history: MoveHistory,
@@ -656,9 +659,12 @@ pub async fn game_play_thread(
     console_dbg!("created ai worker");
 
     let game = world.starting_state.clone();
+    let last_seen = std::array::from_fn(|_| LastSeenObjects {
+        state: GameState::new(),
+    });
     let mut game = GameStateTotal {
         tactical: game,
-        fog: std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new()),
+        last_seen,
         history: MoveHistory::new(),
     };
 
@@ -742,12 +748,12 @@ pub async fn game_play_thread(
         match player_type[team.index()] {
             engine::Slot::Ai => {
                 let the_move = {
-                    let mut ai_state = game.tactical.bake_fog(&game.fog[team.index()]);
+                    let mut ai_state = game.tactical.convert_to_playable(world, team);
 
                     if false {
                         ai_tx.post_message(AiCommand {
                             game: ai_state,
-                            fogs: game.fog.clone(),
+
                             world: world.clone(),
                             team,
                             history: game.history.clone(),
@@ -771,7 +777,6 @@ pub async fn game_play_thread(
                     } else {
                         engine::ai::calculate_move(
                             &mut ai_state,
-                            &game.fog,
                             &world,
                             team,
                             &game.history,
@@ -787,15 +792,17 @@ pub async fn game_play_thread(
                 let effect_m = the_move
                     .animate_move(team, &mut game, &world, &mut doop)
                     .await
-                    .apply(
-                        team,
-                        &mut game.tactical,
-                        &game.fog[team.index()],
-                        &world,
-                        None,
-                    );
+                    .apply(team, &mut game.tactical, &world, None);
 
                 //game.update_fog(world, team);
+                game.last_seen[!team].apply(
+                    &game.tactical,
+                    GenericMove::Normal(the_move),
+                    world,
+                    !team,
+                );
+                //game.last_seen[team].apply(&game.tactical,GenericMove::Normal(the_move),world,team);
+
                 game.history
                     .inner
                     .push(GenericMove::Normal((the_move, effect_m)));
@@ -810,37 +817,28 @@ pub async fn game_play_thread(
                 console_dbg!(curr_eval);
             }
             engine::Slot::Player => {
-                let r = engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
+                let r1 =
+                    engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
 
-                let r = match r {
+                let r = match r1 {
                     engine::move_build::GenericMove::Normal(norm) => {
                         let effect = norm
                             .animate_move(team, &game, world, &mut doop)
                             .await
-                            .apply(
-                                team,
-                                &mut game.tactical,
-                                &game.fog[team.index()],
-                                world,
-                                None,
-                            );
+                            .apply(team, &mut game.tactical, world, None);
 
                         GenericMove::Normal((norm, effect))
                     }
                     engine::move_build::GenericMove::Lighthouse(lm) => {
-                        let effect = lm.apply(
-                            team,
-                            &mut game.tactical,
-                            &game.fog[team.index()],
-                            world,
-                            None,
-                        );
+                        let effect = lm.apply(team, &mut game.tactical, world, None);
 
                         GenericMove::Lighthouse((lm, effect))
                     }
                 };
 
-                //game.update_fog(world, team);
+                game.last_seen[!team].apply(&game.tactical, r1, world, !team);
+                //game.last_seen[team].apply(&game.tactical,r1,world,team);
+
                 game.history.inner.push(r);
 
                 let spoke_info = moves::SpokeInfo::new(&game.tactical, world);
@@ -925,6 +923,7 @@ async fn render_command(
     let mut poking = 0;
     let mut camera_moving_last = scroll::CameraMoving::Stopped;
 
+    let mut show_hidden_units = false;
     let score_data = game.score(world);
     let score_data = dom::ScoreData {
         white: score_data.white,
@@ -1481,11 +1480,11 @@ async fn render_command(
         //let shown_team = team;
         let shown_team = Team::White;
 
-        let shown_fog = match shown_team {
-            Team::White => &game_total.fog[0],
-            Team::Black => &game_total.fog[1],
-            Team::Neutral => todo!(),
-        };
+        // let shown_fog = match shown_team {
+        //     Team::White => &game_total.fog[0],
+        //     Team::Black => &game_total.fog[1],
+        //     Team::Neutral => todo!(),
+        // };
 
         {
             let zzzz = 0.1;
@@ -1507,9 +1506,9 @@ async fn render_command(
                         }) => {
                             let val = stack_height.to_num();
                             if tt != team_perspective {
-                                // if darkness.is_set(a) {
-                                //     return None;
-                                // }
+                                if !show_hidden_units && darkness.is_set(a) {
+                                    return None;
+                                }
                             }
 
                             let xx = if val == 6 && tt == Team::Neutral {
@@ -1582,25 +1581,42 @@ async fn render_command(
                 }
             }
 
-            for (index, height, team2) in
+            let visible_cells =
                 game.factions
                     .cells
                     .iter()
                     .enumerate()
-                    .filter_map(|(index, x)| match x {
-                        GameCell::Piece(unit::Piece {
-                            height: stack_height,
-                            team,
-                            ..
-                        }) => Some((index, *stack_height as u8, *team)),
-                        GameCell::Empty => None,
-                    })
+                    .filter(|(index, d)| match d {
+                        GameCell::Piece(d) => {
+                            if d.team != team_perspective {
+                                !darkness.inner[*index]
+                            } else {
+                                true
+                            }
+                        }
+                        GameCell::Empty => false,
+                    });
+
+            let last_seen_cells = game_total.last_seen[team]
+                .state
+                .factions
+                .cells
+                .iter()
+                .enumerate();
+            for (index, height, team2) in visible_cells
+                .chain(last_seen_cells)
+                //game_total.last_seen[team].state.factions.cells.iter().enumerate().chain()
+                //game_total.last_seen[!team].state.factions.cells.iter().enumerate()
+                //game.factions.cells.iter().enumerate()
+                .filter_map(|(index, x)| match x {
+                    GameCell::Piece(unit::Piece {
+                        height: stack_height,
+                        team,
+                        ..
+                    }) => Some((index, *stack_height as u8, *team)),
+                    GameCell::Empty => None,
+                })
             {
-                if team2 != team_perspective {
-                    // if darkness.inner[index] {
-                    //     continue;
-                    // }
-                }
                 let a = Axial::from_index(&index);
                 //if let Some((height, team2)) = game.factions.get_cell(a) {
                 // let inner_stack = height.min(2);
@@ -1618,18 +1634,18 @@ async fn render_command(
                 //     continue;
                 // }
 
-                let teamuse = if height == 0 {
-                    match game.lighthouses.get_cell_inner(index) {
-                        GameCell::Piece(tt) => tt.team,
-                        GameCell::Empty => {
-                            unreachable!("error:the only zero stack pieces are lighthouses")
-                        }
-                    }
-                } else {
-                    team2
-                };
+                // let teamuse = if height == 0 {
+                //     match game.lighthouses.get_cell_inner(index) {
+                //         GameCell::Piece(tt) => tt.team,
+                //         GameCell::Empty => {
+                //             unreachable!("error:the only zero stack pieces are lighthouses")
+                //         }
+                //     }
+                // } else {
+                //     team2
+                // };
 
-                let arr = match teamuse {
+                let arr = match team2 {
                     Team::White => &mut white_team_cells,
                     Team::Black => &mut black_team_cells,
                     Team::Neutral => &mut neutral_team_cells,
@@ -1676,9 +1692,9 @@ async fn render_command(
             .filter_map(|(index, k)| match k {
                 GameCell::Piece(e) => {
                     if e.team != team_perspective {
-                        // if darkness.inner[index] {
-                        //     return None;
-                        // }
+                        if !show_hidden_units && darkness.inner[index] {
+                            return None;
+                        }
                     }
                     let e = Axial::from_index(&index);
                     let k = glem::build(&grid_snap(e, 0.0).chain(glem::scale(1.0, 1.0, 1.0)));
@@ -1706,17 +1722,17 @@ async fn render_command(
         // }
         // draw_sys.batch(ice_pos).build(&models.snow, &projjj);
 
-        let mut fog_pos = vec![];
+        //let mut fog_pos = vec![];
         // let fogg = match team {
         //     ActiveTeam::White => &game_total.fog[0],
         //     ActiveTeam::Black => &game_total.fog[1],
         //     ActiveTeam::Neutral => todo!(),
         // };
 
-        for pos in shown_fog.iter_mesh(Axial::zero()) {
-            fog_pos.push(grid_snap(pos, 0.0));
-        }
-        draw_sys.batch(fog_pos).build(&models.fog, &projjj);
+        // for pos in shown_fog.iter_mesh(Axial::zero()) {
+        //     fog_pos.push(grid_snap(pos, 0.0));
+        // }
+        // draw_sys.batch(fog_pos).build(&models.fog, &projjj);
 
         let mut label_arrows = vec![];
         for (pos, hdir) in label_arrow_points(world) {

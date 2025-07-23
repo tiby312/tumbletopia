@@ -1,6 +1,7 @@
 use crate::{
     mesh::small_mesh::SmallMesh,
     move_build::{GenericMove, LighthouseMove, NormalMove},
+    unit::LastSeenObjects,
 };
 
 use super::*;
@@ -109,9 +110,12 @@ pub enum MouseEvent<T> {
 
 pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit::Map {
     let game = world.starting_state.clone();
+    let last_seen = std::array::from_fn(|_| LastSeenObjects {
+        state: game.clone(),
+    });
     let mut game_total = unit::GameStateTotal {
         tactical: game,
-        fog: std::array::from_fn(|_| mesh::small_mesh::SmallMesh::new()),
+        last_seen,
         history: MoveHistory::new(),
     };
 

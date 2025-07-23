@@ -185,7 +185,7 @@ impl LighthouseMove {
         &self,
         team: Team,
         game: &mut GameState,
-        fog: &mesh::small_mesh::SmallMesh,
+        //fog: &mesh::small_mesh::SmallMesh,
         world: &board::MyWorld,
         spoke_info: Option<&SpokeInfo>,
     ) -> LighthouseMoveEffect {
@@ -201,7 +201,7 @@ impl LighthouseMove {
                     coord: self.coord,
                     stack: StackHeight::Stack0,
                 }
-                .apply(team, game, fog, world, spoke_info);
+                .apply(team, game, world, spoke_info);
 
                 Some(nm)
             }
@@ -304,7 +304,7 @@ impl NormalMove {
         &self,
         team: Team,
         game: &mut GameState,
-        fog: &mesh::small_mesh::SmallMesh,
+        //fog: &mesh::small_mesh::SmallMesh,
         world: &board::MyWorld,
         spoke_info: Option<&SpokeInfo>,
     ) -> NormalMoveEffect {
@@ -378,7 +378,8 @@ impl NormalMove {
             world.format(&aa.coord)
         );
 
-        let ff = state.tactical.bake_fog(&state.fog[team.index()]);
+        //let ff = state.tactical.bake_fog(&state.fog[team.index()]);
+        let ff = &state.tactical;
 
         let end_points = ff.factions.iter_end_points(world, aa.coord.0);
 

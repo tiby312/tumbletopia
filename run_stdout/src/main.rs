@@ -175,18 +175,11 @@ pub fn test_run(
             break foo;
         }
         //let mut ai_state = game.bake_fog(&game.fog[team]);
-        let m = engine::ai::calculate_move(
-            &mut game,
-            &std::array::from_fn(|_| SmallMesh::new()),
-            &world,
-            team,
-            &game_history,
-            &zobrist,
-        );
+        let m = engine::ai::calculate_move(&mut game, &world, team, &game_history, &zobrist);
         //panic!();
 
         //println!("team {:?} made move {:?}",team,&world.format(&m));
-        let effect = m.apply(team, &mut game, &SmallMesh::new(), &world, None);
+        let effect = m.apply(team, &mut game, &world, None);
         game_history.inner.push(GenericMove::Normal((m, effect)));
     };
     //
