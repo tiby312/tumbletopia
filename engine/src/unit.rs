@@ -27,10 +27,10 @@ impl LastSeenObjects {
         };
 
         if !darkness.inner[coord.0] {
-            self.state.factions.copy_cell(&game_after.factions, coord.0);
+            self.state.factions.copy_cell_if_occupied(&game_after.factions, coord.0);
             self.state
                 .lighthouses
-                .copy_cell(&game_after.lighthouses, coord.0);
+                .copy_cell_if_occupied(&game_after.lighthouses, coord.0);
         }
     }
 
@@ -41,6 +41,7 @@ impl LastSeenObjects {
         world: &MyWorld,
         team: Team,
     ) {
+        
         //if we are adding a piece,
         //check if we can see it. If we can't, don't update last seen.
 
@@ -49,20 +50,20 @@ impl LastSeenObjects {
         //copy everything that is visible to state.
         for &j in world.land_as_vec.iter() {
             if !darkness.inner[j] {
-                self.state.factions.copy_cell(&game_after.factions, j);
-                self.state.lighthouses.copy_cell(&game_after.lighthouses, j);
+                self.state.factions.copy_cell_if_occupied(&game_after.factions, j);
+                self.state.lighthouses.copy_cell_if_occupied(&game_after.lighthouses, j);
             }
         }
 
-        let coord = match m {
-            GenericMove::Normal(o) => o.coord,
-            GenericMove::Lighthouse(l) => l.coord,
-        };
+        // let coord = match m {
+        //     GenericMove::Normal(o) => o.coord,
+        //     GenericMove::Lighthouse(l) => l.coord,
+        // };
 
-        if !darkness.inner[coord.0] {
-            // self.state.factions.copy_cell(&game_after.factions, coord.0);
-            // self.state.lighthouses.copy_cell(&game_after.lighthouses, coord.0);
-        }
+        // if !darkness.inner[coord.0] {
+        //     self.state.factions.copy_cell_if_occupied(&game_after.factions, coord.0);
+        //     self.state.lighthouses.copy_cell_if_occupied(&game_after.lighthouses, coord.0);
+        // }
     }
 }
 
@@ -708,9 +709,15 @@ impl Tribe {
     //     self.piece.inner[index]
     // }
 
-    pub fn copy_cell(&mut self, other: &Tribe, index: usize) {
+    pub fn copy_cell_if_occupied(&mut self, other: &Tribe, index: usize) {
         assert!(index != hex::PASS_MOVE_INDEX);
-        self.cells[index] = other.cells[index].clone()
+
+        match other.cells[index]{
+            GameCell::Piece(o) => {
+                self.cells[index]=GameCell::Piece(o);
+            },
+            GameCell::Empty => {},
+        }
     }
 
     pub fn get_cell_inner(&self, index: usize) -> &GameCell<Piece> {
