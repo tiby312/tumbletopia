@@ -682,21 +682,17 @@ pub async fn handle_player(
 
         let mut mov = vec![];
         for _ in [(); 2] {
-            let f = game.history.inner.pop().unwrap();
-            match f {
+            match game.history.inner.pop().unwrap(){
                 GenericMove::Normal((a, e)) => {
                     mov.push(a.coord);
-                    a.undo(team.not(), &e, &mut game.tactical);
+                    a.undo( &e, &mut game.tactical);
                 }
                 GenericMove::Lighthouse((a, e)) => {
                     mov.push(a.coord);
-                    a.undo(team.not(), &e, &mut game.tactical);
+                    a.undo(&e, &mut game.tactical);
                 }
             }
         }
-
-        // let (a2, e2) = game.history.inner.pop().unwrap();
-        // a2.undo(team, &e2, &mut game.tactical);
 
         let s = format!(
             "undoing moves {:?} and {:?}",

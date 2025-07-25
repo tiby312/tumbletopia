@@ -211,7 +211,7 @@ impl LighthouseMove {
         LighthouseMoveEffect { nm }
     }
 
-    pub fn undo(&self, team: Team, effect: &LighthouseMoveEffect, state: &mut GameState) {
+    pub fn undo(&self, effect: &LighthouseMoveEffect, state: &mut GameState) {
         assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
 
         if let Some(fe) = &effect.nm {
@@ -219,7 +219,7 @@ impl LighthouseMove {
                 coord: self.coord,
                 stack: StackHeight::Stack0,
             }
-            .undo(team, fe, state);
+            .undo( fe, state);
 
             // if let Some(k)=fe.destroyed_unit{
             //     if let Some(ff)=k.lighthouse_was_removed{
@@ -300,7 +300,7 @@ impl NormalMove {
             }
         })
     }
-    pub fn undo(&self, _team_index: Team, effect: &NormalMoveEffect, state: &mut GameState) {
+    pub fn undo(&self, effect: &NormalMoveEffect, state: &mut GameState) {
         let moveto = self.coord.0;
 
         if moveto == hex::PASS_MOVE_INDEX {
