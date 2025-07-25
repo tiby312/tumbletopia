@@ -12,7 +12,7 @@ pub struct LastSeenObjects {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct CellDiff {
     old: GameCell<Piece>,
-    new: GameCell<Piece>,
+    pos: Coordinate,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -21,30 +21,9 @@ pub struct LastSeenObjectsEffect {
 }
 
 impl LastSeenObjects {
-    pub fn undo(
-        &mut self,
-        game_after: &GameState,
-        m: GenericMove<NormalMove, LighthouseMove>,
-        world: &MyWorld,
-        team: Team,
-    ) {
-        //????
-        //not sure how to implement
-
-        let darkness = game_after.darkness(world, team);
-
-        let coord = match m {
-            GenericMove::Normal(o) => o.coord,
-            GenericMove::Lighthouse(l) => l.coord,
-        };
-
-        if !darkness.inner[coord.0] {
-            self.state
-                .factions
-                .copy_cell_if_occupied(&game_after.factions, coord.0);
-            // self.state
-            //     .lighthouses
-            //     .copy_cell_if_occupied(&game_after.lighthouses, coord.0);
+    pub fn undo(&mut self, ll: LastSeenObjectsEffect) {
+        for a in ll.diff {
+            self.state.factions.cells[a.pos.0] = a.old;
         }
     }
 
@@ -54,21 +33,29 @@ impl LastSeenObjects {
         m: GenericMove<NormalMove, LighthouseMove>,
         world: &MyWorld,
         team: Team,
-    ) {
+    ) -> LastSeenObjectsEffect {
         //if we are adding a piece,
         //check if we can see it. If we can't, don't update last seen.
 
         let darkness = game_after.darkness(world, team);
 
+        let mut diffs = vec![];
         //copy everything that is visible to state.
         for &j in world.land_as_vec.iter() {
             if !darkness.inner[j] {
-                self.state
-                    .factions
-                    .copy_cell_if_occupied(&game_after.factions, j);
-                // self.state.lighthouses.copy_cell_if_occupied(&game_after.lighthouses, j);
+                if self.state.factions.cells[j] != game_after.factions.cells[j] {
+                    diffs.push(CellDiff {
+                        old: self.state.factions.cells[j].clone(),
+                        pos: Coordinate(j),
+                    });
+                    self.state
+                        .factions
+                        .copy_cell_if_occupied(&game_after.factions, j);
+                }
             }
         }
+
+        LastSeenObjectsEffect { diff: diffs }
     }
 }
 

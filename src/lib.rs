@@ -745,7 +745,7 @@ pub async fn game_play_thread(
         // };
 
         console_dbg!("main thread iter");
-        match player_type[team.index()] {
+        let r1 = match player_type[team.index()] {
             engine::Slot::Ai => {
                 let the_move = {
                     let mut ai_state = game.tactical.convert_to_playable(world, team);
@@ -785,72 +785,50 @@ pub async fn game_play_thread(
                     }
                 };
 
-                //let the_move = the_move.line[0].clone();
-
                 console_dbg!("gmae thread has interrupted render thread");
 
-                let effect_m = the_move
-                    .animate_move(team, &mut game, &world, &mut doop)
-                    .await
-                    .apply(team, &mut game.tactical, &world, None);
+                // let effect_m = the_move
+                //     .animate_move(team, &mut game, &world, &mut doop)
+                //     .await
+                //     .apply(team, &mut game.tactical, &world, None);
 
-                //game.update_fog(world, team);
-                game.last_seen[!team].apply(
-                    &game.tactical,
-                    GenericMove::Normal(the_move),
-                    world,
-                    !team,
-                );
-                //game.last_seen[team].apply(&game.tactical,GenericMove::Normal(the_move),world,team);
-
-                game.history
-                    .inner
-                    .push(GenericMove::Normal((the_move, effect_m)));
-
-                let spoke_info = moves::SpokeInfo::new(&game.tactical, world);
-                let curr_eval = engine::ai::Evaluator::default().absolute_evaluate(
-                    &game.tactical,
-                    world,
-                    &spoke_info,
-                    false,
-                );
-                console_dbg!(curr_eval);
+                GenericMove::Normal(the_move)
             }
             engine::Slot::Player => {
                 let r1 =
                     engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
-
-                let r = match r1 {
-                    engine::move_build::GenericMove::Normal(norm) => {
-                        let effect = norm
-                            .animate_move(team, &game, world, &mut doop)
-                            .await
-                            .apply(team, &mut game.tactical, world, None);
-
-                        GenericMove::Normal((norm, effect))
-                    }
-                    engine::move_build::GenericMove::Lighthouse(lm) => {
-                        let effect = lm.apply(team, &mut game.tactical, world, None);
-
-                        GenericMove::Lighthouse((lm, effect))
-                    }
-                };
-
-                game.last_seen[!team].apply(&game.tactical, r1, world, !team);
-                //game.last_seen[team].apply(&game.tactical,r1,world,team);
-
-                game.history.inner.push(r);
-
-                let spoke_info = moves::SpokeInfo::new(&game.tactical, world);
-                let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
-                    &game.tactical,
-                    world,
-                    &spoke_info,
-                    false,
-                );
-                console_dbg!(curr_eval_player);
+                r1
             }
-        }
+        };
+
+        let r = match r1 {
+            engine::move_build::GenericMove::Normal(norm) => {
+                let effect = norm
+                    .animate_move(team, &game, world, &mut doop)
+                    .await
+                    .apply(team, &mut game.tactical, world, None);
+
+                GenericMove::Normal((norm, effect))
+            }
+            engine::move_build::GenericMove::Lighthouse(lm) => {
+                let effect = lm.apply(team, &mut game.tactical, world, None);
+
+                GenericMove::Lighthouse((lm, effect))
+            }
+        };
+
+        game.last_seen[!team].apply(&game.tactical, r1, world, !team);
+
+        game.history.inner.push(r);
+
+        let spoke_info = moves::SpokeInfo::new(&game.tactical, world);
+        let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
+            &game.tactical,
+            world,
+            &spoke_info,
+            false,
+        );
+        console_dbg!(curr_eval_player);
     };
 
     //When ai vs ai finishes, allow player to look around.
