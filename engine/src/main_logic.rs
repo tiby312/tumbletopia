@@ -6,6 +6,9 @@ use crate::{
 
 use super::*;
 
+
+
+
 #[derive(Debug, Clone)]
 pub enum CellSelection {
     MoveSelection(
@@ -677,12 +680,20 @@ pub async fn handle_player(
     team: Team,
 ) -> move_build::GenericMove<NormalMove, LighthouseMove> {
     let undo = async |doop: &mut CommandSender, game: &mut unit::GameStateTotal| {
+        
+
         //log!("undoing turn!!!");
         assert!(game.history.inner.len() >= 2, "Not enough moves to undo");
 
         let mut mov = vec![];
-        for _ in [(); 2] {
-            match game.history.inner.pop().unwrap(){
+        for tt in [team.not(),team] {
+            
+            let f=game.history.inner.pop().unwrap();
+
+             game.last_seen[tt].undo( f.fe);
+           
+
+            match f.r{
                 GenericMove::Normal((a, e)) => {
                     mov.push(a.coord);
                     a.undo( &e, &mut game.tactical);

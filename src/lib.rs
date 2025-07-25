@@ -36,6 +36,7 @@ use hex;
 
 use unit::*;
 
+
 #[wasm_bindgen]
 pub async fn main_entry() {
     let (sender, mut receiver) = futures::channel::mpsc::unbounded();
@@ -690,7 +691,7 @@ pub async fn game_play_thread(
             use std::fmt::Write;
             let mut s = String::new();
 
-            match gg {
+            match &gg.r {
                 GenericMove::Normal(mm) => {
                     write!(
                         &mut s,
@@ -800,9 +801,9 @@ pub async fn game_play_thread(
             }
         };
 
-        game.last_seen[!team].apply(&game.tactical, r1, world, !team);
+        let fe = game.last_seen[team].apply(&game.tactical, r1, world, team);
 
-        game.history.inner.push(r);
+        game.history.inner.push(engine::HistoryOneMove{r,fe});
 
         let spoke_info = moves::SpokeInfo::new(&game.tactical, world);
         let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
@@ -1566,7 +1567,7 @@ async fn render_command(
                 .enumerate();
 
             for (index, height, team2) in visible_cells
-                //.chain(last_seen_cells)
+                .chain(last_seen_cells)
                 .filter_map(|(index, x)| match x {
                     GameCell::Piece(unit::Piece {
                         height: stack_height,

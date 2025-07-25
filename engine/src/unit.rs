@@ -359,7 +359,7 @@ impl GameState {
             _ => return None,
         };
 
-        if let (GenericMove::Normal(a), GenericMove::Normal(b)) = (a, b) {
+        if let (GenericMove::Normal(a), GenericMove::Normal(b)) = (&a.r, &b.r) {
             if a.0.is_pass() && b.0.is_pass() {
                 //return None;
                 if score_data.white > score_data.black {

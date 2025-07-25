@@ -336,24 +336,15 @@ impl NormalMove {
 
         //let env = &mut game.env;
         let target_cell = self.coord.0;
-
         let destroyed_unit = match game.factions.get_cell_inner(target_cell) {
             &unit::GameCell::Piece(pp) => {
-                // let light_house_to_remove = match game.lighthouses.get_cell_inner(target_cell) {
-                //     unit::GameCell::Piece(pp) => {
-                //         if team == pp.team {
-                //             //In thise case, we don't remove the lighthouse
-                //             //since we are just bolstering it.
-                //             false
-                //         } else {
-                //             true
-                //         }
-                //     }
-                //     unit::GameCell::Empty => false,
-                // };
+                
 
                 let lighthouse_was_removed = if pp.has_lighthouse {
-                    if team != pp.team { Some(pp.team) } else { None }
+                    if team != pp.team { 
+                        
+                        Some(pp.team) 
+                    } else { None }
                 } else {
                     None
                 };
@@ -368,9 +359,25 @@ impl NormalMove {
         };
 
         let has_lighthouse = match game.factions.get_cell_inner(target_cell) {
-            unit::GameCell::Piece(o) => o.has_lighthouse,
+            unit::GameCell::Piece(o) => if o.has_lighthouse{
+                if let Some(d)=destroyed_unit{
+                    if d.lighthouse_was_removed.is_some(){
+                        false
+                    }else{
+                        true
+                    }
+                }else{
+                    true
+                }
+            }else{
+                false
+            },
             unit::GameCell::Empty => false,
         };
+
+
+        
+
         game.factions.remove_inner(target_cell);
         game.factions
             .add_cell_inner(target_cell, self.stack, team, has_lighthouse);
