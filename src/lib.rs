@@ -747,57 +747,40 @@ pub async fn game_play_thread(
         console_dbg!("main thread iter");
         let r1 = match player_type[team.index()] {
             engine::Slot::Ai => {
-                let the_move = {
-                    let mut ai_state = game.tactical.convert_to_playable(world, team);
+                let mut ai_state = game.tactical.convert_to_playable(world, team);
 
-                    if false {
-                        ai_tx.post_message(AiCommand {
-                            game: ai_state,
+                let the_move = if false {
+                    ai_tx.post_message(AiCommand {
+                        game: ai_state,
 
-                            world: world.clone(),
-                            team,
-                            history: game.history.clone(),
-                            zobrist: zobrist.clone(),
-                        });
+                        world: world.clone(),
+                        team,
+                        history: game.history.clone(),
+                        zobrist: zobrist.clone(),
+                    });
 
-                        use futures::FutureExt;
-                        let the_move = futures::select!(
-                            _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
-                            x = ai_rx.recv().next().fuse() => x
-                        );
+                    use futures::FutureExt;
+                    let the_move = futures::select!(
+                        _ = doop.wait_forever(team, &mut game).fuse()=>unreachable!(),
+                        x = ai_rx.recv().next().fuse() => x
+                    );
 
-                        interrupt_tx.send(()).await.unwrap();
+                    interrupt_tx.send(()).await.unwrap();
 
-                        let k = doop.receiver.next().await;
-                        matches!(k.unwrap().data, ace::Response::AnimationFinish);
+                    let k = doop.receiver.next().await;
+                    matches!(k.unwrap().data, ace::Response::AnimationFinish);
 
-                        //ai_int.interrupt_render_thread().await;
+                    //ai_int.interrupt_render_thread().await;
 
-                        the_move.unwrap().inner
-                    } else {
-                        engine::ai::calculate_move(
-                            &mut ai_state,
-                            &world,
-                            team,
-                            &game.history,
-                            &zobrist,
-                        )
-                    }
+                    the_move.unwrap().inner
+                } else {
+                    engine::ai::calculate_move(&mut ai_state, &world, team, &game.history, &zobrist)
                 };
-
-                console_dbg!("gmae thread has interrupted render thread");
-
-                // let effect_m = the_move
-                //     .animate_move(team, &mut game, &world, &mut doop)
-                //     .await
-                //     .apply(team, &mut game.tactical, &world, None);
 
                 GenericMove::Normal(the_move)
             }
             engine::Slot::Player => {
-                let r1 =
-                    engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await;
-                r1
+                engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await
             }
         };
 
