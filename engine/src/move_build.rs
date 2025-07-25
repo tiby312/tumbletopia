@@ -141,13 +141,14 @@ impl LighthouseMove {
 
         let mut game = state.clone();
 
+        //Forbid making a lighthouse from a lighthouse
         for &a in world.land_as_vec.iter() {
-            match game.lighthouses.get_cell_inner(a) {
+            match game.factions.get_cell_inner(a) {
                 unit::GameCell::Piece(f) => {
-                    if f.team == team {
+                    if f.team == team && f.has_lighthouse {
                         game.factions.remove_inner(a);
                         game.factions
-                            .add_cell_inner(a, StackHeight::Stack6, Team::Neutral);
+                            .add_cell_inner(a, StackHeight::Stack6, Team::Neutral, false);
                     }
                 }
                 unit::GameCell::Empty => {}
@@ -191,9 +192,6 @@ impl LighthouseMove {
     ) -> LighthouseMoveEffect {
         assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
 
-        game.lighthouses
-            .add_cell_inner(self.coord.0, StackHeight::Stack0, team);
-
         let nm = match game.factions.get_cell_inner(self.coord.0) {
             unit::GameCell::Piece(_) => None,
             unit::GameCell::Empty => {
@@ -207,6 +205,9 @@ impl LighthouseMove {
             }
         };
 
+        game.factions
+            .add_cell_inner(self.coord.0, StackHeight::Stack0, team, true);
+
         LighthouseMoveEffect { nm }
     }
 
@@ -219,9 +220,28 @@ impl LighthouseMove {
                 stack: StackHeight::Stack0,
             }
             .undo(team, fe, state);
+
+            // if let Some(k)=fe.destroyed_unit{
+            //     if let Some(ff)=k.lighthouse_was_removed{
+            //         match &mut state.factions.cells[self.coord.0]{
+            //             unit::GameCell::Piece(o) => o.has_lighthouse=true,
+            //             unit::GameCell::Empty => {},
+            //         }
+
+            //     }
+
+            // }
+            // match &mut state.factions.cells[self.coord.0]{
+            //     unit::GameCell::Piece(o) => o.has_lighthouse=false,
+            //     unit::GameCell::Empty => {},
+            // }
         }
 
-        state.lighthouses.remove_inner(self.coord.0);
+        // match state.factions.cells[self.coord.0]{
+
+        // }
+
+        //state.lighthouses.remove_inner(self.coord.0);
     }
 }
 
@@ -288,13 +308,12 @@ impl NormalMove {
         }
 
         if let Some(dd) = effect.destroyed_unit {
-            state.factions.add_cell_inner(moveto, dd.height, dd.team);
-
-            if let Some(dd) = dd.lighthouse_was_removed {
-                state
-                    .lighthouses
-                    .add_cell_inner(moveto, StackHeight::Stack0, dd);
-            }
+            state.factions.add_cell_inner(
+                moveto,
+                dd.height,
+                dd.team,
+                dd.lighthouse_was_removed.is_some(),
+            );
         } else {
             state.factions.remove_inner(moveto)
         };
@@ -319,44 +338,42 @@ impl NormalMove {
         let target_cell = self.coord.0;
 
         let destroyed_unit = match game.factions.get_cell_inner(target_cell) {
-            &unit::GameCell::Piece(unit::Piece {
-                height, team: t2, ..
-            }) => {
-                let light_house_to_remove = match game.lighthouses.get_cell_inner(target_cell) {
-                    unit::GameCell::Piece(pp) => {
-                        if team == pp.team {
-                            //In thise case, we don't remove the lighthouse
-                            //since we are just bolstering it.
-                            false
-                        } else {
-                            true
-                        }
-                    }
-                    unit::GameCell::Empty => false,
-                };
+            &unit::GameCell::Piece(pp) => {
+                // let light_house_to_remove = match game.lighthouses.get_cell_inner(target_cell) {
+                //     unit::GameCell::Piece(pp) => {
+                //         if team == pp.team {
+                //             //In thise case, we don't remove the lighthouse
+                //             //since we are just bolstering it.
+                //             false
+                //         } else {
+                //             true
+                //         }
+                //     }
+                //     unit::GameCell::Empty => false,
+                // };
 
-                let lighthouse_was_removed = if light_house_to_remove {
-                    let p = match game.lighthouses.get_cell_inner(target_cell) {
-                        unit::GameCell::Piece(p) => p.team,
-                        unit::GameCell::Empty => unreachable!(),
-                    };
-                    game.lighthouses.remove_inner(target_cell);
-                    Some(p)
+                let lighthouse_was_removed = if pp.has_lighthouse {
+                    if team != pp.team { Some(pp.team) } else { None }
                 } else {
                     None
                 };
 
                 Some(DestroyedUnit {
-                    height,
-                    team: t2,
+                    height: pp.height,
+                    team: pp.team,
                     lighthouse_was_removed,
                 })
             }
             unit::GameCell::Empty => None,
         };
 
+        let has_lighthouse = match game.factions.get_cell_inner(target_cell) {
+            unit::GameCell::Piece(o) => o.has_lighthouse,
+            unit::GameCell::Empty => false,
+        };
         game.factions.remove_inner(target_cell);
-        game.factions.add_cell_inner(target_cell, self.stack, team);
+        game.factions
+            .add_cell_inner(target_cell, self.stack, team, has_lighthouse);
 
         NormalMoveEffect { destroyed_unit }
     }
@@ -417,9 +434,12 @@ impl NormalMove {
                 unit::GameCell::Empty => {}
             }
             //TODO can_attack correct value?
-            ss.tactical
-                .factions
-                .add_cell_inner(aa.coord.0, StackHeight::from_num(stack), team);
+            ss.tactical.factions.add_cell_inner(
+                aa.coord.0,
+                StackHeight::from_num(stack),
+                team,
+                false,
+            );
         }
 
         aa

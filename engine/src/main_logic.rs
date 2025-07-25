@@ -181,15 +181,16 @@ pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit
         match tt {
             TT::Player1 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::White);
+                game.factions.add_cell(pos, curr_stack, Team::White, false);
             }
             TT::Player2 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::Black);
+                game.factions.add_cell(pos, curr_stack, Team::Black, false);
             }
             TT::Player3 => {
                 game.factions.remove(pos);
-                game.factions.add_cell(pos, curr_stack, Team::Neutral);
+                game.factions
+                    .add_cell(pos, curr_stack, Team::Neutral, false);
             }
             TT::Empty => {
                 game.factions.remove(pos);

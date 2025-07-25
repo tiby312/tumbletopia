@@ -1603,11 +1603,9 @@ async fn render_command(
                 .cells
                 .iter()
                 .enumerate();
+
             for (index, height, team2) in visible_cells
-                .chain(last_seen_cells)
-                //game_total.last_seen[team].state.factions.cells.iter().enumerate().chain()
-                //game_total.last_seen[!team].state.factions.cells.iter().enumerate()
-                //game.factions.cells.iter().enumerate()
+                //.chain(last_seen_cells)
                 .filter_map(|(index, x)| match x {
                     GameCell::Piece(unit::Piece {
                         height: stack_height,
@@ -1685,12 +1683,15 @@ async fn render_command(
 
         let mut lighthouses = vec![];
         for a in game
-            .lighthouses
+            .factions
             .cells
             .iter()
             .enumerate()
             .filter_map(|(index, k)| match k {
                 GameCell::Piece(e) => {
+                    if !e.has_lighthouse {
+                        return None;
+                    }
                     if e.team != team_perspective {
                         if !show_hidden_units && darkness.inner[index] {
                             return None;

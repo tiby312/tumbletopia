@@ -8,6 +8,18 @@ use super::*;
 pub struct LastSeenObjects {
     pub state: GameState,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct CellDiff {
+    old: GameCell<Piece>,
+    new: GameCell<Piece>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LastSeenObjectsEffect {
+    diff: Vec<CellDiff>,
+}
+
 impl LastSeenObjects {
     pub fn undo(
         &mut self,
@@ -27,10 +39,12 @@ impl LastSeenObjects {
         };
 
         if !darkness.inner[coord.0] {
-            self.state.factions.copy_cell_if_occupied(&game_after.factions, coord.0);
             self.state
-                .lighthouses
-                .copy_cell_if_occupied(&game_after.lighthouses, coord.0);
+                .factions
+                .copy_cell_if_occupied(&game_after.factions, coord.0);
+            // self.state
+            //     .lighthouses
+            //     .copy_cell_if_occupied(&game_after.lighthouses, coord.0);
         }
     }
 
@@ -41,7 +55,6 @@ impl LastSeenObjects {
         world: &MyWorld,
         team: Team,
     ) {
-        
         //if we are adding a piece,
         //check if we can see it. If we can't, don't update last seen.
 
@@ -50,20 +63,12 @@ impl LastSeenObjects {
         //copy everything that is visible to state.
         for &j in world.land_as_vec.iter() {
             if !darkness.inner[j] {
-                self.state.factions.copy_cell_if_occupied(&game_after.factions, j);
-                self.state.lighthouses.copy_cell_if_occupied(&game_after.lighthouses, j);
+                self.state
+                    .factions
+                    .copy_cell_if_occupied(&game_after.factions, j);
+                // self.state.lighthouses.copy_cell_if_occupied(&game_after.lighthouses, j);
             }
         }
-
-        // let coord = match m {
-        //     GenericMove::Normal(o) => o.coord,
-        //     GenericMove::Lighthouse(l) => l.coord,
-        // };
-
-        // if !darkness.inner[coord.0] {
-        //     self.state.factions.copy_cell_if_occupied(&game_after.factions, coord.0);
-        //     self.state.lighthouses.copy_cell_if_occupied(&game_after.lighthouses, coord.0);
-        // }
     }
 }
 
@@ -279,7 +284,7 @@ impl GameStateTotal {}
 pub struct GameState {
     //This only has lighthouse locations.
     //TODO use a different datastructure that is just a bitfield with team info
-    pub lighthouses: Tribe,
+    //pub lighthouses: Tribe,
     //Lighthouses are added to factions as neutral pieces.
     pub factions: Tribe,
 }
@@ -299,9 +304,8 @@ impl GameState {
         let mut gg = self.clone();
         for a in d.iter_mesh(Axial::zero()) {
             gg.factions.remove(a);
-            gg.factions.add_cell(a, StackHeight::Stack6, Team::Neutral);
-            gg.lighthouses
-                .add_cell(a, StackHeight::Stack0, Team::Neutral);
+            gg.factions
+                .add_cell(a, StackHeight::Stack6, Team::Neutral, true);
         }
         gg
     }
@@ -310,9 +314,10 @@ impl GameState {
         let mut darkness = world.land.clone();
         for a in world.land.inner.iter_ones() {
             match self.factions.get_cell_inner(a) {
-                &GameCell::Piece(Piece { team: tt, .. }) => {
-                    if tt == team_perspective {
-                        for j in Axial::from_index(&a).to_cube().range(1) {
+                &GameCell::Piece(p) => {
+                    if p.team == team_perspective {
+                        let r = if p.has_lighthouse { 2 } else { 1 };
+                        for j in Axial::from_index(&a).to_cube().range(r) {
                             darkness.set_coord(j.ax, false);
                         }
                     }
@@ -320,18 +325,7 @@ impl GameState {
                 GameCell::Empty => {}
             }
         }
-        for a in world.land.inner.iter_ones() {
-            match self.lighthouses.get_cell_inner(a) {
-                &GameCell::Piece(Piece { team: tt, .. }) => {
-                    if tt == team_perspective {
-                        for j in Axial::from_index(&a).to_cube().range(2) {
-                            darkness.set_coord(j.ax, false);
-                        }
-                    }
-                }
-                GameCell::Empty => {}
-            }
-        }
+
         darkness
 
         // SmallMesh::new()
@@ -340,25 +334,24 @@ impl GameState {
     pub fn new() -> GameState {
         GameState {
             factions: Tribe::new(),
-            lighthouses: Tribe::new(),
         }
     }
-    pub fn bake_fog(&self, fog: &SmallMesh) -> GameState {
-        let mut gg = self.clone();
-        // let fog = match team {
-        //     ActiveTeam::White => &self.fog[0],
-        //     ActiveTeam::Black => &self.fog[1],
-        //     ActiveTeam::Neutral => unreachable!(),
-        // };
+    // pub fn bake_fog(&self, fog: &SmallMesh) -> GameState {
+    //     let mut gg = self.clone();
+    //     // let fog = match team {
+    //     //     ActiveTeam::White => &self.fog[0],
+    //     //     ActiveTeam::Black => &self.fog[1],
+    //     //     ActiveTeam::Neutral => unreachable!(),
+    //     // };
 
-        //TODO use bit and/oring
-        for a in fog.iter_mesh(Axial::zero()) {
-            gg.factions.remove(a);
-            gg.factions.add_cell(a, StackHeight::Stack6, Team::Neutral);
-        }
+    //     //TODO use bit and/oring
+    //     for a in fog.iter_mesh(Axial::zero()) {
+    //         gg.factions.remove(a);
+    //         gg.factions.add_cell(a, StackHeight::Stack6, Team::Neutral);
+    //     }
 
-        gg
-    }
+    //     gg
+    // }
     pub fn hash_me(&self) -> u64 {
         use std::hash::Hash;
         use std::hash::Hasher;
@@ -550,6 +543,7 @@ impl StackHeight {
 pub struct Piece {
     pub height: StackHeight,
     pub team: Team,
+    pub has_lighthouse: bool,
 }
 
 #[derive(Hash, Deserialize, Serialize, PartialEq, Eq, Debug, Clone, Copy, PartialOrd, Ord)]
@@ -712,11 +706,11 @@ impl Tribe {
     pub fn copy_cell_if_occupied(&mut self, other: &Tribe, index: usize) {
         assert!(index != hex::PASS_MOVE_INDEX);
 
-        match other.cells[index]{
+        match other.cells[index] {
             GameCell::Piece(o) => {
-                self.cells[index]=GameCell::Piece(o);
-            },
-            GameCell::Empty => {},
+                self.cells[index] = GameCell::Piece(o);
+            }
+            GameCell::Empty => {}
         }
     }
 
@@ -771,7 +765,13 @@ impl Tribe {
     //     // //}
     // }
 
-    pub fn add_cell_inner(&mut self, a: usize, stack: StackHeight, team: Team) {
+    pub fn add_cell_inner(
+        &mut self,
+        a: usize,
+        stack: StackHeight,
+        team: Team,
+        has_lighthouse: bool,
+    ) {
         // let s = match stack {
         //     1 => StackHeight::Stack1,
         //     2 => StackHeight::Stack2,
@@ -786,6 +786,7 @@ impl Tribe {
         self.cells[a] = GameCell::Piece(Piece {
             team,
             height: stack,
+            has_lighthouse,
         });
         // match team {
         //     Team::White => self.team.inner.set(a, true),
@@ -806,9 +807,9 @@ impl Tribe {
         // }
         // self.set_coord(a, stack);
     }
-    pub fn add_cell(&mut self, a: Axial, stack: StackHeight, team: Team) {
+    pub fn add_cell(&mut self, a: Axial, stack: StackHeight, team: Team, has_lighthouse: bool) {
         let a = a.to_index();
-        self.add_cell_inner(a, stack, team);
+        self.add_cell_inner(a, stack, team, has_lighthouse);
     }
 }
 
