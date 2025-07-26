@@ -1562,7 +1562,8 @@ async fn render_command(
                 .factions
                 .cells
                 .iter()
-                .enumerate();
+                .enumerate()
+                .filter(|(i, x)| if darkness.inner[*i] { true } else { false });
 
             for (index, height, team2) in
                 visible_cells
