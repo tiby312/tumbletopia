@@ -210,7 +210,7 @@ pub trait AiInterface {
         fogs: &[mesh::small_mesh::SmallMesh; 2],
         world: &MyWorld,
         team: Team,
-        history: &MoveHistory,
+        history: &MoveHistory<HistoryOneMove>,
     );
     //fn interrupt_render_thread(&mut self);
     fn interrupt_render_thread(&mut self) -> impl std::future::Future<Output = ()>;
@@ -583,7 +583,7 @@ pub async fn reselect_loop(
 
 pub async fn replay(
     map: &unit::Map,
-    history: &MoveHistory,
+    history: &MoveHistory<HistoryOneMove>,
     world: &board::MyWorld,
     mut doop: CommandSender,
 ) -> unit::GameOver {

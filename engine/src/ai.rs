@@ -357,7 +357,7 @@ pub fn should_pass(
     _game_orig: &mut GameState,
     _world: &MyWorld,
     //TODO pass in all history instead
-    move_history: &MoveHistory,
+    move_history: &MoveHistory<HistoryOneMove>,
 ) -> bool {
     //try with -sr-se--se--se----r
 
@@ -491,7 +491,7 @@ pub fn calculate_move(
     //fogs: &[mesh::small_mesh::SmallMesh; 2],
     world: &board::MyWorld,
     team: Team,
-    move_history: &MoveHistory,
+    move_history: &MoveHistory<HistoryOneMove>,
     zobrist: &Zobrist,
 ) -> NormalMove {
     let m = if let Some(mo) = iterative_deepening2(game, world, team, 9, zobrist) {

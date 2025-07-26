@@ -298,7 +298,7 @@ pub struct GameStateTotal {
     //0 is white fog. 1 is black fog
     pub last_seen: LastSeenObjectsAll,
     pub tactical: GameState,
-    pub history: MoveHistory,
+    pub history: MoveHistory<HistoryOneMove>,
 }
 
 impl GameStateTotal {}
@@ -386,7 +386,7 @@ impl GameState {
         &self,
         world: &board::MyWorld,
         _team: Team,
-        history: &MoveHistory,
+        history: &MoveHistory<HistoryOneMove>,
     ) -> Option<GameOver> {
         let score_data = self.score(world);
 
@@ -869,7 +869,7 @@ pub enum UnitType {
 //     Some((map, mh))
 // }
 
-pub fn replay_string(_moves: &MoveHistory, _world: &MyWorld) -> Result<String, std::fmt::Error> {
+pub fn replay_string(_moves: &MoveHistory<HistoryOneMove>, _world: &MyWorld) -> Result<String, std::fmt::Error> {
     let s = String::new();
 
     //let map_str = map.save(world).unwrap();

@@ -220,6 +220,27 @@ pub struct JustMoveLog {
     pub inner: Vec<GenericMove<NormalMove, LighthouseMove>>,
 }
 
+
+pub trait CanPass{
+    fn is_pass(&self)->bool;
+}
+
+
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// pub struct HistoryOneMoveBasic{
+//     pub r: GenericMove<(NormalMove, NormalMoveEffect), (LighthouseMove, LighthouseMoveEffect)>,
+// }
+
+
+impl CanPass for HistoryOneMove{
+    fn is_pass(&self)->bool{
+        match &self.r{
+            GenericMove::Normal(o) => o.0.is_pass(),
+            GenericMove::Lighthouse(_) => false,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HistoryOneMove {
     pub r: GenericMove<(NormalMove, NormalMoveEffect), (LighthouseMove, LighthouseMoveEffect)>,
@@ -228,17 +249,17 @@ pub struct HistoryOneMove {
 
 //Need to keep effect so you can undo all the way to the start.
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct MoveHistory {
-    pub inner: Vec<HistoryOneMove>,
+pub struct MoveHistory<T> {
+    pub inner: Vec<T>,
 }
 
-impl Default for MoveHistory {
+impl<T> Default for MoveHistory<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl MoveHistory {
+impl<T> MoveHistory<T> {
     pub fn into_string(&self, world: &MyWorld) -> String {
         // use std::fmt::Write;
 
@@ -266,7 +287,7 @@ impl MoveHistory {
         todo!()
     }
 
-    pub fn push_normal(&mut self, o: HistoryOneMove) {
+    pub fn push_normal(&mut self, o: T) {
         self.inner.push(o);
     }
 }
