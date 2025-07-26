@@ -1615,30 +1615,48 @@ async fn render_command(
             .batch(neutral_team_cells)
             .build(&models.token_neutral, &projjj);
 
-        let mut lighthouses = vec![];
-        for a in game
+        let visible_lighthouses =
+            game.factions
+                .cells
+                .iter()
+                .enumerate()
+                .filter_map(|(index, k)| match k {
+                    GameCell::Piece(e) => {
+                        if !e.has_lighthouse {
+                            return None;
+                        }
+                        if e.team != team_perspective {
+                            if !show_hidden_units && darkness.inner[index] {
+                                return None;
+                            }
+                        }
+                        Some((index, k))
+                    }
+                    GameCell::Empty => None,
+                });
+
+        let last_seen_lighthouses = game_total.last_seen.fog[team]
+            .state
             .factions
             .cells
             .iter()
             .enumerate()
-            .filter_map(|(index, k)| match k {
-                GameCell::Piece(e) => {
-                    if !e.has_lighthouse {
-                        return None;
-                    }
-                    if e.team != team_perspective {
-                        if !show_hidden_units && darkness.inner[index] {
-                            return None;
-                        }
-                    }
-                    let e = Axial::from_index(&index);
-                    let k = glem::build(&grid_snap(e, 0.0).chain(glem::scale(1.0, 1.0, 1.0)));
-                    Some(k)
+            .filter(|(i, x)| {
+                if !darkness.inner[*i] {
+                    return false;
                 }
-                GameCell::Empty => None,
-            })
-        {
-            lighthouses.push(a);
+                match x {
+                    GameCell::Piece(o) => o.has_lighthouse,
+                    GameCell::Empty => false,
+                }
+            });
+
+        let mut lighthouses = vec![];
+        for (index, pp) in visible_lighthouses.chain(last_seen_lighthouses) {
+            let e = Axial::from_index(&index);
+            let k = glem::build(&grid_snap(e, 0.0).chain(glem::scale(1.0, 1.0, 1.0)));
+
+            lighthouses.push(k);
         }
 
         draw_sys
