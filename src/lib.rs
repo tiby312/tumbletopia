@@ -777,7 +777,7 @@ pub async fn game_play_thread(
 
         let r = (r1, effect);
 
-        let fe = game.last_seen.apply(&game.tactical, world);
+        let fe = game.last_seen.apply(&game.tactical, (&r.0, &r.1), world);
 
         game.history.inner.push(engine::HistoryOneMove { r, fe });
 

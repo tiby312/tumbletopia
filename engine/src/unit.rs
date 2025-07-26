@@ -26,9 +26,14 @@ impl LastSeenObjectsAll {
             fog: std::array::from_fn(|_| LastSeenObjects { state: a.clone() }),
         }
     }
-    pub fn apply(&mut self, game_after: &GameState, world: &MyWorld) -> LastSeenObjectsAllEffect {
-        let a = self.fog[0].apply(game_after, world, Team::White);
-        let b = self.fog[1].apply(game_after, world, Team::Black);
+    pub fn apply(
+        &mut self,
+        game_after: &GameState,
+        m: (&NormalMove, &NormalMoveEffect),
+        world: &MyWorld,
+    ) -> LastSeenObjectsAllEffect {
+        let a = self.fog[0].apply(game_after, world, m, Team::White);
+        let b = self.fog[1].apply(game_after, world, m, Team::Black);
         LastSeenObjectsAllEffect { diff: [a, b] }
     }
     pub fn undo(&mut self, ll: &LastSeenObjectsAllEffect) {
@@ -65,6 +70,7 @@ impl LastSeenObjects {
         &mut self,
         game_after: &GameState,
         world: &MyWorld,
+        m: (&NormalMove, &NormalMoveEffect),
         team: Team,
     ) -> LastSeenObjectsEffect {
         //if we are adding a piece,
@@ -72,31 +78,69 @@ impl LastSeenObjects {
 
         let darkness = game_after.darkness(world, team);
 
-        let mut diffs = vec![];
-        //copy everything that is visible to state.
-        for &j in world.land_as_vec.iter() {
-            if !darkness.inner[j] {
-                if self.state.factions.cells[j] != game_after.factions.cells[j] {
-                    diffs.push(CellDiff {
-                        old: self.state.factions.cells[j].clone(),
-                        pos: Coordinate(j),
-                    });
-                    self.state
-                        .factions
-                        .copy_cell_if_occupied(&game_after.factions, j);
+        let mut handle_this = vec![];
+        let j = m.0.coord.0;
+        if let Some(p) = m.1.captured_unit(&m.0, game_after) {
+            if p.team == team {
+                let r=if p.has_lighthouse{
+                    2
+                }else{
+                    1
+                };
+
+                for a in Axial::from_index(&j).to_cube().range(r) {
+                    let x = a.ax.to_index();
+
+                    match game_after.factions.cells[x] {
+                        GameCell::Piece(p) => {
+                            if p.team != team {
+                                handle_this.push(x);
+                            }
+                        }
+                        GameCell::Empty => {}
+                    }
                 }
-            } else {
-                // if self.state.factions.cells[j]!=GameCell::Empty{
-                //     diffs.push(CellDiff {
-                //         old: self.state.factions.cells[j].clone(),
-                //         pos: Coordinate(j),
-                //     });
-                //     self.state
-                //         .factions
-                //         .cells[j]=GameCell::Empty;
-                // }
             }
         }
+
+        let mut diffs = vec![];
+
+        for j in handle_this {
+            if self.state.factions.cells[j] != game_after.factions.cells[j] {
+                diffs.push(CellDiff {
+                    old: self.state.factions.cells[j].clone(),
+                    pos: Coordinate(j),
+                });
+                self.state
+                    .factions
+                    .copy_cell_if_occupied(&game_after.factions, j);
+            }
+        }
+
+        // //copy everything that is visible to state.
+        // for &j in world.land_as_vec.iter() {
+        //     if !darkness.inner[j] {
+        //         if self.state.factions.cells[j] != game_after.factions.cells[j] {
+        //             diffs.push(CellDiff {
+        //                 old: self.state.factions.cells[j].clone(),
+        //                 pos: Coordinate(j),
+        //             });
+        //             self.state
+        //                 .factions
+        //                 .copy_cell_if_occupied(&game_after.factions, j);
+        //         }
+        //     } else {
+        //         // if self.state.factions.cells[j]!=GameCell::Empty{
+        //         //     diffs.push(CellDiff {
+        //         //         old: self.state.factions.cells[j].clone(),
+        //         //         pos: Coordinate(j),
+        //         //     });
+        //         //     self.state
+        //         //         .factions
+        //         //         .cells[j]=GameCell::Empty;
+        //         // }
+        //     }
+        // }
 
         LastSeenObjectsEffect { diff: diffs }
     }
