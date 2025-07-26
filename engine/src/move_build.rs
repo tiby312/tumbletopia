@@ -219,7 +219,7 @@ impl LighthouseMove {
                 coord: self.coord,
                 stack: StackHeight::Stack0,
             }
-            .undo( fe, state);
+            .undo(fe, state);
 
             // if let Some(k)=fe.destroyed_unit{
             //     if let Some(ff)=k.lighthouse_was_removed{
@@ -338,13 +338,8 @@ impl NormalMove {
         let target_cell = self.coord.0;
         let destroyed_unit = match game.factions.get_cell_inner(target_cell) {
             &unit::GameCell::Piece(pp) => {
-                
-
                 let lighthouse_was_removed = if pp.has_lighthouse {
-                    if team != pp.team { 
-                        
-                        Some(pp.team) 
-                    } else { None }
+                    if team != pp.team { Some(pp.team) } else { None }
                 } else {
                     None
                 };
@@ -359,24 +354,23 @@ impl NormalMove {
         };
 
         let has_lighthouse = match game.factions.get_cell_inner(target_cell) {
-            unit::GameCell::Piece(o) => if o.has_lighthouse{
-                if let Some(d)=destroyed_unit{
-                    if d.lighthouse_was_removed.is_some(){
-                        false
-                    }else{
+            unit::GameCell::Piece(o) => {
+                if o.has_lighthouse {
+                    if let Some(d) = destroyed_unit {
+                        if d.lighthouse_was_removed.is_some() {
+                            false
+                        } else {
+                            true
+                        }
+                    } else {
                         true
                     }
-                }else{
-                    true
+                } else {
+                    false
                 }
-            }else{
-                false
-            },
+            }
             unit::GameCell::Empty => false,
         };
-
-
-        
 
         game.factions.remove_inner(target_cell);
         game.factions

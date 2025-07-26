@@ -1,13 +1,10 @@
 use crate::{
     mesh::small_mesh::SmallMesh,
     move_build::{GenericMove, LighthouseMove, NormalMove},
-    unit::LastSeenObjects,
+    unit::{LastSeenObjects, LastSeenObjectsAll},
 };
 
 use super::*;
-
-
-
 
 #[derive(Debug, Clone)]
 pub enum CellSelection {
@@ -113,9 +110,7 @@ pub enum MouseEvent<T> {
 
 pub async fn map_editor(mut doop: CommandSender, world: &board::MyWorld) -> unit::Map {
     let game = world.starting_state.clone();
-    let last_seen = std::array::from_fn(|_| LastSeenObjects {
-        state: game.clone(),
-    });
+    let last_seen = LastSeenObjectsAll::new(&game);
     let mut game_total = unit::GameStateTotal {
         tactical: game,
         last_seen,
@@ -680,23 +675,19 @@ pub async fn handle_player(
     team: Team,
 ) -> move_build::GenericMove<NormalMove, LighthouseMove> {
     let undo = async |doop: &mut CommandSender, game: &mut unit::GameStateTotal| {
-        
-
         //log!("undoing turn!!!");
         assert!(game.history.inner.len() >= 2, "Not enough moves to undo");
 
         let mut mov = vec![];
-        for tt in [team.not(),team] {
-            
-            let f=game.history.inner.pop().unwrap();
+        for tt in [team.not(), team] {
+            let f = game.history.inner.pop().unwrap();
 
-             game.last_seen[tt].undo( f.fe);
-           
+            game.last_seen.undo(&f.fe);
 
-            match f.r{
+            match f.r {
                 GenericMove::Normal((a, e)) => {
                     mov.push(a.coord);
-                    a.undo( &e, &mut game.tactical);
+                    a.undo(&e, &mut game.tactical);
                 }
                 GenericMove::Lighthouse((a, e)) => {
                     mov.push(a.coord);

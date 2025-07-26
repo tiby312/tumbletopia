@@ -221,17 +221,15 @@ pub struct JustMoveLog {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct HistoryOneMove{
-    pub r:GenericMove<(NormalMove, NormalMoveEffect), (LighthouseMove, LighthouseMoveEffect)>,
-    pub fe:unit::LastSeenObjectsEffect
+pub struct HistoryOneMove {
+    pub r: GenericMove<(NormalMove, NormalMoveEffect), (LighthouseMove, LighthouseMoveEffect)>,
+    pub fe: unit::LastSeenObjectsAllEffect,
 }
-
 
 //Need to keep effect so you can undo all the way to the start.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MoveHistory {
-    pub inner:
-        Vec<HistoryOneMove>,
+    pub inner: Vec<HistoryOneMove>,
 }
 
 impl Default for MoveHistory {
@@ -271,5 +269,4 @@ impl MoveHistory {
     pub fn push_normal(&mut self, o: HistoryOneMove) {
         self.inner.push(o);
     }
-    
 }

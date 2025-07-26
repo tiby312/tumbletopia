@@ -36,7 +36,6 @@ use hex;
 
 use unit::*;
 
-
 #[wasm_bindgen]
 pub async fn main_entry() {
     let (sender, mut receiver) = futures::channel::mpsc::unbounded();
@@ -660,9 +659,8 @@ pub async fn game_play_thread(
     console_dbg!("created ai worker");
 
     let game = world.starting_state.clone();
-    let last_seen = std::array::from_fn(|_| LastSeenObjects {
-        state: GameState::new(),
-    });
+    let last_seen = LastSeenObjectsAll::new(&GameState::new());
+
     let mut game = GameStateTotal {
         tactical: game,
         last_seen,
@@ -801,9 +799,9 @@ pub async fn game_play_thread(
             }
         };
 
-        let fe = game.last_seen[team].apply(&game.tactical, r1, world, team);
+        let fe = game.last_seen.apply(&game.tactical, world);
 
-        game.history.inner.push(engine::HistoryOneMove{r,fe});
+        game.history.inner.push(engine::HistoryOneMove { r, fe });
 
         let spoke_info = moves::SpokeInfo::new(&game.tactical, world);
         let curr_eval_player = engine::ai::Evaluator::default().absolute_evaluate(
@@ -1559,23 +1557,24 @@ async fn render_command(
                         GameCell::Empty => false,
                     });
 
-            let last_seen_cells = game_total.last_seen[team]
+            let last_seen_cells = game_total.last_seen.fog[team]
                 .state
                 .factions
                 .cells
                 .iter()
                 .enumerate();
 
-            for (index, height, team2) in visible_cells
-                .chain(last_seen_cells)
-                .filter_map(|(index, x)| match x {
-                    GameCell::Piece(unit::Piece {
-                        height: stack_height,
-                        team,
-                        ..
-                    }) => Some((index, *stack_height as u8, *team)),
-                    GameCell::Empty => None,
-                })
+            for (index, height, team2) in
+                visible_cells
+                    .chain(last_seen_cells)
+                    .filter_map(|(index, x)| match x {
+                        GameCell::Piece(unit::Piece {
+                            height: stack_height,
+                            team,
+                            ..
+                        }) => Some((index, *stack_height as u8, *team)),
+                        GameCell::Empty => None,
+                    })
             {
                 let a = Axial::from_index(&index);
                 //if let Some((height, team2)) = game.factions.get_cell(a) {

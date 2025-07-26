@@ -16,21 +16,47 @@ struct CellDiff {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LastSeenObjectsAll {
+    pub fog: [LastSeenObjects; 2],
+}
+
+impl LastSeenObjectsAll {
+    pub fn new(a: &GameState) -> Self {
+        LastSeenObjectsAll {
+            fog: std::array::from_fn(|_| LastSeenObjects { state: a.clone() }),
+        }
+    }
+    pub fn apply(&mut self, game_after: &GameState, world: &MyWorld) -> LastSeenObjectsAllEffect {
+        let a = self.fog[0].apply(game_after, world, Team::White);
+        let b = self.fog[1].apply(game_after, world, Team::Black);
+        LastSeenObjectsAllEffect { diff: [a, b] }
+    }
+    pub fn undo(&mut self, ll: &LastSeenObjectsAllEffect) {
+        self.fog[0].undo(&ll.diff[0]);
+        self.fog[1].undo(&ll.diff[0]);
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LastSeenObjectsAllEffect {
+    diff: [LastSeenObjectsEffect; 2],
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LastSeenObjectsEffect {
     diff: Vec<CellDiff>,
 }
 
 impl LastSeenObjects {
-    pub fn undo(&mut self, ll: LastSeenObjectsEffect) {
-        for a in ll.diff {
-            self.state.factions.cells[a.pos.0] = a.old;
+    pub fn undo(&mut self, ll: &LastSeenObjectsEffect) {
+        for a in &ll.diff {
+            self.state.factions.cells[a.pos.0] = a.old.clone();
         }
     }
 
     pub fn apply(
         &mut self,
         game_after: &GameState,
-        m: GenericMove<NormalMove, LighthouseMove>,
         world: &MyWorld,
         team: Team,
     ) -> LastSeenObjectsEffect {
@@ -52,6 +78,16 @@ impl LastSeenObjects {
                         .factions
                         .copy_cell_if_occupied(&game_after.factions, j);
                 }
+            } else {
+                // if self.state.factions.cells[j]!=GameCell::Empty{
+                //     diffs.push(CellDiff {
+                //         old: self.state.factions.cells[j].clone(),
+                //         pos: Coordinate(j),
+                //     });
+                //     self.state
+                //         .factions
+                //         .cells[j]=GameCell::Empty;
+                // }
             }
         }
 
@@ -260,7 +296,7 @@ impl Team {
 
 pub struct GameStateTotal {
     //0 is white fog. 1 is black fog
-    pub last_seen: [LastSeenObjects; 2],
+    pub last_seen: LastSeenObjectsAll,
     pub tactical: GameState,
     pub history: MoveHistory,
 }

@@ -714,7 +714,7 @@ impl<'a> AlphaBeta<'a> {
 
             spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
 
-            cand.undo( &effect, game);
+            cand.undo(&effect, game);
 
             key.move_undo(&self.zobrist, cand, team, &effect);
 
@@ -906,7 +906,7 @@ impl<'a> AlphaBeta<'a> {
             //     self.world.format(&m.clone().to_vec())
             // );
 
-            cand.undo( &effect, game);
+            cand.undo(&effect, game);
 
             key.move_undo(&self.zobrist, cand, team, &effect);
             m.push(cand);
