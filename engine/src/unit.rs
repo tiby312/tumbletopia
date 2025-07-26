@@ -82,11 +82,7 @@ impl LastSeenObjects {
         let j = m.0.coord.0;
         if let Some(p) = m.1.captured_unit(&m.0, game_after) {
             if p.team == team {
-                let r=if p.has_lighthouse{
-                    2
-                }else{
-                    1
-                };
+                let r = if p.has_lighthouse { 2 } else { 1 };
 
                 for a in Axial::from_index(&j).to_cube().range(r) {
                     let x = a.ax.to_index();
@@ -106,15 +102,15 @@ impl LastSeenObjects {
         let mut diffs = vec![];
 
         for j in handle_this {
-            if self.state.factions.cells[j] != game_after.factions.cells[j] {
-                diffs.push(CellDiff {
-                    old: self.state.factions.cells[j].clone(),
-                    pos: Coordinate(j),
-                });
-                self.state
-                    .factions
-                    .copy_cell_if_occupied(&game_after.factions, j);
-            }
+            //if self.state.factions.cells[j] != game_after.factions.cells[j] {
+            diffs.push(CellDiff {
+                old: self.state.factions.cells[j].clone(),
+                pos: Coordinate(j),
+            });
+            self.state
+                .factions
+                .copy_cell_if_occupied(&game_after.factions, j);
+            //}
         }
 
         // //copy everything that is visible to state.
