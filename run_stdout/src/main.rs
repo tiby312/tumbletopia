@@ -1,9 +1,10 @@
 use engine::{
-    Zobrist,
+    HistoryOneMove, Zobrist,
     ai::Evaluator,
     mesh::small_mesh::SmallMesh,
     move_build::{GenericMove, LighthouseMove, NormalMove},
     moves::SpokeInfo,
+    unit::LastSeenObjectsAllEffect,
 };
 
 //-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
@@ -180,13 +181,16 @@ pub fn test_run(
 
         //println!("team {:?} made move {:?}",team,&world.format(&m));
         let effect = m.apply(team, &mut game, &world, None);
-        game_history.inner.push(GenericMove::Normal((m, effect)));
+        game_history.inner.push(HistoryOneMove {
+            r: GenericMove::Normal((m, effect)),
+            fe: LastSeenObjectsAllEffect::dummy(),
+        });
     };
     //
     let history: Vec<_> = game_history
         .inner
         .iter()
-        .map(|x| match x {
+        .map(|x| match &x.r {
             GenericMove::Normal(x) => GenericMove::Normal(x.0),
             GenericMove::Lighthouse(x) => GenericMove::Lighthouse(x.0),
         })

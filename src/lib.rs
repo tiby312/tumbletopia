@@ -4,6 +4,7 @@ use engine::main_logic::GameWrap;
 use engine::main_logic::MouseEvent;
 
 use cgmath::Vector2;
+use engine::HistoryOneMove;
 use engine::MoveHistory;
 use engine::Zobrist;
 use engine::mesh;
@@ -376,7 +377,7 @@ struct AiCommand {
     //fogs: [mesh::small_mesh::SmallMesh; 2],
     world: board::MyWorld,
     team: Team,
-    history: MoveHistory,
+    history: MoveHistory<HistoryOneMove>,
     zobrist: Zobrist,
 }
 
@@ -575,7 +576,7 @@ pub async fn worker_entry() {
 
     enum Finish {
         MapEditor(Map),
-        GameFinish((GameOver, engine::MoveHistory)),
+        GameFinish((GameOver, engine::MoveHistory<HistoryOneMove>)),
     }
 
     let gameplay_thread = async {
@@ -647,7 +648,7 @@ pub async fn game_play_thread(
     team: Team,
     player_type: [engine::Slot; 2],
     mut interrupt_tx: futures::channel::mpsc::Sender<()>,
-) -> (unit::GameOver, MoveHistory) {
+) -> (unit::GameOver, MoveHistory<HistoryOneMove>) {
     console_dbg!("gameplay thread start");
 
     let (ai_tx, mut ai_rx) = shogo::main::create_main::<AiCommand, AiResponse, _>(
@@ -699,7 +700,7 @@ pub async fn game_play_thread(
                         world.format(&mm.0.coord)
                     )
                     .unwrap();
-                    if mm.1.destroyed_unit.is_some() {
+                    if mm.1.captured_unit(&mm.0, &game.tactical).is_some() {
                         write!(&mut s, "x").unwrap();
                     }
                 }

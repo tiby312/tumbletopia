@@ -406,7 +406,7 @@ pub async fn reselect_loop(
         if lighthouse_mode {
             gloo_console::console_dbg!("Logging mesh thing");
             let mut cca = SmallMesh::from_iter_move(
-                LighthouseMove::possible_moves(
+                NormalMove::possible_lighthouse_moves(
                     &game2,
                     world,
                     selected_unit.team,
@@ -570,11 +570,16 @@ pub async fn reselect_loop(
     let mp = Coordinate(target_cell.to_index());
 
     if lighthouse_mode {
-        return LoopRes::EndTurn(GenericMove::Lighthouse(LighthouseMove { coord: mp }));
+        return LoopRes::EndTurn(GenericMove::Normal(NormalMove {
+            coord: mp,
+            stack: StackHeight::Stack0,
+            place_lighthouse: true,
+        }));
     } else {
         let norm = NormalMove {
             coord: mp,
             stack: mp.determine_stack_height(&game.tactical, world, team, None),
+            place_lighthouse: false,
         };
 
         return LoopRes::EndTurn(GenericMove::Normal(norm));

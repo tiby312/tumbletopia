@@ -119,9 +119,9 @@ mod spoke {
             &mut self,
             a: NormalMove,
             effect: &move_build::NormalMoveEffect,
-            _team: Team,
+            team: Team,
             _world: &board::MyWorld,
-            _game: &GameState,
+            game: &GameState,
             spoke_temp: SpokeTempInfo,
         ) {
             if a.coord.0 == hex::PASS_MOVE_INDEX {
@@ -142,7 +142,7 @@ mod spoke {
 
                 let mut index2: isize = index as isize;
 
-                let oppt = if let Some(ff) = effect.destroyed_unit {
+                let oppt = if let Some(ff) = effect.captured_unit(&a, game) {
                     ff.team
                 } else {
                     if let (_, Some(end)) = &arr[hexdir.rotate_180() as usize] {

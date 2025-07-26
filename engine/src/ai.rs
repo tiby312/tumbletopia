@@ -263,6 +263,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
                                 team,
                                 Some(&spoke),
                             ),
+                            place_lighthouse: false,
                         }
                         .apply(team, game, world, Some(&spoke));
                         let _s = spoke.process_move_better(
@@ -274,6 +275,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
                                     team,
                                     Some(&spoke),
                                 ),
+                                place_lighthouse: false,
                             },
                             team,
                             world,
@@ -306,6 +308,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
                                 Some(&spoke),
                             ),
                             coord: Coordinate(index),
+                            place_lighthouse: false,
                         }
                         .apply(team, game, world, Some(&spoke));
                         let _s = spoke.process_move_better(
@@ -317,6 +320,7 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
                                     Some(&spoke),
                                 ),
                                 coord: Coordinate(index),
+                                place_lighthouse: false,
                             },
                             team,
                             world,
@@ -697,6 +701,7 @@ impl<'a> AlphaBeta<'a> {
                     team,
                     Some(&spoke_info),
                 ),
+                place_lighthouse: false,
             }));
 
         let end_move_index = self.moves.len();
@@ -706,17 +711,16 @@ impl<'a> AlphaBeta<'a> {
 
             let effect = cand.apply(team, game, self.world, Some(&spoke_info));
 
-            key.move_update(&self.zobrist, cand, team, &effect);
+            key.move_update(&self.zobrist, cand, team, &effect, game);
 
             let temp = spoke_info.process_move_better(cand, team, self.world, game);
 
             let eval = -self.quiesance(game, key, spoke_info, -ab.clone(), -team, depth - 1);
 
             spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
+            key.move_undo(&self.zobrist, cand, team, &effect, game);
 
             cand.undo(&effect, game);
-
-            key.move_undo(&self.zobrist, cand, team, &effect);
 
             if eval >= ab.beta {
                 self.moves.drain(start_move_index..);
@@ -882,10 +886,9 @@ impl<'a> AlphaBeta<'a> {
             let cand = self.moves.pop().unwrap();
 
             let effect = cand.apply(team, game, self.world, Some(&spoke_info));
-
-            key.move_update(&self.zobrist, cand, team, &effect);
-
             let temp = spoke_info.process_move_better(cand, team, self.world, game);
+
+            key.move_update(&self.zobrist, cand, team, &effect, game);
 
             let (eval, mut m) = self.negamax(
                 game,
@@ -899,16 +902,17 @@ impl<'a> AlphaBeta<'a> {
             let eval = -eval;
 
             spoke_info.undo_move(cand, &effect, team, self.world, game, temp);
+
             // log!(
             //     "consid depth:{} {:?}:{:?}",
             //     depth,
             //     self.world.format(&cand),
             //     self.world.format(&m.clone().to_vec())
             // );
+            key.move_undo(&self.zobrist, cand, team, &effect, game);
 
             cand.undo(&effect, game);
 
-            key.move_undo(&self.zobrist, cand, team, &effect);
             m.push(cand);
             if !ab_iter.keep_going(m, eval) {
                 beta_cutoff = true;

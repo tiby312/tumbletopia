@@ -67,6 +67,7 @@ impl Key {
         m: NormalMove,
         team: Team,
         effect: &NormalMoveEffect,
+        game: &GameState,
     ) {
         if let Team::White = team {
             self.key ^= base.white_to_move
@@ -74,7 +75,7 @@ impl Key {
         if m.is_pass() {
             self.key ^= base.pass;
         } else {
-            if let Some(a) = effect.destroyed_unit {
+            if let Some(a) = effect.captured_unit(&m, game) {
                 //panic!();
                 //xor out what piece was there
                 self.key ^= base.inner[m.coord.0][get_index(a.height, a.team)];
@@ -91,6 +92,7 @@ impl Key {
         m: NormalMove,
         team: Team,
         effect: &NormalMoveEffect,
+        game: &GameState,
     ) {
         if m.is_pass() {
             self.key ^= base.pass;
@@ -98,7 +100,7 @@ impl Key {
             //xor out the new piece
             self.key ^= base.inner[m.coord.0][get_index(m.stack, team)];
 
-            if let Some(a) = effect.destroyed_unit {
+            if let Some(a) = effect.captured_unit(&m, game) {
                 //xor in what piece was there
                 self.key ^= base.inner[m.coord.0][get_index(a.height, a.team)];
             }
@@ -220,21 +222,18 @@ pub struct JustMoveLog {
     pub inner: Vec<GenericMove<NormalMove, LighthouseMove>>,
 }
 
-
-pub trait CanPass{
-    fn is_pass(&self)->bool;
+pub trait CanPass {
+    fn is_pass(&self) -> bool;
 }
-
 
 // #[derive(Serialize, Deserialize, Debug, Clone)]
 // pub struct HistoryOneMoveBasic{
 //     pub r: GenericMove<(NormalMove, NormalMoveEffect), (LighthouseMove, LighthouseMoveEffect)>,
 // }
 
-
-impl CanPass for HistoryOneMove{
-    fn is_pass(&self)->bool{
-        match &self.r{
+impl CanPass for HistoryOneMove {
+    fn is_pass(&self) -> bool {
+        match &self.r {
             GenericMove::Normal(o) => o.0.is_pass(),
             GenericMove::Lighthouse(_) => false,
         }

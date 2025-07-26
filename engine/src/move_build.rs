@@ -30,7 +30,29 @@ impl hex::HexDraw for GenericMove<NormalMove, LighthouseMove> {
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct NormalMoveEffect {
-    pub destroyed_unit: Option<DestroyedUnit>,
+    pub curr_cell: unit::GameCell<unit::Piece>,
+    pub last_cell: unit::GameCell<unit::Piece>,
+}
+impl NormalMoveEffect {
+    pub fn captured_unit(&self, foo: &NormalMove, game: &GameState) -> Option<&unit::Piece> {
+        let curr = &game.factions.cells[foo.coord.0];
+        assert_eq!(&self.curr_cell, curr);
+        let last = &self.last_cell;
+
+        match (last, curr) {
+            (unit::GameCell::Piece(x), unit::GameCell::Piece(y)) => {
+                Some(x)
+                // if x.team != y.team {
+                //     Some(x)
+                // } else {
+                //     None
+                // }
+            }
+            (unit::GameCell::Piece(_), unit::GameCell::Empty) => None,
+            (unit::GameCell::Empty, unit::GameCell::Piece(_)) => None,
+            (unit::GameCell::Empty, unit::GameCell::Empty) => None,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
@@ -116,13 +138,106 @@ impl LighthouseMove {
     //     }
     // }
 
-    pub fn possible_moves<'b>(
+    pub fn apply(
+        &self,
+        team: Team,
+        game: &mut GameState,
+        //fog: &mesh::small_mesh::SmallMesh,
+        world: &board::MyWorld,
+        spoke_info: Option<&SpokeInfo>,
+    ) -> LighthouseMoveEffect {
+        todo!()
+        // assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
+
+        // let nm = match game.factions.get_cell_inner(self.coord.0) {
+        //     unit::GameCell::Piece(_) => None,
+        //     unit::GameCell::Empty => {
+        //         let nm = NormalMove {
+        //             coord: self.coord,
+        //             stack: StackHeight::Stack0,
+        //         }
+        //         .apply(team, game, world, spoke_info);
+
+        //         Some(nm)
+        //     }
+        // };
+
+        // game.factions
+        //     .add_cell_inner(self.coord.0, StackHeight::Stack0, team, true);
+
+        // LighthouseMoveEffect { nm }
+    }
+
+    pub fn undo(&self, effect: &LighthouseMoveEffect, state: &mut GameState) {
+        // assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
+
+        // if let Some(fe) = &effect.nm {
+        //     NormalMove {
+        //         coord: self.coord,
+        //         stack: StackHeight::Stack0,
+        //     }
+        //     .undo(fe, state);
+
+        //     // if let Some(k)=fe.destroyed_unit{
+        //     //     if let Some(ff)=k.lighthouse_was_removed{
+        //     //         match &mut state.factions.cells[self.coord.0]{
+        //     //             unit::GameCell::Piece(o) => o.has_lighthouse=true,
+        //     //             unit::GameCell::Empty => {},
+        //     //         }
+
+        //     //     }
+
+        //     // }
+        //     // match &mut state.factions.cells[self.coord.0]{
+        //     //     unit::GameCell::Piece(o) => o.has_lighthouse=false,
+        //     //     unit::GameCell::Empty => {},
+        //     // }
+        // }
+
+        // // match state.factions.cells[self.coord.0]{
+
+        // // }
+
+        // //state.lighthouses.remove_inner(self.coord.0);
+    }
+}
+
+//Represents playing a normal piece at the specified coordinate
+//The tactical AI considers millions of these moves only.
+//The tactical AI does not consider light house moves
+#[derive(PartialEq, Eq, Default, Serialize, Deserialize, Clone, Copy, Debug)]
+
+pub struct NormalMove {
+    pub stack: StackHeight,
+    pub coord: Coordinate,
+    pub place_lighthouse: bool,
+}
+
+impl hex::HexDraw for NormalMove {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
+        Axial::from_index(&self.coord).fmt(f, radius)
+    }
+}
+
+impl NormalMove {
+    pub fn new_pass() -> NormalMove {
+        NormalMove {
+            stack: StackHeight::Stack0,
+            coord: Coordinate(hex::PASS_MOVE_INDEX),
+            place_lighthouse: false,
+        }
+    }
+    pub fn is_pass(&self) -> bool {
+        self.coord.0 == hex::PASS_MOVE_INDEX
+    }
+
+    pub fn possible_lighthouse_moves<'b>(
         state: &'b GameState,
         world: &'b board::MyWorld,
         team: Team,
         spoke_info: &'b SpokeInfo,
         allow_suicidal: bool,
-    ) -> impl Iterator<Item = LighthouseMove> + use<'b> {
+    ) -> impl Iterator<Item = NormalMove> + use<'b> {
         //light house pieces should get added as neutral pieces to the game state
         //because they cannot attack.
         //The game state is used mainly to determine what moves the ai can play.
@@ -145,7 +260,17 @@ impl LighthouseMove {
         for &a in world.land_as_vec.iter() {
             match game.factions.get_cell_inner(a) {
                 unit::GameCell::Piece(f) => {
-                    if f.team == team && f.has_lighthouse {
+                    if f.team == team {
+                        if f.has_lighthouse {
+                            game.factions.remove_inner(a);
+                            game.factions.add_cell_inner(
+                                a,
+                                StackHeight::Stack6,
+                                Team::Neutral,
+                                false,
+                            );
+                        }
+                    } else {
                         game.factions.remove_inner(a);
                         game.factions
                             .add_cell_inner(a, StackHeight::Stack6, Team::Neutral, false);
@@ -160,116 +285,13 @@ impl LighthouseMove {
         //TODO inefficient
         let sp = SpokeInfo::new(&state, world);
         let v: Vec<_> = NormalMove::possible_moves(&state, world, team, &sp, allow_suicidal)
-            .map(|x| LighthouseMove { coord: x.coord })
+            .map(|mut x| {
+                x.place_lighthouse = true;
+                x
+            })
             .collect();
 
         v.into_iter()
-
-        // //TODO optimize this
-        // let j: Vec<LighthouseMove> = world
-        //     .land_as_vec
-        //     .iter()
-        //     .filter_map(move |&index| {
-
-        //             match state.lighthouses.get_cell_inner(index) {
-        //             unit::GameCell::Piece(_) => None,
-        //             unit::GameCell::Empty => Some(LighthouseMove {
-        //                 coord: Coordinate(index),
-        //             }),
-        //         }},
-        //     )
-        //     .collect();
-        // j.into_iter()
-    }
-
-    pub fn apply(
-        &self,
-        team: Team,
-        game: &mut GameState,
-        //fog: &mesh::small_mesh::SmallMesh,
-        world: &board::MyWorld,
-        spoke_info: Option<&SpokeInfo>,
-    ) -> LighthouseMoveEffect {
-        assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
-
-        let nm = match game.factions.get_cell_inner(self.coord.0) {
-            unit::GameCell::Piece(_) => None,
-            unit::GameCell::Empty => {
-                let nm = NormalMove {
-                    coord: self.coord,
-                    stack: StackHeight::Stack0,
-                }
-                .apply(team, game, world, spoke_info);
-
-                Some(nm)
-            }
-        };
-
-        game.factions
-            .add_cell_inner(self.coord.0, StackHeight::Stack0, team, true);
-
-        LighthouseMoveEffect { nm }
-    }
-
-    pub fn undo(&self, effect: &LighthouseMoveEffect, state: &mut GameState) {
-        assert_ne!(self.coord.0, hex::PASS_MOVE_INDEX);
-
-        if let Some(fe) = &effect.nm {
-            NormalMove {
-                coord: self.coord,
-                stack: StackHeight::Stack0,
-            }
-            .undo(fe, state);
-
-            // if let Some(k)=fe.destroyed_unit{
-            //     if let Some(ff)=k.lighthouse_was_removed{
-            //         match &mut state.factions.cells[self.coord.0]{
-            //             unit::GameCell::Piece(o) => o.has_lighthouse=true,
-            //             unit::GameCell::Empty => {},
-            //         }
-
-            //     }
-
-            // }
-            // match &mut state.factions.cells[self.coord.0]{
-            //     unit::GameCell::Piece(o) => o.has_lighthouse=false,
-            //     unit::GameCell::Empty => {},
-            // }
-        }
-
-        // match state.factions.cells[self.coord.0]{
-
-        // }
-
-        //state.lighthouses.remove_inner(self.coord.0);
-    }
-}
-
-//Represents playing a normal piece at the specified coordinate
-//The tactical AI considers millions of these moves only.
-//The tactical AI does not consider light house moves
-#[derive(PartialEq, Eq, Default, Serialize, Deserialize, Clone, Copy, Debug)]
-
-pub struct NormalMove {
-    pub stack: StackHeight,
-    pub coord: Coordinate,
-}
-
-impl hex::HexDraw for NormalMove {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
-        Axial::from_index(&self.coord).fmt(f, radius)
-    }
-}
-
-impl NormalMove {
-    pub fn new_pass() -> NormalMove {
-        NormalMove {
-            stack: StackHeight::Stack0,
-            coord: Coordinate(hex::PASS_MOVE_INDEX),
-        }
-    }
-    pub fn is_pass(&self) -> bool {
-        self.coord.0 == hex::PASS_MOVE_INDEX
     }
 
     pub fn possible_moves<'b>(
@@ -291,6 +313,7 @@ impl NormalMove {
                             Some(spoke_info),
                         ),
                         coord: Coordinate(index),
+                        place_lighthouse: false,
                     })
                 } else {
                     None
@@ -307,16 +330,18 @@ impl NormalMove {
             return;
         }
 
-        if let Some(dd) = effect.destroyed_unit {
-            state.factions.add_cell_inner(
-                moveto,
-                dd.height,
-                dd.team,
-                dd.lighthouse_was_removed.is_some(),
-            );
-        } else {
-            state.factions.remove_inner(moveto)
-        };
+        state.factions.cells[moveto] = effect.last_cell.clone();
+
+        // if let Some(dd) = effect.destroyed_unit {
+        //     state.factions.add_cell_inner(
+        //         moveto,
+        //         dd.height,
+        //         dd.team,
+        //         dd.lighthouse_was_removed.is_some(),
+        //     );
+        // } else {
+        //     state.factions.remove_inner(moveto)
+        // };
     }
 
     pub fn apply(
@@ -330,7 +355,8 @@ impl NormalMove {
         //this is a pass
         if self.coord.0 == hex::PASS_MOVE_INDEX {
             return NormalMoveEffect {
-                destroyed_unit: None,
+                last_cell: unit::GameCell::Empty,
+                curr_cell: unit::GameCell::Empty,
             };
         }
 
@@ -353,30 +379,38 @@ impl NormalMove {
             unit::GameCell::Empty => None,
         };
 
-        let has_lighthouse = match game.factions.get_cell_inner(target_cell) {
-            unit::GameCell::Piece(o) => {
-                if o.has_lighthouse {
-                    if let Some(d) = destroyed_unit {
-                        if d.lighthouse_was_removed.is_some() {
-                            false
+        let has_lighthouse = if self.place_lighthouse {
+            true
+        } else {
+            match game.factions.get_cell_inner(target_cell) {
+                unit::GameCell::Piece(o) => {
+                    if o.has_lighthouse {
+                        if let Some(d) = destroyed_unit {
+                            if d.lighthouse_was_removed.is_some() {
+                                false
+                            } else {
+                                true
+                            }
                         } else {
                             true
                         }
                     } else {
-                        true
+                        false
                     }
-                } else {
-                    false
                 }
+                unit::GameCell::Empty => false,
             }
-            unit::GameCell::Empty => false,
         };
 
+        let last_cell = game.factions.cells[target_cell].clone();
         game.factions.remove_inner(target_cell);
         game.factions
             .add_cell_inner(target_cell, self.stack, team, has_lighthouse);
 
-        NormalMoveEffect { destroyed_unit }
+        NormalMoveEffect {
+            last_cell,
+            curr_cell: game.factions.cells[target_cell].clone(),
+        }
     }
 
     pub async fn animate_move<'a>(

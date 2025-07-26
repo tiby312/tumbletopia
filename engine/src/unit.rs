@@ -46,6 +46,13 @@ pub struct LastSeenObjectsAllEffect {
 pub struct LastSeenObjectsEffect {
     diff: Vec<CellDiff>,
 }
+impl LastSeenObjectsAllEffect {
+    pub fn dummy() -> Self {
+        Self {
+            diff: std::array::from_fn(|_| LastSeenObjectsEffect { diff: vec![] }),
+        }
+    }
+}
 
 impl LastSeenObjects {
     pub fn undo(&mut self, ll: &LastSeenObjectsEffect) {
@@ -561,7 +568,7 @@ impl StackHeight {
     }
 }
 
-#[derive(Copy, Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
+#[derive(PartialOrd, Ord, Copy, Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 
 pub struct Piece {
     pub height: StackHeight,
@@ -582,7 +589,7 @@ pub enum PieceType {
 //     Normal(StackHeight,Team)
 // }
 
-#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
+#[derive(PartialOrd, Ord, Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 
 pub enum GameCell<T> {
     Piece(T),
@@ -869,7 +876,10 @@ pub enum UnitType {
 //     Some((map, mh))
 // }
 
-pub fn replay_string(_moves: &MoveHistory<HistoryOneMove>, _world: &MyWorld) -> Result<String, std::fmt::Error> {
+pub fn replay_string(
+    _moves: &MoveHistory<HistoryOneMove>,
+    _world: &MyWorld,
+) -> Result<String, std::fmt::Error> {
     let s = String::new();
 
     //let map_str = map.save(world).unwrap();
