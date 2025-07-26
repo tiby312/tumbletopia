@@ -1565,53 +1565,25 @@ async fn render_command(
                 .enumerate()
                 .filter(|(i, x)| if darkness.inner[*i] { true } else { false });
 
-            for (index, height, team2) in
-                visible_cells
-                    .chain(last_seen_cells)
-                    .filter_map(|(index, x)| match x {
-                        GameCell::Piece(unit::Piece {
-                            height: stack_height,
-                            team,
-                            ..
-                        }) => Some((index, *stack_height as u8, *team)),
-                        GameCell::Empty => None,
-                    })
+            for (index, pp) in visible_cells
+                .chain(last_seen_cells)
+                .filter_map(|(index, x)| match x {
+                    GameCell::Piece(p) => Some((index, p)),
+                    GameCell::Empty => None,
+                })
             {
                 let a = Axial::from_index(&index);
-                //if let Some((height, team2)) = game.factions.get_cell(a) {
-                // let inner_stack = height.min(2);
-                // let mid_stack = height.max(2).min(4) - 2;
-                // let outer_stack = height.max(4) - 4;
-                let inner_stack = height.min(3);
-                let mid_stack = height.max(3).min(6) - 3;
+                let inner_stack = pp.height.to_num().min(3);
+                let mid_stack = pp.height.to_num().max(3).min(6) - 3;
 
-                // if height == 6 && team2 == Team::Neutral {
-                //     //mountains.push(grid_snap(a, /*models.land.height / 2.0*/ 0.0).generate());
-                //     continue;
-                // }
-
-                // if shown_fog.is_set(a) {
-                //     continue;
-                // }
-
-                // let teamuse = if height == 0 {
-                //     match game.lighthouses.get_cell_inner(index) {
-                //         GameCell::Piece(tt) => tt.team,
-                //         GameCell::Empty => {
-                //             unreachable!("error:the only zero stack pieces are lighthouses")
-                //         }
-                //     }
-                // } else {
-                //     team2
-                // };
-
-                let arr = match team2 {
+                let arr = match pp.team {
                     Team::White => &mut white_team_cells,
                     Team::Black => &mut black_team_cells,
                     Team::Neutral => &mut neutral_team_cells,
                 };
 
-                if height == 0 {
+                if pp.height == StackHeight::Stack0 {
+                    assert!(pp.has_lighthouse);
                     let radius = radius[0];
                     arr.push(glem::build(
                         &grid_snap(a, 5. as f32 * cell_height * piece_scale)
