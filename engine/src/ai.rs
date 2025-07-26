@@ -371,11 +371,9 @@ pub fn should_pass(
 
     //If the user wants the game to end, just end the game.
     if let Some(g) = move_history.inner.last() {
-        if let GenericMove::Normal(n) = &g.r {
-            if n.0.is_pass() {
-                log!("AI:Passing since player wants the game to end");
-                return true;
-            }
+        if g.r.0.is_pass() {
+            log!("AI:Passing since player wants the game to end");
+            return true;
         }
     }
 

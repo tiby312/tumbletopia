@@ -173,9 +173,6 @@ macro_rules! log {
 
 pub(crate) use log;
 
-use crate::move_build::GenericMove;
-use crate::move_build::LighthouseMove;
-use crate::move_build::LighthouseMoveEffect;
 use crate::move_build::NormalMove;
 use crate::unit::StackHeight;
 
@@ -219,30 +216,12 @@ pub mod share {
 //This is for saving/loading.
 #[derive(Deserialize, Serialize)]
 pub struct JustMoveLog {
-    pub inner: Vec<GenericMove<NormalMove, LighthouseMove>>,
-}
-
-pub trait CanPass {
-    fn is_pass(&self) -> bool;
-}
-
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// pub struct HistoryOneMoveBasic{
-//     pub r: GenericMove<(NormalMove, NormalMoveEffect), (LighthouseMove, LighthouseMoveEffect)>,
-// }
-
-impl CanPass for HistoryOneMove {
-    fn is_pass(&self) -> bool {
-        match &self.r {
-            GenericMove::Normal(o) => o.0.is_pass(),
-            GenericMove::Lighthouse(_) => false,
-        }
-    }
+    pub inner: Vec<NormalMove>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HistoryOneMove {
-    pub r: GenericMove<(NormalMove, NormalMoveEffect), (LighthouseMove, LighthouseMoveEffect)>,
+    pub r: (NormalMove, NormalMoveEffect),
     pub fe: unit::LastSeenObjectsAllEffect,
 }
 

@@ -1,6 +1,6 @@
 use crate::{
     mesh::small_mesh::SmallMesh,
-    move_build::{GenericMove, LighthouseMove, NormalMove},
+    move_build::NormalMove,
     unit::{LastSeenObjects, LastSeenObjectsAll},
 };
 
@@ -359,7 +359,7 @@ pub struct SelectType {
 
 #[derive(Debug)]
 pub enum LoopRes<T> {
-    EndTurn(move_build::GenericMove<NormalMove, LighthouseMove>),
+    EndTurn(NormalMove),
     Deselect,
     Undo,
     Pass,
@@ -570,11 +570,11 @@ pub async fn reselect_loop(
     let mp = Coordinate(target_cell.to_index());
 
     if lighthouse_mode {
-        return LoopRes::EndTurn(GenericMove::Normal(NormalMove {
+        return LoopRes::EndTurn(NormalMove {
             coord: mp,
             stack: StackHeight::Stack0,
             place_lighthouse: true,
-        }));
+        });
     } else {
         let norm = NormalMove {
             coord: mp,
@@ -582,7 +582,7 @@ pub async fn reselect_loop(
             place_lighthouse: false,
         };
 
-        return LoopRes::EndTurn(GenericMove::Normal(norm));
+        return LoopRes::EndTurn(norm);
     }
 }
 
@@ -678,7 +678,7 @@ pub async fn handle_player(
     world: &board::MyWorld,
     doop: &mut CommandSender,
     team: Team,
-) -> move_build::GenericMove<NormalMove, LighthouseMove> {
+) -> NormalMove {
     let undo = async |doop: &mut CommandSender, game: &mut unit::GameStateTotal| {
         //log!("undoing turn!!!");
         assert!(game.history.inner.len() >= 2, "Not enough moves to undo");
@@ -689,16 +689,8 @@ pub async fn handle_player(
 
             game.last_seen.undo(&f.fe);
 
-            match f.r {
-                GenericMove::Normal((a, e)) => {
-                    mov.push(a.coord);
-                    a.undo(&e, &mut game.tactical);
-                }
-                GenericMove::Lighthouse((a, e)) => {
-                    mov.push(a.coord);
-                    a.undo(&e, &mut game.tactical);
-                }
-            }
+            mov.push(f.r.0.coord);
+            f.r.0.undo(&f.r.1, &mut game.tactical);
         }
 
         let s = format!(
@@ -742,7 +734,7 @@ pub async fn handle_player(
                         //     world,
                         //     None,
                         // );
-                        return GenericMove::Normal(mp);
+                        return mp;
                     } else if s == "lighthouse" {
                         lighthouse_mode = true;
                         gloo_console::console_dbg!("POTATO");
@@ -809,7 +801,7 @@ pub async fn handle_player(
                     //     world,
                     //     None,
                     // );
-                    return GenericMove::Normal(mp);
+                    return mp;
                 }
             };
             selected_unit = a;

@@ -9,9 +9,6 @@ use engine::MoveHistory;
 use engine::Zobrist;
 use engine::mesh;
 use engine::mesh::small_mesh::SmallMesh;
-use engine::move_build::GenericMove;
-use engine::move_build::LighthouseMove;
-use engine::move_build::LighthouseMoveEffect;
 use engine::move_build::NormalMove;
 use engine::move_build::NormalMoveEffect;
 use engine::moves::SpokeInfo;
@@ -690,30 +687,17 @@ pub async fn game_play_thread(
             use std::fmt::Write;
             let mut s = String::new();
 
-            match &gg.r {
-                GenericMove::Normal(mm) => {
-                    write!(
-                        &mut s,
-                        "{}:{:?}:n{:?}",
-                        game.history.inner.len(),
-                        team.not(),
-                        world.format(&mm.0.coord)
-                    )
-                    .unwrap();
-                    if mm.1.captured_unit(&mm.0, &game.tactical).is_some() {
-                        write!(&mut s, "x").unwrap();
-                    }
-                }
-                GenericMove::Lighthouse(ll) => {
-                    write!(
-                        &mut s,
-                        "{}:{:?}:l{:?}",
-                        game.history.inner.len(),
-                        team.not(),
-                        world.format(&ll.0.coord)
-                    )
-                    .unwrap();
-                }
+            let mm = &gg.r;
+            write!(
+                &mut s,
+                "{}:{:?}:n{:?}",
+                game.history.inner.len(),
+                team.not(),
+                world.format(&mm.0.coord)
+            )
+            .unwrap();
+            if mm.1.captured_unit(&mm.0, &game.tactical).is_some() {
+                write!(&mut s, "x").unwrap();
             }
 
             doop.repaint_ui(team, &mut game, s).await;
@@ -777,28 +761,21 @@ pub async fn game_play_thread(
                     engine::ai::calculate_move(&mut ai_state, &world, team, &game.history, &zobrist)
                 };
 
-                GenericMove::Normal(the_move)
+                the_move
             }
             engine::Slot::Player => {
                 engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await
             }
         };
 
-        let r = match r1 {
-            engine::move_build::GenericMove::Normal(norm) => {
-                let effect = norm
-                    .animate_move(team, &game, world, &mut doop)
-                    .await
-                    .apply(team, &mut game.tactical, world, None);
+        let effect = r1.animate_move(team, &game, world, &mut doop).await.apply(
+            team,
+            &mut game.tactical,
+            world,
+            None,
+        );
 
-                GenericMove::Normal((norm, effect))
-            }
-            engine::move_build::GenericMove::Lighthouse(lm) => {
-                let effect = lm.apply(team, &mut game.tactical, world, None);
-
-                GenericMove::Lighthouse((lm, effect))
-            }
-        };
+        let r = (r1, effect);
 
         let fe = game.last_seen.apply(&game.tactical, world);
 
