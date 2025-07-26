@@ -1,10 +1,6 @@
 use engine::{
-    HistoryOneMove, Zobrist,
-    ai::Evaluator,
-    mesh::small_mesh::SmallMesh,
-    move_build::{GenericMove, LighthouseMove, NormalMove},
-    moves::SpokeInfo,
-    unit::LastSeenObjectsAllEffect,
+    HistoryOneMove, Zobrist, ai::Evaluator, mesh::small_mesh::SmallMesh, move_build::NormalMove,
+    moves::SpokeInfo, unit::LastSeenObjectsAllEffect,
 };
 
 //-r-sgg---wwg---wwwgg-swwwgg-wwwwgwwww
@@ -161,7 +157,7 @@ pub fn test_run(
     game: &str,
 ) -> (
     engine::unit::GameOver,
-    Vec<engine::move_build::GenericMove<NormalMove, LighthouseMove>>,
+    Vec<NormalMove>,
     engine::board::MyWorld,
 ) {
     let world = engine::board::MyWorld::load_from_string(game).unwrap();
@@ -182,19 +178,12 @@ pub fn test_run(
         //println!("team {:?} made move {:?}",team,&world.format(&m));
         let effect = m.apply(team, &mut game, &world, None);
         game_history.inner.push(HistoryOneMove {
-            r: GenericMove::Normal((m, effect)),
+            r: (m, effect),
             fe: LastSeenObjectsAllEffect::dummy(),
         });
     };
     //
-    let history: Vec<_> = game_history
-        .inner
-        .iter()
-        .map(|x| match &x.r {
-            GenericMove::Normal(x) => GenericMove::Normal(x.0),
-            GenericMove::Lighthouse(x) => GenericMove::Lighthouse(x.0),
-        })
-        .collect();
+    let history: Vec<_> = game_history.inner.iter().map(|x| x.r.0).collect();
 
     // let s = format!("{:?}", world.format(&history));
     // assert_eq!(s,"[E3,D3,E4,B2,D2,C2,B1,D3,B2,D4,C2,C3,D3,D5,E3,C4,D2,B3,C1,C4,E4,C5,C2,D5,B1,C4,B2,B4,A1,A3,pp,pp,]");
