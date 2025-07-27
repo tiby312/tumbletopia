@@ -82,7 +82,11 @@ impl LastSeenObjects {
         let j = m.0.coord.0;
         if let Some(p) = m.1.captured_unit(&m.0, game_after) {
             if p.team == team {
-                let r = if p.has_lighthouse { 2 } else { 1 };
+                let r = if p.has_lighthouse {
+                    LIGHTHOUSE_RANGE
+                } else {
+                    NORMAL_RANGE
+                };
 
                 for a in Axial::from_index(&j).to_cube().range(r) {
                     let x = a.ax.to_index();
@@ -367,6 +371,9 @@ pub enum GameOver {
     Tie,
 }
 
+pub const LIGHTHOUSE_RANGE: i8 = 2;
+pub const NORMAL_RANGE: i8 = 1;
+
 impl GameState {
     pub fn convert_to_playable(&self, world: &MyWorld, team_perspective: Team) -> GameState {
         let d = self.darkness(world, team_perspective);
@@ -386,7 +393,11 @@ impl GameState {
             match self.factions.get_cell_inner(a) {
                 &GameCell::Piece(p) => {
                     if p.team == team_perspective {
-                        let r = if p.has_lighthouse { 2 } else { 1 };
+                        let r = if p.has_lighthouse {
+                            LIGHTHOUSE_RANGE
+                        } else {
+                            NORMAL_RANGE
+                        };
                         for j in Axial::from_index(&a).to_cube().range(r) {
                             darkness.set_coord(j.ax, false);
                         }
