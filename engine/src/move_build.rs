@@ -6,21 +6,6 @@ use crate::{
 
 use super::*;
 
-// #[derive(PartialEq, Eq, Serialize, Deserialize, Clone, Copy, Debug)]
-// pub enum GenericMove<T, L> {
-//     Normal(T),
-//     Lighthouse(L),
-// }
-
-// impl hex::HexDraw for GenericMove<NormalMove, LighthouseMove> {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>, radius: i8) -> Result<(), std::fmt::Error> {
-//         match self {
-//             GenericMove::Normal(o) => o.fmt(f, radius),
-//             GenericMove::Lighthouse(o) => o.fmt(f, radius),
-//         }
-//     }
-// }
-
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
 pub struct NormalMoveEffect {
     pub curr_cell: unit::GameCell<unit::Piece>,
@@ -33,7 +18,7 @@ impl NormalMoveEffect {
         let last = &self.last_cell;
 
         match (last, curr) {
-            (unit::GameCell::Piece(x), unit::GameCell::Piece(y)) => {
+            (unit::GameCell::Piece(x), unit::GameCell::Piece(_)) => {
                 Some(x)
                 // if x.team != y.team {
                 //     Some(x)
@@ -81,7 +66,7 @@ impl NormalMove {
         state: &'b GameState,
         world: &'b board::MyWorld,
         team: Team,
-        spoke_info: &'b SpokeInfo,
+        _spoke_info: &'b SpokeInfo,
         allow_suicidal: bool,
     ) -> impl Iterator<Item = NormalMove> + use<'b> {
         //light house pieces should get added as neutral pieces to the game state
@@ -195,8 +180,8 @@ impl NormalMove {
         team: Team,
         game: &mut GameState,
         //fog: &mesh::small_mesh::SmallMesh,
-        world: &board::MyWorld,
-        spoke_info: Option<&SpokeInfo>,
+        _world: &board::MyWorld,
+        _spoke_info: Option<&SpokeInfo>,
     ) -> NormalMoveEffect {
         #[derive(Copy, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
         pub struct DestroyedUnit {

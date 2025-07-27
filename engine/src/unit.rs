@@ -69,14 +69,13 @@ impl LastSeenObjects {
     pub fn apply(
         &mut self,
         game_after: &GameState,
-        world: &MyWorld,
+        _world: &MyWorld,
         m: (&NormalMove, &NormalMoveEffect),
         team: Team,
     ) -> LastSeenObjectsEffect {
         //if we are adding a piece,
         //check if we can see it. If we can't, don't update last seen.
 
-        
         let mut handle_this = vec![];
         let j = m.0.coord.0;
         if let Some(p) = m.1.captured_unit(&m.0, game_after) {
@@ -112,13 +111,11 @@ impl LastSeenObjects {
             self.state
                 .factions
                 .copy_cell_if_occupied(&game_after.factions, j);
-            
         }
 
         LastSeenObjectsEffect { diff: diffs }
     }
 }
-
 
 #[must_use]
 #[derive(Serialize, Deserialize, Hash, Ord, PartialOrd, Debug, Copy, Clone, Eq, PartialEq)]
@@ -225,7 +222,6 @@ impl Team {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 
 pub struct GameStateTotal {
@@ -293,7 +289,7 @@ impl GameState {
             factions: Tribe::new(),
         }
     }
-    
+
     pub fn hash_me(&self) -> u64 {
         use std::hash::Hash;
         use std::hash::Hasher;
@@ -397,7 +393,6 @@ impl GameState {
             neutral,
         }
     }
-
 }
 
 #[derive(
@@ -573,7 +568,7 @@ impl Tribe {
     pub fn remove_inner(&mut self, a: usize) {
         self.cells[a] = GameCell::Empty;
     }
-    
+
     pub fn copy_cell_if_occupied(&mut self, other: &Tribe, index: usize) {
         assert!(index != hex::PASS_MOVE_INDEX);
 
@@ -588,12 +583,10 @@ impl Tribe {
     pub fn get_cell_inner(&self, index: usize) -> &GameCell<Piece> {
         assert!(index != hex::PASS_MOVE_INDEX);
         &self.cells[index]
-        
     }
     pub fn get_cell(&self, a: Axial) -> &GameCell<Piece> {
         self.get_cell_inner(a.to_index())
     }
-
 
     pub fn add_cell_inner(
         &mut self,
@@ -607,7 +600,6 @@ impl Tribe {
             height: stack,
             has_lighthouse,
         });
-        
     }
     pub fn add_cell(&mut self, a: Axial, stack: StackHeight, team: Team, has_lighthouse: bool) {
         let a = a.to_index();
@@ -833,5 +825,3 @@ impl Map {
 //     //     start2,
 //     // }
 // }
-
-

@@ -1,8 +1,4 @@
-use crate::{
-    mesh::small_mesh::SmallMesh,
-    move_build::NormalMove,
-    unit::{LastSeenObjects, LastSeenObjectsAll},
-};
+use crate::{mesh::small_mesh::SmallMesh, move_build::NormalMove, unit::LastSeenObjectsAll};
 
 use super::*;
 
@@ -27,7 +23,6 @@ use futures::{
     SinkExt, StreamExt,
     channel::mpsc::{Receiver, Sender},
 };
-use hex::PASS_MOVE_INDEX;
 
 #[derive(Debug, Clone)]
 pub enum AnimationCommand {

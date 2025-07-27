@@ -119,7 +119,7 @@ mod spoke {
             &mut self,
             a: NormalMove,
             effect: &move_build::NormalMoveEffect,
-            team: Team,
+            _team: Team,
             _world: &board::MyWorld,
             game: &GameState,
             spoke_temp: SpokeTempInfo,

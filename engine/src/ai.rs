@@ -9,71 +9,50 @@ use tinyvec::ArrayVec;
 pub const MAX_NODE_VISIT: usize = 1_000_000;
 
 impl GameState {
-    fn moves_that_block_better(
-        &self,
-        index: usize,
-        team: Team,
-        world: &board::MyWorld,
-        ret: &mut SmallMesh,
-        spoke_info: &SpokeInfo,
-    ) {
-        for dir in HDir::all() {
-            let team2 = spoke_info.get(index, dir);
-            if team2 == !team {
-            } else {
-                continue;
-            }
+    // fn moves_that_block_better(
+    //     &self,
+    //     index: usize,
+    //     team: Team,
+    //     world: &board::MyWorld,
+    //     ret: &mut SmallMesh,
+    //     spoke_info: &SpokeInfo,
+    // ) {
+    //     for dir in HDir::all() {
+    //         let team2 = spoke_info.get(index, dir);
+    //         if team2 == !team {
+    //         } else {
+    //             continue;
+    //         }
 
-            //tddtuts-utusbtddcdc
-            for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
-                let index2 = index2 as usize;
-                let num_attack = spoke_info.get_num_attack(index2);
+    //         //tddtuts-utusbtddcdc
+    //         for index2 in unit::ray(Axial::from_index(&index), dir, world).1 {
+    //             let index2 = index2 as usize;
+    //             let num_attack = spoke_info.get_num_attack(index2);
 
-                match self.factions.get_cell_inner(index2) {
-                    &unit::GameCell::Piece(unit::Piece {
-                        height: stack_height,
-                        team: team2,
-                        ..
-                    }) => {
-                        let height = stack_height.to_num();
-                        debug_assert_eq!(team2, !team);
-                        if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
-                        {
-                            ret.inner.set(index2 as usize, true);
-                        }
-                        break;
-                    }
-                    unit::GameCell::Empty => {
-                        if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
-                            ret.inner.set(index2 as usize, true);
-                        }
-                    }
-                }
-            }
+    //             match self.factions.get_cell_inner(index2) {
+    //                 &unit::GameCell::Piece(unit::Piece {
+    //                     height: stack_height,
+    //                     team: team2,
+    //                     ..
+    //                 }) => {
+    //                     let height = stack_height.to_num();
+    //                     debug_assert_eq!(team2, !team);
+    //                     if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
+    //                     {
+    //                         ret.inner.set(index2 as usize, true);
+    //                     }
+    //                     break;
+    //                 }
+    //                 unit::GameCell::Empty => {
+    //                     if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
+    //                         ret.inner.set(index2 as usize, true);
+    //                     }
+    //                 }
+    //             }
+    //         }
 
-            // for (index2, fo) in self.los_ray(index, dir, world) {
-            //     let num_attack = get_num_attack(spoke_info, index2);
-
-            //     match fo {
-            //         LosRayItem::Move => {
-            //             if num_attack[team] >= num_attack[!team] && num_attack[team] > 0 {
-            //                 ret.inner.set(index2 as usize, true);
-            //             }
-            //         }
-            //         LosRayItem::End {
-            //             height,
-            //             team: team2,
-            //         } => {
-            //             debug_assert_eq!(team2, !team);
-            //             if num_attack[team] > height as i64 && num_attack[team] >= num_attack[!team]
-            //             {
-            //                 ret.inner.set(index2 as usize, true);
-            //             }
-            //         }
-            //     }
-            // }
-        }
-    }
+    //     }
+    // }
 
     fn moves_that_increase_los_better(
         &self,

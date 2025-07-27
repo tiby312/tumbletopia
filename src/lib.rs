@@ -719,7 +719,6 @@ pub async fn game_play_thread(
             }
         }
 
-
         console_dbg!("main thread iter");
         let r1 = match player_type[team.index()] {
             engine::Slot::Ai => {
