@@ -398,54 +398,6 @@ impl GameState {
         }
     }
 
-    // pub fn threat_score(&self, world: &MyWorld) -> (usize, usize) {
-    //     let total_num = world.get_game_cells().inner.count_ones();
-
-    //     let game = self;
-    //     let mut white_score = 0;
-    //     let mut black_score = 0;
-    //     for index in world.get_game_cells().inner.iter_ones() {
-    //         let mut num_white = 0;
-    //         let mut num_black = 0;
-    //         for (_, rest) in game.factions.iter_end_points(world, index) {
-    //             if let Some((_, team)) = rest {
-    //                 match team {
-    //                     ActiveTeam::White => num_white += 1,
-    //                     ActiveTeam::Black => num_black += 1,
-    //                     ActiveTeam::Neutral => {}
-    //                 }
-    //             }
-    //         }
-
-    //         if let Some((height, tt)) = game.factions.get_cell_inner(index) {
-    //             let height = height as i8;
-    //             match tt {
-    //                 ActiveTeam::White => {
-    //                     white_score += 1;
-    //                     if num_black >= height {
-    //                         black_score += 1000
-    //                     }
-    //                 }
-    //                 ActiveTeam::Black => {
-    //                     black_score += 1;
-    //                     if num_white >= height {
-    //                         white_score += 1000;
-    //                     }
-    //                 }
-    //                 ActiveTeam::Neutral => {}
-    //             }
-    //         } else {
-    //             let ownership = num_white - num_black;
-
-    //             if ownership > 0 {
-    //                 white_score += 1;
-    //             } else if ownership < 0 {
-    //                 black_score += 1;
-    //             }
-    //         };
-    //     }
-    //     (white_score, black_score)
-    // }
 }
 
 #[derive(
@@ -495,12 +447,6 @@ pub enum PieceType {
     Lighthouse,
 }
 
-// #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
-
-// pub enum Pieces{
-//     Normal(StackHeight,Team)
-// }
-
 #[derive(PartialOrd, Ord, Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 
 pub enum GameCell<T> {
@@ -511,13 +457,7 @@ pub enum GameCell<T> {
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq, Hash, Clone)]
 pub struct Tribe {
-    pub cells: Vec<GameCell<Piece>>, // pub cells: [SmallMesh; 3],
-                                     // pub team: SmallMesh,
-                                     // pub ice: SmallMesh,
-                                     // //This just signifies if there is a number in cells.
-                                     // //This way you can just check one mesh to see if a piece is there or not
-                                     // //instead of checking 3
-                                     // pub piece: SmallMesh,
+    pub cells: Vec<GameCell<Piece>>,
 }
 
 pub fn ray(
@@ -632,19 +572,8 @@ impl Tribe {
     }
     pub fn remove_inner(&mut self, a: usize) {
         self.cells[a] = GameCell::Empty;
-        // self.cells[0].inner.set(a, false);
-        // self.cells[1].inner.set(a, false);
-        // self.cells[2].inner.set(a, false);
-        // self.piece.inner.set(a, false);
-        // self.team.inner.set(a, false);
     }
-    // pub fn has_a_piece(&self, index: usize) -> bool {
-    //     //TODO worth having a seperate piece bitfield????
-    //     //Check smaller bits first. more likely to be set.
-    //     //self.cells[0].is_set(a) || self.cells[1].is_set(a) || self.cells[2].is_set(a)
-    //     self.piece.inner[index]
-    // }
-
+    
     pub fn copy_cell_if_occupied(&mut self, other: &Tribe, index: usize) {
         assert!(index != hex::PASS_MOVE_INDEX);
 
@@ -658,54 +587,13 @@ impl Tribe {
 
     pub fn get_cell_inner(&self, index: usize) -> &GameCell<Piece> {
         assert!(index != hex::PASS_MOVE_INDEX);
-        // match &self.cells[index] {
-        //     GameCell::Empty => None,
-        //     GameCell::Piece(height, team) => Some((height.clone() as u8 + 1, *team)),
-        // }
         &self.cells[index]
-        // if !self.piece.inner[index as usize] {
-        //     return None;
-        // }
-
-        // let bit0 = self.cells[0].inner[index] as usize;
-        // let bit1 = self.cells[1].inner[index] as usize;
-        // let bit2 = self.cells[2].inner[index] as usize;
-
-        // let val = bit0 | bit1 << 1 | bit2 << 2;
-
-        // if val == 7 {
-        //     return Some((2, Team::Neutral));
-        // }
-        // if val == 0 {
-        //     return Some((6, Team::Neutral));
-        // }
-
-        // let team = if self.team.inner[index] {
-        //     Team::White
-        // } else {
-        //     Team::Black
-        // };
-        // Some((val as u8, team))
+        
     }
     pub fn get_cell(&self, a: Axial) -> &GameCell<Piece> {
         self.get_cell_inner(a.to_index())
     }
 
-    // fn set_coord(&mut self, index: usize, stack: u8) {
-    //     self.cells[index]=GameCell::P
-    //     // assert!(stack <= 7);
-    //     // let bit2 = ((stack >> 2) & 1) != 0;
-    //     // let bit1 = ((stack >> 1) & 1) != 0;
-    //     // let bit0 = ((stack >> 0) & 1) != 0;
-
-    //     // self.cells[0].inner.set(index, bit0);
-    //     // self.cells[1].inner.set(index, bit1);
-    //     // self.cells[2].inner.set(index, bit2);
-
-    //     // //if stack != 0 {
-    //     // self.piece.inner.set(index, true);
-    //     // //}
-    // }
 
     pub fn add_cell_inner(
         &mut self,
@@ -714,40 +602,12 @@ impl Tribe {
         team: Team,
         has_lighthouse: bool,
     ) {
-        // let s = match stack {
-        //     1 => StackHeight::Stack1,
-        //     2 => StackHeight::Stack2,
-        //     3 => StackHeight::Stack3,
-        //     4 => StackHeight::Stack4,
-        //     5 => StackHeight::Stack5,
-        //     6 => StackHeight::Stack6,
-        //     _ => unreachable!(),
-        // };
-
-        //TODO pass piece type
         self.cells[a] = GameCell::Piece(Piece {
             team,
             height: stack,
             has_lighthouse,
         });
-        // match team {
-        //     Team::White => self.team.inner.set(a, true),
-        //     Team::Black => self.team.inner.set(a, false),
-        //     Team::Neutral => {
-        //         let val = if stack == 2 {
-        //             7
-        //         } else if stack == 6 {
-        //             0
-        //         } else {
-        //             panic!("impossible")
-        //         };
-
-        //         self.set_coord(a, val);
-        //         self.team.inner.set(a, false);
-        //         return;
-        //     }
-        // }
-        // self.set_coord(a, stack);
+        
     }
     pub fn add_cell(&mut self, a: Axial, stack: StackHeight, team: Team, has_lighthouse: bool) {
         let a = a.to_index();
@@ -974,121 +834,4 @@ impl Map {
 //     // }
 // }
 
-impl GameStateTotal {
-    //TODO make part of GameState
-    // pub fn new(world: &board::MyWorld, map: &unit::Map) -> (GameStateTotal, Team) {
-    //     //let map = &world.map;
 
-    //     let mut cells = Tribe::new();
-
-    //     for f in map.white.iter_mesh(Axial::zero()) {
-    //         cells.add_cell(f, 1, Team::White);
-    //     }
-
-    //     for f in map.black.iter_mesh(Axial::zero()) {
-    //         cells.add_cell(f, 1, Team::Black);
-    //     }
-
-    //     for f in map.forests.iter_mesh(Axial::zero()) {
-    //         cells.add_cell(f, 1, Team::Neutral);
-    //     }
-
-    //     for m in map.water.iter_mesh(Axial::zero()) {
-    //         cells.add_cell(m, 6, Team::Neutral);
-    //     }
-
-    //     // for w in map.ice.iter_mesh(Axial::zero()) {
-    //     //     cells.ice.add(w);
-    //     // }
-
-    //     let game = GameState { factions: cells };
-
-    //     let mut game_total = GameStateTotal {
-    //         tactical: game,
-    //         fog: std::array::from_fn(|_| SmallMesh::new()),
-    //     };
-
-    //     //Fill everything with fog.
-    //     //game_total.fog[0].inner |= world.get_game_cells().inner;
-    //     //game_total.fog[1].inner |= world.get_game_cells().inner;
-
-    //     game_total.update_fog(&world, Team::White);
-    //     game_total.update_fog(&world, Team::Black);
-
-    //     (game_total, Team::White)
-    // }
-}
-
-// mod test {
-
-//     fn doop() {
-//         let foo = "
-// -----s--s-eb-ev-b--
-// -c-c-s-tct---cs--c-
-// tc-s-d-re-srces-s--
-// --brc----dc--r-sr-r
-// -r---s--rtd-bbb-c--
-// cs--cs----s---csc--
-// bs----s--d--c--s--c
-// ducd-uc-d-ub-dubd-u
-// test-est--erte-rte-
-// b-rbbr---k---ds-tds
-// c---rc-b-uc-r-s--sc
-// s--cbs---ds---d--bs
-// c--sc---s-e--ses-s-
-// rr-dr----d----rr-dr
-// ssetseteeessssettse
-// d--sd-d-sdd--s---s-
-// bcs-d-ss-e--sudtc--
-// bb---cs--d----s---r
-// -sr-se--se--se----r
-// sccrbs--ses--ses-sc
-// c-b--s-r-ts-ccd----
-// rc-rr----d----rc-rr
-// -r-e--rte--r-e--te-
-// rdsr-ds--dd-r-ds-ds
-// -bbrr----c-bs-rb-r-
-// s-s-ddssd-ds-dd-s-s
-// c-rse-rr-e-ss-e-s-c
-// t---tt-d---d--dttd-
-// d--d--t--d-t---dtt-
-// -t--d--t---t-d-dd-t
-// --t-td-t-t-dd--d---
-// -rrs-r---cb---bb---
-// s--c--s--t---cdbc--
-// r--c----cs-r--d--b-
-// s-cr-d---er-rtdt-c-
-// -se-se--ser-se-t---
-// --es-e--see--s-e-ss
-// c--ct-------c-t--cc
-// ccc-e-ss----s-----d
-// --ttd-tt-d---dtdd--
-// ---d-c-s--d-rtst-dc
-// c--ctc-c-d---ssss--
-// tddt-t--dt---t-d-d-
-// t-dt---t-t-d--dtdd-
-// -tbc--b-s--c----b-t
-// bbbr-rc--dt----r---
-// --d---ss---s----bcb
-// bb-t-bbsrd-s----s--
-// dcc-surr-f-s--sd-sd
-// s---s-bdd-tct---b-b
-// -s--ds---cs-s-ds---
-// --ddttt------d-e---
-// ----sc-s-----ccssc-
-// duc----tt---e-b-td-
-// -----ds--tdsc--er-t
-// sdt--ect-----e-sc-s
-// -tccd--t-t-ct--rdd-
-// --s---s-cttc-d-cr-c
-// cs--c----r--b----dr
-// -r--r-rbbcr---dr-bs
-// -r--r-r-bct---c--b-
-// -r--r-r-d-t-c-d--b-
-// "
-//         .trim()
-//         .split('\n');
-
-//         //TODO make sure first player wins in all these cases using the AI.
-//     }
-// }
