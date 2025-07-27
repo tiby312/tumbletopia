@@ -10,7 +10,6 @@ use engine::Zobrist;
 use engine::mesh;
 use engine::mesh::small_mesh::SmallMesh;
 use engine::move_build::NormalMove;
-use engine::move_build::NormalMoveEffect;
 use engine::moves::SpokeInfo;
 use glem::rotate_y;
 use gloo::console::console_dbg;

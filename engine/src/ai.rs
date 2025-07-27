@@ -221,8 +221,7 @@ impl GameState {
 pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
     let reinforce = |team, game: &mut GameState| {
         let mut spoke = SpokeInfo::new(game, world);
-        let fog = &mesh::small_mesh::SmallMesh::new();
-
+        
         for &index in world.land_as_vec.iter() {
             let n = spoke.get_num_attack(index);
 
@@ -268,7 +267,6 @@ pub fn calculate_secure_points(game: &GameState, world: &MyWorld) -> [i64; 2] {
     };
 
     let expand = |team, game: &mut GameState| {
-        let fog = &mesh::small_mesh::SmallMesh::new();
         let mut progress = true;
 
         let mut spoke = SpokeInfo::new(game, world);
