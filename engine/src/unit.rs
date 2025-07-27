@@ -76,8 +76,7 @@ impl LastSeenObjects {
         //if we are adding a piece,
         //check if we can see it. If we can't, don't update last seen.
 
-        let darkness = game_after.darkness(world, team);
-
+        
         let mut handle_this = vec![];
         let j = m.0.coord.0;
         if let Some(p) = m.1.captured_unit(&m.0, game_after) {
@@ -106,7 +105,6 @@ impl LastSeenObjects {
         let mut diffs = vec![];
 
         for j in handle_this {
-            //if self.state.factions.cells[j] != game_after.factions.cells[j] {
             diffs.push(CellDiff {
                 old: self.state.factions.cells[j].clone(),
                 pos: Coordinate(j),
@@ -114,89 +112,13 @@ impl LastSeenObjects {
             self.state
                 .factions
                 .copy_cell_if_occupied(&game_after.factions, j);
-            //}
+            
         }
-
-        // //copy everything that is visible to state.
-        // for &j in world.land_as_vec.iter() {
-        //     if !darkness.inner[j] {
-        //         if self.state.factions.cells[j] != game_after.factions.cells[j] {
-        //             diffs.push(CellDiff {
-        //                 old: self.state.factions.cells[j].clone(),
-        //                 pos: Coordinate(j),
-        //             });
-        //             self.state
-        //                 .factions
-        //                 .copy_cell_if_occupied(&game_after.factions, j);
-        //         }
-        //     } else {
-        //         // if self.state.factions.cells[j]!=GameCell::Empty{
-        //         //     diffs.push(CellDiff {
-        //         //         old: self.state.factions.cells[j].clone(),
-        //         //         pos: Coordinate(j),
-        //         //     });
-        //         //     self.state
-        //         //         .factions
-        //         //         .cells[j]=GameCell::Empty;
-        //         // }
-        //     }
-        // }
 
         LastSeenObjectsEffect { diff: diffs }
     }
 }
 
-// #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
-// pub struct Factions {
-//     pub cells: Tribe,
-// }
-// impl Factions {
-//     // pub fn has_a_set(&self, coord: Axial) -> bool {
-//     //     self.black.is_set(coord) || self.white.is_set(coord)
-//     // }
-
-//     // pub fn has_a_set_type(&self, coord: Axial) -> Option<UnitType> {
-//     //     if let Some(a) = self.black.try_get_type(coord) {
-//     //         return Some(a);
-//     //     }
-
-//     //     self.white.try_get_type(coord)
-//     // }
-
-//     // pub fn get_unit_mut(&mut self, team: ActiveTeam, coord: Axial) -> &mut UnitData {
-//     //     self.relative_mut(team)
-//     //         .this_team
-//     //         .find_slow_mut(&coord)
-//     //         .unwrap()
-//     // }
-//     // pub fn get_unit(&self, team: ActiveTeam, coord: Axial) -> &UnitData {
-//     //     self.relative(team).this_team.find_slow(&coord).unwrap()
-//     // }
-//     // pub fn relative_mut(&mut self, team: ActiveTeam) -> FactionRelative<&mut Tribe> {
-//     //     match team {
-//     //         ActiveTeam::White => FactionRelative {
-//     //             this_team: &mut self.white,
-//     //             that_team: &mut self.black,
-//     //         },
-//     //         ActiveTeam::Black => FactionRelative {
-//     //             this_team: &mut self.black,
-//     //             that_team: &mut self.white,
-//     //         },
-//     //     }
-//     // }
-//     // pub fn relative(&self, team: ActiveTeam) -> FactionRelative<&Tribe> {
-//     //     match team {
-//     //         ActiveTeam::White => FactionRelative {
-//     //             this_team: &self.white,
-//     //             that_team: &self.black,
-//     //         },
-//     //         ActiveTeam::Black => FactionRelative {
-//     //             this_team: &self.black,
-//     //             that_team: &self.white,
-//     //         },
-//     //     }
-//     // }
-// }
 
 #[must_use]
 #[derive(Serialize, Deserialize, Hash, Ord, PartialOrd, Debug, Copy, Clone, Eq, PartialEq)]
@@ -303,45 +225,6 @@ impl Team {
     }
 }
 
-// pub struct FactionRelative<T> {
-//     pub this_team: T,
-//     pub that_team: T,
-// }
-// impl FactionRelative<&mut Tribe> {
-//     pub fn has_a_set(&self, coord: Axial) -> bool {
-//         self.this_team.is_set(coord) || self.that_team.is_set(coord)
-//     }
-// }
-// impl FactionRelative<&Tribe> {
-//     pub fn has_a_set(&self, coord: Axial) -> bool {
-//         self.this_team.is_set(coord) || self.that_team.is_set(coord)
-//     }
-// }
-
-// #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
-// pub struct Terrain {
-//     pub land: BitField,
-//     pub forest: BitField,
-//     pub mountain: BitField,
-// }
-// impl Terrain {
-//     pub fn is_set(&self, a: Axial) -> bool {
-//         self.land.is_set(a) || self.forest.is_set(a) || self.mountain.is_set(a)
-//     }
-//     pub fn gen_all_terrain(&self) -> BitField {
-//         let mut k = BitField::new();
-//         k.union_with(&self.land);
-//         k.union_with(&self.forest);
-//         k.union_with(&self.mountain);
-//         k
-//     }
-// }
-// #[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, Eq, PartialEq)]
-// pub struct Environment {
-//     pub terrain: Terrain,
-//     pub fog: BitField,
-//     pub powerups: Vec<Axial>,
-// }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 
@@ -352,14 +235,9 @@ pub struct GameStateTotal {
     pub history: MoveHistory<HistoryOneMove>,
 }
 
-impl GameStateTotal {}
 //Additionally removes need to special case animation.
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct GameState {
-    //This only has lighthouse locations.
-    //TODO use a different datastructure that is just a bitfield with team info
-    //pub lighthouses: Tribe,
-    //Lighthouses are added to factions as neutral pieces.
     pub factions: Tribe,
 }
 
@@ -408,8 +286,6 @@ impl GameState {
         }
 
         darkness
-
-        // SmallMesh::new()
     }
 
     pub fn new() -> GameState {
@@ -417,22 +293,7 @@ impl GameState {
             factions: Tribe::new(),
         }
     }
-    // pub fn bake_fog(&self, fog: &SmallMesh) -> GameState {
-    //     let mut gg = self.clone();
-    //     // let fog = match team {
-    //     //     ActiveTeam::White => &self.fog[0],
-    //     //     ActiveTeam::Black => &self.fog[1],
-    //     //     ActiveTeam::Neutral => unreachable!(),
-    //     // };
-
-    //     //TODO use bit and/oring
-    //     for a in fog.iter_mesh(Axial::zero()) {
-    //         gg.factions.remove(a);
-    //         gg.factions.add_cell(a, StackHeight::Stack6, Team::Neutral);
-    //     }
-
-    //     gg
-    // }
+    
     pub fn hash_me(&self) -> u64 {
         use std::hash::Hash;
         use std::hash::Hasher;

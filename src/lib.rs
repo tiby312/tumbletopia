@@ -719,14 +719,6 @@ pub async fn game_play_thread(
             }
         }
 
-        //Add AIIIIII.
-        // let foo = match game_type {
-        //     engine::GameType::SinglePlayer(_) => team == Team::Black,
-        //     engine::GameType::PassPlay(_) => false,
-        //     engine::GameType::AIBattle(_) => true,
-        //     engine::GameType::MapEditor(_) => unreachable!(),
-        //     engine::GameType::Replay(_) => unreachable!(),
-        // };
 
         console_dbg!("main thread iter");
         let r1 = match player_type[team.index()] {
