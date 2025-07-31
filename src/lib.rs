@@ -814,7 +814,8 @@ async fn render_command(
     engine_worker: &mut shogo::worker::WorkerSender<dom::WorkerToDom>,
     interrupt_rx: &mut futures::channel::mpsc::Receiver<()>,
 ) -> ace::Response {
-    let game = &game_total.tactical;
+    let game_total = game_total.clone();
+    //let game = &game_total.tactical;
     let scroll_manager = &mut e.scroll_manager;
     //let last_matrix = &mut e.last_matrix;
     let ctx = &e.ctx;
@@ -852,7 +853,7 @@ async fn render_command(
     let mut camera_moving_last = scroll::CameraMoving::Stopped;
 
     let mut show_hidden_units = false;
-    let score_data = game.score(world);
+    let score_data = game_total.tactical.score(world);
     let score_data = dom::ScoreData {
         white: score_data.white,
         black: score_data.black,
@@ -865,7 +866,7 @@ async fn render_command(
     // let game_str = game.into_string(world);
     // let history_str = game_total.foo.into_string(world);
 
-    let spoke = moves::SpokeInfo::new(&game, world);
+    let spoke = moves::SpokeInfo::new(&game_total.tactical, world);
 
     struct Foo {
         start: Axial,
@@ -875,7 +876,7 @@ async fn render_command(
     }
 
     let mut repaint_ui = None;
-
+    let mut awaiting_popup_stop = None;
     //let mut waiting_engine_ack = false;
     //console_dbg!(command);
     match command {
@@ -940,7 +941,7 @@ async fn render_command(
         ace::Command::GetMouseInputSelection { selection, grey } => {
             match selection {
                 ace::CellSelection::MoveSelection(axial, small_mesh, have_moved) => {
-                    let game2 = game.convert_to_playable(world, team);
+                    let game2 = game_total.tactical.convert_to_playable(world, team);
                     let spoke2 = SpokeInfo::new(&game2, world);
                     let mut suicidal_moves = mesh::small_mesh::SmallMesh::from_iter_move(
                         NormalMove::generate_suicidal(&game2, world, team, &spoke2),
@@ -970,20 +971,31 @@ async fn render_command(
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
         ace::Command::WaitAI => {}
         ace::Command::Wait => {}
-        ace::Command::Popup(_str) => {
-            todo!();
-            // if str.is_empty() {
-            //     engine_worker.post_message(UiButton::HidePopup);
-            // } else {
-            //     engine_worker.post_message(UiButton::ShowPopup(str));
-            // }
-
-            // return ace::Response::Ack;
+        ace::Command::Popup(str) => {
+            engine_worker.post_message(dom::WorkerToDom::ShowPopup(str.clone()));
+            awaiting_popup_stop = Some(str);
         }
         ace::Command::Poke => {
             poking = 3;
         }
     };
+
+    let game_total = if awaiting_popup_stop.is_some() {
+        let game = GameState::new();
+        let last_seen = LastSeenObjectsAll::new(&GameState::new());
+
+        let game = GameStateTotal {
+            tactical: game,
+            last_seen,
+            history: MoveHistory::new(),
+        };
+
+        game
+    } else {
+        game_total
+    };
+
+    let game = &game_total.tactical;
 
     let grid_snap = |c: Axial, cc| {
         let pos = grid_matrix.hex_axial_to_world(&c);
@@ -1076,6 +1088,11 @@ async fn render_command(
                             }
                         }
                         DomToWorker::Button(s) => {
+                            if let Some(oo)=&awaiting_popup_stop && s=="popup_ack"{
+                                engine_worker.post_message(dom::WorkerToDom::HidePopup(oo.clone()));
+
+                                return ace::Response::Ack;
+                            }
 
                             button_pushed = Some(s.clone());
 

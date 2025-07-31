@@ -153,6 +153,8 @@ pub enum WorkerToDom {
     ExportMap(String),
     CantParseReplay,
     ReplayFinish,
+    ShowPopup(String),
+    HidePopup(String),
     Ack,
 }
 
@@ -250,6 +252,7 @@ fn engine_handlers<'a>(
         reg_button(worker, "lighthouse"),
         reg_button(worker, "b_next"),
         reg_button(worker, "b_prev"),
+        reg_button(worker, "popup_ack"),
         // reg_button(worker, "b_ice"),
         // reg_button(worker, "b_land"),
         // reg_button(worker, "b_water"),
@@ -311,6 +314,14 @@ pub async fn start_game(game_type: GameType, host: &str) {
                 let hay = hay.unwrap_throw();
 
                 match hay {
+                    WorkerToDom::ShowPopup(s)=>{
+                        let foo = shogo::utils::get_by_id_elem("nextplayer_popup");
+                        foo.set_attribute("style", "display:grid").unwrap_throw();
+                    }
+                    WorkerToDom::HidePopup(s)=>{
+                        let foo = shogo::utils::get_by_id_elem("nextplayer_popup");
+                        foo.set_attribute("style", "display:none;").unwrap_throw();
+                    }
                     WorkerToDom::TextUpdate(t,p,console_entry)=>{
                         text=t;
                         score_data=Some(p);

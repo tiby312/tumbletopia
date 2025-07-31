@@ -114,6 +114,22 @@
         text-decoration: none;
         font-size: 16px;
       }
+      #nextplayer_popup{
+        z-index: 10;
+        display:block;
+        position:absolute;
+        padding:10px;
+        margin:auto;
+        background-color: #213022; /* Green */
+        
+        border-radius: 5px;
+        top:50%;
+        left:50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+      }
       #undo{
         /* z-index: 10;
         position: absolute;
@@ -293,6 +309,11 @@
     <button onClick="window.location.reload();">Main Menu</button>
   </div>
 
+  <div id="nextplayer_popup" style="display:none;">              
+    <text class="foo" >Next Player Turn</text>
+    <text class="foo" id="nextplayer_text">It is X turn</text>
+    <button id="popup_ack" class="editor-button">ack_popup</button>
+  </div>
   <!--
   <div id="editor">
   <button id="b_land" class="editor-button"> Land</button>

@@ -321,6 +321,16 @@ impl CommandSender {
         the_move
     }
 
+    pub async fn wait_popup(&mut self, team: Team, game: &mut unit::GameStateTotal, foo: &str) {
+        let data = self
+            .send_command(team, game, Command::Popup(foo.into()))
+            .await;
+
+        let Response::Ack = data else {
+            unreachable!();
+        };
+    }
+
     //TODO use
     async fn send_command(
         &mut self,
@@ -674,6 +684,9 @@ pub async fn handle_player(
     doop: &mut CommandSender,
     team: Team,
 ) -> NormalMove {
+    doop.wait_popup(team, game, &format!("{:?}: Ready for your turn?", team))
+        .await;
+
     let undo = async |doop: &mut CommandSender, game: &mut unit::GameStateTotal| {
         //log!("undoing turn!!!");
         assert!(game.history.inner.len() >= 2, "Not enough moves to undo");
