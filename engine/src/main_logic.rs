@@ -83,7 +83,7 @@ pub enum Command {
     HideUndo,
     Popup(String),
     Poke,
-    Wait,
+    Wait(Option<usize>),
     RepaintUI(String),
 }
 
@@ -303,7 +303,7 @@ impl CommandSender {
     }
 
     pub async fn wait_forever(&mut self, team: Team, game: &mut unit::GameStateTotal) {
-        let data = self.send_command(team, game, Command::Wait).await;
+        let data = self.send_command(team, game, Command::Wait(None)).await;
 
         let Response::AnimationFinish = data else {
             unreachable!();
@@ -320,7 +320,20 @@ impl CommandSender {
         //console_dbg!("woke up");
         the_move
     }
+    pub async fn wait_sometime(
+        &mut self,
+        team: Team,
+        game: &mut unit::GameStateTotal,
+        ticks: usize,
+    ) {
+        let data = self
+            .send_command(team, game, Command::Wait(Some(ticks)))
+            .await;
 
+        let Response::Ack = data else {
+            unreachable!();
+        };
+    }
     pub async fn wait_popup(&mut self, team: Team, game: &mut unit::GameStateTotal, foo: &str) {
         let data = self
             .send_command(team, game, Command::Popup(foo.into()))

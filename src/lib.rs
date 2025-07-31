@@ -779,6 +779,8 @@ pub async fn game_play_thread(
             false,
         );
         console_dbg!(curr_eval_player);
+
+        doop.wait_sometime(team, &mut game, 60).await;
     };
 
     //When ai vs ai finishes, allow player to look around.
@@ -875,6 +877,7 @@ async fn render_command(
         grey: bool,
     }
 
+    let mut tick_counter = 0;
     let mut repaint_ui = None;
     let mut awaiting_popup_stop = None;
     //let mut waiting_engine_ack = false;
@@ -970,7 +973,10 @@ async fn render_command(
         }
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
         ace::Command::WaitAI => {}
-        ace::Command::Wait => {}
+        ace::Command::Wait(None) => {}
+        ace::Command::Wait(Some(ticks)) => {
+            tick_counter = ticks;
+        }
         ace::Command::Popup(str) => {
             engine_worker.post_message(dom::WorkerToDom::ShowPopup(str.clone()));
             awaiting_popup_stop = Some(str);
@@ -1046,7 +1052,7 @@ async fn render_command(
             }
             futures::select! {
                 _ = interrupt_rx.next()=>{
-                    matches!(command_copy,ace::Command::Wait);
+                    matches!(command_copy,ace::Command::Wait(None));
                     return ace::Response::AnimationFinish;
                 },
                 () = timer.next().fuse() =>{
@@ -1130,6 +1136,12 @@ async fn render_command(
             }
         }
 
+        if tick_counter != 0 {
+            tick_counter -= 1;
+            if tick_counter == 0 {
+                return ace::Response::Ack;
+            }
+        }
         if let Some((x, y)) = resize_canvas {
             let xx = x as u32;
             let yy = y as u32;
