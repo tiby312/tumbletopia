@@ -786,7 +786,7 @@ pub async fn game_play_thread(
         );
         console_dbg!(curr_eval_player);
 
-        //doop.wait_sometime(team, &mut game, 60).await;
+        doop.wait_sometime(team, &mut game, 60*2).await;
         doop.wait_popup(team, &mut game, &format!("{:?}: Confirm End Turn", team))
             .await;
     };

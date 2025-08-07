@@ -317,7 +317,11 @@ pub async fn start_game(game_type: GameType, host: &str) {
                     WorkerToDom::ShowPopup(s)=>{
                         let foo = shogo::utils::get_by_id_elem("nextplayer_popup");
                         foo.set_attribute("style", "display:grid").unwrap_throw();
+
+                        let foo = shogo::utils::get_by_id_elem("nextplayer_text");
+                        foo.set_inner_html(&s);                        
                         
+
                     }
                     WorkerToDom::HidePopup(s)=>{
                         let foo = shogo::utils::get_by_id_elem("nextplayer_popup");
