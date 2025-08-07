@@ -754,6 +754,12 @@ pub async fn game_play_thread(
                 the_move
             }
             engine::Slot::Player => {
+                let mut g = game.clone();
+                g.tactical = GameState::new();
+                g.last_seen = LastSeenObjectsAll::new(&g.tactical);
+                doop.wait_popup(team, &mut g, &format!("{:?}: Ready for your turn?", team))
+                    .await;
+
                 engine::main_logic::handle_player(&mut game, &world, &mut doop, team).await
             }
         };
@@ -780,7 +786,9 @@ pub async fn game_play_thread(
         );
         console_dbg!(curr_eval_player);
 
-        doop.wait_sometime(team, &mut game, 60).await;
+        //doop.wait_sometime(team, &mut game, 60).await;
+        doop.wait_popup(team, &mut game, &format!("{:?}: Confirm End Turn", team))
+            .await;
     };
 
     //When ai vs ai finishes, allow player to look around.
@@ -817,9 +825,7 @@ async fn render_command(
     interrupt_rx: &mut futures::channel::mpsc::Receiver<()>,
 ) -> ace::Response {
     let game_total = game_total.clone();
-    //let game = &game_total.tactical;
     let scroll_manager = &mut e.scroll_manager;
-    //let last_matrix = &mut e.last_matrix;
     let ctx = &e.ctx;
     let canvas = &e.canvas;
     let grid_matrix = &e.grid_matrix;
@@ -854,7 +860,6 @@ async fn render_command(
     let mut poking = 0;
     let mut camera_moving_last = scroll::CameraMoving::Stopped;
 
-    let mut show_hidden_units = false;
     let score_data = game_total.tactical.score(world);
     let score_data = dom::ScoreData {
         white: score_data.white,
@@ -868,7 +873,7 @@ async fn render_command(
     // let game_str = game.into_string(world);
     // let history_str = game_total.foo.into_string(world);
 
-    let spoke = moves::SpokeInfo::new(&game_total.tactical, world);
+    //let spoke = moves::SpokeInfo::new(&game_total.tactical, world);
 
     struct Foo {
         start: Axial,
@@ -880,41 +885,21 @@ async fn render_command(
     let mut tick_counter = 0;
     let mut repaint_ui = None;
     let mut awaiting_popup_stop = None;
-    //let mut waiting_engine_ack = false;
-    //console_dbg!(command);
+
     match command {
         ace::Command::RepaintUI(foo) => {
             repaint_ui = Some(foo);
-            // let k = update_text(world, grid_matrix, viewport, &cgmath::Matrix4::identity());
-            // engine_worker.post_message(dom::WorkerToDom::TextUpdate(k, score_data.clone(), foo));
-            // return ace::Response::Ack;
         }
         ace::Command::HideUndo => {
             engine_worker.post_message(dom::WorkerToDom::HideUndo);
-            //waiting_engine_ack = true;
             return ace::Response::Ack;
         }
         ace::Command::ShowUndo => {
             engine_worker.post_message(dom::WorkerToDom::ShowUndo);
-            //waiting_engine_ack = true;
             return ace::Response::Ack;
         }
         ace::Command::Animate(ak) => match ak {
             engine::main_logic::AnimationCommand::Movement { unit, end } => {
-                // let ff = match data {
-                //     move_build::PushInfo::PushedLand => {
-                //         Some(animation::land_delta(unit, end, grid_matrix))
-                //     }
-                //     move_build::PushInfo::UpgradedLand => {
-                //         todo!("BLAP");
-                //     }
-                //     move_build::PushInfo::PushedUnit => {
-                //         todo!("BLAP");
-                //     }
-
-                //     move_build::PushInfo::None => None,
-                // };
-
                 let it = {
                     let a = grid_matrix.hex_axial_to_world(&unit);
                     let b = grid_matrix.hex_axial_to_world(&end);
@@ -950,9 +935,6 @@ async fn render_command(
                         NormalMove::generate_suicidal(&game2, world, team, &spoke2),
                     );
                     suicidal_moves.inner &= small_mesh.inner;
-                    //suicidal_moves.set_coord(axial,false);
-
-                    //suicidal_moves
                     let mut normal_moves = small_mesh;
                     normal_moves.inner &= !suicidal_moves.inner;
 
@@ -967,9 +949,6 @@ async fn render_command(
                 }
                 ace::CellSelection::BuildSelection(axial) => todo!(),
             };
-            //let normal_moves
-
-            //get_mouse_input = Some(Some((selection, grey)));
         }
         ace::Command::GetMouseInputNoSelect => get_mouse_input = Some(None),
         ace::Command::WaitAI => {}
@@ -986,20 +965,20 @@ async fn render_command(
         }
     };
 
-    let game_total = if awaiting_popup_stop.is_some() {
-        let game = GameState::new();
-        let last_seen = LastSeenObjectsAll::new(&GameState::new());
+    // let game_total = if awaiting_popup_stop.is_some() {
+    //     let game = GameState::new();
+    //     let last_seen = LastSeenObjectsAll::new(&GameState::new());
 
-        let game = GameStateTotal {
-            tactical: game,
-            last_seen,
-            history: MoveHistory::new(),
-        };
+    //     let game = GameStateTotal {
+    //         tactical: game,
+    //         last_seen,
+    //         history: MoveHistory::new(),
+    //     };
 
-        game
-    } else {
-        game_total
-    };
+    //     game
+    // } else {
+    //     game_total
+    // };
 
     let game = &game_total.tactical;
 
@@ -1463,7 +1442,7 @@ async fn render_command(
                         }) => {
                             let val = stack_height.to_num();
                             if tt != team_perspective {
-                                if !show_hidden_units && darkness.is_set(a) {
+                                if darkness.is_set(a) {
                                     return None;
                                 }
                             }
@@ -1623,7 +1602,7 @@ async fn render_command(
                             return None;
                         }
                         if e.team != team_perspective {
-                            if !show_hidden_units && darkness.inner[index] {
+                            if darkness.inner[index] {
                                 return None;
                             }
                         }

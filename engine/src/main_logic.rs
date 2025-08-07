@@ -277,29 +277,12 @@ impl CommandSender {
         o
     }
 
-    // async fn poke(&mut self, team: ActiveTeam, game: GameState) {
-    //     self.sender
-    //         .send(GameWrap {
-    //             game,
-    //             data: Command::Poke,
-    //             team,
-    //         })
-    //         .await
-    //         .unwrap();
-
-    //     let GameWrapResponse { game: _gg, data } = self.receiver.next().await.unwrap();
-
-    //     let Response::Ack = data else {
-    //         unreachable!();
-    //     };
-    // }
     pub async fn repaint_ui(&mut self, team: Team, game: &mut unit::GameStateTotal, foo: String) {
         let data = self.send_command(team, game, Command::RepaintUI(foo)).await;
 
         let Response::Ack = data else {
             unreachable!();
         };
-        //console_db
     }
 
     pub async fn wait_forever(&mut self, team: Team, game: &mut unit::GameStateTotal) {
@@ -308,7 +291,6 @@ impl CommandSender {
         let Response::AnimationFinish = data else {
             unreachable!();
         };
-        //console_db
     }
 
     pub async fn wait_ai(&mut self, team: Team, game: &mut unit::GameStateTotal) -> Coordinate {
@@ -317,7 +299,6 @@ impl CommandSender {
         let Response::AiFinish(the_move) = data else {
             unreachable!();
         };
-        //console_dbg!("woke up");
         the_move
     }
     pub async fn wait_sometime(
@@ -344,14 +325,12 @@ impl CommandSender {
         };
     }
 
-    //TODO use
     async fn send_command(
         &mut self,
         team: Team,
         game1: &mut unit::GameStateTotal,
         co: Command,
     ) -> Response {
-        //let game2 = std::mem::take(game1);
         self.sender
             .send(GameWrap {
                 game: game1.clone(),
@@ -362,8 +341,6 @@ impl CommandSender {
             .unwrap();
 
         let GameWrap { data, .. } = self.receiver.next().await.unwrap();
-
-        //std::mem::swap(&mut game, game1);
 
         data
     }
@@ -697,9 +674,6 @@ pub async fn handle_player(
     doop: &mut CommandSender,
     team: Team,
 ) -> NormalMove {
-    doop.wait_popup(team, game, &format!("{:?}: Ready for your turn?", team))
-        .await;
-
     let undo = async |doop: &mut CommandSender, game: &mut unit::GameStateTotal| {
         //log!("undoing turn!!!");
         assert!(game.history.inner.len() >= 2, "Not enough moves to undo");
