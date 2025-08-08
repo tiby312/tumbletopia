@@ -562,6 +562,8 @@ pub async fn reselect_loop(
 
     //let c = target_cell;
 
+    let lighthouse_mode2 = doop.wait_sometime(team, game, 60).await;
+
     let mp = Coordinate(target_cell.to_index());
 
     if lighthouse_mode {

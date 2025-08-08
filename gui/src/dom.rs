@@ -44,14 +44,14 @@ pub enum DomToWorker {
 }
 
 //convert DOM coordinate to canvas relative coordinate
-fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
+pub fn convert_coord(canvas: &web_sys::EventTarget, event: &web_sys::Event) -> [f32; 2] {
     gui::shader_sys::convert_coord(
         canvas.dyn_ref().unwrap_throw(),
         event.dyn_ref().unwrap_throw(),
     )
 }
 
-fn convert_coord_touch(
+pub fn convert_coord_touch(
     canvas: &web_sys::EventTarget,
     event: &web_sys::Event,
 ) -> gui::scroll::Touches {
@@ -246,20 +246,12 @@ fn engine_handlers<'a>(
             let touches = convert_coord_touch(canvas, e);
             worker.post_message(DomToWorker::TouchEnd { touches })
         }),
-        //TODO register buttons based on game type
         reg_button(worker, "undo"),
         reg_button(worker, "pass"),
         reg_button(worker, "lighthouse"),
         reg_button(worker, "b_next"),
         reg_button(worker, "b_prev"),
         reg_button(worker, "popup_ack"),
-        // reg_button(worker, "b_ice"),
-        // reg_button(worker, "b_land"),
-        // reg_button(worker, "b_water"),
-        // reg_button(worker, "b_forest"),
-        // reg_button(worker, "b_start1"),
-        // reg_button(worker, "b_start2"),
-        // reg_button(worker, "b_export"),
     )
 }
 
@@ -297,10 +289,6 @@ pub async fn start_game(game_type: GameType, host: &str) {
     //repaint_text_send.send(()).await.unwrap();
 
     let mut text = vec![];
-    // text.push(Text {
-    //     text: "Hello".to_string(),
-    //     pos: [40.0, 40.0],
-    // });
 
     let mut score_data = None;
 
@@ -319,8 +307,8 @@ pub async fn start_game(game_type: GameType, host: &str) {
                         foo.set_attribute("style", "display:grid").unwrap_throw();
 
                         let foo = shogo::utils::get_by_id_elem("nextplayer_text");
-                        foo.set_inner_html(&s);                        
-                        
+                        foo.set_inner_html(&s);
+
 
                     }
                     WorkerToDom::HidePopup(s)=>{
